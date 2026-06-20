@@ -1,0 +1,13 @@
+bot
+assets
+.claude
+node_modules
+build.js
+collage.js.map
+template.html
+config.json
+README.md
+.DS_Store
+**/.DS_Store
+widget_carousel
+_carousel

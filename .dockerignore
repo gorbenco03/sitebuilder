@@ -1,0 +1,16 @@
+**/node_modules
+**/.env
+.env
+sites
+_carousel
+widget_carousel
+assets
+.git
+.github
+.claude
+.vercel
+*.log
+**/.sessions.json
+**/.sites-map.json
+.DS_Store
+**/.DS_Store

@@ -1,0 +1,92 @@
+{
+  "business": {
+    "name": "DESSERD by Irina",
+    "tagline": "Artisan Cakes, Pastries & Bread",
+    "title": "DESSERD by Irina | Cake Shop & Food Catering | Romford, London",
+    "metaDescription": "Artisan Cakes, Pastries, Bread. Freshly baked daily in Romford. Food catering, custom cakes, traditional Romanian delicacies. Order via DM or visit us at 28 High St, Romford.",
+    "about": "Welcome to DESSERD by Irina! This is my cake shop and food catering service in Romford, London. We create artisan cakes, pastries, and bread - all freshly baked daily. From traditional Romanian delicacies to custom celebration cakes, we put love into every creation.",
+    "lang": "en"
+  },
+  "theme": {
+    "primary": "#E8588C",
+    "primaryLight": "#f07aa5",
+    "primaryDark": "#d14477",
+    "cream": "#faf8f8"
+  },
+  "logo": "images/logo.jpg",
+  "hero": {
+    "background": "url('images/hero.jpg')",
+    "ctaLabel": "Order now"
+  },
+  "servicesTitle": "Our Specialties",
+  "services": [
+    {
+      "icon": "✦",
+      "label": "Torturi (Custom Cakes)"
+    },
+    {
+      "icon": "✦",
+      "label": "Prăjituri (Pastries)"
+    },
+    {
+      "icon": "✦",
+      "label": "Plăcinte (Traditional Pies)"
+    },
+    {
+      "icon": "✦",
+      "label": "Sarmale & Romanian Food"
+    },
+    {
+      "icon": "✦",
+      "label": "Platouri (Food Platters)"
+    },
+    {
+      "icon": "✦",
+      "label": "Produse Congelate (Frozen Products)"
+    }
+  ],
+  "galleryTitle": "",
+  "categories": [
+    {
+      "title": "",
+      "blurb": "",
+      "photos": [
+        { "src": "images/torturi-1.jpg", "alt": "Themed celebration cakes" },
+        { "src": "images/catering-1.jpg", "alt": "Catering platters with assorted sweets" },
+        { "src": "images/placinte-1.jpg", "alt": "Traditional Romanian pastries" },
+        { "src": "images/cupcakes-1.jpg", "alt": "Mousse cakes and cupcakes" }
+      ]
+    }
+  ],
+  "instagram": {
+    "handle": "desserdirina",
+    "url": "https://www.instagram.com/desserdirina",
+    "posts": [
+      "https://www.instagram.com/p/DSkUmLJDWgQ/",
+      "https://www.instagram.com/p/DGYQLJSN_GS/",
+      "https://www.instagram.com/p/DThXXyiCFVy/",
+      "https://www.instagram.com/p/DTkDEglCPLo/",
+      "https://www.instagram.com/p/DTh9NLbjRsl/",
+      "https://www.instagram.com/p/DFQYgVot8Is/"
+    ]
+  },
+  "contact": {
+    "title": "Order now",
+    "intro": "Order via DM or visit our shop. Book our space for events!",
+    "instagram": {
+      "url": "https://www.instagram.com/desserdirina",
+      "label": "@desserdirina"
+    },
+    "facebook": {
+      "url": "https://www.facebook.com/desserdirina",
+      "label": "Desserdirina"
+    },
+    "whatsapp": "447519511006",
+    "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum"
+  },
+  "footer": {
+    "address": "28 High St, Romford, London RM11HR",
+    "year": 2026,
+    "note": "Freshly baked daily with love."
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+bot/node_modules/
+bot/.env
+.env
+.DS_Store
+**/.DS_Store
+.vercel/
+sites/
+# runtime state (persisted via Railway volume, not committed)
+bot/.sessions.json
+bot/.sites-map.json
+bot/bot.log
+*.log
+_carousel/

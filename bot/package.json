@@ -1,0 +1,13 @@
+{
+  "name": "desserd-site-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Telegram bot that collects business info and auto-generates a landing page from the template.",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "grammy": "^1.30.0"
+  }
+}
