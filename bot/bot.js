@@ -21,6 +21,8 @@ const {
     handleGata,
     handlePhoto,
     handleText,
+    handleHelp,
+    handlePreturi,
     persistSessions,
     setAdminNotifier,
     sessions,
@@ -56,6 +58,8 @@ bot.use(async (ctx, next) => {
 /* ── Commands ── */
 bot.command('start',    handleStart);
 bot.command('wizard',   handleWizard);
+bot.command('help',     handleHelp);
+bot.command('preturi',  handlePreturi);
 bot.command('anuleaza', handleAnuleaza);
 bot.command('gata',     handleGata);
 

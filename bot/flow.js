@@ -685,7 +685,8 @@ async function handleText(ctx) {
 // ---------------------------------------------------------------------------
 
 async function _tryGenerateFromChat(ctx, session, chatId) {
-    // Show typing indicator equivalent — just proceed (grammY doesn't expose sendChatAction easily here)
+    // "typing…" indicator so the client knows the AI is working
+    ctx.replyWithChatAction('typing').catch(() => {});
 
     let result;
     try {
@@ -1012,6 +1013,38 @@ async function _publishAndFinish(ctx, session, chatId) {
 }
 
 // ---------------------------------------------------------------------------
+// /help and /preturi
+// ---------------------------------------------------------------------------
+
+async function handleHelp(ctx) {
+    await ctx.reply(
+        '🤖 Cum funcționează?\n\n' +
+        'Îți construiesc un site web profesional pentru afacerea ta în câteva minute.\n\n' +
+        '1️⃣ Scrie /start și povestește-mi despre afacere (nume, ce vinzi, contacte).\n' +
+        '2️⃣ Trimite câteva poze cu produsele tale.\n' +
+        '3️⃣ Aleg textele, culorile și construiesc site-ul.\n' +
+        '4️⃣ Plătești și site-ul tău e LIVE — pe vercel.app sau pe domeniul tău.\n\n' +
+        'Comenzi:\n' +
+        '/start – construiește un site (chat cu AI)\n' +
+        '/wizard – mod pas-cu-pas (manual)\n' +
+        '/preturi – vezi prețurile\n' +
+        '/anuleaza – resetează\n\n' +
+        'Spune-mi orice despre afacerea ta și începem!'
+    );
+}
+
+async function handlePreturi(ctx) {
+    const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
+    await ctx.reply(
+        '💰 Prețuri\n\n' +
+        `• Site complet (pe adresă vercel.app): ${fee} USD, o singură dată.\n` +
+        '• + Domeniu custom (ex: afacereata.ro): prețul domeniului (~12–15 USD/an) se adaugă la plată.\n' +
+        '• Design la comandă / funcții speciale: de la 500 USD.\n\n' +
+        'Scrie /start ca să începem!'
+    );
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -1029,6 +1062,8 @@ module.exports = {
     handleGata,
     handlePhoto,
     handleText,
+    handleHelp,
+    handlePreturi,
     // Utilities (exported for testing / bot.js wiring)
     slugify,
     downloadPhoto,
