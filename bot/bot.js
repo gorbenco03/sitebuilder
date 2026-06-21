@@ -1,5 +1,5 @@
 /**
- * bot/bot.js — DESSERD site bot (wiring only)
+ * bot/bot.js — hidook site bot (wiring only)
  *
  * Instantiates the grammY Bot, registers all command/message handlers, persists
  * sessions after each update, wires owner notifications, and survives crashes.

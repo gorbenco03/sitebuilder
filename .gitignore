@@ -12,3 +12,4 @@ bot/.sites-map.json
 bot/bot.log
 *.log
 _carousel/
+bot/_qa_scenario.js

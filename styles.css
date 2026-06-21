@@ -1,4 +1,4 @@
-/* CSS Variables - DESSERD by Irina Brand Colors (Logo Pink theme) */
+/* CSS Variables - theme colors (overridden per-site via inline :root in index.html) */
 :root {
     --color-primary: #E8588C;
     --color-primary-light: #f07aa5;
@@ -93,6 +93,20 @@ body {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+}
+
+/* Text wordmark — shown instead of a logo image when the business has no logo */
+.hero-wordmark {
+    font-family: var(--font-serif);
+    font-size: clamp(2.6rem, 8vw, 5rem);
+    font-weight: 600;
+    color: var(--color-primary-dark);
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    text-shadow: 0 2px 18px rgba(255, 255, 255, 0.7);
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+    animation: logoReveal 1.2s var(--transition-smooth) 0.3s forwards;
 }
 
 .hero-tagline {

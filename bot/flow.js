@@ -1,6 +1,6 @@
 'use strict';
 /**
- * bot/flow.js — Orchestrator / state machine for DESSERD site builder.
+ * bot/flow.js — Orchestrator / state machine for the hidook site builder.
  *
  * Phases:
  *   'chat'   — AI-driven free-form conversation (default when AI is available)
@@ -20,7 +20,7 @@ const path = require('path');
 
 const { build }           = require('../build.js');
 const store               = require('./store.js');
-const { getProvider, generateSiteConfig } = require('./ai.js');
+const { getProvider, polishBusinessData } = require('./ai.js');
 // Payment provider: Revolut Merchant API when configured (or PAYMENT_PROVIDER=revolut),
 // otherwise fall back to Stripe. Both expose the same interface.
 const _payments = (process.env.PAYMENT_PROVIDER || '').toLowerCase() === 'stripe'
@@ -160,6 +160,44 @@ async function downloadPhoto(ctx, destPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Contact normalization helpers
+// ---------------------------------------------------------------------------
+
+const isSkip = (v) => !v || !String(v).trim() || String(v).trim().toLowerCase() === 'skip';
+
+/**
+ * Normalize any Instagram input (@handle, handle, instagram.com/handle, full URL)
+ * into { handle, url }. Returns null when empty/skip.
+ */
+function normalizeInstagram(input) {
+    if (isSkip(input)) return null;
+    let h = String(input).trim()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^(www\.|m\.)/i, '')
+        .replace(/^instagram\.com\//i, '')
+        .replace(/[/?#].*$/, '')      // drop trailing path / query
+        .replace(/^@/, '')
+        .trim();
+    if (!h) return null;
+    return { handle: h, url: 'https://instagram.com/' + h };
+}
+
+/**
+ * Normalize a Facebook input (page name or URL) into { url, label }. null on skip.
+ */
+function normalizeFacebook(input) {
+    if (isSkip(input)) return null;
+    const s = String(input).trim();
+    if (/facebook\.com/i.test(s)) {
+        const url = /^https?:\/\//i.test(s) ? s : 'https://' + s.replace(/^\/+/, '');
+        const name = s.replace(/[/?#].*$/, '').split('/').filter(Boolean).pop() || 'Facebook';
+        return { url, label: name };
+    }
+    const name = s.replace(/^@/, '');
+    return { url: 'https://facebook.com/' + name, label: name };
+}
+
+// ---------------------------------------------------------------------------
 // buildConfig — produces full config with `categories` schema
 // ---------------------------------------------------------------------------
 
@@ -173,40 +211,28 @@ async function downloadPhoto(ctx, destPath) {
  * @param {string[]} galleryFiles — filenames like ['gallery-1.jpg', 'gallery-2.jpg']
  * @returns {Object} Full config ready for build.js
  */
-function buildConfig(data, galleryFiles) {
-    const igHandle = (data.instagram || '')
-        .replace(/\/+$/, '').split('/').filter(Boolean).pop() || '';
+function buildConfig(data, galleryFiles, hasLogo) {
+    const ig = normalizeInstagram(data.instagram);
+    const fb = normalizeFacebook(data.facebook);
 
-    const services = (data.services || '')
+    const services = (data.offer || data.services || '')
         .split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
         .map(label => ({ icon: '✦', label }));
 
-    const has = (v) => v && v.trim() && v.trim().toLowerCase() !== 'skip';
-
     const contact = {
-        title: 'Comandă acum',
-        intro: 'Comandă prin mesaj direct sau vizitează-ne.',
-        instagram: {
-            url:   has(data.instagram) ? data.instagram : '#',
-            label: igHandle ? '@' + igHandle : 'Instagram',
-        },
-        facebook: {
-            url:   has(data.facebook) ? data.facebook : '#',
-            label: 'Facebook',
-        },
-        whatsapp: has(data.whatsapp) ? data.whatsapp.replace(/\D/g, '') : '',
-        address:  has(data.address)  ? data.address.replace(/\n/g, '<br>') : '',
+        title: 'Contactează-ne',
+        intro: 'Scrie-ne un mesaj direct sau vizitează-ne.',
+        instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
+        facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
+        whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
+        address:   isSkip(data.address)  ? '' : String(data.address).replace(/\n/g, '<br>'),
     };
 
-    // Put all gallery photos into a single default category.
     const categories = [
         {
-            title:  'Galerie',
-            blurb:  'Descoperă creațiile noastre.',
-            photos: galleryFiles.map((f, i) => ({
-                src: `images/${f}`,
-                alt: `${data.name || 'Produs'} ${i + 1}`,
-            })),
+            title:  '',
+            blurb:  '',
+            photos: galleryFiles.map((f, i) => ({ src: `images/${f}`, alt: `${data.name || 'Produs'} ${i + 1}` })),
         },
     ];
 
@@ -214,112 +240,117 @@ function buildConfig(data, galleryFiles) {
         business: {
             name:            data.name || '',
             tagline:         data.tagline || '',
-            title:           `${data.name || ''} | Landing`,
+            title:           `${data.name || ''}`,
             metaDescription: (data.about || '').slice(0, 160),
             about:           data.about || '',
             lang:            'ro',
         },
-        theme: {
-            primary:      '#E8588C',
-            primaryLight: '#f07aa5',
-            primaryDark:  '#d14477',
-            cream:        '#faf8f8',
-        },
-        logo: 'images/logo.jpg',
+        theme: { primary: '#E8588C', primaryLight: '#f07aa5', primaryDark: '#d14477', cream: '#faf8f8' },
+        logo:        hasLogo ? 'images/logo.jpg' : '',
+        showWordmark: !hasLogo,
         hero: {
-            background: galleryFiles[0]
-                ? `url('images/${galleryFiles[0]}')`
-                : 'linear-gradient(135deg, #f7f3f0 0%, #efe7ea 100%)',
-            ctaLabel: 'Comandă acum',
+            background: galleryFiles[0] ? `url('images/${galleryFiles[0]}')` : 'linear-gradient(135deg, #f7f3f0 0%, #efe7ea 100%)',
+            ctaLabel: 'Contactează-ne',
         },
-        servicesTitle: 'Specialitățile noastre',
+        servicesTitle: 'Ce oferim',
         services,
-        galleryTitle: 'Creațiile noastre',
+        galleryTitle: '',
         categories,
         instagram: {
-            handle:  igHandle,
-            url:     has(data.instagram) ? data.instagram : '#',
-            gallery: galleryFiles.map(f => 'images/' + f),
+            handle:  ig ? ig.handle : '',
+            url:     ig ? ig.url : '#',
+            gallery: galleryFiles.slice(0, 6).map(f => 'images/' + f),
         },
         contact,
         footer: {
-            address: has(data.address) ? data.address.replace(/\n/g, ', ') : '',
+            address: isSkip(data.address) ? '' : String(data.address).replace(/\n/g, ', '),
             year:    new Date().getFullYear(),
-            note:    'Creat cu dragoste.',
+            note:    'Creat cu drag.',
         },
     };
 }
 
 /**
- * Merge real image paths from galleryFiles into an AI-produced config.
+ * Merge the deterministic parts (logo, contacts, images, footer) onto the
+ * AI-polished config, producing a complete config ready for build.js.
  *
- * The AI returns `src: ""` placeholders in config.categories[].photos.
- * We fill them in order from galleryFiles; if the AI has more slots than
- * files, we trim; if fewer, we append the extras to the last category.
+ * The AI handles copy/theme/categories/services; this fills everything the AI
+ * must NOT invent: the client's real logo, normalized contacts, image paths.
  *
- * @param {Object}   aiConfig    — config returned by generateSiteConfig (may be null)
- * @param {Object}   wizardData  — wizard answers (name, tagline, etc.)
+ * @param {Object}   aiConfig    — config from polishBusinessData (or null)
+ * @param {Object}   data        — wizard answers
  * @param {string[]} galleryFiles
+ * @param {boolean}  hasLogo
  * @returns {Object} merged config
  */
-function mergeAiConfig(aiConfig, wizardData, galleryFiles) {
-    if (!aiConfig) {
-        // Fall back to the manual buildConfig
-        return buildConfig(wizardData, galleryFiles);
-    }
+function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
+    if (!aiConfig) return buildConfig(data, galleryFiles, hasLogo);   // AI unavailable → mechanical fallback
 
-    // Deep-clone to avoid mutating the AI output
     const cfg = JSON.parse(JSON.stringify(aiConfig));
+    const ig = normalizeInstagram(data.instagram);
+    const fb = normalizeFacebook(data.facebook);
 
-    // Ensure required keys are present (AI may have omitted some)
-    cfg.logo         = 'images/logo.jpg';
-    cfg.galleryTitle = cfg.galleryTitle || 'Creațiile noastre';
-    cfg.footer       = cfg.footer       || {};
-    cfg.footer.year  = new Date().getFullYear();
+    // Business name always comes from the owner (don't let the AI rename them)
+    cfg.business = cfg.business || {};
+    cfg.business.name = data.name || cfg.business.name || '';
+    cfg.business.lang = 'ro';
 
-    // Ensure categories array exists
+    // Logo: the client's own logo, or a text wordmark when none was provided
+    cfg.logo         = hasLogo ? 'images/logo.jpg' : '';
+    cfg.showWordmark = !hasLogo;
+
+    // Hero background = first real photo (keep AI's ctaLabel)
+    cfg.hero = cfg.hero || {};
+    cfg.hero.background = galleryFiles[0]
+        ? `url('images/${galleryFiles[0]}')`
+        : 'linear-gradient(135deg, #f7f3f0 0%, #efe7ea 100%)';
+    cfg.hero.ctaLabel = cfg.hero.ctaLabel || 'Contactează-ne';
+
+    // Contacts — normalized from the owner's raw input (AI only gave title/intro)
+    const aiContact = cfg.contact || {};
+    cfg.contact = {
+        title: aiContact.title || 'Contactează-ne',
+        intro: aiContact.intro || 'Scrie-ne un mesaj direct sau vizitează-ne.',
+        instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
+        facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
+        whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
+        address:   isSkip(data.address)  ? '' : String(data.address).replace(/\n/g, '<br>'),
+    };
+
+    // Instagram photo-grid section
+    cfg.instagram = {
+        handle:  ig ? ig.handle : '',
+        url:     ig ? ig.url : '#',
+        gallery: galleryFiles.slice(0, 6).map(f => 'images/' + f),
+    };
+
+    // Footer
+    cfg.footer = {
+        address: isSkip(data.address) ? '' : String(data.address).replace(/\n/g, ', '),
+        year:    new Date().getFullYear(),
+        note:    (cfg.footer && cfg.footer.note) || 'Creat cu drag.',
+    };
+
+    cfg.galleryTitle = typeof cfg.galleryTitle === 'string' ? cfg.galleryTitle : '';
+
+    // Distribute the real gallery photos across the AI's categories
     if (!Array.isArray(cfg.categories) || cfg.categories.length === 0) {
-        cfg.categories = [{ title: 'Galerie', blurb: '', photos: [] }];
+        cfg.categories = [{ title: '', blurb: '', photos: [] }];
     }
-
-    // Distribute galleryFiles across categories in order
     let fileIndex = 0;
     for (const cat of cfg.categories) {
         if (!Array.isArray(cat.photos)) cat.photos = [];
         for (const photo of cat.photos) {
-            if (fileIndex < galleryFiles.length) {
-                photo.src = `images/${galleryFiles[fileIndex++]}`;
-            }
+            if (fileIndex < galleryFiles.length) photo.src = `images/${galleryFiles[fileIndex++]}`;
         }
-        // Trim photo slots that have no file
-        cat.photos = cat.photos.filter(p => p.src !== '');
+        cat.photos = cat.photos.filter(p => p.src && p.src !== '');
     }
-
-    // Append any remaining files to the last category
     if (fileIndex < galleryFiles.length) {
         const last = cfg.categories[cfg.categories.length - 1];
         for (; fileIndex < galleryFiles.length; fileIndex++) {
-            last.photos.push({
-                src: `images/${galleryFiles[fileIndex]}`,
-                alt: `${(cfg.business && cfg.business.name) || 'Produs'} ${fileIndex + 1}`,
-            });
+            last.photos.push({ src: `images/${galleryFiles[fileIndex]}`, alt: `${cfg.business.name || 'Produs'} ${fileIndex + 1}` });
         }
     }
-
-    // Make sure every category has at least empty photos array
-    for (const cat of cfg.categories) {
-        if (!Array.isArray(cat.photos)) cat.photos = [];
-    }
-
-    // Update hero background to use the first real photo
-    if (galleryFiles[0]) {
-        cfg.hero = cfg.hero || {};
-        cfg.hero.background = `url('images/${galleryFiles[0]}')`;
-    }
-
-    // Instagram section uses a uniform photo grid (not live embeds) → fill from uploads.
-    cfg.instagram = cfg.instagram || {};
-    cfg.instagram.gallery = galleryFiles.slice(0, 6).map(f => `images/${f}`);
 
     return cfg;
 }
@@ -351,18 +382,12 @@ async function generateSite(chatId, session) {
         if (fs.existsSync(src)) fs.copyFileSync(src, path.join(siteDir, f));
     }
 
-    // Move images from temp dir into site
+    // Move images from temp dir into site. NOTE: if the client uploaded no logo,
+    // we do NOT substitute any other logo — the site shows a text wordmark instead.
     const tmpDir = path.join(SITES_DIR, '_tmp-' + chatId);
-
-    if (fs.existsSync(path.join(tmpDir, 'logo.jpg'))) {
+    const hasLogo = fs.existsSync(path.join(tmpDir, 'logo.jpg'));
+    if (hasLogo) {
         fs.copyFileSync(path.join(tmpDir, 'logo.jpg'), path.join(imagesDir, 'logo.jpg'));
-    } else {
-        // Ensure logo.jpg exists so template token {{logo}} doesn't 404
-        // Copy a placeholder if available, otherwise create a 1px file
-        const fallbackLogo = path.join(PROJECT_ROOT, 'images', 'logo.jpg');
-        if (fs.existsSync(fallbackLogo)) {
-            fs.copyFileSync(fallbackLogo, path.join(imagesDir, 'logo.jpg'));
-        }
     }
 
     const galleryFiles = [];
@@ -376,10 +401,10 @@ async function generateSite(chatId, session) {
         }
     }
 
-    // Build config: prefer AI config merged with real paths; fall back to wizard config
+    // Build config: prefer the AI-polished config; fall back to mechanical buildConfig
     const config = session.siteConfig
-        ? mergeAiConfig(session.siteConfig, session.data, galleryFiles)
-        : buildConfig(session.data, galleryFiles);
+        ? mergeWizardConfig(session.siteConfig, session.data, galleryFiles, hasLogo)
+        : buildConfig(session.data, galleryFiles, hasLogo);
 
     fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(config, null, 2));
     const { bytes } = build(siteDir);
@@ -428,16 +453,16 @@ async function deployBuiltSite(siteDir, slug, chatId) {
 // ---------------------------------------------------------------------------
 
 const STEPS = [
-    { key: 'name',      prompt: '🏪 Cum se numește afacerea ta? (ex: DESSERD by Irina)' },
-    { key: 'tagline',   prompt: '✨ Un slogan scurt? (ex: Prăjituri artizanale cu dragoste)' },
-    { key: 'about',     prompt: '📝 Descrie afacerea în 2-3 propoziții (textul „Despre noi").' },
-    { key: 'services',  prompt: '🍰 Listează produsele/serviciile, fiecare pe linie nouă sau separate prin virgulă.' },
-    { key: 'instagram', prompt: '📸 Link Instagram (sau scrie „skip").' },
-    { key: 'facebook',  prompt: '👍 Link Facebook (sau scrie „skip").' },
-    { key: 'whatsapp',  prompt: '💬 Număr WhatsApp cu prefix de țară, doar cifre (ex: 447123456789), sau „skip".' },
-    { key: 'address',   prompt: '📍 Adresa (sau „skip").' },
-    { key: 'logo',      prompt: '🖼️ Trimite acum LOGO-ul ca poză.', photo: true },
-    { key: 'gallery',   prompt: '🎂 Trimite 3-6 poze cu produse (una câte una). Când termini, scrie /gata.', photos: true },
+    { key: 'name',      prompt: '🏪 (1/9) Cum se numește afacerea ta?' },
+    { key: 'offer',     prompt: '🛍️ (2/9) Ce produse sau servicii oferi? Enumeră-le (fiecare pe linie nouă sau separate prin virgulă).' },
+    { key: 'about',     prompt: '📝 (3/9) Spune-mi pe scurt despre afacerea ta — ce o face specială? (1-3 propoziții, scrie cum îți vine; AI-ul le aranjează frumos)' },
+    { key: 'colors',    prompt: '🎨 (4/9) Ce culori ai vrea pentru site? (ex: roz și auriu, albastru elegant, verde natural, minimalist alb-negru...)' },
+    { key: 'instagram', prompt: '📸 (5/9) Instagram-ul tău (username @nume sau link), sau scrie „skip".' },
+    { key: 'facebook',  prompt: '👍 (6/9) Facebook (link sau nume pagină), sau „skip".' },
+    { key: 'whatsapp',  prompt: '💬 (7/9) Număr WhatsApp cu prefix de țară (ex: 373..., 40..., 44...), sau „skip".' },
+    { key: 'address',   prompt: '📍 (8/9) Adresa afacerii (sau „skip").' },
+    { key: 'logo',      prompt: '🖼️ (9/9) Trimite LOGO-ul afacerii ca poză. Dacă nu ai logo, scrie „skip" (vom folosi numele afacerii).', photo: true },
+    { key: 'gallery',   prompt: '🎂 Acum trimite 3-6 poze cu produsele/serviciile tale (una câte una). Când termini, scrie /gata și AI-ul construiește site-ul.', photos: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -445,48 +470,26 @@ const STEPS = [
 // ---------------------------------------------------------------------------
 
 /**
- * /start — route to AI chat or wizard depending on provider.
+ * /start — single guided flow: collect answers step by step, then the AI polishes
+ * everything and builds the site.
  */
 async function handleStart(ctx) {
-    const chatId  = ctx.chat.id;
-    const session = resetSession(chatId);
-
-    if (getProvider() !== 'none') {
-        session.phase = 'chat';
-        await ctx.reply(
-            '👋 Salut! Sunt asistentul tău DESSERD.\n\n' +
-            'Povestește-mi despre afacerea ta — ce vinzi, cum te cheamă, unde ești, ' +
-            'cum te pot contacta clienții. Trimite și câteva poze cu produse.\n\n' +
-            'Voi genera automat site-ul tău când am suficiente informații.\n\n' +
-            '_Scrie /wizard dacă preferi să răspunzi pas cu pas._\n' +
-            '_Scrie /anuleaza oricând ca să resetezi._'
-        );
-    } else {
-        // No AI — fall straight to wizard
-        session.phase     = 'wizard';
-        session.stepIndex = 0;
-        await ctx.reply(
-            '👋 Salut! Îți construiesc un landing page.\n' +
-            'Răspunde pe rând la câteva întrebări.\n\n' +
-            '_Scrie /anuleaza ca să o iei de la capăt._'
-        );
-        await ctx.reply(STEPS[0].prompt);
-    }
-}
-
-/**
- * /wizard — force wizard mode regardless of AI availability.
- */
-async function handleWizard(ctx) {
     const chatId  = ctx.chat.id;
     const session = resetSession(chatId);
     session.phase     = 'wizard';
     session.stepIndex = 0;
     await ctx.reply(
-        '📋 Wizard pas cu pas pornit!\n' +
-        'Scrie /anuleaza oricând ca să resetezi.'
+        '👋 Salut! Îți construiesc un site web profesional pentru afacerea ta.\n\n' +
+        'Îți pun câteva întrebări scurte despre afacere, apoi un AI îți aranjează frumos ' +
+        'textele, alege culorile și publică site-ul. Hai să începem!\n\n' +
+        'Oricând poți scrie /anuleaza ca să o iei de la capăt.'
     );
     await ctx.reply(STEPS[0].prompt);
+}
+
+/** /wizard — alias of /start (kept for compatibility). */
+async function handleWizard(ctx) {
+    return handleStart(ctx);
 }
 
 /**
@@ -515,20 +518,41 @@ async function handleGata(ctx) {
     }
 
     if (session.gallery.length === 0) {
-        return ctx.reply('Trimite cel puțin o poză înainte de /gata.');
+        return ctx.reply('Trimite cel puțin o poză cu produsele tale înainte de /gata.');
     }
 
-    await ctx.reply('⏳ Generez site-ul...');
+    // 1) Send all collected answers to the AI to polish copy, organise products
+    //    into categories and pick a theme matching the requested colors.
+    await ctx.reply('✨ Am toate informațiile! AI-ul îți aranjează acum site-ul (texte, culori, secțiuni)...');
+    ctx.replyWithChatAction('typing').catch(() => {});
 
+    try {
+        const result = await polishBusinessData(session.data, {
+            photoCount: session.gallery.length,
+            lang: 'ro',
+        });
+        if (result.blocked) {
+            await ctx.reply('🚫 ' + (result.blockReason || 'Pot construi doar site-uri pentru afaceri legitime.') + '\n\nScrie /start ca să încerci din nou.');
+            resetSession(chatId);
+            return;
+        }
+        session.siteConfig = result.config || null;   // null → mechanical buildConfig fallback
+    } catch (e) {
+        console.error('[polishBusinessData error]', e);
+        // Don't lose the client — fall back to the mechanical builder
+        session.siteConfig = null;
+    }
+
+    // 2) Build the site from the (polished or fallback) config
     try {
         await generateSite(chatId, session);
     } catch (e) {
         console.error('[/gata error]', e);
-        await ctx.reply('❌ Eroare la generarea site-ului: ' + e.message);
+        await ctx.reply('❌ Eroare la generarea site-ului: ' + e.message + '\nScrie /anuleaza și încearcă din nou.');
         return;
     }
 
-    // Same path as AI chat: deploy free on vercel.app, then offer a custom domain.
+    // 3) Offer custom domain → payment → publish
     await _afterBuildOfferDomain(ctx, session, chatId);
 }
 
@@ -568,28 +592,8 @@ async function handlePhoto(ctx) {
         return;
     }
 
-    // ----- CHAT (AI) -----
-    if (session.phase === 'chat') {
-        // Treat photo as a gallery upload
-        const name = `g-${session.gallery.length + 1}.jpg`;
-        await downloadPhoto(ctx, path.join(tmpDir, name));
-        session.gallery.push(name);
-
-        // Add a note to conversation
-        session.conversation.push({
-            role:    'user',
-            content: `[Am trimis o fotografie cu produsul meu #${session.gallery.length}]`,
-        });
-
-        await ctx.reply(`📷 Poză ${session.gallery.length} primită!`);
-
-        // Try to advance — maybe we now have enough
-        await _tryGenerateFromChat(ctx, session, chatId);
-        return;
-    }
-
-    // ----- DOMAIN / PAY / DEPLOY -----
-    await ctx.reply('Nu mă așteptam la o poză acum. Continuă cu instrucțiunile precedente.');
+    // ----- ANY OTHER PHASE -----
+    await ctx.reply('Nu am nevoie de o poză acum. Continuă cu instrucțiunile precedente.');
 }
 
 // ---------------------------------------------------------------------------
@@ -620,21 +624,27 @@ async function handleText(ctx) {
         const step = STEPS[session.stepIndex];
         if (!step) return;
 
-        if (step.photo || step.photos) {
-            return ctx.reply('Acum aștept o poză 🙂' + (step.photos ? ' (sau /gata la galerie).' : ''));
+        // Logo step: allow "skip" (no logo) via text; otherwise wait for a photo.
+        if (step.photo) {
+            if (isSkip(text)) {
+                session.hasLogo = false;
+                session.stepIndex++;
+                await ctx.reply('👍 OK, fără logo — vom folosi numele afacerii.');
+                await ctx.reply(STEPS[session.stepIndex].prompt);
+                return;
+            }
+            return ctx.reply('Aici aștept LOGO-ul ca poză 🙂 (sau scrie „skip" dacă nu ai logo).');
+        }
+
+        // Gallery step: photos only (finish with /gata)
+        if (step.photos) {
+            return ctx.reply('Acum aștept poze cu produsele tale 🙂 (sau /gata când ai terminat).');
         }
 
         session.data[step.key] = text;
         session.stepIndex++;
         const next = STEPS[session.stepIndex];
         if (next) await ctx.reply(next.prompt);
-        return;
-    }
-
-    // ----- CHAT (AI) -----
-    if (session.phase === 'chat') {
-        session.conversation.push({ role: 'user', content: text });
-        await _tryGenerateFromChat(ctx, session, chatId);
         return;
     }
 
@@ -678,76 +688,6 @@ async function handleText(ctx) {
         await ctx.reply('⏳ Publicăm site-ul, te rugăm să aștepți...');
         return;
     }
-}
-
-// ---------------------------------------------------------------------------
-// AI Chat: try to extract config and advance
-// ---------------------------------------------------------------------------
-
-async function _tryGenerateFromChat(ctx, session, chatId) {
-    // "typing…" indicator so the client knows the AI is working
-    ctx.replyWithChatAction('typing').catch(() => {});
-
-    let result;
-    try {
-        result = await generateSiteConfig(session.conversation, {
-            photoCount: session.gallery.length,
-            lang: 'ro',
-        });
-    } catch (e) {
-        console.error('[generateSiteConfig error]', e);
-        await ctx.reply(
-            '❌ Eroare la comunicarea cu AI-ul: ' + e.message +
-            '\n\nÎncearcă din nou sau scrie /wizard pentru modul manual.'
-        );
-        return;
-    }
-
-    const { config, missing, followUp } = result;
-
-    // Determine if config is complete enough to proceed
-    const hasName    = config && config.business && config.business.name;
-    const hasContact = config && config.contact && (
-        config.contact.whatsapp ||
-        (config.contact.instagram && config.contact.instagram.url !== '#') ||
-        (config.contact.facebook  && config.contact.facebook.url  !== '#')
-    );
-    const hasPhotos  = session.gallery.length >= 1;
-
-    const isComplete = hasName && hasContact && hasPhotos;
-
-    if (!isComplete) {
-        // Send follow-up question if AI has one, else generic prompt
-        if (followUp) {
-            session.conversation.push({ role: 'assistant', content: followUp });
-            await ctx.reply(followUp);
-        } else {
-            const hints = [];
-            if (!hasName)    hints.push('numele afacerii');
-            if (!hasContact) hints.push('un contact (Instagram, WhatsApp, Facebook sau adresă)');
-            if (!hasPhotos)  hints.push('cel puțin o poză cu produsele tale');
-
-            const msg = `Mai am nevoie de: ${hints.join(', ')}. Povestește-mi mai multe!`;
-            session.conversation.push({ role: 'assistant', content: msg });
-            await ctx.reply(msg);
-        }
-        return;
-    }
-
-    // Config is complete — store it, build, deploy free, then offer a custom domain
-    session.siteConfig = config;
-
-    await ctx.reply('✅ Am toate informațiile! Generez site-ul tău...');
-
-    try {
-        await generateSite(chatId, session);
-    } catch (e) {
-        console.error('[generateSite error]', e);
-        await ctx.reply('❌ Eroare la generarea site-ului: ' + e.message);
-        return;
-    }
-
-    await _afterBuildOfferDomain(ctx, session, chatId);
 }
 
 // ---------------------------------------------------------------------------
@@ -877,8 +817,8 @@ async function _initiatePayment(ctx, session, chatId) {
     }
 
     const productName  = hasDomain
-        ? `Site DESSERD + domeniu ${session.domain}`
-        : 'Site DESSERD (publicare pe vercel.app)';
+        ? `Site web hidook + domeniu ${session.domain}`
+        : 'Site web hidook (publicare pe vercel.app)';
 
     // successUrl / cancelUrl: use Telegram deep-link (polling doesn't need a public URL)
     const botUsername  = process.env.BOT_USERNAME || 'desserd_bot';
@@ -1068,7 +1008,9 @@ module.exports = {
     slugify,
     downloadPhoto,
     buildConfig,
-    mergeAiConfig,
+    mergeWizardConfig,
+    normalizeInstagram,
+    normalizeFacebook,
     generateSite,
     STEPS,
 };

@@ -257,6 +257,80 @@ Reply ONLY with JSON: {"blocked": true|false, "blockReason": "..."|null}`;
     }
 }
 
+/**
+ * Polish structured wizard answers into a finished site config.
+ *
+ * The owner answered a short questionnaire (name, products, about, colors, …).
+ * This rewrites their copy literarily, organises products into categories,
+ * derives a theme palette MATCHING their requested colors, and writes SEO text.
+ * It does NOT handle logo/contacts/images — the orchestrator (flow.js) fills those.
+ *
+ * @param {Object} data  { name, offer, about, colors }
+ * @param {{photoCount?:number, lang?:string}} [opts]
+ * @returns {Promise<{ blocked:boolean, blockReason:string|null, config:object|null }>}
+ */
+async function polishBusinessData(data = {}, opts = {}) {
+    const { photoCount = 0, lang = 'ro' } = opts;
+    if (getProvider() === 'none') return { blocked: false, blockReason: null, config: null };
+
+    // Safety gate on the business description (cheap, reliable)
+    const summary = `Afacere: ${data.name || ''}\nProduse/servicii: ${data.offer || ''}\nDespre: ${data.about || ''}`;
+    const gate = await moderateRequest([{ role: 'user', content: summary }], lang);
+    if (gate.blocked) return { blocked: true, blockReason: gate.blockReason, config: null };
+
+    const system = `You are an expert web copywriter and brand designer for "hidook", a service that builds professional landing pages for small businesses. A business OWNER answered a short questionnaire (raw text, possibly with typos). Turn their answers into a polished, literary-correct landing-page config, written in ${lang === 'ro' ? 'Romanian' : "the owner's language"}.
+
+RULES:
+1. Rewrite "about" into 2–4 warm, professional sentences (fix grammar/spelling; do NOT invent facts the owner didn't state).
+2. Write a short, catchy "tagline" (slogan) that fits the business.
+3. Turn the product/service list into "services": 4–6 items, each {icon:"✦", label:"..."} with clean, attractive labels.
+4. Group the products into 1–4 sensible "categories", each with a title + one friendly one-sentence "blurb".
+5. THEME — choose a tasteful hex palette that MATCHES the colors the owner asked for: "${data.colors || '(not specified — pick a palette that fits the business)'}". Provide primary, primaryLight (lighter than primary), primaryDark (darker than primary) and a very light "cream" background tint. Use real, harmonious colors.
+6. Write an SEO "title" and a "metaDescription" (max 160 chars).
+7. "contact": a short "title" and a one-line "intro".
+8. Every photo "src" MUST be "" (empty string) — the app fills real image paths later. Write meaningful "alt" text. Distribute the ${photoCount} available photo slots across the categories.
+9. Be specific to THIS business. Never use placeholder text like "Lorem ipsum".
+
+Output ONLY this JSON object (no markdown, no commentary):
+{
+  "business": { "name": "string", "tagline": "string", "title": "string", "metaDescription": "string", "about": "string", "lang": "${lang}" },
+  "theme": { "primary": "#rrggbb", "primaryLight": "#rrggbb", "primaryDark": "#rrggbb", "cream": "#rrggbb" },
+  "servicesTitle": "string",
+  "services": [ { "icon": "✦", "label": "string" } ],
+  "galleryTitle": "string",
+  "categories": [ { "title": "string", "blurb": "string", "photos": [ { "src": "", "alt": "string" } ] } ],
+  "contact": { "title": "string", "intro": "string" },
+  "hero": { "ctaLabel": "string" }
+}`;
+
+    const userMsg =
+        `Răspunsurile proprietarului:\n` +
+        `• Numele afacerii: ${data.name || '(lipsă)'}\n` +
+        `• Produse/servicii: ${data.offer || data.services || '(lipsă)'}\n` +
+        `• Despre afacere: ${data.about || '(lipsă)'}\n` +
+        `• Culori dorite pentru site: ${data.colors || '(nespecificat)'}\n` +
+        `• Numărul de poze cu produse: ${photoCount}`;
+
+    const attempt = (extra) =>
+        callLLM({ system, messages: [{ role: 'user', content: userMsg + (extra || '') }], json: true });
+
+    let parsed;
+    try {
+        parsed = await attempt('');
+    } catch (e) {
+        if (e instanceof SyntaxError || (e.message && /parse|json/i.test(e.message))) {
+            try { parsed = await attempt('\n\nReply ONLY with the raw JSON object — no markdown, no commentary.'); }
+            catch { return { blocked: false, blockReason: null, config: null }; }
+        } else {
+            throw e;
+        }
+    }
+    if (!parsed || typeof parsed !== 'object' || !parsed.business) {
+        return { blocked: false, blockReason: null, config: null };
+    }
+    return { blocked: false, blockReason: null, config: parsed };
+}
+
 async function generateSiteConfig(conversation, opts = {}) {
     const { photoCount = 0, lang } = opts;
 
@@ -555,6 +629,7 @@ module.exports = {
     getProvider,
     callLLM,
     moderateRequest,
+    polishBusinessData,
     generateSiteConfig,
     describePhotosForCategories,
 };
