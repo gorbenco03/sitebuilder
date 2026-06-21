@@ -73,7 +73,7 @@ function getProvider() {
  * @returns {Promise<string|object>} Raw text, or parsed object when json=true.
  * @throws {Error} When the provider is "none", or on HTTP / parse errors.
  */
-async function callLLM({ system, messages, json = false }) {
+async function callLLM({ system, messages, json = false, model }) {
     const provider = getProvider();
 
     if (provider === 'none') {
@@ -81,10 +81,10 @@ async function callLLM({ system, messages, json = false }) {
     }
 
     if (provider === 'anthropic') {
-        return _callAnthropic({ system, messages, json });
+        return _callAnthropic({ system, messages, json, model });
     }
     if (provider === 'openai') {
-        return _callOpenAI({ system, messages, json });
+        return _callOpenAI({ system, messages, json, model });
     }
 
     throw new Error(`Unknown AI provider: ${provider}`);
@@ -94,8 +94,8 @@ async function callLLM({ system, messages, json = false }) {
 // Internal: Anthropic implementation
 // ---------------------------------------------------------------------------
 
-async function _callAnthropic({ system, messages, json }) {
-    const model = process.env.AI_MODEL || ANTHROPIC_DEFAULT_MODEL;
+async function _callAnthropic({ system, messages, json, model }) {
+    model = model || process.env.AI_MODEL || ANTHROPIC_DEFAULT_MODEL;
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     const systemText = json
@@ -142,8 +142,8 @@ async function _callAnthropic({ system, messages, json }) {
 // Internal: OpenAI implementation
 // ---------------------------------------------------------------------------
 
-async function _callOpenAI({ system, messages, json }) {
-    const model = process.env.AI_MODEL || OPENAI_DEFAULT_MODEL;
+async function _callOpenAI({ system, messages, json, model }) {
+    model = model || process.env.AI_MODEL || OPENAI_DEFAULT_MODEL;
     const apiKey = process.env.OPENAI_API_KEY;
 
     const openaiMessages = [
@@ -280,8 +280,9 @@ async function polishBusinessData(data = {}, opts = {}) {
 
     const system = `You are an expert web copywriter and brand designer for "hidook", a service that builds professional landing pages for small businesses. A business OWNER answered a short questionnaire (raw text, possibly with typos). Turn their answers into a polished, literary-correct landing-page config, written in ${lang === 'ro' ? 'Romanian' : "the owner's language"}.
 
+${lang === 'ro' ? `LANGUAGE — CRITICAL: Write in PERFECT, natural Romanian with correct diacritics (ă, â, î, ș, ț). NEVER use Spanish/Italian/French words or spellings. Common correct forms: "Bine ați venit" or "Bun venit" (NOT "Bienveniti"/"Bienvenidos"), "colorate" (NOT "colorite"), "delicios", "proaspăt". Re-read every sentence and fix any word that is not standard Romanian before outputting.\n` : ''}
 RULES:
-1. Rewrite "about" into 2–4 warm, professional sentences (fix grammar/spelling; do NOT invent facts the owner didn't state).
+1. Rewrite "about" into 2–4 warm, professional sentences in flawless ${lang === 'ro' ? 'Romanian' : 'language'} (fix grammar/spelling; do NOT invent facts the owner didn't state).
 2. Write a short, catchy "tagline" (slogan) that fits the business.
 3. Turn the product/service list into "services": 4–6 items, each {icon:"✦", label:"..."} with clean, attractive labels.
 4. Group the products into 1–4 sensible "categories", each with a title + one friendly one-sentence "blurb".
@@ -311,8 +312,13 @@ Output ONLY this JSON object (no markdown, no commentary):
         `• Culori dorite pentru site: ${data.colors || '(nespecificat)'}\n` +
         `• Numărul de poze cu produse: ${photoCount}`;
 
+    // Use a stronger model for the single, quality-critical polish call (still ~1 call/site).
+    // Configurable via AI_POLISH_MODEL; defaults to Sonnet for Anthropic, provider default otherwise.
+    const polishModel = getProvider() === 'anthropic'
+        ? (process.env.AI_POLISH_MODEL || 'claude-sonnet-4-6')
+        : undefined;
     const attempt = (extra) =>
-        callLLM({ system, messages: [{ role: 'user', content: userMsg + (extra || '') }], json: true });
+        callLLM({ system, messages: [{ role: 'user', content: userMsg + (extra || '') }], json: true, model: polishModel });
 
     let parsed;
     try {
