@@ -18,6 +18,7 @@ const {
     handleStart,
     handleWizard,
     handleAnuleaza,
+    handleRetry,
     handleGata,
     handlePhoto,
     handleDocument,
@@ -29,7 +30,7 @@ const {
     setAdminNotifier,
     setBotUsername,
     setMessenger,
-    resumePendingPayments,
+    reconcilePending,
     sessions,
 } = flow;
 
@@ -40,6 +41,11 @@ if (!TOKEN) {
 }
 
 const bot = new Bot(TOKEN);
+
+/* ── Periodic reconciliation sweep: re-checks pending payments and resumes paid-but-
+      unpublished orders, so nothing is lost between restarts or past a poll window. ── */
+const SWEEP_INTERVAL_MS = Number(process.env.SWEEP_INTERVAL_MS) || 5 * 60 * 1000;
+let sweepTimer = null;
 
 /* ── Render replies as Markdown by default, but never let a stray special char in a
       dynamic value (e.g. a domain or amount) drop the message: on an entity-parse
@@ -93,6 +99,7 @@ bot.command('wizard',   handleWizard);
 bot.command('help',     handleHelp);
 bot.command('preturi',  handlePreturi);
 bot.command('anuleaza', handleAnuleaza);
+bot.command('retry',    handleRetry);
 bot.command('gata',     handleGata);
 
 /* ── Media + Text (catch-all registered LAST so it only fires for unhandled types) ── */
@@ -112,7 +119,7 @@ bot.catch((err) => {
    unhandledRejection: log only (a single bad promise shouldn't kill the bot).
    uncaughtException: the process state may be corrupt — flush sessions and EXIT non-zero
    so Railway (restartPolicy ON_FAILURE) restarts a clean process, which then re-arms any
-   pending payments via resumePendingPayments(). Staying alive risks a zombie that can't
+   pending payments via reconcilePending(). Staying alive risks a zombie that can't
    deploy or persist. */
 process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e));
 process.on('uncaughtException',  (e) => {
@@ -124,6 +131,7 @@ process.on('uncaughtException',  (e) => {
 /* ── Graceful shutdown: flush sessions, stop polling cleanly ── */
 const shutdown = (signal) => {
     console.log(`\n${signal} received — flushing sessions and stopping…`);
+    if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
     try { require('./store.js').flush(sessions); } catch (_) {}
     bot.stop();
     process.exit(0);
@@ -139,8 +147,15 @@ async function start() {
             onStart: (me) => {
                 setBotUsername(me.username);
                 console.log(`🤖 Bot pornit ca @${me.username}`);
-                // Resume any orders that were mid-payment when we last stopped.
-                try { resumePendingPayments(); } catch (e) { console.error('[reconcile] failed:', e.message); }
+                // Resume any orders that were mid-payment/publish when we last stopped,
+                // then keep checking on an interval (covers slow payments + restarts).
+                try { reconcilePending(); } catch (e) { console.error('[reconcile] failed:', e.message); }
+                if (!sweepTimer) {
+                    sweepTimer = setInterval(() => {
+                        try { reconcilePending(); } catch (e) { console.error('[sweep] failed:', e.message); }
+                    }, SWEEP_INTERVAL_MS);
+                    if (sweepTimer.unref) sweepTimer.unref();
+                }
             },
         });
     } catch (e) {

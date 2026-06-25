@@ -189,11 +189,30 @@ async function pollUntilPaid(sessionId, { intervalMs = 4000, timeoutMs = 900000 
     return false;
 }
 
+/**
+ * Refund a Checkout Session, fully or partially. Resolves the session's payment_intent
+ * and issues a refund against it. Used when a paid order can't be fully delivered (e.g.
+ * the custom domain purchase fails after charging).
+ *
+ * @param {string} sessionId   Stripe Checkout Session id (cs_...).
+ * @param {number} [amountCents] Partial amount to refund; omit for a full refund.
+ * @returns {Promise<object>} The Stripe refund object.
+ */
+async function refund(sessionId, amountCents) {
+    if (!sessionId) throw new Error('sessionId is required for refund.');
+    const session = await stripeRequest('GET', `/checkout/sessions/${encodeURIComponent(sessionId)}`);
+    const pi = session.payment_intent;
+    if (!pi) throw new Error('No payment_intent on session ' + sessionId + ' (was it paid?).');
+    const params = { payment_intent: pi };
+    if (amountCents && amountCents > 0) params.amount = Math.round(amountCents);
+    return stripeRequest('POST', '/refunds', encodeStripeBody(params));
+}
+
 // ---------------------------------------------------------------------------
 // Module exports
 // ---------------------------------------------------------------------------
 
-module.exports = { isConfigured, createCheckout, getCheckoutStatus, pollUntilPaid };
+module.exports = { isConfigured, createCheckout, getCheckoutStatus, pollUntilPaid, refund };
 
 // ---------------------------------------------------------------------------
 // Self-test (run: node bot/payments.js)

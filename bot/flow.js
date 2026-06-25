@@ -37,7 +37,10 @@ const { deployToNetlify } = require('./deploy.js');
 // ---------------------------------------------------------------------------
 
 const PROJECT_ROOT = path.join(__dirname, '..');
-const SITES_DIR    = path.join(PROJECT_ROOT, 'sites');
+// Built sites + temp uploads live on the persistent volume (DATA_DIR) so a paid,
+// not-yet-published order survives a Railway redeploy/restart. Falls back to the
+// project root for local runs where DATA_DIR is unset.
+const SITES_DIR    = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 const SHARED_FILES = ['template.html', 'styles.css', 'script.js', 'collage.js'];
 
 /** One-time site build fee, in USD cents. Charged for every site (even on vercel.app). Env: BUILD_FEE_USD (default 29). */
@@ -66,6 +69,13 @@ function getBotUsername() { return botUsername || process.env.BOT_USERNAME || 'h
 
 // Sessions are restored from disk on boot so a client mid-build survives restarts.
 const sessions = new Map(store.loadSessions());
+
+// chatIds with a payment poller currently running (in-memory only) — prevents the
+// boot reconciler and the periodic sweeper from launching duplicate pollers.
+const activePolls = new Set();
+
+/** A paid-but-unconfirmed checkout is re-polled until this age, then abandoned. Env: PAY_MAX_AGE_MS (default 24h). */
+const PAY_MAX_AGE_MS = Number(process.env.PAY_MAX_AGE_MS) || 24 * 3600 * 1000;
 
 /** Persist the current sessions Map (debounced). Called after each handled update. */
 function persistSessions() {
@@ -100,20 +110,36 @@ function _ctxShim(chatId) {
 }
 
 /**
- * Re-arm background payment polling for any session that was mid-payment when the bot
- * last stopped. Without this, a Railway redeploy during checkout orphans the order —
- * the customer pays but the only poller died, so the site is never published. Call
- * once after the bot has started (bot.api must be live to message the customer).
+ * Reconcile orders that were mid-flight when the bot last stopped — safe to call at
+ * boot AND periodically (the sweeper). Closes the "paid but never delivered" gap that
+ * a single in-memory poller can't survive. Per session:
+ *   'pay'              → (re)arm the payment poller (unless one already runs), or
+ *                        abandon it once the checkout is older than PAY_MAX_AGE_MS.
+ *   'deploy' /
+ *   'paid-needs-retry' → already paid → resume publishing (idempotent via guards).
+ * @returns {number} how many orders it acted on this pass.
  */
-function resumePendingPayments() {
+function reconcilePending() {
     let n = 0;
     for (const [chatId, session] of sessions) {
-        if (session && session.phase === 'pay' && session.stripeSessionId) {
+        if (!session) continue;
+        if (session.phase === 'pay' && session.stripeSessionId) {
+            if (session.payStartedAt && Date.now() - session.payStartedAt > PAY_MAX_AGE_MS) {
+                session.phase = 'done';      // checkout long expired, never paid → stop polling
+                sessions.delete(chatId);
+                flushSessions();
+                continue;
+            }
+            if (activePolls.has(chatId)) continue;   // a poller is already watching this one
             n++;
             _pollPaymentBackground(_ctxShim(chatId), session, chatId, session.stripeSessionId);
+        } else if (session.phase === 'deploy' || session.phase === 'paid-needs-retry') {
+            if (session._publishing) continue;       // a publish is already in flight
+            n++;
+            _publishAndFinish(_ctxShim(chatId), session, chatId).catch(e => console.error('[reconcile publish]', e));
         }
     }
-    if (n) console.log(`[reconcile] re-armed payment polling for ${n} pending session(s)`);
+    if (n) console.log(`[reconcile] resumed ${n} pending order(s)`);
     return n;
 }
 
@@ -603,8 +629,31 @@ async function handleWizard(ctx) {
  */
 async function handleAnuleaza(ctx) {
     const chatId = ctx.chat.id;
+    const s = sessions.get(chatId);
+    // Never silently discard a PAID order (would lose the customer's money).
+    if (s && (s.phase === 'deploy' || s.phase === 'paid-needs-retry')) {
+        return ctx.reply('Ai o comandă deja PLĂTITĂ în curs de publicare — nu o anulez ca să nu pierzi banii. Scrie /retry ca să finalizez publicarea.');
+    }
     resetSession(chatId);
     await ctx.reply('🔄 Am resetat sesiunea. Scrie /start ca să o iei de la capăt.');
+}
+
+/**
+ * /retry — resume publishing a paid order that failed to deploy/finish (phase
+ * 'paid-needs-retry' or 'deploy'). Idempotent via _publishAndFinish's guards.
+ */
+async function handleRetry(ctx) {
+    const chatId  = ctx.chat.id;
+    const session = getSession(chatId);
+    if (session.phase === 'paid-needs-retry' || session.phase === 'deploy') {
+        await ctx.reply('🔁 Reiau publicarea...');
+        await _publishAndFinish(ctx, session, chatId);
+        return;
+    }
+    if (session.phase === 'pay') {
+        return ctx.reply('Încă aștept confirmarea plății. Dacă ai plătit, o detectez automat în scurt timp.');
+    }
+    return ctx.reply('Nu ai o publicare în așteptare. Scrie /start ca să creezi un site.');
 }
 
 /**
@@ -1044,6 +1093,7 @@ async function _initiatePayment(ctx, session, chatId) {
     }
 
     session.stripeSessionId = checkoutId;
+    session.payStartedAt    = Date.now();   // used to abandon never-paid checkouts after PAY_MAX_AGE_MS
 
     const total = (amountCents / 100).toFixed(2);
     const breakdown = hasDomain
@@ -1060,99 +1110,158 @@ async function _initiatePayment(ctx, session, chatId) {
 }
 
 function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
-    pollUntilPaid(checkoutId, { intervalMs: 5000, timeoutMs: 900000 })
+    if (activePolls.has(chatId)) return;   // never two pollers for one chat
+    activePolls.add(chatId);
+    pollUntilPaid(checkoutId, { intervalMs: 5000, timeoutMs: 600000 })
         .then(async (paid) => {
             if (!paid) {
+                // Not confirmed this window. Keep phase 'pay' so the periodic sweeper
+                // re-checks later — covers slow bank/3DS payments past the poll window.
                 await ctx.reply(
-                    '⏰ Sesiunea de plată a expirat sau nu am primit confirmarea.\n' +
-                    'Scrie /start ca să reiei procesul.'
+                    '⏳ Încă n-am primit confirmarea plății. Verific în continuare automat — ' +
+                    'public site-ul imediat ce se confirmă. (Sau scrie /anuleaza ca să renunți.)'
                 );
                 return;
             }
             await ctx.reply('✅ Plată confirmată! Public site-ul...');
             session.phase = 'deploy';
-            flushSessions();   // durable: a restart now resumes from 'deploy', not 'pay' (no double-charge re-poll)
+            flushSessions();   // durable: a restart now resumes from 'deploy', not 'pay'
             await _publishAndFinish(ctx, session, chatId);
         })
         .catch(async (e) => {
             console.error('[pollPayment error]', e);
-            await ctx.reply(
-                '❌ Eroare la verificarea plății: ' + e.message +
-                '\nContactează-ne pentru asistență sau scrie /anuleaza.'
-            );
-        });
+            await ctx.reply('⏳ Verificarea plății a întâmpinat o problemă temporară; reîncerc automat în curând.');
+        })
+        .finally(() => activePolls.delete(chatId));
 }
 
 // ---------------------------------------------------------------------------
 // Publish phase (runs AFTER payment is confirmed)
 // ---------------------------------------------------------------------------
 
+/** Deploy with a couple of retries + small backoff (transient Vercel/network errors). */
+async function _deployWithRetry(siteDir, slug, chatId, attempts = 3) {
+    let lastErr;
+    for (let i = 1; i <= attempts; i++) {
+        try {
+            return await deployBuiltSite(siteDir, slug, chatId);
+        } catch (e) {
+            lastErr = e;
+            console.error(`[deploy attempt ${i}/${attempts}]`, e.message);
+            if (i < attempts) await new Promise(r => setTimeout(r, 1500 * i));
+        }
+    }
+    throw lastErr;
+}
+
+/** Refund the domain portion of a paid order after an unrecoverable domain failure,
+ *  then keep the site live on vercel.app. Best-effort: if the refund API is missing or
+ *  fails, alert the owner to refund manually — never leave the customer silently charged. */
+async function _refundDomainPortion(ctx, session, chatId, err) {
+    const domainCents = Math.round(session.domainPriceUsd * 100) + DOMAIN_MARKUP_CENTS;
+    let refunded = false;
+    try {
+        if (typeof _payments.refund === 'function' && session.stripeSessionId) {
+            await _payments.refund(session.stripeSessionId, domainCents);
+            refunded = true;
+        }
+    } catch (re) {
+        console.error('[refund domain portion]', re);
+    }
+    notifyAdmin(`⚠️ Domeniu eșuat după plată (chat ${chatId}): ${err.message}. Refund domeniu ${(domainCents / 100).toFixed(2)} USD: ${refunded ? 'OK' : 'MANUAL necesar'}.`);
+    await ctx.reply(
+        `⚠️ Nu am putut înregistra domeniul \`${session.domain}\`.` +
+        (refunded
+            ? ` Ți-am returnat costul domeniului (${(domainCents / 100).toFixed(2)} USD).`
+            : ' Echipa te va contacta pentru rambursarea costului domeniului.') +
+        `\nSite-ul tău rămâne LIVE pe ${session.liveUrl}.`
+    );
+    // Drop the domain so the order finishes as a normal vercel.app publish.
+    session.domain = null;
+    session.domainPriceUsd = null;
+}
+
 /**
- * Publish the paid site: deploy to Vercel (*.vercel.app), and — if the client
- * paid for a custom domain — buy it and attach it to the project.
+ * Publish the paid site: deploy to Vercel/Cloudflare, and — if a custom domain was paid
+ * for — buy + attach it. IDEMPOTENT and RETRYABLE: guarded so a reconciler re-poll, a
+ * /retry, and a duplicate update never publish twice; on failure it does NOT discard the
+ * paid order — it parks it in 'paid-needs-retry' for /retry or the sweeper to resume.
  */
 async function _publishAndFinish(ctx, session, chatId) {
+    // Idempotency guards.
+    if (session.published) {
+        const live = session.domain ? `https://${session.domain}` : session.liveUrl;
+        if (live) await ctx.reply(`✅ Site-ul tău e deja live:\n👉 ${live}`);
+        return;
+    }
+    if (session._publishing) return;          // a publish is already in flight for this chat
+    session._publishing = true;
     session.phase = 'deploy';
+    flushSessions();
+
+    // On any unrecoverable failure: keep the PAID order, park it for retry, alert owner.
+    const parkForRetry = async (msg) => {
+        session._publishing = false;
+        session.phase = 'paid-needs-retry';
+        flushSessions();
+        notifyAdmin(`⚠️ Publicare eșuată (client PLĂTIT) chat ${chatId}: ${msg}`);
+        await ctx.reply(`⚠️ ${msg}\n\nAi plătit deja — datele tale sunt în siguranță. Scrie /retry ca să încerc din nou publicarea.`);
+    };
 
     const siteDir = session.siteDir;
     const slug    = session.siteSlug;
-
     if (!siteDir || !fs.existsSync(siteDir)) {
-        await ctx.reply('❌ Nu găsesc fișierele site-ului. Scrie /start ca să reiei procesul.');
-        resetSession(chatId);
+        await parkForRetry('Nu găsesc fișierele site-ului pe disc.');
         return;
     }
 
+    // 1) Deploy (with retry)
+    let url, projectId;
     try {
-        // 1) Deploy the site (now that it's paid)
         await ctx.reply('🚀 Public site-ul...');
-        const { url, projectId } = await deployBuiltSite(siteDir, slug, chatId);
-        if (!url) {
-            session.phase = 'done';
-            await ctx.reply('✅ Site generat, dar deploy-ul nu a returnat un URL. Verifică consola.');
-            return;
-        }
-        session.liveUrl   = url;
-        session.projectId = projectId;
-
-        // 2) If a custom domain was paid for, buy it and attach it
-        if (session.domain && session.domainPriceUsd != null && vercelOk()) {
-            await ctx.reply(`🛒 Cumpăr domeniul \`${session.domain}\`...`);
-            try {
-                await buyDomain(session.domain, session.domainPriceUsd);
-                await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!`);
-                if (projectId && vercelDeployOk()) {
-                    await attachDomain(projectId, session.domain);
-                    await ctx.reply(`🔗 Domeniu atașat la site!`);
-                }
-            } catch (e) {
-                console.error('[domain finalize error]', e);
-                await ctx.reply(
-                    `⚠️ Nu am putut finaliza domeniul \`${session.domain}\`: ${e.message}\n` +
-                    `Site-ul tău e live pe ${url} (te putem ajuta manual cu domeniul).`
-                );
-                session.phase = 'done';
-                sessions.delete(chatId);
-                flushSessions();
-                return;
-            }
-        }
-
-        session.phase = 'done';
-        sessions.delete(chatId);
-        flushSessions();
-
-        const liveUrl = session.domain ? `https://${session.domain}` : url;
-        notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${liveUrl}${session.domain ? ' (domeniu cumpărat)' : ''}`);
-        await ctx.reply(
-            `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${liveUrl}\n\n` +
-            (session.domain ? '_DNS-ul se propagă în câteva minute._\n' : '') +
-            'Felicitări! Scrie /start oricând să faci un site nou.'
-        );
+        ({ url, projectId } = await _deployWithRetry(siteDir, slug, chatId));
     } catch (e) {
-        console.error('[publishAndFinish error]', e);
-        await ctx.reply('❌ Eroare la publicare: ' + e.message + '\nScrie /anuleaza și încearcă din nou.');
+        console.error('[deploy failed after retries]', e);
+        await parkForRetry('Publicarea a eșuat temporar: ' + e.message);
+        return;
     }
+    if (!url) { await parkForRetry('Deploy-ul nu a returnat un URL.'); return; }
+    session.liveUrl   = url;
+    session.projectId = projectId;
+    flushSessions();
+
+    // 2) Custom domain (paid for) — buy + attach. On failure: refund the domain portion
+    //    and finish as a normal vercel.app publish (site stays live).
+    if (session.domain && session.domainPriceUsd != null && vercelOk()) {
+        await ctx.reply(`🛒 Cumpăr domeniul \`${session.domain}\`...`);
+        try {
+            await buyDomain(session.domain, session.domainPriceUsd);
+            await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!`);
+            if (projectId && vercelDeployOk()) {
+                await attachDomain(projectId, session.domain);
+                await ctx.reply('🔗 Domeniu atașat la site!');
+            }
+        } catch (e) {
+            console.error('[domain finalize error]', e);
+            await _refundDomainPortion(ctx, session, chatId, e);
+        }
+    }
+
+    // 3) Done — mark published BEFORE deleting so a crash here can't re-publish.
+    session.published = true;
+    session._publishing = false;
+    session.phase = 'done';
+    flushSessions();
+
+    const liveUrl = session.domain ? `https://${session.domain}` : url;
+    notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${liveUrl}${session.domain ? ' (domeniu cumpărat)' : ''}`);
+    await ctx.reply(
+        `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${liveUrl}\n\n` +
+        (session.domain ? '_DNS-ul se propagă în câteva minute._\n' : '') +
+        'Felicitări! Scrie /start oricând să faci un site nou.'
+    );
+    sessions.delete(chatId);
+    flushSessions();
 }
 
 // ---------------------------------------------------------------------------
@@ -1201,11 +1310,12 @@ module.exports = {
     setAdminNotifier,
     setBotUsername,
     setMessenger,
-    resumePendingPayments,
+    reconcilePending,
     // Handlers
     handleStart,
     handleWizard,
     handleAnuleaza,
+    handleRetry,
     handleGata,
     handlePhoto,
     handleDocument,

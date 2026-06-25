@@ -132,7 +132,25 @@ async function pollUntilPaid(orderId, { intervalMs = 4000, timeoutMs = 900000 } 
     return false;
 }
 
-module.exports = { isConfigured, createCheckout, getCheckoutStatus, pollUntilPaid };
+/**
+ * Refund a Merchant order, fully or partially. Fetches the order to learn its currency,
+ * then POSTs a refund. Used when a paid order can't be fully delivered (e.g. the custom
+ * domain purchase fails after charging).
+ *
+ * @param {string} orderId
+ * @param {number} [amountMinor] Partial amount in minor units; omit for a full refund.
+ * @returns {Promise<object>}
+ */
+async function refund(orderId, amountMinor) {
+    if (!orderId) throw new Error('orderId is required for refund.');
+    const order = await revolutRequest('GET', `/orders/${encodeURIComponent(orderId)}`);
+    const body = { currency: order.currency || 'USD' };
+    if (amountMinor && amountMinor > 0) body.amount = Math.round(amountMinor);
+    else if (order.amount) body.amount = order.amount;   // full refund
+    return revolutRequest('POST', `/orders/${encodeURIComponent(orderId)}/refund`, body);
+}
+
+module.exports = { isConfigured, createCheckout, getCheckoutStatus, pollUntilPaid, refund };
 
 // Offline self-test: node bot/revolut.js
 if (require.main === module) {
