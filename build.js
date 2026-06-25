@@ -31,18 +31,41 @@ function resolve(obj, dotPath) {
 }
 
 /**
+ * HTML-escape a value so user/AI-supplied config can never inject markup into the
+ * generated site (stored XSS). Escapes the five HTML-significant characters; this
+ * is safe in both text and double/single-quoted attribute contexts (browsers decode
+ * entities in attribute values, so e.g. url(&#39;...&#39;) still works in style="").
+ */
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Replace {{token}} occurrences in `str` using a resolver function.
+ *
+ * Values are HTML-ESCAPED by default. A token may opt out of escaping with a
+ * leading ampersand — `{{& token}}` — but ONLY use that for values the build
+ * pipeline itself controls (never raw client/AI input), since it is a stored-XSS
+ * sink. Today nothing in the template uses the raw form.
+ *
  * `warn` is false during loop/if item-scope passes (a token may legitimately
  * belong to the outer/global scope and gets resolved by the final global pass).
  */
 function replaceTokens(str, resolver, warn = true) {
     return str.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, token) => {
+        let raw = false;
+        if (token[0] === '&') { raw = true; token = token.slice(1).trim(); }
         const value = resolver(token);
         if (value === undefined || value === null) {
             if (warn) console.warn(`  ⚠️  unresolved token: {{${token}}}`);
             return match;
         }
-        return String(value);
+        return raw ? String(value) : escapeHtml(value);
     });
 }
 
@@ -158,7 +181,7 @@ function build(siteDir = ROOT) {
     return { outputPath, bytes: html.length };
 }
 
-module.exports = { build };
+module.exports = { build, escapeHtml };
 
 // Run from CLI:  node build.js [siteDir]
 if (require.main === module) {

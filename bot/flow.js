@@ -18,8 +18,9 @@
 const fs   = require('fs');
 const path = require('path');
 
-const { build }           = require('../build.js');
+const { build, escapeHtml } = require('../build.js');
 const store               = require('./store.js');
+const ratelimit           = require('./ratelimit.js');
 const { getProvider, polishBusinessData } = require('./ai.js');
 // Payment provider: Revolut Merchant API when configured (or PAYMENT_PROVIDER=revolut),
 // otherwise fall back to Stripe. Both expose the same interface.
@@ -45,8 +46,19 @@ const BUILD_FEE_CENTS = Math.round((parseFloat(process.env.BUILD_FEE_USD) || 29)
 /** Optional markup added on top of the domain's wholesale price, in USD. Env: DOMAIN_MARKUP_USD (default 0). */
 const DOMAIN_MARKUP_CENTS = Math.round((parseFloat(process.env.DOMAIN_MARKUP_USD) || 0) * 100);
 
+/** Max gallery photos accepted per site (abuse cap). Env: MAX_GALLERY_PHOTOS (default 10). */
+const MAX_GALLERY = Number(process.env.MAX_GALLERY_PHOTOS) || 10;
+
+/** Max accepted image size when downloading from Telegram, in bytes. Env: MAX_IMAGE_BYTES (default 8MB). */
+const MAX_IMAGE_BYTES = Number(process.env.MAX_IMAGE_BYTES) || 8 * 1024 * 1024;
+
 /** Telegram bot token (needed to build Telegram deep-link URLs). */
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+
+/** Bot @username for checkout return links. Seeded from env; bot.js overrides it at boot via getMe(). */
+let botUsername = process.env.BOT_USERNAME || '';
+function setBotUsername(u) { if (u) botUsername = String(u).replace(/^@/, ''); }
+function getBotUsername() { return botUsername || process.env.BOT_USERNAME || 'hidook_bot'; }
 
 // ---------------------------------------------------------------------------
 // Session store (in-memory; chatId → session object)
@@ -60,6 +72,12 @@ function persistSessions() {
     store.scheduleSave(sessions);
 }
 
+/** Force a synchronous flush of sessions to disk — used at money-critical transitions
+ *  (entering deploy, finishing/deleting an order) so a crash can't lose or replay them. */
+function flushSessions() {
+    store.flush(sessions);
+}
+
 // Owner notifications: bot.js injects a sender so the owner gets a Telegram DM
 // on key business events (new site built, payment confirmed). No-op until set.
 let adminNotify = null;
@@ -67,6 +85,36 @@ function setAdminNotifier(fn) { adminNotify = fn; }
 function notifyAdmin(text) {
     if (!adminNotify) return;
     Promise.resolve().then(() => adminNotify(text)).catch(() => {});
+}
+
+// Outbound messenger for background flows that have no incoming `ctx` (e.g. the
+// boot-time payment reconciler). bot.js injects bot.api.sendMessage.
+let sendMessageRaw = null;
+function setMessenger(fn) { sendMessageRaw = fn; }
+function _ctxShim(chatId) {
+    return {
+        chat: { id: chatId },
+        reply: (text, opts) => (sendMessageRaw ? sendMessageRaw(chatId, text, opts) : Promise.resolve()),
+        replyWithChatAction: () => Promise.resolve(),
+    };
+}
+
+/**
+ * Re-arm background payment polling for any session that was mid-payment when the bot
+ * last stopped. Without this, a Railway redeploy during checkout orphans the order —
+ * the customer pays but the only poller died, so the site is never published. Call
+ * once after the bot has started (bot.api must be live to message the customer).
+ */
+function resumePendingPayments() {
+    let n = 0;
+    for (const [chatId, session] of sessions) {
+        if (session && session.phase === 'pay' && session.stripeSessionId) {
+            n++;
+            _pollPaymentBackground(_ctxShim(chatId), session, chatId, session.stripeSessionId);
+        }
+    }
+    if (n) console.log(`[reconcile] re-armed payment polling for ${n} pending session(s)`);
+    return n;
 }
 
 /**
@@ -151,11 +199,17 @@ function slugify(s) {
  * Download a Telegram photo to destPath.
  * Uses the grammY ctx.getFile() API, then raw fetch.
  */
-async function downloadPhoto(ctx, destPath) {
+async function downloadPhoto(ctx, destPath, maxBytes) {
     const file = await ctx.getFile();
+    if (maxBytes && file.file_size && file.file_size > maxBytes) {
+        const e = new Error('FILE_TOO_LARGE'); e.code = 'FILE_TOO_LARGE'; throw e;
+    }
     const url  = `https://api.telegram.org/file/bot${TOKEN}/${file.file_path}`;
     const res  = await fetch(url);
     const buf  = Buffer.from(await res.arrayBuffer());
+    if (maxBytes && buf.length > maxBytes) {
+        const e = new Error('FILE_TOO_LARGE'); e.code = 'FILE_TOO_LARGE'; throw e;
+    }
     fs.writeFileSync(destPath, buf);
 }
 
@@ -165,9 +219,22 @@ async function downloadPhoto(ctx, destPath) {
 
 const isSkip = (v) => !v || !String(v).trim() || String(v).trim().toLowerCase() === 'skip';
 
+/** Validate a #rgb / #rrggbb hex color; return `fallback` for anything else.
+ *  Theme colors land inside a <style> block (CSS context), where HTML-escaping does
+ *  NOT neutralize injection — so we validate the value instead. */
+const HEX_RE = /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+function safeHex(v, fallback) {
+    return (typeof v === 'string' && HEX_RE.test(v.trim())) ? v.trim() : fallback;
+}
+
+/** The mechanical/default theme (also reused as the safe fallback for bad AI colors). */
+const DEFAULT_THEME = { primary: '#E8588C', primaryLight: '#f07aa5', primaryDark: '#d14477', cream: '#faf8f8' };
+
 /**
  * Normalize any Instagram input (@handle, handle, instagram.com/handle, full URL)
- * into { handle, url }. Returns null when empty/skip.
+ * into { handle, url }. Returns null when empty/skip. The handle is reduced to the
+ * characters Instagram actually allows (A-Z a-z 0-9 . _), which also neutralizes any
+ * attribute-breakout/XSS attempt smuggled through this field.
  */
 function normalizeInstagram(input) {
     if (isSkip(input)) return null;
@@ -177,6 +244,7 @@ function normalizeInstagram(input) {
         .replace(/^instagram\.com\//i, '')
         .replace(/[/?#].*$/, '')      // drop trailing path / query
         .replace(/^@/, '')
+        .replace(/[^A-Za-z0-9._]/g, '')  // keep only valid handle chars (XSS-safe)
         .trim();
     if (!h) return null;
     return { handle: h, url: 'https://instagram.com/' + h };
@@ -184,17 +252,31 @@ function normalizeInstagram(input) {
 
 /**
  * Normalize a Facebook input (page name or URL) into { url, label }. null on skip.
+ * Always rebuilds a canonical facebook.com URL from a sanitized slug so no raw,
+ * attacker-influenced URL is ever reflected into an href.
  */
 function normalizeFacebook(input) {
     if (isSkip(input)) return null;
-    const s = String(input).trim();
-    if (/facebook\.com/i.test(s)) {
-        const url = /^https?:\/\//i.test(s) ? s : 'https://' + s.replace(/^\/+/, '');
-        const name = s.replace(/[/?#].*$/, '').split('/').filter(Boolean).pop() || 'Facebook';
-        return { url, label: name };
-    }
-    const name = s.replace(/^@/, '');
-    return { url: 'https://facebook.com/' + name, label: name };
+    let s = String(input).trim()
+        .replace(/^https?:\/\//i, '')
+        .replace(/^(www\.|m\.)/i, '')
+        .replace(/^facebook\.com\//i, '')
+        .replace(/^fb\.com\//i, '')
+        .replace(/[?#].*$/, '')           // drop query / hash
+        .replace(/^@/, '')
+        .replace(/\/+$/, '')              // trailing slash
+        .replace(/[^A-Za-z0-9._/-]/g, '') // conservative slug charset (XSS-safe)
+        .trim();
+    if (!s) return null;
+    const label = s.split('/').filter(Boolean).pop() || 'Facebook';
+    return { url: 'https://facebook.com/' + s, label };
+}
+
+/** Format a free-text address: HTML-escape, then turn newlines into <br>.
+ *  Returned via the template's `{{& contact.address}}` raw slot, so it MUST be
+ *  pre-escaped here (only the <br> we add is intentional markup). */
+function formatAddressHtml(raw) {
+    return escapeHtml(String(raw)).replace(/\n/g, '<br>');
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +307,7 @@ function buildConfig(data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
-        address:   isSkip(data.address)  ? '' : String(data.address).replace(/\n/g, '<br>'),
+        address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
 
     const categories = [
@@ -245,7 +327,7 @@ function buildConfig(data, galleryFiles, hasLogo) {
             about:           data.about || '',
             lang:            'ro',
         },
-        theme: { primary: '#E8588C', primaryLight: '#f07aa5', primaryDark: '#d14477', cream: '#faf8f8' },
+        theme: { ...DEFAULT_THEME },
         logo:        hasLogo ? 'images/logo.jpg' : '',
         showWordmark: !hasLogo,
         hero: {
@@ -295,6 +377,17 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
     cfg.business.name = data.name || cfg.business.name || '';
     cfg.business.lang = 'ro';
 
+    // Validate AI-chosen theme colors. They are interpolated into a <style> block
+    // (CSS context), where HTML-escaping does not neutralize injection — so any
+    // non-hex value is replaced with a safe default rather than trusted.
+    const t = cfg.theme || {};
+    cfg.theme = {
+        primary:      safeHex(t.primary,      DEFAULT_THEME.primary),
+        primaryLight: safeHex(t.primaryLight, DEFAULT_THEME.primaryLight),
+        primaryDark:  safeHex(t.primaryDark,  DEFAULT_THEME.primaryDark),
+        cream:        safeHex(t.cream,        DEFAULT_THEME.cream),
+    };
+
     // Logo: the client's own logo, or a text wordmark when none was provided
     cfg.logo         = hasLogo ? 'images/logo.jpg' : '';
     cfg.showWordmark = !hasLogo;
@@ -314,7 +407,7 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
-        address:   isSkip(data.address)  ? '' : String(data.address).replace(/\n/g, '<br>'),
+        address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
 
     // Instagram photo-grid section
@@ -475,6 +568,19 @@ const STEPS = [
  */
 async function handleStart(ctx) {
     const chatId  = ctx.chat.id;
+
+    // Returning from a checkout deep-link (t.me/bot?start=paid|cancel): NEVER reset a
+    // session that is mid-payment/publish, or we'd orphan the paid-but-unpublished build.
+    const payload  = (ctx.match || '').toString().trim().toLowerCase();
+    const existing = sessions.get(chatId);
+    if ((payload === 'paid' || payload === 'cancel') && existing &&
+        (existing.phase === 'pay' || existing.phase === 'deploy')) {
+        if (payload === 'cancel') {
+            return ctx.reply('Ai întrerupt plata. Redeschide linkul de plată ca să finalizezi, sau scrie /anuleaza ca să o iei de la capăt.');
+        }
+        return ctx.reply('✅ Mulțumim! Verific plata și public site-ul automat — durează un moment. Nu închide conversația.');
+    }
+
     const session = resetSession(chatId);
     session.phase     = 'wizard';
     session.stepIndex = 0;
@@ -521,6 +627,14 @@ async function handleGata(ctx) {
         return ctx.reply('Trimite cel puțin o poză cu produsele tale înainte de /gata.');
     }
 
+    // Abuse throttle: cap builds per chat/hour and globally per day (protects the AI budget).
+    const rl = ratelimit.allowBuild(chatId);
+    if (!rl.ok) {
+        if (rl.scope === 'global') notifyAdmin('⚠️ Limita globală zilnică de build-uri a fost atinsă.');
+        return ctx.reply('⏳ ' + rl.reason);
+    }
+    ratelimit.consumeBuild(chatId);
+
     // 1) Send all collected answers to the AI to polish copy, organise products
     //    into categories and pick a theme matching the requested colors.
     await ctx.reply('✨ Am toate informațiile! AI-ul îți aranjează acum site-ul (texte, culori, secțiuni)...');
@@ -560,6 +674,43 @@ async function handleGata(ctx) {
 // Photo handler
 // ---------------------------------------------------------------------------
 
+/** Download + register the logo at the logo step. Returns false (and replies) on failure. */
+async function _saveLogo(ctx, session, tmpDir) {
+    try {
+        await downloadPhoto(ctx, path.join(tmpDir, 'logo.jpg'), MAX_IMAGE_BYTES);
+    } catch (e) {
+        if (e.code === 'FILE_TOO_LARGE') { await ctx.reply('Imaginea e prea mare (max 8MB). Trimite una mai mică.'); return false; }
+        console.error('[logo download]', e);
+        await ctx.reply('Nu am putut prelua imaginea. Mai încearcă o dată.');
+        return false;
+    }
+    session.hasLogo = true;
+    session.stepIndex++;
+    await ctx.reply('👍 Logo primit!');
+    await ctx.reply(STEPS[session.stepIndex].prompt);
+    return true;
+}
+
+/** Download + register one gallery photo. Enforces the count cap. Returns false on cap/failure. */
+async function _saveGalleryPhoto(ctx, session, tmpDir) {
+    if (session.gallery.length >= MAX_GALLERY) {
+        await ctx.reply(`Ai trimis deja ${MAX_GALLERY} poze — sunt suficiente. Scrie /gata ca să construiesc site-ul.`);
+        return false;
+    }
+    const name = `g-${session.gallery.length + 1}.jpg`;
+    try {
+        await downloadPhoto(ctx, path.join(tmpDir, name), MAX_IMAGE_BYTES);
+    } catch (e) {
+        if (e.code === 'FILE_TOO_LARGE') { await ctx.reply('Poza e prea mare (max 8MB). Trimite una mai mică.'); return false; }
+        console.error('[gallery download]', e);
+        await ctx.reply('Nu am putut prelua poza. Mai încearcă o dată.');
+        return false;
+    }
+    session.gallery.push(name);
+    await ctx.reply(`📷 Poză ${session.gallery.length} salvată. Mai trimite sau scrie /gata.`);
+    return true;
+}
+
 /**
  * Handle incoming photo in any phase.
  */
@@ -576,24 +727,63 @@ async function handlePhoto(ctx) {
         if (!step || (!step.photo && !step.photos)) {
             return ctx.reply('Acum aștept text, nu o poză. Continuă cu răspunsul.');
         }
-
-        if (step.photo) { // logo step
-            await downloadPhoto(ctx, path.join(tmpDir, 'logo.jpg'));
-            session.hasLogo = true;
-            session.stepIndex++;
-            await ctx.reply('👍 Logo primit!');
-            await ctx.reply(STEPS[session.stepIndex].prompt);
-        } else if (step.photos) { // gallery step
-            const name = `g-${session.gallery.length + 1}.jpg`;
-            await downloadPhoto(ctx, path.join(tmpDir, name));
-            session.gallery.push(name);
-            await ctx.reply(`📷 Poză ${session.gallery.length} salvată. Mai trimite sau scrie /gata.`);
-        }
+        if (step.photo)  { await _saveLogo(ctx, session, tmpDir); return; }
+        if (step.photos) { await _saveGalleryPhoto(ctx, session, tmpDir); return; }
         return;
     }
 
     // ----- ANY OTHER PHASE -----
     await ctx.reply('Nu am nevoie de o poză acum. Continuă cu instrucțiunile precedente.');
+}
+
+/**
+ * Handle an incoming DOCUMENT (uncompressed file). Logos are very often sent this
+ * way (a transparent PNG), and Telegram does NOT deliver those as message:photo — so
+ * without this handler the user silently dead-ends at the logo step. We accept only
+ * image/* documents and route them through the same save logic as photos.
+ */
+async function handleDocument(ctx) {
+    const chatId  = ctx.chat.id;
+    const session = getSession(chatId);
+    const doc     = ctx.message.document;
+
+    const tmpDir = path.join(SITES_DIR, '_tmp-' + chatId);
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    if (session.phase === 'wizard') {
+        const step = STEPS[session.stepIndex];
+        if (!step || (!step.photo && !step.photos)) {
+            return ctx.reply('Acum aștept text, nu un fișier. Continuă cu răspunsul.');
+        }
+        const isImage = doc && typeof doc.mime_type === 'string' && doc.mime_type.startsWith('image/');
+        if (!isImage) {
+            return ctx.reply('Te rog trimite o imagine (JPG sau PNG)' + (step.photo ? ' cu logo-ul, sau scrie „skip".' : ' cu produsul.'));
+        }
+        if (step.photo)  { await _saveLogo(ctx, session, tmpDir); return; }
+        if (step.photos) { await _saveGalleryPhoto(ctx, session, tmpDir); return; }
+        return;
+    }
+
+    await ctx.reply('Nu am nevoie de un fișier acum. Continuă cu instrucțiunile precedente.');
+}
+
+/**
+ * Catch-all for message types we don't otherwise handle (stickers, voice, video,
+ * location, contact, …). Registered LAST so it only fires when nothing else matched.
+ * Gives the user a clear nudge instead of silence.
+ */
+async function handleOther(ctx) {
+    const session = getSession(ctx.chat.id);
+    if (session.phase === 'wizard') {
+        const step = STEPS[session.stepIndex];
+        if (step && (step.photo || step.photos)) {
+            return ctx.reply(step.photo
+                ? 'Te rog trimite logo-ul ca imagine (poză sau fișier JPG/PNG), sau scrie „skip".'
+                : 'Te rog trimite poze cu produsele (imagini). Când termini, scrie /gata.');
+        }
+        return ctx.reply('Te rog răspunde cu text la întrebare 🙂');
+    }
+    return ctx.reply('Scrie /start ca să începem.');
 }
 
 // ---------------------------------------------------------------------------
@@ -809,7 +999,17 @@ async function _initiatePayment(ctx, session, chatId) {
     const amountCents = BUILD_FEE_CENTS + domainCents;
 
     if (!stripeOk() || amountCents <= 0) {
-        // Payment not configured (dev mode) — publish directly without charging.
+        // Payment provider missing/misconfigured. In PRODUCTION this must NOT silently
+        // publish for free (revenue leak + abuse). Only the explicit ALLOW_FREE_PUBLISH=1
+        // dev flag enables the free path; otherwise refuse and alert the owner.
+        if (process.env.ALLOW_FREE_PUBLISH !== '1') {
+            console.error('[payment] provider not configured and ALLOW_FREE_PUBLISH != 1 — refusing free publish for chat', chatId);
+            notifyAdmin(`🚨 Plata NECONFIGURATĂ — am refuzat publicarea gratuită pentru chat ${chatId}. Configurează providerul de plată (sau setează ALLOW_FREE_PUBLISH=1 pentru teste).`);
+            await ctx.reply('⚠️ Momentan nu pot finaliza plata. Am anunțat echipa — te rugăm încearcă din nou mai târziu.');
+            session.phase = 'done';
+            return;
+        }
+        // Dev-only free publish.
         await ctx.reply('ℹ️ Plata nu e configurată — public direct (mod dev)...');
         session.phase = 'deploy';
         await _publishAndFinish(ctx, session, chatId);
@@ -821,9 +1021,9 @@ async function _initiatePayment(ctx, session, chatId) {
         : 'Site web hidook (publicare pe vercel.app)';
 
     // successUrl / cancelUrl: use Telegram deep-link (polling doesn't need a public URL)
-    const botUsername  = process.env.BOT_USERNAME || 'desserd_bot';
-    const successUrl   = `https://t.me/${botUsername}?start=paid`;
-    const cancelUrl    = `https://t.me/${botUsername}?start=cancel`;
+    const uname        = getBotUsername();
+    const successUrl   = `https://t.me/${uname}?start=paid`;
+    const cancelUrl    = `https://t.me/${uname}?start=cancel`;
 
     let checkoutId, checkoutUrl;
     try {
@@ -871,6 +1071,7 @@ function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
             }
             await ctx.reply('✅ Plată confirmată! Public site-ul...');
             session.phase = 'deploy';
+            flushSessions();   // durable: a restart now resumes from 'deploy', not 'pay' (no double-charge re-poll)
             await _publishAndFinish(ctx, session, chatId);
         })
         .catch(async (e) => {
@@ -932,12 +1133,14 @@ async function _publishAndFinish(ctx, session, chatId) {
                 );
                 session.phase = 'done';
                 sessions.delete(chatId);
+                flushSessions();
                 return;
             }
         }
 
         session.phase = 'done';
         sessions.delete(chatId);
+        flushSessions();
 
         const liveUrl = session.domain ? `https://${session.domain}` : url;
         notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${liveUrl}${session.domain ? ' (domeniu cumpărat)' : ''}`);
@@ -993,14 +1196,20 @@ module.exports = {
     getSession,
     resetSession,
     persistSessions,
+    flushSessions,
     sessions,
     setAdminNotifier,
+    setBotUsername,
+    setMessenger,
+    resumePendingPayments,
     // Handlers
     handleStart,
     handleWizard,
     handleAnuleaza,
     handleGata,
     handlePhoto,
+    handleDocument,
+    handleOther,
     handleText,
     handleHelp,
     handlePreturi,

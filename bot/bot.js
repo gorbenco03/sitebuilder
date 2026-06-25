@@ -20,11 +20,16 @@ const {
     handleAnuleaza,
     handleGata,
     handlePhoto,
+    handleDocument,
+    handleOther,
     handleText,
     handleHelp,
     handlePreturi,
     persistSessions,
     setAdminNotifier,
+    setBotUsername,
+    setMessenger,
+    resumePendingPayments,
     sessions,
 } = flow;
 
@@ -36,6 +41,26 @@ if (!TOKEN) {
 
 const bot = new Bot(TOKEN);
 
+/* ── Render replies as Markdown by default, but never let a stray special char in a
+      dynamic value (e.g. a domain or amount) drop the message: on an entity-parse
+      error, transparently resend the same text as plain text. ── */
+bot.api.config.use(async (prev, method, payload, signal) => {
+    const isText = method === 'sendMessage' || method === 'editMessageText';
+    if (isText && payload.parse_mode === undefined) {
+        payload = { ...payload, parse_mode: 'Markdown' };
+    }
+    try {
+        return await prev(method, payload, signal);
+    } catch (e) {
+        const desc = (e && (e.description || e.message)) || '';
+        if (isText && payload.parse_mode && /parse entities/i.test(desc)) {
+            const { parse_mode, ...plain } = payload;
+            return await prev(method, plain, signal);
+        }
+        throw e;
+    }
+});
+
 /* ── Owner notifications: DM the owner on key business events ── */
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID;
 if (ADMIN_CHAT_ID) {
@@ -45,6 +70,13 @@ if (ADMIN_CHAT_ID) {
         )
     );
 }
+
+/* ── Outbound messenger for background flows that have no ctx (payment reconciler) ── */
+setMessenger((chatId, text, opts) =>
+    bot.api.sendMessage(chatId, text, opts).catch((e) =>
+        console.error('[bg message] failed:', e.message)
+    )
+);
 
 /* ── Persist sessions after every handled update (debounced in store.js) ── */
 bot.use(async (ctx, next) => {
@@ -63,9 +95,11 @@ bot.command('preturi',  handlePreturi);
 bot.command('anuleaza', handleAnuleaza);
 bot.command('gata',     handleGata);
 
-/* ── Media + Text ── */
-bot.on('message:photo', handlePhoto);
-bot.on('message:text',  handleText);
+/* ── Media + Text (catch-all registered LAST so it only fires for unhandled types) ── */
+bot.on('message:photo',    handlePhoto);
+bot.on('message:document', handleDocument);
+bot.on('message:text',     handleText);
+bot.on('message',          handleOther);
 
 /* ── Per-update error boundary (one bad update never kills the bot) ── */
 bot.catch((err) => {
@@ -74,9 +108,18 @@ bot.catch((err) => {
     if (ctx) ctx.reply('⚠️ A apărut o eroare. Încearcă din nou sau scrie /anuleaza.').catch(() => {});
 });
 
-/* ── Process-level safety net: log, never crash the whole bot ── */
-process.on('uncaughtException',  (e) => console.error('uncaughtException:', e));
+/* ── Process-level safety net ──
+   unhandledRejection: log only (a single bad promise shouldn't kill the bot).
+   uncaughtException: the process state may be corrupt — flush sessions and EXIT non-zero
+   so Railway (restartPolicy ON_FAILURE) restarts a clean process, which then re-arms any
+   pending payments via resumePendingPayments(). Staying alive risks a zombie that can't
+   deploy or persist. */
 process.on('unhandledRejection', (e) => console.error('unhandledRejection:', e));
+process.on('uncaughtException',  (e) => {
+    console.error('uncaughtException (flushing + exiting):', e);
+    try { require('./store.js').flush(sessions); } catch (_) {}
+    process.exit(1);
+});
 
 /* ── Graceful shutdown: flush sessions, stop polling cleanly ── */
 const shutdown = (signal) => {
@@ -93,7 +136,12 @@ async function start() {
     try {
         await bot.start({
             drop_pending_updates: false,
-            onStart: (me) => console.log(`🤖 Bot pornit ca @${me.username}`),
+            onStart: (me) => {
+                setBotUsername(me.username);
+                console.log(`🤖 Bot pornit ca @${me.username}`);
+                // Resume any orders that were mid-payment when we last stopped.
+                try { resumePendingPayments(); } catch (e) { console.error('[reconcile] failed:', e.message); }
+            },
         });
     } catch (e) {
         console.error('Bot start failed, retrying in 5s:', e.message);
