@@ -10,6 +10,7 @@ sites/
 bot/.sessions.json
 bot/.sites-map.json
 bot/.ratelimit.json
+bot/.ledger.jsonl
 bot/bot.log
 *.log
 _carousel/

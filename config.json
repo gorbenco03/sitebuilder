@@ -13,6 +13,16 @@
     "primaryDark": "#d14477",
     "cream": "#faf8f8"
   },
+  "labels": {
+    "about": "About us",
+    "instaTitle": "Follow us on Instagram",
+    "instaFollow": "Follow",
+    "scroll": "Scroll"
+  },
+  "seo": {
+    "ogImage": "images/hero.jpg",
+    "jsonLd": ""
+  },
   "logo": "images/logo.jpg",
   "hero": {
     "background": "url('images/hero.jpg')",

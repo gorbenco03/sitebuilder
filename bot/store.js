@@ -40,6 +40,18 @@ function loadSessions() {
 let saveTimer = null;
 let pending = null;
 
+/**
+ * Atomically replace SESSIONS_FILE with `json`: write a sibling .tmp file, then
+ * rename it over the target. rename(2) is atomic on the same filesystem, so a
+ * crash mid-write leaves either the old intact file or the new one — never a
+ * truncated/corrupt .sessions.json. Throws on failure (callers log).
+ */
+function atomicWrite(json) {
+    const tmp = SESSIONS_FILE + '.tmp';
+    fs.writeFileSync(tmp, json, 'utf8');
+    fs.renameSync(tmp, SESSIONS_FILE);
+}
+
 /** Persist the sessions Map to disk, debounced (coalesces rapid updates). */
 function scheduleSave(sessionsMap) {
     pending = sessionsMap;
@@ -49,8 +61,7 @@ function scheduleSave(sessionsMap) {
         const map = pending;
         pending = null;
         try {
-            const obj = Object.fromEntries(map);
-            fs.writeFileSync(SESSIONS_FILE, JSON.stringify(obj), 'utf8');
+            atomicWrite(JSON.stringify(Object.fromEntries(map)));
         } catch (e) {
             console.error('[store] failed to persist sessions:', e.message);
         }
@@ -64,7 +75,7 @@ function flush(sessionsMap) {
     pending = null;
     if (!map) return;
     try {
-        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(Object.fromEntries(map)), 'utf8');
+        atomicWrite(JSON.stringify(Object.fromEntries(map)));
     } catch (e) {
         console.error('[store] failed to flush sessions:', e.message);
     }

@@ -21,7 +21,12 @@ const path = require('path');
 const { build, escapeHtml } = require('../build.js');
 const store               = require('./store.js');
 const ratelimit           = require('./ratelimit.js');
-const { getProvider, polishBusinessData } = require('./ai.js');
+const ledger              = require('./ledger.js');
+const ai                  = require('./ai.js');
+const { getProvider, polishBusinessData } = ai;
+
+/** Append an order-lifecycle record to the audit ledger (best-effort, never throws). */
+function _ledger(event, fields) { try { ledger.append({ event, ...fields }); } catch (_) {} }
 // Payment provider: Revolut Merchant API when configured (or PAYMENT_PROVIDER=revolut),
 // otherwise fall back to Stripe. Both expose the same interface.
 const _payments = (process.env.PAYMENT_PROVIDER || '').toLowerCase() === 'stripe'
@@ -43,11 +48,26 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const SITES_DIR    = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 const SHARED_FILES = ['template.html', 'styles.css', 'script.js', 'collage.js'];
 
-/** One-time site build fee, in USD cents. Charged for every site (even on vercel.app). Env: BUILD_FEE_USD (default 29). */
-const BUILD_FEE_CENTS = Math.round((parseFloat(process.env.BUILD_FEE_USD) || 29) * 100);
+/** Checkout currency (ISO 4217). Env: PAYMENT_CURRENCY (default 'eur'). Used for the
+ *  payment provider AND every user-facing money string. */
+const PAYMENT_CURRENCY = String(process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+/** Upper-cased currency label for user-facing strings (e.g. 'EUR', 'USD'). */
+const CURRENCY_LABEL = PAYMENT_CURRENCY.toUpperCase();
 
-/** Optional markup added on top of the domain's wholesale price, in USD. Env: DOMAIN_MARKUP_USD (default 0). */
+/** One-time site build fee, in minor units (cents). Charged for every site (even on
+ *  vercel.app). Env precedence: BUILD_FEE_EUR || BUILD_FEE_USD || 49. */
+const BUILD_FEE_CENTS = Math.round(
+    (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
+);
+
+/** Optional markup added on top of the domain's wholesale price, in the checkout currency. Env: DOMAIN_MARKUP_USD (default 0). */
 const DOMAIN_MARKUP_CENTS = Math.round((parseFloat(process.env.DOMAIN_MARKUP_USD) || 0) * 100);
+
+/** Optional yearly managed/retainer plan price, in the checkout currency. Env: RETAINER_EUR (default 49). */
+const RETAINER_PRICE = Math.round(parseFloat(process.env.RETAINER_EUR) || 49);
+
+/** Legal/GDPR/ToS link surfaced in the /start consent note. Env: LEGAL_URL. */
+const LEGAL_URL = (process.env.LEGAL_URL || '').trim();
 
 /** Max gallery photos accepted per site (abuse cap). Env: MAX_GALLERY_PHOTOS (default 10). */
 const MAX_GALLERY = Number(process.env.MAX_GALLERY_PHOTOS) || 10;
@@ -222,6 +242,33 @@ function slugify(s) {
 }
 
 /**
+ * Build a Vercel-safe project/deploy name from a business name + chat id.
+ * Vercel project names must be lowercase, [a-z0-9-] only, no leading/trailing dash,
+ * and bounded in length. A raw chatId can be negative (group chats) — we use
+ * Math.abs() so the id is always a clean numeric suffix. Defends against an
+ * attacker-controlled business name being reflected into the deploy/project name.
+ *
+ * @param {string} name    business name (untrusted)
+ * @param {number|string} chatId
+ * @returns {string} safe slug, e.g. "patiseria-mea-123456789"
+ */
+function safeProjectName(name, chatId) {
+    const idPart = String(Math.abs(Number(chatId)) || 0);
+    let base = slugify(name);                       // already lowercase [a-z0-9-]
+    // Reserve room for the "-<id>" suffix within the ~50 char budget.
+    const budget = Math.max(1, 50 - idPart.length - 1);
+    base = base.slice(0, budget);
+    let slug = `${base}-${idPart}`
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, '-')   // belt-and-suspenders
+        .replace(/-+/g, '-')            // collapse runs of dashes
+        .replace(/^-+|-+$/g, '')        // trim leading/trailing dash
+        .slice(0, 50)
+        .replace(/^-+|-+$/g, '');       // re-trim after the slice
+    return slug || `site-${idPart}`;
+}
+
+/**
  * Download a Telegram photo to destPath.
  * Uses the grammY ctx.getFile() API, then raw fetch.
  */
@@ -239,11 +286,51 @@ async function downloadPhoto(ctx, destPath, maxBytes) {
     fs.writeFileSync(destPath, buf);
 }
 
+/**
+ * Read the raw image buffers a client uploaded this session from the temp dir
+ * (logo + gallery photos) so they can be sent to image moderation BEFORE the
+ * temp dir is consumed/deleted by generateSite(). Best-effort: skips any file
+ * that can't be read.
+ * @param {number|string} chatId
+ * @param {Session} session
+ * @returns {Buffer[]}
+ */
+function _collectTmpImageBuffers(chatId, session) {
+    const tmpDir = path.join(SITES_DIR, '_tmp-' + chatId);
+    const names = [];
+    if (fs.existsSync(path.join(tmpDir, 'logo.jpg'))) names.push('logo.jpg');
+    for (const g of (session.gallery || [])) names.push(g);
+    const buffers = [];
+    for (const n of names) {
+        try {
+            const p = path.join(tmpDir, n);
+            if (fs.existsSync(p)) buffers.push(fs.readFileSync(p));
+        } catch (_) { /* skip unreadable file */ }
+    }
+    return buffers;
+}
+
 // ---------------------------------------------------------------------------
 // Contact normalization helpers
 // ---------------------------------------------------------------------------
 
 const isSkip = (v) => !v || !String(v).trim() || String(v).trim().toLowerCase() === 'skip';
+
+/** True only for 1:1 private chats. The builder collects personal/business data and
+ *  issues payments, so we refuse group/channel/supergroup contexts gracefully. */
+function isPrivateChat(ctx) {
+    const t = ctx && ctx.chat && ctx.chat.type;
+    return !t || t === 'private';
+}
+
+/** One-line GDPR/ToS consent note appended to the greeting. Uses LEGAL_URL when set,
+ *  otherwise a generic note. */
+function consentNote() {
+    const tail = LEGAL_URL
+        ? `Termeni & confidențialitate: ${LEGAL_URL}`
+        : 'Datele se folosesc doar pentru a-ți construi și publica site-ul.';
+    return `ℹ️ Folosind acest bot ești de acord cu prelucrarea datelor pentru crearea site-ului tău (GDPR). ${tail} Poți șterge oricând datele cu /sterge.`;
+}
 
 /** Validate a #rgb / #rrggbb hex color; return `fallback` for anything else.
  *  Theme colors land inside a <style> block (CSS context), where HTML-escaping does
@@ -255,6 +342,59 @@ function safeHex(v, fallback) {
 
 /** The mechanical/default theme (also reused as the safe fallback for bad AI colors). */
 const DEFAULT_THEME = { primary: '#E8588C', primaryLight: '#f07aa5', primaryDark: '#d14477', cream: '#faf8f8' };
+
+/** RO UI labels (CONTRACT §1). Always present; the AI may refine titles later. */
+function defaultLabels() {
+    return {
+        about:       'Despre noi',
+        instaTitle:  'Urmărește-ne pe Instagram',
+        instaFollow: 'Urmărește',
+        scroll:      'Derulează',
+    };
+}
+
+/**
+ * Build the SEO object (CONTRACT §3): ogImage + a complete, </script>-safe schema.org
+ * LocalBusiness JSON-LD string.
+ *
+ * @param {object} args
+ * @param {object} args.business      { name, metaDescription, ... }
+ * @param {object} args.footer        { address } — PLAIN text address for JSON-LD
+ * @param {object} args.contact       { whatsapp } — digits-only phone, or ''
+ * @param {{handle:string,url:string}} args.ig  normalized IG ('' fields when none)
+ * @param {{url:string,label:string}} args.fb   normalized FB ('' url when none)
+ * @param {string[]} args.galleryFiles
+ * @param {boolean}  args.hasLogo
+ * @returns {{ogImage:string, jsonLd:string}}
+ */
+function buildSeo({ business, footer, contact, ig, fb, galleryFiles, hasLogo }) {
+    const ogImage =
+        (galleryFiles && galleryFiles[0]) ? `images/${galleryFiles[0]}`
+        : hasLogo                          ? 'images/logo.jpg'
+        : '';
+
+    const name        = (business && business.name) || '';
+    const description = (business && business.metaDescription) || '';
+    const address     = (footer && footer.address) || '';   // PLAIN text (no HTML)
+    const phone       = (contact && contact.whatsapp) ? `+${contact.whatsapp}` : '';
+    const sameAs      = [ig && ig.url, fb && fb.url].filter(Boolean);
+
+    // Only emit JSON-LD if there's something genuinely useful to describe.
+    const useful = name || description || address || phone || sameAs.length;
+    if (!useful) return { ogImage, jsonLd: '' };
+
+    const ld = { '@context': 'https://schema.org', '@type': 'LocalBusiness' };
+    if (name)          ld.name = name;
+    if (description)   ld.description = description;
+    if (address)       ld.address = address;
+    if (phone)         ld.telephone = phone;
+    if (sameAs.length) ld.sameAs = sameAs;
+
+    // JSON.stringify, then make it safe to embed inside a <script> element by
+    // neutralizing any "<" (covers a smuggled "</script>" sequence).
+    const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
+    return { ogImage, jsonLd };
+}
 
 /**
  * Normalize any Instagram input (@handle, handle, instagram.com/handle, full URL)
@@ -327,11 +467,13 @@ function buildConfig(data, galleryFiles, hasLogo) {
         .split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
         .map(label => ({ icon: '✦', label }));
 
+    // CONTRACT §2: skipped contacts become '' (empty), NOT '#', so the template can
+    // @if-hide them.
     const contact = {
         title: 'Contactează-ne',
         intro: 'Scrie-ne un mesaj direct sau vizitează-ne.',
-        instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
-        facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
+        instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
+        facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
@@ -344,15 +486,23 @@ function buildConfig(data, galleryFiles, hasLogo) {
         },
     ];
 
+    const business = {
+        name:            data.name || '',
+        tagline:         data.tagline || '',
+        title:           `${data.name || ''}`,
+        metaDescription: (data.about || '').slice(0, 160),
+        about:           data.about || '',
+        lang:            'ro',
+    };
+    const footer = {
+        address: isSkip(data.address) ? '' : String(data.address).replace(/\n/g, ', '),
+        year:    new Date().getFullYear(),
+        note:    'Creat cu drag.',
+    };
+
     return {
-        business: {
-            name:            data.name || '',
-            tagline:         data.tagline || '',
-            title:           `${data.name || ''}`,
-            metaDescription: (data.about || '').slice(0, 160),
-            about:           data.about || '',
-            lang:            'ro',
-        },
+        business,
+        labels: defaultLabels(),
         theme: { ...DEFAULT_THEME },
         logo:        hasLogo ? 'images/logo.jpg' : '',
         showWordmark: !hasLogo,
@@ -366,15 +516,12 @@ function buildConfig(data, galleryFiles, hasLogo) {
         categories,
         instagram: {
             handle:  ig ? ig.handle : '',
-            url:     ig ? ig.url : '#',
-            gallery: galleryFiles.slice(0, 6).map(f => 'images/' + f),
+            url:     ig ? ig.url : '',
+            gallery: ig ? galleryFiles.slice(0, 6).map(f => 'images/' + f) : [],
         },
         contact,
-        footer: {
-            address: isSkip(data.address) ? '' : String(data.address).replace(/\n/g, ', '),
-            year:    new Date().getFullYear(),
-            note:    'Creat cu drag.',
-        },
+        seo: buildSeo({ business, footer, contact, ig: ig || { handle: '', url: '' }, fb: fb || { url: '', label: '' }, galleryFiles, hasLogo }),
+        footer,
     };
 }
 
@@ -403,6 +550,17 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
     cfg.business.name = data.name || cfg.business.name || '';
     cfg.business.lang = 'ro';
 
+    // CONTRACT §1: RO UI labels always present. The AI may refine titles, so we merge
+    // any string labels it provided over the RO defaults (ignoring non-strings).
+    const baseLabels = defaultLabels();
+    const aiLabels   = (cfg.labels && typeof cfg.labels === 'object') ? cfg.labels : {};
+    cfg.labels = {
+        about:       typeof aiLabels.about       === 'string' && aiLabels.about.trim()       ? aiLabels.about       : baseLabels.about,
+        instaTitle:  typeof aiLabels.instaTitle  === 'string' && aiLabels.instaTitle.trim()  ? aiLabels.instaTitle  : baseLabels.instaTitle,
+        instaFollow: typeof aiLabels.instaFollow === 'string' && aiLabels.instaFollow.trim() ? aiLabels.instaFollow : baseLabels.instaFollow,
+        scroll:      typeof aiLabels.scroll      === 'string' && aiLabels.scroll.trim()      ? aiLabels.scroll      : baseLabels.scroll,
+    };
+
     // Validate AI-chosen theme colors. They are interpolated into a <style> block
     // (CSS context), where HTML-escaping does not neutralize injection — so any
     // non-hex value is replaced with a safe default rather than trusted.
@@ -425,22 +583,23 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         : 'linear-gradient(135deg, #f7f3f0 0%, #efe7ea 100%)';
     cfg.hero.ctaLabel = cfg.hero.ctaLabel || 'Contactează-ne';
 
-    // Contacts — normalized from the owner's raw input (AI only gave title/intro)
+    // Contacts — normalized from the owner's raw input (AI only gave title/intro).
+    // CONTRACT §2: skipped contacts become '' (NOT '#') so the template can @if-hide them.
     const aiContact = cfg.contact || {};
     cfg.contact = {
         title: aiContact.title || 'Contactează-ne',
         intro: aiContact.intro || 'Scrie-ne un mesaj direct sau vizitează-ne.',
-        instagram: { url: ig ? ig.url : '#', label: ig ? '@' + ig.handle : 'Instagram' },
-        facebook:  { url: fb ? fb.url : '#', label: fb ? fb.label : 'Facebook' },
+        instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
+        facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
 
-    // Instagram photo-grid section
+    // Instagram photo-grid section (handle/url '' and gallery [] when no IG)
     cfg.instagram = {
         handle:  ig ? ig.handle : '',
-        url:     ig ? ig.url : '#',
-        gallery: galleryFiles.slice(0, 6).map(f => 'images/' + f),
+        url:     ig ? ig.url : '',
+        gallery: ig ? galleryFiles.slice(0, 6).map(f => 'images/' + f) : [],
     };
 
     // Footer
@@ -449,6 +608,19 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         year:    new Date().getFullYear(),
         note:    (cfg.footer && cfg.footer.note) || 'Creat cu drag.',
     };
+
+    // CONTRACT §3: SEO (ogImage + </script>-safe LocalBusiness JSON-LD). Built from the
+    // finalized business/footer/contact above so address is PLAIN and phone is the
+    // normalized whatsapp.
+    cfg.seo = buildSeo({
+        business: cfg.business,
+        footer:   cfg.footer,
+        contact:  cfg.contact,
+        ig:       ig || { handle: '', url: '' },
+        fb:       fb || { url: '', label: '' },
+        galleryFiles,
+        hasLogo,
+    });
 
     cfg.galleryTitle = typeof cfg.galleryTitle === 'string' ? cfg.galleryTitle : '';
 
@@ -490,7 +662,9 @@ async function generateSite(chatId, session) {
         || (session.data && session.data.name)
         || 'site';
 
-    const slug    = slugify(name) + '-' + chatId;
+    // Vercel-safe project/deploy name: lowercase [a-z0-9-], Math.abs(chatId) suffix,
+    // bounded length, no leading/trailing dash. Also keeps siteDir path-safe.
+    const slug    = safeProjectName(name, chatId);
     const siteDir = path.join(SITES_DIR, slug);
     const imagesDir = path.join(siteDir, 'images');
     fs.mkdirSync(imagesDir, { recursive: true });
@@ -595,6 +769,11 @@ const STEPS = [
 async function handleStart(ctx) {
     const chatId  = ctx.chat.id;
 
+    // This flow collects personal/business data and issues payments — only in 1:1 chats.
+    if (!isPrivateChat(ctx)) {
+        return ctx.reply('👋 Scrie-mi în privat (mesaj direct) ca să-ți construiesc site-ul. Aici, într-un grup, nu pot.');
+    }
+
     // Returning from a checkout deep-link (t.me/bot?start=paid|cancel): NEVER reset a
     // session that is mid-payment/publish, or we'd orphan the paid-but-unpublished build.
     const payload  = (ctx.match || '').toString().trim().toLowerCase();
@@ -614,7 +793,8 @@ async function handleStart(ctx) {
         '👋 Salut! Îți construiesc un site web profesional pentru afacerea ta.\n\n' +
         'Îți pun câteva întrebări scurte despre afacere, apoi un AI îți aranjează frumos ' +
         'textele, alege culorile și publică site-ul. Hai să începem!\n\n' +
-        'Oricând poți scrie /anuleaza ca să o iei de la capăt.'
+        'Oricând poți scrie /anuleaza ca să o iei de la capăt.\n\n' +
+        consentNote()
     );
     await ctx.reply(STEPS[0].prompt);
 }
@@ -636,6 +816,45 @@ async function handleAnuleaza(ctx) {
     }
     resetSession(chatId);
     await ctx.reply('🔄 Am resetat sesiunea. Scrie /start ca să o iei de la capăt.');
+}
+
+/**
+ * /sterge — GDPR data deletion. Permanently removes the user's session, temp uploads,
+ * built site folder and any site-map entry, then confirms. Refuses to wipe a PAID,
+ * not-yet-published order (that would lose the customer's money + the thing they paid
+ * for) — they must finish or contact support first.
+ */
+async function handleSterge(ctx) {
+    const chatId = ctx.chat.id;
+    const s = sessions.get(chatId);
+
+    // Guard a paid-but-unpublished order, same as /anuleaza.
+    if (s && (s.phase === 'deploy' || s.phase === 'paid-needs-retry')) {
+        return ctx.reply('Ai o comandă deja PLĂTITĂ în curs de publicare — nu o pot șterge acum ca să nu pierzi banii. Scrie /retry ca să finalizez publicarea, apoi poți cere ștergerea datelor.');
+    }
+
+    // 1) Temp uploads
+    try { fs.rmSync(path.join(SITES_DIR, '_tmp-' + chatId), { recursive: true, force: true }); } catch (_) {}
+    // 2) Built site folder (if any was generated)
+    try {
+        if (s && s.siteDir) fs.rmSync(s.siteDir, { recursive: true, force: true });
+    } catch (_) {}
+    // 3) Netlify site-map entry
+    try {
+        const m = loadSitesMap();
+        if (Object.prototype.hasOwnProperty.call(m, chatId)) {
+            delete m[chatId];
+            fs.writeFileSync(SITES_MAP_FILE, JSON.stringify(m, null, 2));
+        }
+    } catch (_) {}
+    // 4) Session itself — remove entirely (not just reset) and flush durably.
+    sessions.delete(chatId);
+    flushSessions();
+
+    await ctx.reply(
+        '🗑️ Am șters toate datele tale (sesiune, poze încărcate și fișierele site-ului) din sistemele noastre.\n\n' +
+        'Scrie /start oricând ca să începi din nou.'
+    );
 }
 
 /**
@@ -704,6 +923,26 @@ async function handleGata(ctx) {
         console.error('[polishBusinessData error]', e);
         // Don't lose the client — fall back to the mechanical builder
         session.siteConfig = null;
+    }
+
+    // 1b) Image moderation — read the uploaded image buffers from the temp dir and
+    //     gate them BEFORE building/publishing (generateSite consumes the temp dir).
+    //     If anything is blocked, refuse with the reason and reset — never publish.
+    if (typeof ai.moderateImages === 'function') {
+        try {
+            const buffers = _collectTmpImageBuffers(chatId, session);
+            if (buffers.length) {
+                const verdict = await ai.moderateImages(buffers, 'ro');
+                if (verdict && verdict.blocked) {
+                    await ctx.reply('🚫 ' + (verdict.reason || 'Una dintre imagini nu respectă regulile noastre.') + '\n\nScrie /start ca să încerci din nou cu alte poze.');
+                    resetSession(chatId);
+                    return;
+                }
+            }
+        } catch (e) {
+            // A transient moderation failure must not block a legitimate client; log and proceed.
+            console.error('[moderateImages error]', e);
+        }
     }
 
     // 2) Build the site from the (polished or fallback) config
@@ -913,6 +1152,22 @@ async function handleText(ctx) {
         return;
     }
 
+    // ----- DOMAIN EMAIL (registrant in the client's name) -----
+    if (session.phase === 'domain-email') {
+        if (isSkip(text)) {
+            session.clientEmail = '';   // fall back to REGISTRANT_* env at purchase time
+            await ctx.reply('OK — înregistrăm domeniul pe contactul nostru și îl putem transfera ulterior. Pregătesc plata...');
+        } else if (!EMAIL_RE.test(text)) {
+            return ctx.reply('Acela nu pare un email valid 🙂 Scrie un email corect (ex: `nume@exemplu.com`) sau „skip".');
+        } else {
+            session.clientEmail = text.trim();
+            await ctx.reply(`📧 Mulțumesc! Domeniul \`${session.domain}\` se va înregistra pe numele tău (${session.clientEmail}). Pregătesc plata...`);
+        }
+        session.phase = 'pay';
+        await _initiatePayment(ctx, session, chatId);
+        return;
+    }
+
     // ----- PAY -----
     if (session.phase === 'pay') {
         await ctx.reply(
@@ -934,7 +1189,7 @@ async function handleText(ctx) {
 // payment (build fee). Offer an optional custom domain, then go to checkout.
 // ---------------------------------------------------------------------------
 
-const BUILD_FEE_LABEL = () => `${(BUILD_FEE_CENTS / 100).toFixed(2)} USD`;
+const BUILD_FEE_LABEL = () => `${(BUILD_FEE_CENTS / 100).toFixed(2)} ${CURRENCY_LABEL}`;
 
 async function _afterBuildOfferDomain(ctx, session, chatId) {
     const bizName = (session.siteConfig && session.siteConfig.business && session.siteConfig.business.name) || session.data.name || 'necunoscut';
@@ -974,6 +1229,58 @@ async function _afterBuildOfferDomain(ctx, session, chatId) {
 // Domain phase
 // ---------------------------------------------------------------------------
 
+/** Loose email sanity check (good enough to avoid obvious typos before purchase). */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Build registrant contactInformation for a domain purchase, preferring the CLIENT's
+ * data so the domain is registered in the client's name. The client's email + a name
+ * derived from their business/answers take priority; every remaining required field
+ * (phone, postal address, country) falls back to REGISTRANT_* env. Returns null only
+ * if neither client nor env can satisfy the required fields — buyDomain then errors
+ * cleanly and the order is refunded by the existing handler.
+ *
+ * @param {Session} session
+ * @returns {object|null}
+ */
+function _buildClientContact(session) {
+    const e = process.env;
+    const data = session.data || {};
+
+    // Derive a first/last name: prefer an explicit client name, else the business name.
+    const rawName = String(data.clientName || data.name || '').trim();
+    const parts   = rawName.split(/\s+/).filter(Boolean);
+    const firstName = (data.clientFirstName && String(data.clientFirstName).trim())
+        || parts[0] || e.REGISTRANT_FIRST_NAME || '';
+    const lastName  = (data.clientLastName && String(data.clientLastName).trim())
+        || (parts.length > 1 ? parts.slice(1).join(' ') : '') || e.REGISTRANT_LAST_NAME || '';
+
+    const email = (session.clientEmail && String(session.clientEmail).trim())
+        || e.REGISTRANT_EMAIL || '';
+
+    // Phone: prefer the client's WhatsApp number (digits) in E.164-ish form, else env.
+    const waDigits = isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, '');
+    const phone = waDigits ? `+${waDigits}` : (e.REGISTRANT_PHONE || '');
+
+    const info = {
+        firstName,
+        lastName,
+        email,
+        phone,
+        // Postal fields are not collected in the wizard — fall back to the platform's
+        // REGISTRANT_* env (the legally responsible registrar contact).
+        address1: e.REGISTRANT_ADDRESS1 || '',
+        city:     e.REGISTRANT_CITY || '',
+        state:    e.REGISTRANT_STATE || '',
+        zip:      e.REGISTRANT_ZIP || '',
+        country:  e.REGISTRANT_COUNTRY || '',
+    };
+
+    // Required by Vercel's registrar — if anything is still empty, signal "use env default".
+    const missing = Object.values(info).some(v => !v || !String(v).trim());
+    return missing ? null : info;
+}
+
 async function _handleDomainAnswer(ctx, session, text) {
     const chatId = ctx.chat.id;
 
@@ -1008,9 +1315,14 @@ async function _handleDomainAnswer(ctx, session, text) {
         session.domain        = domainName;
         session.domainPriceUsd = info.priceUsd;
 
-        await ctx.reply(`✅ Domeniu disponibil: \`${domainName}\` — ${info.priceUsd} USD/an.\n\nPregătesc plata...`);
-        session.phase = 'pay';
-        await _initiatePayment(ctx, session, chatId);
+        // Domain is registered in the CLIENT's name — collect their email first so the
+        // registrant contact prefers the client's data (falling back to REGISTRANT_* env).
+        session.phase = 'domain-email';
+        await ctx.reply(
+            `✅ Domeniu disponibil: \`${domainName}\` — ${info.priceUsd} ${CURRENCY_LABEL}/an.\n\n` +
+            `📧 Pe ce adresă de email să înregistrăm domeniul? Domeniul se înregistrează *pe numele tău* (al clientului), iar pe acest email vei primi confirmările.\n\n` +
+            `_Scrie email-ul tău (sau „skip" ca să-l înregistrăm pe contactul nostru și să-l transferăm ulterior)._`
+        );
     } else {
         // Suggest alternatives
         await ctx.reply(`❌ \`${domainName}\` nu este disponibil. Caut alternative...`);
@@ -1025,7 +1337,7 @@ async function _handleDomainAnswer(ctx, session, text) {
 
         if (suggestions.length > 0) {
             const list = suggestions.slice(0, 5).map(s => {
-                const price = s.priceUsd != null ? ` — ${s.priceUsd} USD/an` : '';
+                const price = s.priceUsd != null ? ` — ${s.priceUsd} ${CURRENCY_LABEL}/an` : '';
                 return `• \`${s.name}\`${price}`;
             }).join('\n');
             await ctx.reply(`Iată câteva alternative disponibile:\n\n${list}\n\nScrie unul din ele sau propune altul.`);
@@ -1078,7 +1390,7 @@ async function _initiatePayment(ctx, session, chatId) {
     try {
         const checkout = await createCheckout({
             amountCents,
-            currency:    'usd',
+            currency:    PAYMENT_CURRENCY,
             productName,
             successUrl,
             cancelUrl,
@@ -1094,13 +1406,14 @@ async function _initiatePayment(ctx, session, chatId) {
 
     session.stripeSessionId = checkoutId;
     session.payStartedAt    = Date.now();   // used to abandon never-paid checkouts after PAY_MAX_AGE_MS
+    _ledger('checkout', { chatId, amountCents, currency: PAYMENT_CURRENCY, domain: session.domain || null });
 
     const total = (amountCents / 100).toFixed(2);
     const breakdown = hasDomain
-        ? `Taxă site: ${(BUILD_FEE_CENTS / 100).toFixed(2)} USD + domeniu \`${session.domain}\`: ${(domainCents / 100).toFixed(2)} USD`
+        ? `Taxă site: ${(BUILD_FEE_CENTS / 100).toFixed(2)} ${CURRENCY_LABEL} + domeniu \`${session.domain}\`: ${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}`
         : `Taxă unică de construcție site`;
     await ctx.reply(
-        `💳 Total de plată: *${total} USD*\n(${breakdown})\n\n` +
+        `💳 Total de plată: *${total} ${CURRENCY_LABEL}*\n(${breakdown})\n\n` +
         `👉 [Plătește aici](${checkoutUrl})\n\n` +
         '_Verific automat plata în fundal. După confirmare, public site-ul. Nu închide conversația._'
     );
@@ -1168,11 +1481,11 @@ async function _refundDomainPortion(ctx, session, chatId, err) {
     } catch (re) {
         console.error('[refund domain portion]', re);
     }
-    notifyAdmin(`⚠️ Domeniu eșuat după plată (chat ${chatId}): ${err.message}. Refund domeniu ${(domainCents / 100).toFixed(2)} USD: ${refunded ? 'OK' : 'MANUAL necesar'}.`);
+    notifyAdmin(`⚠️ Domeniu eșuat după plată (chat ${chatId}): ${err.message}. Refund domeniu ${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}: ${refunded ? 'OK' : 'MANUAL necesar'}.`);
     await ctx.reply(
         `⚠️ Nu am putut înregistra domeniul \`${session.domain}\`.` +
         (refunded
-            ? ` Ți-am returnat costul domeniului (${(domainCents / 100).toFixed(2)} USD).`
+            ? ` Ți-am returnat costul domeniului (${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}).`
             : ' Echipa te va contacta pentru rambursarea costului domeniului.') +
         `\nSite-ul tău rămâne LIVE pe ${session.liveUrl}.`
     );
@@ -1205,6 +1518,7 @@ async function _publishAndFinish(ctx, session, chatId) {
         session.phase = 'paid-needs-retry';
         flushSessions();
         notifyAdmin(`⚠️ Publicare eșuată (client PLĂTIT) chat ${chatId}: ${msg}`);
+        _ledger('failed', { chatId, reason: msg });
         await ctx.reply(`⚠️ ${msg}\n\nAi plătit deja — datele tale sunt în siguranță. Scrie /retry ca să încerc din nou publicarea.`);
     };
 
@@ -1233,10 +1547,17 @@ async function _publishAndFinish(ctx, session, chatId) {
     // 2) Custom domain (paid for) — buy + attach. On failure: refund the domain portion
     //    and finish as a normal vercel.app publish (site stays live).
     if (session.domain && session.domainPriceUsd != null && vercelOk()) {
-        await ctx.reply(`🛒 Cumpăr domeniul \`${session.domain}\`...`);
+        await ctx.reply(`🛒 Cumpăr domeniul \`${session.domain}\` (înregistrat pe numele tău)...`);
         try {
-            await buyDomain(session.domain, session.domainPriceUsd);
-            await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!`);
+            // Prefer the CLIENT's contact (email/name) so the domain is in their name;
+            // _buildClientContact falls back to REGISTRANT_* env, and buyDomain itself
+            // also defaults to env when contactInformation is null.
+            const clientContact = _buildClientContact(session);
+            await buyDomain(session.domain, session.domainPriceUsd, clientContact);
+            const onWhose = (clientContact && session.clientEmail)
+                ? ` Domeniul e înregistrat pe numele tău (${session.clientEmail}).`
+                : ' Domeniul e înregistrat pe contactul nostru și poate fi transferat pe numele tău la cerere.';
+            await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!${onWhose}`);
             if (projectId && vercelDeployOk()) {
                 await attachDomain(projectId, session.domain);
                 await ctx.reply('🔗 Domeniu atașat la site!');
@@ -1255,11 +1576,18 @@ async function _publishAndFinish(ctx, session, chatId) {
 
     const liveUrl = session.domain ? `https://${session.domain}` : url;
     notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${liveUrl}${session.domain ? ' (domeniu cumpărat)' : ''}`);
+    _ledger('published', { chatId, url: liveUrl, domain: session.domain || null });
     await ctx.reply(
         `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${liveUrl}\n\n` +
         (session.domain ? '_DNS-ul se propagă în câteva minute._\n' : '') +
         'Felicitări! Scrie /start oricând să faci un site nou.'
     );
+    // Optional managed yearly plan offer (no real recurring billing yet — just the pitch).
+    await ctx.reply(
+        `🛠️ *Plan anual administrat (opțional)* — ${RETAINER_PRICE} ${CURRENCY_LABEL}/an: ținem site-ul online, ` +
+        `actualizăm textele/pozele și reînnoim domeniul pentru tine.\n\n` +
+        `Dacă te interesează, răspunde cu „administrare" și revin cu detalii. Fără obligație.`
+    ).catch(() => {});
     sessions.delete(chatId);
     flushSessions();
 }
@@ -1280,7 +1608,8 @@ async function handleHelp(ctx) {
         '/start – construiește un site (chat cu AI)\n' +
         '/wizard – mod pas-cu-pas (manual)\n' +
         '/preturi – vezi prețurile\n' +
-        '/anuleaza – resetează\n\n' +
+        '/anuleaza – resetează\n' +
+        '/sterge – șterge toate datele tale (GDPR)\n\n' +
         'Spune-mi orice despre afacerea ta și începem!'
     );
 }
@@ -1289,9 +1618,10 @@ async function handlePreturi(ctx) {
     const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
     await ctx.reply(
         '💰 Prețuri\n\n' +
-        `• Site complet (pe adresă vercel.app): ${fee} USD, o singură dată.\n` +
-        '• + Domeniu custom (ex: afacereata.ro): prețul domeniului (~12–15 USD/an) se adaugă la plată.\n' +
-        '• Design la comandă / funcții speciale: de la 500 USD.\n\n' +
+        `• Site complet (pe adresă vercel.app): ${fee} ${CURRENCY_LABEL}, o singură dată.\n` +
+        `• + Domeniu custom (ex: afacereata.ro): prețul domeniului (~12–15 ${CURRENCY_LABEL}/an) se adaugă la plată.\n` +
+        `• Plan anual administrat (opțional): ${RETAINER_PRICE} ${CURRENCY_LABEL}/an.\n` +
+        `• Design la comandă / funcții speciale: de la 500 ${CURRENCY_LABEL}.\n\n` +
         'Scrie /start ca să începem!'
     );
 }
@@ -1315,6 +1645,7 @@ module.exports = {
     handleStart,
     handleWizard,
     handleAnuleaza,
+    handleSterge,
     handleRetry,
     handleGata,
     handlePhoto,
@@ -1325,6 +1656,7 @@ module.exports = {
     handlePreturi,
     // Utilities (exported for testing / bot.js wiring)
     slugify,
+    safeProjectName,
     downloadPhoto,
     buildConfig,
     mergeWizardConfig,

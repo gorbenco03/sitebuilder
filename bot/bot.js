@@ -13,6 +13,7 @@
 
 const { Bot } = require('grammy');
 const flow = require('./flow.js');
+const { log } = require('./logger.js');
 
 const {
     handleStart,
@@ -26,6 +27,7 @@ const {
     handleText,
     handleHelp,
     handlePreturi,
+    handleSterge, // Faza 5: order deletion (exported by flow.js / Agent A)
     persistSessions,
     setAdminNotifier,
     setBotUsername,
@@ -101,6 +103,13 @@ bot.command('preturi',  handlePreturi);
 bot.command('anuleaza', handleAnuleaza);
 bot.command('retry',    handleRetry);
 bot.command('gata',     handleGata);
+// /sterge — delete a published/paid order. Guarded: flow.js exports handleSterge
+// (Agent A); if a build predates it, skip registration rather than crash on boot.
+if (typeof handleSterge === 'function') {
+    bot.command('sterge', handleSterge);
+} else {
+    console.warn('[wiring] handleSterge not exported by flow.js — /sterge disabled');
+}
 
 /* ── Media + Text (catch-all registered LAST so it only fires for unhandled types) ── */
 bot.on('message:photo',    handlePhoto);
@@ -131,6 +140,7 @@ process.on('uncaughtException',  (e) => {
 /* ── Graceful shutdown: flush sessions, stop polling cleanly ── */
 const shutdown = (signal) => {
     console.log(`\n${signal} received — flushing sessions and stopping…`);
+    log('bot.shutdown', { signal });
     if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
     try { require('./store.js').flush(sessions); } catch (_) {}
     bot.stop();
@@ -138,6 +148,16 @@ const shutdown = (signal) => {
 };
 process.once('SIGINT',  () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
+
+/* ── User-facing command menu shown in the Telegram client (RO descriptions) ── */
+const COMMAND_MENU = [
+    { command: 'start',    description: 'Pornește și creează un site nou' },
+    { command: 'preturi',  description: 'Vezi prețurile și ce e inclus' },
+    { command: 'help',     description: 'Ajutor și cum funcționează' },
+    { command: 'anuleaza', description: 'Anulează procesul curent' },
+    { command: 'retry',    description: 'Reîncearcă publicarea / plata' },
+    { command: 'sterge',   description: 'Șterge un site publicat' },
+];
 
 /* ── Start polling, auto-retry on startup failure (e.g. transient network) ── */
 async function start() {
@@ -147,9 +167,15 @@ async function start() {
             onStart: (me) => {
                 setBotUsername(me.username);
                 console.log(`🤖 Bot pornit ca @${me.username}`);
+                log('bot.started', { username: me.username, id: me.id });
+                // Register the slash-command menu so Telegram shows it in the UI.
+                bot.api.setMyCommands(COMMAND_MENU)
+                    .then(() => log('bot.commands_set', { count: COMMAND_MENU.length }))
+                    .catch((e) => console.error('[setMyCommands] failed:', e.message));
                 // Resume any orders that were mid-payment/publish when we last stopped,
                 // then keep checking on an interval (covers slow payments + restarts).
-                try { reconcilePending(); } catch (e) { console.error('[reconcile] failed:', e.message); }
+                try { reconcilePending(); log('reconcile.boot'); }
+                catch (e) { console.error('[reconcile] failed:', e.message); }
                 if (!sweepTimer) {
                     sweepTimer = setInterval(() => {
                         try { reconcilePending(); } catch (e) { console.error('[sweep] failed:', e.message); }
@@ -160,6 +186,7 @@ async function start() {
         });
     } catch (e) {
         console.error('Bot start failed, retrying in 5s:', e.message);
+        log('bot.start_failed', { err: e.message }, 'error');
         setTimeout(start, 5000);
     }
 }
