@@ -885,7 +885,9 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     height: 640px;
     border: 0;
     display: block;
-    background: transparent;
+    /* match the site background (only sites with an embed widget — i.e. desserdina —
+       have this element; bot-generated sites don't render it) */
+    background: var(--color-cream);
 }
 
 /* ── LIVE Instagram embeds — uniform square cards (cropped to the media) ── */
