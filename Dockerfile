@@ -9,6 +9,10 @@ WORKDIR /app
 COPY bot/package.json bot/package-lock.json ./bot/
 RUN cd bot && npm ci --omit=dev
 
+# Cloudflare Pages deploys (bot/deploy-cloudflare.js) shell out to the wrangler CLI
+# (Direct Upload — the raw HTTP flow needs BLAKE3 hashing that node:crypto lacks).
+RUN npm install -g wrangler@4
+
 # Copy the rest of the project (template + assets + build pipeline)
 COPY . .
 

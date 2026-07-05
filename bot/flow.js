@@ -35,6 +35,7 @@ const _payments = (process.env.PAYMENT_PROVIDER || '').toLowerCase() === 'stripe
 const { isConfigured: stripeOk, createCheckout, pollUntilPaid } = _payments;
 const { isConfigured: vercelOk, checkDomain, suggestDomains, buyDomain } = require('./domains.js');
 const { isConfigured: vercelDeployOk, deploySite, attachDomain } = require('./deploy-vercel.js');
+const cfDeploy = require('./deploy-cloudflare.js');
 const { deployToNetlify } = require('./deploy.js');
 
 // ---------------------------------------------------------------------------
@@ -748,8 +749,12 @@ async function generateSite(chatId, session) {
 // ---------------------------------------------------------------------------
 
 /**
- * Deploy the built site using Vercel (preferred) or Netlify (fallback).
- * Returns the live URL string, or null if neither is configured.
+ * Deploy the built site. Provider precedence:
+ *   1. Cloudflare Pages — when DEPLOY_PROVIDER=cloudflare AND CF creds are set
+ *      (free tier is commercial-OK; each site gets https://<slug>.pages.dev)
+ *   2. Vercel (current default — unchanged until the migration is flipped)
+ *   3. Netlify (legacy fallback)
+ * Returns the live URL string, or null if nothing is configured.
  *
  * @param {string} siteDir
  * @param {string} slug
@@ -757,9 +762,18 @@ async function generateSite(chatId, session) {
  * @returns {Promise<{url:string|null, projectId:string|null}>}
  */
 async function deployBuiltSite(siteDir, slug, chatId) {
+    const prefer = String(process.env.DEPLOY_PROVIDER || '').toLowerCase();
+    if (prefer === 'cloudflare' && cfDeploy.isConfigured()) {
+        const result = await cfDeploy.deploySite(siteDir, { name: slug });
+        return { url: result.url, projectId: result.projectId || slug, provider: 'cloudflare' };
+    }
+    if (prefer === 'cloudflare' && !cfDeploy.isConfigured()) {
+        console.warn('[deploy] DEPLOY_PROVIDER=cloudflare but CLOUDFLARE_* env missing — falling back to Vercel/Netlify.');
+    }
+
     if (vercelDeployOk()) {
         const result = await deploySite(siteDir, { name: slug });
-        return { url: result.url, projectId: result.projectId || slug };
+        return { url: result.url, projectId: result.projectId || slug, provider: 'vercel' };
     }
 
     const netlifyToken = process.env.NETLIFY_TOKEN;
@@ -767,10 +781,10 @@ async function deployBuiltSite(siteDir, slug, chatId) {
         const existingId = loadSitesMap()[chatId];
         const result = await deployToNetlify(siteDir, netlifyToken, existingId);
         saveSiteId(chatId, result.siteId);
-        return { url: result.url, projectId: null };
+        return { url: result.url, projectId: null, provider: 'netlify' };
     }
 
-    return { url: null, projectId: null };
+    return { url: null, projectId: null, provider: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -1426,7 +1440,8 @@ async function _initiatePayment(ctx, session, chatId) {
             productName,
             successUrl,
             cancelUrl,
-            metadata: { chatId: String(chatId), domain: session.domain },
+            metadata: { chatId: String(chatId), platform: 'telegram', domain: session.domain },
+            clientReferenceId: `tg-${chatId}`,
         });
         checkoutId  = checkout.id;
         checkoutUrl = checkout.url;
@@ -1478,6 +1493,61 @@ function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
             await ctx.reply('⏳ Verificarea plății a întâmpinat o problemă temporară; reîncerc automat în curând.');
         })
         .finally(() => activePolls.delete(chatId));
+}
+
+/**
+ * Handle a signature-verified Stripe webhook event (bot/server.js verifies the
+ * signature BEFORE this is called). The webhook is the SOURCE OF TRUTH for
+ * payment: it confirms instantly instead of waiting for the next poll tick,
+ * and it works even if the in-memory poller died. The poller + sweeper stay
+ * as fallback (also covers the Revolut provider, which has no webhook here yet).
+ *
+ * Idempotent by design: publishing is guarded by session.published /
+ * session._publishing, and events for unknown/already-finished orders are
+ * acknowledged without action (Stripe retries non-2xx, so "ignore" = handled).
+ *
+ * @param {object} event  Parsed Stripe event.
+ * @returns {Promise<{handled: boolean, reason?: string}>}
+ */
+async function handleStripeWebhookEvent(event) {
+    const type = event && event.type;
+    if (type !== 'checkout.session.completed' && type !== 'checkout.session.async_payment_succeeded') {
+        return { handled: false, reason: 'ignored event type' };
+    }
+
+    const cs = event.data && event.data.object;
+    if (!cs || cs.payment_status !== 'paid') {
+        // e.g. checkout.session.completed for a delayed method — the
+        // async_payment_succeeded event will follow when it's actually paid.
+        return { handled: false, reason: 'not paid yet' };
+    }
+
+    const rawChatId = cs.metadata && cs.metadata.chatId;
+    if (!rawChatId) return { handled: false, reason: 'no chatId metadata' };
+    const chatId  = Number(rawChatId);
+    const session = sessions.get(chatId) || sessions.get(String(rawChatId));
+    if (!session) {
+        // Already published + cleaned up (poller won the race), or truly unknown.
+        _ledger('paid', { chatId, via: 'webhook', sessionId: cs.id, note: 'no-session' });
+        return { handled: true, reason: 'no session (already finished?)' };
+    }
+    if (session.stripeSessionId && session.stripeSessionId !== cs.id) {
+        return { handled: false, reason: 'checkout session id mismatch' };
+    }
+    if (session.published || session._publishing) {
+        return { handled: true, reason: 'already published/publishing' };
+    }
+    if (session.phase !== 'pay' && session.phase !== 'deploy' && session.phase !== 'paid-needs-retry') {
+        return { handled: false, reason: `unexpected phase ${session.phase}` };
+    }
+
+    _ledger('paid', { chatId, via: 'webhook', sessionId: cs.id });
+    const ctx = _ctxShim(chatId);
+    await ctx.reply('✅ Plată confirmată! Public site-ul...');
+    session.phase = 'deploy';
+    flushSessions();
+    await _publishAndFinish(ctx, session, chatId);
+    return { handled: true };
 }
 
 // ---------------------------------------------------------------------------
@@ -1562,10 +1632,10 @@ async function _publishAndFinish(ctx, session, chatId) {
     }
 
     // 1) Deploy (with retry)
-    let url, projectId;
+    let url, projectId, provider;
     try {
         await ctx.reply('🚀 Public site-ul...');
-        ({ url, projectId } = await _deployWithRetry(siteDir, slug, chatId));
+        ({ url, projectId, provider } = await _deployWithRetry(siteDir, slug, chatId));
     } catch (e) {
         console.error('[deploy failed after retries]', e);
         await parkForRetry('Publicarea a eșuat temporar: ' + e.message);
@@ -1590,7 +1660,11 @@ async function _publishAndFinish(ctx, session, chatId) {
                 ? ` Domeniul e înregistrat pe numele tău (${session.clientEmail}).`
                 : ' Domeniul e înregistrat pe contactul nostru și poate fi transferat pe numele tău la cerere.';
             await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!${onWhose}`);
-            if (projectId && vercelDeployOk()) {
+            // Attach on the provider that actually hosts this deploy.
+            if (projectId && provider === 'cloudflare') {
+                await cfDeploy.attachDomain(projectId, session.domain);
+                await ctx.reply('🔗 Domeniu atașat la site!');
+            } else if (projectId && vercelDeployOk()) {
                 await attachDomain(projectId, session.domain);
                 await ctx.reply('🔗 Domeniu atașat la site!');
             }
@@ -1673,6 +1747,7 @@ module.exports = {
     setBotUsername,
     setMessenger,
     reconcilePending,
+    handleStripeWebhookEvent,
     // Handlers
     handleStart,
     handleWizard,

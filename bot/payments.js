@@ -17,6 +17,8 @@
 
 'use strict';
 
+const crypto = require('crypto');
+
 const STRIPE_API = 'https://api.stripe.com/v1';
 
 // ---------------------------------------------------------------------------
@@ -113,6 +115,8 @@ function isConfigured() {
  * @param {string}  opts.successUrl   Redirect after successful payment.
  * @param {string}  opts.cancelUrl    Redirect if the user cancels.
  * @param {object} [opts.metadata]    Key/value pairs attached to the session (e.g. chatId, slug).
+ * @param {string} [opts.clientReferenceId]  Order reference echoed back on the session
+ *                                    (and in the webhook event) for reconciliation.
  * @returns {Promise<{id: string, url: string}>}  id = Stripe session ID, url = hosted checkout URL.
  */
 async function createCheckout({
@@ -122,6 +126,7 @@ async function createCheckout({
     successUrl,
     cancelUrl,
     metadata = {},
+    clientReferenceId,
 }) {
     if (!amountCents || amountCents < 1) throw new Error('amountCents must be a positive integer.');
     if (!productName) throw new Error('productName is required.');
@@ -143,6 +148,7 @@ async function createCheckout({
         cancel_url: cancelUrl,
         metadata,
     };
+    if (clientReferenceId) params.client_reference_id = String(clientReferenceId).slice(0, 200);
 
     const body = encodeStripeBody(params);
     const session = await stripeRequest('POST', '/checkout/sessions', body);
@@ -209,10 +215,83 @@ async function refund(sessionId, amountCents) {
 }
 
 // ---------------------------------------------------------------------------
+// Webhooks (no SDK — pure node:crypto)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify a Stripe webhook signature (the `Stripe-Signature` request header)
+ * against the RAW request body. Scheme: header is `t=<unix>,v1=<hex>[,v1=...]`;
+ * the signed payload is `${t}.${rawBody}`, HMAC-SHA256 with the endpoint
+ * secret (whsec_...). Constant-time comparison + a timestamp tolerance so a
+ * captured event can't be replayed later.
+ *
+ * Never throws on malformed input — returns false.
+ *
+ * @param {Buffer|string} rawBody   The EXACT bytes Stripe sent (do not re-serialize).
+ * @param {string} sigHeader        Value of the Stripe-Signature header.
+ * @param {string} secret           Endpoint secret (whsec_...).
+ * @param {object} [opts]
+ * @param {number} [opts.toleranceSec=300]  Max allowed |now - t|, seconds.
+ * @param {number} [opts.nowMs]     Injectable clock (tests).
+ * @returns {boolean}
+ */
+function verifyWebhookSignature(rawBody, sigHeader, secret, { toleranceSec = 300, nowMs } = {}) {
+    if (!rawBody || !sigHeader || !secret) return false;
+
+    let t = null;
+    const v1s = [];
+    for (const part of String(sigHeader).split(',')) {
+        const i = part.indexOf('=');
+        if (i < 0) continue;
+        const k = part.slice(0, i).trim();
+        const v = part.slice(i + 1).trim();
+        if (k === 't') t = v;
+        else if (k === 'v1') v1s.push(v);
+    }
+    if (!t || !/^\d+$/.test(t) || v1s.length === 0) return false;
+
+    const nowSec = (nowMs != null ? nowMs : Date.now()) / 1000;
+    if (Math.abs(nowSec - Number(t)) > toleranceSec) return false;
+
+    const payload  = Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody);
+    const expected = crypto.createHmac('sha256', secret).update(`${t}.${payload}`, 'utf8').digest('hex');
+    const expBuf   = Buffer.from(expected, 'utf8');
+    return v1s.some((sig) => {
+        const got = Buffer.from(String(sig), 'utf8');
+        return got.length === expBuf.length && crypto.timingSafeEqual(got, expBuf);
+    });
+}
+
+/**
+ * Verify + parse a Stripe webhook request into an event object.
+ * Throws on an invalid signature (caller responds 400 so Stripe retries/flags).
+ *
+ * @param {Buffer|string} rawBody
+ * @param {string} sigHeader
+ * @param {string} secret
+ * @param {object} [opts]  Passed through to verifyWebhookSignature.
+ * @returns {object} Parsed Stripe event (e.g. { type: 'checkout.session.completed', data: { object } }).
+ */
+function constructWebhookEvent(rawBody, sigHeader, secret, opts) {
+    if (!verifyWebhookSignature(rawBody, sigHeader, secret, opts)) {
+        throw new Error('Invalid Stripe webhook signature.');
+    }
+    return JSON.parse(Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : String(rawBody));
+}
+
+// ---------------------------------------------------------------------------
 // Module exports
 // ---------------------------------------------------------------------------
 
-module.exports = { isConfigured, createCheckout, getCheckoutStatus, pollUntilPaid, refund };
+module.exports = {
+    isConfigured,
+    createCheckout,
+    getCheckoutStatus,
+    pollUntilPaid,
+    refund,
+    verifyWebhookSignature,
+    constructWebhookEvent,
+};
 
 // ---------------------------------------------------------------------------
 // Self-test (run: node bot/payments.js)

@@ -21,8 +21,17 @@ Required:
 Recommended / for full functionality:
 - `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (+ optional `AI_MODEL=claude-haiku-4-5-20251001`)
 - `VERCEL_TOKEN` (+ optional `VERCEL_TEAM_ID`) — site deploy + domains
-- `REVOLUT_SECRET_KEY` + `REVOLUT_ENV` (`sandbox` or `production`) — payments
-- `BUILD_FEE_USD` (default 29), `DOMAIN_MARKUP_USD` (default 0)
+- `DEPLOY_PROVIDER=cloudflare` + `CLOUDFLARE_API_TOKEN` (Pages:Edit) + `CLOUDFLARE_ACCOUNT_ID`
+  — deploy client sites to Cloudflare Pages (`https://<slug>.pages.dev`) instead of Vercel.
+  The image ships the `wrangler` CLI, which the deploy adapter shells out to.
+- **Payments (Stripe, UK Ltd):** `PAYMENT_PROVIDER=stripe` + `STRIPE_SECRET_KEY` +
+  `STRIPE_WEBHOOK_SECRET` (from the Stripe Dashboard webhook endpoint pointing at
+  `https://<railway-public-domain>/webhooks/stripe`, event `checkout.session.completed`).
+  The webhook is the source of truth for "paid"; the poller/sweeper remain as fallback.
+  Railway injects `PORT` — the in-process HTTP server (`bot/server.js`) binds it and also
+  serves `GET /health`.
+- `REVOLUT_SECRET_KEY` + `REVOLUT_ENV` (`sandbox` or `production`) — alternative payments (polling only)
+- `BUILD_FEE_EUR` (default 49), `DOMAIN_MARKUP_USD` (default 0)
 - `ADMIN_CHAT_ID` — your Telegram numeric id, to get a DM on each new site/payment
   (get it by messaging @userinfobot)
 - For real domain purchases: `REGISTRANT_FIRST_NAME`, `REGISTRANT_LAST_NAME`, `REGISTRANT_EMAIL`,

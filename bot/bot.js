@@ -14,6 +14,7 @@
 const { Bot } = require('grammy');
 const flow = require('./flow.js');
 const { log } = require('./logger.js');
+const { startServer } = require('./server.js');
 
 const {
     handleStart,
@@ -33,6 +34,7 @@ const {
     setBotUsername,
     setMessenger,
     reconcilePending,
+    handleStripeWebhookEvent,
     sessions,
 } = flow;
 
@@ -85,6 +87,20 @@ setMessenger((chatId, text, opts) =>
         console.error('[bg message] failed:', e.message)
     )
 );
+
+/* ── HTTP server: health endpoint + Stripe payment webhook (source of truth for
+      "paid" — instant, restart-proof; the poller/sweeper stay as fallback).
+      Binds Railway's injected PORT; a bind failure logs but never kills the bot. ── */
+const httpServer = startServer({
+    onStripeEvent: async (event) => {
+        try {
+            const r = await handleStripeWebhookEvent(event);
+            log('webhook.stripe.handled', { type: event.type, ...r });
+        } finally {
+            persistSessions();
+        }
+    },
+});
 
 /* ── Persist sessions after every handled update (debounced in store.js) ── */
 bot.use(async (ctx, next) => {
@@ -142,6 +158,7 @@ const shutdown = (signal) => {
     console.log(`\n${signal} received — flushing sessions and stopping…`);
     log('bot.shutdown', { signal });
     if (sweepTimer) { clearInterval(sweepTimer); sweepTimer = null; }
+    try { httpServer.close(); } catch (_) {}
     try { require('./store.js').flush(sessions); } catch (_) {}
     bot.stop();
     process.exit(0);
