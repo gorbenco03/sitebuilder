@@ -456,6 +456,17 @@ function formatWhatsappDisplay(raw) {
     return cleaned.startsWith('+') ? cleaned : '+' + digits;
 }
 
+/** Default pre-filled WhatsApp inquiry message (Romanian). Env: WA_DEFAULT_MSG. */
+const WA_DEFAULT_MSG = process.env.WA_DEFAULT_MSG || 'Salut! Aș vrea mai multe informații despre serviciile dumneavoastră.';
+
+/** Build a wa.me link that opens WhatsApp with a message ready to send. Empty on skip. */
+function buildWaHref(raw, msg) {
+    if (isSkip(raw)) return '';
+    const digits = String(raw).replace(/\D/g, '');
+    if (!digits) return '';
+    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg || WA_DEFAULT_MSG);
+}
+
 // ---------------------------------------------------------------------------
 // buildConfig — produces full config with `categories` schema
 // ---------------------------------------------------------------------------
@@ -488,6 +499,7 @@ function buildConfig(data, galleryFiles, hasLogo) {
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
         phone:        isSkip(data.whatsapp) ? '' : '+' + String(data.whatsapp).replace(/\D/g, ''),
         phoneDisplay: formatWhatsappDisplay(data.whatsapp),
+        waHref:       buildWaHref(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
         addressHref: isSkip(data.address) ? '' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(data.address).replace(/\n/g, ', ')),
     };
@@ -608,6 +620,7 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
         phone:        isSkip(data.whatsapp) ? '' : '+' + String(data.whatsapp).replace(/\D/g, ''),
         phoneDisplay: formatWhatsappDisplay(data.whatsapp),
+        waHref:       buildWaHref(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
         addressHref: isSkip(data.address) ? '' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(data.address).replace(/\n/g, ', ')),
     };

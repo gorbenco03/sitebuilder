@@ -45,6 +45,11 @@ function initMenuLangToggle() {
             const val = el.getAttribute('data-' + lang);
             if (val) el.textContent = val;
         });
+        // Bilingual links (e.g. WhatsApp pre-filled message differs EN/RO)
+        document.querySelectorAll('[data-en-href][data-ro-href]').forEach(el => {
+            const href = el.getAttribute('data-' + lang + '-href');
+            if (href) el.setAttribute('href', href);
+        });
         // Button state + document language
         buttons.forEach(b => {
             const active = b.dataset.menuLang === lang;

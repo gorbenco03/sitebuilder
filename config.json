@@ -81,7 +81,9 @@
     "phoneDisplay": "+44 7519 511006",
     "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7",
     "titleRo": "Comandă acum",
-    "introRo": "Comandă prin DM sau vino la patiseria noastră. Rezervă spațiul pentru evenimente!"
+    "introRo": "Comandă prin DM sau vino la patiseria noastră. Rezervă spațiul pentru evenimente!",
+    "waHref": "https://wa.me/447519511006?text=Hi!%20I%20would%20like%20more%20information%20about%20your%20services.",
+    "waHrefRo": "https://wa.me/447519511006?text=Salut!%20A%C8%99%20vrea%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83."
   },
   "footer": {
     "address": "28 High St, Romford, London RM11HR",
