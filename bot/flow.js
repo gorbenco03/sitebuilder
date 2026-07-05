@@ -445,6 +445,17 @@ function formatAddressHtml(raw) {
     return escapeHtml(String(raw)).replace(/\n/g, '<br>');
 }
 
+/** Human-readable WhatsApp number for display next to the WhatsApp link.
+ *  Keeps only phone-ish characters; preserves a leading '+' the owner typed,
+ *  otherwise prefixes one. Empty when skipped. Rendered HTML-escaped by the template. */
+function formatWhatsappDisplay(raw) {
+    if (isSkip(raw)) return '';
+    const cleaned = String(raw).trim().replace(/[^\d+\-() ]/g, '').replace(/\s+/g, ' ').trim();
+    const digits = cleaned.replace(/\D/g, '');
+    if (!digits) return '';
+    return cleaned.startsWith('+') ? cleaned : '+' + digits;
+}
+
 // ---------------------------------------------------------------------------
 // buildConfig — produces full config with `categories` schema
 // ---------------------------------------------------------------------------
@@ -475,6 +486,7 @@ function buildConfig(data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
+        whatsappDisplay: formatWhatsappDisplay(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
 
@@ -592,6 +604,7 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
+        whatsappDisplay: formatWhatsappDisplay(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
     };
 

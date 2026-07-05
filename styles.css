@@ -787,6 +787,22 @@ body {
     box-shadow: 0 12px 30px rgba(232, 88, 140, 0.42);
 }
 
+/* ── Custom Instagram embed widget (iframe) ── */
+.instagram-embed {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+.instagram-embed-iframe {
+    width: 100%;
+    height: 640px;
+    border: 0;
+    border-radius: 16px;
+    display: block;
+    background: var(--color-cream, #faf8f8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+}
+
 /* ── LIVE Instagram embeds — uniform square cards (cropped to the media) ── */
 .instagram-embeds-grid {
     max-width: 1080px;

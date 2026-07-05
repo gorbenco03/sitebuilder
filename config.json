@@ -20,8 +20,9 @@
     "scroll": "Scroll"
   },
   "seo": {
-    "ogImage": "images/hero.jpg",
-    "jsonLd": ""
+    "ogImage": "https://desserdirina.vercel.app/images/hero.jpg",
+    "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"DESSERD by Irina\",\"image\":\"https://desserdirina.vercel.app/images/hero.jpg\",\"url\":\"https://desserdirina.vercel.app/\",\"telephone\":\"+447519511006\",\"priceRange\":\"££\",\"servesCuisine\":[\"Cakes\",\"Pastries\",\"Bread\",\"Romanian\"],\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"28 High St\",\"addressLocality\":\"Romford\",\"addressRegion\":\"London\",\"postalCode\":\"RM11HR\",\"addressCountry\":\"GB\"},\"sameAs\":[\"https://www.instagram.com/desserdirina\",\"https://www.facebook.com/desserdirina\"]}",
+    "canonical": "https://desserdirina.vercel.app/"
   },
   "logo": "images/logo.jpg",
   "hero": {
@@ -61,24 +62,29 @@
       "title": "",
       "blurb": "",
       "photos": [
-        { "src": "images/torturi-1.jpg", "alt": "Themed celebration cakes" },
-        { "src": "images/catering-1.jpg", "alt": "Catering platters with assorted sweets" },
-        { "src": "images/placinte-1.jpg", "alt": "Traditional Romanian pastries" },
-        { "src": "images/cupcakes-1.jpg", "alt": "Mousse cakes and cupcakes" }
+        {
+          "src": "images/torturi-1.jpg",
+          "alt": "Themed celebration cakes"
+        },
+        {
+          "src": "images/catering-1.jpg",
+          "alt": "Catering platters with assorted sweets"
+        },
+        {
+          "src": "images/placinte-1.jpg",
+          "alt": "Traditional Romanian pastries"
+        },
+        {
+          "src": "images/cupcakes-1.jpg",
+          "alt": "Mousse cakes and cupcakes"
+        }
       ]
     }
   ],
   "instagram": {
     "handle": "desserdirina",
     "url": "https://www.instagram.com/desserdirina",
-    "posts": [
-      "https://www.instagram.com/p/DSkUmLJDWgQ/",
-      "https://www.instagram.com/p/DGYQLJSN_GS/",
-      "https://www.instagram.com/p/DThXXyiCFVy/",
-      "https://www.instagram.com/p/DTkDEglCPLo/",
-      "https://www.instagram.com/p/DTh9NLbjRsl/",
-      "https://www.instagram.com/p/DFQYgVot8Is/"
-    ]
+    "embedUrl": "https://hearth-tan-xi.vercel.app/embed/instagram?widgetKey=fb1297f5-fe81-404e-bfda-3cf6fadbdec3"
   },
   "contact": {
     "title": "Order now",
@@ -92,7 +98,8 @@
       "label": "Desserdirina"
     },
     "whatsapp": "447519511006",
-    "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum"
+    "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum",
+    "whatsappDisplay": "+44 7519 511006"
   },
   "footer": {
     "address": "28 High St, Romford, London RM11HR",

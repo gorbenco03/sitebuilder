@@ -17,6 +17,13 @@
     <meta name="twitter:description" content="{{business.metaDescription}}">
     <meta name="twitter:image" content="{{seo.ogImage}}">
 
+    <!-- SEO: canonical + crawlability (canonical/og:url set only when seo.canonical is present) -->
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <!-- @if seo.canonical -->
+    <link rel="canonical" href="{{seo.canonical}}">
+    <meta property="og:url" content="{{seo.canonical}}">
+    <!-- @endif -->
+
     <!-- Favicon: inline SVG dot in the brand colour (no extra request) -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23E8588C'/%3E%3C/svg%3E">
 
@@ -104,7 +111,7 @@
                         <!-- @if contact.whatsapp -->
                         <a href="https://wa.me/{{contact.whatsapp}}" class="contact-item" target="_blank" rel="noopener">
                             <span class="contact-icon whatsapp" aria-hidden="true"></span>
-                            <span>WhatsApp</span>
+                            <span>WhatsApp<!-- @if contact.whatsappDisplay --> · {{contact.whatsappDisplay}}<!-- @endif --></span>
                         </a>
                         <!-- @endif -->
                         <!-- @if contact.address -->
@@ -151,6 +158,13 @@
                 </div>
                 <a href="{{instagram.url}}" class="instagram-follow-btn" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
             </div>
+
+            <!-- Custom embed widget (when config sets instagram.embedUrl) — takes precedence -->
+            <!-- @if instagram.embedUrl -->
+            <div class="instagram-embed">
+                <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            <!-- @endif -->
 
             <!-- LIVE Instagram embeds (when config has instagram.posts) -->
             <!-- @if instagram.posts -->
