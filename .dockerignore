@@ -14,3 +14,9 @@ assets
 **/.sites-map.json
 .DS_Store
 **/.DS_Store
+# Cloudflare-only tooling + site build output (not needed in the bot image)
+package.json
+scripts
+wrangler.toml
+dist
+CLOUDFLARE-DEPLOY.md

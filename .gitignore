@@ -15,3 +15,5 @@ bot/bot.log
 *.log
 _carousel/
 bot/_qa_scenario.js
+# Cloudflare Pages build output (assembled by scripts/build-site.js)
+dist/

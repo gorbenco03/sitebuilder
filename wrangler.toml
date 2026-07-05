@@ -1,0 +1,5 @@
+# Cloudflare Pages — desserdina static site.
+# Deploy the assembled output:  npm run build && npx wrangler pages deploy dist
+name = "desserdina"
+compatibility_date = "2024-06-01"
+pages_build_output_dir = "dist"

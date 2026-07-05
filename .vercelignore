@@ -11,3 +11,9 @@ README.md
 **/.DS_Store
 widget_carousel
 _carousel
+# Cloudflare-only tooling (keep the current Vercel static deploy untouched)
+package.json
+scripts
+wrangler.toml
+dist
+CLOUDFLARE-DEPLOY.md

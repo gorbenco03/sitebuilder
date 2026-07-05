@@ -1,0 +1,9 @@
+{
+  "name": "desserdina-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DESSERD by Irina — static landing page. `npm run build` renders index.html and assembles dist/ for Cloudflare Pages.",
+  "scripts": {
+    "build": "node scripts/build-site.js"
+  }
+}
