@@ -801,6 +801,11 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     padding: var(--space-section) 2rem;
     margin-top: 2rem;
 }
+/* Sites with an embed widget (desserdina): flat site-cream background so there is no
+   second, differently-coloured layer around the widget. Bot sites keep the gradient. */
+.instagram-section--embed {
+    background: var(--color-cream);
+}
 
 /* ── Header ── */
 .instagram-header {
