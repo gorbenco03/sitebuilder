@@ -7,7 +7,25 @@ document.addEventListener('DOMContentLoaded', () => {
     initContactRipple();
     initScrollIndicator();
     initMenuLangToggle();
+    initIgEmbedAutoResize();
 });
+
+/**
+ * Auto-size the Instagram embed iframe to the widget's real content height, for any
+ * layout (grid/carousel/masonry). The hearth widget posts its measured height to the
+ * parent as { type: 'INSTA_WIDGET_HEIGHT', height }, so we just listen and apply it —
+ * no fixed height left oversized. No-op on pages without the embed.
+ */
+function initIgEmbedAutoResize() {
+    const frames = document.querySelectorAll('.instagram-embed-iframe');
+    if (!frames.length) return;
+    window.addEventListener('message', (e) => {
+        const d = e.data;
+        if (d && d.type === 'INSTA_WIDGET_HEIGHT' && typeof d.height === 'number' && d.height > 80 && d.height < 4000) {
+            frames.forEach(f => { f.style.height = d.height + 'px'; });
+        }
+    });
+}
 
 /**
  * Bilingual menu: switch the visible menu panel (default EN) when a language

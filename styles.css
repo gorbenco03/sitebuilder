@@ -297,7 +297,7 @@ body {
     grid-template-columns: 1.05fr 0.95fr;
     gap: 1.75rem;
     margin-bottom: var(--space-section);
-    align-items: start;
+    align-items: stretch;   /* both cards share the tallest height, any language */
 }
 
 .about-card,
@@ -882,9 +882,12 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 }
 .instagram-embed-iframe {
     width: 100%;
-    height: 640px;
+    /* Fallback height; script.js auto-fits it to the widget's real content height
+       (hearth posts an INSTA_WIDGET_HEIGHT message), so the frame never looks oversized. */
+    height: 480px;
     border: 0;
     display: block;
+    transition: height 0.25s ease;
     /* match the site background (only sites with an embed widget — i.e. desserdina —
        have this element; bot-generated sites don't render it) */
     background: var(--color-cream);
