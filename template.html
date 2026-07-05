@@ -76,9 +76,9 @@
             <!-- About + Contact -->
             <section class="about-section fade-in-section" aria-labelledby="about-heading">
                 <div class="about-card">
-                    <p class="section-eyebrow">{{business.tagline}}</p>
-                    <h2 class="section-title" id="about-heading">{{labels.about}}</h2>
-                    <p class="about-text">{{business.about}}</p>
+                    <p class="section-eyebrow"<!-- @if business.taglineRo --> data-en="{{business.tagline}}" data-ro="{{business.taglineRo}}"<!-- @endif -->>{{business.tagline}}</p>
+                    <h2 class="section-title" id="about-heading"<!-- @if labels.aboutRo --> data-en="{{labels.about}}" data-ro="{{labels.aboutRo}}"<!-- @endif -->>{{labels.about}}</h2>
+                    <p class="about-text"<!-- @if business.aboutRo --> data-en="{{business.about}}" data-ro="{{business.aboutRo}}"<!-- @endif -->>{{business.about}}</p>
 
                     <!-- @if services -->
                     <h3 class="services-title">{{servicesTitle}}</h3>
@@ -96,7 +96,7 @@
                     <!-- @if menu -->
                     <div class="menu-block">
                         <div class="menu-head">
-                            <h3 class="menu-heading">{{menu.title}}</h3>
+                            <h3 class="menu-heading"<!-- @if menu.titleRo --> data-en="{{menu.title}}" data-ro="{{menu.titleRo}}"<!-- @endif -->>{{menu.title}}</h3>
                             <div class="menu-langs" role="group" aria-label="Menu language">
                                 <button type="button" class="menu-lang-btn is-active" data-menu-lang="en" aria-pressed="true">🇬🇧 EN</button>
                                 <button type="button" class="menu-lang-btn" data-menu-lang="ro" aria-pressed="false">🇷🇴 RO</button>
@@ -146,8 +146,8 @@
 
                 <!-- Contact Card -->
                 <div class="contact-card" id="order">
-                    <h2 class="section-title">{{contact.title}}</h2>
-                    <p class="contact-intro">{{contact.intro}}</p>
+                    <h2 class="section-title"<!-- @if contact.titleRo --> data-en="{{contact.title}}" data-ro="{{contact.titleRo}}"<!-- @endif -->>{{contact.title}}</h2>
+                    <p class="contact-intro"<!-- @if contact.introRo --> data-en="{{contact.intro}}" data-ro="{{contact.introRo}}"<!-- @endif -->>{{contact.intro}}</p>
                     <div class="contact-info">
                         <!-- Order: phone → WhatsApp → Instagram → Facebook → address (Google Maps) -->
                         <!-- @if contact.phone -->

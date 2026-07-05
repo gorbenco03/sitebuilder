@@ -6,7 +6,38 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScrolling();
     initContactRipple();
     initScrollIndicator();
+    initMenuLangToggle();
 });
+
+/**
+ * Bilingual menu: switch the visible menu panel (default EN) when a language
+ * button is clicked. No-op when the page has no menu.
+ */
+function initMenuLangToggle() {
+    const buttons = document.querySelectorAll('.menu-lang-btn');
+    if (!buttons.length) return;
+
+    const apply = (lang) => {
+        // Menu panels (EN / RO)
+        document.querySelectorAll('.menu-panel').forEach(panel => {
+            panel.hidden = panel.dataset.menuPanel !== lang;
+        });
+        // Bilingual text (About us heading + text, Order now title + intro, menu title, …)
+        document.querySelectorAll('[data-en][data-ro]').forEach(el => {
+            const val = el.getAttribute('data-' + lang);
+            if (val) el.textContent = val;
+        });
+        // Button state + document language
+        buttons.forEach(b => {
+            const active = b.dataset.menuLang === lang;
+            b.classList.toggle('is-active', active);
+            b.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        document.documentElement.setAttribute('lang', lang);
+    };
+
+    buttons.forEach(btn => btn.addEventListener('click', () => apply(btn.dataset.menuLang)));
+}
 
 /**
  * Scroll-triggered fade-in animations + staggered reveal of service cards.

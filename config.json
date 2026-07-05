@@ -5,7 +5,9 @@
     "title": "DESSERD by Irina | Cake Shop & Food Catering | Romford, London",
     "metaDescription": "Artisan Cakes, Pastries, Bread. Freshly baked daily in Romford. Food catering, custom cakes, traditional Romanian delicacies. Order via DM or visit us at 28 High St, Romford.",
     "about": "Welcome to DESSERD by Irina! This is my cake shop and food catering service in Romford, London. We create artisan cakes, pastries, and bread - all freshly baked daily. From traditional Romanian delicacies to custom celebration cakes, we put love into every creation.",
-    "lang": "en"
+    "lang": "en",
+    "taglineRo": "Torturi, prăjituri și pâine artizanală",
+    "aboutRo": "Bine ați venit la DESSERD by Irina! Aceasta este cofetăria și serviciul meu de catering din Romford, Londra. Creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale românești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație."
   },
   "theme": {
     "primary": "#E8588C",
@@ -17,7 +19,8 @@
     "about": "About us",
     "instaTitle": "Follow us on Instagram",
     "instaFollow": "Follow",
-    "scroll": "Scroll"
+    "scroll": "Scroll",
+    "aboutRo": "Despre noi"
   },
   "seo": {
     "ogImage": "https://desserdirina.vercel.app/images/hero.jpg",
@@ -76,7 +79,9 @@
     "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum",
     "phone": "+447519511006",
     "phoneDisplay": "+44 7519 511006",
-    "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7"
+    "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7",
+    "titleRo": "Comandă acum",
+    "introRo": "Comandă prin DM sau vino la magazinul nostru. Rezervă spațiul pentru evenimente!"
   },
   "footer": {
     "address": "28 High St, Romford, London RM11HR",
@@ -168,6 +173,7 @@
         ],
         "empty": false
       }
-    ]
+    ],
+    "titleRo": "Meniu"
   }
 }
