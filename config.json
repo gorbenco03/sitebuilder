@@ -21,10 +21,8 @@
     "instaFollow": "Follow",
     "scroll": "Scroll",
     "aboutRo": "Despre noi",
-    "waQr": "Scan to open WhatsApp",
-    "waQrRo": "Scanează pentru WhatsApp",
-    "waQrSub": "Scan with your phone — WhatsApp opens with your message ready.",
-    "waQrSubRo": "Scanează cu telefonul — WhatsApp se deschide cu mesajul deja scris.",
+    "waQr": "Open WhatsApp on your phone",
+    "waQrRo": "Deschide WhatsApp pe telefon",
     "waOpen": "Or open WhatsApp Web",
     "waOpenRo": "Sau deschide WhatsApp Web"
   },

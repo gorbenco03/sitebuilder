@@ -1265,21 +1265,17 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     margin: 0 auto;
 }
 .wa-qr__open {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-    margin-top: 1.25rem;
-    padding: 0.7rem 1.4rem;
-    background: #25D366;
-    color: #fff;
-    font-size: 0.92rem;
-    font-weight: 600;
-    border-radius: 999px;
-    text-decoration: none;
-    transition: background 0.2s ease, transform 0.2s ease;
+    display: inline-block;
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #1eb257;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
 }
-.wa-qr__open:hover { background: #1eb257; transform: translateY(-1px); }
+.wa-qr__open:hover { opacity: 1; }
 
 .whatsapp-float::before {
     content: '';

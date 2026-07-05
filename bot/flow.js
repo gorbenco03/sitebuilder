@@ -350,8 +350,7 @@ function defaultLabels() {
         instaTitle:  'Urmărește-ne pe Instagram',
         instaFollow: 'Urmărește',
         scroll:      'Derulează',
-        waQr:        'Scanează pentru WhatsApp',
-        waQrSub:     'Scanează cu telefonul — WhatsApp se deschide cu mesajul deja scris.',
+        waQr:        'Deschide WhatsApp pe telefon',
         waOpen:      'Sau deschide WhatsApp Web',
     };
 }
