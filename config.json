@@ -20,7 +20,11 @@
     "instaTitle": "Follow us on Instagram",
     "instaFollow": "Follow",
     "scroll": "Scroll",
-    "aboutRo": "Despre noi"
+    "aboutRo": "Despre noi",
+    "waQr": "Scan to open WhatsApp",
+    "waQrRo": "Scanează pentru WhatsApp",
+    "waQrSub": "Scan with your phone — WhatsApp opens with your message ready.",
+    "waQrSubRo": "Scanează cu telefonul — WhatsApp se deschide cu mesajul deja scris."
   },
   "seo": {
     "ogImage": "https://desserdirina.vercel.app/images/hero.jpg",

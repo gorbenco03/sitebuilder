@@ -1189,6 +1189,82 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     transition: transform 0.3s var(--spring), box-shadow 0.3s var(--transition-smooth);
 }
 
+/* ── WhatsApp QR modal (desktop) ── */
+.wa-qr[hidden] { display: none; }
+.wa-qr {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+.wa-qr__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 10, 15, 0.55);
+    backdrop-filter: blur(3px);
+}
+.wa-qr__card {
+    position: relative;
+    background: #fff;
+    border-radius: 22px;
+    padding: 2rem 1.75rem 1.75rem;
+    max-width: 340px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+    animation: waPop 0.22s ease;
+}
+@keyframes waPop { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.wa-qr__close {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.9rem;
+    border: 0;
+    background: none;
+    font-size: 1.9rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #b8b8b8;
+    transition: color 0.2s ease;
+}
+.wa-qr__close:hover { color: #444; }
+.wa-qr__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #25D366;
+    color: #fff;
+    margin-bottom: 0.85rem;
+}
+.wa-qr__icon svg { width: 30px; height: 30px; }
+.wa-qr__title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.65rem;
+    font-weight: 600;
+    margin: 0 0 0.4rem;
+    color: var(--color-primary-dark, #333);
+}
+.wa-qr__sub {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 1.25rem;
+    line-height: 1.45;
+}
+.wa-qr__code img {
+    width: 240px;
+    height: 240px;
+    border-radius: 12px;
+    background: #fff;
+    display: block;
+    margin: 0 auto;
+}
+
 .whatsapp-float::before {
     content: '';
     position: absolute;

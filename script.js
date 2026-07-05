@@ -8,7 +8,43 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollIndicator();
     initMenuLangToggle();
     initIgEmbedAutoResize();
+    initWhatsAppQR();
 });
+
+/**
+ * On DESKTOP, clicking a WhatsApp link shows a QR to scan with the phone instead of
+ * opening WhatsApp Web — because WhatsApp Web/Desktop drops the pre-filled message,
+ * while the phone keeps it as a draft. On mobile/tablet the wa.me link opens directly.
+ * The QR encodes the link's CURRENT href, so it follows the language toggle.
+ */
+function initWhatsAppQR() {
+    const modal = document.getElementById('wa-qr');
+    const img   = document.getElementById('wa-qr-img');
+    const links = document.querySelectorAll('a[href*="wa.me"]');
+    if (!modal || !img || !links.length) return;
+
+    const ua = navigator.userAgent;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(ua));
+    if (isMobile) return;   // phone/tablet: the wa.me link works and keeps the draft
+
+    const openQr = (waUrl) => {
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=' + encodeURIComponent(waUrl);
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    };
+    const closeQr = () => {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        img.removeAttribute('src');
+    };
+
+    links.forEach(a => a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openQr(a.href);   // current href = correct number + message in the active language
+    }));
+    modal.querySelectorAll('[data-wa-close]').forEach(el => el.addEventListener('click', closeQr));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeQr(); });
+}
 
 /**
  * Auto-size the Instagram embed iframe to the widget's real content height, for any
