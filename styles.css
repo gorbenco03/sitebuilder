@@ -573,16 +573,36 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1.5rem 2rem;
 }
+.menu-group { margin-bottom: 0.4rem; }
 .menu-cat {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 600;
     color: var(--color-primary-dark, #333);
-    margin: 0 0 0.6rem;
-    padding-bottom: 0.4rem;
+    margin: 0;
+    padding: 0.45rem 0;
     border-bottom: 2px solid var(--color-primary-light, #f0a);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
 }
-.menu-items { list-style: none; margin: 0; padding: 0; }
+/* Categories with items are collapsible dropdowns; empty ones are plain labels. */
+details.menu-group > summary.menu-cat { cursor: pointer; list-style: none; }
+details.menu-group > summary.menu-cat::-webkit-details-marker { display: none; }
+details.menu-group > summary.menu-cat::after {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) translateY(2px); }
+.menu-group--plain .menu-cat { cursor: default; }
+.menu-items { list-style: none; margin: 0.5rem 0 0; padding: 0; }
 .menu-items li { padding: 0.28rem 0; color: #555; font-size: 0.98rem; }
 @media (max-width: 640px) {
     .menu-groups { grid-template-columns: 1fr; }

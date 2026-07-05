@@ -80,6 +80,7 @@
                     <h2 class="section-title" id="about-heading">{{labels.about}}</h2>
                     <p class="about-text">{{business.about}}</p>
 
+                    <!-- @if services -->
                     <h3 class="services-title">{{servicesTitle}}</h3>
                     <ul class="services-grid">
                         <!-- @each services -->
@@ -89,6 +90,7 @@
                         </li>
                         <!-- @end -->
                     </ul>
+                    <!-- @endif -->
 
                     <!-- Menu (bilingual — English by default, toggle to Romanian) — inside About -->
                     <!-- @if menu -->
@@ -103,28 +105,38 @@
                         <div class="menu-panel" data-menu-panel="en">
                             <div class="menu-groups">
                                 <!-- @each menu.en -->
-                                <div class="menu-group">
-                                    <h4 class="menu-cat">{{category}}</h4>
-                                    <!-- @if items -->
+                                <!-- @if items -->
+                                <details class="menu-group">
+                                    <summary class="menu-cat">{{category}}</summary>
                                     <ul class="menu-items">
                                         <!-- @each items --><li>{{.}}</li><!-- @end -->
                                     </ul>
-                                    <!-- @endif -->
+                                </details>
+                                <!-- @endif -->
+                                <!-- @if empty -->
+                                <div class="menu-group menu-group--plain">
+                                    <span class="menu-cat">{{category}}</span>
                                 </div>
+                                <!-- @endif -->
                                 <!-- @end -->
                             </div>
                         </div>
                         <div class="menu-panel" data-menu-panel="ro" hidden>
                             <div class="menu-groups">
                                 <!-- @each menu.ro -->
-                                <div class="menu-group">
-                                    <h4 class="menu-cat">{{category}}</h4>
-                                    <!-- @if items -->
+                                <!-- @if items -->
+                                <details class="menu-group">
+                                    <summary class="menu-cat">{{category}}</summary>
                                     <ul class="menu-items">
                                         <!-- @each items --><li>{{.}}</li><!-- @end -->
                                     </ul>
-                                    <!-- @endif -->
+                                </details>
+                                <!-- @endif -->
+                                <!-- @if empty -->
+                                <div class="menu-group menu-group--plain">
+                                    <span class="menu-cat">{{category}}</span>
                                 </div>
+                                <!-- @endif -->
                                 <!-- @end -->
                             </div>
                         </div>
@@ -137,6 +149,19 @@
                     <h2 class="section-title">{{contact.title}}</h2>
                     <p class="contact-intro">{{contact.intro}}</p>
                     <div class="contact-info">
+                        <!-- Order: phone → WhatsApp → Instagram → Facebook → address (Google Maps) -->
+                        <!-- @if contact.phone -->
+                        <a href="tel:{{contact.phone}}" class="contact-item">
+                            <span class="contact-icon phone" aria-hidden="true"></span>
+                            <span>{{contact.phoneDisplay}}</span>
+                        </a>
+                        <!-- @endif -->
+                        <!-- @if contact.whatsapp -->
+                        <a href="https://wa.me/{{contact.whatsapp}}" class="contact-item" target="_blank" rel="noopener">
+                            <span class="contact-icon whatsapp" aria-hidden="true"></span>
+                            <span>WhatsApp</span>
+                        </a>
+                        <!-- @endif -->
                         <!-- @if contact.instagram.url -->
                         <a href="{{contact.instagram.url}}" class="contact-item" target="_blank" rel="noopener">
                             <span class="contact-icon instagram" aria-hidden="true"></span>
@@ -149,23 +174,11 @@
                             <span>{{contact.facebook.label}}</span>
                         </a>
                         <!-- @endif -->
-                        <!-- @if contact.whatsapp -->
-                        <a href="https://wa.me/{{contact.whatsapp}}" class="contact-item" target="_blank" rel="noopener">
-                            <span class="contact-icon whatsapp" aria-hidden="true"></span>
-                            <span>WhatsApp</span>
-                        </a>
-                        <!-- @endif -->
-                        <!-- @if contact.phone -->
-                        <a href="tel:{{contact.phone}}" class="contact-item">
-                            <span class="contact-icon phone" aria-hidden="true"></span>
-                            <span>{{contact.phoneDisplay}}</span>
-                        </a>
-                        <!-- @endif -->
-                        <!-- @if contact.address -->
-                        <div class="contact-item contact-item--static">
+                        <!-- @if contact.addressHref -->
+                        <a href="{{contact.addressHref}}" class="contact-item" target="_blank" rel="noopener">
                             <span class="contact-icon location" aria-hidden="true"></span>
                             <span>{{& contact.address}}</span>
-                        </div>
+                        </a>
                         <!-- @endif -->
                     </div>
                 </div>

@@ -30,32 +30,7 @@
     "ctaLabel": "Order now"
   },
   "servicesTitle": "Our Specialties",
-  "services": [
-    {
-      "icon": "✦",
-      "label": "Torturi (Custom Cakes)"
-    },
-    {
-      "icon": "✦",
-      "label": "Prăjituri (Pastries)"
-    },
-    {
-      "icon": "✦",
-      "label": "Plăcinte (Traditional Pies)"
-    },
-    {
-      "icon": "✦",
-      "label": "Sarmale & Romanian Food"
-    },
-    {
-      "icon": "✦",
-      "label": "Platouri (Food Platters)"
-    },
-    {
-      "icon": "✦",
-      "label": "Produse Congelate (Frozen Products)"
-    }
-  ],
+  "services": [],
   "galleryTitle": "",
   "categories": [
     {
@@ -99,11 +74,100 @@
     },
     "whatsapp": "447519511006",
     "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum",
-    "whatsappDisplay": "+44 7519 511006"
+    "phone": "+447519511006",
+    "phoneDisplay": "+44 7519 511006",
+    "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7"
   },
   "footer": {
     "address": "28 High St, Romford, London RM11HR",
     "year": 2026,
     "note": "Freshly baked daily with love."
+  },
+  "menu": {
+    "title": "Menu",
+    "en": [
+      {
+        "category": "Cakes",
+        "items": [
+          "Red Velvet",
+          "Carrot Cake",
+          "Oreo Cake",
+          "Victoria Sponge",
+          "Chocolate Cake"
+        ],
+        "empty": false
+      },
+      {
+        "category": "Cookies",
+        "items": [],
+        "empty": true
+      },
+      {
+        "category": "Pies",
+        "items": [
+          "Vegetarian",
+          "Cheese"
+        ],
+        "empty": false
+      },
+      {
+        "category": "Breakfast",
+        "items": [],
+        "empty": true
+      },
+      {
+        "category": "Birthday parties",
+        "items": [],
+        "empty": true
+      },
+      {
+        "category": "Candy bars",
+        "items": [],
+        "empty": true
+      }
+    ],
+    "ro": [
+      {
+        "category": "Torturi",
+        "items": [
+          "Napoleon",
+          "Poveste",
+          "Smântânel",
+          "Medovic"
+        ],
+        "empty": false
+      },
+      {
+        "category": "Plăcinte",
+        "items": [],
+        "empty": true
+      },
+      {
+        "category": "La comandă",
+        "items": [
+          "Torturi",
+          "Colaci",
+          "Sarmale",
+          "Mâncare la cutie",
+          "Plăcinte și brânzoaice",
+          "Prăjituri și platouri cu prăjituri",
+          "Produse congelate și semipreparate",
+          "Colțunași și Pelimeni",
+          "Clătite",
+          "Brânzoaice",
+          "Cighiri"
+        ],
+        "empty": false
+      },
+      {
+        "category": "Servicii și Evenimente",
+        "items": [
+          "Catering și mâncare la comandă la cutie",
+          "Zile de naștere în local",
+          "Evenimente"
+        ],
+        "empty": false
+      }
+    ]
   }
 }

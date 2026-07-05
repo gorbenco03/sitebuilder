@@ -486,8 +486,10 @@ function buildConfig(data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
-        whatsappDisplay: formatWhatsappDisplay(data.whatsapp),
+        phone:        isSkip(data.whatsapp) ? '' : '+' + String(data.whatsapp).replace(/\D/g, ''),
+        phoneDisplay: formatWhatsappDisplay(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
+        addressHref: isSkip(data.address) ? '' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(data.address).replace(/\n/g, ', ')),
     };
 
     const categories = [
@@ -604,8 +606,10 @@ function mergeWizardConfig(aiConfig, data, galleryFiles, hasLogo) {
         instagram: { url: ig ? ig.url : '', label: ig ? '@' + ig.handle : 'Instagram' },
         facebook:  { url: fb ? fb.url : '', label: fb ? fb.label : 'Facebook' },
         whatsapp:  isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, ''),
-        whatsappDisplay: formatWhatsappDisplay(data.whatsapp),
+        phone:        isSkip(data.whatsapp) ? '' : '+' + String(data.whatsapp).replace(/\D/g, ''),
+        phoneDisplay: formatWhatsappDisplay(data.whatsapp),
         address:   isSkip(data.address)  ? '' : formatAddressHtml(data.address),
+        addressHref: isSkip(data.address) ? '' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(String(data.address).replace(/\n/g, ', ')),
     };
 
     // Instagram photo-grid section (handle/url '' and gallery [] when no IG)
