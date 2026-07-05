@@ -522,6 +522,70 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z'/%3E%3C/svg%3E");
 }
 
+.contact-icon.phone {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffffff'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   BILINGUAL MENU (config-driven; EN default + language toggle)
+   ============================================================ */
+.menu-section {
+    width: 100%;
+    margin: 0 auto 1.25rem;
+    padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 4vw, 3rem);
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
+}
+.menu-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+.menu-head .section-title { margin: 0; }
+.menu-langs { display: inline-flex; gap: 0.4rem; }
+.menu-lang-btn {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background: #fff;
+    color: var(--color-primary-dark, #333);
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.menu-lang-btn:hover { border-color: var(--color-primary); }
+.menu-lang-btn.is-active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+}
+.menu-panel[hidden] { display: none; }
+.menu-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.75rem 2.5rem;
+}
+.menu-cat {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-primary-dark, #333);
+    margin: 0 0 0.6rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--color-primary-light, #f0a);
+}
+.menu-items { list-style: none; margin: 0; padding: 0; }
+.menu-items li { padding: 0.28rem 0; color: #555; font-size: 0.98rem; }
+@media (max-width: 640px) {
+    .menu-groups { grid-template-columns: 1fr; }
+    .menu-head { flex-direction: column; align-items: flex-start; }
+}
+
 /* ============================================================
    PHOTO COLLAGE (legacy classes preserved for collage.js)
    ============================================================ */
@@ -797,10 +861,8 @@ body {
     width: 100%;
     height: 640px;
     border: 0;
-    border-radius: 16px;
     display: block;
-    background: var(--color-cream, #faf8f8);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    background: transparent;
 }
 
 /* ── LIVE Instagram embeds — uniform square cards (cropped to the media) ── */
