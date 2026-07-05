@@ -352,6 +352,7 @@ function defaultLabels() {
         scroll:      'Derulează',
         waQr:        'Scanează pentru WhatsApp',
         waQrSub:     'Scanează cu telefonul — WhatsApp se deschide cu mesajul deja scris.',
+        waOpen:      'Sau deschide WhatsApp Web',
     };
 }
 

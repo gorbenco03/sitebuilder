@@ -27,8 +27,10 @@ function initWhatsAppQR() {
     const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(ua));
     if (isMobile) return;   // phone/tablet: the wa.me link works and keeps the draft
 
+    const openBtn = document.getElementById('wa-qr-open');
     const openQr = (waUrl) => {
         img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=' + encodeURIComponent(waUrl);
+        if (openBtn) openBtn.href = waUrl;   // "open WhatsApp Web" for those who don't want to scan
         modal.hidden = false;
         document.body.style.overflow = 'hidden';
     };

@@ -1264,6 +1264,22 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     display: block;
     margin: 0 auto;
 }
+.wa-qr__open {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    margin-top: 1.25rem;
+    padding: 0.7rem 1.4rem;
+    background: #25D366;
+    color: #fff;
+    font-size: 0.92rem;
+    font-weight: 600;
+    border-radius: 999px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+.wa-qr__open:hover { background: #1eb257; transform: translateY(-1px); }
 
 .whatsapp-float::before {
     content: '';
