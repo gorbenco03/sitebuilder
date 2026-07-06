@@ -46,16 +46,52 @@ function escapeHtml(value) {
 }
 
 /**
+ * Sanitize a value destined for {{& seo.jsonLd}} — raw output inside a
+ * <script type="application/ld+json"> block.
+ *
+ * The only dangerous sequence in that context is "</script" (case-insensitive),
+ * which can break out of the script element and inject arbitrary HTML.
+ * We replace every occurrence with the JSON-safe Unicode escape "<\/script"
+ * (the backslash is valid inside a JSON string value and ignored by JSON.parse).
+ *
+ * We also validate that the value is parseable JSON so a non-JSON string
+ * cannot be used as a XSS vector (e.g. injecting a raw script tag as the
+ * entire value).  If the value is not valid JSON we drop it and emit an empty
+ * ld+json block, which is harmless.
+ */
+function sanitizeJsonLd(value) {
+    const str = String(value);
+    // Validate: must parse as JSON (object or array).
+    try {
+        const parsed = JSON.parse(str);
+        if (typeof parsed !== 'object' || parsed === null) throw new Error('not an object');
+    } catch (e) {
+        console.warn('  ⚠️  seo.jsonLd is not valid JSON — omitting to prevent XSS');
+        return '';
+    }
+    // Escape </script (case-insensitive) inside the JSON string so the browser
+    // cannot interpret it as closing the <script> element.
+    return str.replace(/<\/script/gi, '<\\/script');
+}
+
+/**
  * Replace {{token}} occurrences in `str` using a resolver function.
  *
  * Values are HTML-ESCAPED by default. A token may opt out of escaping with a
  * leading ampersand — `{{& token}}` — but ONLY use that for values the build
  * pipeline itself controls (never raw client/AI input), since it is a stored-XSS
- * sink. Today nothing in the template uses the raw form.
+ * sink.  Currently two raw sinks exist:
+ *   • {{& seo.jsonLd}}   — sanitised via sanitizeJsonLd() (</script escaped)
+ *   • {{& contact.address}} — allowed ONLY <br> tags; all other HTML is stripped
  *
  * `warn` is false during loop/if item-scope passes (a token may legitimately
  * belong to the outer/global scope and gets resolved by the final global pass).
  */
+function sanitizeAddress(value) {
+    // Escape everything, then un-escape only <br> and <br/> (the sole allowed tag).
+    return escapeHtml(String(value)).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+}
+
 function replaceTokens(str, resolver, warn = true) {
     return str.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, token) => {
         let raw = false;
@@ -65,7 +101,20 @@ function replaceTokens(str, resolver, warn = true) {
             if (warn) console.warn(`  ⚠️  unresolved token: {{${token}}}`);
             return match;
         }
-        return raw ? String(value) : escapeHtml(value);
+        if (raw) {
+            // Per-sink sanitization — each raw sink must be explicitly handled here.
+            if (token === 'seo.jsonLd') return sanitizeJsonLd(value);
+            if (token === 'contact.address') return sanitizeAddress(value);
+            // CSS style-attribute sinks: escapeHtml is correct here because the HTML
+            // parser uses literal (unencoded) characters to find attribute boundaries,
+            // so &quot; / &#39; do NOT close the attribute, and the encoded characters
+            // decode correctly inside the CSS value (e.g. url(&#39;...&#39;) works).
+            if (token === 'hero.background') return escapeHtml(value);
+            // Fallback: treat unknown raw sinks as regular escaped output (safe default).
+            console.warn(`  ⚠️  unknown raw sink {{& ${token}}} — escaping for safety`);
+            return escapeHtml(value);
+        }
+        return escapeHtml(value);
     });
 }
 
@@ -77,7 +126,7 @@ function replaceTokens(str, resolver, warn = true) {
  * Returns null when there is no matching @end.
  */
 function findMatchingEnd(str, startIndex) {
-    const openRe  = /<!--\s*@(?:each|if)\s+[\w.]+\s*-->/g;
+    const openRe  = /<!--\s*@(?:each|if)\s+!?[\w.]+\s*-->/g;
     const closeRe = /<!--\s*@end(?:if)?\s*-->/g;
     openRe.lastIndex  = startIndex;
     closeRe.lastIndex = startIndex;
@@ -115,8 +164,8 @@ function findMatchingEnd(str, startIndex) {
  * filled by the final global pass in build().
  */
 function expandEach(str, scope) {
-    // Matches either <!-- @each path --> or <!-- @if path -->
-    const dirRe = /<!--\s*@(each|if)\s+([\w.]+)\s*-->/g;
+    // Matches either <!-- @each path --> or <!-- @if [!]path -->
+    const dirRe = /<!--\s*@(each|if)\s+(!?[\w.]+)\s*-->/g;
     let out = '';
     let cursor = 0;
 
@@ -139,24 +188,28 @@ function expandEach(str, scope) {
         }
 
         const block = str.slice(blockStart, match.contentEnd);
-        const value = resolve(scope, dataPath);
 
         if (type === 'if') {
-            // Render the block once (same scope) only when the value is "truthy":
-            // non-empty array / non-empty string / any truthy scalar.
-            const truthy = Array.isArray(value) ? value.length > 0 : Boolean(value);
-            if (truthy) out += expandEach(block, scope);
-        } else if (!Array.isArray(value)) {
-            console.warn(`  ⚠️  @each "${dataPath}" is not an array — skipping`);
+            // Support negated paths: <!-- @if !path --> renders when the value is falsy.
+            const negate = dataPath[0] === '!';
+            const resolvedPath = negate ? dataPath.slice(1) : dataPath;
+            const ifVal = resolve(scope, resolvedPath);
+            const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : Boolean(ifVal);
+            if (negate ? !truthy : truthy) out += expandEach(block, scope);
         } else {
-            out += value.map(item => {
-                const expanded = expandEach(block, item);   // nested loops, item scope
-                return replaceTokens(expanded, token => {
-                    if (token === '.') return item;
-                    if (typeof item === 'object' && item !== null) return resolve(item, token);
-                    return undefined;
-                }, false);   // don't warn: outer/global tokens resolve in the final pass
-            }).join('');
+            const value = resolve(scope, dataPath);
+            if (!Array.isArray(value)) {
+                console.warn(`  ⚠️  @each "${dataPath}" is not an array — skipping`);
+            } else {
+                out += value.map(item => {
+                    const expanded = expandEach(block, item);   // nested loops, item scope
+                    return replaceTokens(expanded, token => {
+                        if (token === '.') return item;
+                        if (typeof item === 'object' && item !== null) return resolve(item, token);
+                        return undefined;
+                    }, false);   // don't warn: outer/global tokens resolve in the final pass
+                }).join('');
+            }
         }
 
         cursor = match.blockEnd;                     // continue after @end/@endif
@@ -172,6 +225,16 @@ function build(siteDir = ROOT) {
     const outputPath = path.join(dir, 'index.html');
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+
+    // Derived fields: computed after config load, before rendering.
+    // contact.addressNoHref — truthy when an address text exists but no map link
+    // is provided, so templates can render a plain-text address fallback via
+    // <!-- @if contact.addressNoHref --> without duplicating logic in every preset.
+    if (config.contact) {
+        config.contact.addressNoHref =
+            (config.contact.address && !config.contact.addressHref) ? 'true' : '';
+    }
+
     let html = fs.readFileSync(templatePath, 'utf8');
 
     html = expandEach(html, config);                         // 1) loops first

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<!-- GENERATED FILE NOTE: index.html is built from this template + config.json via `node build.js`. Edit template.html, not index.html. -->
+<html lang="{{business.lang}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{business.title}}</title>
+    <meta name="description" content="{{business.metaDescription}}">
+
+    <!-- Open Graph / social sharing -->
+    <meta property="og:title" content="{{business.title}}">
+    <meta property="og:description" content="{{business.metaDescription}}">
+    <meta property="og:image" content="{{seo.ogImage}}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{business.title}}">
+    <meta name="twitter:description" content="{{business.metaDescription}}">
+    <meta name="twitter:image" content="{{seo.ogImage}}">
+
+    <!-- SEO: canonical + crawlability (canonical/og:url set only when seo.canonical is present) -->
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <!-- @if seo.canonical -->
+    <link rel="canonical" href="{{seo.canonical}}">
+    <meta property="og:url" content="{{seo.canonical}}">
+    <!-- @endif -->
+
+    <!-- Favicon: inline SVG dot in the brand colour (no extra request) -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23E8588C'/%3E%3C/svg%3E">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --color-primary: {{theme.primary}};
+            --color-primary-light: {{theme.primaryLight}};
+            --color-primary-dark: {{theme.primaryDark}};
+            --color-cream: {{theme.cream}};
+            --color-accent: {{theme.primary}};
+        }
+    </style>
+
+    <!-- @if seo.jsonLd -->
+    <script type="application/ld+json">{{& seo.jsonLd}}</script>
+    <!-- @endif -->
+</head>
+<body>
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-background" style="background-image: {{hero.background}}"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <!-- @if logo -->
+            <span class="hero-mark">
+                <img src="{{logo}}" alt="{{business.name}}" class="hero-logo">
+            </span>
+            <h1 class="sr-only">{{business.name}}</h1>
+            <!-- @endif -->
+            <!-- @if showWordmark --><!-- @if !logo --><h1 class="hero-wordmark">{{business.name}}</h1><!-- @endif --><!-- @endif -->
+            <p class="hero-tagline">{{business.tagline}}</p>
+            <a href="#order" class="hero-cta">
+                <span>{{hero.ctaLabel}}</span>
+                <svg class="hero-cta-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+        <button class="scroll-indicator" type="button" aria-label="{{labels.scroll}}">
+            <span>{{labels.scroll}}</span>
+            <span class="scroll-line"></span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- About + Contact -->
+            <section class="about-section fade-in-section" aria-labelledby="about-heading">
+                <div class="about-card">
+                    <p class="section-eyebrow"<!-- @if business.taglineRo --> data-en="{{business.tagline}}" data-ro="{{business.taglineRo}}"<!-- @endif -->>{{business.tagline}}</p>
+                    <h2 class="section-title" id="about-heading"<!-- @if labels.aboutRo --> data-en="{{labels.about}}" data-ro="{{labels.aboutRo}}"<!-- @endif -->>{{labels.about}}</h2>
+                    <p class="about-text"<!-- @if business.aboutRo --> data-en="{{business.about}}" data-ro="{{business.aboutRo}}"<!-- @endif -->>{{business.about}}</p>
+
+                    <!-- @if services -->
+                    <h3 class="services-title">{{servicesTitle}}</h3>
+                    <ul class="services-grid">
+                        <!-- @each services -->
+                        <li class="service-card">
+                            <span class="service-icon" aria-hidden="true">{{icon}}</span>
+                            <span class="service-label">{{label}}</span>
+                        </li>
+                        <!-- @end -->
+                    </ul>
+                    <!-- @endif -->
+
+                    <!-- Menu (bilingual — English by default, toggle to Romanian) — inside About -->
+                    <!-- @if menu -->
+                    <div class="menu-block">
+                        <div class="menu-head">
+                            <h3 class="menu-heading"<!-- @if menu.titleRo --> data-en="{{menu.title}}" data-ro="{{menu.titleRo}}"<!-- @endif -->>{{menu.title}}</h3>
+                            <div class="menu-langs" role="group" aria-label="Menu language">
+                                <button type="button" class="menu-lang-btn is-active" data-menu-lang="en" aria-pressed="true">🇬🇧 EN</button>
+                                <button type="button" class="menu-lang-btn" data-menu-lang="ro" aria-pressed="false">🇷🇴 RO</button>
+                            </div>
+                        </div>
+                        <div class="menu-panel" data-menu-panel="en">
+                            <div class="menu-groups">
+                                <!-- @each menu.en -->
+                                <!-- @if items -->
+                                <details class="menu-group">
+                                    <summary class="menu-cat">{{category}}</summary>
+                                    <ul class="menu-items">
+                                        <!-- @each items --><li>{{.}}</li><!-- @end -->
+                                    </ul>
+                                </details>
+                                <!-- @endif -->
+                                <!-- @if empty -->
+                                <div class="menu-group menu-group--plain">
+                                    <span class="menu-cat">{{category}}</span>
+                                </div>
+                                <!-- @endif -->
+                                <!-- @end -->
+                            </div>
+                        </div>
+                        <div class="menu-panel" data-menu-panel="ro" hidden>
+                            <div class="menu-groups">
+                                <!-- @each menu.ro -->
+                                <!-- @if items -->
+                                <details class="menu-group">
+                                    <summary class="menu-cat">{{category}}</summary>
+                                    <ul class="menu-items">
+                                        <!-- @each items --><li>{{.}}</li><!-- @end -->
+                                    </ul>
+                                </details>
+                                <!-- @endif -->
+                                <!-- @if empty -->
+                                <div class="menu-group menu-group--plain">
+                                    <span class="menu-cat">{{category}}</span>
+                                </div>
+                                <!-- @endif -->
+                                <!-- @end -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @endif -->
+                </div>
+
+                <!-- Contact Card -->
+                <div class="contact-card" id="order">
+                    <h2 class="section-title"<!-- @if contact.titleRo --> data-en="{{contact.title}}" data-ro="{{contact.titleRo}}"<!-- @endif -->>{{contact.title}}</h2>
+                    <p class="contact-intro"<!-- @if contact.introRo --> data-en="{{contact.intro}}" data-ro="{{contact.introRo}}"<!-- @endif -->>{{contact.intro}}</p>
+                    <div class="contact-info">
+                        <!-- Order: phone → WhatsApp → Instagram → Facebook → address (Google Maps) -->
+                        <!-- @if contact.phone -->
+                        <a href="tel:{{contact.phone}}" class="contact-item">
+                            <span class="contact-icon phone" aria-hidden="true"></span>
+                            <span>{{contact.phoneDisplay}}</span>
+                        </a>
+                        <!-- @endif -->
+                        <!-- @if contact.whatsapp -->
+                        <a href="{{contact.waHref}}" class="contact-item" target="_blank" rel="noopener"<!-- @if contact.waHrefRo --> data-en-href="{{contact.waHref}}" data-ro-href="{{contact.waHrefRo}}"<!-- @endif -->>
+                            <span class="contact-icon whatsapp" aria-hidden="true"></span>
+                            <span>WhatsApp</span>
+                        </a>
+                        <!-- @endif -->
+                        <!-- @if contact.instagram.url -->
+                        <a href="{{contact.instagram.url}}" class="contact-item" target="_blank" rel="noopener">
+                            <span class="contact-icon instagram" aria-hidden="true"></span>
+                            <span>{{contact.instagram.label}}</span>
+                        </a>
+                        <!-- @endif -->
+                        <!-- @if contact.facebook.url -->
+                        <a href="{{contact.facebook.url}}" class="contact-item" target="_blank" rel="noopener">
+                            <span class="contact-icon facebook" aria-hidden="true"></span>
+                            <span>{{contact.facebook.label}}</span>
+                        </a>
+                        <!-- @endif -->
+                        <!-- @if contact.addressHref -->
+                        <a href="{{contact.addressHref}}" class="contact-item" target="_blank" rel="noopener">
+                            <span class="contact-icon location" aria-hidden="true"></span>
+                            <span>{{& contact.address}}</span>
+                        </a>
+                        <!-- @endif -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gallery Categories -->
+            <section class="gallery-section fade-in-section" aria-labelledby="gallery-heading">
+                <!-- @if galleryTitle --><h2 class="section-title gallery-heading" id="gallery-heading">{{galleryTitle}}</h2><!-- @endif -->
+                <!-- @each categories -->
+                <div class="category-block">
+                    <h3 class="category-title">{{title}}</h3>
+                    <p class="category-blurb">{{blurb}}</p>
+                    <div class="collage-stage">
+                        <div class="collage-deck">
+                            <!-- @each photos -->
+                            <figure class="collage-photo"><img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy"></figure>
+                            <!-- @end -->
+                        </div>
+                    </div>
+                </div>
+                <!-- @end -->
+            </section>
+        </div>
+
+        <!-- Instagram Widget Section -->
+        <!-- @if instagram.handle -->
+        <section class="instagram-section fade-in-section<!-- @if instagram.embedUrl --> instagram-section--embed<!-- @endif -->" aria-labelledby="instagram-heading">
+            <div class="instagram-header">
+                <span class="instagram-logo" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                    </svg>
+                </span>
+                <div class="instagram-title">
+                    <h2 id="instagram-heading">{{labels.instaTitle}}</h2>
+                    <p>@{{instagram.handle}}</p>
+                </div>
+                <a href="{{instagram.url}}" class="instagram-follow-btn" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
+            </div>
+
+            <!-- Custom embed widget (when config sets instagram.embedUrl) — takes precedence -->
+            <!-- @if instagram.embedUrl -->
+            <div class="instagram-embed">
+                <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            <!-- @endif -->
+
+            <!-- LIVE Instagram embeds (when config has instagram.posts) -->
+            <!-- @if instagram.posts -->
+            <div class="instagram-embeds-grid">
+                <!-- @each instagram.posts -->
+                <a href="{{.}}" target="_blank" rel="noopener" class="insta-frame">
+                    <blockquote class="instagram-media" data-instgrm-permalink="{{.}}" data-instgrm-version="14"></blockquote>
+                    <span class="insta-overlay">
+                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                        <span>Vezi pe Instagram</span>
+                    </span>
+                </a>
+                <!-- @end -->
+            </div>
+            <script async src="//www.instagram.com/embed.js"></script>
+            <!-- @endif -->
+
+            <!-- Uniform photo grid fallback (when config has instagram.gallery instead of posts) -->
+            <!-- @if instagram.gallery -->
+            <div class="instagram-grid">
+                <!-- @each instagram.gallery -->
+                <a href="{{instagram.url}}" target="_blank" rel="noopener" class="insta-card">
+                    <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
+                    <span class="insta-badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                    </span>
+                </a>
+                <!-- @end -->
+            </div>
+            <!-- @endif -->
+        </section>
+        <!-- @endif -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <!-- @if logo --><img src="{{logo}}" alt="{{business.name}}" class="footer-logo"><!-- @endif -->
+            <div class="footer-info">
+                <p class="footer-address">{{footer.address}}</p>
+                <p>&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
+            </div>
+            <div class="footer-social">
+                <!-- @if contact.instagram.url -->
+                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                </a>
+                <!-- @endif -->
+                <!-- @if contact.facebook.url -->
+                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <!-- @endif -->
+            </div>
+        </div>
+    </footer>
+
+    <!-- WhatsApp QR modal — shown on DESKTOP instead of opening WhatsApp Web (where the
+         pre-filled message is not kept). On mobile the wa.me link opens directly. -->
+    <!-- @if contact.whatsapp -->
+    <div class="wa-qr" id="wa-qr" hidden>
+        <div class="wa-qr__backdrop" data-wa-close></div>
+        <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
+            <span class="wa-qr__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></span>
+            <h3 class="wa-qr__title" id="wa-qr-title"<!-- @if labels.waQrRo --> data-en="{{labels.waQr}}" data-ro="{{labels.waQrRo}}"<!-- @endif -->>{{labels.waQr}}</h3>
+            <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
+            <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener"<!-- @if labels.waOpenRo --> data-en="{{labels.waOpen}}" data-ro="{{labels.waOpenRo}}"<!-- @endif -->>{{labels.waOpen}}</a>
+        </div>
+    </div>
+    <!-- @endif -->
+
+    <!-- Floating WhatsApp Button -->
+    <!-- @if contact.whatsapp -->
+    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp"<!-- @if contact.waHrefRo --> data-en-href="{{contact.waHref}}" data-ro-href="{{contact.waHrefRo}}"<!-- @endif -->>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </a>
+    <!-- @endif -->
+
+    <script src="script.js"></script>
+    <script src="collage.js"></script>
+</body>
+</html>

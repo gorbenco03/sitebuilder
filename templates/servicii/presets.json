@@ -1,0 +1,274 @@
+{
+  "presets": [
+    {
+      "id": "clean-london",
+      "name": "CurățineLondra — firmă de curățenie (Londra)",
+      "config": {
+        "business": {
+          "name": "CurățineLondra",
+          "tagline": "Curățenie profesională la domiciliu și birouri",
+          "title": "CurățineLondra | Servicii de Curățenie în Londra | Rapid & Profesional",
+          "metaDescription": "Servicii profesionale de curățenie la domiciliu și birouri în Londra. Echipă românească serioasă, produse eco, prețuri corecte. Sună sau scrie pe WhatsApp!",
+          "about": "Suntem o echipă românească cu experiență de peste 5 ani în Londra. Oferim curățenie generală, curățenie la mutare, curățenie de birou și servicii de menaj regulat. Lucrăm cu produse eco-friendly, suntem asigurați și avem referințe excelente de la clienți din toată Londra.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Despre noi",
+          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Derulează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#2aa87e",
+          "primaryLight": "#4dc99e",
+          "primaryDark": "#1e8462",
+          "cream": "#f4faf8"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(135deg, #1e8462 0%, #2aa87e 50%, #4dc99e 100%)",
+          "ctaLabel": "Solicită ofertă pe WhatsApp"
+        },
+        "servicesTitle": "Ce curățăm",
+        "services": [
+          { "icon": "🏠", "label": "Curățenie la domiciliu" },
+          { "icon": "🏢", "label": "Curățenie birouri" },
+          { "icon": "📦", "label": "Curățenie la mutare" },
+          { "icon": "🌿", "label": "Produse eco-friendly" },
+          { "icon": "🪟", "label": "Spălat geamuri" },
+          { "icon": "🛋️", "label": "Curățare canapele" },
+          { "icon": "🧽", "label": "Curățenie generală" },
+          { "icon": "✅", "label": "Serviciu asigurat" }
+        ],
+        "steps": [
+          {
+            "title": "Contactează-ne",
+            "text": "Scrie-ne pe WhatsApp sau sună — îți răspundem în maxim 30 de minute și stabilim detaliile."
+          },
+          {
+            "title": "Stabilim data și prețul",
+            "text": "Îți trimitem o ofertă clară, fără costuri ascunse. Plătești doar după ce ești mulțumit."
+          },
+          {
+            "title": "Facem treabă curată",
+            "text": "Echipa noastră vine la ora stabilită, lucrează profesional și lasă totul impecabil."
+          }
+        ],
+        "zone": "Toată Londra — acoperim toate cele 32 de districte",
+        "schedule": "Luni–Sâmbătă 07:00–20:00 | Urgențe duminica la cerere",
+        "galleryTitle": "Cum arată munca noastră",
+        "categories": [
+          {
+            "title": "Curățenie rezidențială",
+            "blurb": "Apartamente, case și vile — de la studio la mansionete.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/clean-living/1200/800", "alt": "Salon curat și luminos după serviciu" },
+              { "src": "https://picsum.photos/seed/clean-kitchen/1200/800", "alt": "Bucătărie strălucitoare curățată profesional" },
+              { "src": "https://picsum.photos/seed/clean-bath/1200/800", "alt": "Baie dezinfectată și igienizată complet" }
+            ]
+          },
+          {
+            "title": "Curățenie birouri",
+            "blurb": "Spații de lucru impecabile pentru echipa ta.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/clean-office/1200/800", "alt": "Birou modern curat și ordonat" },
+              { "src": "https://picsum.photos/seed/clean-desk/1200/800", "alt": "Birouri și spații comune curățate" }
+            ]
+          }
+        ],
+        "reviews": [
+          {
+            "name": "Maria D., Hackney",
+            "text": "Fantastici! Au venit la ora fixată, au lucrat rapid și conștiincios. Apartamentul arată mai bine decât atunci când l-am luat. Recomand cu toată inima!"
+          },
+          {
+            "name": "Andrei P., Camden",
+            "text": "Folosesc serviciul lunar de 8 luni. Mereu punctuali, mereu serioși. Prețul e corect și rezultatul excelent. Nu mai caut pe altcineva."
+          },
+          {
+            "name": "Elena M., Islington",
+            "text": "Am comandat curățenie la mutare și nu mi-a venit să cred cât de curat au lăsat totul. Am recuperat integral depozitul de la proprietar!"
+          }
+        ],
+        "instagram": {
+          "handle": "curateninelondra",
+          "url": "https://www.instagram.com/curateninelondra",
+          "gallery": [
+            "https://picsum.photos/seed/ig-clean1/600/600",
+            "https://picsum.photos/seed/ig-clean2/600/600",
+            "https://picsum.photos/seed/ig-clean3/600/600",
+            "https://picsum.photos/seed/ig-clean4/600/600",
+            "https://picsum.photos/seed/ig-clean5/600/600",
+            "https://picsum.photos/seed/ig-clean6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Solicită ofertă gratuită",
+          "intro": "Scrie-ne pe WhatsApp sau sună — răspundem rapid și stabilim tot ce ai nevoie.",
+          "instagram": {
+            "url": "https://www.instagram.com/curateninelondra",
+            "label": "@curateninelondra"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/curateninelondra",
+            "label": "CurățineLondra"
+          },
+          "whatsapp": "447700100200",
+          "phone": "+447700100200",
+          "phoneDisplay": "+44 7700 100 200",
+          "waHref": "https://wa.me/447700100200?text=Salut!%20A%C8%99 vrea%20o%20ofert%C4%83%20pentru%20cur%C4%83%C8%9Benie.",
+          "address": "Londra, Marea Britanie<br>Acoperim toate districtele",
+          "addressHref": ""
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/clean-og/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"LocalBusiness\",\"name\":\"Cur\\u0103\\u021bineLondra\",\"description\":\"Servicii profesionale de cur\\u0103\\u021benie la domiciliu \\u015fi birouri \\u00een Londra\",\"telephone\":\"+447700100200\",\"areaServed\":\"London\",\"url\":\"https://curateninelondra.co.uk\"}",
+          "canonical": ""
+        },
+        "footer": {
+          "address": "Londra, Marea Britanie — toate districtele",
+          "year": 2026,
+          "note": "Curățenie profesională cu suflet românesc."
+        }
+      }
+    },
+    {
+      "id": "transport-ro-uk",
+      "name": "TransRO — transport și mutări România–UK",
+      "config": {
+        "business": {
+          "name": "TransRO",
+          "tagline": "Transport persoane, bagaje și mutări România – UK",
+          "title": "TransRO | Transport România–Anglia | Mutări, Bagaje, Colete",
+          "metaDescription": "Transport regulat România–Anglia: persoane, bagaje și mutări. Șoferi cu experiență, prețuri transparente, curse săptămânale București–Londra. Rezervă acum!",
+          "about": "Facem transport România–UK de 8 ani. Curse săptămânale București–Londra, dar și Iași, Cluj, Timișoara. Transportăm persoane, bagaje, colete și organizăm mutări complete. Toate mașinile sunt verificate tehnic, asigurate internațional și dotate cu GPS. Rezervă locul tău din timp!",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Despre noi",
+          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Derulează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#2563eb",
+          "primaryLight": "#3b82f6",
+          "primaryDark": "#1d4ed8",
+          "cream": "#f0f4ff"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)",
+          "ctaLabel": "Rezervă pe WhatsApp"
+        },
+        "servicesTitle": "Ce transportăm",
+        "services": [
+          { "icon": "🚐", "label": "Transport persoane" },
+          { "icon": "🧳", "label": "Bagaje și colete" },
+          { "icon": "📦", "label": "Mutări complete" },
+          { "icon": "🇷🇴", "label": "Din toată România" },
+          { "icon": "🇬🇧", "label": "Toată Anglia" },
+          { "icon": "📍", "label": "Door-to-door" },
+          { "icon": "🛡️", "label": "Asigurat internațional" },
+          { "icon": "📅", "label": "Curse săptămânale" }
+        ],
+        "steps": [
+          {
+            "title": "Rezervă locul",
+            "text": "Scrie-ne pe WhatsApp cu data dorită și orașul de plecare. Confirmăm disponibilitatea și prețul în câteva ore."
+          },
+          {
+            "title": "Pregătești bagajele",
+            "text": "Îți trimitem detalii despre pickup, orarul cursei și ce documente sunt necesare pentru traversare."
+          },
+          {
+            "title": "Călătorești confortabil",
+            "text": "Te luăm de la ușă și te ducem la destinație. Pauzele de masă sunt incluse. Ajungi odihnit!"
+          }
+        ],
+        "zone": "Curse regulate: București, Iași, Cluj, Timișoara → Londra, Birmingham, Manchester, Leeds",
+        "schedule": "Curse de joi și duminică | Rezervări: oricând pe WhatsApp",
+        "galleryTitle": "Flota noastră",
+        "categories": [
+          {
+            "title": "Vehicule confortabile",
+            "blurb": "Minibus-uri de 8+1 locuri, climatizate, cu GPS și Wi-Fi la bord.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/transro-van1/1200/800", "alt": "Minibus modern pentru transport persoane" },
+              { "src": "https://picsum.photos/seed/transro-van2/1200/800", "alt": "Interior confortabil cu scaune reclinabile" },
+              { "src": "https://picsum.photos/seed/transro-cargo/1200/800", "alt": "Vehicul cargo pentru mutări și colete" }
+            ]
+          },
+          {
+            "title": "Mutări România–UK",
+            "blurb": "Ambalăm, încărcăm și livrăm totul în siguranță.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/transro-move1/1200/800", "alt": "Echipa noastră la o mutare" },
+              { "src": "https://picsum.photos/seed/transro-move2/1200/800", "alt": "Marfă ambalată profesional" }
+            ]
+          }
+        ],
+        "reviews": [
+          {
+            "name": "Cristina V., Londra",
+            "text": "Am călătorit București–Londra de 4 ori cu TransRO. Mereu punctuali, șoferi amabili și cursă confortabilă. Nu mai iau autobuz sau avion când merg acasă!"
+          },
+          {
+            "name": "Bogdan T., Manchester",
+            "text": "Am trimis colete cu ei lunar de 2 ani. Niciodată o problemă, totul ajunge intact și la timp. Prețul e cel mai bun față de alte firme."
+          },
+          {
+            "name": "Ana și Mihai S., Birmingham",
+            "text": "Ne-am mutat din Cluj în Birmingham cu TransRO. Au ambalat tot, au livrat perfect și au ajutat și la descărcat. Profesionalism 100%!"
+          }
+        ],
+        "instagram": {
+          "handle": "transro_uk",
+          "url": "https://www.instagram.com/transro_uk",
+          "gallery": [
+            "https://picsum.photos/seed/trig1/600/600",
+            "https://picsum.photos/seed/trig2/600/600",
+            "https://picsum.photos/seed/trig3/600/600",
+            "https://picsum.photos/seed/trig4/600/600",
+            "https://picsum.photos/seed/trig5/600/600",
+            "https://picsum.photos/seed/trig6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Rezervă acum",
+          "intro": "Spune-ne data dorită și orașul de plecare — îți confirmăm locul în câteva ore.",
+          "instagram": {
+            "url": "https://www.instagram.com/transro_uk",
+            "label": "@transro_uk"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/transrouk",
+            "label": "TransRO UK"
+          },
+          "whatsapp": "447700200300",
+          "phone": "+447700200300",
+          "phoneDisplay": "+44 7700 200 300",
+          "waHref": "https://wa.me/447700200300?text=Salut!%20Vreau%20s%C4%83%20rezerv%20un%20loc%20pentru%20transport%20Rom%C3%A2nia%E2%80%93UK.",
+          "address": "",
+          "addressHref": ""
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/transro-og/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"MovingCompany\",\"name\":\"TransRO\",\"description\":\"Transport persoane, bagaje \\u015fi mut\\u0103ri Rom\\u00e2nia\\u2013UK\",\"telephone\":\"+447700200300\",\"areaServed\":[\"Romania\",\"United Kingdom\"]}",
+          "canonical": ""
+        },
+        "footer": {
+          "address": "România — Marea Britanie | Curse săptămânale",
+          "year": 2026,
+          "note": "Aproape de casă, oriunde ai fi."
+        }
+      }
+    }
+  ]
+}

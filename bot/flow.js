@@ -1771,4 +1771,6 @@ module.exports = {
     normalizeFacebook,
     generateSite,
     STEPS,
+    // Deploy helper (used by webpublish.js)
+    deployBuiltSite,
 };

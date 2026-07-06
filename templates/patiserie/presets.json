@@ -1,0 +1,188 @@
+{
+  "presets": [
+    {
+      "id": "cofetaria-elena",
+      "name": "Cofetăria Elena",
+      "config": {
+        "business": {
+          "name": "Cofetăria Elena",
+          "tagline": "Torturi artizanale și prăjituri de casă",
+          "title": "Cofetăria Elena | Torturi și Prăjituri Artizanale | Cluj-Napoca",
+          "metaDescription": "Torturi la comandă, prăjituri de casă și platouri dulci pentru orice ocazie. Cofetărie artizanală în Cluj-Napoca, cu ingrediente naturale și rețete tradiționale.",
+          "about": "Bine ați venit la Cofetăria Elena! Suntem o mică cofetărie de familie din Cluj-Napoca, unde fiecare tort și fiecare prăjitură sunt pregătite cu drag și ingrediente de calitate. De la torturi tematice pentru aniversări și nunți, până la platouri de prăjituri pentru evenimente corporate, punem suflet în fiecare comandă. Rețetele noastre combină tradițiile dulci românești cu tehnici moderne de patiserie.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Despre noi",
+          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Descoperă",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#C8715A",
+          "primaryLight": "#d98b78",
+          "primaryDark": "#a85a45",
+          "cream": "#fdf8f5"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "url('https://picsum.photos/seed/cofetariaelena/1200/800')",
+          "ctaLabel": "Comandă acum"
+        },
+        "servicesTitle": "Specialitățile noastre",
+        "services": [
+          { "icon": "🎂", "label": "Torturi la comandă" },
+          { "icon": "🧁", "label": "Cupcakes & muffins" },
+          { "icon": "🥐", "label": "Croissante & cornuri" },
+          { "icon": "🍰", "label": "Prăjituri de casă" },
+          { "icon": "🫐", "label": "Tarte cu fructe" },
+          { "icon": "🍫", "label": "Praline artizanale" }
+        ],
+        "galleryTitle": "Creațiile noastre",
+        "categories": [
+          {
+            "title": "Torturi de ocazie",
+            "blurb": "Torturi personalizate pentru aniversări, nunți și botezuri.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/tort-nunta/800/600", "alt": "Tort elegant de nuntă" },
+              { "src": "https://picsum.photos/seed/tort-aniversar/800/600", "alt": "Tort colorat de aniversare" },
+              { "src": "https://picsum.photos/seed/tort-ciocolata/800/600", "alt": "Tort cu ciocolată și fructe de pădure" }
+            ]
+          },
+          {
+            "title": "Prăjituri și platouri",
+            "blurb": "Platouri dulci perfecte pentru evenimente și corporate.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/prajituri-platou/800/600", "alt": "Platou cu prăjituri asortate" },
+              { "src": "https://picsum.photos/seed/cupcakes-elena/800/600", "alt": "Cupcakes decorate cu cremă" },
+              { "src": "https://picsum.photos/seed/tarte-fructe/800/600", "alt": "Tarte cu căpșuni și fructe de pădure" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "cofetaria.elena",
+          "url": "https://www.instagram.com/cofetaria.elena",
+          "gallery": []
+        },
+        "contact": {
+          "title": "Comandă acum",
+          "intro": "Scrieți-ne pe WhatsApp sau Instagram pentru o comandă personalizată. Livrăm și în Cluj!",
+          "instagram": {
+            "url": "https://www.instagram.com/cofetaria.elena",
+            "label": "@cofetaria.elena"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/cofetariaelena",
+            "label": "Cofetăria Elena"
+          },
+          "whatsapp": "40721345678",
+          "phone": "+40721345678",
+          "phoneDisplay": "+40 721 345 678",
+          "waHref": "https://wa.me/40721345678?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20s%C4%83%20comand%20un%20tort.",
+          "address": "Str. Memorandumului 12<br>Cluj-Napoca, 400114",
+          "addressHref": "https://maps.google.com/?q=Str+Memorandumului+12+Cluj-Napoca"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/cofetariaelena/1200/800",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Cofetăria Elena\",\"url\":\"https://cofetariaelena.ro\",\"telephone\":\"+40721345678\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 12\",\"addressLocality\":\"Cluj-Napoca\",\"postalCode\":\"400114\",\"addressCountry\":\"RO\"}}"
+        },
+        "footer": {
+          "address": "Str. Memorandumului 12, Cluj-Napoca, 400114",
+          "year": 2026,
+          "note": "Cu drag, în fiecare zi."
+        }
+      }
+    },
+    {
+      "id": "placintaria-ion",
+      "name": "Plăcintăria lui Ion",
+      "config": {
+        "business": {
+          "name": "Plăcintăria lui Ion",
+          "tagline": "Plăcinte, brânzoaice și pâine caldă în fiecare zi",
+          "title": "Plăcintăria lui Ion | Plăcinte Tradiționale | Chișinău, Moldova",
+          "metaDescription": "Plăcinte moldovenești cu brânză, cartofi și varză, brânzoaice și pâine de casă. Coapte proaspăt în fiecare dimineață în Chișinău.",
+          "about": "La Plăcintăria lui Ion, dimineața începe cu mirosul de plăcinte proaspete. Folosim rețete moștenite de generații: aluat frământat manual, brânză de vaci de la fermieri locali și umpluturi generoase. Fie că ești în drum spre serviciu sau vrei să răsfățați familia, găsești la noi ce-ți trebuie: plăcinte cu brânză, cu cartofi, cu varză, brânzoaice calde și pâine de casă scoasă din cuptor dimineața.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Povestea noastră",
+          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Descoperă",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#8B6914",
+          "primaryLight": "#a8852e",
+          "primaryDark": "#6e5110",
+          "cream": "#fdf9f0"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "url('https://picsum.photos/seed/placintaria-ion/1200/800')",
+          "ctaLabel": "Vino azi"
+        },
+        "servicesTitle": "Ce coacem zilnic",
+        "services": [
+          { "icon": "🫓", "label": "Plăcinte cu brânză" },
+          { "icon": "🥔", "label": "Plăcinte cu cartofi" },
+          { "icon": "🥬", "label": "Plăcinte cu varză" },
+          { "icon": "🍞", "label": "Pâine de casă" },
+          { "icon": "🧀", "label": "Brânzoaice" },
+          { "icon": "🥐", "label": "Cornuri cu mac" }
+        ],
+        "galleryTitle": "",
+        "categories": [
+          {
+            "title": "",
+            "blurb": "",
+            "photos": [
+              { "src": "https://picsum.photos/seed/placinte-branza/800/600", "alt": "Plăcinte cu brânză de vaci proaspătă" },
+              { "src": "https://picsum.photos/seed/branzoaice-calde/800/600", "alt": "Brânzoaice abia scoase din cuptor" },
+              { "src": "https://picsum.photos/seed/paine-casa/800/600", "alt": "Pâine de casă cu crustă aurie" },
+              { "src": "https://picsum.photos/seed/placinte-cartofi/800/600", "alt": "Plăcinte cu cartofi și ceapă" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "placintaria_ion",
+          "url": "https://www.instagram.com/placintaria_ion",
+          "gallery": []
+        },
+        "contact": {
+          "title": "Ne găsești la noi",
+          "intro": "Suntem deschiși de luni până sâmbătă, 7:00–19:00. Comandă în avans pentru cantități mari.",
+          "instagram": {
+            "url": "https://www.instagram.com/placintaria_ion",
+            "label": "@placintaria_ion"
+          },
+          "facebook": {
+            "url": "",
+            "label": ""
+          },
+          "whatsapp": "37369123456",
+          "phone": "+37369123456",
+          "phoneDisplay": "+373 69 123 456",
+          "waHref": "https://wa.me/37369123456?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20s%C4%83%20comand%20pl%C4%83cinte.",
+          "address": "Str. Armenească 45<br>Chișinău, MD-2012",
+          "addressHref": "https://maps.google.com/?q=Str+Armeneasca+45+Chisinau"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/placintaria-ion/1200/800",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Plăcintăria lui Ion\",\"url\":\"https://placintaria-ion.md\",\"telephone\":\"+37369123456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Armenească 45\",\"addressLocality\":\"Chișinău\",\"postalCode\":\"MD-2012\",\"addressCountry\":\"MD\"}}"
+        },
+        "footer": {
+          "address": "Str. Armenească 45, Chișinău, MD-2012",
+          "year": 2026,
+          "note": "Coapte cu dragoste, în fiecare dimineață."
+        }
+      }
+    }
+  ]
+}

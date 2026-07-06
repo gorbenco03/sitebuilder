@@ -1,0 +1,25 @@
+{
+  "templates": [
+    {
+      "id": "patiserie",
+      "name": "Patiserie & Cofetărie",
+      "vertical": "food",
+      "description": "Cofetării, patiserii, restaurante, catering",
+      "version": 1
+    },
+    {
+      "id": "constructii",
+      "name": "Construcții & Renovări",
+      "vertical": "constructii",
+      "description": "Firme de construcții, renovări, meșteri",
+      "version": 1
+    },
+    {
+      "id": "servicii",
+      "name": "Servicii locale",
+      "vertical": "servicii",
+      "description": "Curățenie, transport, reparații, îngrijire",
+      "version": 1
+    }
+  ]
+}

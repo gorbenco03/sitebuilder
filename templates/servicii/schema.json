@@ -1,0 +1,157 @@
+{
+  "templateId": "servicii-locale",
+  "version": 1,
+  "name": "Servicii Locale",
+  "language": "ro",
+  "wizardHints": {
+    "vertical": "Servicii locale — curățenie, transport/mutări, reparații, îngrijire",
+    "aiStyle": "Ton prietenos, de încredere, direct; evidențiază profesionalismul și promptitudinea; evită superlativele goale; folosește verbe de acțiune"
+  },
+  "sections": [
+    {
+      "id": "business",
+      "title": "Despre afacere",
+      "fields": [
+        { "key": "business.name",            "type": "text",     "label": "Numele afacerii",                           "required": true,  "maxLen": 60 },
+        { "key": "business.tagline",         "type": "text",     "label": "Slogan scurt (max 80 caractere)",           "required": true,  "maxLen": 80 },
+        { "key": "business.title",           "type": "text",     "label": "Titlu pagină (SEO — apare în tab browser)", "required": true,  "maxLen": 70 },
+        { "key": "business.metaDescription", "type": "textarea", "label": "Descriere SEO (max 160 caractere)",         "required": true,  "maxLen": 160 },
+        { "key": "business.about",           "type": "textarea", "label": "Despre voi — paragraf de prezentare",       "required": true,  "maxLen": 600 },
+        { "key": "business.lang",            "type": "text",     "label": "Codul limbii (ex: ro, en)",                 "required": false, "maxLen": 5 }
+      ]
+    },
+    {
+      "id": "theme",
+      "title": "Culori",
+      "fields": [
+        { "key": "theme.primary",      "type": "color", "label": "Culoare principală (hex)",       "required": true },
+        { "key": "theme.primaryLight", "type": "color", "label": "Culoare deschisă (hover/accent)", "required": true },
+        { "key": "theme.primaryDark",  "type": "color", "label": "Culoare închisă (titluri/CTA)",  "required": true },
+        { "key": "theme.cream",        "type": "color", "label": "Fundal pagină (cream/alb cald)", "required": true }
+      ]
+    },
+    {
+      "id": "hero",
+      "title": "Hero (prima secțiune)",
+      "fields": [
+        { "key": "logo",               "type": "text", "label": "Cale logo (images/logo.png) sau gol", "required": false },
+        { "key": "showWordmark",       "type": "text", "label": "Afișează numele ca text dacă nu există logo (true/false)", "required": false },
+        { "key": "hero.background",    "type": "text", "label": "Fundal hero — url('images/hero.jpg') sau gradient CSS", "required": true },
+        { "key": "hero.ctaLabel",      "type": "text", "label": "Text buton CTA WhatsApp",           "required": true, "maxLen": 40 }
+      ]
+    },
+    {
+      "id": "services",
+      "title": "Servicii oferite",
+      "fields": [
+        { "key": "servicesTitle", "type": "text", "label": "Titlu secțiune servicii", "required": false, "maxLen": 60 },
+        {
+          "key": "services",
+          "type": "list",
+          "label": "Lista serviciilor (icon emoji + denumire)",
+          "required": false,
+          "itemShape": { "icon": "text", "label": "text" }
+        }
+      ]
+    },
+    {
+      "id": "steps",
+      "title": "Cum lucrăm (3 pași)",
+      "fields": [
+        {
+          "key": "steps",
+          "type": "list",
+          "label": "Pașii procesului vostru (opțional — lăsați gol pentru a ascunde secțiunea)",
+          "required": false,
+          "itemShape": { "title": "text", "text": "text" }
+        }
+      ]
+    },
+    {
+      "id": "zone_schedule",
+      "title": "Zonă și program",
+      "fields": [
+        { "key": "zone",     "type": "text", "label": "Zona acoperită (ex: București, sector 1-6 + Ilfov)", "required": false, "maxLen": 120 },
+        { "key": "schedule", "type": "text", "label": "Program (ex: Luni–Sâmbătă 08:00–20:00)",             "required": false, "maxLen": 80 }
+      ]
+    },
+    {
+      "id": "gallery",
+      "title": "Galerie foto",
+      "fields": [
+        { "key": "galleryTitle", "type": "text", "label": "Titlu galerie (opțional)", "required": false, "maxLen": 60 },
+        {
+          "key": "categories",
+          "type": "list",
+          "label": "Categorii foto (titlu, descriere, poze)",
+          "required": false,
+          "itemShape": { "title": "text", "blurb": "text", "photos": "photos" }
+        }
+      ]
+    },
+    {
+      "id": "reviews",
+      "title": "Recenzii clienți",
+      "fields": [
+        {
+          "key": "reviews",
+          "type": "list",
+          "label": "Testimoniale (opțional — lăsați gol pentru a ascunde)",
+          "required": false,
+          "itemShape": { "name": "text", "text": "text" }
+        }
+      ]
+    },
+    {
+      "id": "instagram",
+      "title": "Instagram",
+      "fields": [
+        { "key": "instagram.handle", "type": "text",   "label": "Cont Instagram (fără @, ex: firma_ta)",           "required": false },
+        { "key": "instagram.url",    "type": "url",    "label": "Link Instagram complet",                           "required": false },
+        { "key": "instagram.gallery","type": "photos", "label": "Poze grilă Instagram (opțional, max 6)",          "required": false }
+      ]
+    },
+    {
+      "id": "contact",
+      "title": "Contact",
+      "fields": [
+        { "key": "contact.title",           "type": "text",    "label": "Titlu secțiune contact (ex: Solicită ofertă)", "required": true,  "maxLen": 50 },
+        { "key": "contact.intro",           "type": "textarea","label": "Text intro contact",                           "required": true,  "maxLen": 200 },
+        { "key": "contact.phone",           "type": "phone",   "label": "Număr telefon (format internațional +40...)",  "required": false },
+        { "key": "contact.phoneDisplay",    "type": "text",    "label": "Număr telefon afișat (ex: +40 721 000 000)",   "required": false },
+        { "key": "contact.whatsapp",        "type": "phone",   "label": "Număr WhatsApp (cifre, fără +, ex: 40721...)", "required": false },
+        { "key": "contact.waHref",          "type": "url",     "label": "Link WhatsApp cu mesaj pre-completat",         "required": false },
+        { "key": "contact.instagram.url",   "type": "url",     "label": "Link Instagram (sau gol)",                     "required": false },
+        { "key": "contact.instagram.label", "type": "text",    "label": "Eticheta Instagram (ex: @firma_ta)",           "required": false },
+        { "key": "contact.facebook.url",    "type": "url",     "label": "Link Facebook (sau gol)",                      "required": false },
+        { "key": "contact.facebook.label",  "type": "text",    "label": "Eticheta Facebook",                            "required": false },
+        { "key": "contact.address",         "type": "textarea","label": "Adresă (HTML simplu permis: <br>)",             "required": false },
+        { "key": "contact.addressHref",     "type": "url",     "label": "Link Google Maps",                             "required": false }
+      ]
+    },
+    {
+      "id": "seo_footer",
+      "title": "SEO și footer",
+      "fields": [
+        { "key": "seo.ogImage",  "type": "url",     "label": "URL imagine OG (1200×630px recomandat)", "required": false },
+        { "key": "seo.jsonLd",   "type": "textarea","label": "JSON-LD structurat (opțional)",           "required": false },
+        { "key": "seo.canonical","type": "url",     "label": "URL canonic al site-ului",                "required": false },
+        { "key": "footer.address","type": "text",   "label": "Adresă în footer (text simplu)",          "required": false },
+        { "key": "footer.year",   "type": "text",   "label": "Anul copyright",                          "required": false },
+        { "key": "footer.note",   "type": "text",   "label": "Notă footer (ex: Servicii de calitate)",  "required": false }
+      ]
+    },
+    {
+      "id": "labels",
+      "title": "Etichete interfață",
+      "fields": [
+        { "key": "labels.about",       "type": "text", "label": "Eticheta secțiunii Despre (ex: Despre noi)", "required": false },
+        { "key": "labels.instaTitle",  "type": "text", "label": "Titlu secțiune Instagram",                   "required": false },
+        { "key": "labels.instaFollow", "type": "text", "label": "Text buton urmărire Instagram",              "required": false },
+        { "key": "labels.scroll",      "type": "text", "label": "Text indicator scroll (ex: Derulează)",      "required": false },
+        { "key": "labels.waQr",        "type": "text", "label": "Titlu modal QR WhatsApp",                    "required": false },
+        { "key": "labels.waOpen",      "type": "text", "label": "Text link WhatsApp Web în modal",            "required": false }
+      ]
+    }
+  ]
+}
