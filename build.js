@@ -218,6 +218,30 @@ function expandEach(str, scope) {
     return out;
 }
 
+/**
+ * renderHtml(templateHtml, config) — pure render pipeline, no fs.
+ *
+ * Applies derived fields (contact.addressNoHref), expands @each/@if blocks,
+ * and replaces all {{token}} placeholders against `config`.
+ *
+ * This is the heart of the engine and is exported so it can run in the browser
+ * (via scripts/build-builder.js) without any Node.js file-system calls.
+ */
+function renderHtml(templateHtml, config) {
+    // Work on a shallow clone so we don't mutate the caller's config.
+    const cfg = Object.assign({}, config);
+    if (cfg.contact) {
+        cfg.contact = Object.assign({}, cfg.contact);
+        cfg.contact.addressNoHref =
+            (cfg.contact.address && !cfg.contact.addressHref) ? 'true' : '';
+    }
+
+    let html = templateHtml;
+    html = expandEach(html, cfg);                              // 1) loops first
+    html = replaceTokens(html, token => resolve(cfg, token)); // 2) global tokens
+    return html;
+}
+
 function build(siteDir = ROOT) {
     const dir = path.resolve(siteDir);
     const configPath = path.join(dir, 'config.json');
@@ -225,26 +249,15 @@ function build(siteDir = ROOT) {
     const outputPath = path.join(dir, 'index.html');
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const templateHtml = fs.readFileSync(templatePath, 'utf8');
 
-    // Derived fields: computed after config load, before rendering.
-    // contact.addressNoHref — truthy when an address text exists but no map link
-    // is provided, so templates can render a plain-text address fallback via
-    // <!-- @if contact.addressNoHref --> without duplicating logic in every preset.
-    if (config.contact) {
-        config.contact.addressNoHref =
-            (config.contact.address && !config.contact.addressHref) ? 'true' : '';
-    }
-
-    let html = fs.readFileSync(templatePath, 'utf8');
-
-    html = expandEach(html, config);                         // 1) loops first
-    html = replaceTokens(html, token => resolve(config, token)); // 2) global tokens
+    const html = renderHtml(templateHtml, config);
 
     fs.writeFileSync(outputPath, html, 'utf8');
     return { outputPath, bytes: html.length };
 }
 
-module.exports = { build, escapeHtml };
+module.exports = { build, escapeHtml, renderHtml };
 
 // Run from CLI:  node build.js [siteDir]
 if (require.main === module) {

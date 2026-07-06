@@ -13,6 +13,7 @@
 
 const { Bot } = require('grammy');
 const flow = require('./flow.js');
+const webpublish = require('./webpublish.js');
 const { log } = require('./logger.js');
 const { startServer } = require('./server.js');
 
@@ -91,16 +92,35 @@ setMessenger((chatId, text, opts) =>
 /* ── HTTP server: health endpoint + Stripe payment webhook (source of truth for
       "paid" — instant, restart-proof; the poller/sweeper stay as fallback).
       Binds Railway's injected PORT; a bind failure logs but never kills the bot. ── */
-const httpServer = startServer({
-    onStripeEvent: async (event) => {
+/**
+ * Dispatcher: Stripe events are routed by metadata.platform.
+ *   platform === 'web'  → webpublish.handleStripePaid (builder web flow)
+ *   otherwise           → flow.handleStripeWebhookEvent (Telegram bot flow)
+ */
+async function onStripeEvent(event) {
+    const cs       = event && event.data && event.data.object;
+    const platform = cs && cs.metadata && cs.metadata.platform;
+
+    if (platform === 'web') {
         try {
-            const r = await handleStripeWebhookEvent(event);
-            log('webhook.stripe.handled', { type: event.type, ...r });
-        } finally {
-            persistSessions();
+            await webpublish.handleStripePaid(event);
+            log('webhook.stripe.web.handled', { type: event.type });
+        } catch (e) {
+            log('webhook.stripe.web.error', { err: e.message, type: event.type }, 'error');
         }
-    },
-});
+        return;
+    }
+
+    // Default: Telegram bot flow
+    try {
+        const r = await handleStripeWebhookEvent(event);
+        log('webhook.stripe.handled', { type: event.type, ...r });
+    } finally {
+        persistSessions();
+    }
+}
+
+const httpServer = startServer({ onStripeEvent });
 
 /* ── Persist sessions after every handled update (debounced in store.js) ── */
 bot.use(async (ctx, next) => {

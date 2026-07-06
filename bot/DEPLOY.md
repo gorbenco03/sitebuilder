@@ -38,7 +38,28 @@ Recommended / for full functionality:
   `REGISTRANT_PHONE` (E.164, e.g. `+40.721234567`), `REGISTRANT_ADDRESS1`, `REGISTRANT_CITY`,
   `REGISTRANT_STATE`, `REGISTRANT_ZIP`, `REGISTRANT_COUNTRY` (ISO-2) — and a card on the Vercel account.
 
-## 5. Deploy
+## 5. Web Builder (API + site editor)
+
+The same process also serves the web-based site builder on the same PORT:
+
+| Env var | Required | Description |
+|---------|----------|-------------|
+| `SERVER_SECRET` | **yes** | Random 32-char secret for HMAC session cookies. Without it, all `/api/auth/*` and `/api/me` routes respond 503. Generate with: `openssl rand -hex 32` |
+| `PUBLIC_URL` | yes for magic links | Full public URL of the service, e.g. `https://myapp.up.railway.app`. Used to build the `/auth/verify?token=…` link in magic-link emails. |
+| `RESEND_API_KEY` | no | When set, magic-link emails are sent via [Resend](https://resend.com). Without it, the link is logged to stdout (`devLink` is also returned in the API response for dev mode). |
+| `EMAIL_FROM` | no | Sender address for magic-link emails (default: `onboarding@resend.dev`). Only used when `RESEND_API_KEY` is set. |
+| `BUILD_FEE_EUR` | no | One-time site build fee in EUR cents (default `49`). Same env as the Telegram bot. |
+| `ALLOW_FREE_PUBLISH` | dev only | Set to `1` to skip payment and publish immediately. **Never set in production.** |
+| `SITES_DIR` / `DATA_DIR` | no | Persistent volume for built sites and registry data. Railway mounts `/data`; `DATA_DIR=/data` is set in the Dockerfile. |
+
+Static files for the builder UI are served from `<repo>/builder/` at `GET /app/*`.
+The parallel agent builds the full UI; a minimal `builder/index.html` is shipped as a placeholder.
+
+Stripe webhook for web payments: the existing `POST /webhooks/stripe` endpoint now dispatches
+events by `metadata.platform`: `web` → `webpublish.handleStripePaid`; `telegram` (default) → `flow.handleStripeWebhookEvent`.
+Make sure the Stripe webhook in the dashboard sends `checkout.session.completed` to `https://<domain>/webhooks/stripe`.
+
+## 6. Deploy
 Railway builds + starts automatically. Logs should show `🤖 Bot pornit ca @<username>`.
 The bot is now live 24/7. Only one instance may poll a token at a time — keep replicas = 1.
 
