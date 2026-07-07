@@ -5,20 +5,34 @@
       "name": "Patiserie & Cofetărie",
       "vertical": "food",
       "description": "Cofetării, patiserii, restaurante, catering",
-      "version": 1
+      "version": 2
     },
     {
       "id": "constructii",
       "name": "Construcții & Renovări",
       "vertical": "constructii",
       "description": "Firme de construcții, renovări, meșteri",
-      "version": 1
+      "version": 2
     },
     {
       "id": "servicii",
       "name": "Servicii locale",
       "vertical": "servicii",
       "description": "Curățenie, transport, reparații, îngrijire",
+      "version": 2
+    },
+    {
+      "id": "beauty",
+      "name": "Beauty & Salon",
+      "vertical": "beauty",
+      "description": "Saloane de înfrumusețare, frizerii, manichiură, cosmetică",
+      "version": 1
+    },
+    {
+      "id": "evenimente",
+      "name": "Evenimente & Artiști",
+      "vertical": "evenimente",
+      "description": "Fotografi, videografi, formații, DJ, decor, organizare evenimente",
       "version": 1
     }
   ]

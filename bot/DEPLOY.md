@@ -48,8 +48,12 @@ The same process also serves the web-based site builder on the same PORT:
 | `PUBLIC_URL` | yes for magic links | Full public URL of the service, e.g. `https://myapp.up.railway.app`. Used to build the `/auth/verify?token=…` link in magic-link emails. |
 | `RESEND_API_KEY` | no | When set, magic-link emails are sent via [Resend](https://resend.com). Without it, the link is logged to stdout (`devLink` is also returned in the API response for dev mode). |
 | `EMAIL_FROM` | no | Sender address for magic-link emails (default: `onboarding@resend.dev`). Only used when `RESEND_API_KEY` is set. |
-| `BUILD_FEE_EUR` | no | One-time site build fee in EUR cents (default `49`). Same env as the Telegram bot. |
-| `ALLOW_FREE_PUBLISH` | dev only | Set to `1` to skip payment and publish immediately. **Never set in production.** |
+| `BUILD_FEE_EUR` | no | One-time site build fee in EUR (default `49`). Same env as the Telegram bot. |
+| `TRIAL_DAYS` | no | Number of free trial days (default `3`). Sites are published immediately for free; payment activates them permanently. |
+| `CONTACT_URL` | no | URL or text shown after payment for "custom domain" concierge message (e.g. `https://t.me/hidook`). If unset, a plain text fallback is shown. |
+| `BRAND_DOMAIN` | no | If set AND `DEPLOY_PROVIDER=cloudflare`, the platform will try to attach `<slug>.<BRAND_DOMAIN>` to each Pages project after deploy (best-effort). Requires CF zone for `BRAND_DOMAIN` accessible with `CLOUDFLARE_API_TOKEN`. |
+| `HIDOOK_FAKE_DEPLOY` | test only | Set to `1` to stub all deploys (returns `https://<slug>.test.local`). **Refused in production (`NODE_ENV=production`).** |
+| `ALLOW_FREE_PUBLISH` | dev only | Legacy flag — no longer needed for trial flow. Set to `1` to skip payment in old legacy sessions. **Never set in production.** |
 | `SITES_DIR` / `DATA_DIR` | no | Persistent volume for built sites and registry data. Railway mounts `/data`; `DATA_DIR=/data` is set in the Dockerfile. |
 
 Static files for the builder UI are served from `<repo>/builder/` at `GET /app/*`.

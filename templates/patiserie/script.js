@@ -1,4 +1,6 @@
-// Landing page interactions: scroll reveals, hero parallax, smooth anchors.
+// Landing page interactions — defensive vanilla JS.
+// Every init function returns early when its elements are absent
+// so pages with partial configs never error.
 
 document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
@@ -11,138 +13,126 @@ document.addEventListener('DOMContentLoaded', () => {
     initWhatsAppQR();
 });
 
-/**
- * On DESKTOP, clicking a WhatsApp link shows a QR to scan with the phone instead of
- * opening WhatsApp Web — because WhatsApp Web/Desktop drops the pre-filled message,
- * while the phone keeps it as a draft. On mobile/tablet the wa.me link opens directly.
- * The QR encodes the link's CURRENT href, so it follows the language toggle.
- */
+// ── WhatsApp QR modal ─────────────────────────────────────
+// On DESKTOP: intercept all wa.me links and show a QR instead.
+// On MOBILE:  the wa.me link opens directly (keeps the pre-filled draft).
 function initWhatsAppQR() {
-    const modal = document.getElementById('wa-qr');
-    const img   = document.getElementById('wa-qr-img');
-    const links = document.querySelectorAll('a[href*="wa.me"]');
+    const modal   = document.getElementById('wa-qr');
+    const img     = document.getElementById('wa-qr-img');
+    const links   = document.querySelectorAll('a[href*="wa.me"]');
     if (!modal || !img || !links.length) return;
 
-    const ua = navigator.userAgent;
-    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(ua));
-    if (isMobile) return;   // phone/tablet: the wa.me link works and keeps the draft
+    const ua       = navigator.userAgent;
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua) ||
+                     (navigator.maxTouchPoints > 1 && /Mac/.test(ua));
+    if (isMobile) return;
 
     const openBtn = document.getElementById('wa-qr-open');
-    const openQr = (waUrl) => {
-        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=' + encodeURIComponent(waUrl);
-        if (openBtn) openBtn.href = waUrl;   // "open WhatsApp Web" for those who don't want to scan
+
+    function openQr(waUrl) {
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=' +
+                  encodeURIComponent(waUrl);
+        if (openBtn) openBtn.href = waUrl;
         modal.hidden = false;
         document.body.style.overflow = 'hidden';
-    };
-    const closeQr = () => {
+    }
+
+    function closeQr() {
         modal.hidden = true;
         document.body.style.overflow = '';
         img.removeAttribute('src');
-    };
+    }
 
     links.forEach(a => a.addEventListener('click', (e) => {
         e.preventDefault();
-        openQr(a.href);   // current href = correct number + message in the active language
+        openQr(a.href);
     }));
-    modal.querySelectorAll('[data-wa-close]').forEach(el => el.addEventListener('click', closeQr));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeQr(); });
+
+    modal.querySelectorAll('[data-wa-close]').forEach(el =>
+        el.addEventListener('click', closeQr)
+    );
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.hidden) closeQr();
+    });
 }
 
-/**
- * Auto-size the Instagram embed iframe to the widget's real content height, for any
- * layout (grid/carousel/masonry). The hearth widget posts its measured height to the
- * parent as { type: 'INSTA_WIDGET_HEIGHT', height }, so we just listen and apply it —
- * no fixed height left oversized. No-op on pages without the embed.
- */
+// ── Instagram embed iframe auto-resize ───────────────────
 function initIgEmbedAutoResize() {
     const frames = document.querySelectorAll('.instagram-embed-iframe');
     if (!frames.length) return;
     window.addEventListener('message', (e) => {
         const d = e.data;
-        if (d && d.type === 'INSTA_WIDGET_HEIGHT' && typeof d.height === 'number' && d.height > 80 && d.height < 4000) {
+        if (d && d.type === 'INSTA_WIDGET_HEIGHT' &&
+            typeof d.height === 'number' && d.height > 80 && d.height < 4000) {
             frames.forEach(f => { f.style.height = d.height + 'px'; });
         }
     });
 }
 
-/**
- * Bilingual menu: switch the visible menu panel (default EN) when a language
- * button is clicked. No-op when the page has no menu.
- */
+// ── Bilingual menu (optional) ─────────────────────────────
 function initMenuLangToggle() {
     const buttons = document.querySelectorAll('.menu-lang-btn');
     if (!buttons.length) return;
 
-    const apply = (lang) => {
-        // Menu panels (EN / RO)
+    function apply(lang) {
         document.querySelectorAll('.menu-panel').forEach(panel => {
             panel.hidden = panel.dataset.menuPanel !== lang;
         });
-        // Bilingual text (About us heading + text, Order now title + intro, menu title, …)
         document.querySelectorAll('[data-en][data-ro]').forEach(el => {
             const val = el.getAttribute('data-' + lang);
             if (val) el.textContent = val;
         });
-        // Bilingual links (e.g. WhatsApp pre-filled message differs EN/RO)
         document.querySelectorAll('[data-en-href][data-ro-href]').forEach(el => {
             const href = el.getAttribute('data-' + lang + '-href');
             if (href) el.setAttribute('href', href);
         });
-        // Button state + document language
         buttons.forEach(b => {
             const active = b.dataset.menuLang === lang;
             b.classList.toggle('is-active', active);
             b.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         document.documentElement.setAttribute('lang', lang);
-    };
+    }
 
-    buttons.forEach(btn => btn.addEventListener('click', () => apply(btn.dataset.menuLang)));
+    buttons.forEach(btn =>
+        btn.addEventListener('click', () => apply(btn.dataset.menuLang))
+    );
 }
 
-/**
- * Scroll-triggered fade-in animations + staggered reveal of service cards.
- */
+// ── Scroll-triggered fade-in animations ──────────────────
 function initScrollAnimations() {
-    const fadeElements = document.querySelectorAll('.fade-in-section');
-    if (!fadeElements.length) return;
+    const fadeEls = document.querySelectorAll('.fade-in-section');
+    if (!fadeEls.length) return;
 
     const observer = new IntersectionObserver((entries, obs) => {
         entries.forEach(entry => {
             if (!entry.isIntersecting) return;
             entry.target.classList.add('visible');
             staggerChildren(entry.target);
-            obs.unobserve(entry.target);   // reveal once, then stop watching
+            obs.unobserve(entry.target);
         });
     }, {
-        root: null,
         rootMargin: '0px 0px -80px 0px',
-        threshold: 0.1
+        threshold: 0.08
     });
 
-    fadeElements.forEach(el => observer.observe(el));
+    fadeEls.forEach(el => observer.observe(el));
 }
 
-/**
- * Apply an incremental CSS delay so cards inside a revealed section fade in
- * one after another (graceful, not all-at-once).
- */
 function staggerChildren(section) {
-    const cards = section.querySelectorAll('.service-card');
-    cards.forEach((card, i) => {
-        card.style.setProperty('--reveal-delay', `${Math.min(i * 60, 420)}ms`);
+    section.querySelectorAll('.service-card').forEach((card, i) => {
+        card.style.setProperty('--reveal-delay', `${Math.min(i * 65, 420)}ms`);
     });
 }
 
-/**
- * Parallax + fade for the hero content as the page scrolls.
- */
+// ── Hero parallax + fade on scroll ───────────────────────
 function initParallaxEffect() {
     const hero = document.querySelector('.hero');
     if (!hero) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const heroContent = hero.querySelector('.hero-content');
+    const heroContent     = hero.querySelector('.hero-content');
     const scrollIndicator = hero.querySelector('.scroll-indicator');
     let ticking = false;
 
@@ -150,14 +140,13 @@ function initParallaxEffect() {
         if (ticking) return;
         ticking = true;
         requestAnimationFrame(() => {
-            const scrolled = window.pageYOffset;
-            const heroHeight = hero.offsetHeight;
-
+            const scrolled    = window.pageYOffset;
+            const heroHeight  = hero.offsetHeight;
             if (scrolled < heroHeight) {
-                const opacity = Math.max(0, 1 - (scrolled / (heroHeight * 0.5)));
+                const opacity = Math.max(0, 1 - scrolled / (heroHeight * 0.5));
                 if (heroContent) {
-                    heroContent.style.opacity = opacity;
-                    heroContent.style.transform = `translateY(${scrolled * 0.3}px)`;
+                    heroContent.style.opacity   = opacity;
+                    heroContent.style.transform = `translateY(${scrolled * 0.28}px)`;
                 }
                 if (scrollIndicator) {
                     scrollIndicator.style.opacity = opacity;
@@ -168,9 +157,7 @@ function initParallaxEffect() {
     }, { passive: true });
 }
 
-/**
- * Smooth scrolling for in-page anchor links.
- */
+// ── Smooth anchor scrolling ───────────────────────────────
 function initSmoothScrolling() {
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -185,68 +172,55 @@ function initSmoothScrolling() {
     });
 }
 
-/**
- * Subtle ripple feedback when tapping a contact row.
- */
+// ── Contact-item ripple on click ──────────────────────────
 function initContactRipple() {
+    const style = document.createElement('style');
+    style.textContent = '@keyframes ripple { to { transform: scale(4); opacity: 0; } }';
+    document.head.appendChild(style);
+
     document.querySelectorAll('.contact-item').forEach(item => {
         item.addEventListener('click', function (e) {
             const ripple = document.createElement('span');
-            ripple.style.cssText = `
-                position: absolute;
-                background: rgba(255, 255, 255, 0.3);
-                border-radius: 50%;
-                transform: scale(0);
-                animation: ripple 0.6s linear;
-                pointer-events: none;
-            `;
-
-            const rect = this.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-
+            const rect   = this.getBoundingClientRect();
+            const size   = Math.max(rect.width, rect.height);
+            ripple.style.cssText = [
+                'position:absolute',
+                'border-radius:50%',
+                'pointer-events:none',
+                'background:rgba(255,255,255,0.28)',
+                'transform:scale(0)',
+                'animation:ripple 0.6s linear',
+                `width:${size}px`,
+                `height:${size}px`,
+                `left:${e.clientX - rect.left - size / 2}px`,
+                `top:${e.clientY - rect.top - size / 2}px`
+            ].join(';');
             this.style.position = 'relative';
             this.style.overflow = 'hidden';
             this.appendChild(ripple);
-
-            setTimeout(() => ripple.remove(), 600);
+            setTimeout(() => ripple.remove(), 620);
         });
     });
-
-    // Inject the ripple keyframes once.
-    const style = document.createElement('style');
-    style.textContent = `@keyframes ripple { to { transform: scale(4); opacity: 0; } }`;
-    document.head.appendChild(style);
 }
 
-/**
- * Clicking the scroll indicator jumps to the main content.
- */
+// ── Scroll-indicator button scrolls to main content ──────
 function initScrollIndicator() {
-    const scrollIndicator = document.querySelector('.scroll-indicator');
-    if (!scrollIndicator) return;
-    scrollIndicator.addEventListener('click', () => {
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) mainContent.scrollIntoView({ behavior: 'smooth' });
+    const btn = document.querySelector('.scroll-indicator');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const main = document.querySelector('.main-content');
+        if (main) main.scrollIntoView({ behavior: 'smooth' });
     });
 }
 
-/**
- * On full load, immediately reveal any sections already in view (so above-the-fold
- * content isn't stuck invisible) and run their stagger.
- */
+// ── Immediately reveal sections already in the viewport ──
 window.addEventListener('load', () => {
     document.body.classList.add('loaded');
     document.querySelectorAll('.fade-in-section').forEach(el => {
         const rect = el.getBoundingClientRect();
         if (rect.top < window.innerHeight) {
             el.classList.add('visible');
-            const cards = el.querySelectorAll('.service-card');
-            cards.forEach((card, i) => {
-                card.style.setProperty('--reveal-delay', `${Math.min(i * 60, 420)}ms`);
-            });
+            staggerChildren(el);
         }
     });
 });

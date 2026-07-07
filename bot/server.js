@@ -1,6 +1,6 @@
 'use strict';
 /**
- * bot/server.js — zero-dependency HTTP server.
+ * bot/server.js — zero-dependency HTTP server (trial model).
  *
  * Routes:
  *   GET  /                   → 302 /app/
@@ -9,16 +9,19 @@
  *
  *   GET  /app/*              → static files from <repo>/builder/
  *
+ *   GET  /api/config         → {priceEur, trialDays, brandDomain|null, contactUrl|null} (public)
+ *   GET  /api/slug-check?slug= → {available:bool, slug} (public)
  *   GET  /api/templates      → list templates with schema + presets
  *   POST /api/auth/email     → send magic link
  *   GET  /auth/verify        → consume login token, set session cookie
  *   POST /api/auth/telegram  → verify Telegram initData, set session cookie
  *   GET  /api/me             → current user or 401
- *   GET  /api/sites          → user's sites
+ *   GET  /api/sites          → user's sites (includes trialEndsAt/status/paid)
  *   GET  /api/sites/:id      → single site + latest config
  *   GET  /api/sites/:id/versions    → version list
  *   POST /api/sites/:id/rollback    → republish a past version
- *   POST /api/publish        → create/update site, pay or publish directly
+ *   POST /api/sites/:id/checkout    → {paymentUrl} for dashboard / reactivation
+ *   POST /api/publish        → trial publish (immediate, free); max 1 unpaid per user
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  */
@@ -31,8 +34,7 @@ const crypto = require('crypto');
 const payments = require('./payments.js');
 const { log }  = require('./logger.js');
 
-// These are loaded lazily (after the parallel agents deliver them) so we never
-// crash at require-time when running tests without the stubs.
+// These are loaded lazily so we never crash at require-time in tests without stubs.
 function getRegistry() { return require('./registry.js'); }
 function getAuth()     { return require('./auth.js'); }
 function getEmail()    { return require('./email.js'); }
@@ -46,9 +48,13 @@ const PUBLISH_BODY_MAX = 16 * 1024 * 1024;    // 16 MB for /api/publish
 const BUILDER_DIR      = path.join(__dirname, '..', 'builder');
 const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
 
+const TRIAL_DAYS = Number(process.env.TRIAL_DAYS) || 3;
+
 const BUILD_FEE_CENTS = Math.round(
     (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
 );
+
+const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
@@ -70,10 +76,6 @@ const MIME_TYPES = {
 // Body reading
 // ---------------------------------------------------------------------------
 
-/**
- * Read the full raw request body as a Buffer.
- * Rejects with { code: 'BODY_TOO_LARGE' } past `limit`.
- */
 function readRawBody(req, limit = MAX_BODY_BYTES) {
     return new Promise((resolve, reject) => {
         const chunks = [];
@@ -85,8 +87,6 @@ function readRawBody(req, limit = MAX_BODY_BYTES) {
             if (size > limit) {
                 tooLarge = true;
                 reject(Object.assign(new Error('BODY_TOO_LARGE'), { code: 'BODY_TOO_LARGE' }));
-                // Drain remaining data without destroying the socket so the
-                // caller can still write a 413 response before closing.
                 req.resume();
                 return;
             }
@@ -97,7 +97,6 @@ function readRawBody(req, limit = MAX_BODY_BYTES) {
     });
 }
 
-/** Parse JSON body with a per-route size limit. */
 async function parseJson(req, limit = MAX_BODY_BYTES) {
     let raw;
     try {
@@ -132,7 +131,6 @@ function sendRedirect(res, location, status = 302) {
 // Auth helper
 // ---------------------------------------------------------------------------
 
-/** Extract authenticated userId from cookie. Returns null if not authenticated. */
 function requireAuth(req, res) {
     let userId;
     try {
@@ -145,6 +143,30 @@ function requireAuth(req, res) {
         return null;
     }
     return userId;
+}
+
+// ---------------------------------------------------------------------------
+// Slug helpers
+// ---------------------------------------------------------------------------
+
+function slugify(s) {
+    return (s || 'site')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'site';
+}
+
+function normalizeSlug(raw) {
+    return slugify(raw || '');
+}
+
+function isSlugAvailable(slug) {
+    const reg = getRegistry();
+    const all = reg.listAllSites ? reg.listAllSites() : [];
+    return !all.some(s => s.slug === slug || s.projectName === slug);
 }
 
 // ---------------------------------------------------------------------------
@@ -177,14 +199,8 @@ function loadTemplates() {
 // Static file serving — /app/*
 // ---------------------------------------------------------------------------
 
-/**
- * Serve a file from BUILDER_DIR.
- * Normalises the path and refuses anything that escapes the directory.
- */
 function serveStatic(req, res, urlPath) {
-    // Strip /app prefix
     let relative = urlPath.replace(/^\/app\/?/, '') || 'index.html';
-    // Prevent path traversal
     const normalised = path.normalize(relative);
     if (normalised.startsWith('..') || path.isAbsolute(normalised)) {
         sendJson(res, 403, { error: 'Acces interzis.' });
@@ -192,7 +208,6 @@ function serveStatic(req, res, urlPath) {
     }
 
     const filePath = path.join(BUILDER_DIR, normalised);
-    // Verify the resolved path is inside BUILDER_DIR
     const realBuilder = path.resolve(BUILDER_DIR);
     const realFile    = path.resolve(filePath);
     if (!realFile.startsWith(realBuilder + path.sep) && realFile !== realBuilder) {
@@ -203,7 +218,6 @@ function serveStatic(req, res, urlPath) {
     let stat;
     try { stat = fs.statSync(filePath); } catch { /* not found below */ }
 
-    // If it's a directory, serve index.html inside it
     let targetPath = filePath;
     if (stat && stat.isDirectory()) {
         targetPath = path.join(filePath, 'index.html');
@@ -211,7 +225,6 @@ function serveStatic(req, res, urlPath) {
     }
 
     if (!stat || !stat.isFile()) {
-        // Fallback: serve builder/index.html for SPA routes
         const indexPath = path.join(BUILDER_DIR, 'index.html');
         try {
             const content = fs.readFileSync(indexPath);
@@ -233,6 +246,25 @@ function serveStatic(req, res, urlPath) {
 // ---------------------------------------------------------------------------
 // Route handlers
 // ---------------------------------------------------------------------------
+
+async function handleGetConfig(req, res) {
+    sendJson(res, 200, {
+        priceEur:    BUILD_FEE_CENTS / 100,
+        trialDays:   TRIAL_DAYS,
+        brandDomain: process.env.BRAND_DOMAIN || null,
+        contactUrl:  process.env.CONTACT_URL  || null,
+    });
+}
+
+async function handleSlugCheck(req, res, query) {
+    const raw  = (query.get('slug') || '').trim();
+    const slug = normalizeSlug(raw);
+    if (!SLUG_RE.test(slug)) {
+        return sendJson(res, 200, { available: false, slug, error: 'Slug invalid (3-40 caractere, a-z 0-9 -).' });
+    }
+    const available = isSlugAvailable(slug);
+    sendJson(res, 200, { available, slug });
+}
 
 async function handleGetTemplates(req, res) {
     const templates = loadTemplates();
@@ -266,7 +298,6 @@ async function handleAuthEmail(req, res) {
         devLink = result.devLink;
     } catch (e) {
         log('server.auth.email.send_error', { err: e.message }, 'error');
-        // Don't fail — the token is created; caller can try again
     }
 
     const resp = { ok: true, sent };
@@ -340,7 +371,6 @@ async function handleGetSite(req, res, siteId) {
     const site = await getRegistry().getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
-    // Attach latest config
     const versions = await getRegistry().listVersions(siteId);
     let config = null;
     if (versions.length > 0) {
@@ -375,7 +405,6 @@ async function handleRollback(req, res, siteId) {
     const config = await reg.getVersionConfig(siteId, versionId);
     if (!config) return sendJson(res, 404, { error: 'Versiunea nu a fost găsită.' });
 
-    // Republish without new payment
     const webpublish = require('./webpublish.js');
     try {
         const result = await webpublish.publishSite({ site, config, images: [] });
@@ -386,6 +415,67 @@ async function handleRollback(req, res, siteId) {
     }
 }
 
+async function handleSiteCheckout(req, res, siteId) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const reg  = getRegistry();
+    const site = await reg.getSite(siteId);
+    if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
+    if (site.paid) return sendJson(res, 409, { error: 'Site-ul este deja plătit.' });
+
+    if (!payments.isConfigured()) {
+        return sendJson(res, 503, { error: 'Plata nu este configurată.' });
+    }
+
+    const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+
+    const order = await reg.createOrder({
+        siteId: site.id,
+        userId,
+        amountCents: BUILD_FEE_CENTS,
+        currency,
+        stripeSessionId: 'pending',
+    });
+
+    let checkout;
+    try {
+        checkout = await payments.createCheckout({
+            amountCents: BUILD_FEE_CENTS,
+            currency,
+            productName: 'Activare site Hidook',
+            successUrl:  publicUrl + '/app/#platit',
+            cancelUrl:   publicUrl + '/app/#anulat',
+            metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
+            clientReferenceId: 'web-' + site.id,
+        });
+    } catch (e) {
+        log('server.checkout.error', { siteId, err: e.message }, 'error');
+        return sendJson(res, 503, { error: 'Nu am putut iniția plata: ' + e.message });
+    }
+
+    // Update order with real Stripe session id
+    await reg.createOrder({
+        siteId: site.id,
+        userId,
+        amountCents: BUILD_FEE_CENTS,
+        currency,
+        stripeSessionId: checkout.id,
+    });
+
+    sendJson(res, 200, { paymentUrl: checkout.url });
+}
+
+/**
+ * POST /api/publish — trial publish (immediate, free).
+ *
+ * - Max 1 unpaid site per user (409 if another unpaid exists and it's a NEW site).
+ * - Publishes immediately on the platform subdomain (trial).
+ * - If paid (re-edit): publishes directly for free.
+ * - Returns {site: {id,url,slug,paid,status,trialEndsAt}, paymentUrl|null}
+ */
 async function handlePublish(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -394,7 +484,7 @@ async function handlePublish(req, res) {
     try { body = await parseJson(req, PUBLISH_BODY_MAX); }
     catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
 
-    const { siteId, templateId, config, images } = body || {};
+    const { siteId, templateId, config, images, slug: slugHint } = body || {};
 
     // Validate templateId
     const templates = loadTemplates();
@@ -411,11 +501,9 @@ async function handlePublish(req, res) {
     }
     for (const img of imgList) {
         if (!img || !img.dataUrl) continue;
-        // Check size
-        if (img.dataUrl.length > MAX_DATA_URL * 1.4) {  // base64 overhead ~4/3
+        if (img.dataUrl.length > MAX_DATA_URL * 1.4) {
             return sendJson(res, 422, { error: `Imaginea "${img.name}" depășește 2.5 MB.` });
         }
-        // Check MIME type from data URL
         const mimeMatch = /^data:([^;]+);/.exec(img.dataUrl);
         if (!mimeMatch || !ALLOWED_MIME.test(mimeMatch[1])) {
             return sendJson(res, 422, { error: `Tipul imaginii "${img.name}" nu este acceptat (jpeg/png/webp).` });
@@ -431,123 +519,117 @@ async function handlePublish(req, res) {
         if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
         if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
     } else {
-        // Build slug from config business name
-        const bizName = (config && config.business && config.business.name) || 'site';
-        const slug = slugify(bizName);
+        // Max 1 unpaid site per user (prevents abuse)
+        const existing = await reg.listSites(userId);
+        const unpaid   = existing.filter(s => !s.paid && s.status !== 'deleted');
+        if (unpaid.length > 0) {
+            return sendJson(res, 409, {
+                error: 'Ai deja un site în perioada de probă. Plătește-l sau șterge-l înainte de a crea altul.',
+                siteId: unpaid[0].id,
+            });
+        }
+
+        // Determine slug
+        let slug;
+        if (slugHint) {
+            slug = normalizeSlug(slugHint);
+            if (!SLUG_RE.test(slug)) {
+                return sendJson(res, 422, { error: 'Slug invalid (3-40 caractere, a-z 0-9 -).' });
+            }
+            if (!isSlugAvailable(slug)) {
+                return sendJson(res, 409, { error: 'Slug-ul este deja folosit.' });
+            }
+        } else {
+            const bizName = (config && config.business && config.business.name) || 'site';
+            slug = slugify(bizName);
+        }
+
+        const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 86400 * 1000).toISOString();
+
         site = await reg.createSite({
             userId,
             templateId,
             templateVersion: tpl.version,
             slug,
+            platform:    'web',
+            trialEndsAt,
         });
     }
+
+    const webpublish = require('./webpublish.js');
 
     // If already paid — publish directly (free re-edit)
     if (site.paid) {
-        const webpublish = require('./webpublish.js');
         try {
             const result = await webpublish.publishSite({ site, config, images: imgList });
-            return sendJson(res, 200, { site: await reg.getSite(site.id), url: result.url });
+            const updated = await reg.getSite(site.id);
+            return sendJson(res, 200, { site: updated, paymentUrl: null });
         } catch (e) {
             if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
-            log('server.publish.error', { siteId: site.id, err: e.message }, 'error');
+            log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
             const updated = await reg.getSite(site.id);
             return sendJson(res, 500, { error: 'Publicarea a eșuat: ' + e.message, site: updated });
         }
     }
 
-    // Not yet paid
-    if (payments.isConfigured()) {
-        // Create order + Stripe checkout
-        const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
-        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-        const successUrl = publicUrl + '/app/#platit';
-        const cancelUrl  = publicUrl + '/app/#anulat';
+    // Trial publish — IMMEDIATE, FREE
+    try {
+        const result = await webpublish.publishSite({ site, config, images: imgList });
+        const updated = await reg.getSite(site.id);
 
-        const order = await reg.createOrder({
-            siteId: site.id,
-            userId,
-            amountCents: BUILD_FEE_CENTS,
-            currency,
-            stripeSessionId: null,   // will be updated below
-        });
-
-        let checkout;
-        try {
-            checkout = await payments.createCheckout({
-                amountCents: BUILD_FEE_CENTS,
-                currency,
-                productName: 'Site web Hidook',
-                successUrl,
-                cancelUrl,
-                metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
-                clientReferenceId: 'web-' + site.id,
-            });
-        } catch (e) {
-            log('server.publish.checkout_error', { siteId: site.id, err: e.message }, 'error');
-            return sendJson(res, 503, { error: 'Nu am putut iniția plata: ' + e.message });
+        // Generate paymentUrl if payments are configured
+        let paymentUrl = null;
+        if (payments.isConfigured()) {
+            try {
+                const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+                const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+                const order = await reg.createOrder({
+                    siteId: site.id,
+                    userId,
+                    amountCents: BUILD_FEE_CENTS,
+                    currency,
+                    stripeSessionId: 'pending',
+                });
+                const checkout = await payments.createCheckout({
+                    amountCents: BUILD_FEE_CENTS,
+                    currency,
+                    productName: 'Activare site Hidook',
+                    successUrl:  publicUrl + '/app/#platit',
+                    cancelUrl:   publicUrl + '/app/#anulat',
+                    metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
+                    clientReferenceId: 'web-' + site.id,
+                });
+                // Update order with real session id
+                await reg.createOrder({
+                    siteId: site.id,
+                    userId,
+                    amountCents: BUILD_FEE_CENTS,
+                    currency,
+                    stripeSessionId: checkout.id,
+                });
+                paymentUrl = checkout.url;
+            } catch (e) {
+                log('server.publish.checkout_error', { siteId: site.id, err: e.message }, 'warn');
+                // non-fatal — site is already live
+            }
         }
 
-        // Update order with the real Stripe session id
-        await reg.createOrder({
-            siteId: site.id,
-            userId,
-            amountCents: BUILD_FEE_CENTS,
-            currency,
-            stripeSessionId: checkout.id,
+        return sendJson(res, 200, {
+            site: { ...updated, url: result.url },
+            paymentUrl,
         });
-
-        // Save pending draft so handleStripePaid can publish after payment
-        const webpublish = require('./webpublish.js');
-        webpublish.savePendingDraft(order.id, { siteId: site.id, config, images: imgList });
-
-        return sendJson(res, 200, { paymentUrl: checkout.url, siteId: site.id, orderId: order.id });
+    } catch (e) {
+        if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
+        log('server.publish.trial.error', { siteId: site.id, err: e.message }, 'error');
+        const updated = await reg.getSite(site.id);
+        return sendJson(res, 500, { error: 'Publicarea a eșuat: ' + e.message, site: updated });
     }
-
-    // Payments not configured
-    if (process.env.ALLOW_FREE_PUBLISH === '1') {
-        const webpublish = require('./webpublish.js');
-        // Mark site as paid so publishSite skips payment check
-        await reg.updateSite(site.id, { paid: true });
-        const freshSite = await reg.getSite(site.id);
-        try {
-            const result = await webpublish.publishSite({ site: freshSite, config, images: imgList });
-            return sendJson(res, 200, { site: await reg.getSite(site.id), url: result.url });
-        } catch (e) {
-            if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
-            log('server.publish.free.error', { siteId: site.id, err: e.message }, 'error');
-            const updated = await reg.getSite(site.id);
-            return sendJson(res, 500, { error: 'Publicarea a eșuat: ' + e.message, site: updated });
-        }
-    }
-
-    return sendJson(res, 503, { error: 'Plata nu este configurată. Contactați administratorul.' });
-}
-
-// ---------------------------------------------------------------------------
-// Slug helper (mirrors flow.js — duplicated to avoid circular dep)
-// ---------------------------------------------------------------------------
-function slugify(s) {
-    return (s || 'site')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 40) || 'site';
 }
 
 // ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
-/**
- * Build the request handler.
- *
- * @param {object} [opts]
- * @param {(event: object) => Promise<any>} [opts.onStripeEvent]
- * @returns {(req, res) => Promise<void>}
- */
 function createHandler({ onStripeEvent } = {}) {
     return async (req, res) => {
         const rawUrl = req.url || '/';
@@ -556,17 +638,17 @@ function createHandler({ onStripeEvent } = {}) {
         const query  = new URLSearchParams(qIdx >= 0 ? rawUrl.slice(qIdx + 1) : '');
 
         try {
-            // ── Redirect root → /app/ ────────────────────────────────────────
+            // ── Redirect root → /app/ ──────────────────────────────────────
             if (req.method === 'GET' && url === '/') {
                 return sendRedirect(res, '/app/');
             }
 
-            // ── Health ───────────────────────────────────────────────────────
+            // ── Health ─────────────────────────────────────────────────────
             if (req.method === 'GET' && url === '/health') {
                 return sendJson(res, 200, { ok: true, service: 'hidook-bot', uptimeSec: Math.round(process.uptime()) });
             }
 
-            // ── Stripe webhook ───────────────────────────────────────────────
+            // ── Stripe webhook ─────────────────────────────────────────────
             if (req.method === 'POST' && url === '/webhooks/stripe') {
                 const secret = process.env.STRIPE_WEBHOOK_SECRET;
                 if (!secret) return sendJson(res, 503, { error: 'webhook not configured' });
@@ -590,12 +672,22 @@ function createHandler({ onStripeEvent } = {}) {
                 return;
             }
 
-            // ── Static: /app and /app/* ──────────────────────────────────────
+            // ── Static: /app and /app/* ────────────────────────────────────
             if (req.method === 'GET' && (url === '/app' || url === '/app/' || url.startsWith('/app/'))) {
                 return serveStatic(req, res, url);
             }
 
-            // ── API routes ───────────────────────────────────────────────────
+            // ── Public API: /api/config ─────────────────────────────────────
+            if (req.method === 'GET' && url === '/api/config') {
+                return await handleGetConfig(req, res);
+            }
+
+            // ── Public API: /api/slug-check ─────────────────────────────────
+            if (req.method === 'GET' && url === '/api/slug-check') {
+                return await handleSlugCheck(req, res, query);
+            }
+
+            // ── API routes ──────────────────────────────────────────────────
             if (req.method === 'GET' && url === '/api/templates') {
                 return await handleGetTemplates(req, res);
             }
@@ -632,6 +724,12 @@ function createHandler({ onStripeEvent } = {}) {
                 return await handleRollback(req, res, rollbackMatch[1]);
             }
 
+            // /api/sites/:id/checkout
+            const checkoutMatch = url.match(/^\/api\/sites\/([^/]+)\/checkout$/);
+            if (req.method === 'POST' && checkoutMatch) {
+                return await handleSiteCheckout(req, res, checkoutMatch[1]);
+            }
+
             // /api/sites/:id
             const siteMatch = url.match(/^\/api\/sites\/([^/]+)$/);
             if (req.method === 'GET' && siteMatch) {
@@ -654,9 +752,6 @@ function createHandler({ onStripeEvent } = {}) {
 // Server start
 // ---------------------------------------------------------------------------
 
-/**
- * Start the HTTP server. Port precedence: opts.port → env PORT → 8787.
- */
 function startServer(opts = {}) {
     const port   = opts.port != null ? opts.port : (Number(process.env.PORT) || 8787);
     const server = http.createServer(createHandler(opts));

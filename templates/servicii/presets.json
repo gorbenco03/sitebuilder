@@ -1,155 +1,199 @@
 {
   "presets": [
     {
-      "id": "clean-london",
-      "name": "CurățineLondra — firmă de curățenie (Londra)",
+      "id": "curatenie-profesionala-uk",
+      "name": "LuciuHome — curățenie rezidențială & birouri (Londra)",
       "config": {
         "business": {
-          "name": "CurățineLondra",
-          "tagline": "Curățenie profesională la domiciliu și birouri",
-          "title": "CurățineLondra | Servicii de Curățenie în Londra | Rapid & Profesional",
-          "metaDescription": "Servicii profesionale de curățenie la domiciliu și birouri în Londra. Echipă românească serioasă, produse eco, prețuri corecte. Sună sau scrie pe WhatsApp!",
-          "about": "Suntem o echipă românească cu experiență de peste 5 ani în Londra. Oferim curățenie generală, curățenie la mutare, curățenie de birou și servicii de menaj regulat. Lucrăm cu produse eco-friendly, suntem asigurați și avem referințe excelente de la clienți din toată Londra.",
+          "name": "LuciuHome",
+          "tagline": "Curățenie profesională în Londra",
+          "title": "LuciuHome | Curățenie Profesională Londra | Rezidențial & Birouri",
+          "metaDescription": "Curățenie rezidențială și de birouri în Londra. Echipă românească serioasă, produse eco, fără costuri ascunse. Ofertă gratuită în 30 de minute pe WhatsApp.",
+          "about": "Suntem o echipă românească cu 6 ani de experiență în Londra. Lucrăm în toate cele 32 de districte și oferim curățenie generală, curățenie profundă, end-of-tenancy și menaj regulat. Folosim produse eco-friendly certificate, suntem complet asigurați și venim întotdeauna la ora stabilită. Peste 300 de clienți fericiți ne recomandă.",
           "lang": "ro"
         },
         "labels": {
           "about": "Despre noi",
-          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaTitle": "Urmărește munca noastră",
           "instaFollow": "Urmărește",
           "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary": "#2aa87e",
-          "primaryLight": "#4dc99e",
-          "primaryDark": "#1e8462",
-          "cream": "#f4faf8"
+          "primary": "#0e9e70",
+          "primaryLight": "#2dc48e",
+          "primaryDark": "#0a7a56",
+          "cream": "#f2faf7"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(135deg, #1e8462 0%, #2aa87e 50%, #4dc99e 100%)",
-          "ctaLabel": "Solicită ofertă pe WhatsApp"
+          "background": "linear-gradient(148deg, #0a7a56 0%, #0e9e70 55%, #2dc48e 100%), url('https://picsum.photos/seed/luciu-hero/1600/900') center/cover no-repeat",
+          "ctaLabel": "Solicită ofertă gratuită"
         },
+        "heroBenefits": [
+          "Răspuns în 30 de minute",
+          "Produse eco-friendly",
+          "Asigurați & verificați"
+        ],
         "servicesTitle": "Ce curățăm",
         "services": [
-          { "icon": "🏠", "label": "Curățenie la domiciliu" },
-          { "icon": "🏢", "label": "Curățenie birouri" },
-          { "icon": "📦", "label": "Curățenie la mutare" },
-          { "icon": "🌿", "label": "Produse eco-friendly" },
-          { "icon": "🪟", "label": "Spălat geamuri" },
-          { "icon": "🛋️", "label": "Curățare canapele" },
-          { "icon": "🧽", "label": "Curățenie generală" },
-          { "icon": "✅", "label": "Serviciu asigurat" }
+          {
+            "icon": "<rect x='3' y='3' width='7' height='9' rx='1'/><rect x='14' y='3' width='7' height='5' rx='1'/><rect x='14' y='12' width='7' height='9' rx='1'/><rect x='3' y='16' width='7' height='5' rx='1'/>",
+            "label": "Curățenie generală"
+          },
+          {
+            "icon": "<path d='M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/>",
+            "label": "Curățenie rezidențială"
+          },
+          {
+            "icon": "<rect x='2' y='7' width='20' height='14' rx='2'/><path d='M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16'/>",
+            "label": "Curățenie birouri"
+          },
+          {
+            "icon": "<path d='M5 12H3l9-9 9 9h-2'/><path d='M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7'/><path d='M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6'/>",
+            "label": "End-of-tenancy"
+          },
+          {
+            "icon": "<polyline points='21 8 21 21 3 21 3 8'/><rect x='1' y='3' width='22' height='5' rx='1'/><line x1='10' y1='12' x2='14' y2='12'/>",
+            "label": "Curățenie la mutare"
+          },
+          {
+            "icon": "<circle cx='12' cy='12' r='10'/><path d='M12 8v4l3 3'/>",
+            "label": "Menaj regulat"
+          },
+          {
+            "icon": "<path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z'/><line x1='4' y1='22' x2='4' y2='15'/>",
+            "label": "Spălat geamuri"
+          },
+          {
+            "icon": "<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
+            "label": "Asigurați 100%"
+          }
         ],
         "steps": [
           {
             "title": "Contactează-ne",
-            "text": "Scrie-ne pe WhatsApp sau sună — îți răspundem în maxim 30 de minute și stabilim detaliile."
+            "text": "Scrie-ne pe WhatsApp sau sună — îți răspundem în maxim 30 de minute și discutăm detaliile."
           },
           {
-            "title": "Stabilim data și prețul",
-            "text": "Îți trimitem o ofertă clară, fără costuri ascunse. Plătești doar după ce ești mulțumit."
+            "title": "Primești oferta clară",
+            "text": "Îți trimitem prețul final fără costuri ascunse. Nicio surpriză la final — plătești exact ce s-a convenit."
           },
           {
-            "title": "Facem treabă curată",
-            "text": "Echipa noastră vine la ora stabilită, lucrează profesional și lasă totul impecabil."
+            "title": "Facem treabă impecabilă",
+            "text": "Echipa noastră vine la ora stabilită cu toate materialele. Lucrăm profesional și lăsăm totul strălucitor."
           }
         ],
-        "zone": "Toată Londra — acoperim toate cele 32 de districte",
-        "schedule": "Luni–Sâmbătă 07:00–20:00 | Urgențe duminica la cerere",
-        "galleryTitle": "Cum arată munca noastră",
+        "zone": "Toate cele 32 de districte din Londra — inclusiv Surrey & Essex",
+        "schedule": "Luni–Sâmbătă 07:30–21:00 | Urgențe disponibile Duminică",
+        "galleryTitle": "Rezultatele noastre",
         "categories": [
           {
             "title": "Curățenie rezidențială",
-            "blurb": "Apartamente, case și vile — de la studio la mansionete.",
+            "blurb": "Apartamente, case și mansionete — de la studio la proprietăți mari.",
             "photos": [
-              { "src": "https://picsum.photos/seed/clean-living/1200/800", "alt": "Salon curat și luminos după serviciu" },
-              { "src": "https://picsum.photos/seed/clean-kitchen/1200/800", "alt": "Bucătărie strălucitoare curățată profesional" },
-              { "src": "https://picsum.photos/seed/clean-bath/1200/800", "alt": "Baie dezinfectată și igienizată complet" }
+              {
+                "src": "https://picsum.photos/seed/luciu-living/1200/800",
+                "alt": "Salon curat și luminat după serviciu LuciuHome"
+              },
+              {
+                "src": "https://picsum.photos/seed/luciu-kitchen/1200/800",
+                "alt": "Bucătărie strălucitoare curățată profesional"
+              },
+              {
+                "src": "https://picsum.photos/seed/luciu-bath/1200/800",
+                "alt": "Baie igienizată și dezinfectată complet"
+              }
             ]
           },
           {
-            "title": "Curățenie birouri",
-            "blurb": "Spații de lucru impecabile pentru echipa ta.",
+            "title": "Curățenie birouri & spații comerciale",
+            "blurb": "Spații de lucru impecabile pentru echipa ta — înainte sau după program.",
             "photos": [
-              { "src": "https://picsum.photos/seed/clean-office/1200/800", "alt": "Birou modern curat și ordonat" },
-              { "src": "https://picsum.photos/seed/clean-desk/1200/800", "alt": "Birouri și spații comune curățate" }
+              {
+                "src": "https://picsum.photos/seed/luciu-office/1200/800",
+                "alt": "Birou modern curat și ordonat"
+              },
+              {
+                "src": "https://picsum.photos/seed/luciu-desk/1200/800",
+                "alt": "Birouri și zone comune curățate profesional"
+              }
             ]
           }
         ],
         "reviews": [
           {
             "name": "Maria D., Hackney",
-            "text": "Fantastici! Au venit la ora fixată, au lucrat rapid și conștiincios. Apartamentul arată mai bine decât atunci când l-am luat. Recomand cu toată inima!"
+            "text": "Fantastici! Au venit exact la ora fixată, au lucrat rapid și conștiincios. Apartamentul arată mai bine ca niciodată. Recomand cu toată inima!"
           },
           {
             "name": "Andrei P., Camden",
-            "text": "Folosesc serviciul lunar de 8 luni. Mereu punctuali, mereu serioși. Prețul e corect și rezultatul excelent. Nu mai caut pe altcineva."
+            "text": "Folosesc serviciul lunar de 8 luni. Mereu punctuali, mereu serioși. Prețul este corect și rezultatul excelent. Nu mai caut pe altcineva."
           },
           {
             "name": "Elena M., Islington",
-            "text": "Am comandat curățenie la mutare și nu mi-a venit să cred cât de curat au lăsat totul. Am recuperat integral depozitul de la proprietar!"
+            "text": "Am comandat end-of-tenancy și nu mi-a venit să cred cât de curat au lăsat totul. Am recuperat integral depozitul de la proprietar!"
           }
         ],
         "instagram": {
-          "handle": "curateninelondra",
-          "url": "https://www.instagram.com/curateninelondra",
+          "handle": "luciuhome_london",
+          "url": "https://www.instagram.com/luciuhome_london",
           "gallery": [
-            "https://picsum.photos/seed/ig-clean1/600/600",
-            "https://picsum.photos/seed/ig-clean2/600/600",
-            "https://picsum.photos/seed/ig-clean3/600/600",
-            "https://picsum.photos/seed/ig-clean4/600/600",
-            "https://picsum.photos/seed/ig-clean5/600/600",
-            "https://picsum.photos/seed/ig-clean6/600/600"
+            "https://picsum.photos/seed/lg-clean1/600/600",
+            "https://picsum.photos/seed/lg-clean2/600/600",
+            "https://picsum.photos/seed/lg-clean3/600/600",
+            "https://picsum.photos/seed/lg-clean4/600/600",
+            "https://picsum.photos/seed/lg-clean5/600/600",
+            "https://picsum.photos/seed/lg-clean6/600/600"
           ]
         },
         "contact": {
           "title": "Solicită ofertă gratuită",
-          "intro": "Scrie-ne pe WhatsApp sau sună — răspundem rapid și stabilim tot ce ai nevoie.",
+          "intro": "Scrie-ne pe WhatsApp — răspundem în 30 de minute și stabilim tot ce ai nevoie.",
           "instagram": {
-            "url": "https://www.instagram.com/curateninelondra",
-            "label": "@curateninelondra"
+            "url": "https://www.instagram.com/luciuhome_london",
+            "label": "@luciuhome_london"
           },
           "facebook": {
-            "url": "https://www.facebook.com/curateninelondra",
-            "label": "CurățineLondra"
+            "url": "https://www.facebook.com/luciuhome",
+            "label": "LuciuHome Londra"
           },
-          "whatsapp": "447700100200",
-          "phone": "+447700100200",
-          "phoneDisplay": "+44 7700 100 200",
-          "waHref": "https://wa.me/447700100200?text=Salut!%20A%C8%99 vrea%20o%20ofert%C4%83%20pentru%20cur%C4%83%C8%9Benie.",
-          "address": "Londra, Marea Britanie<br>Acoperim toate districtele",
+          "whatsapp": "447712345678",
+          "phone": "+447712345678",
+          "phoneDisplay": "+44 7712 345 678",
+          "waHref": "https://wa.me/447712345678?text=Buna%20ziua!%20As%20dori%20o%20oferta%20pentru%20curatenie.",
+          "address": "Londra, Marea Britanie",
           "addressHref": ""
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/clean-og/1200/630",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"LocalBusiness\",\"name\":\"Cur\\u0103\\u021bineLondra\",\"description\":\"Servicii profesionale de cur\\u0103\\u021benie la domiciliu \\u015fi birouri \\u00een Londra\",\"telephone\":\"+447700100200\",\"areaServed\":\"London\",\"url\":\"https://curateninelondra.co.uk\"}",
+          "ogImage": "https://picsum.photos/seed/luciu-og/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"LocalBusiness\",\"name\":\"LuciuHome\",\"description\":\"Cur\\u0103\\u021benie profesional\\u0103 reziden\\u021bial\\u0103 \\u015fi birouri \\u00een Londra\",\"telephone\":\"+447712345678\",\"areaServed\":\"London\",\"url\":\"https://luciuhome.co.uk\"}",
           "canonical": ""
         },
         "footer": {
           "address": "Londra, Marea Britanie — toate districtele",
           "year": 2026,
-          "note": "Curățenie profesională cu suflet românesc."
+          "note": "Curățenie cu suflet românesc."
         }
       }
     },
     {
-      "id": "transport-ro-uk",
-      "name": "TransRO — transport și mutări România–UK",
+      "id": "instalatii-reparatii-ro",
+      "name": "ProFix România — instalații, reparații și renovări (București)",
       "config": {
         "business": {
-          "name": "TransRO",
-          "tagline": "Transport persoane, bagaje și mutări România – UK",
-          "title": "TransRO | Transport România–Anglia | Mutări, Bagaje, Colete",
-          "metaDescription": "Transport regulat România–Anglia: persoane, bagaje și mutări. Șoferi cu experiență, prețuri transparente, curse săptămânale București–Londra. Rezervă acum!",
-          "about": "Facem transport România–UK de 8 ani. Curse săptămânale București–Londra, dar și Iași, Cluj, Timișoara. Transportăm persoane, bagaje, colete și organizăm mutări complete. Toate mașinile sunt verificate tehnic, asigurate internațional și dotate cu GPS. Rezervă locul tău din timp!",
+          "name": "ProFix",
+          "tagline": "Instalații, reparații și renovări la domiciliu",
+          "title": "ProFix | Instalații și Reparații Rapide București | Meșteri Serioși",
+          "metaDescription": "Instalații sanitare, electrice și reparații la domiciliu în București. Meșteri calificați, intervenții rapide, garanție la lucrare. Sună sau scrie pe WhatsApp!",
+          "about": "ProFix este echipa ta de meșteri de încredere din București. De 9 ani rezolvăm probleme de instalații sanitare, electrice, faianță, gresie, zugrăveli și mici renovări. Lucrăm în regim de urgență și oferim garanție la toate lucrările. Fără improvizații, fără surprize la preț — evaluare gratuită la fața locului.",
           "lang": "ro"
         },
         "labels": {
           "about": "Despre noi",
-          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaTitle": "Lucrările noastre pe Instagram",
           "instaFollow": "Urmărește",
           "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
@@ -157,116 +201,160 @@
         },
         "theme": {
           "primary": "#2563eb",
-          "primaryLight": "#3b82f6",
-          "primaryDark": "#1d4ed8",
-          "cream": "#f0f4ff"
+          "primaryLight": "#4f86f7",
+          "primaryDark": "#1a47c0",
+          "cream": "#f0f5ff"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)",
-          "ctaLabel": "Rezervă pe WhatsApp"
+          "background": "linear-gradient(148deg, #1a3a8f 0%, #2563eb 55%, #4f86f7 100%), url('https://picsum.photos/seed/profix-hero/1600/900') center/cover no-repeat",
+          "ctaLabel": "Sună sau scrie pe WhatsApp"
         },
-        "servicesTitle": "Ce transportăm",
+        "heroBenefits": [
+          "Intervenție în ziua apelului",
+          "Garanție la toate lucrările",
+          "Evaluare gratuită la fața locului"
+        ],
+        "servicesTitle": "Ce reparăm & instalăm",
         "services": [
-          { "icon": "🚐", "label": "Transport persoane" },
-          { "icon": "🧳", "label": "Bagaje și colete" },
-          { "icon": "📦", "label": "Mutări complete" },
-          { "icon": "🇷🇴", "label": "Din toată România" },
-          { "icon": "🇬🇧", "label": "Toată Anglia" },
-          { "icon": "📍", "label": "Door-to-door" },
-          { "icon": "🛡️", "label": "Asigurat internațional" },
-          { "icon": "📅", "label": "Curse săptămânale" }
+          {
+            "icon": "<path d='M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z'/><path d='M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3'/><line x1='12' y1='17' x2='12.01' y2='17'/>",
+            "label": "Instalații sanitare"
+          },
+          {
+            "icon": "<polyline points='13 2 13 9 20 9'/><path d='M20 14.5V7l-7-5H4a2 2 0 00-2 2v14a2 2 0 002 2h8'/><line x1='16' y1='18' x2='22' y2='18'/><line x1='19' y1='15' x2='19' y2='21'/>",
+            "label": "Instalații electrice"
+          },
+          {
+            "icon": "<rect x='2' y='3' width='20' height='14' rx='2'/><line x1='8' y1='21' x2='16' y2='21'/><line x1='12' y1='17' x2='12' y2='21'/>",
+            "label": "Faianță & gresie"
+          },
+          {
+            "icon": "<path d='M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z'/>",
+            "label": "Zugrăveli & vopsitorie"
+          },
+          {
+            "icon": "<path d='M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z'/><polyline points='9 22 9 12 15 12 15 22'/>",
+            "label": "Renovări apartamente"
+          },
+          {
+            "icon": "<circle cx='12' cy='12' r='3'/><path d='M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M2 12H0M6.34 6.34L4.93 4.93M22 12h-2M17.66 17.66l1.41 1.41M12 2V0M12 22v-2'/>",
+            "label": "Urgențe 24/7"
+          },
+          {
+            "icon": "<path d='M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z'/>",
+            "label": "Mici reparații casă"
+          },
+          {
+            "icon": "<path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/>",
+            "label": "Garanție lucrare"
+          }
         ],
         "steps": [
           {
-            "title": "Rezervă locul",
-            "text": "Scrie-ne pe WhatsApp cu data dorită și orașul de plecare. Confirmăm disponibilitatea și prețul în câteva ore."
+            "title": "Descrie problema",
+            "text": "Sună sau trimite un mesaj pe WhatsApp. Poți atașa o fotografie — îți dăm o estimare de preț în câteva minute."
           },
           {
-            "title": "Pregătești bagajele",
-            "text": "Îți trimitem detalii despre pickup, orarul cursei și ce documente sunt necesare pentru traversare."
+            "title": "Meșterul vine la tine",
+            "text": "Stabilim o oră convenabilă și trimitem meșterul calificat cu toate uneltele și materialele necesare."
           },
           {
-            "title": "Călătorești confortabil",
-            "text": "Te luăm de la ușă și te ducem la destinație. Pauzele de masă sunt incluse. Ajungi odihnit!"
+            "title": "Lucrare cu garanție",
+            "text": "Rezolvăm problema profesional și oferim garanție în scris. Plătești doar după ce ești 100% mulțumit."
           }
         ],
-        "zone": "Curse regulate: București, Iași, Cluj, Timișoara → Londra, Birmingham, Manchester, Leeds",
-        "schedule": "Curse de joi și duminică | Rezervări: oricând pe WhatsApp",
-        "galleryTitle": "Flota noastră",
+        "zone": "București — toate sectoarele + Ilfov",
+        "schedule": "Luni–Duminică 07:00–22:00 | Urgențe disponibile non-stop",
+        "galleryTitle": "Lucrările noastre",
         "categories": [
           {
-            "title": "Vehicule confortabile",
-            "blurb": "Minibus-uri de 8+1 locuri, climatizate, cu GPS și Wi-Fi la bord.",
+            "title": "Instalații & reparații",
+            "blurb": "Intervenții sanitare, electrice și reparații generale executate la standarde înalte.",
             "photos": [
-              { "src": "https://picsum.photos/seed/transro-van1/1200/800", "alt": "Minibus modern pentru transport persoane" },
-              { "src": "https://picsum.photos/seed/transro-van2/1200/800", "alt": "Interior confortabil cu scaune reclinabile" },
-              { "src": "https://picsum.photos/seed/transro-cargo/1200/800", "alt": "Vehicul cargo pentru mutări și colete" }
+              {
+                "src": "https://picsum.photos/seed/profix-plumb/1200/800",
+                "alt": "Instalație sanitară montată profesional"
+              },
+              {
+                "src": "https://picsum.photos/seed/profix-elec/1200/800",
+                "alt": "Tablou electric modernizat și etichetat"
+              },
+              {
+                "src": "https://picsum.photos/seed/profix-tiles/1200/800",
+                "alt": "Faianță montată perfect, fuga egală"
+              }
             ]
           },
           {
-            "title": "Mutări România–UK",
-            "blurb": "Ambalăm, încărcăm și livrăm totul în siguranță.",
+            "title": "Renovări apartamente",
+            "blurb": "Renovăm complet sau parțial — de la zugrăveli la pardoseli și mobilier de baie.",
             "photos": [
-              { "src": "https://picsum.photos/seed/transro-move1/1200/800", "alt": "Echipa noastră la o mutare" },
-              { "src": "https://picsum.photos/seed/transro-move2/1200/800", "alt": "Marfă ambalată profesional" }
+              {
+                "src": "https://picsum.photos/seed/profix-renov1/1200/800",
+                "alt": "Baie renovată integral — înainte și după"
+              },
+              {
+                "src": "https://picsum.photos/seed/profix-renov2/1200/800",
+                "alt": "Cameră revopsită și renovată"
+              }
             ]
           }
         ],
         "reviews": [
           {
-            "name": "Cristina V., Londra",
-            "text": "Am călătorit București–Londra de 4 ori cu TransRO. Mereu punctuali, șoferi amabili și cursă confortabilă. Nu mai iau autobuz sau avion când merg acasă!"
+            "name": "Cristina V., Sector 1",
+            "text": "Am sunat la 8 dimineața cu o țeavă spartă și până la 10:30 problema era rezolvată. Profesioniști adevărați, prețuri corecte. Nu mai apelez la altcineva!"
           },
           {
-            "name": "Bogdan T., Manchester",
-            "text": "Am trimis colete cu ei lunar de 2 ani. Niciodată o problemă, totul ajunge intact și la timp. Prețul e cel mai bun față de alte firme."
+            "name": "Bogdan T., Sector 3",
+            "text": "Am renovat baia cu ProFix de la zero. Au respectat termenul, au fost curați în lucru și rezultatul e superb. Recomand cu toată încrederea!"
           },
           {
-            "name": "Ana și Mihai S., Birmingham",
-            "text": "Ne-am mutat din Cluj în Birmingham cu TransRO. Au ambalat tot, au livrat perfect și au ajutat și la descărcat. Profesionalism 100%!"
+            "name": "Ana I., Ilfov",
+            "text": "Meșter extrem de serios, a explicat tot ce face și de ce. Instalația electrică montată impecabil, cu garanție. Exact ce căutam!"
           }
         ],
         "instagram": {
-          "handle": "transro_uk",
-          "url": "https://www.instagram.com/transro_uk",
+          "handle": "profix_bucuresti",
+          "url": "https://www.instagram.com/profix_bucuresti",
           "gallery": [
-            "https://picsum.photos/seed/trig1/600/600",
-            "https://picsum.photos/seed/trig2/600/600",
-            "https://picsum.photos/seed/trig3/600/600",
-            "https://picsum.photos/seed/trig4/600/600",
-            "https://picsum.photos/seed/trig5/600/600",
-            "https://picsum.photos/seed/trig6/600/600"
+            "https://picsum.photos/seed/pf-ig1/600/600",
+            "https://picsum.photos/seed/pf-ig2/600/600",
+            "https://picsum.photos/seed/pf-ig3/600/600",
+            "https://picsum.photos/seed/pf-ig4/600/600",
+            "https://picsum.photos/seed/pf-ig5/600/600",
+            "https://picsum.photos/seed/pf-ig6/600/600"
           ]
         },
         "contact": {
-          "title": "Rezervă acum",
-          "intro": "Spune-ne data dorită și orașul de plecare — îți confirmăm locul în câteva ore.",
+          "title": "Solicită intervenție",
+          "intro": "Spune-ne ce problemă ai — trimite și o fotografie pe WhatsApp pentru o estimare rapidă.",
           "instagram": {
-            "url": "https://www.instagram.com/transro_uk",
-            "label": "@transro_uk"
+            "url": "https://www.instagram.com/profix_bucuresti",
+            "label": "@profix_bucuresti"
           },
           "facebook": {
-            "url": "https://www.facebook.com/transrouk",
-            "label": "TransRO UK"
+            "url": "https://www.facebook.com/profixbucuresti",
+            "label": "ProFix București"
           },
-          "whatsapp": "447700200300",
-          "phone": "+447700200300",
-          "phoneDisplay": "+44 7700 200 300",
-          "waHref": "https://wa.me/447700200300?text=Salut!%20Vreau%20s%C4%83%20rezerv%20un%20loc%20pentru%20transport%20Rom%C3%A2nia%E2%80%93UK.",
-          "address": "",
-          "addressHref": ""
+          "whatsapp": "40721654321",
+          "phone": "+40721654321",
+          "phoneDisplay": "+40 721 654 321",
+          "waHref": "https://wa.me/40721654321?text=Buna%20ziua!%20Am%20nevoie%20de%20ajutor%20cu%20o%20reparatie.",
+          "address": "București & Ilfov",
+          "addressHref": "https://maps.google.com/?q=Bucuresti"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/transro-og/1200/630",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"MovingCompany\",\"name\":\"TransRO\",\"description\":\"Transport persoane, bagaje \\u015fi mut\\u0103ri Rom\\u00e2nia\\u2013UK\",\"telephone\":\"+447700200300\",\"areaServed\":[\"Romania\",\"United Kingdom\"]}",
+          "ogImage": "https://picsum.photos/seed/profix-og/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProFix\",\"description\":\"Instala\\u021bii, repara\\u021bii \\u015fi renov\\u0103ri la domiciliu \\u00een Bucure\\u015fti\",\"telephone\":\"+40721654321\",\"areaServed\":\"Bucure\\u015fti\",\"url\":\"https://profix.ro\"}",
           "canonical": ""
         },
         "footer": {
-          "address": "România — Marea Britanie | Curse săptămânale",
+          "address": "București & Ilfov — toate sectoarele",
           "year": 2026,
-          "note": "Aproape de casă, oriunde ai fi."
+          "note": "Meșteri serioși, lucrări cu garanție."
         }
       }
     }

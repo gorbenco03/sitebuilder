@@ -1,10 +1,17 @@
 'use strict';
 /**
- * bot/webpublish.js — Web-platform publish pipeline.
+ * bot/webpublish.js — Web-platform publish pipeline (trial model).
  *
- * Handles:
- *  - publishSite({site, config, images}): decode images, moderate, build, deploy.
- *  - handleStripePaid(event): idempotent post-payment publish triggered by Stripe webhook.
+ * Trial model:
+ *   - publishSite: deploy IMMEDIATELY (free, trial). Accepts {siteDirAlreadyBuilt}
+ *     to skip the build step when files are already on disk (Telegram flow).
+ *   - handleStripePaid: generalized across platforms; if site was expired →
+ *     republish last version; notify owner on owner's channel + concierge domain msg.
+ *   - deployPlaceholder: deploy a self-contained expired-trial page with a
+ *     payment/reactivation link.
+ *
+ * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
+ * {url:'https://<slug>.test.local', provider:'fake'} — for offline tests.
  *
  * CommonJS, zero new npm dependencies, Node 18+.
  */
@@ -13,17 +20,35 @@ const fs   = require('fs');
 const path = require('path');
 
 const { build }         = require('../build.js');
-const { deployBuiltSite } = require('./flow.js');
+// deployBuiltSite is loaded lazily to avoid circular dep: flow.js ↔ webpublish.js
+function getDeployBuiltSite() { return require('./flow.js').deployBuiltSite; }
 const registry          = require('./registry.js');
 const ledger            = require('./ledger.js');
 const ai                = require('./ai.js');
 const { log }           = require('./logger.js');
+const cfDeploy          = require('./deploy-cloudflare.js');
 
-const PROJECT_ROOT = path.join(__dirname, '..');
+const PROJECT_ROOT  = path.join(__dirname, '..');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
-const SITES_DIR = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
+const SITES_DIR     = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 
 const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
+
+// ---------------------------------------------------------------------------
+// Fake-deploy stub (tests only)
+// ---------------------------------------------------------------------------
+
+function _isFakeDeploy() {
+    if (process.env.HIDOOK_FAKE_DEPLOY !== '1') return false;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('HIDOOK_FAKE_DEPLOY=1 is refused in production');
+    }
+    return true;
+}
+
+async function _fakeDeploy(slug) {
+    return { url: `https://${slug}.test.local`, provider: 'fake' };
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,11 +66,24 @@ function imageFilename(name) {
     if (!name || typeof name !== 'string') return null;
     const lower = name.toLowerCase().replace(/\s+/g, '-');
     if (lower === 'logo') return 'logo.jpg';
-    // gallery-N or any other name
     if (/^gallery-\d+$/.test(lower)) return lower + '.jpg';
-    // safe fallback
     const safe = lower.replace(/[^a-z0-9-]/g, '').slice(0, 40);
     return safe ? safe + '.jpg' : null;
+}
+
+/**
+ * Recursively walk obj and replace any string value equal to `dataUrl` with `localPath`.
+ */
+function rewriteDataUrl(obj, dataUrl, localPath) {
+    if (!obj || typeof obj !== 'object') return;
+    for (const key of Object.keys(obj)) {
+        const val = obj[key];
+        if (val === dataUrl) {
+            obj[key] = localPath;
+        } else if (typeof val === 'object' && val !== null) {
+            rewriteDataUrl(val, dataUrl, localPath);
+        }
+    }
 }
 
 /**
@@ -80,166 +118,403 @@ function deletePendingDraft(orderId) {
 }
 
 // ---------------------------------------------------------------------------
+// Core deploy helper (with BRAND_DOMAIN subdomain support)
+// ---------------------------------------------------------------------------
+
+/**
+ * Deploy a built site directory. Returns {url, provider}.
+ * Respects HIDOOK_FAKE_DEPLOY=1 for offline tests.
+ * If DEPLOY_PROVIDER=cloudflare and BRAND_DOMAIN is set, also attaches subdomain (best-effort).
+ */
+async function _deploy(siteDir, projectName, userId) {
+    if (_isFakeDeploy()) {
+        return await _fakeDeploy(projectName);
+    }
+
+    const result = await getDeployBuiltSite()(siteDir, projectName, userId);
+    const url    = result && result.url;
+    const provider = result && result.provider;
+
+    // BRAND_DOMAIN: attach <slug>.<BRAND_DOMAIN> when cloudflare is the provider
+    if (provider === 'cloudflare' && process.env.BRAND_DOMAIN) {
+        const sub = await cfDeploy.ensureSubdomain(projectName);
+        // Return brandUrl as the canonical URL if available
+        return { url: sub.brandUrl || url || sub.url, provider };
+    }
+
+    return { url, provider };
+}
+
+// ---------------------------------------------------------------------------
 // publishSite
 // ---------------------------------------------------------------------------
 
 /**
- * Build and deploy a site for a web-platform order.
+ * Build (if needed) and deploy a site immediately (trial model).
  *
  * @param {object} opts
- * @param {object} opts.site     — registry site record
- * @param {object} opts.config   — site config (tokens/copy, may contain dataUrls in src fields)
- * @param {Array<{name:string, dataUrl:string}>} opts.images — uploaded images
+ * @param {object} opts.site              — registry site record
+ * @param {object} [opts.config]          — site config (with possible dataUrls); required unless siteDirAlreadyBuilt
+ * @param {Array<{name:string, dataUrl:string}>} [opts.images] — uploaded images
+ * @param {boolean} [opts.siteDirAlreadyBuilt] — if true, skip template copy/build; files are on disk already
  * @returns {Promise<{url: string}>}
  * @throws if moderation blocks, or deploy fails
  */
-async function publishSite({ site, config, images }) {
-    const siteDir    = path.join(SITES_DIR, site.projectName);
-    const imagesDir  = path.join(siteDir, 'images');
-    fs.mkdirSync(imagesDir, { recursive: true });
+async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
+    const siteDir   = path.join(SITES_DIR, site.projectName);
+    const imagesDir = path.join(siteDir, 'images');
 
-    // 1. Copy template files (excluding schema/presets/md)
-    const templateDir = path.join(TEMPLATES_DIR, site.templateId);
-    if (fs.existsSync(templateDir)) {
-        for (const entry of fs.readdirSync(templateDir)) {
-            if (TEMPLATE_EXCLUDES.test(entry)) continue;
-            const src = path.join(templateDir, entry);
-            if (fs.statSync(src).isFile()) {
-                fs.copyFileSync(src, path.join(siteDir, entry));
+    if (!siteDirAlreadyBuilt) {
+        fs.mkdirSync(imagesDir, { recursive: true });
+
+        // 1. Copy template files (excluding schema/presets/md)
+        const templateDir = path.join(TEMPLATES_DIR, site.templateId);
+        if (fs.existsSync(templateDir)) {
+            for (const entry of fs.readdirSync(templateDir)) {
+                if (TEMPLATE_EXCLUDES.test(entry)) continue;
+                const src = path.join(templateDir, entry);
+                if (fs.statSync(src).isFile()) {
+                    fs.copyFileSync(src, path.join(siteDir, entry));
+                }
             }
         }
-    }
 
-    // 2. Decode images and write to disk; rewrite src in config
-    const imageBuffers = [];
-    const cfgCopy = JSON.parse(JSON.stringify(config));
+        // 2. Decode images and write to disk; rewrite src in config
+        const imageBuffers = [];
+        const cfgCopy = JSON.parse(JSON.stringify(config || {}));
 
-    for (const img of (images || [])) {
-        if (!img || !img.dataUrl || !img.name) continue;
-        const decoded = decodeDataUrl(img.dataUrl);
-        if (!decoded) continue;
-        const fname = imageFilename(img.name);
-        if (!fname) continue;
-        fs.writeFileSync(path.join(imagesDir, fname), decoded.buffer);
-        imageBuffers.push(decoded.buffer);
-        // Rewrite any dataUrl references in config to the local path
-        rewriteDataUrl(cfgCopy, img.dataUrl, 'images/' + fname);
-    }
-
-    // 3. Image moderation (if configured)
-    if (typeof ai.moderateImages === 'function' && imageBuffers.length > 0) {
-        let verdict;
-        try {
-            verdict = await ai.moderateImages(imageBuffers, 'ro');
-        } catch (e) {
-            log('webpublish.moderation_error', { err: e.message, siteId: site.id }, 'error');
-            // transient failure — don't block publication
+        for (const img of (images || [])) {
+            if (!img || !img.dataUrl || !img.name) continue;
+            const decoded = decodeDataUrl(img.dataUrl);
+            if (!decoded) continue;
+            const fname = imageFilename(img.name);
+            if (!fname) continue;
+            fs.writeFileSync(path.join(imagesDir, fname), decoded.buffer);
+            imageBuffers.push(decoded.buffer);
+            rewriteDataUrl(cfgCopy, img.dataUrl, 'images/' + fname);
         }
-        if (verdict && verdict.blocked) {
-            const err = new Error(verdict.reason || 'Imaginile nu au trecut moderarea.');
-            err.code = 'MODERATION';
+
+        // 3. Image moderation (if configured)
+        if (typeof ai.moderateImages === 'function' && imageBuffers.length > 0) {
+            let verdict;
+            try {
+                verdict = await ai.moderateImages(imageBuffers, 'ro');
+            } catch (e) {
+                log('webpublish.moderation_error', { err: e.message, siteId: site.id }, 'error');
+                // transient failure — don't block publication
+            }
+            if (verdict && verdict.blocked) {
+                const err = new Error(verdict.reason || 'Imaginile nu au trecut moderarea.');
+                err.code = 'MODERATION';
+                throw err;
+            }
+        }
+
+        // 4. Write config.json and build
+        fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(cfgCopy, null, 2));
+        build(siteDir);
+    } else {
+        // Files already on disk — just verify the directory exists
+        if (!fs.existsSync(siteDir)) {
+            const err = new Error(`siteDir not found: ${siteDir}`);
+            err.code  = 'SITE_DIR_MISSING';
             throw err;
         }
     }
 
-    // 4. Write config.json and build
-    fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(cfgCopy, null, 2));
-    build(siteDir);
-
     // 5. Deploy
     let url;
     try {
-        const result = await deployBuiltSite(siteDir, site.projectName, site.userId);
+        const result = await _deploy(siteDir, site.projectName, site.userId);
         url = result && result.url;
     } catch (e) {
-        await registry.updateSite(site.id, { status: 'needs-retry' });
+        registry.updateSite(site.id, { status: 'needs-retry' });
         throw e;
     }
 
     if (!url) {
-        await registry.updateSite(site.id, { status: 'needs-retry' });
+        registry.updateSite(site.id, { status: 'needs-retry' });
         throw new Error('Furnizorul de deploy nu a returnat un URL.');
     }
 
     // 6. Mark live
-    await registry.updateSite(site.id, { status: 'live', url, paid: site.paid });
-    await registry.saveVersion(site.id, cfgCopy);
+    registry.updateSite(site.id, { status: 'live', url, paid: site.paid });
+    if (!siteDirAlreadyBuilt && config) {
+        const cfgToSave = JSON.parse(JSON.stringify(config || {}));
+        // rewrite dataUrls already happened in cfgCopy above; use the saved config.json
+        try {
+            const saved = JSON.parse(fs.readFileSync(path.join(siteDir, 'config.json'), 'utf8'));
+            registry.saveVersion(site.id, saved);
+        } catch (_) {
+            registry.saveVersion(site.id, cfgToSave);
+        }
+    }
 
-    try { ledger.append({ event: 'published', siteId: site.id, url, platform: 'web' }); } catch (_) {}
+    try { ledger.append({ event: 'published', siteId: site.id, url, platform: site.platform || 'web' }); } catch (_) {}
 
     return { url };
 }
 
+// ---------------------------------------------------------------------------
+// deployPlaceholder
+// ---------------------------------------------------------------------------
+
 /**
- * Recursively walk obj and replace any string value equal to `dataUrl` with `localPath`.
+ * Deploy a self-contained branded placeholder page for an expired trial site.
+ * The page includes a payment/reactivation link.
+ *
+ * @param {object} site   — registry site record (must have site.id, site.projectName)
+ * @returns {Promise<{url: string}>}
  */
-function rewriteDataUrl(obj, dataUrl, localPath) {
-    if (!obj || typeof obj !== 'object') return;
-    for (const key of Object.keys(obj)) {
-        const val = obj[key];
-        if (val === dataUrl) {
-            obj[key] = localPath;
-        } else if (typeof val === 'object' && val !== null) {
-            rewriteDataUrl(val, dataUrl, localPath);
+async function deployPlaceholder(site) {
+    const siteDir = path.join(SITES_DIR, site.projectName);
+    fs.mkdirSync(siteDir, { recursive: true });
+
+    // Generate a checkout/reactivation link
+    let paymentUrl = null;
+    try {
+        const payments = require('./payments.js');
+        if (payments.isConfigured()) {
+            const BUILD_FEE_CENTS = Math.round(
+                (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
+            );
+            const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+            const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+            const checkout = await payments.createCheckout({
+                amountCents: BUILD_FEE_CENTS,
+                currency,
+                productName: 'Reactivare site Hidook',
+                successUrl:  publicUrl + '/app/#platit',
+                cancelUrl:   publicUrl + '/app/#anulat',
+                metadata: { platform: 'web', siteId: site.id, reactivate: '1' },
+                clientReferenceId: 'reactivate-' + site.id,
+            });
+            paymentUrl = checkout.url;
+            // Persist latest checkout session for this site
+            registry.updateSite(site.id, { reactivateSessionId: checkout.id });
         }
+    } catch (e) {
+        log('webpublish.placeholder.checkout_error', { siteId: site.id, err: e.message }, 'warn');
     }
+
+    const bizName = _getBizName(site);
+    const payBtn = paymentUrl
+        ? `<a href="${paymentUrl}" class="btn">Reactivează site-ul</a>`
+        : '<p class="sub">Contactați-ne pentru reactivare.</p>';
+
+    const html = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${_esc(bizName)} — Perioadă de probă expirată</title>
+<style>
+  body{margin:0;font-family:system-ui,sans-serif;background:#f7f3f0;color:#333;
+       display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+  .card{background:#fff;border-radius:16px;padding:48px 32px;max-width:480px;
+        box-shadow:0 4px 32px rgba(0,0,0,.1)}
+  h1{font-size:1.4rem;margin-bottom:8px}
+  .sub{color:#777;font-size:.95rem;margin-bottom:24px}
+  .btn{display:inline-block;background:#E8588C;color:#fff;text-decoration:none;
+       padding:14px 32px;border-radius:8px;font-weight:600;font-size:1rem}
+  .btn:hover{background:#d14477}
+  .brand{margin-top:32px;font-size:.75rem;color:#bbb}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>${_esc(bizName)}</h1>
+  <p class="sub">Perioada de probă a expirat.</p>
+  <p class="sub">Plătește o singură dată pentru a-ți reactiva site-ul și a-l păstra permanent.</p>
+  ${payBtn}
+  <div class="brand">Hidook · site builder</div>
+</div>
+</body>
+</html>`;
+
+    fs.writeFileSync(path.join(siteDir, 'index.html'), html, 'utf8');
+
+    // Deploy
+    let url;
+    try {
+        const result = await _deploy(siteDir, site.projectName, site.userId);
+        url = result && result.url;
+    } catch (e) {
+        log('webpublish.placeholder.deploy_error', { siteId: site.id, err: e.message }, 'error');
+        throw e;
+    }
+
+    if (!url) {
+        throw new Error('Placeholder deploy nu a returnat un URL.');
+    }
+
+    registry.updateSite(site.id, { status: 'expired', url });
+    try { ledger.append({ event: 'placeholder_deployed', siteId: site.id, url }); } catch (_) {}
+
+    return { url };
+}
+
+/** Extract business name from site metadata (best-effort). */
+function _getBizName(site) {
+    if (site.businessName) return site.businessName;
+    // Try reading config from last saved version
+    try {
+        const siteDir = path.join(SITES_DIR, site.projectName);
+        const cfg = JSON.parse(fs.readFileSync(path.join(siteDir, 'config.json'), 'utf8'));
+        return (cfg && cfg.business && cfg.business.name) || site.projectName;
+    } catch (_) {}
+    return site.projectName || 'Site';
+}
+
+/** HTML-escape a string. */
+function _esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // ---------------------------------------------------------------------------
-// handleStripePaid
+// handleStripePaid — generalized across platforms
 // ---------------------------------------------------------------------------
 
 /**
- * Idempotent: called after Stripe confirms payment for a web-platform order.
- * Reads the pending draft, marks order paid, then publishes.
+ * Idempotent: called after Stripe confirms payment for any order (web or telegram).
+ * - Marks order paid.
+ * - Marks site paid.
+ * - If site was expired: republishes the last saved version.
+ * - If site had a pending draft (web flow): publishes that.
+ * - Notifies owner on owner's channel.
+ * - Sends concierge domain message to user if messenger is injected.
  *
- * @param {object} event  Stripe checkout.session.completed event
+ * @param {object} event            Stripe checkout.session.completed event
+ * @param {object} [opts]
+ * @param {Function} [opts.messenger]    fn(chatId, text) — Telegram messenger for TG sites
+ * @param {Function} [opts.notifyAdmin]  fn(text) — owner notification
  */
-async function handleStripePaid(event) {
+async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     const cs = event.data && event.data.object;
     if (!cs) return;
 
+    const sessionId = cs.id;
+
     // Idempotency: markOrderPaid returns null if already paid
-    const order = await registry.markOrderPaid(cs.id);
+    const order = registry.markOrderPaid(sessionId);
     if (!order) {
-        log('webpublish.stripe_paid.already_handled', { sessionId: cs.id });
+        log('webpublish.stripe_paid.already_handled', { sessionId });
         return;
     }
 
-    const siteId  = cs.metadata && cs.metadata.siteId;
+    const siteId  = (cs.metadata && cs.metadata.siteId) || order.siteId;
     const orderId = order.id;
 
     if (!siteId) {
-        log('webpublish.stripe_paid.no_site_id', { sessionId: cs.id, orderId }, 'error');
+        log('webpublish.stripe_paid.no_site_id', { sessionId, orderId }, 'error');
         return;
     }
 
-    // Mark the site as paid so future edits publish for free
-    try { await registry.updateSite(siteId, { paid: true }); } catch (_) {}
+    // Mark the site as paid
+    try { registry.updateSite(siteId, { paid: true }); } catch (_) {}
 
-    // Read pending draft saved at /api/publish time
-    const draft = loadPendingDraft(orderId);
-    if (!draft) {
-        log('webpublish.stripe_paid.no_draft', { orderId, siteId }, 'error');
-        // Site is paid but we have no draft — mark needs-retry
-        try { await registry.updateSite(siteId, { status: 'needs-retry' }); } catch (_) {}
-        return;
-    }
-
-    const site = await registry.getSite(siteId);
+    const site = registry.getSite(siteId);
     if (!site) {
         log('webpublish.stripe_paid.no_site', { siteId, orderId }, 'error');
         return;
     }
 
-    try {
-        await publishSite({ site: { ...site, paid: true }, config: draft.config, images: draft.images });
-        deletePendingDraft(orderId);
-        log('webpublish.stripe_paid.published', { siteId, orderId });
-    } catch (e) {
-        log('webpublish.stripe_paid.publish_failed', { siteId, orderId, err: e.message }, 'error');
-        // site status already set to needs-retry inside publishSite
+    const paidSite = { ...site, paid: true };
+
+    // Owner notification
+    if (typeof notifyAdmin === 'function') {
+        notifyAdmin(`💰 Plată confirmată! Site: ${site.slug || site.projectName} (${site.platform || 'web'})`);
+    }
+
+    // If reactivation (expired trial): republish last version
+    if (site.status === 'expired') {
+        const versions = registry.listVersions(siteId);
+        if (versions.length > 0) {
+            const lastConfig = registry.getVersionConfig(siteId, versions[versions.length - 1].versionId)
+                            || registry.getVersionConfig(siteId, versions[0].versionId);
+            if (lastConfig) {
+                try {
+                    const result = await publishSite({ site: paidSite, config: lastConfig, images: [], siteDirAlreadyBuilt: false });
+                    registry.updateSite(siteId, { status: 'live', url: result.url, paid: true });
+                    _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
+                    log('webpublish.stripe_paid.reactivated', { siteId, orderId, url: result.url });
+                } catch (e) {
+                    log('webpublish.stripe_paid.reactivate_failed', { siteId, orderId, err: e.message }, 'error');
+                    registry.updateSite(siteId, { status: 'needs-retry' });
+                }
+                return;
+            }
+        }
+        // No versions — mark needs-retry
+        log('webpublish.stripe_paid.no_version_for_reactivation', { siteId, orderId }, 'error');
+        registry.updateSite(siteId, { status: 'needs-retry' });
+        return;
+    }
+
+    // Normal flow: read pending draft saved at /api/publish time
+    const draft = loadPendingDraft(orderId);
+    if (draft) {
+        try {
+            const result = await publishSite({ site: paidSite, config: draft.config, images: draft.images || [] });
+            deletePendingDraft(orderId);
+            _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
+            log('webpublish.stripe_paid.published', { siteId, orderId, url: result.url });
+        } catch (e) {
+            log('webpublish.stripe_paid.publish_failed', { siteId, orderId, err: e.message }, 'error');
+            // site status already set to needs-retry inside publishSite
+        }
+        return;
+    }
+
+    // No draft — try republishing last known version (site already live, user just paid)
+    const versions = registry.listVersions(siteId);
+    if (versions.length > 0) {
+        const lastConfig = registry.getVersionConfig(siteId, versions[versions.length - 1].versionId)
+                        || registry.getVersionConfig(siteId, versions[0].versionId);
+        if (lastConfig) {
+            try {
+                const result = await publishSite({ site: paidSite, config: lastConfig, images: [] });
+                _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
+                log('webpublish.stripe_paid.republished', { siteId, orderId, url: result.url });
+            } catch (e) {
+                log('webpublish.stripe_paid.republish_failed', { siteId, orderId, err: e.message }, 'error');
+                registry.updateSite(siteId, { status: 'needs-retry' });
+            }
+            return;
+        }
+    }
+
+    log('webpublish.stripe_paid.no_draft_no_version', { orderId, siteId }, 'error');
+    registry.updateSite(siteId, { status: 'needs-retry' });
+}
+
+/**
+ * Notify the site owner on their channel (Telegram or just admin) after payment.
+ * Sends the "domeniu propriu" concierge message.
+ */
+function _notifyOwnerChannel(site, url, messenger, notifyAdmin) {
+    const contactUrl = (process.env.CONTACT_URL || '').trim();
+    const domainMsg  = contactUrl
+        ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${contactUrl}`
+        : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
+    const msg = `✅ Site-ul tău e LIVE: ${url}\n\n${domainMsg}`;
+
+    if (site.platform === 'telegram' && site.ownerChatId && typeof messenger === 'function') {
+        Promise.resolve().then(() => messenger(String(site.ownerChatId), msg)).catch(() => {});
+    }
+    if (typeof notifyAdmin === 'function') {
+        notifyAdmin(`💰 Site plătit + live: ${url} (${site.platform || 'web'})`);
     }
 }
 
-module.exports = { publishSite, handleStripePaid, savePendingDraft, loadPendingDraft };
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+
+module.exports = {
+    publishSite,
+    handleStripePaid,
+    deployPlaceholder,
+    savePendingDraft,
+    loadPendingDraft,
+};

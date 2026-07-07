@@ -179,10 +179,11 @@ function _buildSlug(name, siteId) {
 /**
  * Create a new site record.
  *
- * @param {{ userId: string, templateId: string, templateVersion: number|null, slug?: string }} opts
+ * @param {{ userId: string, templateId: string, templateVersion: number|null, slug?: string,
+ *           platform?: string, trialEndsAt?: string }} opts
  * @returns {object} site
  */
-function createSite({ userId, templateId, templateVersion, slug }) {
+function createSite({ userId, templateId, templateVersion, slug, platform, trialEndsAt }) {
     const db = _load();
     db.sites = db.sites || {};
     const id          = crypto.randomUUID();
@@ -194,14 +195,26 @@ function createSite({ userId, templateId, templateVersion, slug }) {
         templateVersion: templateVersion != null ? templateVersion : null,
         slug:            projectName,
         projectName,
+        platform:        platform || 'web',
         status:    'draft',
         paid:      false,
         url:       null,
+        trialEndsAt: trialEndsAt || null,
+        reminded:    false,
         createdAt: new Date().toISOString(),
     };
     db.sites[id] = site;
     _save(db);
     return { ...site };
+}
+
+/**
+ * List all sites across all users (for sweeper use).
+ * @returns {object[]}
+ */
+function listAllSites() {
+    const db = _load();
+    return Object.values(db.sites || {}).map(s => ({ ...s }));
 }
 
 /**
@@ -366,6 +379,7 @@ module.exports = {
     createSite,
     getSite,
     listSites,
+    listAllSites,
     updateSite,
     saveVersion,
     listVersions,

@@ -186,20 +186,38 @@ const ts = require('../template-steps.js');
     // ── templateVersion saved from registry ──────────────────────────────────
 
     await check('(a) templateVersion is saved on session after handleTemplateStep', () => {
+        // Read the actual version from the registry (may be 1 or 2 depending on template agent)
+        let expectedVersion = 1;
+        try {
+            const regPath = path.join(__dirname, '../../templates/registry.json');
+            const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+            const first = reg && reg.templates && reg.templates[0];
+            if (first && first.version != null) expectedVersion = first.version;
+        } catch (_) {}
         const session = { data: {} };
         ts.handleTemplateStep(session, '1');
-        assert.strictEqual(session.templateVersion, 1, `expected version 1, got ${session.templateVersion}`);
+        assert.strictEqual(session.templateVersion, expectedVersion,
+            `expected version ${expectedVersion}, got ${session.templateVersion}`);
     });
 
     await check('(a) templateVersion saved by copyTemplateFiles when not already set', () => {
         const TEMPLATES_DIR = path.join(__dirname, '../../templates');
         const tplDir = path.join(TEMPLATES_DIR, 'constructii');
         if (!fs.existsSync(tplDir)) { console.log('SKIP templateVersion from copyTemplateFiles'); return; }
+        // Read expected version dynamically
+        let expectedVersion = 1;
+        try {
+            const regPath = path.join(TEMPLATES_DIR, 'registry.json');
+            const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
+            const entry = reg && reg.templates && reg.templates.find(t => t.id === 'constructii');
+            if (entry && entry.version != null) expectedVersion = entry.version;
+        } catch (_) {}
         const fakeSiteDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tpicker-ver-'));
         try {
             const session = {};
             ts.copyTemplateFiles('constructii', session, fakeSiteDir);
-            assert.strictEqual(session.templateVersion, 1, `expected 1, got ${session.templateVersion}`);
+            assert.strictEqual(session.templateVersion, expectedVersion,
+                `expected ${expectedVersion}, got ${session.templateVersion}`);
         } finally {
             fs.rmSync(fakeSiteDir, { recursive: true, force: true });
         }

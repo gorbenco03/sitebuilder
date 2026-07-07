@@ -210,10 +210,74 @@ async function attachDomain(projectName, domainName) {
 }
 
 // ---------------------------------------------------------------------------
+// ensureSubdomain — BRAND_DOMAIN helper
+// ---------------------------------------------------------------------------
+
+/**
+ * After a Pages deploy, optionally attach <slug>.<BRAND_DOMAIN> to the project.
+ * Requires BRAND_DOMAIN env and Cloudflare API credentials. Best-effort: never
+ * throws — any failure is logged and the caller falls back to the pages.dev URL.
+ *
+ * Steps:
+ *   1. Lookup zone id for BRAND_DOMAIN (GET /zones?name=BRAND_DOMAIN).
+ *   2. Attach <slug>.<BRAND_DOMAIN> to the Pages project (POST /pages/projects/:name/domains).
+ *   3. Create a CNAME record in the zone: slug → <name>.pages.dev (best-effort).
+ *
+ * @param {string} projectName  Pages project name (= slug).
+ * @returns {Promise<{url: string, brandUrl: string|null}>}
+ */
+async function ensureSubdomain(projectName) {
+    const brandDomain = process.env.BRAND_DOMAIN;
+    if (!brandDomain || !isConfigured()) {
+        return { url: `https://${projectName}.pages.dev`, brandUrl: null };
+    }
+
+    const subdomain = `${projectName}.${brandDomain}`;
+    try {
+        // 1. Look up zone
+        const zones = await cfRequest('GET', `/zones?name=${encodeURIComponent(brandDomain)}`);
+        const zone  = Array.isArray(zones) ? zones[0] : null;
+        const zoneId = zone && zone.id;
+
+        // 2. Attach domain to Pages project (idempotent — 409 = already attached)
+        try {
+            await cfRequest(
+                'POST',
+                `/accounts/{account}/pages/projects/${encodeURIComponent(projectName)}/domains`,
+                { name: subdomain }
+            );
+        } catch (e) {
+            if (e.status !== 409) throw e; // 409 = already registered, fine
+        }
+
+        // 3. Create CNAME in zone (best-effort)
+        if (zoneId) {
+            try {
+                await cfRequest('POST', `/zones/${zoneId}/dns_records`, {
+                    type:    'CNAME',
+                    name:    projectName,         // <slug> relative to brandDomain zone
+                    content: `${projectName}.pages.dev`,
+                    proxied: true,
+                    ttl:     1,
+                });
+            } catch (e) {
+                // 409 duplicate or other errors — best-effort, ignore
+                console.warn('[ensureSubdomain] CNAME create (best-effort):', e.message);
+            }
+        }
+
+        return { url: `https://${projectName}.pages.dev`, brandUrl: `https://${subdomain}` };
+    } catch (e) {
+        console.warn('[ensureSubdomain] failed (best-effort):', e.message);
+        return { url: `https://${projectName}.pages.dev`, brandUrl: null };
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Module exports
 // ---------------------------------------------------------------------------
 
-module.exports = { isConfigured, ensureProject, deploySite, attachDomain };
+module.exports = { isConfigured, ensureProject, deploySite, attachDomain, ensureSubdomain };
 
 // ---------------------------------------------------------------------------
 // Self-test (run: node bot/deploy-cloudflare.js)

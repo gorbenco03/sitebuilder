@@ -46,6 +46,53 @@ function escapeHtml(value) {
 }
 
 /**
+ * Sanitize a URL value so that `javascript:` (and similar dangerous protocol)
+ * payloads cannot be injected into href attributes.
+ *
+ * Allowed protocols: https?, tel:, mailto:, protocol-relative (//).
+ * Anything else (including javascript:, data:, vbscript:) is replaced with '#'.
+ * Empty/falsy values pass through unchanged (template @if guards handle hiding).
+ */
+function sanitizeUrl(value) {
+    const str = String(value).trim();
+    if (!str) return str;
+    // Allow safe protocols only.
+    if (/^(https?:|tel:|mailto:|\/\/)/i.test(str)) return str;
+    console.warn(`  ⚠️  unsafe URL protocol stripped: "${str.slice(0, 60)}"`);
+    return '#';
+}
+
+/** URL token paths that appear in href attributes and must be sanitized. */
+const URL_TOKENS = new Set([
+    'contact.waHref',
+    'contact.addressHref',
+    'contact.instagram.url',
+    'contact.facebook.url',
+    'instagram.url',
+    'seo.canonical',
+]);
+
+/**
+ * Phone number tokens that appear in tel: href attributes.
+ * We sanitize these by stripping everything except digits, +, -, (, ), and spaces
+ * so that a value like 'javascript:alert(x)' cannot be injected into tel: hrefs.
+ * (Modern browsers do not execute javascript: in tel: URIs, but we make the guard
+ * explicit and consistent with the URL_TOKENS system.)
+ */
+const PHONE_TOKENS = new Set(['contact.phone']);
+
+function sanitizePhone(value) {
+    const str = String(value).trim();
+    if (!str) return str;
+    // Keep only characters valid in telephone numbers (E.164 + display variants).
+    const stripped = str.replace(/[^0-9+\-() ]/g, '');
+    if (stripped !== str) {
+        console.warn(`  ⚠️  phone value sanitized (non-phone characters removed): "${str.slice(0, 60)}"`);
+    }
+    return stripped;
+}
+
+/**
  * Sanitize a value destined for {{& seo.jsonLd}} — raw output inside a
  * <script type="application/ld+json"> block.
  *
@@ -109,12 +156,52 @@ function replaceTokens(str, resolver, warn = true) {
             // parser uses literal (unencoded) characters to find attribute boundaries,
             // so &quot; / &#39; do NOT close the attribute, and the encoded characters
             // decode correctly inside the CSS value (e.g. url(&#39;...&#39;) works).
-            if (token === 'hero.background') return escapeHtml(value);
+            // Additionally strip dangerous CSS url() schemes (javascript:, data:, etc.)
+            // so they cannot be embedded as background values.
+            if (token === 'hero.background') {
+                const safeBg = String(value).replace(
+                    /url\(\s*(['"]?)\s*(?:javascript|data|vbscript):[^)]*\1\s*\)/gi,
+                    'url(about:blank)'
+                );
+                return escapeHtml(safeBg);
+            }
+            // Inline SVG icons inside @each services blocks — builder/bot-generated,
+            // never raw user input. Strip dangerous constructs before emitting so
+            // the sink is safe even if config is tampered with:
+            //   • <script>…</script> blocks
+            //   • on*= event-handler attributes
+            //   • javascript: / data: / vbscript: in any attribute value
+            //     (covers href, xlink:href, src, action, etc. — case-insensitive,
+            //      tolerates URL-encoded colons and whitespace padding)
+            //   • <foreignObject>…</foreignObject> (allows HTML injection inside SVG)
+            if (token === 'icon') {
+                const safe = String(value)
+                    // 1. Remove <script> blocks (including content).
+                    .replace(/<script[\s\S]*?<\/script>/gi, '')
+                    // 2. Remove <foreignObject> blocks (including content).
+                    .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+                    // 3. Remove on*= event-handler attributes (replace with harmless marker).
+                    .replace(/\bon\w+\s*=/gi, 'data-removed=')
+                    // 4. Strip dangerous URL protocols from attribute values.
+                    //    Matches: href="javascript:…", xlink:href='data:…', etc.
+                    //    Uses a lookahead to find the scheme anywhere inside an attribute
+                    //    value. We blank the scheme to "#" so the attribute stays valid SVG.
+                    .replace(
+                        /((?:xlink:)?href|src|action|formaction)\s*=\s*(['"]?)\s*(?:javascript|data|vbscript)\s*:[^"'\s>]*/gi,
+                        '$1=$2#'
+                    );
+                return safe;
+            }
             // Fallback: treat unknown raw sinks as regular escaped output (safe default).
             console.warn(`  ⚠️  unknown raw sink {{& ${token}}} — escaping for safety`);
             return escapeHtml(value);
         }
-        return escapeHtml(value);
+        // Sanitize URL fields before HTML-escaping to block javascript: protocol XSS.
+        // Sanitize phone fields to strip non-telephone characters (consistent guard).
+        const safeValue = URL_TOKENS.has(token)   ? sanitizeUrl(value)
+                        : PHONE_TOKENS.has(token) ? sanitizePhone(value)
+                        : value;
+        return escapeHtml(safeValue);
     });
 }
 
@@ -194,7 +281,10 @@ function expandEach(str, scope) {
             const negate = dataPath[0] === '!';
             const resolvedPath = negate ? dataPath.slice(1) : dataPath;
             const ifVal = resolve(scope, resolvedPath);
-            const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : Boolean(ifVal);
+            // Treat string 'false' / '0' / 'no' as falsy so schema fields declared as
+            // type:text with value 'false' (e.g. showWordmark) work correctly with @if.
+            const isFalsyString = typeof ifVal === 'string' && /^(false|0|no)$/i.test(ifVal.trim());
+            const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : (!isFalsyString && Boolean(ifVal));
             if (negate ? !truthy : truthy) out += expandEach(block, scope);
         } else {
             const value = resolve(scope, dataPath);

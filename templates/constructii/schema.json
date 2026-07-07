@@ -17,8 +17,22 @@
         { "key": "business.title",           "type": "text",     "label": "Titlu pagina SEO (apare in tab browser)",           "required": true,  "maxLen": 70 },
         { "key": "business.metaDescription", "type": "textarea", "label": "Descriere scurta pentru Google (max 160 caractere)","required": true,  "maxLen": 160 },
         { "key": "business.about",           "type": "textarea", "label": "Descriere firma (2-4 fraze despre ce faceti)",      "required": true,  "maxLen": 500 },
+        { "key": "business.lang",            "type": "text",     "label": "Codul limbii paginii (ex: ro, en) — folosit in <html lang>", "required": true, "maxLen": 10 },
         { "key": "business.yearsExp",        "type": "text",     "label": "Ani de experienta (ex: 12) — optional",            "required": false, "maxLen": 4 },
+        { "key": "business.projectsDone",    "type": "text",     "label": "Numar proiecte finalizate (ex: 240) — optional, afisat in hero si statistici", "required": false, "maxLen": 10 },
         { "key": "business.zone",            "type": "text",     "label": "Zona de activitate (ex: Londra si imprejurimi) — optional", "required": false, "maxLen": 100 }
+      ]
+    },
+    {
+      "id": "labels",
+      "title": "Etichete interfata (texte butoane/sectiuni)",
+      "fields": [
+        { "key": "labels.about",       "type": "text", "label": "Titlu sectiune Despre noi (ex: Despre noi)",        "required": true, "maxLen": 40 },
+        { "key": "labels.instaTitle",  "type": "text", "label": "Titlu sectiune Instagram (ex: Urmariti-ne pe Instagram)", "required": true, "maxLen": 60 },
+        { "key": "labels.instaFollow", "type": "text", "label": "Textul butonului urmarire Instagram (ex: Urmareste)", "required": true, "maxLen": 30 },
+        { "key": "labels.scroll",      "type": "text", "label": "Text indicator scroll (ex: Deruleaza)",             "required": true, "maxLen": 30 },
+        { "key": "labels.waQr",        "type": "text", "label": "Titlu modal QR WhatsApp (ex: Deschide WhatsApp pe telefon)", "required": true, "maxLen": 60 },
+        { "key": "labels.waOpen",      "type": "text", "label": "Buton secundar WhatsApp Web (ex: Sau deschide WhatsApp Web)", "required": true, "maxLen": 60 }
       ]
     },
     {

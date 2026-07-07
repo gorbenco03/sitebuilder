@@ -14,6 +14,7 @@
 const { Bot } = require('grammy');
 const flow = require('./flow.js');
 const webpublish = require('./webpublish.js');
+const { sweepTrials } = require('./trials.js');
 const { log } = require('./logger.js');
 const { startServer } = require('./server.js');
 
@@ -102,8 +103,13 @@ async function onStripeEvent(event) {
     const platform = cs && cs.metadata && cs.metadata.platform;
 
     if (platform === 'web') {
+        // Web builder flow — handled directly by webpublish with no TG messenger
         try {
-            await webpublish.handleStripePaid(event);
+            await webpublish.handleStripePaid(event, {
+                notifyAdmin: ADMIN_CHAT_ID
+                    ? (text) => bot.api.sendMessage(ADMIN_CHAT_ID, text).catch(() => {})
+                    : undefined,
+            });
             log('webhook.stripe.web.handled', { type: event.type });
         } catch (e) {
             log('webhook.stripe.web.error', { err: e.message, type: event.type }, 'error');
@@ -111,7 +117,8 @@ async function onStripeEvent(event) {
         return;
     }
 
-    // Default: Telegram bot flow
+    // Telegram / trial-telegram / unknown platform:
+    // handleStripeWebhookEvent now tries registry first, then legacy sessions.
     try {
         const r = await handleStripeWebhookEvent(event);
         log('webhook.stripe.handled', { type: event.type, ...r });
@@ -216,6 +223,13 @@ async function start() {
                 if (!sweepTimer) {
                     sweepTimer = setInterval(() => {
                         try { reconcilePending(); } catch (e) { console.error('[sweep] failed:', e.message); }
+                        // Trial model: reminder + expire unpaid trial sites
+                        sweepTrials({
+                            messenger:   (chatId, text) => bot.api.sendMessage(chatId, text).catch(() => {}),
+                            notifyAdmin: ADMIN_CHAT_ID
+                                ? (text) => bot.api.sendMessage(ADMIN_CHAT_ID, text).catch(() => {})
+                                : undefined,
+                        }).catch((e) => console.error('[sweepTrials] failed:', e.message));
                     }, SWEEP_INTERVAL_MS);
                     if (sweepTimer.unref) sweepTimer.unref();
                 }

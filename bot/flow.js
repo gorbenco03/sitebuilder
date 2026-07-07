@@ -33,10 +33,16 @@ const _payments = (process.env.PAYMENT_PROVIDER || '').toLowerCase() === 'stripe
     ? require('./payments.js')
     : (require('./revolut.js').isConfigured() ? require('./revolut.js') : require('./payments.js'));
 const { isConfigured: stripeOk, createCheckout, pollUntilPaid } = _payments;
-const { isConfigured: vercelOk, checkDomain, suggestDomains, buyDomain } = require('./domains.js');
+// domains.js remains on disk but is NOT used (trial model — no domain automation)
 const { isConfigured: vercelDeployOk, deploySite, attachDomain } = require('./deploy-vercel.js');
 const cfDeploy = require('./deploy-cloudflare.js');
 const { deployToNetlify } = require('./deploy.js');
+
+const registry   = require('./registry.js');
+const webpublish = require('./webpublish.js');
+
+const TRIAL_DAYS = Number(process.env.TRIAL_DAYS) || 3;
+const CONTACT_URL = (process.env.CONTACT_URL || '').trim();
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -60,9 +66,6 @@ const CURRENCY_LABEL = PAYMENT_CURRENCY.toUpperCase();
 const BUILD_FEE_CENTS = Math.round(
     (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
 );
-
-/** Optional markup added on top of the domain's wholesale price, in the checkout currency. Env: DOMAIN_MARKUP_USD (default 0). */
-const DOMAIN_MARKUP_CENTS = Math.round((parseFloat(process.env.DOMAIN_MARKUP_USD) || 0) * 100);
 
 /** Optional yearly managed/retainer plan price, in the checkout currency. Env: RETAINER_EUR (default 49). */
 const RETAINER_PRICE = Math.round(parseFloat(process.env.RETAINER_EUR) || 49);
@@ -198,11 +201,11 @@ function _emptySession() {
         siteConfig: null,
         siteDir: null,
         siteSlug: null,
-        domain: null,
-        domainPriceUsd: null,
         stripeSessionId: null,
-        projectId: null,   // Vercel project id from the free deploy (to attach custom domain later)
-        liveUrl: null,     // the free *.vercel.app URL
+        projectId: null,
+        liveUrl: null,
+        registrySiteId: null,  // id in registry after trial publish
+        trialEndsAt: null,     // ISO string
     };
 }
 
@@ -893,12 +896,25 @@ async function handleSterge(ctx) {
             fs.writeFileSync(SITES_MAP_FILE, JSON.stringify(m, null, 2));
         }
     } catch (_) {}
-    // 4) Session itself — remove entirely (not just reset) and flush durably.
+    // 4) Registry sites for this chat — deploy placeholder + mark deleted (GDPR)
+    try {
+        const tgUser = registry.getOrCreateUserByTelegram(chatId);
+        const regSites = registry.listSites(tgUser.id);
+        for (const site of regSites) {
+            if (site.status === 'deleted') continue;
+            // Deploy placeholder (best-effort) and mark deleted
+            try {
+                await webpublish.deployPlaceholder({ ...site, businessName: 'Site șters' });
+            } catch (_) {}
+            registry.updateSite(site.id, { status: 'deleted', url: null });
+        }
+    } catch (_) {}
+    // 5) Session itself — remove entirely (not just reset) and flush durably.
     sessions.delete(chatId);
     flushSessions();
 
     await ctx.reply(
-        '🗑️ Am șters toate datele tale (sesiune, poze încărcate și fișierele site-ului) din sistemele noastre.\n\n' +
+        '🗑️ Am șters toate datele tale (sesiune, poze încărcate, fișierele site-ului și site-urile înregistrate) din sistemele noastre.\n\n' +
         'Scrie /start oricând ca să începi din nou.'
     );
 }
@@ -910,6 +926,8 @@ async function handleSterge(ctx) {
 async function handleRetry(ctx) {
     const chatId  = ctx.chat.id;
     const session = getSession(chatId);
+
+    // Legacy in-memory retry
     if (session.phase === 'paid-needs-retry' || session.phase === 'deploy') {
         await ctx.reply('🔁 Reiau publicarea...');
         await _publishAndFinish(ctx, session, chatId);
@@ -918,6 +936,31 @@ async function handleRetry(ctx) {
     if (session.phase === 'pay') {
         return ctx.reply('Încă aștept confirmarea plății. Dacă ai plătit, o detectez automat în scurt timp.');
     }
+
+    // Registry-based retry: find needs-retry sites for this user
+    try {
+        const tgUser = registry.getOrCreateUserByTelegram(chatId);
+        const regSites = registry.listSites(tgUser.id).filter(s => s.status === 'needs-retry');
+        if (regSites.length > 0) {
+            await ctx.reply('🔁 Reiau publicarea site-ului...');
+            for (const site of regSites) {
+                try {
+                    const result = await webpublish.publishSite({
+                        site,
+                        config: {},
+                        images: [],
+                        siteDirAlreadyBuilt: true,
+                    });
+                    registry.updateSite(site.id, { status: 'live', url: result.url });
+                    await ctx.reply(`✅ Site publicat: ${result.url}`);
+                } catch (e) {
+                    await ctx.reply('❌ Publicarea a eșuat din nou: ' + e.message);
+                }
+            }
+            return;
+        }
+    } catch (_) {}
+
     return ctx.reply('Nu ai o publicare în așteptare. Scrie /start ca să creezi un site.');
 }
 
@@ -1000,8 +1043,8 @@ async function handleGata(ctx) {
         return;
     }
 
-    // 3) Offer custom domain → payment → publish
-    await _afterBuildOfferDomain(ctx, session, chatId);
+    // 3) Trial publish — IMEDIAT și GRATUIT
+    await _publishTrialAndFinish(ctx, session, chatId);
 }
 
 // ---------------------------------------------------------------------------
@@ -1172,49 +1215,7 @@ async function handleText(ctx) {
         return;
     }
 
-    // ----- OFFER DOMAIN (da/nu) -----
-    if (session.phase === 'offer-domain') {
-        const ans = text.toLowerCase();
-        const yes = /^(da|yes|vreau|ok|sigur|y)\b/.test(ans);
-        const no  = /^(nu|no|n|nu mul)/.test(ans);
-        if (yes) {
-            session.phase = 'domain';
-            await ctx.reply('🌐 Ce domeniu vrei? (ex: `numeleafacerii.ro` sau `numeleafacerii.com`)\n\n_Verific disponibilitatea și îți spun prețul total._');
-        } else if (no) {
-            // No custom domain — pay just the build fee, then publish on vercel.app.
-            session.domain = null;
-            session.domainPriceUsd = null;
-            session.phase = 'pay';
-            await _initiatePayment(ctx, session, chatId);
-        } else {
-            await ctx.reply('Scrie *da* (vreau domeniu custom) sau *nu* (doar pe vercel.app).');
-        }
-        return;
-    }
-
-    // ----- DOMAIN -----
-    if (session.phase === 'domain') {
-        await _handleDomainAnswer(ctx, session, text);
-        return;
-    }
-
-    // ----- DOMAIN EMAIL (registrant in the client's name) -----
-    if (session.phase === 'domain-email') {
-        if (isSkip(text)) {
-            session.clientEmail = '';   // fall back to REGISTRANT_* env at purchase time
-            await ctx.reply('OK — înregistrăm domeniul pe contactul nostru și îl putem transfera ulterior. Pregătesc plata...');
-        } else if (!EMAIL_RE.test(text)) {
-            return ctx.reply('Acela nu pare un email valid 🙂 Scrie un email corect (ex: `nume@exemplu.com`) sau „skip".');
-        } else {
-            session.clientEmail = text.trim();
-            await ctx.reply(`📧 Mulțumesc! Domeniul \`${session.domain}\` se va înregistra pe numele tău (${session.clientEmail}). Pregătesc plata...`);
-        }
-        session.phase = 'pay';
-        await _initiatePayment(ctx, session, chatId);
-        return;
-    }
-
-    // ----- PAY -----
+    // ----- PAY (legacy sessions still in-flight) -----
     if (session.phase === 'pay') {
         await ctx.reply(
             '⏳ Așteptăm confirmarea plății. Dacă ai plătit deja, ' +
@@ -1231,206 +1232,147 @@ async function handleText(ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// After build: the site is ready but NOT published yet. Publishing requires
-// payment (build fee). Offer an optional custom domain, then go to checkout.
+// After build: trial publish — IMEDIAT și GRATUIT pe platforma noastră
 // ---------------------------------------------------------------------------
-
-const BUILD_FEE_LABEL = () => `${(BUILD_FEE_CENTS / 100).toFixed(2)} ${CURRENCY_LABEL}`;
-
-async function _afterBuildOfferDomain(ctx, session, chatId) {
-    const bizName = (session.siteConfig && session.siteConfig.business && session.siteConfig.business.name) || session.data.name || 'necunoscut';
-    notifyAdmin(`🔧 Site nou construit: "${bizName}" (chat ${chatId}). Așteaptă plata.`);
-
-    // If deploy isn't even configured, there's no product to sell — just say so.
-    if (!vercelDeployOk() && !process.env.NETLIFY_TOKEN) {
-        session.phase = 'done';
-        sessions.delete(chatId);
-        await ctx.reply(
-            `✅ Site generat local în:\n\`${session.siteDir}\`\n\n` +
-            '_(Publicarea automată e dezactivată — adaugă VERCEL_TOKEN.)_'
-        );
-        return;
-    }
-
-    await ctx.reply(
-        `🔧 Site-ul tău e gata de publicare!\n\n` +
-        `Publicarea costă o taxă unică de *${BUILD_FEE_LABEL()}* (site pe adresă vercel.app).`
-    );
-
-    if (vercelOk()) {
-        session.phase = 'offer-domain';
-        await ctx.reply(
-            '🌐 Vrei și un *domeniu custom* (ex: `numeleafacerii.ro`)? Costul domeniului se adaugă la plată.\n\n' +
-            'Scrie *da* ca să caut un domeniu și să-ți spun prețul total, sau *nu* ca să publici doar pe vercel.app.'
-        );
-    } else {
-        // No domain capability — go straight to paying the build fee.
-        session.domain = null;
-        session.phase = 'pay';
-        await _initiatePayment(ctx, session, chatId);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Domain phase
-// ---------------------------------------------------------------------------
-
-/** Loose email sanity check (good enough to avoid obvious typos before purchase). */
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Build registrant contactInformation for a domain purchase, preferring the CLIENT's
- * data so the domain is registered in the client's name. The client's email + a name
- * derived from their business/answers take priority; every remaining required field
- * (phone, postal address, country) falls back to REGISTRANT_* env. Returns null only
- * if neither client nor env can satisfy the required fields — buyDomain then errors
- * cleanly and the order is refunded by the existing handler.
- *
- * @param {Session} session
- * @returns {object|null}
+ * Trial publish for the Telegram flow:
+ * 1. Register site in registry (getOrCreateUserByTelegram + createSite platform=telegram).
+ * 2. Publish IMMEDIATELY via webpublish.publishSite (siteDirAlreadyBuilt=true).
+ * 3. Set trialEndsAt in registry.
+ * 4. Send checkout link if payments configured.
+ * 5. Notify admin. Delete session (state = registry).
  */
-function _buildClientContact(session) {
-    const e = process.env;
-    const data = session.data || {};
+async function _publishTrialAndFinish(ctx, session, chatId) {
+    const bizName = (session.siteConfig && session.siteConfig.business && session.siteConfig.business.name)
+        || (session.data && session.data.name)
+        || 'necunoscut';
 
-    // Derive a first/last name: prefer an explicit client name, else the business name.
-    const rawName = String(data.clientName || data.name || '').trim();
-    const parts   = rawName.split(/\s+/).filter(Boolean);
-    const firstName = (data.clientFirstName && String(data.clientFirstName).trim())
-        || parts[0] || e.REGISTRANT_FIRST_NAME || '';
-    const lastName  = (data.clientLastName && String(data.clientLastName).trim())
-        || (parts.length > 1 ? parts.slice(1).join(' ') : '') || e.REGISTRANT_LAST_NAME || '';
+    // 1. Register in registry
+    const tgUser = registry.getOrCreateUserByTelegram(chatId, {
+        username:  ctx.from && ctx.from.username,
+        firstName: ctx.from && ctx.from.first_name,
+    });
 
-    const email = (session.clientEmail && String(session.clientEmail).trim())
-        || e.REGISTRANT_EMAIL || '';
+    const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 86400 * 1000).toISOString();
+    const slug = session.siteSlug || safeProjectName(bizName, chatId);
 
-    // Phone: prefer the client's WhatsApp number (digits) in E.164-ish form, else env.
-    const waDigits = isSkip(data.whatsapp) ? '' : String(data.whatsapp).replace(/\D/g, '');
-    const phone = waDigits ? `+${waDigits}` : (e.REGISTRANT_PHONE || '');
+    const regSite = registry.createSite({
+        userId:          tgUser.id,
+        templateId:      session.data && session.data.templateId || 'patiserie',
+        templateVersion: null,
+        slug,
+        platform:    'telegram',
+        trialEndsAt,
+    });
 
-    const info = {
-        firstName,
-        lastName,
-        email,
-        phone,
-        // Postal fields are not collected in the wizard — fall back to the platform's
-        // REGISTRANT_* env (the legally responsible registrar contact).
-        address1: e.REGISTRANT_ADDRESS1 || '',
-        city:     e.REGISTRANT_CITY || '',
-        state:    e.REGISTRANT_STATE || '',
-        zip:      e.REGISTRANT_ZIP || '',
-        country:  e.REGISTRANT_COUNTRY || '',
-    };
+    // Store ownerChatId for later notifications (trials sweeper, stripe webhook)
+    registry.updateSite(regSite.id, { ownerChatId: String(chatId), businessName: bizName });
+    session.registrySiteId = regSite.id;
+    session.trialEndsAt    = trialEndsAt;
 
-    // Required by Vercel's registrar — if anything is still empty, signal "use env default".
-    const missing = Object.values(info).some(v => !v || !String(v).trim());
-    return missing ? null : info;
-}
-
-async function _handleDomainAnswer(ctx, session, text) {
-    const chatId = ctx.chat.id;
-
-    // Clean input: remove spaces, lowercase
-    const domainName = text.toLowerCase().replace(/\s+/g, '').replace(/^https?:\/\//, '');
-
-    if (!domainName.includes('.')) {
-        return ctx.reply('Te rog introduci un domeniu complet, ex: `afacereaMea.ro` sau `afacereamea.com`.');
-    }
-
-    await ctx.reply(`🔍 Verific disponibilitatea pentru \`${domainName}\`...`);
-
-    let info;
+    // 2. Publish immediately (files already built on disk)
+    await ctx.reply('🚀 Public site-ul acum...');
+    let url;
     try {
-        info = await checkDomain(domainName);
-    } catch (e) {
-        console.error('[checkDomain error]', e);
-        await ctx.reply('❌ Nu am putut verifica domeniul: ' + e.message + '\nÎncearcă alt domeniu sau /anuleaza.');
-        return;
-    }
-
-    if (info.available && info.priceUsd == null) {
-        // Available but we couldn't get a price (premium/unsupported TLD) — ask for another.
-        await ctx.reply(
-            `\`${domainName}\` pare disponibil dar nu pot afla prețul automat (TLD premium sau nesuportat).\n` +
-            'Încearcă un alt domeniu, ex. cu `.com` sau `.ro`.'
-        );
-        return;
-    }
-
-    if (info.available) {
-        session.domain        = domainName;
-        session.domainPriceUsd = info.priceUsd;
-
-        // Domain is registered in the CLIENT's name — collect their email first so the
-        // registrant contact prefers the client's data (falling back to REGISTRANT_* env).
-        session.phase = 'domain-email';
-        await ctx.reply(
-            `✅ Domeniu disponibil: \`${domainName}\` — ${info.priceUsd} ${CURRENCY_LABEL}/an.\n\n` +
-            `📧 Pe ce adresă de email să înregistrăm domeniul? Domeniul se înregistrează *pe numele tău* (al clientului), iar pe acest email vei primi confirmările.\n\n` +
-            `_Scrie email-ul tău (sau „skip" ca să-l înregistrăm pe contactul nostru și să-l transferăm ulterior)._`
-        );
-    } else {
-        // Suggest alternatives
-        await ctx.reply(`❌ \`${domainName}\` nu este disponibil. Caut alternative...`);
-
-        const base = domainName.split('.')[0];
-        let suggestions = [];
+        // Read config from disk for version saving
+        let config = null;
         try {
-            suggestions = await suggestDomains(base);
-        } catch (e) {
-            console.error('[suggestDomains error]', e);
-        }
+            const cfgPath = path.join(session.siteDir, 'config.json');
+            config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+        } catch (_) {}
 
-        if (suggestions.length > 0) {
-            const list = suggestions.slice(0, 5).map(s => {
-                const price = s.priceUsd != null ? ` — ${s.priceUsd} ${CURRENCY_LABEL}/an` : '';
-                return `• \`${s.name}\`${price}`;
-            }).join('\n');
-            await ctx.reply(`Iată câteva alternative disponibile:\n\n${list}\n\nScrie unul din ele sau propune altul.`);
-        } else {
-            await ctx.reply('Nu am găsit alternative disponibile. Încearcă un alt domeniu.');
-        }
-        // Stay in domain phase
+        const freshSite = { ...regSite, paid: false, platform: 'telegram' };
+        const result = await webpublish.publishSite({
+            site: freshSite,
+            config: config || {},
+            images: [],
+            siteDirAlreadyBuilt: true,
+        });
+        url = result.url;
+        registry.updateSite(regSite.id, { url, status: 'live' });
+    } catch (e) {
+        console.error('[trial publish error]', e);
+        registry.updateSite(regSite.id, { status: 'needs-retry' });
+        await ctx.reply('❌ Publicarea a eșuat: ' + e.message + '\nScrie /retry sau /anuleaza.');
+        return;
     }
+
+    const trialDaysLabel = TRIAL_DAYS;
+    const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
+    const domainMsg = CONTACT_URL
+        ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${CONTACT_URL}`
+        : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
+
+    // 3. Build checkout link if payments configured
+    let paymentText = '';
+    if (stripeOk()) {
+        const uname      = getBotUsername();
+        const successUrl = `https://t.me/${uname}?start=paid`;
+        const cancelUrl  = `https://t.me/${uname}?start=cancel`;
+        try {
+            const checkout = await createCheckout({
+                amountCents:  BUILD_FEE_CENTS,
+                currency:     PAYMENT_CURRENCY,
+                productName:  'Activare site Hidook (permanent)',
+                successUrl,
+                cancelUrl,
+                metadata: { chatId: String(chatId), platform: 'telegram', siteId: regSite.id },
+                clientReferenceId: `tg-${chatId}`,
+            });
+            session.stripeSessionId = checkout.id;
+            _ledger('checkout', { chatId, amountCents: BUILD_FEE_CENTS, currency: PAYMENT_CURRENCY, siteId: regSite.id });
+            paymentText = `\n\n💳 *Păstrează site-ul permanent* (${fee} ${CURRENCY_LABEL}, o singură dată):\n👉 [Plătește aici](${checkout.url})`;
+        } catch (e) {
+            console.error('[trial checkout error]', e);
+        }
+    }
+
+    notifyAdmin(`🔧 Site nou LIVE (trial): "${bizName}" (chat ${chatId}) → ${url}`);
+    _ledger('trial_published', { chatId, url, siteId: regSite.id });
+
+    await ctx.reply(
+        `🎉 Site-ul tău e *LIVE* acum — GRATUIT pentru ${trialDaysLabel} zile:\n\n👉 ${url}\n\n` +
+        `Ai ${trialDaysLabel} zile să-l testezi. O singură plată de *${fee} ${CURRENCY_LABEL}* pentru a-l păstra permanent.` +
+        paymentText +
+        `\n\n${domainMsg}\n\n` +
+        'Felicitări! Scrie /start oricând să faci un site nou.'
+    );
+
+    // 4. Session done — state kept in registry
+    session.phase     = 'done';
+    session.liveUrl   = url;
+    session.published = true;
+    sessions.delete(chatId);
+    flushSessions();
 }
 
 // ---------------------------------------------------------------------------
-// Payment phase
+// Payment phase (LEGACY — for sessions created before the trial model)
 // ---------------------------------------------------------------------------
 
 async function _initiatePayment(ctx, session, chatId) {
-    // Every site is paid: a one-time build fee, PLUS the domain cost if a custom
-    // domain was chosen. The site is published only AFTER payment is confirmed.
-    const hasDomain   = Boolean(session.domain && session.domainPriceUsd != null);
-    const domainCents = hasDomain ? Math.round(session.domainPriceUsd * 100) + DOMAIN_MARKUP_CENTS : 0;
-    const amountCents = BUILD_FEE_CENTS + domainCents;
+    // Legacy: every site required upfront payment.
+    const amountCents = BUILD_FEE_CENTS;
 
     if (!stripeOk() || amountCents <= 0) {
-        // Payment provider missing/misconfigured. In PRODUCTION this must NOT silently
-        // publish for free (revenue leak + abuse). Only the explicit ALLOW_FREE_PUBLISH=1
-        // dev flag enables the free path; otherwise refuse and alert the owner.
         if (process.env.ALLOW_FREE_PUBLISH !== '1') {
             console.error('[payment] provider not configured and ALLOW_FREE_PUBLISH != 1 — refusing free publish for chat', chatId);
-            notifyAdmin(`🚨 Plata NECONFIGURATĂ — am refuzat publicarea gratuită pentru chat ${chatId}. Configurează providerul de plată (sau setează ALLOW_FREE_PUBLISH=1 pentru teste).`);
+            notifyAdmin(`🚨 Plata NECONFIGURATĂ — am refuzat publicarea gratuită pentru chat ${chatId}.`);
             await ctx.reply('⚠️ Momentan nu pot finaliza plata. Am anunțat echipa — te rugăm încearcă din nou mai târziu.');
             session.phase = 'done';
             return;
         }
-        // Dev-only free publish.
         await ctx.reply('ℹ️ Plata nu e configurată — public direct (mod dev)...');
         session.phase = 'deploy';
         await _publishAndFinish(ctx, session, chatId);
         return;
     }
 
-    const productName  = hasDomain
-        ? `Site web hidook + domeniu ${session.domain}`
-        : 'Site web hidook (publicare pe vercel.app)';
-
-    // successUrl / cancelUrl: use Telegram deep-link (polling doesn't need a public URL)
-    const uname        = getBotUsername();
-    const successUrl   = `https://t.me/${uname}?start=paid`;
-    const cancelUrl    = `https://t.me/${uname}?start=cancel`;
+    const productName = 'Site web hidook';
+    const uname       = getBotUsername();
+    const successUrl  = `https://t.me/${uname}?start=paid`;
+    const cancelUrl   = `https://t.me/${uname}?start=cancel`;
 
     let checkoutId, checkoutUrl;
     try {
@@ -1440,7 +1382,7 @@ async function _initiatePayment(ctx, session, chatId) {
             productName,
             successUrl,
             cancelUrl,
-            metadata: { chatId: String(chatId), platform: 'telegram', domain: session.domain },
+            metadata: { chatId: String(chatId), platform: 'telegram' },
             clientReferenceId: `tg-${chatId}`,
         });
         checkoutId  = checkout.id;
@@ -1452,20 +1394,16 @@ async function _initiatePayment(ctx, session, chatId) {
     }
 
     session.stripeSessionId = checkoutId;
-    session.payStartedAt    = Date.now();   // used to abandon never-paid checkouts after PAY_MAX_AGE_MS
-    _ledger('checkout', { chatId, amountCents, currency: PAYMENT_CURRENCY, domain: session.domain || null });
+    session.payStartedAt    = Date.now();
+    _ledger('checkout', { chatId, amountCents, currency: PAYMENT_CURRENCY });
 
     const total = (amountCents / 100).toFixed(2);
-    const breakdown = hasDomain
-        ? `Taxă site: ${(BUILD_FEE_CENTS / 100).toFixed(2)} ${CURRENCY_LABEL} + domeniu \`${session.domain}\`: ${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}`
-        : `Taxă unică de construcție site`;
     await ctx.reply(
-        `💳 Total de plată: *${total} ${CURRENCY_LABEL}*\n(${breakdown})\n\n` +
+        `💳 Total de plată: *${total} ${CURRENCY_LABEL}*\n\n` +
         `👉 [Plătește aici](${checkoutUrl})\n\n` +
         '_Verific automat plata în fundal. După confirmare, public site-ul. Nu închide conversația._'
     );
 
-    // Poll in background — don't await so the bot remains responsive
     _pollPaymentBackground(ctx, session, chatId, checkoutId);
 }
 
@@ -1496,15 +1434,15 @@ function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
 }
 
 /**
- * Handle a signature-verified Stripe webhook event (bot/server.js verifies the
- * signature BEFORE this is called). The webhook is the SOURCE OF TRUTH for
- * payment: it confirms instantly instead of waiting for the next poll tick,
- * and it works even if the in-memory poller died. The poller + sweeper stay
- * as fallback (also covers the Revolut provider, which has no webhook here yet).
+ * Handle a signature-verified Stripe webhook event.
  *
- * Idempotent by design: publishing is guarded by session.published /
- * session._publishing, and events for unknown/already-finished orders are
- * acknowledged without action (Stripe retries non-2xx, so "ignore" = handled).
+ * Dispatcher (TRIAL MODEL):
+ *   1. Try webpublish.handleStripePaid first — it looks up the order in registry
+ *      by stripeSessionId regardless of platform. If the order is in the registry
+ *      (web or trial-telegram), it handles it, notifies on the owner's channel,
+ *      and returns early.
+ *   2. Fall back to legacy in-memory session handling (for sessions created before
+ *      the trial model that still have chatId metadata and a live session).
  *
  * @param {object} event  Parsed Stripe event.
  * @returns {Promise<{handled: boolean, reason?: string}>}
@@ -1517,17 +1455,31 @@ async function handleStripeWebhookEvent(event) {
 
     const cs = event.data && event.data.object;
     if (!cs || cs.payment_status !== 'paid') {
-        // e.g. checkout.session.completed for a delayed method — the
-        // async_payment_succeeded event will follow when it's actually paid.
         return { handled: false, reason: 'not paid yet' };
     }
 
+    // 1. Try registry-based handling first (covers all platforms including telegram trial)
+    try {
+        const orderInRegistry = registry.getOrderBySession(cs.id);
+        if (orderInRegistry) {
+            await webpublish.handleStripePaid(event, {
+                messenger:   sendMessageRaw,
+                notifyAdmin: adminNotify,
+            });
+            _ledger('paid', { via: 'webhook-registry', sessionId: cs.id });
+            return { handled: true, reason: 'registry order handled' };
+        }
+    } catch (e) {
+        console.error('[handleStripeWebhookEvent] registry path error:', e.message);
+        // Fall through to legacy
+    }
+
+    // 2. Legacy: in-memory session lookup by chatId metadata
     const rawChatId = cs.metadata && cs.metadata.chatId;
     if (!rawChatId) return { handled: false, reason: 'no chatId metadata' };
     const chatId  = Number(rawChatId);
     const session = sessions.get(chatId) || sessions.get(String(rawChatId));
     if (!session) {
-        // Already published + cleaned up (poller won the race), or truly unknown.
         _ledger('paid', { chatId, via: 'webhook', sessionId: cs.id, note: 'no-session' });
         return { handled: true, reason: 'no session (already finished?)' };
     }
@@ -1569,52 +1521,21 @@ async function _deployWithRetry(siteDir, slug, chatId, attempts = 3) {
     throw lastErr;
 }
 
-/** Refund the domain portion of a paid order after an unrecoverable domain failure,
- *  then keep the site live on vercel.app. Best-effort: if the refund API is missing or
- *  fails, alert the owner to refund manually — never leave the customer silently charged. */
-async function _refundDomainPortion(ctx, session, chatId, err) {
-    const domainCents = Math.round(session.domainPriceUsd * 100) + DOMAIN_MARKUP_CENTS;
-    let refunded = false;
-    try {
-        if (typeof _payments.refund === 'function' && session.stripeSessionId) {
-            await _payments.refund(session.stripeSessionId, domainCents);
-            refunded = true;
-        }
-    } catch (re) {
-        console.error('[refund domain portion]', re);
-    }
-    notifyAdmin(`⚠️ Domeniu eșuat după plată (chat ${chatId}): ${err.message}. Refund domeniu ${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}: ${refunded ? 'OK' : 'MANUAL necesar'}.`);
-    await ctx.reply(
-        `⚠️ Nu am putut înregistra domeniul \`${session.domain}\`.` +
-        (refunded
-            ? ` Ți-am returnat costul domeniului (${(domainCents / 100).toFixed(2)} ${CURRENCY_LABEL}).`
-            : ' Echipa te va contacta pentru rambursarea costului domeniului.') +
-        `\nSite-ul tău rămâne LIVE pe ${session.liveUrl}.`
-    );
-    // Drop the domain so the order finishes as a normal vercel.app publish.
-    session.domain = null;
-    session.domainPriceUsd = null;
-}
-
 /**
- * Publish the paid site: deploy to Vercel/Cloudflare, and — if a custom domain was paid
- * for — buy + attach it. IDEMPOTENT and RETRYABLE: guarded so a reconciler re-poll, a
- * /retry, and a duplicate update never publish twice; on failure it does NOT discard the
- * paid order — it parks it in 'paid-needs-retry' for /retry or the sweeper to resume.
+ * LEGACY publish phase — used for sessions created before the trial model (and for
+ * /retry on paid-needs-retry sessions). IDEMPOTENT and RETRYABLE.
  */
 async function _publishAndFinish(ctx, session, chatId) {
-    // Idempotency guards.
     if (session.published) {
-        const live = session.domain ? `https://${session.domain}` : session.liveUrl;
+        const live = session.liveUrl;
         if (live) await ctx.reply(`✅ Site-ul tău e deja live:\n👉 ${live}`);
         return;
     }
-    if (session._publishing) return;          // a publish is already in flight for this chat
+    if (session._publishing) return;
     session._publishing = true;
     session.phase = 'deploy';
     flushSessions();
 
-    // On any unrecoverable failure: keep the PAID order, park it for retry, alert owner.
     const parkForRetry = async (msg) => {
         session._publishing = false;
         session.phase = 'paid-needs-retry';
@@ -1631,7 +1552,6 @@ async function _publishAndFinish(ctx, session, chatId) {
         return;
     }
 
-    // 1) Deploy (with retry)
     let url, projectId, provider;
     try {
         await ctx.reply('🚀 Public site-ul...');
@@ -1646,54 +1566,22 @@ async function _publishAndFinish(ctx, session, chatId) {
     session.projectId = projectId;
     flushSessions();
 
-    // 2) Custom domain (paid for) — buy + attach. On failure: refund the domain portion
-    //    and finish as a normal vercel.app publish (site stays live).
-    if (session.domain && session.domainPriceUsd != null && vercelOk()) {
-        await ctx.reply(`🛒 Cumpăr domeniul \`${session.domain}\` (înregistrat pe numele tău)...`);
-        try {
-            // Prefer the CLIENT's contact (email/name) so the domain is in their name;
-            // _buildClientContact falls back to REGISTRANT_* env, and buyDomain itself
-            // also defaults to env when contactInformation is null.
-            const clientContact = _buildClientContact(session);
-            await buyDomain(session.domain, session.domainPriceUsd, clientContact);
-            const onWhose = (clientContact && session.clientEmail)
-                ? ` Domeniul e înregistrat pe numele tău (${session.clientEmail}).`
-                : ' Domeniul e înregistrat pe contactul nostru și poate fi transferat pe numele tău la cerere.';
-            await ctx.reply(`✅ Domeniu \`${session.domain}\` cumpărat!${onWhose}`);
-            // Attach on the provider that actually hosts this deploy.
-            if (projectId && provider === 'cloudflare') {
-                await cfDeploy.attachDomain(projectId, session.domain);
-                await ctx.reply('🔗 Domeniu atașat la site!');
-            } else if (projectId && vercelDeployOk()) {
-                await attachDomain(projectId, session.domain);
-                await ctx.reply('🔗 Domeniu atașat la site!');
-            }
-        } catch (e) {
-            console.error('[domain finalize error]', e);
-            await _refundDomainPortion(ctx, session, chatId, e);
-        }
-    }
-
-    // 3) Done — mark published BEFORE deleting so a crash here can't re-publish.
     session.published = true;
     session._publishing = false;
     session.phase = 'done';
     flushSessions();
 
-    const liveUrl = session.domain ? `https://${session.domain}` : url;
-    notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${liveUrl}${session.domain ? ' (domeniu cumpărat)' : ''}`);
-    _ledger('published', { chatId, url: liveUrl, domain: session.domain || null });
+    const domainMsg = CONTACT_URL
+        ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${CONTACT_URL}`
+        : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
+
+    notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${url}`);
+    _ledger('published', { chatId, url });
     await ctx.reply(
-        `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${liveUrl}\n\n` +
-        (session.domain ? '_DNS-ul se propagă în câteva minute._\n' : '') +
+        `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${url}\n\n` +
+        `${domainMsg}\n\n` +
         'Felicitări! Scrie /start oricând să faci un site nou.'
     );
-    // Optional managed yearly plan offer (no real recurring billing yet — just the pitch).
-    await ctx.reply(
-        `🛠️ *Plan anual administrat (opțional)* — ${RETAINER_PRICE} ${CURRENCY_LABEL}/an: ținem site-ul online, ` +
-        `actualizăm textele/pozele și reînnoim domeniul pentru tine.\n\n` +
-        `Dacă te interesează, răspunde cu „administrare" și revin cu detalii. Fără obligație.`
-    ).catch(() => {});
     sessions.delete(chatId);
     flushSessions();
 }
@@ -1703,15 +1591,20 @@ async function _publishAndFinish(ctx, session, chatId) {
 // ---------------------------------------------------------------------------
 
 async function handleHelp(ctx) {
+    const domainMsg = CONTACT_URL
+        ? `Domeniu propriu? Scrie-ne: ${CONTACT_URL}`
+        : 'Domeniu propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
     await ctx.reply(
         '🤖 Cum funcționează?\n\n' +
-        'Îți construiesc un site web profesional pentru afacerea ta în câteva minute.\n\n' +
-        '1️⃣ Scrie /start și povestește-mi despre afacere (nume, ce vinzi, contacte).\n' +
-        '2️⃣ Trimite câteva poze cu produsele tale.\n' +
-        '3️⃣ Aleg textele, culorile și construiesc site-ul.\n' +
-        '4️⃣ Plătești și site-ul tău e LIVE — pe vercel.app sau pe domeniul tău.\n\n' +
+        'Îți construiesc un site web profesional GRATUIT pentru probă.\n\n' +
+        `1️⃣ Scrie /start și povestește-mi despre afacere (nume, ce vinzi, contacte).\n` +
+        `2️⃣ Trimite câteva poze cu produsele tale.\n` +
+        `3️⃣ Aleg textele, culorile și construiesc site-ul.\n` +
+        `4️⃣ Site-ul e LIVE imediat — GRATUIT ${TRIAL_DAYS} zile de probă.\n` +
+        `5️⃣ O singură plată pentru a-l păstra permanent.\n` +
+        `6️⃣ ${domainMsg}\n\n` +
         'Comenzi:\n' +
-        '/start – construiește un site (chat cu AI)\n' +
+        '/start – construiește un site\n' +
         '/wizard – mod pas-cu-pas (manual)\n' +
         '/preturi – vezi prețurile\n' +
         '/anuleaza – resetează\n' +
@@ -1722,12 +1615,15 @@ async function handleHelp(ctx) {
 
 async function handlePreturi(ctx) {
     const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
+    const domainMsg = CONTACT_URL
+        ? `Domeniu custom (ex: firma-ta.ro): Scrie-ne la ${CONTACT_URL} și îl setăm noi.`
+        : 'Domeniu custom (ex: firma-ta.ro): Scrie-ne și îl setăm noi pentru tine.';
     await ctx.reply(
         '💰 Prețuri\n\n' +
-        `• Site complet (pe adresă vercel.app): ${fee} ${CURRENCY_LABEL}, o singură dată.\n` +
-        `• + Domeniu custom (ex: afacereata.ro): prețul domeniului (~12–15 ${CURRENCY_LABEL}/an) se adaugă la plată.\n` +
-        `• Plan anual administrat (opțional): ${RETAINER_PRICE} ${CURRENCY_LABEL}/an.\n` +
-        `• Design la comandă / funcții speciale: de la 500 ${CURRENCY_LABEL}.\n\n` +
+        `• Site web GRATUIT ${TRIAL_DAYS} zile de probă — publicat imediat pe platforma noastră.\n` +
+        `• Activare permanentă: *${fee} ${CURRENCY_LABEL}*, o singură dată.\n` +
+        `• ${domainMsg}\n` +
+        `• Plan anual administrat (opțional): ${RETAINER_PRICE} ${CURRENCY_LABEL}/an.\n\n` +
         'Scrie /start ca să începem!'
     );
 }

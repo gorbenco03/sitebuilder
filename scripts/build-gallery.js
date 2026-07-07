@@ -63,6 +63,36 @@ function main() {
 
     mkdirp(DIST_DIR);
 
+    // 1b. Calculează setul de directoare care vor fi generate în acest run
+    const expectedDirs = new Set(['index.html']);
+    for (const tpl of registry.templates) {
+        const tplDir = path.join(TEMPLATES_DIR, tpl.id);
+        if (!fs.existsSync(tplDir)) continue;
+        const presetsPath = path.join(tplDir, 'presets.json');
+        if (!fs.existsSync(presetsPath)) continue;
+        let presetsData;
+        try { presetsData = JSON.parse(fs.readFileSync(presetsPath, 'utf8')); } catch (e) { continue; }
+        if (!Array.isArray(presetsData.presets)) continue;
+        for (const preset of presetsData.presets) {
+            expectedDirs.add(`${tpl.id}-${preset.id}`);
+        }
+    }
+
+    // Șterge directoarele stale (nu sunt în setul curent)
+    if (fs.existsSync(DIST_DIR)) {
+        const existing = fs.readdirSync(DIST_DIR);
+        for (const entry of existing) {
+            if (!expectedDirs.has(entry)) {
+                const stalePath = path.join(DIST_DIR, entry);
+                const stat = fs.statSync(stalePath);
+                if (stat.isDirectory()) {
+                    fs.rmSync(stalePath, { recursive: true, force: true });
+                    console.log(`  🗑  Șters director stale: ${entry}`);
+                }
+            }
+        }
+    }
+
     // Structură pentru index.html: { vertical, templateName, templateDesc, demos: [] }
     const verticals = {};   // vertical → { name, description, demos[] }
 
@@ -113,9 +143,13 @@ function main() {
             const demoDir = path.join(DIST_DIR, demoId);
 
             console.log(`  → construiesc ${demoId} …`);
+            // Curăță dir-ul demo înainte de copiere ca să nu rămână fișiere stale
+            if (fs.existsSync(demoDir)) {
+                fs.rmSync(demoDir, { recursive: true, force: true });
+            }
             mkdirp(demoDir);
 
-            // Copiază fișierele șablonului (fără schema/presets/md)
+            // Copiază fișierele șablonului (fără schema/presets/md/template.html)
             copyTemplateFiles(tplDir, demoDir);
 
             // Scrie config.json din preset
@@ -135,6 +169,10 @@ function main() {
                 totalSkipped++;
                 continue;
             }
+
+            // Șterge template.html din output — nu e necesar la runtime și conține {{ nerezolvate
+            const tplCopy = path.join(demoDir, 'template.html');
+            if (fs.existsSync(tplCopy)) fs.unlinkSync(tplCopy);
 
             // Adaugă la lista de demo-uri pentru vitrina
             const businessName = (preset.config.business && preset.config.business.name)

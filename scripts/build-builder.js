@@ -82,6 +82,20 @@ function renderPreview(files, config) {
         );
     }
 
+    // PREVIEW MODE: complete every entry animation instantly (keeping the
+    // \`forwards\` end state). Two reasons: (1) each debounced re-render would
+    // otherwise restart all fade-ins — janky while typing; (2) Chrome throttles
+    // animation timelines in hidden/offscreen cross-origin iframes, which can
+    // leave opacity-0 entry animations stuck at frame 0 (blank preview).
+    // Published sites are NOT affected — this style exists only in srcdoc.
+    html = html.replace(
+        '</head>',
+        '<style data-hidook-preview>*, *::before, *::after {' +
+        ' animation-duration: 0.01ms !important;' +
+        ' animation-delay: 0ms !important;' +
+        ' transition-duration: 0.01ms !important; }</style></head>'
+    );
+
     return html;
 }
 `;

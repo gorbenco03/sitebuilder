@@ -9,9 +9,10 @@
           "tagline": "Renovari interioare & finisaje premium",
           "title": "ProRenov Construct | Renovari Interioare Londra | Finisaje de Calitate",
           "metaDescription": "Renovari interioare complete in Londra si imprejurimi. Gresie, faianta, rigips, vopsitorie, instalatii. Echipa de profesionisti romani cu 12 ani experienta. Cere oferta gratuita!",
-          "about": "ProRenov Construct este o firma de constructii si renovari infiintata de o echipa de mesteri romani cu experienta in Londra. Oferim servicii complete de renovare interioara: de la demolare si structura pana la finisaje de lux. Lucram curat, respectam termenele si oferim garantie la toate lucrarile.",
+          "about": "ProRenov Construct este o firma de constructii si renovari infiintata de o echipa de mesteri romani cu experienta bogata in Londra. Oferim servicii complete de renovare interioara: de la demolare si structura pana la finisaje de lux. Lucram curat, respectam termenele si oferim garantie scrisa la toate lucrarile.",
           "lang": "ro",
           "yearsExp": "12",
+          "projectsDone": "240",
           "zone": "Londra si imprejurimi (Essex, Kent, Surrey)"
         },
         "labels": {
@@ -26,44 +27,44 @@
           "primary":      "#F5A623",
           "primaryLight": "#F7BA52",
           "primaryDark":  "#D4891A",
-          "cream":        "#F4F5F7"
+          "cream":        "#F4F5F0"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(135deg, #1a2744 0%, #2c3e6b 50%, #1a2744 100%)",
+          "background": "linear-gradient(160deg, rgba(31,41,51,.60) 0%, rgba(45,61,80,.40) 60%, rgba(26,45,26,.55) 100%), url('https://picsum.photos/seed/prorenov-hero/1600/900') center/cover no-repeat",
           "ctaLabel": "Cere oferta gratuita"
         },
         "servicesTitle": "Serviciile noastre",
         "services": [
-          { "icon": "🧱", "label": "Zidarie si structura" },
-          { "icon": "🪟", "label": "Rigips si tavane false" },
-          { "icon": "🎨", "label": "Vopsitorie si tencuiala" },
-          { "icon": "🚿", "label": "Gresie si faianta" },
-          { "icon": "🔧", "label": "Instalatii sanitare" },
-          { "icon": "⚡", "label": "Instalatii electrice" },
-          { "icon": "🪵", "label": "Parchet si laminat" },
-          { "icon": "🏠", "label": "Renovare completa" }
+          { "icon": "", "label": "Zidarie si structura" },
+          { "icon": "", "label": "Rigips si tavane false" },
+          { "icon": "", "label": "Vopsitorie si tencuiala" },
+          { "icon": "", "label": "Gresie si faianta" },
+          { "icon": "", "label": "Instalatii sanitare" },
+          { "icon": "", "label": "Instalatii electrice" },
+          { "icon": "", "label": "Parchet si laminat" },
+          { "icon": "", "label": "Renovare completa casa" }
         ],
         "galleryTitle": "Lucrari realizate",
         "trust": [
           {
-            "icon": "🏆",
+            "icon": "",
             "title": "12 ani experienta",
             "text": "Peste un deceniu de lucrari in Londra. Cunoastem standardele britanice si lucram conform normativelor in vigoare."
           },
           {
-            "icon": "✅",
-            "title": "Garantie scrisa",
+            "icon": "",
+            "title": "Garantie scrisa 2 ani",
             "text": "Oferim garantie de 2 ani la toate lucrarile de constructii si finisaje. Calitatea noastra vorbeste de la sine."
           },
           {
-            "icon": "📋",
+            "icon": "",
             "title": "Oferta transparenta",
-            "text": "Deviz detaliat inainte de inceperea lucrarilor. Fara costuri ascunse, fara surprize neplacute."
+            "text": "Deviz detaliat inainte de inceperea lucrarilor. Fara costuri ascunse, fara surprize neplacute pe parcurs."
           },
           {
-            "icon": "🔒",
+            "icon": "",
             "title": "Asigurare completa",
             "text": "Firma asigurata complet (public liability & employer's liability). Lucrari sigure pentru dumneavoastra si familia dvs."
           }
@@ -77,28 +78,28 @@
         "categories": [
           {
             "title": "Renovari baie completa",
-            "blurb": "Transformam baia dumneavoastra de la zero: demolare, impermeabilizare, gresie, faianta, instalatii sanitare si accesorii.",
+            "blurb": "Transformam baia dumneavoastra de la zero: demolare, impermeabilizare, gresie, faianta, instalatii sanitare si accesorii de calitate.",
             "photos": [
-              { "src": "https://picsum.photos/seed/baie-moderna/1200/800", "alt": "Baie moderna renovata complet" },
-              { "src": "https://picsum.photos/seed/baie-gresie/1200/800", "alt": "Gresie si faianta baie" },
-              { "src": "https://picsum.photos/seed/baie-dus/1200/800", "alt": "Dus walk-in cu faianta marmura" }
+              { "src": "https://picsum.photos/seed/baie-moderna-lon/1200/800", "alt": "Baie moderna renovata complet" },
+              { "src": "https://picsum.photos/seed/baie-gresie-lon/1200/800", "alt": "Gresie si faianta baie premium" },
+              { "src": "https://picsum.photos/seed/baie-dus-lon/1200/800", "alt": "Dus walk-in cu faianta marmura" }
             ]
           },
           {
-            "title": "Bucatarii si open-space",
-            "blurb": "Amenajam spatii de living moderne: dem pereti, rigips, electricitate, gresie si vopsitorie pentru un rezultat impecabil.",
+            "title": "Bucatarii si spatii open-space",
+            "blurb": "Amenajam spatii de living moderne: demolare pereti, rigips, electricitate, gresie portelanata si vopsitorie pentru un rezultat impecabil.",
             "photos": [
-              { "src": "https://picsum.photos/seed/bucatarie-moderna/1200/800", "alt": "Bucatarie open-space renovata" },
-              { "src": "https://picsum.photos/seed/living-parquet/1200/800", "alt": "Living cu parchet si gresie portelanata" },
-              { "src": "https://picsum.photos/seed/bucatarie-tavan/1200/800", "alt": "Tavan fals LED in bucatarie" }
+              { "src": "https://picsum.photos/seed/bucatarie-lon1/1200/800", "alt": "Bucatarie open-space renovata modern" },
+              { "src": "https://picsum.photos/seed/living-parquet-lon/1200/800", "alt": "Living cu parchet si gresie portelanata" },
+              { "src": "https://picsum.photos/seed/bucatarie-tavan-lon/1200/800", "alt": "Tavan fals LED in bucatarie" }
             ]
           },
           {
             "title": "Extinderi si lucrari structurale",
-            "blurb": "Extinderi casa, mansardari, dem pereti portanti cu autorizatie, constructii noi in gradina (annex, garage, shed).",
+            "blurb": "Extinderi casa, mansardari, demolare pereti portanti cu autorizatie, constructii noi in gradina (annex, garage, garden office).",
             "photos": [
-              { "src": "https://picsum.photos/seed/extensie-casa/1200/800", "alt": "Extensie casa cu structura otel" },
-              { "src": "https://picsum.photos/seed/annex-gradina/1200/800", "alt": "Annex finalizat in gradina" }
+              { "src": "https://picsum.photos/seed/extensie-lon1/1200/800", "alt": "Extensie casa cu structura otel" },
+              { "src": "https://picsum.photos/seed/annex-lon1/1200/800", "alt": "Annex finalizat in gradina" }
             ]
           }
         ],
@@ -106,17 +107,17 @@
           "handle": "prorenov.london",
           "url": "https://www.instagram.com/prorenov.london",
           "gallery": [
-            "https://picsum.photos/seed/insta-ren1/600/600",
-            "https://picsum.photos/seed/insta-ren2/600/600",
-            "https://picsum.photos/seed/insta-ren3/600/600",
-            "https://picsum.photos/seed/insta-ren4/600/600",
-            "https://picsum.photos/seed/insta-ren5/600/600",
-            "https://picsum.photos/seed/insta-ren6/600/600"
+            "https://picsum.photos/seed/insta-prorenov-1/600/600",
+            "https://picsum.photos/seed/insta-prorenov-2/600/600",
+            "https://picsum.photos/seed/insta-prorenov-3/600/600",
+            "https://picsum.photos/seed/insta-prorenov-4/600/600",
+            "https://picsum.photos/seed/insta-prorenov-5/600/600",
+            "https://picsum.photos/seed/insta-prorenov-6/600/600"
           ]
         },
         "contact": {
           "title": "Cere oferta gratuita",
-          "intro": "Sunati-ne sau scrieti pe WhatsApp pentru o evaluare gratuita. Raspundem in aceeasi zi.",
+          "intro": "Sunati-ne sau scrieti pe WhatsApp pentru o evaluare gratuita la domiciliu. Raspundem in aceeasi zi.",
           "instagram": {
             "url": "https://www.instagram.com/prorenov.london",
             "label": "@prorenov.london"
@@ -129,16 +130,17 @@
           "phone": "+447900112233",
           "phoneDisplay": "+44 7900 112 233",
           "waHref": "https://wa.me/447900112233?text=Salut!%20Vreau%20o%20oferta%20gratuita%20pentru%20renovare.",
-          "address": "East London<br>Essex & Surrey",
+          "address": "East London, Essex & Surrey",
           "addressHref": ""
         },
         "seo": {
           "ogImage": "https://picsum.photos/seed/prorenov-og/1200/630",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovari interioare complete in Londra si imprejurimi\",\"telephone\":\"+447900112233\",\"areaServed\":\"London\",\"url\":\"\"}"
+          "canonical": "https://prorenov-construct.co.uk",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovari interioare complete in Londra si imprejurimi\",\"telephone\":\"+447900112233\",\"areaServed\":\"London\",\"url\":\"https://prorenov-construct.co.uk\"}"
         },
         "footer": {
           "address": "East London, Essex & Surrey",
-          "year": 2026,
+          "year": "2026",
           "note": "Calitate garantata. Lucrari curate, termene respectate."
         }
       }
@@ -152,9 +154,10 @@
           "tagline": "Acoperisuri, fatade si izolatie termica",
           "title": "ConstTop Roofing | Acoperisuri si Fatade Manchester | Reparatii & Montaj",
           "metaDescription": "Montaj si reparatii acoperisuri, fatade ventilate, izolatie termica in Manchester si imprejurimi. Mesteri romani cu 15 ani experienta. Urgente 24/7. Oferta gratuita!",
-          "about": "ConstTop Roofing este specializata in lucrari de acoperisuri si fatade in Manchester si nord-vestul Angliei. Montam tigla ceramica si metalica, membrane bituminoase, fatade ventilate si izolatie termica la standarde ridicate. Intervenim si in urgente — scurgeri, stricaciuni dupa furtuna — in cel mai scurt timp.",
+          "about": "ConstTop Roofing este specializata in lucrari de acoperisuri si fatade in Manchester si nord-vestul Angliei. Montam tigla ceramica si metalica, membrane bituminoase, fatade ventilate si izolatie termica la standarde ridicate. Intervenim si in urgente — scurgeri, stricaciuni dupa furtuna — in cel mai scurt timp posibil.",
           "lang": "ro",
           "yearsExp": "15",
+          "projectsDone": "380",
           "zone": "Manchester, Salford, Stockport, Bolton"
         },
         "labels": {
@@ -174,39 +177,39 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "url('https://picsum.photos/seed/acoperis-hero/1600/900')",
+          "background": "linear-gradient(160deg, rgba(31,41,51,.60) 0%, rgba(31,41,51,.40) 50%, rgba(31,41,51,.55) 100%), url('https://picsum.photos/seed/acoperis-hero-man/1600/900') center/cover no-repeat",
           "ctaLabel": "Cere oferta gratuita"
         },
         "servicesTitle": "Ce facem",
         "services": [
-          { "icon": "🏠", "label": "Montaj tigla ceramica" },
-          { "icon": "🔩", "label": "Tigla metalica & tabla" },
-          { "icon": "💧", "label": "Membrane bituminoase" },
-          { "icon": "🧱", "label": "Fatade ventilate" },
-          { "icon": "🌡️", "label": "Izolatie termica" },
-          { "icon": "🚨", "label": "Urgente scurgeri 24/7" },
-          { "icon": "🪟", "label": "Luminatoare Velux" },
-          { "icon": "🌧️", "label": "Jgheaburi si burlane" }
+          { "icon": "", "label": "Montaj tigla ceramica" },
+          { "icon": "", "label": "Tigla metalica si tabla faltuita" },
+          { "icon": "", "label": "Membrane bituminoase EPDM" },
+          { "icon": "", "label": "Fatade ventilate composite" },
+          { "icon": "", "label": "Izolatie termica EPS / vata" },
+          { "icon": "", "label": "Urgente scurgeri 24/7" },
+          { "icon": "", "label": "Luminatoare Velux" },
+          { "icon": "", "label": "Jgheaburi si burlane" }
         ],
         "galleryTitle": "Proiecte finalizate",
         "trust": [
           {
-            "icon": "⚡",
+            "icon": "",
             "title": "Urgente 24/7",
             "text": "Scurgeri dupa furtuna sau deteriorari bruste — suntem disponibili non-stop pentru interventii rapide in zona Manchester."
           },
           {
-            "icon": "📜",
+            "icon": "",
             "title": "Autorizati si asigurati",
-            "text": "Firma inregistrata la Companies House, asigurata complet si inregistrata in sistemele de garantie ale constructorilor britanici."
+            "text": "Firma inregistrata la Companies House, asigurata complet si inscrisa in sistemele de garantie ale constructorilor britanici."
           },
           {
-            "icon": "💰",
-            "title": "Pret corect",
+            "icon": "",
+            "title": "Pret fix agreat",
             "text": "Oferta detaliata si onesta inainte de inceperea lucrarilor. Pretul agreat ramane neschimbat pe parcursul executiei."
           },
           {
-            "icon": "🛡️",
+            "icon": "",
             "title": "Garantie 10 ani",
             "text": "Acoperisuri noi cu garantie de 10 ani. Lucram cu materiale certificate si echipamente profesionale de ultima generatie."
           }
@@ -220,28 +223,28 @@
         "categories": [
           {
             "title": "Acoperisuri rezidentiale",
-            "blurb": "Montam si inlocuim complet acoperisuri de case si blocuri: tigla ceramica, beton, metalica, tabla faltuita, membrane EPDM si bituminoase.",
+            "blurb": "Montam si inlocuim complet acoperisuri de case: tigla ceramica, beton, metalica, tabla faltuita, membrane EPDM si bituminoase de calitate superioara.",
             "photos": [
-              { "src": "https://picsum.photos/seed/acoperis-rezid/1200/800", "alt": "Acoperis rezidential nou cu tigla ceramica" },
-              { "src": "https://picsum.photos/seed/acoperis-tabla/1200/800", "alt": "Acoperis tabla faltuita moderna" },
-              { "src": "https://picsum.photos/seed/acoperis-mansarda/1200/800", "alt": "Mansarda cu luminatoare Velux" }
+              { "src": "https://picsum.photos/seed/acoperis-rez-man1/1200/800", "alt": "Acoperis rezidential nou cu tigla ceramica" },
+              { "src": "https://picsum.photos/seed/acoperis-tabla-man/1200/800", "alt": "Acoperis tabla faltuita moderna" },
+              { "src": "https://picsum.photos/seed/mansarda-velux-man/1200/800", "alt": "Mansarda amenajata cu luminatoare Velux" }
             ]
           },
           {
             "title": "Fatade ventilate si termoizolatie",
-            "blurb": "Sisteme de fatade ventilate cu vata minerala si panouri composite — reduceti facturile la energie pana la 40%.",
+            "blurb": "Sisteme de fatade ventilate cu vata minerala si panouri composite — reduceti facturile la energie pana la 40% in primul an.",
             "photos": [
-              { "src": "https://picsum.photos/seed/fatada-ventilata/1200/800", "alt": "Fatada ventilata moderna casa" },
-              { "src": "https://picsum.photos/seed/izolatie-ext/1200/800", "alt": "Termoizolatie exterioara EPS" }
+              { "src": "https://picsum.photos/seed/fatada-vent-man1/1200/800", "alt": "Fatada ventilata moderna casa" },
+              { "src": "https://picsum.photos/seed/izolatie-eps-man/1200/800", "alt": "Termoizolatie exterioara EPS aplicata" }
             ]
           },
           {
             "title": "Reparatii si interventii urgente",
-            "blurb": "Intervenim rapid la scurgeri, tigle deplasate de vant, stricaciuni dupa furtuna sau alte urgente de acoperis.",
+            "blurb": "Intervenim rapid la scurgeri, tigle deplasate de vant, stricaciuni dupa furtuna si orice urgenta de acoperis, 7 zile din 7.",
             "photos": [
-              { "src": "https://picsum.photos/seed/reparatie-acop/1200/800", "alt": "Reparatie urgenta acoperis dupa furtuna" },
-              { "src": "https://picsum.photos/seed/jgheab-burlan/1200/800", "alt": "Montaj jgheaburi si burlane cupru" },
-              { "src": "https://picsum.photos/seed/cos-tigla/1200/800", "alt": "Refacere cos si inchidere tigla" }
+              { "src": "https://picsum.photos/seed/reparatie-man1/1200/800", "alt": "Reparatie urgenta acoperis dupa furtuna" },
+              { "src": "https://picsum.photos/seed/jgheab-cupru-man/1200/800", "alt": "Montaj jgheaburi si burlane cupru" },
+              { "src": "https://picsum.photos/seed/cos-tigla-man/1200/800", "alt": "Refacere cos de fum si inchidere tigla" }
             ]
           }
         ],
@@ -249,15 +252,17 @@
           "handle": "consttop.roofing",
           "url": "https://www.instagram.com/consttop.roofing",
           "gallery": [
-            "https://picsum.photos/seed/insta-roof1/600/600",
-            "https://picsum.photos/seed/insta-roof2/600/600",
-            "https://picsum.photos/seed/insta-roof3/600/600",
-            "https://picsum.photos/seed/insta-roof4/600/600"
+            "https://picsum.photos/seed/insta-consttop-1/600/600",
+            "https://picsum.photos/seed/insta-consttop-2/600/600",
+            "https://picsum.photos/seed/insta-consttop-3/600/600",
+            "https://picsum.photos/seed/insta-consttop-4/600/600",
+            "https://picsum.photos/seed/insta-consttop-5/600/600",
+            "https://picsum.photos/seed/insta-consttop-6/600/600"
           ]
         },
         "contact": {
           "title": "Cere oferta gratuita",
-          "intro": "Disponibili 7 zile din 7. Sunati sau scrieti pe WhatsApp — evaluare gratuita la domiciliu.",
+          "intro": "Disponibili 7 zile din 7. Sunati sau scrieti pe WhatsApp — evaluare gratuita la domiciliu, fara obligatii.",
           "instagram": {
             "url": "https://www.instagram.com/consttop.roofing",
             "label": "@consttop.roofing"
@@ -270,16 +275,17 @@
           "phone": "+447755443322",
           "phoneDisplay": "+44 7755 443 322",
           "waHref": "https://wa.me/447755443322?text=Buna%20ziua!%20Vreau%20o%20oferta%20pentru%20acoperis.",
-          "address": "Manchester<br>Greater Manchester, M1",
+          "address": "Manchester, Greater Manchester M1",
           "addressHref": "https://maps.google.com/?q=Manchester"
         },
         "seo": {
           "ogImage": "https://picsum.photos/seed/consttop-og/1200/630",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Acoperisuri si fatade in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"\"}"
+          "canonical": "https://consttop-roofing.co.uk",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Acoperisuri si fatade in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"https://consttop-roofing.co.uk\"}"
         },
         "footer": {
           "address": "Manchester, Greater Manchester",
-          "year": 2026,
+          "year": "2026",
           "note": "Acoperisuri durabile. Garantie 10 ani."
         }
       }

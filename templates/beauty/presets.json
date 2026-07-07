@@ -1,0 +1,358 @@
+{
+  "presets": [
+    {
+      "id": "salon-lumina",
+      "name": "Salon Lumina",
+      "config": {
+        "business": {
+          "name": "Salon Lumina",
+          "tagline": "Frumusețe autentică, îngrijire cu suflet",
+          "title": "Salon Lumina | Coafură, Manichiură & Make-up | București",
+          "metaDescription": "Salon de frumusețe în București — coafură, manichiură, pedichiură și make-up profesionist. Programări rapide pe WhatsApp, atmosferă boutique.",
+          "about": "Salon Lumina s-a născut din dorința de a oferi femeilor din București un spațiu unde să se simtă cu adevărat îngrijite. De cinci ani facem din fiecare vizită o experiență: de la prima consultație până la ultima pensulă de make-up, atenția noastră este întotdeauna asupra ta. Lucrăm cu produse certificate, tehnici actuale și, mai presus de orice, cu pasiune. Echipa noastră s-a format în saloane din Milano și Paris — și a adus acasă tot ce e mai bun.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Povestea noastră",
+          "instaTitle": "Inspirație zilnică pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Descoperă",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "servicesEyebrow": "Meniu servicii",
+          "scheduleEyebrow": "Program",
+          "galleryEyebrow": "Lucrările noastre",
+          "teamEyebrow": "Echipa noastră",
+          "bookingEyebrow": "Rezervări",
+          "waBookBtn": "Rezervă pe WhatsApp"
+        },
+        "theme": {
+          "primary": "#C4956A",
+          "primaryLight": "#D9B08C",
+          "primaryDark": "#A07548",
+          "cream": "#FAF7F4"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "url('https://picsum.photos/seed/salon-lumina-hero-bg/1600/900') center/cover no-repeat",
+          "ctaLabel": "Rezervă acum"
+        },
+        "servicesTitle": "Serviciile noastre",
+        "services": [
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
+            "label": "Coafură & styling",
+            "price": "de la 80 lei"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
+            "label": "Manichiură gel",
+            "price": "de la 130 lei"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
+            "label": "Pedichiură SPA",
+            "price": "de la 120 lei"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
+            "label": "Make-up ocazie",
+            "price": "de la 200 lei"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
+            "label": "Îngrijire ten",
+            "price": "de la 180 lei"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
+            "label": "Tratament păr",
+            "price": "de la 150 lei"
+          }
+        ],
+        "pricing": [
+          { "name": "Tuns + uscat", "price": "80–120 lei" },
+          { "name": "Vopsit rădăcini", "price": "160–220 lei" },
+          { "name": "Balayage complet", "price": "350–550 lei" },
+          { "name": "Manichiură simplă", "price": "80 lei" },
+          { "name": "Manichiură gel color", "price": "130 lei" },
+          { "name": "Nail art (per unghie)", "price": "15–30 lei" },
+          { "name": "Pedichiură clasică", "price": "80 lei" },
+          { "name": "Pedichiură SPA + gel", "price": "180 lei" },
+          { "name": "Make-up zi", "price": "200 lei" },
+          { "name": "Make-up mireasă", "price": "400 lei" }
+        ],
+        "schedule": {
+          "title": "Program de lucru",
+          "rows": [
+            { "day": "Luni – Vineri", "hours": "09:00 – 20:00" },
+            { "day": "Sâmbătă", "hours": "09:00 – 18:00" },
+            { "day": "Duminică", "hours": "10:00 – 15:00" }
+          ]
+        },
+        "team": {
+          "title": "Echipa Salon Lumina",
+          "members": [
+            {
+              "name": "Cristina Ionescu",
+              "role": "Coafor senior & colorist",
+              "bio": "15 ani de experiență în coafură și coloristică, specializată în tehnici balayage și vopsit la rece.",
+              "photo": "https://picsum.photos/seed/lumina-team-cristina/400/400"
+            },
+            {
+              "name": "Diana Popa",
+              "role": "Specialist manichiură & nail art",
+              "bio": "Certificată internațional în tehnici gel și acryl, pasionată de nail art minimalist și floral.",
+              "photo": "https://picsum.photos/seed/lumina-team-diana/400/400"
+            },
+            {
+              "name": "Laura Mihai",
+              "role": "Make-up artist & esteticiană",
+              "bio": "Formată la școli de beauty din București și Viena — make-up de zi, seară și ocazii speciale.",
+              "photo": "https://picsum.photos/seed/lumina-team-laura/400/400"
+            }
+          ]
+        },
+        "galleryTitle": "Portofoliul nostru",
+        "categories": [
+          {
+            "title": "Coafuri & culori",
+            "blurb": "De la balayage discret la culori curajase — fiecare tuns e o semnătură.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/lumina-par1/800/1000", "alt": "Balayage elegant cu tonuri de miere" },
+              { "src": "https://picsum.photos/seed/lumina-par2/800/1000", "alt": "Ondulare cu volum și strălucire" },
+              { "src": "https://picsum.photos/seed/lumina-par3/800/1000", "alt": "Tuns modern cu textură" },
+              { "src": "https://picsum.photos/seed/lumina-par4/800/1000", "alt": "Highlights discrete pe păr șaten" }
+            ]
+          },
+          {
+            "title": "Manichiură & nail art",
+            "blurb": "Gel, acryl, BIAB sau simplu — unghii îngrijite care vorbesc de la sine.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/lumina-mani1/800/800", "alt": "Manichiură gel nude cu linie aurie" },
+              { "src": "https://picsum.photos/seed/lumina-mani2/800/800", "alt": "Nail art floral primăvară" },
+              { "src": "https://picsum.photos/seed/lumina-mani3/800/800", "alt": "Ombre roz-alb pe unghii scurte" },
+              { "src": "https://picsum.photos/seed/lumina-mani4/800/800", "alt": "Manichiură clasică roșu aprins" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "salon.lumina.bucuresti",
+          "url": "https://www.instagram.com/salon.lumina.bucuresti",
+          "gallery": [
+            "https://picsum.photos/seed/luminainsta1/600/600",
+            "https://picsum.photos/seed/luminainsta2/600/600",
+            "https://picsum.photos/seed/luminainsta3/600/600",
+            "https://picsum.photos/seed/luminainsta4/600/600",
+            "https://picsum.photos/seed/luminainsta5/600/600",
+            "https://picsum.photos/seed/luminainsta6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Rezervă o programare",
+          "intro": "Scrie-ne pe WhatsApp și confirmăm data și ora în cel mult 2 ore. Te așteptăm în salonul nostru din Floreasca!",
+          "instagram": {
+            "url": "https://www.instagram.com/salon.lumina.bucuresti",
+            "label": "@salon.lumina.bucuresti"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/salonluminabucuresti",
+            "label": "Salon Lumina"
+          },
+          "whatsapp": "40745123456",
+          "phone": "+40745123456",
+          "phoneDisplay": "+40 745 123 456",
+          "waHref": "https://wa.me/40745123456?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20s%C4%83%20fac%20o%20programare%20la%20Salon%20Lumina.",
+          "address": "Str. Dorobanți 62<br>București, Sector 1",
+          "addressHref": "https://maps.google.com/?q=Str+Dorobanti+62+Bucuresti"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/salon-lumina-hero/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Salon Lumina\",\"url\":\"https://salonlumina.ro\",\"telephone\":\"+40745123456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Dorobanți 62\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+        },
+        "footer": {
+          "address": "Str. Dorobanți 62, București, Sector 1",
+          "year": 2026,
+          "note": "Frumusețe cu suflet, în fiecare zi."
+        }
+      }
+    },
+    {
+      "id": "atelier-mihaela",
+      "name": "Atelier Mihaela",
+      "config": {
+        "business": {
+          "name": "Atelier Mihaela",
+          "tagline": "Extensii & îngrijire — salon boutique în inima Chișinăului",
+          "title": "Atelier Mihaela | Extensii, Coafură & Make-up | Chișinău",
+          "metaDescription": "Salon boutique în Chișinău — extensii de păr, coafuri de mireasă, make-up profesionist și manichiură artistică. Programări pe WhatsApp.",
+          "about": "Atelier Mihaela este un salon mic cu suflet mare, deschis în 2019 în centrul Chișinăului. Mihaela și echipa ei au peste 12 ani de experiență în coafură, extensii și make-up de ocazie — de la nuntă la shooting foto. Credem că fiecare femeie merită să se simtă extraordinară, nu doar în zi de sărbătoare. De aceea, fiecare programare e tratată ca un eveniment: ascultăm, propunem, realizăm. Și ne bucurăm împreună de rezultat.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Despre atelier",
+          "instaTitle": "Lucrările noastre pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Descoperă",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "servicesEyebrow": "Meniu servicii",
+          "scheduleEyebrow": "Program",
+          "galleryEyebrow": "Lucrările noastre",
+          "teamEyebrow": "Echipa noastră",
+          "bookingEyebrow": "Rezervări",
+          "waBookBtn": "Rezervă pe WhatsApp"
+        },
+        "theme": {
+          "primary": "#B08460",
+          "primaryLight": "#C9A07E",
+          "primaryDark": "#8C6342",
+          "cream": "#FBF8F5"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "url('https://picsum.photos/seed/atelier-mihaela-hero-bg/1600/900') center/cover no-repeat",
+          "ctaLabel": "Programează-te"
+        },
+        "servicesTitle": "Ce facem cel mai bine",
+        "services": [
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>",
+            "label": "Extensii păr natural",
+            "price": "de la 1.200 MDL"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
+            "label": "Coafură mireasă",
+            "price": "de la 800 MDL"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
+            "label": "Make-up de ocazie",
+            "price": "de la 600 MDL"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/></svg>",
+            "label": "Vopsit & balayage",
+            "price": "de la 500 MDL"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
+            "label": "Manichiură artistică",
+            "price": "de la 250 MDL"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
+            "label": "Tratament Keratină",
+            "price": "de la 900 MDL"
+          }
+        ],
+        "pricing": [
+          { "name": "Extensii tape-in (50 șuvițe)", "price": "1.200 MDL" },
+          { "name": "Extensii micro-ring (100 fire)", "price": "2.400 MDL" },
+          { "name": "Corectare extensii (lunar)", "price": "600 MDL" },
+          { "name": "Coafură mireasă", "price": "800–1.200 MDL" },
+          { "name": "Coafură domnișoară de onoare", "price": "500 MDL" },
+          { "name": "Make-up mireasă", "price": "900 MDL" },
+          { "name": "Make-up ocazie", "price": "600 MDL" },
+          { "name": "Manichiură gel", "price": "280 MDL" },
+          { "name": "Manichiură + Pedichiură", "price": "500 MDL" },
+          { "name": "Balayage complet", "price": "1.000–1.600 MDL" }
+        ],
+        "schedule": {
+          "title": "Program",
+          "rows": [
+            { "day": "Luni – Sâmbătă", "hours": "09:00 – 19:00" },
+            { "day": "Duminică", "hours": "la cerere (nunți & ocazii)" }
+          ]
+        },
+        "team": {
+          "title": "Echipa atelierului",
+          "members": [
+            {
+              "name": "Mihaela Rusu",
+              "role": "Fondatoare & coafor senior",
+              "bio": "12 ani de experiență, formată la școli de coafură din București și Milano.",
+              "photo": "https://picsum.photos/seed/mihaela-rusu/400/400"
+            },
+            {
+              "name": "Ana Ciorici",
+              "role": "Make-up artist",
+              "bio": "Specializată în make-up de mireasă și shooting editorial.",
+              "photo": "https://picsum.photos/seed/ana-ciorici/400/400"
+            },
+            {
+              "name": "Olesea Bivol",
+              "role": "Specialist unghii",
+              "bio": "Nail art, extensii unghii și pedichiură SPA — cu răbdare și precizie.",
+              "photo": "https://picsum.photos/seed/olesea-bivol/400/400"
+            }
+          ]
+        },
+        "galleryTitle": "Lucrările atelierului",
+        "categories": [
+          {
+            "title": "Extensii & coafuri de ocazie",
+            "blurb": "Extensii din păr natural și coafuri pentru nunți, botezuri și evenimente.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/mihaela-ext1/800/1000", "alt": "Extensii tape-in pe păr brunet" },
+              { "src": "https://picsum.photos/seed/mihaela-ext2/800/1000", "alt": "Coafură mireasă cu bucle moi" },
+              { "src": "https://picsum.photos/seed/mihaela-ext3/800/1000", "alt": "Updo elegant pentru cununie" },
+              { "src": "https://picsum.photos/seed/mihaela-ext4/800/1000", "alt": "Extensii blonde pe păr șaten" }
+            ]
+          },
+          {
+            "title": "Make-up & look complet",
+            "blurb": "Makeup natural sau dramatic — fiecare look creat după personalitatea ta.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/mihaela-mua1/800/900", "alt": "Make-up mireasă natural cu glow" },
+              { "src": "https://picsum.photos/seed/mihaela-mua2/800/900", "alt": "Look de seară cu smoky eye" },
+              { "src": "https://picsum.photos/seed/mihaela-mua3/800/900", "alt": "Make-up editorial pe shooting" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "atelier.mihaela.md",
+          "url": "https://www.instagram.com/atelier.mihaela.md",
+          "gallery": [
+            "https://picsum.photos/seed/mihaela-ig1/600/600",
+            "https://picsum.photos/seed/mihaela-ig2/600/600",
+            "https://picsum.photos/seed/mihaela-ig3/600/600",
+            "https://picsum.photos/seed/mihaela-ig4/600/600",
+            "https://picsum.photos/seed/mihaela-ig5/600/600",
+            "https://picsum.photos/seed/mihaela-ig6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Programează-te",
+          "intro": "Scrie-ne pe WhatsApp pentru o programare sau pentru o consultație gratuită privind extensiile. Răspundem în aceeași zi!",
+          "instagram": {
+            "url": "https://www.instagram.com/atelier.mihaela.md",
+            "label": "@atelier.mihaela.md"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/ateliermihaela",
+            "label": "Atelier Mihaela"
+          },
+          "whatsapp": "37369234567",
+          "phone": "+37369234567",
+          "phoneDisplay": "+373 69 234 567",
+          "waHref": "https://wa.me/37369234567?text=Bun%C4%83%20ziua%2C%20Mihaela!%20A%C8%99%20dori%20s%C4%83%20m%C4%83%20programez%20la%20atelier.",
+          "address": "Bd. Ștefan cel Mare 120<br>Chișinău, MD-2001",
+          "addressHref": "https://maps.google.com/?q=Bd+Stefan+cel+Mare+120+Chisinau"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/atelier-mihaela-hero/1200/630",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Mihaela\",\"url\":\"https://ateliermihaela.md\",\"telephone\":\"+37369234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Bd. Ștefan cel Mare 120\",\"addressLocality\":\"Chișinău\",\"postalCode\":\"MD-2001\",\"addressCountry\":\"MD\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
+        },
+        "footer": {
+          "address": "Bd. Ștefan cel Mare 120, Chișinău, MD-2001",
+          "year": 2026,
+          "note": "Cu grijă pentru fiecare detaliu."
+        }
+      }
+    }
+  ]
+}
