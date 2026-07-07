@@ -93,6 +93,7 @@ function renderPreview(files, config) {
         '<style data-hidook-preview>*, *::before, *::after {' +
         ' animation-duration: 0.01ms !important;' +
         ' animation-delay: 0ms !important;' +
+        ' animation-iteration-count: 1 !important;' +   // infinite loops would restart every 0.01ms = visible trembling
         ' transition-duration: 0.01ms !important; }</style></head>'
     );
 
