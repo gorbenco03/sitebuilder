@@ -41,11 +41,19 @@ const fnStart = buildSrc.indexOf('\n/** Resolve a dot-path');
 const exportsLine = buildSrc.indexOf('\nmodule.exports');
 const pureFunctions = buildSrc.slice(fnStart, exportsLine).trim();
 
+// Read the edit overlay script if it exists. The overlay agent writes this file;
+// if it hasn't been created yet, we embed an empty placeholder and leave a TODO.
+// TODO: replace placeholder once builder/edit-overlay.js is written by overlay agent.
+const editOverlayPath = path.join(BUILDER_DIR, 'edit-overlay.js');
+const editOverlaySrc = fs.existsSync(editOverlayPath)
+    ? fs.readFileSync(editOverlayPath, 'utf8')
+    : '/* TODO: builder/edit-overlay.js not found — overlay agent must create it */';
+
 // The renderPreview helper: inlines CSS/JS assets into the rendered HTML so it
 // can be used as an <iframe srcdoc="…"> without cross-origin issues.
 const renderPreviewSrc = `
 /**
- * renderPreview(files, config) -> htmlString
+ * renderPreview(files, config, opts) -> htmlString
  *
  * Renders the template with the given config then inlines all asset references
  * so the result is a self-contained HTML document suitable for iframe srcdoc.
@@ -53,10 +61,11 @@ const renderPreviewSrc = `
  * @param {object} files
  *   { templateHtml: string, stylesCss: string, scriptJs: string, collageJs?: string }
  * @param {object} config  — the site config object
+ * @param {object} [opts]  — optional render options; opts.editMode triggers edit UI
  * @returns {string}
  */
-function renderPreview(files, config) {
-    let html = renderHtml(files.templateHtml, config);
+function renderPreview(files, config, opts) {
+    let html = renderHtml(files.templateHtml, config, opts);
 
     // Inline <link rel="stylesheet" href="styles.css">
     html = html.replace(
@@ -97,9 +106,35 @@ function renderPreview(files, config) {
         ' transition-duration: 0.01ms !important; }</style></head>'
     );
 
+    // EDIT MODE: inject the edit overlay (affordances + postMessage bridge) and
+    // minimal hover/outline styles for [data-hb-edit] elements.
+    if (opts && opts.editMode) {
+        // Minimal CSS affordances: outline editable text nodes on hover, show
+        // a "Schimbă poza" button over images (the full overlay JS handles the rest).
+        const editStyles =
+            '[data-hb-edit]{outline:2px dashed rgba(99,102,241,.55);outline-offset:2px;cursor:text;border-radius:2px;}' +
+            '[data-hb-edit]:hover,[data-hb-edit]:focus{outline-color:rgba(99,102,241,1);background:rgba(99,102,241,.07);}' +
+            'img.hb-img-hover{outline:2px dashed rgba(99,102,241,.55);outline-offset:2px;}';
+        html = html.replace(
+            '</head>',
+            '<style data-hidook-edit-affordances>' + editStyles + '</style></head>'
+        );
+        // Inject the overlay script at end of body (after template scripts so it
+        // can observe the fully rendered DOM).
+        html = html.replace(
+            '</body>',
+            '<script data-hidook-edit-overlay>' + EDIT_OVERLAY_SRC + '</script></body>'
+        );
+    }
+
     return html;
 }
 `;
+
+// Embed the overlay source as a JS string literal that renderPreview can use.
+// We JSON.stringify it so it is safe to embed inside a JS string (escapes quotes,
+// newlines, backslashes, etc.).
+const editOverlayEmbedded = JSON.stringify(editOverlaySrc);
 
 const engineIife = `(function () {
 'use strict';
@@ -112,6 +147,10 @@ function require(mod) {
 var __dirname = '';
 
 ${pureFunctions}
+
+// ── Edit overlay source (inlined by bundler from builder/edit-overlay.js) ────
+// Used by renderPreview in editMode to inject the overlay script into srcdoc.
+var EDIT_OVERLAY_SRC = ${editOverlayEmbedded};
 
 ${renderPreviewSrc}
 

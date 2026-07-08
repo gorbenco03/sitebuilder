@@ -1,6 +1,6 @@
 'use strict';
 /* ============================================================
-   Hidook Builder — app.js
+   Hidook Builder — app.js  (v2: inline editing on site)
    Vanilla JS, zero framework/CDN, CommonJS-free (browser)
    All user-facing strings in Romanian.
    ============================================================ */
@@ -20,14 +20,15 @@ let currentTemplate = null;
 // Runtime config from /api/config
 let appConfig = { priceEur: null, trialDays: 3, brandDomain: null, contactUrl: null };
 
-// Wizard state
-let wizardSteps      = [];   // [{id, title, fields, optional:[]}]
-let wizardCurrentStep = 0;
-
-// Preview debounce
+// Preview/iframe state
 let previewTimer       = null;
 let previewSpinTimer   = null;
 let previewFirstRender = false;
+let iframeReady        = false;   // did overlay send {hb:'ready'}?
+let pendingRender      = false;   // is a srcdoc re-render queued?
+
+// Pending image replacement request
+let pendingImagePath = null;
 
 // Slug check debounce
 let slugCheckTimer = null;
@@ -40,6 +41,16 @@ let trialEndsAt    = null;
 let sitePaymentUrl = null;
 let publishedSiteId = null;
 let publishedSiteUrl = null;
+
+// Color popover state
+let colorPopoverOpen = false;
+
+// Drawer state
+let drawerOpen = false;
+let drawerSaveTimer = null;
+
+// Device mode
+let deviceMode = 'desktop'; // 'desktop' | 'mobile'
 
 // ---------------------------------------------------------------------------
 // 2. Helpers — DOM
@@ -80,7 +91,6 @@ function openModal(id) {
   const el = $(id);
   if (!el) return;
   el.style.display = '';
-  // Focus trap: focus first focusable
   requestAnimationFrame(() => {
     const first = el.querySelector('button,input,a,[tabindex]:not([tabindex="-1"])');
     if (first) first.focus();
@@ -169,7 +179,6 @@ function escHtml(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-// Slugify
 function toSlug(str) {
   return (str || '')
     .toLowerCase()
@@ -181,7 +190,6 @@ function toSlug(str) {
     .slice(0, 40);
 }
 
-// Format time remaining
 function fmtTimeRemaining(ms) {
   if (ms <= 0) return 'expirat';
   const d = Math.floor(ms / 86400000);
@@ -254,62 +262,910 @@ function getTemplateById(id) {
 }
 
 // ---------------------------------------------------------------------------
-// 6. Preview rendering
+// 6. Schema helpers — identify inline vs drawer fields
 // ---------------------------------------------------------------------------
 
-function schedulePreview(immediate) {
-  if (previewTimer) clearTimeout(previewTimer);
-  if (immediate) { renderPreview(); return; }
-  previewTimer = setTimeout(renderPreview, 280);
+// Field types that go in the drawer (not editable inline on the canvas)
+const DRAWER_TYPES = new Set(['phone', 'url', 'color']);
+const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waHref', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
+
+function isDrawerField(field) {
+  if (DRAWER_TYPES.has(field.type)) return true;
+  const k = field.key || '';
+  return DRAWER_KEYS_PARTIAL.some(p => k.includes(p));
 }
 
-function showPreviewSpinner(show) {
-  const el = $('preview-spinner-overlay');
-  if (el) el.style.display = show ? '' : 'none';
+function getAllSchemaFields(schema) {
+  if (!schema || !schema.sections) return [];
+  const fields = [];
+  schema.sections.forEach(section => {
+    (section.fields || []).forEach(f => fields.push({ ...f, _section: section.title }));
+  });
+  return fields;
 }
 
-function renderPreview() {
-  if (!draft.config || !draft.templateId) return;
-  const tpl = getTemplateById(draft.templateId);
-  if (!tpl || typeof window.HidookEngine === 'undefined') return;
+function getRequiredFields(schema) {
+  return getAllSchemaFields(schema).filter(f => f.required !== false);
+}
 
-  // Show spinner if re-render takes >300ms
-  if (previewFirstRender) {
-    if (previewSpinTimer) clearTimeout(previewSpinTimer);
-    previewSpinTimer = setTimeout(() => showPreviewSpinner(true), 300);
+function isFieldComplete(field) {
+  const val = getPath(draft.config, field.key);
+  if (val == null || val === '') return false;
+  if (Array.isArray(val) && val.length === 0) return false;
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// 7. Checklist indicator
+// ---------------------------------------------------------------------------
+
+function updateChecklist() {
+  if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) return;
+  const required = getRequiredFields(currentTemplate.data.schema);
+  const done = required.filter(isFieldComplete).length;
+  const total = required.length;
+  const el = $('checklist-text');
+  const ind = $('checklist-indicator');
+  if (el) el.textContent = done + '/' + total;
+  if (ind) {
+    ind.classList.toggle('checklist-ok', done === total);
+    ind.classList.toggle('checklist-warn', done < total);
   }
+}
 
-  try {
-    const html = window.HidookEngine.renderPreview(tpl.files, draft.config);
-    setIframeSrcdoc('preview-iframe-desktop', html);
-    setIframeSrcdoc('preview-iframe-mobile', html);
+// ---------------------------------------------------------------------------
+// 8. Iframe / preview rendering
+// ---------------------------------------------------------------------------
 
-    // First render: hide skeleton
-    if (!previewFirstRender) {
-      previewFirstRender = true;
-      const skel = $('preview-skeleton');
-      if (skel) skel.classList.add('hidden');
+function getPreviewIframe() { return $('preview-iframe'); }
+
+// Edit overlay script injected into srcdoc for inline editing.
+// Runs INSIDE the sandboxed iframe. Communication only via postMessage('*').
+// Uses data-hb attributes when present.
+// IMPORTANT: this string must be valid JS when injected into a <script> tag.
+var EDIT_OVERLAY_SCRIPT = [
+  '(function(){',
+  '"use strict";',
+  'var _config=null;',
+  'function send(msg){window.parent.postMessage(msg,"*");}',
+  'function debounce(fn,ms){var t;return function(){clearTimeout(t);t=setTimeout(function(){fn.apply(null,[].slice.call(arguments));},ms,[].slice.call(arguments)[0]);};}',
+  'window.addEventListener("message",function(e){',
+  '  if(e.source!==window.parent)return;',
+  '  var msg=e.data;if(!msg||typeof msg!=="object")return;',
+  '  if(msg.hb==="set"&&msg.path){',
+  '    document.querySelectorAll("[data-hb]").forEach(function(el){',
+  '      if(el.dataset.hb!==msg.path)return;',
+  '      if(document.activeElement===el)return;',
+  '      if(el.tagName.toLowerCase()!=="img")el.textContent=msg.value||"";',
+  '    });',
+  '  }',
+  '  if(msg.hb==="highlight"&&msg.path){',
+  '    document.querySelectorAll("[data-hb]").forEach(function(el){',
+  '      if(el.dataset.hb!==msg.path)return;',
+  '      el.style.outline="3px solid #5B5BD6";',
+  '      el.style.outlineOffset="3px";',
+  '      el.scrollIntoView({behavior:"smooth",block:"center"});',
+  '      setTimeout(function(){el.style.outline="";el.style.outlineOffset="";},2500);',
+  '    });',
+  '  }',
+  '  if(msg.hb==="config-sync"){_config=msg.config;}',
+  '});',
+  'function makeEditable(el,path){',
+  '  if(el.dataset.hbInit)return;el.dataset.hbInit="1";',
+  '  el.contentEditable="true";',
+  '  el.setAttribute("spellcheck","false");',
+  '  el.style.cursor="text";el.style.outline="none";el.style.minWidth="1em";',
+  '  el.addEventListener("keydown",function(e){if(e.key==="Enter")e.preventDefault();});',
+  '  el.addEventListener("focus",function(){',
+  '    el.style.boxShadow="0 0 0 2px #5B5BD6,0 0 0 5px rgba(91,91,214,.18)";',
+  '    el.style.borderRadius="3px";el.style.zIndex="10";',
+  '    send({hb:"focus",path:path});',
+  '  });',
+  '  el.addEventListener("blur",function(){',
+  '    el.style.boxShadow="";el.style.borderRadius="";el.style.zIndex="";',
+  '    send({hb:"text",path:path,value:el.textContent.trim()});',
+  '  });',
+  '  el.addEventListener("input",debounce(function(ev){',
+  '    send({hb:"text",path:path,value:el.textContent.trim()});',
+  '  },300));',
+  '}',
+  'function makeImageClickable(el,path){',
+  '  if(el.dataset.hbInit)return;el.dataset.hbInit="1";',
+  '  el.style.cursor="pointer";',
+  '  el.title="Apasa pentru a schimba imaginea";',
+  '  var par=el.parentElement;',
+  '  if(par&&window.getComputedStyle(par).position==="static")par.style.position="relative";',
+  '  var ov=document.createElement("div");',
+  '  ov.style.position="absolute";ov.style.top="0";ov.style.left="0";',
+  '  ov.style.width="100%";ov.style.height="100%";ov.style.display="none";',
+  '  ov.style.alignItems="center";ov.style.justifyContent="center";',
+  '  ov.style.background="rgba(0,0,0,.42)";ov.style.color="#fff";',
+  '  ov.style.fontSize="13px";ov.style.fontWeight="600";ov.style.fontFamily="system-ui";',
+  '  ov.style.cursor="pointer";ov.style.borderRadius="inherit";',
+  '  ov.style.pointerEvents="auto";ov.style.zIndex="5";',
+  '  var sp=document.createElement("span");',
+  '  sp.textContent="Schimba poza";',
+  '  sp.style.background="rgba(0,0,0,.5)";sp.style.padding="4px 10px";sp.style.borderRadius="6px";',
+  '  ov.appendChild(sp);',
+  '  par&&par.appendChild(ov);',
+  '  function showOv(){ov.style.display="flex";}',
+  '  function hideOv(){ov.style.display="none";}',
+  '  el.addEventListener("mouseenter",showOv);el.addEventListener("mouseleave",hideOv);',
+  '  ov.addEventListener("mouseenter",showOv);ov.addEventListener("mouseleave",hideOv);',
+  '  function doClick(e){e.preventDefault();e.stopPropagation();send({hb:"image",path:path});}',
+  '  el.addEventListener("click",doClick);ov.addEventListener("click",doClick);',
+  '}',
+  'function initListControls(){',
+  '  document.querySelectorAll("[data-hb-list]").forEach(function(el){',
+  '    if(el.dataset.hbListInit)return;el.dataset.hbListInit="1";',
+  '    var lp=el.dataset.hbList;',
+  '    var btn=document.createElement("button");',
+  '    btn.type="button";btn.textContent="+ Adauga element";',
+  '    btn.style.marginTop="8px";btn.style.padding="5px 10px";btn.style.fontSize="12px";',
+  '    btn.style.fontFamily="system-ui";btn.style.background="#5B5BD6";btn.style.color="#fff";',
+  '    btn.style.border="none";btn.style.borderRadius="8px";btn.style.cursor="pointer";btn.style.display="block";',
+  '    btn.addEventListener("click",function(){send({hb:"list-add",listPath:lp});});',
+  '    el.after(btn);',
+  '  });',
+  '  document.querySelectorAll("[data-hb-remove]").forEach(function(el){',
+  '    if(el.dataset.hbRemoveInit)return;el.dataset.hbRemoveInit="1";',
+  '    var ip=el.dataset.hbRemove;el.style.cursor="pointer";',
+  '    el.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();send({hb:"list-remove",path:ip});});',
+  '  });',
+  '}',
+  'function init(){',
+  '  document.querySelectorAll("[data-hb]").forEach(function(el){',
+  '    var path=el.dataset.hb;if(!path)return;',
+  '    if(el.tagName.toLowerCase()==="img")makeImageClickable(el,path);',
+  '    else makeEditable(el,path);',
+  '  });',
+  '  initListControls();',
+  '  send({hb:"ready"});',
+  '}',
+  'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",init);}',
+  'else{init();}',
+  '})();'
+].join('\n');
+
+// Inject data-hb attributes into rendered HTML by matching config values.
+// For each TEXT config value, we wrap the first occurrence in an inline element
+// with data-hb="path" so the overlay can make it contenteditable.
+// For image src values, we inject data-hb on the <img> tag.
+function injectDataHb(html, config) {
+  // Build a flat map of path → value for all string/number values
+  const pathMap = []; // [{path, value}]
+  function walk(obj, prefix) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => walk(item, prefix + '.' + i));
+      return;
     }
+    Object.entries(obj).forEach(([k, v]) => {
+      const full = prefix ? prefix + '.' + k : k;
+      if (typeof v === 'string' && v.length > 0) {
+        pathMap.push({ path: full, value: v });
+      } else if (typeof v === 'object' && v !== null) {
+        walk(v, full);
+      }
+    });
+  }
+  walk(config, '');
 
-    clearTimeout(previewSpinTimer);
-    showPreviewSpinner(false);
+  // Sort by value length descending (replace longer matches first to avoid partial overlaps)
+  pathMap.sort((a, b) => b.value.length - a.value.length);
 
-    const status = $('preview-status');
-    if (status) status.textContent = 'Actualizat ' + new Date().toLocaleTimeString('ro-RO', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  let result = html;
+  const processed = new Set(); // avoid double-processing same path
+
+  for (const { path, value } of pathMap) {
+    if (processed.has(path)) continue;
+    // Skip data URIs, URLs, SVG paths, and short values that cause false matches
+    if (value.startsWith('data:') || value.startsWith('http') || value.startsWith('#') ||
+        value.startsWith('<') || value.includes(';base64') || value.length < 3 ||
+        /^\d+$/.test(value) || value.startsWith('images/') || path.includes('jsonLd') ||
+        path.includes('seo.') || path.includes('background') || path.includes('gradient')) {
+      // For image src values: inject data-hb on img
+      if (value.startsWith('data:image') || value.startsWith('images/')) {
+        const imgRe = new RegExp('<img([^>]*?)\\ssrc=["\']' + escapeRegex(value) + '["\']', 'i');
+        if (!result.match(imgRe)) continue;
+        result = result.replace(imgRe, (m, attrs) => {
+          if (attrs.includes('data-hb=')) return m;
+          return '<img' + attrs + ' src="' + value + '" data-hb="' + path + '"';
+        });
+        processed.add(path);
+      }
+      continue;
+    }
+    // For text values: find the exact text in an element and wrap it with a span if not already tagged
+    // Strategy: look for >EXACTVALUE< or >...EXACTVALUE...< patterns in non-script/style contexts
+    const esc = escHtmlForAttr(value);
+    // Try to find in text content
+    const pattern = new RegExp('(>[^<]*?)(' + escapeRegex(esc) + ')([^<]*?<)', 'g');
+    let injected = false;
+    result = result.replace(pattern, (full, pre, match, post) => {
+      if (injected) return full; // only first occurrence
+      injected = true;
+      // Check if we're in a script or style tag — we'll skip those
+      return pre + '<span data-hb="' + path + '">' + match + '</span>' + post;
+    });
+    if (injected) processed.add(path);
+  }
+
+  return result;
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function escHtmlForAttr(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function buildSrcdoc() {
+  if (!draft.config || !draft.templateId) return '';
+  const tpl = getTemplateById(draft.templateId);
+  if (!tpl || typeof window.HidookEngine === 'undefined') return '';
+  try {
+    // Pass editMode:true so renderHtml emits data-hb-edit attributes and
+    // renderPreview injects the modern edit-overlay.js (bundled in engine.js).
+    let html = window.HidookEngine.renderPreview(tpl.files, draft.config, { editMode: true });
+    return html;
   } catch (e) {
-    console.warn('renderPreview error:', e);
-    clearTimeout(previewSpinTimer);
-    showPreviewSpinner(false);
+    console.warn('buildSrcdoc error:', e);
+    return '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Eroare randare: ' + escHtml(e.message) + '</body>';
   }
 }
 
-function setIframeSrcdoc(id, html) {
-  const iframe = $(id);
-  if (iframe) iframe.srcdoc = html;
+function showPreviewSpinner(vis) {
+  const el = $('preview-spinner-overlay');
+  if (el) el.style.display = vis ? '' : 'none';
+}
+
+// Full re-render: new srcdoc. Called for: initial load, image change, list add/remove, color change.
+function fullRerender() {
+  if (!draft.config || !draft.templateId) return;
+  iframeReady = false;
+  pendingRender = false;
+
+  if (previewSpinTimer) clearTimeout(previewSpinTimer);
+  previewSpinTimer = setTimeout(() => showPreviewSpinner(true), 200);
+
+  const html = buildSrcdoc();
+  const iframe = getPreviewIframe();
+  if (!iframe) return;
+
+  iframe.srcdoc = html;
+
+  if (!previewFirstRender) {
+    previewFirstRender = true;
+    const skel = $('preview-skeleton');
+    if (skel) skel.classList.add('hidden');
+  }
+}
+
+// Debounce re-render (used after initial load)
+function scheduleRerender(immediate) {
+  if (previewTimer) clearTimeout(previewTimer);
+  if (immediate) { fullRerender(); return; }
+  previewTimer = setTimeout(fullRerender, 280);
+}
+
+// Send a chirurgical set to the iframe without re-rendering
+function sendSetToIframe(path, value) {
+  const iframe = getPreviewIframe();
+  if (!iframe || !iframeReady) return;
+  iframe.contentWindow.postMessage({ hb: 'set', path, value }, '*');
+}
+
+// Send highlight message to iframe
+function sendHighlightToIframe(path) {
+  const iframe = getPreviewIframe();
+  if (!iframe || !iframeReady) return;
+  iframe.contentWindow.postMessage({ hb: 'highlight', path }, '*');
+}
+
+// Send imgmap after re-render (to inject images into srcdoc)
+function sendImgMap() {
+  // Not needed here since images are embedded as dataURLs in config
+  // but we keep the protocol slot for future use
 }
 
 // ---------------------------------------------------------------------------
-// 7. Draft persistence
+// 9. postMessage listener — parent listens to overlay messages
+// ---------------------------------------------------------------------------
+
+function initPostMessageListener() {
+  window.addEventListener('message', (event) => {
+    const iframe = getPreviewIframe();
+    // Security: only accept from our iframe (origin is "null" for sandboxed srcdoc)
+    if (!iframe || event.source !== iframe.contentWindow) return;
+
+    const msg = event.data;
+    if (!msg || typeof msg !== 'object' || msg.hb == null) return;
+
+    switch (msg.hb) {
+      case 'ready':
+        onIframeReady();
+        break;
+      case 'text':
+        onInlineTextEdit(msg.path, msg.value);
+        break;
+      case 'image':
+        onImageChangeRequest(msg.path);
+        break;
+      case 'list-add':
+        onListAdd(msg.listPath);
+        break;
+      case 'list-remove':
+        onListRemove(msg.path);
+        break;
+      case 'focus':
+        // Could highlight field in drawer — skip for now
+        break;
+    }
+  });
+}
+
+function buildImgMap(config) {
+  // Build a src→path reverse-lookup map for all image values in config.
+  // Used by the modern edit-overlay.js to resolve {hb:'image', path} on img clicks.
+  const map = {};
+  function walk(obj, prefix) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => walk(item, prefix + '.' + i));
+      return;
+    }
+    Object.entries(obj).forEach(([k, v]) => {
+      const full = prefix ? prefix + '.' + k : k;
+      if (typeof v === 'string' && v.length > 0 &&
+          (v.startsWith('data:image') || v.startsWith('images/') || v.startsWith('http'))) {
+        map[v] = full;
+      } else if (typeof v === 'object' && v !== null) {
+        walk(v, full);
+      }
+    });
+  }
+  walk(config, '');
+  return map;
+}
+
+function onIframeReady() {
+  iframeReady = true;
+  clearTimeout(previewSpinTimer);
+  showPreviewSpinner(false);
+  // Send imgmap to modern overlay so image src→config-path resolution works.
+  const iframe = getPreviewIframe();
+  if (iframe && draft.config) {
+    const map = buildImgMap(draft.config);
+    iframe.contentWindow.postMessage({ hb: 'imgmap', map }, '*');
+  }
+}
+
+function onInlineTextEdit(path, value) {
+  if (!path) return;
+  setPath(draft.config, path, value);
+  saveDraft();
+  updateChecklist();
+  // Update drawer field if open
+  syncDrawerField(path, value);
+  // No re-render — text is already visible in contenteditable
+}
+
+function onImageChangeRequest(path) {
+  if (!path) return;
+  pendingImagePath = path;
+  const fileInput = $('img-file-input');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.click();
+  }
+}
+
+function onListAdd(listPath) {
+  if (!listPath) return;
+  const tpl = currentTemplate && currentTemplate.data;
+  const schema = tpl && tpl.schema;
+  // Find field definition for itemShape
+  let itemShape = null;
+  if (schema) {
+    getAllSchemaFields(schema).forEach(f => {
+      if (f.key === listPath && f.type === 'list') itemShape = f.itemShape;
+    });
+  }
+  const arr = getPath(draft.config, listPath) || [];
+  let newItem;
+  if (typeof itemShape === 'string') {
+    newItem = '';
+  } else if (typeof itemShape === 'object' && itemShape !== null) {
+    newItem = {};
+    Object.keys(itemShape).forEach(k => { newItem[k] = itemShape[k] === 'photos' ? [] : ''; });
+  } else {
+    newItem = '';
+  }
+  arr.push(newItem);
+  setPath(draft.config, listPath, arr);
+  saveDraft();
+  fullRerender();
+}
+
+function onListRemove(path) {
+  // path like 'services.2'
+  const parts = path.split('.');
+  const idx = parseInt(parts.pop(), 10);
+  const parentPath = parts.join('.');
+  if (isNaN(idx)) return;
+  const arr = getPath(draft.config, parentPath);
+  if (!Array.isArray(arr)) return;
+  arr.splice(idx, 1);
+  setPath(draft.config, parentPath, arr);
+  saveDraft();
+  fullRerender();
+}
+
+// ---------------------------------------------------------------------------
+// 10. Image file input handler
+// ---------------------------------------------------------------------------
+
+function initImageFileInput() {
+  const fileInput = $('img-file-input');
+  if (!fileInput) return;
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file || !pendingImagePath) { fileInput.value = ''; return; }
+    const path = pendingImagePath;
+    pendingImagePath = null;
+    try {
+      showPreviewSpinner(true);
+      const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
+      setPath(draft.config, path, dataUrl);
+      saveDraft();
+      fullRerender();
+    } catch (e) {
+      showToast('Eroare la procesarea imaginii: ' + e.message, 'error');
+      showPreviewSpinner(false);
+    }
+    fileInput.value = '';
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 11. Image resize
+// ---------------------------------------------------------------------------
+
+function resizeImageToDataUrl(file, maxPx, quality) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      if (w > maxPx || h > maxPx) {
+        const ratio = Math.min(maxPx/w, maxPx/h);
+        w = Math.round(w * ratio); h = Math.round(h * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Eroare la citirea imaginii')); };
+    img.src = url;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 12. Color Picker Popover
+// ---------------------------------------------------------------------------
+
+const COLOR_PRESETS = [
+  { label: 'Indigo',   hex: '#5B5BD6' },
+  { label: 'Teal',     hex: '#0D9488' },
+  { label: 'Violet',   hex: '#7C3AED' },
+  { label: 'Portocaliu', hex: '#EA580C' },
+  { label: 'Roz',      hex: '#DB2777' },
+  { label: 'Verde',    hex: '#16A34A' },
+];
+
+function initColorPicker() {
+  const btn = $('btn-color-picker');
+  const popover = $('color-popover');
+  const presetsWrap = $('color-presets');
+  const swatch = $('color-custom-swatch');
+  const textInp = $('color-custom-text');
+
+  if (!btn || !popover) return;
+
+  // Build presets
+  COLOR_PRESETS.forEach(p => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'color-preset-dot';
+    dot.style.background = p.hex;
+    dot.title = p.label;
+    dot.setAttribute('aria-label', p.label);
+    dot.addEventListener('click', () => {
+      applyThemeColor(p.hex);
+      if (swatch) swatch.value = p.hex;
+      if (textInp) textInp.value = p.hex;
+      dot.closest('.color-presets') && dot.closest('.color-presets').querySelectorAll('.color-preset-dot').forEach(d => d.classList.remove('active'));
+      dot.classList.add('active');
+    });
+    if (presetsWrap) presetsWrap.appendChild(dot);
+  });
+
+  if (swatch) {
+    swatch.addEventListener('input', () => {
+      const v = swatch.value;
+      if (textInp) textInp.value = v;
+      applyThemeColor(v);
+    });
+  }
+  if (textInp) {
+    textInp.addEventListener('input', () => {
+      const v = textInp.value;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        if (swatch) swatch.value = v;
+        applyThemeColor(v);
+      }
+    });
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleColorPopover();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (colorPopoverOpen && !popover.contains(e.target) && e.target !== btn) {
+      closeColorPopover();
+    }
+  });
+}
+
+function toggleColorPopover() {
+  if (colorPopoverOpen) { closeColorPopover(); return; }
+  openColorPopover();
+}
+
+function openColorPopover() {
+  const popover = $('color-popover');
+  const btn = $('btn-color-picker');
+  if (!popover || !btn) return;
+
+  // Sync current color
+  const curColor = (draft.config && getPath(draft.config, 'theme.primary')) || '#5B5BD6';
+  const sw = $('color-custom-swatch');
+  const ti = $('color-custom-text');
+  if (sw) sw.value = curColor;
+  if (ti) ti.value = curColor;
+
+  // Mark active preset
+  $('color-presets') && $('color-presets').querySelectorAll('.color-preset-dot').forEach(dot => {
+    dot.classList.toggle('active', dot.style.background === curColor || dot.style.backgroundColor === curColor);
+  });
+
+  // Position below button
+  const rect = btn.getBoundingClientRect();
+  popover.style.top = (rect.bottom + 6) + 'px';
+  popover.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+  popover.style.left = 'auto';
+
+  show(popover);
+  colorPopoverOpen = true;
+  btn.setAttribute('aria-expanded', 'true');
+}
+
+function closeColorPopover() {
+  const popover = $('color-popover');
+  const btn = $('btn-color-picker');
+  if (popover) hide(popover);
+  colorPopoverOpen = false;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function applyThemeColor(hex) {
+  if (!draft.config) return;
+  const derived = deriveColors(hex);
+  setPath(draft.config, 'theme.primary', hex);
+  setPath(draft.config, 'theme.primaryLight', derived.primaryLight);
+  setPath(draft.config, 'theme.primaryDark', derived.primaryDark);
+  saveDraft();
+  // Re-render needed for color changes
+  fullRerender();
+}
+
+// ---------------------------------------------------------------------------
+// 13. Drawer — details panel
+// ---------------------------------------------------------------------------
+
+function openDrawer() {
+  const overlay = $('drawer-overlay');
+  const drawer = $('details-drawer');
+  if (!drawer) return;
+  buildDrawer();
+  show(overlay);
+  show(drawer);
+  drawerOpen = true;
+  const btn = $('btn-open-drawer');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+  // Focus first field
+  requestAnimationFrame(() => {
+    const first = drawer.querySelector('input,textarea,select');
+    if (first) first.focus();
+  });
+}
+
+function closeDrawer() {
+  hide($('drawer-overlay'));
+  hide($('details-drawer'));
+  drawerOpen = false;
+  const btn = $('btn-open-drawer');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  // Re-render if any drawer field was edited (deferred)
+  if (drawerSaveTimer) {
+    clearTimeout(drawerSaveTimer);
+    drawerSaveTimer = null;
+    fullRerender();
+  }
+}
+
+function buildDrawer() {
+  const body = $('drawer-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) {
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Selectează un șablon mai întâi.</p>';
+    return;
+  }
+
+  const schema = currentTemplate.data.schema;
+  const allFields = getAllSchemaFields(schema);
+
+  // Group drawer fields by section
+  const sectionMap = {};
+  allFields.forEach(f => {
+    if (!isDrawerField(f)) return;
+    if (!sectionMap[f._section]) sectionMap[f._section] = [];
+    sectionMap[f._section].push(f);
+  });
+
+  // SEO section: always add as collapsible at the bottom
+  const seoFields = allFields.filter(f => (f.key || '').startsWith('seo.') || (f.key || '').includes('jsonLd') || (f.key || '').includes('canonical') || (f.key || '').includes('ogImage'));
+
+  Object.entries(sectionMap).forEach(([sectionTitle, fields]) => {
+    if (fields.length === 0) return;
+    const group = document.createElement('div');
+    group.className = 'drawer-section';
+
+    const title = document.createElement('div');
+    title.className = 'drawer-section-title';
+    title.textContent = sectionTitle;
+    group.appendChild(title);
+
+    fields.forEach(field => {
+      const fg = buildDrawerField(field);
+      if (fg) group.appendChild(fg);
+    });
+
+    body.appendChild(group);
+  });
+
+  // Photo gallery section
+  const photoPaths = findPhotoPaths();
+  if (photoPaths.length > 0) {
+    const section = document.createElement('div');
+    section.className = 'drawer-section';
+    const title = document.createElement('div');
+    title.className = 'drawer-section-title';
+    title.textContent = 'Galerie foto';
+    section.appendChild(title);
+
+    const galleryBtn = document.createElement('button');
+    galleryBtn.type = 'button';
+    galleryBtn.className = 'btn-ghost btn-sm';
+    galleryBtn.style.marginTop = '.35rem';
+    galleryBtn.textContent = 'Administrează pozele';
+    galleryBtn.addEventListener('click', () => openGalleryModal());
+    section.appendChild(galleryBtn);
+    body.appendChild(section);
+  }
+}
+
+function buildDrawerField(field) {
+  const wrap = document.createElement('div');
+  wrap.className = 'field-group';
+
+  const key = field.key;
+  const label = field.label || key;
+  const type = field.type;
+  const required = field.required !== false;
+  const safeId = 'dr_' + key.replace(/[^a-zA-Z0-9]/g,'_');
+
+  const labelEl = document.createElement('label');
+  labelEl.className = 'field-label';
+  labelEl.setAttribute('for', safeId);
+  labelEl.innerHTML = escHtml(label) + (required ? '<span class="required" aria-hidden="true">*</span>' : '');
+  wrap.appendChild(labelEl);
+
+  if (field.hint) {
+    const hint = document.createElement('p');
+    hint.className = 'field-hint';
+    hint.textContent = field.hint;
+    wrap.appendChild(hint);
+  }
+
+  let input;
+  if (type === 'textarea') {
+    input = document.createElement('textarea');
+    input.className = 'field-textarea';
+    if (field.maxLen) input.maxLength = field.maxLen;
+    input.rows = 3;
+  } else if (type === 'color') {
+    // Skip — handled by color picker popover
+    return null;
+  } else {
+    input = document.createElement('input');
+    input.className = 'field-input';
+    input.type = type === 'phone' ? 'tel' : (type === 'url' ? 'url' : (type === 'email' ? 'email' : 'text'));
+    if (field.maxLen) input.maxLength = field.maxLen;
+  }
+
+  input.id = safeId;
+  input.name = key;
+  if (required) input.required = true;
+  const curVal = getPath(draft.config, key);
+  if (curVal != null && typeof curVal !== 'object') input.value = String(curVal);
+
+  // Sync to config on change
+  input.addEventListener('input', () => {
+    setPath(draft.config, key, input.value);
+    saveDraft();
+    updateChecklist();
+    // Try chirurgical update if field has a visible representation
+    sendSetToIframe(key, input.value);
+    // Schedule re-render on drawer close
+    if (drawerSaveTimer) clearTimeout(drawerSaveTimer);
+    drawerSaveTimer = setTimeout(() => {
+      drawerSaveTimer = null;
+      // Re-render if drawer is still open (lazy)
+    }, 2000);
+  });
+
+  wrap.appendChild(input);
+  wrap.dataset.fieldKey = key;
+  return wrap;
+}
+
+// Sync a drawer field value when it changes via inline editing
+function syncDrawerField(path, value) {
+  if (!drawerOpen) return;
+  const body = $('drawer-body');
+  if (!body) return;
+  const wrap = body.querySelector('[data-field-key="' + path + '"]');
+  if (!wrap) return;
+  const input = wrap.querySelector('input,textarea');
+  if (input && input.value !== value) input.value = value;
+}
+
+// ---------------------------------------------------------------------------
+// 14. Gallery Modal
+// ---------------------------------------------------------------------------
+
+function findPhotoPaths() {
+  // Return list of paths to photo arrays in config
+  const paths = [];
+  if (!draft.config) return paths;
+
+  function walk(obj, path) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      obj.forEach((item, i) => walk(item, path + '.' + i));
+      return;
+    }
+    Object.entries(obj).forEach(([k, v]) => {
+      const full = path ? path + '.' + k : k;
+      if (Array.isArray(v) && v.length > 0 && v.some(p => typeof p === 'object' && p && p.src)) {
+        paths.push(full);
+      } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+        walk(v, full);
+      }
+    });
+  }
+  walk(draft.config, '');
+  return paths;
+}
+
+function openGalleryModal() {
+  buildGalleryModal();
+  openModal('modal-gallery');
+}
+
+function buildGalleryModal() {
+  const body = $('gallery-modal-body');
+  if (!body) return;
+  body.innerHTML = '';
+
+  const photoPaths = findPhotoPaths();
+  if (photoPaths.length === 0) {
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">Nu există fotografii în config.</p>';
+    return;
+  }
+
+  photoPaths.forEach(path => {
+    const section = document.createElement('div');
+    section.className = 'gallery-path-section';
+
+    const title = document.createElement('div');
+    title.className = 'field-label';
+    title.style.marginBottom = '.5rem';
+    title.textContent = path;
+    section.appendChild(title);
+
+    const thumbs = document.createElement('div');
+    thumbs.className = 'photos-thumbs';
+
+    function renderThumbs() {
+      thumbs.innerHTML = '';
+      const photos = getPath(draft.config, path) || [];
+      photos.forEach((p, idx) => {
+        const src = typeof p === 'string' ? p : (p && p.src);
+        if (!src) return;
+        const div = document.createElement('div');
+        div.className = 'photo-thumb';
+
+        const img = document.createElement('img');
+        img.src = src; img.alt = 'Fotografie ' + (idx+1); img.loading = 'lazy';
+
+        const del = document.createElement('button');
+        del.type = 'button'; del.className = 'photo-thumb-del';
+        del.setAttribute('aria-label', 'Șterge fotografia ' + (idx+1));
+        del.innerHTML = '&times;';
+        del.addEventListener('click', () => {
+          const arr = getPath(draft.config, path) || [];
+          arr.splice(idx, 1);
+          setPath(draft.config, path, arr);
+          saveDraft();
+          fullRerender();
+          renderThumbs();
+        });
+        div.appendChild(img); div.appendChild(del); thumbs.appendChild(div);
+      });
+    }
+    renderThumbs();
+    section.appendChild(thumbs);
+
+    const addBtn = document.createElement('label');
+    addBtn.className = 'photos-dropzone';
+    addBtn.style.marginTop = '.5rem';
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = 'image/jpeg,image/png,image/webp';
+    addBtn.innerHTML = '<div class="photos-dropzone-icon" aria-hidden="true">+</div><div>Adaugă fotografii</div>';
+    addBtn.appendChild(fileInput);
+    fileInput.addEventListener('change', async () => {
+      const files = Array.from(fileInput.files);
+      for (const file of files) {
+        const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
+        const arr = getPath(draft.config, path) || [];
+        arr.push({ src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
+        setPath(draft.config, path, arr);
+      }
+      saveDraft();
+      fullRerender();
+      renderThumbs();
+      fileInput.value = '';
+    });
+    section.appendChild(addBtn);
+    body.appendChild(section);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 15. Draft persistence
 // ---------------------------------------------------------------------------
 
 function saveDraft() {
@@ -319,7 +1175,7 @@ function saveDraft() {
 function loadDraft() { return lsGet(DRAFT_KEY); }
 
 // ---------------------------------------------------------------------------
-// 8. API
+// 16. API
 // ---------------------------------------------------------------------------
 
 async function apiGet(url) {
@@ -344,22 +1200,18 @@ async function apiPost(url, body) {
 }
 
 // ---------------------------------------------------------------------------
-// 9. App config
+// 17. App config
 // ---------------------------------------------------------------------------
 
 async function fetchAppConfig() {
   try {
     const data = await apiGet('/api/config');
     appConfig = Object.assign(appConfig, data);
-  } catch (_) {
-    // Fallback defaults already in appConfig
-  }
-  // Update hero
+  } catch (_) {}
   const heroPrice = $('hero-price');
   const heroTrialDays = $('hero-trial-days');
   if (heroPrice) heroPrice.textContent = appConfig.priceEur != null ? appConfig.priceEur + '€' : '—€';
   if (heroTrialDays) heroTrialDays.textContent = appConfig.trialDays + ' zile';
-  // Update trial bullets in publish modal
   const bulletDays = $('trial-bullet-days');
   const bulletPrice = $('trial-bullet-price');
   if (bulletDays) bulletDays.textContent = appConfig.trialDays + ' zile';
@@ -367,7 +1219,7 @@ async function fetchAppConfig() {
 }
 
 // ---------------------------------------------------------------------------
-// 10. Auth
+// 18. Auth
 // ---------------------------------------------------------------------------
 
 async function fetchCurrentUser() {
@@ -405,761 +1257,31 @@ function tryTelegramAuth() {
 }
 
 // ---------------------------------------------------------------------------
-// 11. Wizard — build from schema
+// 19. Device mode toggle
 // ---------------------------------------------------------------------------
 
-/**
- * Parse schema.sections into wizard steps.
- * Required fields → step body; optional fields → collapsed group at bottom of step.
- */
-function buildWizardSteps(schema) {
-  if (!schema || !schema.sections) return [];
-  return schema.sections.map(section => {
-    const required = (section.fields || []).filter(f => f.required !== false);
-    const optional = (section.fields || []).filter(f => f.required === false);
-    return { id: section.id, title: section.title || section.id, fields: required, optional };
-  });
-}
+function setDeviceMode(mode) {
+  deviceMode = mode;
+  const wrap = $('editor-canvas-wrap');
+  const iframe = $('preview-iframe');
+  const desktopBtn = $('btn-preview-desktop');
+  const mobileBtn = $('btn-preview-mobile');
 
-function renderWizard(schema, config) {
-  wizardSteps = buildWizardSteps(schema);
-  wizardCurrentStep = 0;
-  previewFirstRender = false;
-
-  renderStepper();
-  renderAllStepPanels(config);
-  goToStep(0);
-}
-
-function renderStepper() {
-  const stepper = $('wizard-stepper');
-  if (!stepper) return;
-  if (wizardSteps.length <= 1) { hide(stepper); return; }
-  show(stepper);
-  stepper.innerHTML = '';
-  wizardSteps.forEach((step, i) => {
-    if (i > 0) {
-      const sep = document.createElement('span');
-      sep.className = 'stepper-sep';
-      sep.setAttribute('aria-hidden','true');
-      sep.textContent = '›';
-      stepper.appendChild(sep);
-    }
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'stepper-step';
-    btn.setAttribute('aria-label', 'Pasul ' + (i+1) + ': ' + step.title);
-    btn.dataset.step = i;
-    btn.innerHTML =
-      '<span class="step-num">' + (i+1) + '</span>' +
-      '<span class="step-label">' + escHtml(step.title) + '</span>';
-    btn.addEventListener('click', () => {
-      // Only allow navigating to completed steps
-      if (i <= wizardCurrentStep) goToStep(i);
-    });
-    stepper.appendChild(btn);
-  });
-}
-
-function renderAllStepPanels(config) {
-  const wrap = $('wizard-steps-wrap');
-  if (!wrap) return;
-  wrap.innerHTML = '';
-
-  const totalSteps = wizardSteps.length;
-
-  wizardSteps.forEach((step, i) => {
-    const isLast = i === totalSteps - 1;
-    const panel = document.createElement('div');
-    panel.className = 'wizard-step-panel';
-    panel.id = 'wstep-' + i;
-    panel.setAttribute('role','tabpanel');
-
-    if (isLast) {
-      // Summary / publish step
-      panel.appendChild(buildSummaryPanel());
-    } else {
-      // Build fields
-      const reqWrap = document.createElement('div');
-      reqWrap.className = 'step-fields-required';
-      reqWrap.style.display = 'flex';
-      reqWrap.style.flexDirection = 'column';
-      reqWrap.style.gap = '1rem';
-
-      step.fields.forEach(field => {
-        const fg = buildFieldGroup(field, config);
-        if (fg) reqWrap.appendChild(fg);
-      });
-      panel.appendChild(reqWrap);
-
-      // Optional fields
-      if (step.optional && step.optional.length > 0) {
-        const optGroup = document.createElement('div');
-        optGroup.className = 'optional-group';
-
-        const togBtn = document.createElement('button');
-        togBtn.type = 'button';
-        togBtn.className = 'optional-toggle';
-        togBtn.setAttribute('aria-expanded','false');
-        togBtn.innerHTML =
-          '+ Mai multe opțiuni <span class="optional-toggle-chevron" aria-hidden="true">&#9660;</span>';
-        togBtn.addEventListener('click', () => {
-          const open = optGroup.classList.toggle('open');
-          togBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-
-        const optFields = document.createElement('div');
-        optFields.className = 'optional-fields';
-        step.optional.forEach(field => {
-          const fg = buildFieldGroup(field, config);
-          if (fg) optFields.appendChild(fg);
-        });
-
-        optGroup.appendChild(togBtn);
-        optGroup.appendChild(optFields);
-        panel.appendChild(optGroup);
-      }
-    }
-
-    wrap.appendChild(panel);
-  });
-}
-
-function buildSummaryPanel() {
-  const div = document.createElement('div');
-  div.className = 'summary-step';
-
-  const title = document.createElement('div');
-  title.className = 'summary-step-title';
-  title.textContent = 'Totul arată bine?';
-  div.appendChild(title);
-
-  const sub = document.createElement('p');
-  sub.className = 'step-section-sub';
-  sub.style.marginTop = '0';
-  sub.textContent = 'Verifică previzualizarea și publică site-ul gratuit.';
-  div.appendChild(sub);
-
-  // Mini preview
-  const previewBox = document.createElement('div');
-  previewBox.className = 'summary-preview-box';
-  const previewIframe = document.createElement('iframe');
-  previewIframe.id = 'summary-preview-iframe';
-  previewIframe.title = 'Previzualizare rezumat';
-  previewIframe.setAttribute('sandbox', 'allow-scripts');
-  previewIframe.setAttribute('aria-label', 'Previzualizare site în rezumat');
-  previewBox.appendChild(previewIframe);
-  div.appendChild(previewBox);
-
-  const publishBtn = document.createElement('button');
-  publishBtn.type = 'button';
-  publishBtn.id = 'btn-publish';
-  publishBtn.className = 'btn-primary btn-full';
-  publishBtn.style.padding = '0.85rem 1rem';
-  publishBtn.style.fontSize = '1rem';
-  publishBtn.innerHTML =
-    '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 14h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' +
-    'Publică site-ul GRATUIT';
-  publishBtn.addEventListener('click', doPublish);
-  div.appendChild(publishBtn);
-
-  const trialNote = document.createElement('p');
-  trialNote.style.cssText = 'font-size:.78rem;color:var(--text-muted);text-align:center;line-height:1.45';
-  trialNote.textContent =
-    'Site-ul devine live imediat. Ai ' + appConfig.trialDays + ' zile gratuite.';
-  div.appendChild(trialNote);
-
-  return div;
-}
-
-function goToStep(index) {
-  if (index < 0 || index >= wizardSteps.length) return;
-  wizardCurrentStep = index;
-
-  // Show/hide panels
-  document.querySelectorAll('.wizard-step-panel').forEach((panel, i) => {
-    panel.classList.toggle('active', i === index);
-  });
-
-  // Autofocus first input
-  requestAnimationFrame(() => {
-    const panel = document.getElementById('wstep-' + index);
-    if (panel) {
-      const first = panel.querySelector('input:not([type=file]):not([type=color]),textarea');
-      if (first) first.focus();
-    }
-  });
-
-  // Update stepper
-  document.querySelectorAll('.stepper-step').forEach((btn, i) => {
-    btn.classList.toggle('active', i === index);
-    btn.classList.toggle('done', i < index);
-    btn.setAttribute('aria-current', i === index ? 'step' : 'false');
-  });
-
-  // Update progress bar
-  const total = wizardSteps.length;
-  const pct = total > 1 ? Math.round((index / (total - 1)) * 100) : 100;
-  const bar = $('wizard-progress-bar');
-  if (bar) bar.style.width = pct + '%';
-
-  // Footer buttons
-  const backBtn = $('btn-step-back');
-  const nextBtn = $('btn-step-next');
-  const isLast = index === wizardSteps.length - 1;
-
-  if (backBtn) {
-    if (index === 0) hide(backBtn); else show(backBtn);
-  }
-  if (nextBtn) {
-    if (isLast) {
-      hide(nextBtn);
-    } else {
-      show(nextBtn);
-      nextBtn.innerHTML = (index === wizardSteps.length - 2)
-        ? 'Verifică și publică <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        : 'Continuă <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    }
-  }
-
-  // Scroll stepper item into view
-  const stepperBtn = document.querySelector('.stepper-step[data-step="' + index + '"]');
-  if (stepperBtn) stepperBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-
-  // Sync summary iframe
-  if (isLast) {
-    syncSummaryPreview();
-  }
-}
-
-function syncSummaryPreview() {
-  const iframe = $('summary-preview-iframe');
-  if (!iframe || !draft.config || !draft.templateId) return;
-  const tpl = getTemplateById(draft.templateId);
-  if (!tpl || typeof window.HidookEngine === 'undefined') return;
-  try {
-    const html = window.HidookEngine.renderPreview(tpl.files, draft.config);
-    iframe.srcdoc = html;
-  } catch (_) {}
-}
-
-function nextStep() {
-  if (wizardCurrentStep < wizardSteps.length - 1) {
-    goToStep(wizardCurrentStep + 1);
-    schedulePreview();
-  }
-}
-
-function prevStep() {
-  if (wizardCurrentStep > 0) goToStep(wizardCurrentStep - 1);
-}
-
-// ---------------------------------------------------------------------------
-// 12. Field builders
-// ---------------------------------------------------------------------------
-
-function buildFieldGroup(field, config) {
-  const type = field.type;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'field-group';
-
-  if (type === 'color') return buildColorField(field, config, wrap);
-  if (type === 'list')  return buildListField(field, config, wrap);
-  if (type === 'photos') return buildPhotosField(field, config, wrap);
-
-  // text / phone / url / textarea / email
-  const key = field.key;
-  const label = field.label || key;
-  const required = field.required !== false;
-  const maxLen = field.maxLen;
-
-  const safeId = 'f_' + key.replace(/[^a-zA-Z0-9]/g,'_');
-
-  const labelEl = document.createElement('label');
-  labelEl.className = 'field-label';
-  labelEl.setAttribute('for', safeId);
-  labelEl.innerHTML = escHtml(label) + (required ? '<span class="required" aria-hidden="true">*</span>' : '');
-  wrap.appendChild(labelEl);
-
-  if (field.hint) {
-    const hint = document.createElement('p');
-    hint.className = 'field-hint';
-    hint.textContent = field.hint;
-    wrap.appendChild(hint);
-  }
-
-  let input;
-  if (type === 'textarea') {
-    input = document.createElement('textarea');
-    input.className = 'field-textarea';
-    if (maxLen) input.maxLength = maxLen;
-    input.rows = 3;
+  if (mode === 'mobile') {
+    if (wrap) wrap.classList.add('mode-mobile');
+    if (iframe) iframe.classList.add('mode-mobile');
+    if (desktopBtn) { desktopBtn.classList.remove('active'); desktopBtn.setAttribute('aria-pressed','false'); }
+    if (mobileBtn)  { mobileBtn.classList.add('active'); mobileBtn.setAttribute('aria-pressed','true'); }
   } else {
-    input = document.createElement('input');
-    input.className = 'field-input';
-    input.type = type === 'phone' ? 'tel' : (type === 'url' ? 'url' : (type === 'email' ? 'email' : 'text'));
-    if (maxLen) input.maxLength = maxLen;
+    if (wrap) wrap.classList.remove('mode-mobile');
+    if (iframe) iframe.classList.remove('mode-mobile');
+    if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
+    if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
   }
-  input.id = safeId;
-  input.name = key;
-  if (required) input.required = true;
-  const curVal = getPath(config, key);
-  if (curVal != null && typeof curVal !== 'object') input.value = String(curVal);
-
-  // Autoslug from business name
-  if (key === 'business.name') {
-    input.addEventListener('input', () => {
-      setPath(draft.config, key, input.value);
-      saveDraft();
-      schedulePreview();
-      // Pre-fill slug when user hasn't manually set it
-      const slugInput = $('input-slug');
-      if (slugInput && !slugInput.dataset.manuallyEdited) {
-        const s = toSlug(input.value);
-        slugInput.value = s;
-        scheduleSlugCheck(s);
-      }
-    });
-  } else {
-    input.addEventListener('input', () => {
-      setPath(draft.config, key, input.value);
-      saveDraft();
-      schedulePreview();
-    });
-  }
-
-  // Inline validation on blur
-  if (required) {
-    input.addEventListener('blur', () => {
-      validateField(input, required);
-    });
-  }
-
-  wrap.appendChild(input);
-
-  // Error placeholder
-  const errEl = document.createElement('p');
-  errEl.className = 'field-error';
-  errEl.setAttribute('role','alert');
-  errEl.style.display = 'none';
-  wrap.appendChild(errEl);
-  input._errEl = errEl;
-
-  return wrap;
-}
-
-function validateField(input, required) {
-  const errEl = input._errEl;
-  const val = input.value.trim();
-  if (required && !val) {
-    input.classList.add('invalid');
-    if (errEl) { errEl.textContent = 'Câmp obligatoriu'; errEl.style.display = ''; }
-    return false;
-  }
-  input.classList.remove('invalid');
-  if (errEl) errEl.style.display = 'none';
-  return true;
-}
-
-function buildColorField(field, config, wrap) {
-  const key = field.key;
-  const label = field.label || key;
-  const safeId = 'f_' + key.replace(/[^a-zA-Z0-9]/g,'_');
-
-  const labelEl = document.createElement('label');
-  labelEl.className = 'field-label';
-  labelEl.setAttribute('for', safeId);
-  labelEl.textContent = label;
-  wrap.appendChild(labelEl);
-
-  const row = document.createElement('div');
-  row.className = 'field-color-row';
-
-  const swatch = document.createElement('input');
-  swatch.type = 'color';
-  swatch.className = 'field-color-swatch';
-  swatch.id = safeId;
-  swatch.setAttribute('aria-label', label + ' (selector culoare)');
-  const curVal = getPath(config, key);
-  if (curVal) swatch.value = curVal;
-
-  const textInput = document.createElement('input');
-  textInput.className = 'field-input';
-  textInput.type = 'text';
-  textInput.maxLength = 7;
-  textInput.placeholder = '#RRGGBB';
-  textInput.setAttribute('aria-label', label + ' (cod hex)');
-  if (curVal) textInput.value = curVal;
-
-  const syncFromSwatch = () => {
-    const v = swatch.value;
-    textInput.value = v;
-    setPath(draft.config, key, v);
-    if (key === 'theme.primary') {
-      const derived = deriveColors(v);
-      setPath(draft.config, 'theme.primaryLight', derived.primaryLight);
-      setPath(draft.config, 'theme.primaryDark', derived.primaryDark);
-      const lI = document.getElementById('f_theme_primaryLight');
-      const dI = document.getElementById('f_theme_primaryDark');
-      if (lI) lI.value = derived.primaryLight;
-      if (dI) dI.value = derived.primaryDark;
-    }
-    saveDraft();
-    schedulePreview();
-  };
-
-  swatch.addEventListener('input', syncFromSwatch);
-  textInput.name = key;
-  textInput.addEventListener('input', () => {
-    const v = textInput.value;
-    if (/^#[0-9a-fA-F]{6}$/.test(v)) { swatch.value = v; syncFromSwatch(); }
-    else { setPath(draft.config, key, v); saveDraft(); schedulePreview(); }
-  });
-
-  row.appendChild(swatch);
-  row.appendChild(textInput);
-  wrap.appendChild(row);
-  return wrap;
-}
-
-function buildListField(field, config, wrap) {
-  const key = field.key;
-  const label = field.label || key;
-  const itemShape = field.itemShape;
-  const maxItems = field.max || 20;
-
-  const labelEl = document.createElement('div');
-  labelEl.className = 'field-label';
-  labelEl.textContent = label;
-  wrap.appendChild(labelEl);
-
-  const listContainer = document.createElement('div');
-  listContainer.className = 'list-items';
-
-  const curVal = getPath(config, key);
-  const items = Array.isArray(curVal) ? deepClone(curVal) : [];
-
-  const addBtn = document.createElement('button');
-  addBtn.type = 'button';
-  addBtn.className = 'btn-list-add';
-  addBtn.textContent = '+ Adaugă element';
-
-  function renderItems() {
-    listContainer.innerHTML = '';
-    items.forEach((item, idx) => {
-      const itemDiv = document.createElement('div');
-      itemDiv.className = 'list-item';
-
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.className = 'btn-list-remove';
-      delBtn.setAttribute('aria-label', 'Șterge elementul ' + (idx+1));
-      delBtn.innerHTML = '&times;';
-      delBtn.addEventListener('click', () => {
-        items.splice(idx, 1);
-        setPath(draft.config, key, deepClone(items));
-        saveDraft(); schedulePreview(); renderItems();
-      });
-
-      if (typeof itemShape === 'string' && itemShape === 'text') {
-        const row = document.createElement('div');
-        row.className = 'list-item-row';
-        const inp = document.createElement('input');
-        inp.className = 'field-input';
-        inp.type = 'text';
-        inp.value = typeof item === 'string' ? item : '';
-        inp.setAttribute('aria-label', 'Element ' + (idx+1));
-        inp.addEventListener('input', () => {
-          items[idx] = inp.value;
-          setPath(draft.config, key, deepClone(items));
-          saveDraft(); schedulePreview();
-        });
-        row.appendChild(inp);
-        row.appendChild(delBtn);
-        itemDiv.appendChild(row);
-      } else if (typeof itemShape === 'object' && itemShape !== null) {
-        const headerRow = document.createElement('div');
-        headerRow.className = 'list-item-row';
-        headerRow.style.justifyContent = 'flex-end';
-        headerRow.appendChild(delBtn);
-        itemDiv.appendChild(headerRow);
-
-        Object.entries(itemShape).forEach(([subKey, subType]) => {
-          const subWrap = document.createElement('div');
-          subWrap.className = 'list-item-subfield field-group';
-
-          const subLabel = document.createElement('label');
-          subLabel.className = 'field-label';
-          const subId = 'li_' + idx + '_' + subKey;
-          subLabel.setAttribute('for', subId);
-          subLabel.textContent = subKey;
-          subWrap.appendChild(subLabel);
-
-          if (subType === 'photos') {
-            subWrap.appendChild(buildPhotosInlineField(subKey, item, idx, key, items));
-          } else {
-            const inp = document.createElement('input');
-            inp.className = 'field-input';
-            inp.type = 'text';
-            inp.id = subId;
-            inp.setAttribute('aria-label', subKey + ' element ' + (idx+1));
-            if (item && item[subKey] != null) inp.value = String(item[subKey]);
-            inp.addEventListener('input', () => {
-              if (!items[idx]) items[idx] = {};
-              items[idx][subKey] = inp.value;
-              setPath(draft.config, key, deepClone(items));
-              saveDraft(); schedulePreview();
-            });
-            subWrap.appendChild(inp);
-          }
-          itemDiv.appendChild(subWrap);
-        });
-      }
-
-      listContainer.appendChild(itemDiv);
-    });
-    addBtn.disabled = items.length >= maxItems;
-    addBtn.title = items.length >= maxItems ? 'Maxim ' + maxItems + ' elemente' : '';
-  }
-
-  addBtn.addEventListener('click', () => {
-    if (items.length >= maxItems) return;
-    if (typeof itemShape === 'string') {
-      items.push('');
-    } else if (typeof itemShape === 'object' && itemShape !== null) {
-      const newItem = {};
-      Object.keys(itemShape).forEach(k => { newItem[k] = itemShape[k] === 'photos' ? [] : ''; });
-      items.push(newItem);
-    } else {
-      items.push('');
-    }
-    setPath(draft.config, key, deepClone(items));
-    saveDraft(); schedulePreview(); renderItems();
-  });
-
-  renderItems();
-  wrap.appendChild(listContainer);
-  wrap.appendChild(addBtn);
-  return wrap;
-}
-
-function buildPhotosInlineField(subKey, item, itemIdx, parentKey, items) {
-  const photosWrap = document.createElement('div');
-  photosWrap.className = 'photos-container';
-  const thumbs = document.createElement('div');
-  thumbs.className = 'photos-thumbs';
-
-  function renderThumbs() {
-    thumbs.innerHTML = '';
-    const photos = (item && Array.isArray(item[subKey])) ? item[subKey] : [];
-    photos.forEach((p, pi) => {
-      const src = typeof p === 'string' ? p : (p && p.src);
-      if (!src) return;
-      const div = document.createElement('div');
-      div.className = 'photo-thumb';
-      const img = document.createElement('img');
-      img.src = src; img.alt = 'Fotografie ' + (pi+1);
-      const del = document.createElement('button');
-      del.type = 'button'; del.className = 'photo-thumb-del';
-      del.setAttribute('aria-label', 'Șterge fotografia ' + (pi+1));
-      del.innerHTML = '&times;';
-      del.addEventListener('click', () => {
-        photos.splice(pi, 1); item[subKey] = photos; items[itemIdx] = item;
-        setPath(draft.config, parentKey, deepClone(items));
-        saveDraft(); schedulePreview(); renderThumbs();
-      });
-      div.appendChild(img); div.appendChild(del); thumbs.appendChild(div);
-    });
-  }
-
-  renderThumbs();
-
-  const dropzone = buildDropzone(null, async (files) => {
-    for (const file of files) {
-      const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
-      if (!Array.isArray(item[subKey])) item[subKey] = [];
-      item[subKey].push({ src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
-      items[itemIdx] = item;
-      setPath(draft.config, parentKey, deepClone(items));
-      saveDraft(); schedulePreview();
-    }
-    renderThumbs();
-  });
-
-  photosWrap.appendChild(thumbs);
-  photosWrap.appendChild(dropzone);
-  return photosWrap;
-}
-
-function buildPhotosField(field, config, wrap) {
-  const key = field.key;
-  const label = field.label || key;
-  const maxPhotos = field.max || 12;
-
-  const labelEl = document.createElement('div');
-  labelEl.className = 'field-label';
-  labelEl.textContent = label;
-  wrap.appendChild(labelEl);
-
-  const countEl = document.createElement('div');
-  countEl.className = 'photos-count';
-
-  const thumbs = document.createElement('div');
-  thumbs.className = 'photos-thumbs';
-
-  // Drag reorder state
-  let dragIdx = null;
-
-  function renderThumbs() {
-    thumbs.innerHTML = '';
-    const photos = getPath(draft.config, key);
-    const count = Array.isArray(photos) ? photos.length : 0;
-    countEl.textContent = count + ' din ' + maxPhotos + ' poze';
-    countEl.className = 'photos-count' + (count >= maxPhotos ? ' at-limit' : '');
-    if (!Array.isArray(photos)) return;
-    photos.forEach((p, idx) => {
-      const src = typeof p === 'string' ? p : (p && p.src);
-      if (!src) return;
-      const div = document.createElement('div');
-      div.className = 'photo-thumb';
-      div.setAttribute('draggable','true');
-      div.dataset.idx = idx;
-
-      const img = document.createElement('img');
-      img.src = src; img.alt = 'Fotografie ' + (idx+1); img.loading = 'lazy';
-      const del = document.createElement('button');
-      del.type = 'button'; del.className = 'photo-thumb-del';
-      del.setAttribute('aria-label', 'Șterge fotografia ' + (idx+1));
-      del.innerHTML = '&times;';
-      del.addEventListener('click', () => {
-        const arr = getPath(draft.config, key) || [];
-        arr.splice(idx, 1);
-        setPath(draft.config, key, arr);
-        saveDraft(); schedulePreview(); renderThumbs();
-      });
-
-      // Drag handlers
-      div.addEventListener('dragstart', () => { dragIdx = idx; div.classList.add('dragging'); });
-      div.addEventListener('dragend', () => { dragIdx = null; div.classList.remove('dragging'); document.querySelectorAll('.photo-thumb').forEach(d => d.classList.remove('drag-over')); });
-      div.addEventListener('dragover', (e) => { e.preventDefault(); div.classList.add('drag-over'); });
-      div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
-      div.addEventListener('drop', (e) => {
-        e.preventDefault();
-        div.classList.remove('drag-over');
-        if (dragIdx == null || dragIdx === idx) return;
-        const arr = getPath(draft.config, key) || [];
-        const moved = arr.splice(dragIdx, 1)[0];
-        arr.splice(idx, 0, moved);
-        setPath(draft.config, key, arr);
-        saveDraft(); schedulePreview(); renderThumbs();
-      });
-
-      div.appendChild(img); div.appendChild(del); thumbs.appendChild(div);
-    });
-  }
-
-  const dropzone = buildDropzone(maxPhotos, async (files) => {
-    const existing = getPath(draft.config, key) || [];
-    const remaining = maxPhotos - existing.length;
-    if (remaining <= 0) { showToast('Maxim ' + maxPhotos + ' fotografii.', 'error'); return; }
-    const toAdd = files.slice(0, remaining);
-    for (const file of toAdd) {
-      const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
-      existing.push({ src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
-    }
-    setPath(draft.config, key, existing);
-    saveDraft(); schedulePreview(); renderThumbs();
-  }, () => {
-    // Return current count for limit checking
-    const arr = getPath(draft.config, key);
-    return Array.isArray(arr) ? arr.length : 0;
-  }, maxPhotos);
-
-  renderThumbs();
-
-  const container = document.createElement('div');
-  container.className = 'photos-container';
-  container.appendChild(thumbs);
-  container.appendChild(countEl);
-  container.appendChild(dropzone);
-  wrap.appendChild(container);
-  return wrap;
-}
-
-/** Build a reusable drag&drop + click zone. */
-function buildDropzone(maxPhotos, onFiles, getCurrentCount, maxCount) {
-  const label = document.createElement('label');
-  label.className = 'photos-dropzone';
-
-  const icon = document.createElement('div');
-  icon.className = 'photos-dropzone-icon';
-  icon.setAttribute('aria-hidden','true');
-  icon.textContent = '📷';
-
-  const text = document.createElement('div');
-  text.textContent = 'Adaugă fotografii — trage sau apasă';
-
-  const hint = document.createElement('div');
-  hint.className = 'photos-dropzone-hint';
-  hint.textContent = 'JPG, PNG, WebP' + (maxCount ? ' · max ' + maxCount + ' poze' : '');
-
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.multiple = true;
-  fileInput.accept = 'image/jpeg,image/png,image/webp';
-
-  label.appendChild(icon);
-  label.appendChild(text);
-  label.appendChild(hint);
-  label.appendChild(fileInput);
-
-  fileInput.addEventListener('change', async () => {
-    const files = Array.from(fileInput.files);
-    if (files.length) await onFiles(files);
-    fileInput.value = '';
-  });
-
-  // Drag events
-  label.addEventListener('dragover', (e) => { e.preventDefault(); label.classList.add('dragover'); });
-  label.addEventListener('dragleave', () => label.classList.remove('dragover'));
-  label.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    label.classList.remove('dragover');
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-    if (files.length) await onFiles(files);
-  });
-
-  return label;
 }
 
 // ---------------------------------------------------------------------------
-// 13. Image resize
-// ---------------------------------------------------------------------------
-
-function resizeImageToDataUrl(file, maxPx, quality) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let w = img.naturalWidth, h = img.naturalHeight;
-      if (w > maxPx || h > maxPx) {
-        const ratio = Math.min(maxPx/w, maxPx/h);
-        w = Math.round(w * ratio); h = Math.round(h * ratio);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Eroare la citirea imaginii')); };
-    img.src = url;
-  });
-}
-
-// ---------------------------------------------------------------------------
-// 14. Publish flow
+// 20. Publish flow
 // ---------------------------------------------------------------------------
 
 function extractImages(config) {
@@ -1188,7 +1310,6 @@ function extractImages(config) {
 }
 
 function openPublishModal() {
-  // Reset to step 1
   show($('publish-step-1'));
   hide($('publish-step-2'));
   hide($('auth-sent'));
@@ -1196,7 +1317,24 @@ function openPublishModal() {
   hideId('auth-error');
   hideId('slug-error');
 
-  // Pre-fill slug from business name
+  // Validate required fields
+  if (currentTemplate && currentTemplate.data && currentTemplate.data.schema) {
+    const required = getRequiredFields(currentTemplate.data.schema);
+    const missing = required.filter(f => !isFieldComplete(f));
+    if (missing.length > 0) {
+      const firstMissing = missing[0];
+      const msgParts = missing.map(f => f.label || f.key);
+      showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
+      // Highlight in iframe
+      sendHighlightToIframe(firstMissing.key);
+      // Open drawer if field is a drawer field
+      if (isDrawerField(firstMissing)) {
+        openDrawer();
+      }
+      return;
+    }
+  }
+
   const businessName = getPath(draft.config, 'business.name') || '';
   const slugInput = $('input-slug');
   if (slugInput && businessName) {
@@ -1211,7 +1349,6 @@ function openPublishModal() {
   openModal('modal-publish');
 }
 
-// Slug checking
 function scheduleSlugCheck(value) {
   if (slugCheckTimer) clearTimeout(slugCheckTimer);
   updateSlugPreview(value, 'checking');
@@ -1269,7 +1406,6 @@ async function checkSlug(rawSlug) {
       slugValid = false;
     }
   } catch (_) {
-    // Offline or server doesn't have endpoint yet — treat as valid, server will check
     updateSlugPreview(rawSlug, 'valid');
     slugValid = true;
     slugNormalized = rawSlug;
@@ -1277,19 +1413,12 @@ async function checkSlug(rawSlug) {
   }
 }
 
-async function doPublish() {
-  // Open publish modal — step 1 slug selection
-  openPublishModal();
-}
-
 async function doActualPublish(chosenSlug) {
   if (!currentUser) {
-    // Need auth — show step 2
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
     hide($('auth-sent'));
-    // After auth, we retry doActualPublish
     wireAuthForm(() => doActualPublish(chosenSlug));
     return;
   }
@@ -1316,7 +1445,6 @@ async function execPublish(slug) {
   if (currentSiteId) payload.siteId = currentSiteId;
 
   const data = await apiPost('/api/publish', payload);
-
   if (!data.site) { showToast('Răspuns neașteptat de la server.', 'error'); return; }
 
   closeModal('modal-publish');
@@ -1365,7 +1493,6 @@ function wireAuthForm(onAuthSuccess) {
           devLink.href = res.devLink;
           devLink.textContent = 'Deschide linkul de testare';
           show(devLink);
-          // After devLink, re-check user after slight delay
           devLink.addEventListener('click', async () => {
             await new Promise(r => setTimeout(r, 800));
             const user = await fetchCurrentUser().catch(() => null);
@@ -1374,7 +1501,7 @@ function wireAuthForm(onAuthSuccess) {
               closeModal('modal-publish');
               if (onAuthSuccess) {
                 setLoading(true, 'Se publică...');
-                try { await onAuthSuccess(); } catch (_) { /* errors shown via showToast in doActualPublish */ } finally { setLoading(false); }
+                try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
               }
             }
           });
@@ -1389,13 +1516,11 @@ function wireAuthForm(onAuthSuccess) {
 }
 
 function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
-  // URL
   const urlText = $('success-url-text');
   const urlLink = $('success-url-link');
   if (urlText) urlText.textContent = url;
   if (urlLink) urlLink.href = url;
 
-  // Keep site button
   const keepBtn = $('btn-keep-site');
   const successPrice = $('success-price');
   if (keepBtn) {
@@ -1408,7 +1533,6 @@ function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
     if (successPrice) successPrice.textContent = appConfig.priceEur != null ? appConfig.priceEur + '€' : '—€';
   }
 
-  // Trial countdown
   const countdownEl = $('trial-countdown');
   const countdownText = $('trial-countdown-text');
   if (trialEndsAtIso && countdownEl && countdownText) {
@@ -1430,7 +1554,6 @@ function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
     hide(countdownEl);
   }
 
-  // WhatsApp share
   const waBtn = $('btn-share-wa');
   if (waBtn) {
     const businessName = getPath(draft.config, 'business.name') || 'Site-ul nostru';
@@ -1442,65 +1565,7 @@ function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
 }
 
 // ---------------------------------------------------------------------------
-// 15. Slug input wiring in publish modal
-// ---------------------------------------------------------------------------
-
-function wirePublishModal() {
-  const slugInput = $('input-slug');
-  if (slugInput) {
-    slugInput.addEventListener('input', () => {
-      slugInput.dataset.manuallyEdited = '1';
-      const val = toSlug(slugInput.value);
-      scheduleSlugCheck(val);
-    });
-  }
-
-  const continueBtn = $('btn-publish-continue');
-  if (continueBtn) {
-    continueBtn.addEventListener('click', async () => {
-      const rawSlug = slugInput ? toSlug(slugInput.value) : '';
-      if (!rawSlug || rawSlug.length < 3) {
-        const err = $('slug-error');
-        if (err) { err.textContent = 'Introdu o adresă validă (minim 3 caractere).'; show(err); }
-        if (slugInput) slugInput.focus();
-        return;
-      }
-
-      // Wait for slug check to complete
-      if (slugCheckTimer) {
-        clearTimeout(slugCheckTimer);
-        await checkSlug(rawSlug);
-      }
-
-      if (!slugValid) {
-        if (slugInput) slugInput.focus();
-        return;
-      }
-
-      await doActualPublish(slugNormalized || rawSlug);
-    });
-  }
-
-  // Copy URL button
-  const copyBtn = $('btn-copy-url');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', async () => {
-      const url = publishedSiteUrl;
-      if (!url) return;
-      try {
-        await navigator.clipboard.writeText(url);
-        copyBtn.classList.add('copied');
-        copyBtn.textContent = 'Copiat!';
-        setTimeout(() => { copyBtn.classList.remove('copied'); copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copiază'; }, 2000);
-      } catch (_) {
-        showToast('Nu s-a putut copia. Selectează manual.', 'error');
-      }
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 16. Templates screen
+// 21. Templates screen
 // ---------------------------------------------------------------------------
 
 function renderTemplatesGrid() {
@@ -1510,10 +1575,7 @@ function renderTemplatesGrid() {
 
   const registry = getTemplateList();
   if (!registry || registry.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
-      <div class="empty-state-icon">&#128200;</div>
-      <p>Șabloanele nu sunt disponibile momentan.</p>
-    </div>`;
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Șabloanele nu sunt disponibile momentan.</p></div>';
     return;
   }
 
@@ -1522,7 +1584,6 @@ function renderTemplatesGrid() {
     card.className = 'template-card';
     card.setAttribute('role','listitem');
 
-    // Mini preview area
     const previewWrap = document.createElement('div');
     previewWrap.className = 'template-card-preview';
 
@@ -1530,7 +1591,6 @@ function renderTemplatesGrid() {
     shimmer.className = 'template-card-preview-shimmer';
     previewWrap.appendChild(shimmer);
 
-    // Lazy-load preview via IntersectionObserver
     let previewLoaded = false;
     const observer = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting && !previewLoaded) {
@@ -1541,7 +1601,6 @@ function renderTemplatesGrid() {
     }, { rootMargin: '100px' });
     observer.observe(previewWrap);
 
-    // Body
     const body = document.createElement('div');
     body.className = 'template-card-body';
     body.innerHTML = `
@@ -1558,8 +1617,6 @@ function renderTemplatesGrid() {
 
     body.querySelector('.btn-start-tpl').addEventListener('click', (e) => { e.stopPropagation(); startWithTemplate(tpl.id); });
     body.querySelector('.btn-preview-tpl').addEventListener('click', (e) => { e.stopPropagation(); openPreviewModal(tpl.id); });
-
-    // Card click = start
     card.addEventListener('click', () => startWithTemplate(tpl.id));
 
     card.appendChild(previewWrap);
@@ -1616,14 +1673,12 @@ function startWithTemplate(templateId) {
 
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;
+  iframeReady = false;
 
   const nameEl = $('editor-template-name');
   if (nameEl) nameEl.textContent = meta.name;
 
-  renderWizard(tplData.schema, draft.config);
-
   window.location.hash = '#edit';
-  schedulePreview();
 }
 
 function openPreviewModal(templateId) {
@@ -1650,7 +1705,6 @@ function openPreviewModal(templateId) {
     if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Eroare: ' + escHtml(e.message) + '</body>';
   }
 
-  // Reset to desktop mode
   const body = $('modal-preview-body');
   const desktopBtn = $('modal-preview-desktop');
   const mobileBtn = $('modal-preview-mobile');
@@ -1662,7 +1716,7 @@ function openPreviewModal(templateId) {
 }
 
 // ---------------------------------------------------------------------------
-// 17. Dashboard
+// 22. Dashboard
 // ---------------------------------------------------------------------------
 
 async function loadDashboard() {
@@ -1675,24 +1729,17 @@ async function loadDashboard() {
     const sites = data.sites || [];
 
     if (sites.length === 0) {
-      list.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">&#128203;</div>
-          <p>Nu ai site-uri create încă.</p>
-          <a href="#templates" class="btn-primary">Creează primul tău site</a>
-        </div>`;
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>Nu ai site-uri create încă.</p><a href="#templates" class="btn-primary">Creează primul tău site</a></div>`;
       return;
     }
 
     list.innerHTML = '';
-    sites.forEach(site => {
-      list.appendChild(buildSiteCard(site));
-    });
+    sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = `<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>`;
+      list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>';
     } else {
-      list.innerHTML = `<div class="empty-state"><p>Eroare la încărcare: ${escHtml(e.message)}</p></div>`;
+      list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
     }
   }
 }
@@ -1701,7 +1748,6 @@ function buildSiteCard(site) {
   const card = document.createElement('div');
   card.className = 'site-card';
 
-  // Mini preview
   const thumbWrap = document.createElement('div');
   thumbWrap.className = 'site-card-preview-thumb';
   const tplData = site.templateId ? getTemplateById(site.templateId) : null;
@@ -1718,7 +1764,6 @@ function buildSiteCard(site) {
     } catch (_) {}
   }
 
-  // Badge + trial info
   const now = Date.now();
   const trialEnd = site.trialEndsAt ? new Date(site.trialEndsAt) : null;
   const remaining = trialEnd ? (trialEnd - now) : null;
@@ -1738,7 +1783,6 @@ function buildSiteCard(site) {
     badgeClass = 'status-draft'; badgeLabel = 'Reîncearcă';
   }
 
-  // Info
   const info = document.createElement('div');
   info.className = 'site-card-info';
 
@@ -1775,7 +1819,6 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
-  // Actions
   const actions = document.createElement('div');
   actions.className = 'site-card-actions';
 
@@ -1786,7 +1829,6 @@ function buildSiteCard(site) {
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
-  // Keep/reactivate button
   if (!site.paid || site.status === 'expired') {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
@@ -1836,12 +1878,13 @@ async function loadSiteForEdit(siteId) {
     const meta = registry.find(t => t.id === site.templateId) || { id: site.templateId, name: site.templateId, description: '' };
     currentTemplate = { meta, data: tplData };
 
-    if (tplData) renderWizard(tplData.schema, draft.config);
     const nameEl = $('editor-template-name');
     if (nameEl) nameEl.textContent = meta.name;
 
+    previewFirstRender = false;
+    iframeReady = false;
+
     window.location.hash = '#edit';
-    schedulePreview();
   } catch (e) {
     showToast('Eroare la încărcarea site-ului: ' + e.message, 'error');
   } finally {
@@ -1889,35 +1932,12 @@ async function loadVersions(siteId) {
       list.appendChild(item);
     });
   } catch (e) {
-    if (list) list.innerHTML = `<p style="color:var(--error);font-size:.85rem">${escHtml(e.message)}</p>`;
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
   }
 }
 
 // ---------------------------------------------------------------------------
-// 18. Preview device toggle
-// ---------------------------------------------------------------------------
-
-function setPreviewMode(mode) {
-  const wrap = $('preview-iframe-wrap');
-  const iframe = $('preview-iframe-desktop');
-  const desktopBtn = $('btn-preview-desktop');
-  const mobileBtn = $('btn-preview-mobile');
-
-  if (mode === 'mobile') {
-    if (wrap) wrap.classList.add('mode-mobile');
-    if (iframe) iframe.classList.add('mode-mobile');
-    if (desktopBtn) { desktopBtn.classList.remove('active'); desktopBtn.setAttribute('aria-pressed','false'); }
-    if (mobileBtn)  { mobileBtn.classList.add('active'); mobileBtn.setAttribute('aria-pressed','true'); }
-  } else {
-    if (wrap) wrap.classList.remove('mode-mobile');
-    if (iframe) iframe.classList.remove('mode-mobile');
-    if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
-    if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 19. Router
+// 23. Router
 // ---------------------------------------------------------------------------
 
 const screens = ['templates', 'edit', 'dashboard'];
@@ -1930,6 +1950,20 @@ function showScreen(name) {
   document.querySelectorAll('[data-route]').forEach(a => {
     a.classList.toggle('active', a.dataset.route === name);
   });
+
+  // Show/hide editor topbar and normal header
+  const topbar = $('editor-topbar');
+  const header = $('app-header');
+  if (name === 'edit') {
+    if (topbar) show(topbar);
+    if (header) hide(header);
+  } else {
+    if (topbar) hide(topbar);
+    if (header) show(header);
+    // Close drawer and color picker when leaving edit
+    if (drawerOpen) closeDrawer();
+    if (colorPopoverOpen) closeColorPopover();
+  }
 }
 
 async function handleRoute(hash) {
@@ -1941,13 +1975,17 @@ async function handleRoute(hash) {
   } else if (route === 'edit') {
     if (!draft.templateId) { window.location.hash = '#templates'; return; }
     showScreen('edit');
-    schedulePreview();
+    updateChecklist();
+    scheduleRerender(true);
   } else if (route === 'dashboard') {
     showScreen('dashboard');
     const user = await fetchCurrentUser().catch(() => null);
     updateUserUI(user);
     if (user) loadDashboard();
-    else $('sites-list').innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>';
+    else {
+      const list = $('sites-list');
+      if (list) list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>';
+    }
   } else if (route === 'platit') {
     showToast('Plata a fost procesată! Site-ul tău va fi publicat în câteva momente.', 'success', 6000);
     window.location.hash = '#dashboard';
@@ -1964,49 +2002,7 @@ async function handleRoute(hash) {
 }
 
 // ---------------------------------------------------------------------------
-// 20. Mobile tabs wiring
-// ---------------------------------------------------------------------------
-
-function wireMobileTabs() {
-  const editTab = $('mob-tab-edit');
-  const previewTab = $('mob-tab-preview');
-  const formPanel = $('wizard-steps-wrap');
-  const previewPanel = $('preview-panel-mobile');
-  const wizardFooter = $('wizard-footer');
-  const mobileTabs = $('editor-form-panel');
-
-  function switchTab(which) {
-    if (which === 'edit') {
-      editTab.classList.add('active'); editTab.setAttribute('aria-selected','true');
-      previewTab.classList.remove('active'); previewTab.setAttribute('aria-selected','false');
-      if (formPanel) show(formPanel);
-      if (wizardFooter) show(wizardFooter);
-      if (previewPanel) hide(previewPanel);
-    } else {
-      previewTab.classList.add('active'); previewTab.setAttribute('aria-selected','true');
-      editTab.classList.remove('active'); editTab.setAttribute('aria-selected','false');
-      if (formPanel) hide(formPanel);
-      if (wizardFooter) hide(wizardFooter);
-      if (previewPanel) {
-        show(previewPanel);
-        // Render into mobile iframe
-        const mobileIframe = $('preview-iframe-mobile');
-        const desktopIframe = $('preview-iframe-desktop');
-        if (mobileIframe && desktopIframe && desktopIframe.srcdoc) {
-          mobileIframe.srcdoc = desktopIframe.srcdoc;
-        } else {
-          renderPreview();
-        }
-      }
-    }
-  }
-
-  if (editTab) editTab.addEventListener('click', () => switchTab('edit'));
-  if (previewTab) previewTab.addEventListener('click', () => switchTab('preview'));
-}
-
-// ---------------------------------------------------------------------------
-// 21. Static button wiring
+// 24. Static button wiring
 // ---------------------------------------------------------------------------
 
 function wireStaticButtons() {
@@ -2014,49 +2010,74 @@ function wireStaticButtons() {
   const backBtn = $('btn-back-templates');
   if (backBtn) backBtn.addEventListener('click', () => { window.location.hash = '#templates'; });
 
-  // Wizard step nav
-  const nextBtn = $('btn-step-next');
-  if (nextBtn) nextBtn.addEventListener('click', nextStep);
-  const prevBtn = $('btn-step-back');
-  if (prevBtn) prevBtn.addEventListener('click', prevStep);
-
-  // Preview device toggle
+  // Device toggle
   const desktopBtn = $('btn-preview-desktop');
   const mobileBtn  = $('btn-preview-mobile');
-  if (desktopBtn) desktopBtn.addEventListener('click', () => setPreviewMode('desktop'));
-  if (mobileBtn)  mobileBtn.addEventListener('click',  () => setPreviewMode('mobile'));
+  if (desktopBtn) desktopBtn.addEventListener('click', () => setDeviceMode('desktop'));
+  if (mobileBtn)  mobileBtn.addEventListener('click',  () => setDeviceMode('mobile'));
 
-  // Fullscreen preview
-  const fsBtn = $('btn-preview-fullscreen');
-  if (fsBtn) {
-    fsBtn.addEventListener('click', () => {
-      if (!currentTemplate) return;
-      openPreviewModal(draft.templateId);
-      // Override iframe with current live preview
-      const iframe = $('preview-modal-iframe');
-      const src = $('preview-iframe-desktop');
-      if (iframe && src && src.srcdoc) iframe.srcdoc = src.srcdoc;
-      const title = $('modal-preview-title');
-      if (title && currentTemplate && currentTemplate.meta) title.textContent = currentTemplate.meta.name;
+  // Publish button in topbar
+  const pubBtn = $('btn-publish');
+  if (pubBtn) pubBtn.addEventListener('click', openPublishModal);
+
+  // Drawer
+  const drawerBtn = $('btn-open-drawer');
+  if (drawerBtn) drawerBtn.addEventListener('click', () => {
+    if (drawerOpen) closeDrawer(); else openDrawer();
+  });
+
+  const closeDrawerBtn = $('btn-close-drawer');
+  if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+
+  const drawerOverlay = $('drawer-overlay');
+  if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+  // Publish modal slug input
+  const slugInput = $('input-slug');
+  if (slugInput) {
+    slugInput.addEventListener('input', () => {
+      slugInput.dataset.manuallyEdited = '1';
+      const val = toSlug(slugInput.value);
+      scheduleSlugCheck(val);
     });
   }
 
-  // Preview modal device toggle
-  const modalDesktopBtn = $('modal-preview-desktop');
-  const modalMobileBtn  = $('modal-preview-mobile');
-  const modalBody = $('modal-preview-body');
-  if (modalDesktopBtn) {
-    modalDesktopBtn.addEventListener('click', () => {
-      if (modalBody) modalBody.classList.remove('mode-mobile');
-      modalDesktopBtn.classList.add('active'); modalDesktopBtn.setAttribute('aria-pressed','true');
-      if (modalMobileBtn) { modalMobileBtn.classList.remove('active'); modalMobileBtn.setAttribute('aria-pressed','false'); }
+  const continueBtn = $('btn-publish-continue');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', async () => {
+      const rawSlug = slugInput ? toSlug(slugInput.value) : '';
+      if (!rawSlug || rawSlug.length < 3) {
+        const err = $('slug-error');
+        if (err) { err.textContent = 'Introdu o adresă validă (minim 3 caractere).'; show(err); }
+        if (slugInput) slugInput.focus();
+        return;
+      }
+      if (slugCheckTimer) {
+        clearTimeout(slugCheckTimer);
+        await checkSlug(rawSlug);
+      }
+      if (!slugValid) { if (slugInput) slugInput.focus(); return; }
+      await doActualPublish(slugNormalized || rawSlug);
     });
   }
-  if (modalMobileBtn) {
-    modalMobileBtn.addEventListener('click', () => {
-      if (modalBody) modalBody.classList.add('mode-mobile');
-      modalMobileBtn.classList.add('active'); modalMobileBtn.setAttribute('aria-pressed','true');
-      if (modalDesktopBtn) { modalDesktopBtn.classList.remove('active'); modalDesktopBtn.setAttribute('aria-pressed','false'); }
+
+  // Copy URL button
+  const copyBtn = $('btn-copy-url');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const url = publishedSiteUrl;
+      if (!url) return;
+      try {
+        await navigator.clipboard.writeText(url);
+        copyBtn.classList.add('copied');
+        copyBtn.textContent = 'Copiat!';
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copiază';
+        }, 2000);
+      } catch (_) {
+        showToast('Nu s-a putut copia. Selectează manual.', 'error');
+      }
     });
   }
 
@@ -2080,8 +2101,29 @@ function wireStaticButtons() {
   wireModalClose('btn-close-preview',  'modal-preview');
   wireModalClose('btn-close-success',  'modal-success');
   wireModalClose('btn-close-versions', 'modal-versions');
+  wireModalClose('btn-close-gallery',  'modal-gallery');
+
   const successCloseBtn = $('btn-success-close');
   if (successCloseBtn) successCloseBtn.addEventListener('click', () => closeModal('modal-success'));
+
+  // Preview modal device toggle
+  const modalDesktopBtn = $('modal-preview-desktop');
+  const modalMobileBtn  = $('modal-preview-mobile');
+  const modalBody = $('modal-preview-body');
+  if (modalDesktopBtn) {
+    modalDesktopBtn.addEventListener('click', () => {
+      if (modalBody) modalBody.classList.remove('mode-mobile');
+      modalDesktopBtn.classList.add('active'); modalDesktopBtn.setAttribute('aria-pressed','true');
+      if (modalMobileBtn) { modalMobileBtn.classList.remove('active'); modalMobileBtn.setAttribute('aria-pressed','false'); }
+    });
+  }
+  if (modalMobileBtn) {
+    modalMobileBtn.addEventListener('click', () => {
+      if (modalBody) modalBody.classList.add('mode-mobile');
+      modalMobileBtn.classList.add('active'); modalMobileBtn.setAttribute('aria-pressed','true');
+      if (modalDesktopBtn) { modalDesktopBtn.classList.remove('active'); modalDesktopBtn.setAttribute('aria-pressed','false'); }
+    });
+  }
 
   // Close on overlay click
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
@@ -2090,33 +2132,36 @@ function wireStaticButtons() {
     });
   });
 
-  // Escape closes all modals
+  // Escape closes everything
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-publish','modal-preview','modal-success','modal-versions'].forEach(id => {
+      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery'].forEach(id => {
         const el = $(id);
         if (el && el.style.display !== 'none') el.style.display = 'none';
       });
+      if (drawerOpen) closeDrawer();
+      if (colorPopoverOpen) closeColorPopover();
     }
   });
 
-  // Wire publish modal (slug input, continue btn, copy btn)
-  wirePublishModal();
-  // Wire mobile tabs
-  wireMobileTabs();
+  // Color picker
+  initColorPicker();
+
+  // Image file input
+  initImageFileInput();
 }
 
 // ---------------------------------------------------------------------------
-// 22. Bootstrap
+// 25. Bootstrap
 // ---------------------------------------------------------------------------
 
 async function boot() {
   setLoading(true, 'Se încarcă...');
   try {
+    initPostMessageListener();
     wireStaticButtons();
     tryTelegramAuth();
 
-    // Fetch config + user in parallel
     const [user] = await Promise.all([
       fetchCurrentUser().catch(() => null),
       fetchAppConfig(),

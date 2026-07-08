@@ -16,7 +16,7 @@
 </div>
 
 <!-- ===== HEADER ===== -->
-<header class="app-header">
+<header class="app-header" id="app-header">
   <a href="#templates" class="logo" aria-label="Hidook — Acasă">
     <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
       <rect width="26" height="26" rx="7" fill="#5B5BD6"/>
@@ -34,13 +34,71 @@
   </div>
 </header>
 
+<!-- ===== EDITOR TOPBAR (shown only in #edit) ===== -->
+<div id="editor-topbar" class="editor-topbar" style="display:none" role="toolbar" aria-label="Bara de editare">
+  <div class="editor-topbar-left">
+    <button id="btn-back-templates" class="btn-icon-back" aria-label="Înapoi la șabloane">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="editor-topbar-back-label">Înapoi</span>
+    </button>
+    <span id="editor-template-name" class="editor-tpl-name"></span>
+  </div>
+  <div class="editor-topbar-center">
+    <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
+      <button id="btn-preview-desktop" class="device-btn active" aria-label="Vedere desktop" aria-pressed="true" title="Desktop">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button id="btn-preview-mobile" class="device-btn" aria-label="Vedere mobil" aria-pressed="false" title="Mobil">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="editor-topbar-right">
+    <div id="checklist-indicator" class="checklist-indicator" title="Câmpuri obligatorii completate" aria-label="Câmpuri completate">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="checklist-text">...</span>
+    </div>
+    <button id="btn-color-picker" class="btn-topbar" aria-label="Culoare temă" title="Culoare temă">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7.5 2C7.5 2 3 4.5 3 7.5a4.5 4.5 0 009 0C12 4.5 7.5 2 7.5 2z" fill="currentColor" opacity=".2"/>
+      </svg>
+      <span class="btn-topbar-label">Culoare</span>
+    </button>
+    <button id="btn-open-drawer" class="btn-topbar" aria-label="Detalii și câmpuri suplimentare" title="Detalii">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <circle cx="7.5" cy="3" r="1.2" fill="currentColor"/>
+        <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
+        <circle cx="7.5" cy="12" r="1.2" fill="currentColor"/>
+      </svg>
+      <span class="btn-topbar-label">Detalii</span>
+    </button>
+    <button id="btn-publish" class="btn-primary btn-publish-top" type="button" aria-label="Publică site-ul">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M7 2v7M4 5l3 3 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 12h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>Publică site-ul</span>
+    </button>
+  </div>
+</div>
+
 <!-- ===== MAIN ===== -->
 <main id="app-main">
 
   <!-- ========== SCREEN: TEMPLATES ========== -->
   <section id="screen-templates" class="screen" role="main" aria-label="Alege un șablon">
-
-    <!-- Hero -->
     <div class="hero-section">
       <div class="hero-badge" aria-hidden="true">Gratuit cu perioadă de probă</div>
       <h1 class="hero-title">Site-ul afacerii tale,<br><em>gata azi</em></h1>
@@ -49,10 +107,7 @@
         Îl păstrezi cu o singură plată de <strong id="hero-price">—€</strong>.
       </p>
     </div>
-
-    <!-- Templates grid -->
     <div id="templates-grid" class="templates-grid" role="list" aria-label="Șabloane disponibile">
-      <!-- Skeleton placeholders -->
       <div class="card-skeleton" aria-hidden="true">
         <div class="skeleton-preview"></div>
         <div class="skeleton-body">
@@ -80,128 +135,22 @@
     </div>
   </section>
 
-  <!-- ========== SCREEN: EDITOR (Wizard) ========== -->
-  <section id="screen-edit" class="screen" role="main" aria-label="Editează site-ul" style="display:none">
-    <div class="editor-layout">
-
-      <!-- Left panel: wizard form -->
-      <div class="editor-form-panel" id="editor-form-panel">
-
-        <!-- Wizard header -->
-        <div class="wizard-header">
-          <button id="btn-back-templates" class="btn-icon-back" aria-label="Înapoi la șabloane">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <span id="editor-template-name" class="wizard-tpl-name"></span>
-        </div>
-
-        <!-- Stepper -->
-        <div class="wizard-stepper" id="wizard-stepper" role="navigation" aria-label="Pași wizard" style="display:none"></div>
-
-        <!-- Progress bar -->
-        <div class="wizard-progress" aria-hidden="true">
-          <div class="wizard-progress-bar" id="wizard-progress-bar"></div>
-        </div>
-
-        <!-- Step content -->
-        <div class="wizard-steps-wrap" id="wizard-steps-wrap">
-          <!-- populated by app.js -->
-        </div>
-
-        <!-- Step footer nav -->
-        <div class="wizard-footer" id="wizard-footer">
-          <button id="btn-step-back" class="btn-ghost" style="display:none" aria-label="Pasul anterior">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Înapoi
-          </button>
-          <button id="btn-step-next" class="btn-primary wizard-btn-next" aria-label="Pasul următor">
-            Continuă
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M5 2l5 5-5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Mobile bottom tab bar -->
-        <div class="mobile-tab-bar" role="tablist" aria-label="Vizualizare editor">
-          <button class="mobile-tab active" id="mob-tab-edit" role="tab" aria-selected="true" aria-controls="wizard-steps-wrap">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M3 14l3-1 8-8a1 1 0 000-1.4L13 2.6a1 1 0 00-1.4 0L3 10.6V14z" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            Editează
-          </button>
-          <button class="mobile-tab" id="mob-tab-preview" role="tab" aria-selected="false" aria-controls="preview-panel-mobile">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <ellipse cx="9" cy="9" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/>
-              <circle cx="9" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            Previzualizare
-          </button>
-        </div>
+  <!-- ========== SCREEN: EDITOR (Inline) ========== -->
+  <section id="screen-edit" class="screen screen-edit" role="main" aria-label="Editează site-ul" style="display:none">
+    <div class="editor-canvas-wrap" id="editor-canvas-wrap">
+      <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">
+        <div class="preview-shimmer"></div>
       </div>
-
-      <!-- Right panel: desktop preview -->
-      <div class="editor-preview-panel" id="editor-preview-panel" aria-label="Previzualizare site">
-        <div class="preview-toolbar">
-          <span class="preview-label">Previzualizare</span>
-          <div class="preview-toolbar-right">
-            <span id="preview-status" class="preview-status" aria-live="polite"></span>
-            <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
-              <button id="btn-preview-desktop" class="device-btn active" aria-label="Vedere desktop" aria-pressed="true" title="Desktop">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-                  <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-              </button>
-              <button id="btn-preview-mobile" class="device-btn" aria-label="Vedere mobil" aria-pressed="false" title="Mobil">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
-                  <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
-                </svg>
-              </button>
-            </div>
-            <button id="btn-preview-fullscreen" class="btn-ghost btn-sm" aria-label="Ecran întreg">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              Ecran întreg
-            </button>
-          </div>
-        </div>
-
-        <!-- Desktop preview iframe wrapper -->
-        <div class="preview-iframe-wrap" id="preview-iframe-wrap">
-          <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">
-            <div class="preview-shimmer"></div>
-          </div>
-          <div class="preview-spinner-overlay" id="preview-spinner-overlay" style="display:none" aria-hidden="true">
-            <div class="spinner spinner--sm"></div>
-          </div>
-          <iframe
-            id="preview-iframe-desktop"
-            class="preview-iframe preview-iframe--desktop"
-            title="Previzualizare site"
-            sandbox="allow-scripts"
-            aria-label="Previzualizare site"
-          ></iframe>
-        </div>
-
-        <!-- Mobile preview (inside preview panel, shown on mobile tab) -->
-        <div class="preview-panel-mobile" id="preview-panel-mobile" style="display:none" role="tabpanel" aria-labelledby="mob-tab-preview">
-          <iframe
-            id="preview-iframe-mobile"
-            class="preview-iframe preview-iframe--mobile"
-            title="Previzualizare site mobil"
-            sandbox="allow-scripts"
-            aria-label="Previzualizare site pe mobil"
-          ></iframe>
-        </div>
+      <div class="preview-spinner-overlay" id="preview-spinner-overlay" style="display:none" aria-hidden="true">
+        <div class="spinner spinner--sm"></div>
       </div>
-
+      <iframe
+        id="preview-iframe"
+        class="preview-iframe preview-iframe--edit"
+        title="Editează site-ul tău"
+        sandbox="allow-scripts"
+        aria-label="Editează direct pe site"
+      ></iframe>
     </div>
   </section>
 
@@ -217,20 +166,40 @@
           Site nou
         </a>
       </div>
-      <div id="sites-list" class="sites-list" aria-live="polite">
-        <!-- populated by js -->
-      </div>
+      <div id="sites-list" class="sites-list" aria-live="polite"></div>
     </div>
   </section>
 
 </main>
 
+<!-- ===== COLOR PICKER POPOVER ===== -->
+<div id="color-popover" class="color-popover" role="dialog" aria-label="Culoare temă" style="display:none">
+  <div class="color-popover-inner">
+    <div class="color-popover-title">Culoarea temei</div>
+    <div class="color-presets" id="color-presets" role="group" aria-label="Culori presetate"></div>
+    <div class="color-custom-row">
+      <input type="color" id="color-custom-swatch" class="field-color-swatch" aria-label="Culoare personalizată" />
+      <input type="text" id="color-custom-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Cod hex culoare" />
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAILS DRAWER ===== -->
+<div id="drawer-overlay" class="drawer-overlay" style="display:none" aria-hidden="true"></div>
+<aside id="details-drawer" class="details-drawer" role="complementary" aria-label="Detalii site" style="display:none">
+  <div class="drawer-header">
+    <span class="drawer-title">Detalii site</span>
+    <button id="btn-close-drawer" class="modal-close-btn" aria-label="Închide">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <!-- populated by js -->
+  </div>
+</aside>
+
 <!-- ===== MODAL: PUBLISH FLOW ===== -->
 <div id="modal-publish" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-publish-title" style="display:none">
   <div class="modal-box modal-box--publish">
     <button class="modal-close" id="btn-close-publish" aria-label="Închide">&times;</button>
-
-    <!-- Step 1: Slug + trial info -->
     <div id="publish-step-1" class="publish-step">
       <div class="publish-icon" aria-hidden="true">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
@@ -240,8 +209,6 @@
         </svg>
       </div>
       <h2 id="modal-publish-title" class="modal-title">Publicăm site-ul tău GRATUIT</h2>
-
-      <!-- Trial bullets -->
       <ul class="trial-bullets" aria-label="Cum funcționează proba gratuită">
         <li>
           <span class="trial-bullet-icon" aria-hidden="true">
@@ -262,34 +229,17 @@
           <span>O singură plată de <strong id="trial-bullet-price">—€</strong> îl păstrează permanent</span>
         </li>
       </ul>
-
-      <!-- Slug chooser -->
       <div class="slug-chooser" role="group" aria-labelledby="slug-label">
         <label id="slug-label" class="field-label" for="input-slug">Adresa site-ului tău</label>
         <div class="slug-input-row">
-          <input
-            id="input-slug"
-            class="field-input"
-            type="text"
-            placeholder="numele-afacerii"
-            maxlength="40"
-            autocomplete="off"
-            autocapitalize="none"
-            spellcheck="false"
-            aria-describedby="slug-preview slug-status"
-          />
+          <input id="input-slug" class="field-input" type="text" placeholder="numele-afacerii" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="slug-preview slug-status" />
           <span class="slug-status-icon" id="slug-status-icon" aria-hidden="true"></span>
         </div>
         <p class="slug-preview" id="slug-preview" aria-live="polite"></p>
         <p class="field-error" id="slug-error" role="alert" style="display:none"></p>
       </div>
-
-      <button id="btn-publish-continue" class="btn-primary btn-full" type="button">
-        Continuă cu această adresă
-      </button>
+      <button id="btn-publish-continue" class="btn-primary btn-full" type="button">Continuă cu această adresă</button>
     </div>
-
-    <!-- Step 2: Auth -->
     <div id="publish-step-2" class="publish-step" style="display:none">
       <h2 class="modal-title">Intră în cont pentru a publica</h2>
       <p class="modal-sub">Îți trimitem un link magic pe email — fără parolă, fără cont de creat.</p>
@@ -299,9 +249,7 @@
           <input id="input-email" class="field-input" type="email" placeholder="email@exemplu.ro" autocomplete="email" required aria-describedby="auth-error" />
         </div>
         <div id="auth-error" class="field-error" role="alert" style="display:none"></div>
-        <button class="btn-primary btn-full" type="submit" id="btn-send-magic" style="margin-top:.75rem">
-          Trimite link magic
-        </button>
+        <button class="btn-primary btn-full" type="submit" id="btn-send-magic" style="margin-top:.75rem">Trimite link magic</button>
       </form>
       <div id="auth-sent" style="display:none" class="auth-sent">
         <div class="auth-sent-icon" aria-hidden="true">
@@ -309,9 +257,7 @@
         </div>
         <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
         <p class="auth-sent-sub">Deschide emailul și apasă pe link pentru a te autentifica.</p>
-        <a id="dev-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none" class="dev-link" aria-label="Link de dezvoltare pentru testare">
-          Deschide linkul de testare
-        </a>
+        <a id="dev-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none" class="dev-link" aria-label="Link de dezvoltare pentru testare">Deschide linkul de testare</a>
       </div>
     </div>
   </div>
@@ -321,7 +267,6 @@
 <div id="modal-success" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-success-title" style="display:none">
   <div class="modal-box modal-box--success">
     <button class="modal-close" id="btn-close-success" aria-label="Închide">&times;</button>
-
     <div class="success-check" aria-hidden="true">
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <circle cx="24" cy="24" r="23" fill="#DCFCE7" stroke="#16A34A" stroke-width="2"/>
@@ -329,8 +274,6 @@
       </svg>
     </div>
     <h2 id="modal-success-title" class="success-title">Site-ul tău e live!</h2>
-
-    <!-- URL block -->
     <div class="success-url-block">
       <a id="success-url-link" href="#" target="_blank" rel="noopener noreferrer" class="success-url-link" aria-label="Deschide site-ul publicat">
         <span id="success-url-text"></span>
@@ -346,14 +289,10 @@
         Copiază
       </button>
     </div>
-
-    <!-- Trial countdown -->
     <div class="trial-countdown" id="trial-countdown" style="display:none" aria-live="polite">
       <span class="trial-countdown-icon" aria-hidden="true">&#9203;</span>
       <span id="trial-countdown-text">Proba expiră în...</span>
     </div>
-
-    <!-- Actions -->
     <div class="success-actions">
       <button id="btn-keep-site" class="btn-primary btn-full" type="button" style="display:none">
         Păstrează site-ul definitiv — <span id="success-price">—€</span>
@@ -393,13 +332,7 @@
       </div>
     </div>
     <div class="modal-preview-body" id="modal-preview-body">
-      <iframe
-        id="preview-modal-iframe"
-        class="preview-iframe preview-iframe--modal"
-        title="Previzualizare șablon complet"
-        sandbox="allow-scripts"
-        aria-label="Previzualizare completă a șablonului"
-      ></iframe>
+      <iframe id="preview-modal-iframe" class="preview-iframe preview-iframe--modal" title="Previzualizare șablon complet" sandbox="allow-scripts" aria-label="Previzualizare completă a șablonului"></iframe>
     </div>
   </div>
 </div>
@@ -409,14 +342,24 @@
   <div class="modal-box">
     <button class="modal-close" id="btn-close-versions" aria-label="Închide">&times;</button>
     <h2 id="modal-versions-title" class="modal-title">Istoricul versiunilor</h2>
-    <div id="versions-list" class="versions-list" aria-live="polite">
-      <!-- populated by js -->
-    </div>
+    <div id="versions-list" class="versions-list" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: IMAGE GALLERY ===== -->
+<div id="modal-gallery" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-gallery-title" style="display:none">
+  <div class="modal-box modal-box--gallery">
+    <button class="modal-close" id="btn-close-gallery" aria-label="Închide">&times;</button>
+    <h2 id="modal-gallery-title" class="modal-title">Galerie foto</h2>
+    <div id="gallery-modal-body" class="gallery-modal-body"></div>
   </div>
 </div>
 
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
+
+<!-- Hidden file input for image replacement -->
+<input type="file" id="img-file-input" accept="image/*" style="display:none" aria-hidden="true" />
 
 <script src="generated/templates-data.js"></script>
 <script src="generated/engine.js"></script>

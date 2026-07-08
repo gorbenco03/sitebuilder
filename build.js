@@ -133,13 +133,20 @@ function sanitizeJsonLd(value) {
  *
  * `warn` is false during loop/if item-scope passes (a token may legitimately
  * belong to the outer/global scope and gets resolved by the final global pass).
+ *
+ * `editOpts` (optional): { editMode: bool, pathPrefix: string, inTextCtx: bool }
+ *   When editMode is true AND inTextCtx is true the resolved value is wrapped in
+ *   <span data-hb-edit="PATH" data-hb-kind="text">VALUE</span> for inline editing.
+ *   pathPrefix is prepended to the token to build the full config path.
+ *   When inTextCtx is false (we're inside a tag/attribute) no wrapping happens.
+ *   Raw sinks ({{& …}}) are never wrapped regardless of context.
  */
 function sanitizeAddress(value) {
     // Escape everything, then un-escape only <br> and <br/> (the sole allowed tag).
     return escapeHtml(String(value)).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
 }
 
-function replaceTokens(str, resolver, warn = true) {
+function replaceTokens(str, resolver, warn = true, editOpts) {
     return str.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, token) => {
         let raw = false;
         if (token[0] === '&') { raw = true; token = token.slice(1).trim(); }
@@ -201,8 +208,88 @@ function replaceTokens(str, resolver, warn = true) {
         const safeValue = URL_TOKENS.has(token)   ? sanitizeUrl(value)
                         : PHONE_TOKENS.has(token) ? sanitizePhone(value)
                         : value;
-        return escapeHtml(safeValue);
+        const escaped = escapeHtml(safeValue);
+
+        // editMode: wrap text-context tokens in an editable span.
+        if (editOpts && editOpts.editMode && editOpts.inTextCtx) {
+            const prefix = editOpts.pathPrefix;
+            // Build full config path: for {{.}} on a string array the path IS the prefix.
+            const fullPath = token === '.'
+                ? (prefix || '.')
+                : (prefix ? prefix + '.' + token : token);
+            return '<span data-hb-edit="' + fullPath + '" data-hb-kind="text">' + escaped + '</span>';
+        }
+
+        return escaped;
     });
+}
+
+/**
+ * Segment `str` into alternating text/tag regions and call replaceTokens on each.
+ *
+ * Tag regions (content between < and >) have inTextCtx=false → tokens there are
+ * resolved but NOT wrapped in edit spans (they live in attributes/tag bodies).
+ * Text regions (content between > and <) have inTextCtx=true → tokens are wrapped.
+ *
+ * Special handling: <!-- comment --> regions are treated as tag context (not editable).
+ * Script/style element content is also treated as non-text-context.
+ *
+ * editOpts must include { editMode: true, pathPrefix: string }.
+ */
+function replaceTokensWithEditMode(str, resolver, warn, editOpts) {
+    // Fast-path: no edit mode → plain replaceTokens.
+    if (!editOpts || !editOpts.editMode) return replaceTokens(str, resolver, warn);
+
+    let out = '';
+    let i   = 0;
+    const len = str.length;
+
+    // Track whether we're currently inside a <…> tag (or comment/script/style).
+    // Start in text context (before any tag).
+    let inTag = false;
+
+    // We walk character by character, accumulating runs and flushing them when
+    // context switches. This avoids a full HTML parse while being accurate enough
+    // for our template syntax (templates are well-formed).
+    let runStart = 0;
+
+    function flush(end, isTagCtx) {
+        if (end <= runStart) return;
+        const chunk = str.slice(runStart, end);
+        const opts  = Object.assign({}, editOpts, { inTextCtx: !isTagCtx });
+        out += replaceTokens(chunk, resolver, warn, opts);
+        runStart = end;
+    }
+
+    while (i < len) {
+        if (!inTag && str[i] === '<') {
+            // Flush the text run just ended.
+            flush(i, false);
+            inTag = true;
+            // Check for comment: <!-- ... -->
+            if (str.startsWith('<!--', i)) {
+                const closeIdx = str.indexOf('-->', i + 4);
+                const end = closeIdx === -1 ? len : closeIdx + 3;
+                // Comments are tag-context (not editable).
+                flush(i, true); // nothing to flush yet but sets runStart
+                runStart = i;
+                flush(end, true);
+                i = end;
+                inTag = false;
+                continue;
+            }
+            runStart = i;
+        } else if (inTag && str[i] === '>') {
+            // Flush the tag run including the '>'.
+            flush(i + 1, true);
+            inTag = false;
+            runStart = i + 1;
+        }
+        i++;
+    }
+    // Flush any trailing content.
+    flush(len, inTag);
+    return out;
 }
 
 /**
@@ -249,8 +336,13 @@ function findMatchingEnd(str, startIndex) {
  * `@each photos` inside `@each categories` resolves `photos` on the category,
  * and `{{src}}` on each photo. Top-level/global tokens are left intact here and
  * filled by the final global pass in build().
+ *
+ * `editOpts` (optional): { editMode: bool, pathPrefix: string }
+ *   When editMode is true, tokens inside @each blocks are given indexed paths
+ *   such as "services.0.label" so the edit overlay knows which config value to
+ *   update.  pathPrefix tracks the current dot-path prefix from outer loops.
  */
-function expandEach(str, scope) {
+function expandEach(str, scope, editOpts) {
     // Matches either <!-- @each path --> or <!-- @if [!]path -->
     const dirRe = /<!--\s*@(each|if)\s+(!?[\w.]+)\s*-->/g;
     let out = '';
@@ -285,19 +377,27 @@ function expandEach(str, scope) {
             // type:text with value 'false' (e.g. showWordmark) work correctly with @if.
             const isFalsyString = typeof ifVal === 'string' && /^(false|0|no)$/i.test(ifVal.trim());
             const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : (!isFalsyString && Boolean(ifVal));
-            if (negate ? !truthy : truthy) out += expandEach(block, scope);
+            if (negate ? !truthy : truthy) out += expandEach(block, scope, editOpts);
         } else {
             const value = resolve(scope, dataPath);
             if (!Array.isArray(value)) {
                 console.warn(`  ⚠️  @each "${dataPath}" is not an array — skipping`);
             } else {
-                out += value.map(item => {
-                    const expanded = expandEach(block, item);   // nested loops, item scope
-                    return replaceTokens(expanded, token => {
+                out += value.map((item, idx) => {
+                    // Build the full dot-path prefix for this loop item, e.g. "services.0"
+                    // or "categories.1.photos.2" for nested loops.
+                    const outerPrefix = editOpts && editOpts.pathPrefix ? editOpts.pathPrefix + '.' : '';
+                    const itemPrefix  = outerPrefix + dataPath + '.' + idx;
+                    const itemEditOpts = editOpts
+                        ? Object.assign({}, editOpts, { pathPrefix: itemPrefix })
+                        : undefined;
+
+                    const expanded = expandEach(block, item, itemEditOpts);   // nested loops, item scope
+                    return replaceTokensWithEditMode(expanded, token => {
                         if (token === '.') return item;
                         if (typeof item === 'object' && item !== null) return resolve(item, token);
                         return undefined;
-                    }, false);   // don't warn: outer/global tokens resolve in the final pass
+                    }, false, itemEditOpts);   // don't warn: outer/global tokens resolve in the final pass
                 }).join('');
             }
         }
@@ -309,15 +409,22 @@ function expandEach(str, scope) {
 }
 
 /**
- * renderHtml(templateHtml, config) — pure render pipeline, no fs.
+ * renderHtml(templateHtml, config, opts={}) — pure render pipeline, no fs.
  *
  * Applies derived fields (contact.addressNoHref), expands @each/@if blocks,
  * and replaces all {{token}} placeholders against `config`.
  *
  * This is the heart of the engine and is exported so it can run in the browser
  * (via scripts/build-builder.js) without any Node.js file-system calls.
+ *
+ * opts.editMode (boolean, default false):
+ *   When true, text-context tokens are wrapped in <span data-hb-edit="PATH"
+ *   data-hb-kind="text">VALUE</span> for inline editing.  Tokens inside tag/
+ *   attribute contexts (href, src, style, content, alt, class, etc.) are left
+ *   untouched.  Tokens inside @each loops carry indexed paths (services.0.label).
+ *   When false/absent the output is BYTE-IDENTICAL to the non-opts call.
  */
-function renderHtml(templateHtml, config) {
+function renderHtml(templateHtml, config, opts) {
     // Work on a shallow clone so we don't mutate the caller's config.
     const cfg = Object.assign({}, config);
     if (cfg.contact) {
@@ -326,9 +433,17 @@ function renderHtml(templateHtml, config) {
             (cfg.contact.address && !cfg.contact.addressHref) ? 'true' : '';
     }
 
+    const editMode  = !!(opts && opts.editMode);
+    const editOpts  = editMode ? { editMode: true, pathPrefix: '' } : undefined;
+
     let html = templateHtml;
-    html = expandEach(html, cfg);                              // 1) loops first
-    html = replaceTokens(html, token => resolve(cfg, token)); // 2) global tokens
+    html = expandEach(html, cfg, editOpts);                                        // 1) loops first
+    html = replaceTokensWithEditMode(                                              // 2) global tokens
+        html,
+        token => resolve(cfg, token),
+        true,
+        editOpts
+    );
     return html;
 }
 

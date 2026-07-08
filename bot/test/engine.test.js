@@ -7,6 +7,10 @@
  * (b) generated/engine.js incarcat intr-un vm cu window={} produce un HTML
  *     cu <style> inline, fara {{ si fara href="styles.css".
  * (c) node build.js in ROOT produce index.html byte-identic (invariant).
+ * (d) renderHtml editMode pe patiserie preset0 → contine data-hb-edit="business.name"
+ *     in context text; {{business.title}} din atribut content= NU e invelit.
+ * (e) Token dintr-o bucla @each are index corect: data-hb-edit="services.0.label".
+ * (f) Fara editMode, ZERO 'data-hb-edit' in output.
  *
  * Run:  node bot/test/engine.test.js
  * Iese non-zero la primul esec.
@@ -145,6 +149,150 @@ check('(c) node build.js in ROOT produce index.html byte-identic', () => {
 
     assert.strictEqual(after, before,
         'build.js a produs un index.html diferit — invariantul byte-identic e incalcat');
+});
+
+// ─── (d) editMode: data-hb-edit in context text, NU in atribute ──────────────
+
+check('(d) editMode: business.name apare ca data-hb-edit in context text (h1/p)', () => {
+    const { renderHtml } = require('../../build.js');
+    const config = loadPreset('patiserie', 0);
+    const templateHtml = loadTemplateHtml('patiserie');
+
+    const html = renderHtml(templateHtml, config, { editMode: true });
+
+    // Trebuie sa contina un span cu data-hb-edit="business.name"
+    assert.ok(
+        html.includes('data-hb-edit="business.name"'),
+        'editMode: data-hb-edit="business.name" nu e prezent in output'
+    );
+
+    // Span-ul trebuie sa aiba data-hb-kind="text"
+    assert.ok(
+        html.includes('data-hb-kind="text"'),
+        'editMode: data-hb-kind="text" nu e prezent in output'
+    );
+});
+
+check('(d) editMode: tokenul din atribut content= NU e invelit in span', () => {
+    const { renderHtml } = require('../../build.js');
+    const config = loadPreset('patiserie', 0);
+    const templateHtml = loadTemplateHtml('patiserie');
+
+    const html = renderHtml(templateHtml, config, { editMode: true });
+
+    // meta og:title — valoarea atributului content= nu trebuie sa fie un span
+    // Cautam: content="<span ...>" — asta ar fi o greseala
+    const attrWrapped = /content="[^"]*data-hb-edit/.test(html);
+    assert.ok(!attrWrapped, 'editMode: un token din atribut content= a fost gresit invelit in span');
+
+    // href attribute — nu trebuie sa contina data-hb-edit
+    const hrefWrapped = /href="[^"]*data-hb-edit/.test(html);
+    assert.ok(!hrefWrapped, 'editMode: un token din atribut href= a fost gresit invelit in span');
+
+    // alt attribute — nu trebuie sa contina data-hb-edit
+    const altWrapped = /alt="[^"]*data-hb-edit/.test(html);
+    assert.ok(!altWrapped, 'editMode: un token din atribut alt= a fost gresit invelit in span');
+});
+
+// ─── (e) editMode in bucla @each: path indexat corect ────────────────────────
+
+check('(e) editMode: token din @each services are index corect (services.0.label)', () => {
+    const { renderHtml } = require('../../build.js');
+    const config = loadPreset('patiserie', 0);
+    const templateHtml = loadTemplateHtml('patiserie');
+
+    // Asigura-te ca exista cel putin un element in services
+    assert.ok(
+        Array.isArray(config.services) && config.services.length > 0,
+        'Preset 0 trebuie sa aiba cel putin un element in services'
+    );
+
+    const html = renderHtml(templateHtml, config, { editMode: true });
+
+    assert.ok(
+        html.includes('data-hb-edit="services.0.label"'),
+        'editMode: data-hb-edit="services.0.label" nu e prezent in output (token de bucla)'
+    );
+
+    // Daca exista un al doilea element in services, verifica si services.1.label
+    if (config.services.length > 1) {
+        assert.ok(
+            html.includes('data-hb-edit="services.1.label"'),
+            'editMode: data-hb-edit="services.1.label" nu e prezent (al doilea element bucla)'
+        );
+    }
+});
+
+// ─── (f) fara editMode: ZERO data-hb-edit in output ──────────────────────────
+
+check('(f) fara editMode: output-ul NU contine niciun data-hb-edit', () => {
+    const { renderHtml } = require('../../build.js');
+    const config = loadPreset('patiserie', 0);
+    const templateHtml = loadTemplateHtml('patiserie');
+
+    // Fara opts
+    const htmlNoOpts = renderHtml(templateHtml, config);
+    assert.ok(
+        !htmlNoOpts.includes('data-hb-edit'),
+        'renderHtml fara opts: output contine data-hb-edit (invariant incalcat)'
+    );
+
+    // Cu opts={} (editMode absent/falsy)
+    const htmlEmptyOpts = renderHtml(templateHtml, config, {});
+    assert.ok(
+        !htmlEmptyOpts.includes('data-hb-edit'),
+        'renderHtml cu opts={}: output contine data-hb-edit'
+    );
+
+    // Cu opts={editMode: false}
+    const htmlFalseMode = renderHtml(templateHtml, config, { editMode: false });
+    assert.ok(
+        !htmlFalseMode.includes('data-hb-edit'),
+        'renderHtml cu editMode:false: output contine data-hb-edit'
+    );
+});
+
+// ─── (g) renderPreview in engine.js accepta opts si le paseaza mai departe ───
+
+check('(g) engine.js renderPreview(files, config, {editMode:true}) contine data-hb-edit', () => {
+    const engineSrc = fs.readFileSync(
+        path.join(ROOT, 'builder', 'generated', 'engine.js'), 'utf8'
+    );
+    const sandbox = { window: {}, console };
+    vm.runInNewContext(engineSrc, sandbox);
+
+    const engine = sandbox.window.HidookEngine;
+    const templateId = 'patiserie';
+    const tplDir = path.join(ROOT, 'templates', templateId);
+
+    const files = {
+        templateHtml: fs.readFileSync(path.join(tplDir, 'template.html'), 'utf8'),
+        stylesCss:    fs.readFileSync(path.join(tplDir, 'styles.css'),    'utf8'),
+        scriptJs:     fs.readFileSync(path.join(tplDir, 'script.js'),     'utf8'),
+        collageJs:    fs.readFileSync(path.join(tplDir, 'collage.js'),    'utf8'),
+    };
+
+    const config = loadPreset('patiserie', 0);
+    const html = engine.renderPreview(files, config, { editMode: true });
+
+    assert.ok(
+        html.includes('data-hb-edit="business.name"'),
+        'engine.js renderPreview editMode: data-hb-edit="business.name" nu e prezent'
+    );
+    assert.ok(
+        html.includes('data-hb-edit="services.0.label"'),
+        'engine.js renderPreview editMode: data-hb-edit="services.0.label" nu e prezent'
+    );
+    // Trebuie sa injecteze si style-ul de affordante pentru edit
+    assert.ok(
+        html.includes('data-hidook-edit-affordances'),
+        'engine.js renderPreview editMode: style data-hidook-edit-affordances nu e injectat'
+    );
+    // Trebuie sa injecteze overlay script
+    assert.ok(
+        html.includes('data-hidook-edit-overlay'),
+        'engine.js renderPreview editMode: script data-hidook-edit-overlay nu e injectat'
+    );
 });
 
 // ─── rezultat final ───────────────────────────────────────────────────────────
