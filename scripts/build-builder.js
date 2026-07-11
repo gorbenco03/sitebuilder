@@ -106,6 +106,36 @@ function renderPreview(files, config, opts) {
         ' transition-duration: 0.01ms !important; }</style></head>'
     );
 
+    // PREVIEW MODE, belt-and-suspenders: paused animation timelines (throttled
+    // sandboxed iframes) leave entry-animated elements stuck at opacity 0 even
+    // with the 0.01ms override above — the preview must not DEPEND on animations
+    // at all. Every template already declares its "must be visible without JS"
+    // classes in a <noscript><style> block; re-activate that CSS unconditionally
+    // inside the preview so content is always visible. Published sites keep
+    // their animations (noscript stays inert there).
+    {
+        const revealCss = Array.from(
+            html.matchAll(/<noscript>\\s*<style[^>]*>([\\s\\S]*?)<\\/style>\\s*<\\/noscript>/gi),
+            (m) => m[1]
+        ).join('\\n');
+        if (revealCss) {
+            html = html.replace(
+                '</head>',
+                '<style data-hidook-reveal>' + revealCss + '</style></head>'
+            );
+        }
+    }
+
+    // PREVIEW MODE, universal forcer: the per-template noscript lists can miss
+    // classes (e.g. hero elements whose reveal is a "pure CSS" keyframe that a
+    // throttled iframe never plays). Deterministic sweep: any element that an
+    // entry animation left at computed opacity 0 gets forced visible. Runs only
+    // inside the srcdoc preview, never on published sites.
+    html = html.replace(
+        '</body>',
+        '<scr' + 'ipt data-hidook-forcer>(function(){function force(){var els=document.querySelectorAll("*");for(var i=0;i<els.length;i++){var cs=getComputedStyle(els[i]);if(cs.opacity==="0"&&cs.animationName!=="none"){els[i].style.setProperty("opacity","1","important");els[i].style.setProperty("transform","none","important");}}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){setTimeout(force,60);});}else{setTimeout(force,60);}window.addEventListener("load",function(){setTimeout(force,120);});})();</scr' + 'ipt></body>'
+    );
+
     // EDIT MODE: inject the edit overlay (affordances + postMessage bridge) and
     // minimal hover/outline styles for [data-hb-edit] elements.
     if (opts && opts.editMode) {

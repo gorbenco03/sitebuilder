@@ -261,6 +261,10 @@ function replaceTokensWithEditMode(str, resolver, warn, editOpts) {
         runStart = end;
     }
 
+    // Raw-text elements: their CONTENT is not visible editable text — a wrapper
+    // <span> inside <style> would corrupt the whole stylesheet (blank page).
+    const RAW_TEXT_OPEN = /^<(script|style|title|textarea|noscript)\b/i;
+
     while (i < len) {
         if (!inTag && str[i] === '<') {
             // Flush the text run just ended.
@@ -272,6 +276,26 @@ function replaceTokensWithEditMode(str, resolver, warn, editOpts) {
                 const end = closeIdx === -1 ? len : closeIdx + 3;
                 // Comments are tag-context (not editable).
                 flush(i, true); // nothing to flush yet but sets runStart
+                runStart = i;
+                flush(end, true);
+                i = end;
+                inTag = false;
+                continue;
+            }
+            // Raw-text element: consume the WHOLE element (open tag + content +
+            // close tag) as tag context so its content is never span-wrapped.
+            const rawMatch = RAW_TEXT_OPEN.exec(str.slice(i, i + 12));
+            if (rawMatch) {
+                const tagName  = rawMatch[1].toLowerCase();
+                const lower    = str.toLowerCase();
+                const closeIdx = lower.indexOf('</' + tagName, i);
+                let end;
+                if (closeIdx === -1) {
+                    end = len;
+                } else {
+                    const gt = str.indexOf('>', closeIdx);
+                    end = gt === -1 ? len : gt + 1;
+                }
                 runStart = i;
                 flush(end, true);
                 i = end;

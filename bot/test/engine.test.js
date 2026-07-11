@@ -295,6 +295,24 @@ check('(g) engine.js renderPreview(files, config, {editMode:true}) contine data-
     );
 });
 
+check('(h) editMode: continutul <style>/<script>/<title> NU e invelit (regresie: span in CSS = pagina alba)', () => {
+    // Bug real: {{theme.primary}} din <style> era invelit in <span data-hb-edit>,
+    // corupand intregul stylesheet al temei → editorul se randa complet alb.
+    const { renderHtml } = require('../../build.js');
+    for (const tid of ['patiserie', 'constructii', 'servicii', 'beauty', 'evenimente']) {
+        const tpl = fs.readFileSync(path.join(ROOT, 'templates', tid, 'template.html'), 'utf8');
+        const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', tid, 'presets.json'), 'utf8')).presets[0].config;
+        const html = renderHtml(tpl, cfg, { editMode: true });
+        for (const re of [/<style[^>]*>[\s\S]*?<\/style>/gi, /<script[^>]*>[\s\S]*?<\/script>/gi, /<title>[\s\S]*?<\/title>/gi]) {
+            for (const block of html.match(re) || []) {
+                assert.ok(!block.includes('data-hb-edit'),
+                    tid + ': data-hb-edit gasit intr-un bloc raw-text: ' + block.slice(0, 80));
+            }
+        }
+        assert.ok((html.match(/data-hb-edit=/g) || []).length > 5, tid + ': prea putine campuri editabile');
+    }
+});
+
 // ─── rezultat final ───────────────────────────────────────────────────────────
 
 if (failed) {
