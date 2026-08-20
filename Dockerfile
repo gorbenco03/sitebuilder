@@ -16,6 +16,9 @@ RUN npm install -g wrangler@4
 # Copy the rest of the project (template + assets + build pipeline)
 COPY . .
 
+# Browser builder assets are gitignored; bake them into the image so /app/ boots.
+RUN node scripts/build-builder.js
+
 # Persisted runtime state (sessions, site-map) → mount a volume here on Railway
 ENV DATA_DIR=/data
 RUN mkdir -p /data
