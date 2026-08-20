@@ -1,6 +1,6 @@
 'use strict';
 /**
- * bot/server.js — zero-dependency HTTP server (trial model).
+ * bot/server.js — zero-dependency HTTP server (pay-before-publish).
  *
  * Routes:
  *   GET  /                   → 302 /app/
@@ -9,21 +9,22 @@
  *
  *   GET  /app/*              → static files from <repo>/builder/
  *
- *   GET  /api/config         → {priceEur, trialDays, brandDomain|null, contactUrl|null} (public)
+ *   GET  /api/config         → {amount, amountCents, currency, renewal, renewalCents, brandDomain|null, contactUrl|null} (public)
  *   GET  /api/slug-check?slug= → {available:bool, slug} (public)
  *   GET  /api/templates      → list templates with schema + presets
  *   POST /api/auth/email     → send magic link
  *   GET  /auth/verify        → consume login token, set session cookie
  *   POST /api/auth/telegram  → verify Telegram initData, set session cookie
  *   GET  /api/me             → current user or 401
- *   GET  /api/sites          → user's sites (includes trialEndsAt/status/paid)
+ *   GET  /api/sites          → user's sites (includes status/paid)
  *   GET  /api/sites/:id      → single site + latest config
  *   GET  /api/sites/:id/versions    → version list
- *   POST /api/sites/:id/rollback    → republish a past version
+ *   POST /api/sites/:id/rollback    → republish a past version (paid only)
  *   POST /api/sites/:id/checkout    → {paymentUrl} for dashboard / reactivation
- *   POST /api/publish        → trial publish (immediate, free); max 1 unpaid per user
+ *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
+ * Pricing amounts come only from ./pricing.js.
  */
 
 const http   = require('http');
@@ -32,6 +33,7 @@ const path   = require('path');
 const crypto = require('crypto');
 
 const payments = require('./payments.js');
+const pricing  = require('./pricing.js');
 const { log }  = require('./logger.js');
 
 // These are loaded lazily so we never crash at require-time in tests without stubs.
@@ -47,12 +49,6 @@ const MAX_BODY_BYTES   = 1024 * 1024;         // 1 MB default
 const PUBLISH_BODY_MAX = 16 * 1024 * 1024;    // 16 MB for /api/publish
 const BUILDER_DIR      = path.join(__dirname, '..', 'builder');
 const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
-
-const TRIAL_DAYS = Number(process.env.TRIAL_DAYS) || 3;
-
-const BUILD_FEE_CENTS = Math.round(
-    (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
-);
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
@@ -247,12 +243,18 @@ function serveStatic(req, res, urlPath) {
 // Route handlers
 // ---------------------------------------------------------------------------
 
-async function handleGetConfig(req, res) {
+async function handleGetConfig(req, res, query) {
+    const p = pricing.getPricingFromRequest(req, { query });
     sendJson(res, 200, {
-        priceEur:    BUILD_FEE_CENTS / 100,
-        trialDays:   TRIAL_DAYS,
-        brandDomain: process.env.BRAND_DOMAIN || null,
-        contactUrl:  process.env.CONTACT_URL  || null,
+        amount:       p.amount,
+        amountCents:  p.amountCents,
+        currency:     p.currency,
+        renewal:      p.renewal,
+        renewalCents: p.renewalCents,
+        // Compat alias for older UI that read priceEur as the displayed major units.
+        priceEur:     p.amount,
+        brandDomain:  process.env.BRAND_DOMAIN || null,
+        contactUrl:   process.env.CONTACT_URL  || null,
     });
 }
 
@@ -429,13 +431,14 @@ async function handleSiteCheckout(req, res, siteId) {
         return sendJson(res, 503, { error: 'Plata nu este configurată.' });
     }
 
-    const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+    const p         = pricing.getPricingFromRequest(req);
+    const currency  = p.currency;
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
 
     const order = await reg.createOrder({
         siteId: site.id,
         userId,
-        amountCents: BUILD_FEE_CENTS,
+        amountCents: p.amountCents,
         currency,
         stripeSessionId: 'pending',
     });
@@ -443,7 +446,7 @@ async function handleSiteCheckout(req, res, siteId) {
     let checkout;
     try {
         checkout = await payments.createCheckout({
-            amountCents: BUILD_FEE_CENTS,
+            amountCents: p.amountCents,
             currency,
             productName: 'Activare site Hidook',
             successUrl:  publicUrl + '/app/#platit',
@@ -460,7 +463,7 @@ async function handleSiteCheckout(req, res, siteId) {
     await reg.createOrder({
         siteId: site.id,
         userId,
-        amountCents: BUILD_FEE_CENTS,
+        amountCents: p.amountCents,
         currency,
         stripeSessionId: checkout.id,
     });
@@ -469,12 +472,13 @@ async function handleSiteCheckout(req, res, siteId) {
 }
 
 /**
- * POST /api/publish — trial publish (immediate, free).
+ * POST /api/publish — pay before first public production publish.
  *
  * - Max 1 unpaid site per user (409 if another unpaid exists and it's a NEW site).
- * - Publishes immediately on the platform subdomain (trial).
- * - If paid (re-edit): publishes directly for free.
- * - Returns {site: {id,url,slug,paid,status,trialEndsAt}, paymentUrl|null}
+ * - Unpaid: persist draft (non-public), never deploy / never set status live.
+ *   Returns checkout URL when payments are configured.
+ * - Paid (re-edit): deploys directly.
+ * - Returns {site: {id,url,slug,paid,status,...}, paymentUrl|null}
  */
 async function handlePublish(req, res) {
     const userId = requireAuth(req, res);
@@ -511,6 +515,7 @@ async function handlePublish(req, res) {
     }
 
     const reg = getRegistry();
+    const price = pricing.getPricingFromRequest(req);
 
     // Get or create site
     let site;
@@ -524,7 +529,7 @@ async function handlePublish(req, res) {
         const unpaid   = existing.filter(s => !s.paid && s.status !== 'deleted');
         if (unpaid.length > 0) {
             return sendJson(res, 409, {
-                error: 'Ai deja un site în perioada de probă. Plătește-l sau șterge-l înainte de a crea altul.',
+                error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte de a crea altul.',
                 siteId: unpaid[0].id,
             });
         }
@@ -544,26 +549,25 @@ async function handlePublish(req, res) {
             slug = slugify(bizName);
         }
 
-        const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 86400 * 1000).toISOString();
-
         site = await reg.createSite({
             userId,
             templateId,
             templateVersion: tpl.version,
             slug,
-            platform:    'web',
-            trialEndsAt,
+            platform: 'web',
+            // No free live trial window
+            trialEndsAt: null,
         });
     }
 
     const webpublish = require('./webpublish.js');
 
-    // If already paid — publish directly (free re-edit)
+    // If already paid — publish directly (re-edit)
     if (site.paid) {
         try {
             const result = await webpublish.publishSite({ site, config, images: imgList });
             const updated = await reg.getSite(site.id);
-            return sendJson(res, 200, { site: updated, paymentUrl: null });
+            return sendJson(res, 200, { site: { ...updated, url: result.url }, paymentUrl: null });
         } catch (e) {
             if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
@@ -572,57 +576,66 @@ async function handlePublish(req, res) {
         }
     }
 
-    // Trial publish — IMMEDIATE, FREE
+    // Unpaid path: persist draft only — never deploy, never set live
     try {
-        const result = await webpublish.publishSite({ site, config, images: imgList });
-        const updated = await reg.getSite(site.id);
+        if (config && typeof config === 'object') {
+            await reg.saveVersion(site.id, config);
+        }
+        await reg.updateSite(site.id, { status: 'draft', paid: false });
 
-        // Generate paymentUrl if payments are configured
         let paymentUrl = null;
         if (payments.isConfigured()) {
             try {
-                const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
                 const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
                 const order = await reg.createOrder({
                     siteId: site.id,
                     userId,
-                    amountCents: BUILD_FEE_CENTS,
-                    currency,
+                    amountCents: price.amountCents,
+                    currency: price.currency,
                     stripeSessionId: 'pending',
                 });
                 const checkout = await payments.createCheckout({
-                    amountCents: BUILD_FEE_CENTS,
-                    currency,
+                    amountCents: price.amountCents,
+                    currency: price.currency,
                     productName: 'Activare site Hidook',
                     successUrl:  publicUrl + '/app/#platit',
                     cancelUrl:   publicUrl + '/app/#anulat',
                     metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
                     clientReferenceId: 'web-' + site.id,
                 });
-                // Update order with real session id
                 await reg.createOrder({
                     siteId: site.id,
                     userId,
-                    amountCents: BUILD_FEE_CENTS,
-                    currency,
+                    amountCents: price.amountCents,
+                    currency: price.currency,
                     stripeSessionId: checkout.id,
                 });
+                // Pending draft is keyed by the order id that markOrderPaid will return
+                // (the row with the real stripe session id).
+                const paidOrder = await reg.getOrderBySession(checkout.id);
+                const draftOrderId = (paidOrder && paidOrder.id) || order.id;
+                webpublish.savePendingDraft(draftOrderId, { config, images: imgList, siteId: site.id });
                 paymentUrl = checkout.url;
             } catch (e) {
                 log('server.publish.checkout_error', { siteId: site.id, err: e.message }, 'warn');
-                // non-fatal — site is already live
             }
         }
 
+        const updated = await reg.getSite(site.id);
         return sendJson(res, 200, {
-            site: { ...updated, url: result.url },
+            site: {
+                ...updated,
+                status: 'draft',
+                paid: false,
+                // No public live URL until payment + deploy
+                url: updated.url && updated.status === 'live' ? updated.url : null,
+            },
             paymentUrl,
         });
     } catch (e) {
-        if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
-        log('server.publish.trial.error', { siteId: site.id, err: e.message }, 'error');
+        log('server.publish.draft.error', { siteId: site.id, err: e.message }, 'error');
         const updated = await reg.getSite(site.id);
-        return sendJson(res, 500, { error: 'Publicarea a eșuat: ' + e.message, site: updated });
+        return sendJson(res, 500, { error: 'Salvarea ciornei a eșuat: ' + e.message, site: updated });
     }
 }
 
@@ -679,7 +692,7 @@ function createHandler({ onStripeEvent } = {}) {
 
             // ── Public API: /api/config ─────────────────────────────────────
             if (req.method === 'GET' && url === '/api/config') {
-                return await handleGetConfig(req, res);
+                return await handleGetConfig(req, res, query);
             }
 
             // ── Public API: /api/slug-check ─────────────────────────────────

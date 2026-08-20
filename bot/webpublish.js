@@ -1,18 +1,20 @@
 'use strict';
 /**
- * bot/webpublish.js — Web-platform publish pipeline (trial model).
+ * bot/webpublish.js — Web-platform publish pipeline (pay-before-publish).
  *
- * Trial model:
- *   - publishSite: deploy IMMEDIATELY (free, trial). Accepts {siteDirAlreadyBuilt}
+ * Model:
+ *   - publishSite: deploy after payment (or paid republish). Accepts {siteDirAlreadyBuilt}
  *     to skip the build step when files are already on disk (Telegram flow).
  *   - handleStripePaid: generalized across platforms; if site was expired →
- *     republish last version; notify owner on owner's channel + concierge domain msg.
- *   - deployPlaceholder: deploy a self-contained expired-trial page with a
- *     payment/reactivation link.
+ *     republish last version; if pending draft → first public publish after pay;
+ *     notify owner on owner's channel + concierge domain msg.
+ *   - deployPlaceholder: deploy a self-contained page for expired legacy trial sites
+ *     with a payment/reactivation link.
  *
  * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
  * {url:'https://<slug>.test.local', provider:'fake'} — for offline tests.
  *
+ * Commercial amounts come only from ./pricing.js.
  * CommonJS, zero new npm dependencies, Node 18+.
  */
 
@@ -150,7 +152,7 @@ async function _deploy(siteDir, projectName, userId) {
 // ---------------------------------------------------------------------------
 
 /**
- * Build (if needed) and deploy a site immediately (trial model).
+ * Build (if needed) and deploy a site (paid path / reactivation).
  *
  * @param {object} opts
  * @param {object} opts.site              — registry site record
@@ -275,14 +277,12 @@ async function deployPlaceholder(site) {
     try {
         const payments = require('./payments.js');
         if (payments.isConfigured()) {
-            const BUILD_FEE_CENTS = Math.round(
-                (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
-            );
-            const currency  = (process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
+            const pricing   = require('./pricing.js');
+            const p         = pricing.getPricing();
             const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
             const checkout = await payments.createCheckout({
-                amountCents: BUILD_FEE_CENTS,
-                currency,
+                amountCents: p.amountCents,
+                currency:    p.currency,
                 productName: 'Reactivare site Hidook',
                 successUrl:  publicUrl + '/app/#platit',
                 cancelUrl:   publicUrl + '/app/#anulat',
@@ -324,8 +324,8 @@ async function deployPlaceholder(site) {
 <body>
 <div class="card">
   <h1>${_esc(bizName)}</h1>
-  <p class="sub">Perioada de probă a expirat.</p>
-  <p class="sub">Plătește o singură dată pentru a-ți reactiva site-ul și a-l păstra permanent.</p>
+  <p class="sub">Perioada de acces a expirat.</p>
+  <p class="sub">Plătește pentru a-ți reactiva site-ul și 12 luni de hosting gestionat.</p>
   ${payBtn}
   <div class="brand">Hidook · site builder</div>
 </div>
@@ -455,7 +455,12 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     const draft = loadPendingDraft(orderId);
     if (draft) {
         try {
-            const result = await publishSite({ site: paidSite, config: draft.config, images: draft.images || [] });
+            const result = await publishSite({
+                site: paidSite,
+                config: draft.config,
+                images: draft.images || [],
+                siteDirAlreadyBuilt: !!draft.siteDirAlreadyBuilt,
+            });
             deletePendingDraft(orderId);
             _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
             log('webpublish.stripe_paid.published', { siteId, orderId, url: result.url });

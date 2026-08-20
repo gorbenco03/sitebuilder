@@ -1,10 +1,13 @@
 'use strict';
 /**
- * bot/test/trials.test.js — Trial model tests.
+ * bot/test/trials.test.js — Legacy trial sweeper + paid republish tests.
+ *
+ * New commercial path does not create unpaid live trial sites. These tests still
+ * cover the sweeper for any legacy live unpaid rows and paid reactivation.
  *
  * Tests:
- *   - publish → trialEndsAt set → sweepTrials (reminder < 24h)
- *   - publish → manipulate trialEndsAt to past → sweepTrials → status expired + deployPlaceholder called + notify
+ *   - legacy live unpaid with trialEndsAt → sweepTrials (reminder < 24h)
+ *   - expired unpaid → deployPlaceholder + status expired
  *   - markOrderPaid on expired → republish → live
  *   - reminder sent only once (reminded flag)
  *
@@ -173,7 +176,7 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
         const order = registry.createOrder({
             siteId:          site.id,
             userId:          user.id,
-            amountCents:     4900,
+            amountCents:     10000,
             currency:        'eur',
             stripeSessionId: 'cs_test_' + crypto.randomUUID().slice(0, 8),
         });

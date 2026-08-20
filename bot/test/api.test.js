@@ -1,21 +1,19 @@
 'use strict';
 /**
- * bot/test/api.test.js — Integration tests for the HTTP API + static serving (TRIAL MODEL).
+ * bot/test/api.test.js — Integration tests for the HTTP API + static serving (pay-before-publish).
  *
  * Covers:
- *   - GET /api/config → {priceEur, trialDays, brandDomain|null, contactUrl|null}
+ *   - GET /api/config → {amount, currency, renewal, brandDomain|null, contactUrl|null}
  *   - GET /api/slug-check → {available, slug}
- *   - GET /api/templates returns 3 templates with schema+presets
+ *   - GET /api/templates returns templates with schema+presets
  *   - GET /api/me without cookie → 401
  *   - Full email magic-link flow (no RESEND → devLink in response)
  *   - Token reuse → redirect to login-expirat
  *   - POST /api/publish without auth → 401
- *   - POST /api/publish with auth + HIDOOK_FAKE_DEPLOY=1 → {site.url, trialEndsAt, paymentUrl null}
+ *   - POST /api/publish unpaid → draft (not live); no deploy
  *   - Second unpaid site → 409
  *   - Static: GET /app/ → 200 text/html
  *   - Static path traversal: GET /app/../bot/.env → 403/404
- *
- * Also runs all legacy test suites.
  *
  * Run: node bot/test/api.test.js
  * Exits non-zero on failure.
@@ -32,11 +30,13 @@ const http   = require('http');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'api-test-'));
 process.env.DATA_DIR        = tmpDir;
 process.env.SERVER_SECRET   = 'test-secret-' + crypto.randomBytes(8).toString('hex');
-process.env.TRIAL_DAYS      = '3';
-process.env.HIDOOK_FAKE_DEPLOY = '1';   // stub deploys offline
+process.env.HIDOOK_FAKE_DEPLOY = '1';   // stub deploys offline (paid path only)
 process.env.PUBLIC_URL      = 'http://127.0.0.1:0';
 // Disable Stripe so paymentUrl is null
 delete process.env.STRIPE_SECRET_KEY;
+delete process.env.TRIAL_DAYS;
+delete process.env.BUILD_FEE_EUR;
+delete process.env.BUILD_FEE_USD;
 // Disable deploy providers (fake deploy is used instead)
 delete process.env.VERCEL_TOKEN;
 delete process.env.NETLIFY_TOKEN;
@@ -270,13 +270,18 @@ const MINIMAL_CONFIG = {
     const client = makeClient(base);
 
     // ── 1. GET /api/config ─────────────────────────────────────────────────
-    await check('GET /api/config → {priceEur, trialDays, brandDomain:null, contactUrl:null}', async () => {
+    await check('GET /api/config → {amount:100, currency, renewal:29, brandDomain:null, contactUrl:null}', async () => {
         const res  = await fetch(`${base}/api/config`);
         assert.strictEqual(res.status, 200);
         const body = await res.json();
-        assert.ok(typeof body.priceEur === 'number',   'priceEur must be number');
-        assert.ok(typeof body.trialDays === 'number',  'trialDays must be number');
-        assert.strictEqual(body.trialDays, 3,          'default TRIAL_DAYS=3');
+        assert.strictEqual(body.amount, 100, 'amount must be 100');
+        assert.strictEqual(body.amountCents, 10000);
+        assert.ok(typeof body.currency === 'string', 'currency must be string');
+        assert.strictEqual(body.renewal, 29);
+        assert.strictEqual(body.renewalCents, 2900);
+        if (body.trialDays != null) {
+            assert.notStrictEqual(body.trialDays, 3, 'must not advertise free trialDays=3');
+        }
         assert.strictEqual(body.brandDomain, null,     'brandDomain null when env unset');
         assert.strictEqual(body.contactUrl,  null,     'contactUrl null when env unset');
     });
@@ -384,8 +389,8 @@ const MINIMAL_CONFIG = {
         assert.strictEqual(res.status, 401);
     });
 
-    // ── 8. POST /api/publish with auth + HIDOOK_FAKE_DEPLOY=1 → trial site ─
-    await check('POST /api/publish (auth + fake deploy) → {site.url, trialEndsAt, paymentUrl:null}', async () => {
+    // ── 8. POST /api/publish unpaid → draft (pay-before-publish) ───────────
+    await check('POST /api/publish unpaid → draft site, not live, paymentUrl null', async () => {
         const templates = loadTemplatesForTest();
         const tplId = templates[0] ? templates[0].id : 'patiserie';
         const res = await client('/api/publish', {
@@ -394,41 +399,37 @@ const MINIMAL_CONFIG = {
             body:    JSON.stringify({ templateId: tplId, config: MINIMAL_CONFIG, images: [] }),
         });
         const body = await res.json();
-        // Should be 200 with trial site or 500 if build.js fails (no real templates)
-        if (res.status === 200) {
-            assert.ok(body.site, 'response must have site');
-            assert.ok(body.site.url,         'site.url must be set');
-            assert.ok(body.site.trialEndsAt, 'site.trialEndsAt must be set');
-            assert.strictEqual(body.site.paid, false, 'trial site is not paid');
-            assert.strictEqual(body.paymentUrl, null,  'paymentUrl null without Stripe');
-            assert.ok(
-                body.site.status === 'live' || body.site.status === 'needs-retry',
-                `unexpected status: ${body.site.status}`
-            );
-        } else {
-            // 500 is acceptable if templates are not fully built yet (CI context)
-            assert.ok(res.status === 500 || res.status === 422, `unexpected status: ${res.status}`);
-            console.log('  [note] publish returned', res.status, '— templates may not be built yet');
+        assert.strictEqual(res.status, 200, `expected 200, got ${res.status}: ${JSON.stringify(body)}`);
+        assert.ok(body.site, 'response must have site');
+        assert.strictEqual(body.site.paid, false, 'unpaid site is not paid');
+        assert.notStrictEqual(body.site.status, 'live', 'unpaid must not go live');
+        assert.strictEqual(body.site.status, 'draft', 'unpaid status is draft');
+        assert.strictEqual(body.paymentUrl, null,  'paymentUrl null without Stripe');
+        // Fake deploy must not have assigned a public test URL
+        if (body.site.url) {
+            assert.ok(!String(body.site.url).includes('.test.local'),
+                'must not deploy unpaid (no fake deploy URL)');
         }
     });
 
     // ── 9. Second unpaid site → 409 ───────────────────────────────────────
     await check('Second POST /api/publish (unpaid exists) → 409', async () => {
-        // Register a fake unpaid site for this user to simulate the block
-        // Get the current userId from cookie
+        // First publish above already created an unpaid draft for this user.
+        // If it somehow didn't, seed one.
         const meRes  = await client('/api/me');
         const meBody = await meRes.json();
         if (meBody.user) {
-            // Create a fake unpaid site in registry
-            const stubbedReg = require(registryPath);
-            stubbedReg.createSite({
-                userId:      meBody.user.id,
-                templateId:  'patiserie',
-                templateVersion: null,
-                slug:        'my-test-site',
-                platform:    'web',
-                trialEndsAt: new Date(Date.now() + 3 * 86400 * 1000).toISOString(),
-            });
+            const sites = require(registryPath).listSites(meBody.user.id);
+            if (!sites.some(s => !s.paid && s.status !== 'deleted')) {
+                require(registryPath).createSite({
+                    userId:      meBody.user.id,
+                    templateId:  'patiserie',
+                    templateVersion: null,
+                    slug:        'my-test-site',
+                    platform:    'web',
+                    trialEndsAt: null,
+                });
+            }
         }
 
         const templates = loadTemplatesForTest();

@@ -18,7 +18,7 @@ let currentSiteId  = null;
 let currentTemplate = null;
 
 // Runtime config from /api/config
-let appConfig = { priceEur: null, trialDays: 3, brandDomain: null, contactUrl: null };
+let appConfig = { amount: null, currency: 'usd', renewal: null, priceEur: null, brandDomain: null, contactUrl: null };
 
 // Preview/iframe state
 let previewTimer       = null;
@@ -1208,14 +1208,33 @@ async function fetchAppConfig() {
     const data = await apiGet('/api/config');
     appConfig = Object.assign(appConfig, data);
   } catch (_) {}
+  const priceLabel = formatPriceLabel(appConfig);
+  const renewalLabel = formatRenewalLabel(appConfig);
   const heroPrice = $('hero-price');
-  const heroTrialDays = $('hero-trial-days');
-  if (heroPrice) heroPrice.textContent = appConfig.priceEur != null ? appConfig.priceEur + '€' : '—€';
-  if (heroTrialDays) heroTrialDays.textContent = appConfig.trialDays + ' zile';
-  const bulletDays = $('trial-bullet-days');
+  const heroRenewal = $('hero-renewal');
+  if (heroPrice) heroPrice.textContent = priceLabel;
+  if (heroRenewal) heroRenewal.textContent = renewalLabel;
   const bulletPrice = $('trial-bullet-price');
-  if (bulletDays) bulletDays.textContent = appConfig.trialDays + ' zile';
-  if (bulletPrice) bulletPrice.textContent = appConfig.priceEur != null ? appConfig.priceEur + '€' : '—€';
+  const bulletRenewal = $('trial-bullet-renewal');
+  if (bulletPrice) bulletPrice.textContent = priceLabel;
+  if (bulletRenewal) bulletRenewal.textContent = renewalLabel;
+}
+
+function formatPriceLabel(cfg) {
+  const amount = cfg.amount != null ? cfg.amount : cfg.priceEur;
+  const cur = String(cfg.currency || 'usd').toLowerCase();
+  if (amount == null) return '—';
+  if (cur === 'gbp') return '£' + amount;
+  if (cur === 'eur') return amount + '€';
+  return '$' + amount;
+}
+
+function formatRenewalLabel(cfg) {
+  const amount = cfg.renewal != null ? cfg.renewal : 29;
+  const cur = String(cfg.currency || 'usd').toLowerCase();
+  if (cur === 'gbp') return '£' + amount;
+  if (cur === 'eur') return amount + '€';
+  return '$' + amount;
 }
 
 // ---------------------------------------------------------------------------
@@ -1516,10 +1535,25 @@ function wireAuthForm(onAuthSuccess) {
 }
 
 function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
+  const titleEl = $('modal-success-title');
+  const draftNote = $('success-draft-note');
   const urlText = $('success-url-text');
   const urlLink = $('success-url-link');
-  if (urlText) urlText.textContent = url;
-  if (urlLink) urlLink.href = url;
+  const copyBtn = $('btn-copy-url');
+  const isLive = !!(url && String(url).indexOf('http') === 0);
+
+  if (isLive) {
+    if (titleEl) titleEl.textContent = 'Site-ul tău e live!';
+    if (draftNote) hide(draftNote);
+    if (urlText) urlText.textContent = url;
+    if (urlLink) { urlLink.href = url; show(urlLink); }
+    if (copyBtn) show(copyBtn);
+  } else {
+    if (titleEl) titleEl.textContent = 'Ciorna e salvată';
+    if (draftNote) show(draftNote);
+    if (urlLink) hide(urlLink);
+    if (copyBtn) hide(copyBtn);
+  }
 
   const keepBtn = $('btn-keep-site');
   const successPrice = $('success-price');
@@ -1530,35 +1564,23 @@ function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
     } else {
       hide(keepBtn);
     }
-    if (successPrice) successPrice.textContent = appConfig.priceEur != null ? appConfig.priceEur + '€' : '—€';
+    if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
   }
 
   const countdownEl = $('trial-countdown');
-  const countdownText = $('trial-countdown-text');
-  if (trialEndsAtIso && countdownEl && countdownText) {
-    show(countdownEl);
-    if (countdownTimer) clearInterval(countdownTimer);
-    const endsAt = new Date(trialEndsAtIso);
-    function tick() {
-      const remaining = endsAt - Date.now();
-      if (remaining <= 0) {
-        countdownText.textContent = 'Proba a expirat';
-        clearInterval(countdownTimer);
-      } else {
-        countdownText.textContent = 'Proba expiră în ' + fmtTimeRemaining(remaining);
-      }
-    }
-    tick();
-    countdownTimer = setInterval(tick, 1000);
-  } else if (countdownEl) {
-    hide(countdownEl);
-  }
+  if (countdownEl) hide(countdownEl);
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
 
   const waBtn = $('btn-share-wa');
   if (waBtn) {
-    const businessName = getPath(draft.config, 'business.name') || 'Site-ul nostru';
-    const waText = encodeURIComponent('Bună! Am creat site-ul pentru ' + businessName + ': ' + url);
-    waBtn.onclick = () => { window.open('https://wa.me/?text=' + waText, '_blank', 'noopener'); };
+    if (isLive) {
+      show(waBtn);
+      const businessName = getPath(draft.config, 'business.name') || 'Site-ul nostru';
+      const waText = encodeURIComponent('Bună! Am creat site-ul pentru ' + businessName + ': ' + url);
+      waBtn.onclick = () => { window.open('https://wa.me/?text=' + waText, '_blank', 'noopener'); };
+    } else {
+      hide(waBtn);
+    }
   }
 
   openModal('modal-success');
@@ -1769,18 +1791,17 @@ function buildSiteCard(site) {
   const remaining = trialEnd ? (trialEnd - now) : null;
   let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
 
-  if (site.status === 'live' || site.status === 'active') {
-    if (site.paid) {
-      badgeClass = 'status-live'; badgeLabel = 'Activ';
-    } else if (remaining != null && remaining > 0) {
-      badgeClass = 'status-trial'; badgeLabel = 'Probă';
-    } else {
-      badgeClass = 'status-expired'; badgeLabel = 'Expirat';
-    }
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    badgeClass = 'status-live'; badgeLabel = 'Activ';
+  } else if (site.status === 'live' && !site.paid) {
+    // Legacy unpaid live (pre pay-before-publish)
+    badgeClass = 'status-trial'; badgeLabel = 'Neplătit';
   } else if (site.status === 'expired') {
     badgeClass = 'status-expired'; badgeLabel = 'Expirat';
   } else if (site.status === 'needs-retry') {
     badgeClass = 'status-draft'; badgeLabel = 'Reîncearcă';
+  } else if (!site.paid) {
+    badgeClass = 'status-draft'; badgeLabel = 'Neplătit';
   }
 
   const info = document.createElement('div');

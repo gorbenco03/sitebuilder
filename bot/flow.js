@@ -33,15 +33,15 @@ const _payments = (process.env.PAYMENT_PROVIDER || '').toLowerCase() === 'stripe
     ? require('./payments.js')
     : (require('./revolut.js').isConfigured() ? require('./revolut.js') : require('./payments.js'));
 const { isConfigured: stripeOk, createCheckout, pollUntilPaid } = _payments;
-// domains.js remains on disk but is NOT used (trial model — no domain automation)
+// domains.js remains on disk but is NOT used (pay-before-publish — no domain automation)
 const { isConfigured: vercelDeployOk, deploySite, attachDomain } = require('./deploy-vercel.js');
 const cfDeploy = require('./deploy-cloudflare.js');
 const { deployToNetlify } = require('./deploy.js');
 
 const registry   = require('./registry.js');
 const webpublish = require('./webpublish.js');
+const pricing    = require('./pricing.js');
 
-const TRIAL_DAYS = Number(process.env.TRIAL_DAYS) || 3;
 const CONTACT_URL = (process.env.CONTACT_URL || '').trim();
 
 // ---------------------------------------------------------------------------
@@ -55,20 +55,9 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 const SITES_DIR    = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 const SHARED_FILES = ['template.html', 'styles.css', 'script.js', 'collage.js'];
 
-/** Checkout currency (ISO 4217). Env: PAYMENT_CURRENCY (default 'eur'). Used for the
- *  payment provider AND every user-facing money string. */
+/** Fallback label currency when pricing bucket is unavailable. Env: PAYMENT_CURRENCY. */
 const PAYMENT_CURRENCY = String(process.env.PAYMENT_CURRENCY || 'eur').toLowerCase();
-/** Upper-cased currency label for user-facing strings (e.g. 'EUR', 'USD'). */
 const CURRENCY_LABEL = PAYMENT_CURRENCY.toUpperCase();
-
-/** One-time site build fee, in minor units (cents). Charged for every site (even on
- *  vercel.app). Env precedence: BUILD_FEE_EUR || BUILD_FEE_USD || 49. */
-const BUILD_FEE_CENTS = Math.round(
-    (parseFloat(process.env.BUILD_FEE_EUR) || parseFloat(process.env.BUILD_FEE_USD) || 49) * 100
-);
-
-/** Optional yearly managed/retainer plan price, in the checkout currency. Env: RETAINER_EUR (default 49). */
-const RETAINER_PRICE = Math.round(parseFloat(process.env.RETAINER_EUR) || 49);
 
 /** Legal/GDPR/ToS link surfaced in the /start consent note. Env: LEGAL_URL. */
 const LEGAL_URL = (process.env.LEGAL_URL || '').trim();
@@ -1043,8 +1032,8 @@ async function handleGata(ctx) {
         return;
     }
 
-    // 3) Trial publish — IMEDIAT și GRATUIT
-    await _publishTrialAndFinish(ctx, session, chatId);
+    // 3) Pay-before-publish: register draft + checkout (no unpaid live deploy)
+    await _prepareCheckoutAndFinish(ctx, session, chatId);
 }
 
 // ---------------------------------------------------------------------------
@@ -1232,30 +1221,28 @@ async function handleText(ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// After build: trial publish — IMEDIAT și GRATUIT pe platforma noastră
+// After build: register draft + checkout (pay before first public publish)
 // ---------------------------------------------------------------------------
 
 /**
- * Trial publish for the Telegram flow:
- * 1. Register site in registry (getOrCreateUserByTelegram + createSite platform=telegram).
- * 2. Publish IMMEDIATELY via webpublish.publishSite (siteDirAlreadyBuilt=true).
- * 3. Set trialEndsAt in registry.
- * 4. Send checkout link if payments configured.
- * 5. Notify admin. Delete session (state = registry).
+ * Telegram intake finish (same draft as browser product):
+ * 1. Register draft site (getOrCreateUserByTelegram + createSite platform=telegram).
+ * 2. Do NOT deploy while unpaid.
+ * 3. Save version + pending draft; create checkout via pricing.js when configured.
+ * 4. Notify admin. Session ends; first public deploy happens after Stripe paid.
  */
-async function _publishTrialAndFinish(ctx, session, chatId) {
+async function _prepareCheckoutAndFinish(ctx, session, chatId) {
     const bizName = (session.siteConfig && session.siteConfig.business && session.siteConfig.business.name)
         || (session.data && session.data.name)
         || 'necunoscut';
 
-    // 1. Register in registry
     const tgUser = registry.getOrCreateUserByTelegram(chatId, {
         username:  ctx.from && ctx.from.username,
         firstName: ctx.from && ctx.from.first_name,
     });
 
-    const trialEndsAt = new Date(Date.now() + TRIAL_DAYS * 86400 * 1000).toISOString();
     const slug = session.siteSlug || safeProjectName(bizName, chatId);
+    const price = pricing.getPricing(); // Telegram has no CF country; default USD unless region later
 
     const regSite = registry.createSite({
         userId:          tgUser.id,
@@ -1263,97 +1250,113 @@ async function _publishTrialAndFinish(ctx, session, chatId) {
         templateVersion: null,
         slug,
         platform:    'telegram',
-        trialEndsAt,
+        trialEndsAt: null,
     });
 
-    // Store ownerChatId for later notifications (trials sweeper, stripe webhook)
-    registry.updateSite(regSite.id, { ownerChatId: String(chatId), businessName: bizName });
+    registry.updateSite(regSite.id, {
+        ownerChatId: String(chatId),
+        businessName: bizName,
+        status: 'draft',
+        paid: false,
+    });
     session.registrySiteId = regSite.id;
-    session.trialEndsAt    = trialEndsAt;
 
-    // 2. Publish immediately (files already built on disk)
-    await ctx.reply('🚀 Public site-ul acum...');
-    let url;
+    let config = null;
     try {
-        // Read config from disk for version saving
-        let config = null;
-        try {
-            const cfgPath = path.join(session.siteDir, 'config.json');
-            config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-        } catch (_) {}
-
-        const freshSite = { ...regSite, paid: false, platform: 'telegram' };
-        const result = await webpublish.publishSite({
-            site: freshSite,
-            config: config || {},
-            images: [],
-            siteDirAlreadyBuilt: true,
-        });
-        url = result.url;
-        registry.updateSite(regSite.id, { url, status: 'live' });
-    } catch (e) {
-        console.error('[trial publish error]', e);
-        registry.updateSite(regSite.id, { status: 'needs-retry' });
-        await ctx.reply('❌ Publicarea a eșuat: ' + e.message + '\nScrie /retry sau /anuleaza.');
-        return;
+        const cfgPath = path.join(session.siteDir, 'config.json');
+        config = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+    } catch (_) {}
+    if (config) {
+        try { registry.saveVersion(regSite.id, config); } catch (_) {}
     }
 
-    const trialDaysLabel = TRIAL_DAYS;
-    const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
+    const fee = String(price.amount);
+    const cur = String(price.currency).toUpperCase();
     const domainMsg = CONTACT_URL
         ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${CONTACT_URL}`
         : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
 
-    // 3. Build checkout link if payments configured
     let paymentText = '';
     if (stripeOk()) {
         const uname      = getBotUsername();
         const successUrl = `https://t.me/${uname}?start=paid`;
         const cancelUrl  = `https://t.me/${uname}?start=cancel`;
         try {
+            const order = registry.createOrder({
+                siteId: regSite.id,
+                userId: tgUser.id,
+                amountCents: price.amountCents,
+                currency: price.currency,
+                stripeSessionId: 'pending',
+            });
             const checkout = await createCheckout({
-                amountCents:  BUILD_FEE_CENTS,
-                currency:     PAYMENT_CURRENCY,
-                productName:  'Activare site Hidook (permanent)',
+                amountCents:  price.amountCents,
+                currency:     price.currency,
+                productName:  'Activare site Hidook (12 luni hosting)',
                 successUrl,
                 cancelUrl,
-                metadata: { chatId: String(chatId), platform: 'telegram', siteId: regSite.id },
+                metadata: {
+                    chatId: String(chatId),
+                    platform: 'telegram',
+                    siteId: regSite.id,
+                    orderId: order.id,
+                },
                 clientReferenceId: `tg-${chatId}`,
             });
+            registry.createOrder({
+                siteId: regSite.id,
+                userId: tgUser.id,
+                amountCents: price.amountCents,
+                currency: price.currency,
+                stripeSessionId: checkout.id,
+            });
+            const paidOrder = registry.getOrderBySession(checkout.id);
+            const draftOrderId = (paidOrder && paidOrder.id) || order.id;
+            webpublish.savePendingDraft(draftOrderId, {
+                config: config || {},
+                images: [],
+                siteId: regSite.id,
+                siteDirAlreadyBuilt: true,
+                siteDir: session.siteDir,
+            });
             session.stripeSessionId = checkout.id;
-            _ledger('checkout', { chatId, amountCents: BUILD_FEE_CENTS, currency: PAYMENT_CURRENCY, siteId: regSite.id });
-            paymentText = `\n\n💳 *Păstrează site-ul permanent* (${fee} ${CURRENCY_LABEL}, o singură dată):\n👉 [Plătește aici](${checkout.url})`;
+            _ledger('checkout', {
+                chatId,
+                amountCents: price.amountCents,
+                currency: price.currency,
+                siteId: regSite.id,
+            });
+            paymentText = `\n\n💳 *Publică site-ul* (${fee} ${cur} + 12 luni hosting; reînnoire ${price.renewal} ${cur}/an):\n👉 [Plătește aici](${checkout.url})`;
         } catch (e) {
-            console.error('[trial checkout error]', e);
+            console.error('[checkout error]', e);
         }
     }
 
-    notifyAdmin(`🔧 Site nou LIVE (trial): "${bizName}" (chat ${chatId}) → ${url}`);
-    _ledger('trial_published', { chatId, url, siteId: regSite.id });
+    notifyAdmin(`📝 Draft Telegram gata de plată: "${bizName}" (chat ${chatId}) site=${regSite.id}`);
+    _ledger('draft_ready', { chatId, siteId: regSite.id });
 
     await ctx.reply(
-        `🎉 Site-ul tău e *LIVE* acum — GRATUIT pentru ${trialDaysLabel} zile:\n\n👉 ${url}\n\n` +
-        `Ai ${trialDaysLabel} zile să-l testezi. O singură plată de *${fee} ${CURRENCY_LABEL}* pentru a-l păstra permanent.` +
+        `✅ Site-ul *${bizName}* e pregătit ca ciornă.\n\n` +
+        `Pentru a-l face public pe HTTPS ai nevoie de plata de *${fee} ${cur}* ` +
+        `(include 12 luni hosting gestionat; reînnoire ${price.renewal} ${cur}/an).` +
         paymentText +
         `\n\n${domainMsg}\n\n` +
-        'Felicitări! Scrie /start oricând să faci un site nou.'
+        'După plată publicăm automat. Scrie /start oricând pentru un site nou.'
     );
 
-    // 4. Session done — state kept in registry
     session.phase     = 'done';
-    session.liveUrl   = url;
-    session.published = true;
+    session.published = false;
     sessions.delete(chatId);
     flushSessions();
 }
 
 // ---------------------------------------------------------------------------
-// Payment phase (LEGACY — for sessions created before the trial model)
+// Payment phase (LEGACY — for sessions created before pay-before-publish)
 // ---------------------------------------------------------------------------
 
 async function _initiatePayment(ctx, session, chatId) {
-    // Legacy: every site required upfront payment.
-    const amountCents = BUILD_FEE_CENTS;
+    const price = pricing.getPricing();
+    const amountCents = price.amountCents;
 
     if (!stripeOk() || amountCents <= 0) {
         if (process.env.ALLOW_FREE_PUBLISH !== '1') {
@@ -1378,7 +1381,7 @@ async function _initiatePayment(ctx, session, chatId) {
     try {
         const checkout = await createCheckout({
             amountCents,
-            currency:    PAYMENT_CURRENCY,
+            currency:    price.currency,
             productName,
             successUrl,
             cancelUrl,
@@ -1395,11 +1398,12 @@ async function _initiatePayment(ctx, session, chatId) {
 
     session.stripeSessionId = checkoutId;
     session.payStartedAt    = Date.now();
-    _ledger('checkout', { chatId, amountCents, currency: PAYMENT_CURRENCY });
+    _ledger('checkout', { chatId, amountCents, currency: price.currency });
 
     const total = (amountCents / 100).toFixed(2);
+    const curLabel = String(price.currency).toUpperCase();
     await ctx.reply(
-        `💳 Total de plată: *${total} ${CURRENCY_LABEL}*\n\n` +
+        `💳 Total de plată: *${total} ${curLabel}*\n\n` +
         `👉 [Plătește aici](${checkoutUrl})\n\n` +
         '_Verific automat plata în fundal. După confirmare, public site-ul. Nu închide conversația._'
     );
@@ -1594,14 +1598,17 @@ async function handleHelp(ctx) {
     const domainMsg = CONTACT_URL
         ? `Domeniu propriu? Scrie-ne: ${CONTACT_URL}`
         : 'Domeniu propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
+    const p = pricing.getPricing();
+    const fee = String(p.amount);
+    const cur = String(p.currency).toUpperCase();
     await ctx.reply(
         '🤖 Cum funcționează?\n\n' +
-        'Îți construiesc un site web profesional GRATUIT pentru probă.\n\n' +
+        'Îți pregătesc un site web profesional; publicarea live se face după plată.\n\n' +
         `1️⃣ Scrie /start și povestește-mi despre afacere (nume, ce vinzi, contacte).\n` +
         `2️⃣ Trimite câteva poze cu produsele tale.\n` +
-        `3️⃣ Aleg textele, culorile și construiesc site-ul.\n` +
-        `4️⃣ Site-ul e LIVE imediat — GRATUIT ${TRIAL_DAYS} zile de probă.\n` +
-        `5️⃣ O singură plată pentru a-l păstra permanent.\n` +
+        `3️⃣ Aleg textele, culorile și construiesc ciorna.\n` +
+        `4️⃣ Plătești ${fee} ${cur} → site LIVE pe HTTPS (include 12 luni hosting).\n` +
+        `5️⃣ Reînnoire ${p.renewal} ${cur}/an. Editezi și republici oricând din builder.\n` +
         `6️⃣ ${domainMsg}\n\n` +
         'Comenzi:\n' +
         '/start – construiește un site\n' +
@@ -1614,17 +1621,18 @@ async function handleHelp(ctx) {
 }
 
 async function handlePreturi(ctx) {
-    const fee = (BUILD_FEE_CENTS / 100).toFixed(0);
+    const p = pricing.getPricing();
+    const fee = String(p.amount);
+    const cur = String(p.currency).toUpperCase();
     const domainMsg = CONTACT_URL
         ? `Domeniu custom (ex: firma-ta.ro): Scrie-ne la ${CONTACT_URL} și îl setăm noi.`
         : 'Domeniu custom (ex: firma-ta.ro): Scrie-ne și îl setăm noi pentru tine.';
     await ctx.reply(
         '💰 Prețuri\n\n' +
-        `• Site web GRATUIT ${TRIAL_DAYS} zile de probă — publicat imediat pe platforma noastră.\n` +
-        `• Activare permanentă: *${fee} ${CURRENCY_LABEL}*, o singură dată.\n` +
-        `• ${domainMsg}\n` +
-        `• Plan anual administrat (opțional): ${RETAINER_PRICE} ${CURRENCY_LABEL}/an.\n\n` +
-        'Scrie /start ca să începem!'
+        `• Primul public live: *${fee} ${cur}* (builder + publish + 12 luni hosting gestionat).\n` +
+        `• Reînnoire: *${p.renewal} ${cur}*/an.\n` +
+        `• ${domainMsg}\n\n` +
+        'Nu există perioadă de probă publică neplătită. Scrie /start ca să începem!'
     );
 }
 
