@@ -7,6 +7,8 @@
  *
  * Checks:
  *   (a) Dockerfile runs the builder asset build after COPY
+ *   (a2) .dockerignore does not exclude scripts/build-builder.js (and other bake inputs)
+ *       — host GREEN is not an equivalent Docker path; COPY . . respects dockerignore
  *   (b) node scripts/build-builder.js produces engine.js + templates-data.js
  *   (c) GET /app/ references those scripts; GET of each JS returns JS (not HTML SPA fallback)
  *
@@ -49,6 +51,88 @@ function check(name, fn) {
     }
 }
 
+/**
+ * Docker .dockerignore matcher (moby/patternmatcher semantics, simplified).
+ * - strip comments/# and blanks; trim whitespace
+ * - ! prefix = exception (include)
+ * - last matching pattern wins
+ * - pattern without / matches basename OR as directory prefix (foo → foo, foo/...)
+ * - ** and * supported via a small translation to RegExp
+ */
+function parseDockerignore(text) {
+    return text.split(/\r?\n/).map((raw) => {
+        let line = raw.trim();
+        if (!line || line.startsWith('#')) return null;
+        let negate = false;
+        if (line.startsWith('!')) {
+            negate = true;
+            line = line.slice(1);
+        }
+        // Dockerfile/dockerignore treat leading ./ as optional
+        if (line.startsWith('./')) line = line.slice(2);
+        return { negate, pattern: line };
+    }).filter(Boolean);
+}
+
+function dockerignorePatternToRegExp(pattern) {
+    // Escape regex specials except the glob tokens we handle
+    let i = 0;
+    let out = '';
+    while (i < pattern.length) {
+        if (pattern[i] === '*' && pattern[i + 1] === '*') {
+            // ** → match across /
+            if (pattern[i + 2] === '/') {
+                out += '(?:.*/)?';
+                i += 3;
+            } else {
+                out += '.*';
+                i += 2;
+            }
+            continue;
+        }
+        if (pattern[i] === '*') {
+            out += '[^/]*';
+            i += 1;
+            continue;
+        }
+        if (pattern[i] === '?') {
+            out += '[^/]';
+            i += 1;
+            continue;
+        }
+        const ch = pattern[i];
+        if (/[.+^${}()|[\]\\]/.test(ch)) out += '\\' + ch;
+        else out += ch;
+        i += 1;
+    }
+    return new RegExp('^' + out + '$');
+}
+
+function pathExcludedByDockerignore(relPath, patterns) {
+    const cleaned = relPath.replace(/\\/g, '/').replace(/^\.\//, '');
+    let excluded = false;
+    for (const { negate, pattern } of patterns) {
+        const re = dockerignorePatternToRegExp(pattern);
+        let matched = re.test(cleaned);
+        // Directory-prefix: pattern "scripts" also matches "scripts/foo"
+        if (!matched && !pattern.includes('/')) {
+            matched = cleaned === pattern || cleaned.startsWith(pattern + '/');
+        } else if (!matched && pattern.endsWith('/')) {
+            matched = cleaned === pattern.slice(0, -1) || cleaned.startsWith(pattern);
+        } else if (!matched && pattern.includes('/')) {
+            // also allow directory prefix when pattern is a dir path without **
+            matched = cleaned.startsWith(pattern.replace(/\/*$/, '') + '/');
+        }
+        // Basename-only patterns (no slash): also match any path ending with /pattern
+        if (!matched && !pattern.includes('/') && !pattern.includes('**')) {
+            const base = cleaned.split('/').pop();
+            matched = dockerignorePatternToRegExp(pattern).test(base);
+        }
+        if (matched) excluded = !negate;
+    }
+    return excluded;
+}
+
 (async () => {
     // ── (a) Dockerfile production recipe includes builder asset build ───────
     await check('(a) Dockerfile RUN builds builder/generated after COPY', () => {
@@ -64,6 +148,36 @@ function check(name, fn) {
         assert.ok(
             hasBuild,
             'Dockerfile must RUN node scripts/build-builder.js (or npm run build:app) after COPY so builder/generated/ is in the image'
+        );
+    });
+
+    // ── (a2) Docker build context must include the bundler (and bake inputs) ─
+    // Host-only `node scripts/build-builder.js` is NOT an equivalent Docker path:
+    // COPY . . respects .dockerignore. Pattern `scripts` excludes the bundler.
+    await check('(a2) .dockerignore leaves bake inputs in Docker context', () => {
+        const diPath = path.join(ROOT, '.dockerignore');
+        assert.ok(fs.existsSync(diPath), '.dockerignore must exist');
+        const patterns = parseDockerignore(fs.readFileSync(diPath, 'utf8'));
+
+        const bakeInputs = [
+            'scripts/build-builder.js',
+            'build.js',
+            'templates/registry.json',
+        ];
+        for (const rel of bakeInputs) {
+            assert.ok(
+                !pathExcludedByDockerignore(rel, patterns),
+                `.dockerignore excludes '${rel}' from docker context — ` +
+                    `Dockerfile COPY . . then RUN node scripts/build-builder.js will fail (ENOENT). ` +
+                    `Un-ignore the bundler (e.g. !scripts/build-builder.js after scripts).`
+            );
+        }
+        // Sanity: the matcher still treats a plain `scripts` exclude as excluding the bundler
+        // when no exception is present (guards against a no-op test).
+        const scriptsOnly = parseDockerignore('scripts\n');
+        assert.ok(
+            pathExcludedByDockerignore('scripts/build-builder.js', scriptsOnly),
+            'test harness: pattern "scripts" must exclude scripts/build-builder.js'
         );
     });
 

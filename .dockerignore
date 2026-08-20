@@ -17,6 +17,8 @@ assets
 # Cloudflare-only tooling + site build output (not needed in the bot image)
 package.json
 scripts
+# Production Dockerfile RUN node scripts/build-builder.js after COPY . .
+!scripts/build-builder.js
 wrangler.toml
 dist
 CLOUDFLARE-DEPLOY.md
