@@ -1,9 +1,9 @@
 {
-  "name": "desserd-site-bot",
+  "name": "hidook-site-builder-bot",
   "version": "0.1.0",
   "private": true,
   "type": "commonjs",
-  "description": "Telegram bot that collects business info and auto-generates a landing page from the template.",
+  "description": "Hidook Site Builder Node service — hosts the browser builder and Telegram draft intake into the same editor.",
   "scripts": {
     "start": "node bot.js"
   },

@@ -1,4 +1,5 @@
-# DESSERD site bot — production image (Telegram long-polling, always-on).
+# Hidook Site Builder — production image (Node bot/server: browser builder host
+# + Telegram draft intake, long-polling, always-on).
 # The bot (bot/) reads template.html, styles.css, script.js, collage.js and
 # build.js from the PROJECT ROOT, so the whole repo is copied in.
 FROM node:20-alpine
