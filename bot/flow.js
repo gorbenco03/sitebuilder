@@ -1205,17 +1205,26 @@ async function handleText(ctx) {
     }
 
     // ----- PAY (legacy sessions still in-flight) -----
+    // No new Telegram checkout/deploy happy path — steer to the browser builder.
     if (session.phase === 'pay') {
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
         await ctx.reply(
-            '⏳ Așteptăm confirmarea plății. Dacă ai plătit deja, ' +
-            'procesăm automat în câteva momente. Dacă ai probleme, scrie /anuleaza.'
+            'Această plată din Telegram nu mai e calea comercială.\n\n' +
+            `Continuă în site builder (${appHint}) — acolo editezi ciorna și plătești înainte de publicare.\n` +
+            'Dacă ai deja un link de plată vechi și ai probleme, scrie /anuleaza și /start din nou.'
         );
         return;
     }
 
-    // ----- DEPLOY -----
+    // ----- DEPLOY (legacy) -----
     if (session.phase === 'deploy') {
-        await ctx.reply('⏳ Publicăm site-ul, te rugăm să aștepți...');
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
+        await ctx.reply(
+            'Publicarea din Telegram e pe cale de a fi înlocuită de builder.\n\n' +
+            `Deschide ${appHint} ca să vezi proiectele tale. Dacă ai o comandă deja plătită, scrie /retry.`
+        );
         return;
     }
 }
@@ -1224,14 +1233,31 @@ async function handleText(ctx) {
 // After build: register draft + checkout (pay before first public publish)
 // ---------------------------------------------------------------------------
 
+/** Commercial catalog ids (S3). Never patiserie / removed verticals. */
+const CATALOG_TEMPLATE_IDS = new Set(['product-menu', 'local-service', 'portfolio']);
+
 /**
- * Telegram intake finish (same draft as browser product):
- * 1. Register draft site (getOrCreateUserByTelegram + createSite platform=telegram).
- * 2. Do NOT deploy while unpaid.
- * 3. Save version + pending draft; create checkout via pricing.js when configured.
- * 4. Notify admin. Session ends; first public deploy happens after Stripe paid.
+ * Resolve templateId for a Telegram intake draft.
+ * Prefer session picker (session.templateId), then session.data.templateId, else catalog default.
  */
-async function _prepareCheckoutAndFinish(ctx, session, chatId) {
+function resolveIntakeTemplateId(session) {
+    const raw =
+        (session && session.templateId) ||
+        (session && session.data && session.data.templateId) ||
+        'product-menu';
+    return CATALOG_TEMPLATE_IDS.has(raw) ? raw : 'product-menu';
+}
+
+/**
+ * Telegram intake finish — same draft as the browser builder.
+ * 1. Register draft site (getOrCreateUserByTelegram + createSite; unpaid draft).
+ * 2. Do NOT deploy. Do NOT create a Telegram Stripe/Revolut checkout.
+ * 3. Magic-link via createLoginToken + /auth/verify so the user opens that draft in /app/.
+ * 4. Pay stays browser /api/publish (platform: web).
+ *
+ * Exported as finishTelegramIntake for tests; _prepareCheckoutAndFinish kept as alias.
+ */
+async function finishTelegramIntake(ctx, session, chatId) {
     const bizName = (session.siteConfig && session.siteConfig.business && session.siteConfig.business.name)
         || (session.data && session.data.name)
         || 'necunoscut';
@@ -1242,12 +1268,15 @@ async function _prepareCheckoutAndFinish(ctx, session, chatId) {
     });
 
     const slug = session.siteSlug || safeProjectName(bizName, chatId);
-    const price = pricing.getPricing(); // Telegram has no CF country; default USD unless region later
+    const templateId = resolveIntakeTemplateId(session);
+    const templateVersion = (session && session.templateVersion != null)
+        ? session.templateVersion
+        : null;
 
     const regSite = registry.createSite({
         userId:          tgUser.id,
-        templateId:      session.data && session.data.templateId || 'product-menu',
-        templateVersion: null,
+        templateId,
+        templateVersion,
         slug,
         platform:    'telegram',
         trialEndsAt: null,
@@ -1270,84 +1299,50 @@ async function _prepareCheckoutAndFinish(ctx, session, chatId) {
         try { registry.saveVersion(regSite.id, config); } catch (_) {}
     }
 
+    const price = pricing.getPricing();
     const fee = String(price.amount);
     const cur = String(price.currency).toUpperCase();
     const domainMsg = CONTACT_URL
         ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${CONTACT_URL}`
         : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
 
-    let paymentText = '';
-    if (stripeOk()) {
-        const uname      = getBotUsername();
-        const successUrl = `https://t.me/${uname}?start=paid`;
-        const cancelUrl  = `https://t.me/${uname}?start=cancel`;
-        try {
-            const order = registry.createOrder({
-                siteId: regSite.id,
-                userId: tgUser.id,
-                amountCents: price.amountCents,
-                currency: price.currency,
-                stripeSessionId: 'pending',
-            });
-            const checkout = await createCheckout({
-                amountCents:  price.amountCents,
-                currency:     price.currency,
-                productName:  'Activare site Hidook (12 luni hosting)',
-                successUrl,
-                cancelUrl,
-                metadata: {
-                    chatId: String(chatId),
-                    platform: 'telegram',
-                    siteId: regSite.id,
-                    orderId: order.id,
-                },
-                clientReferenceId: `tg-${chatId}`,
-            });
-            registry.createOrder({
-                siteId: regSite.id,
-                userId: tgUser.id,
-                amountCents: price.amountCents,
-                currency: price.currency,
-                stripeSessionId: checkout.id,
-            });
-            const paidOrder = registry.getOrderBySession(checkout.id);
-            const draftOrderId = (paidOrder && paidOrder.id) || order.id;
-            webpublish.savePendingDraft(draftOrderId, {
-                config: config || {},
-                images: [],
-                siteId: regSite.id,
-                siteDirAlreadyBuilt: true,
-                siteDir: session.siteDir,
-            });
-            session.stripeSessionId = checkout.id;
-            _ledger('checkout', {
-                chatId,
-                amountCents: price.amountCents,
-                currency: price.currency,
-                siteId: regSite.id,
-            });
-            paymentText = `\n\n💳 *Publică site-ul* (${fee} ${cur} + 12 luni hosting; reînnoire ${price.renewal} ${cur}/an):\n👉 [Plătește aici](${checkout.url})`;
-        } catch (e) {
-            console.error('[checkout error]', e);
-        }
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    let builderUrl = publicUrl ? `${publicUrl}/app/` : '/app/';
+    try {
+        const { token } = registry.createLoginToken({
+            userId: tgUser.id,
+            siteId: regSite.id,
+            purpose: 'telegram-intake',
+        });
+        builderUrl = publicUrl
+            ? `${publicUrl}/auth/verify?token=${token}`
+            : `/auth/verify?token=${token}`;
+    } catch (e) {
+        console.error('[finishTelegramIntake] createLoginToken failed', e);
     }
 
-    notifyAdmin(`📝 Draft Telegram gata de plată: "${bizName}" (chat ${chatId}) site=${regSite.id}`);
+    notifyAdmin(`📝 Draft Telegram → builder: "${bizName}" (chat ${chatId}) site=${regSite.id}`);
     _ledger('draft_ready', { chatId, siteId: regSite.id });
 
     await ctx.reply(
-        `✅ Site-ul *${bizName}* e pregătit ca ciornă.\n\n` +
-        `Pentru a-l face public pe HTTPS ai nevoie de plata de *${fee} ${cur}* ` +
-        `(include 12 luni hosting gestionat; reînnoire ${price.renewal} ${cur}/an).` +
-        paymentText +
-        `\n\n${domainMsg}\n\n` +
-        'După plată publicăm automat. Scrie /start oricând pentru un site nou.'
+        `✅ Ciorna *${bizName}* e gata în site builder.\n\n` +
+        `Continuă în editor ca să editezi textele/pozele și să publici după plată ` +
+        `(*${fee} ${cur}*, include 12 luni hosting; reînnoire ${price.renewal} ${cur}/an):\n` +
+        `👉 ${builderUrl}\n\n` +
+        `${domainMsg}\n\n` +
+        'Plata și publicarea live se fac din builder — nu din Telegram. ' +
+        'Scrie /start oricând pentru un site nou.'
     );
 
     session.phase     = 'done';
     session.published = false;
     sessions.delete(chatId);
     flushSessions();
+}
+
+/** @deprecated name — calls finishTelegramIntake (no Telegram checkout). */
+async function _prepareCheckoutAndFinish(ctx, session, chatId) {
+    return finishTelegramIntake(ctx, session, chatId);
 }
 
 // ---------------------------------------------------------------------------
@@ -1675,6 +1670,9 @@ module.exports = {
     normalizeFacebook,
     generateSite,
     STEPS,
+    // Telegram intake → same browser draft (S4)
+    finishTelegramIntake,
+    resolveIntakeTemplateId,
     // Deploy helper (used by webpublish.js)
     deployBuiltSite,
 };

@@ -316,17 +316,28 @@ async function handleAuthVerify(req, res, query) {
     try { payload = await reg.consumeLoginToken(token); } catch { payload = null; }
     if (!payload) return sendRedirect(res, '/app/#login-expirat');
 
-    const email = payload.email;
-    if (!email) return sendRedirect(res, '/app/#login-expirat');
-
     let user;
-    try { user = await reg.getOrCreateUserByEmail(email); } catch { return sendRedirect(res, '/app/#login-expirat'); }
+    try {
+        // Telegram intake tokens bind an existing userId (+ optional siteId).
+        // Email magic-links keep creating/looking up by email.
+        if (payload.userId) {
+            user = await reg.getUser(payload.userId);
+        } else if (payload.email) {
+            user = await reg.getOrCreateUserByEmail(payload.email);
+        } else {
+            user = null;
+        }
+    } catch {
+        user = null;
+    }
+    if (!user) return sendRedirect(res, '/app/#login-expirat');
 
     let auth;
     try { auth = getAuth(); } catch { return sendRedirect(res, '/app/#login-expirat'); }
 
     const cookieValue = auth.signSession(user.id);
     const cookie      = auth.buildSessionCookie(cookieValue);
+    // Draft from Telegram lands on dashboard (same registry site; pay/publish in /app/).
     res.writeHead(302, { 'Set-Cookie': cookie, 'Location': '/app/#dashboard' });
     res.end();
 }
