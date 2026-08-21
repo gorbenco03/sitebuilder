@@ -1,57 +1,57 @@
-# Deploy desserdina to Cloudflare Pages
+# Cloudflare and customer-site hosting (Hidook Site Builder)
 
-The desserdina landing page is a plain static site (no framework). This builds it into
-`dist/` and uploads that folder to Cloudflare Pages. **Nothing here touches the bot** —
-that stays on Railway.
+**Product:** **Hidook Site Builder**. The commercial product is the **browser builder** (account, editor, pay, publish, edit, renew). Customer live sites are conceptually `https://{slug}.sites.hidook.agency` after **pay before first public publish**.
 
-## What gets deployed
-`scripts/build-site.js` renders `index.html` from `template.html` + `config.json`, then
-copies into `dist/` only the live-site files: `index.html`, `styles.css`, `script.js`,
-`collage.js`, `robots.txt`, `sitemap.xml`, the referenced `images/…`, and a `_headers`
-file (long-cache assets + basic security headers). Build inputs (`template.html`,
-`config.json`) are **not** shipped.
+This note is for the engineering team. It is **not** a checklist to cut over live DNS or create production Cloudflare resources for `hidook.agency` in this slice. Those remain **owner-only launch gates** (`PRODUCT.md`).
 
-## One-time setup
-1. Install Node 18+ (already have it).
-2. A Cloudflare account (free). Log in the CLI once:
-   ```bash
-   npx wrangler login
-   ```
+Do **not** treat legacy names (`desserdina`, DESSERD), the root bakery `config.json` / `index.html` sample, or `wrangler.toml` `name = "desserdina"` as the product identity. Those are leftover sample / legacy labels — **not** operator product copy and **not** the commercial deploy path.
 
-## Build + deploy (CLI — recommended, no Git needed)
-```bash
-npm run build                                          # produces dist/
-npx wrangler pages deploy dist --project-name desserdina
-```
-- The first run creates the Pages project `desserdina` and returns a
-  `https://desserdina.pages.dev` URL.
-- Re-run both commands any time you change content — see below.
+## What Cloudflare is for (product shape)
 
-`wrangler.toml` already sets `name = "desserdina"` and `pages_build_output_dir = "dist"`,
-so `npx wrangler pages deploy` (without args) also works after `npm run build`.
+| Piece | Role |
+|---|---|
+| Browser builder + bot (`bot/`, Railway image) | Commercial surface; pay-before-publish; paid publish pipeline |
+| Customer site hosting | After payment, published sites may land on Cloudflare Pages (or another configured provider) under the agency subdomain model |
+| Root sample static files | Example brochure data for the zero-dep renderer — **not** the Hidook product name |
 
-## Editing content later
-All content lives in `config.json` (text, menu, contacts, Instagram widget) and the
-layout in `template.html`. After editing:
-```bash
-npm run build && npx wrangler pages deploy dist
-```
+Telegram only creates or opens the **same** unpaid draft in the browser builder. It is not a second Cloudflare deploy console.
 
-## Custom domain
-Cloudflare dashboard → **Workers & Pages → desserdina → Custom domains → Set up a
-domain** (e.g. `desserdina.ro`). If the domain is registered at Cloudflare, DNS is
-automatic; otherwise point a CNAME to `desserdina.pages.dev`.
+## In scope for the team (local / test / isolated)
 
-## Alternative: Git integration (if you push this repo to GitHub later)
-Cloudflare dashboard → **Create application → Pages → Connect to Git**, then:
-- **Build command:** `npm run build`
-- **Build output directory:** `dist`
-- **Root directory:** `/` (leave default)
+- Local bot + builder with **test** Stripe and **fake-or-isolated** deploy (`HIDOOK_FAKE_DEPLOY=1`, refused when `NODE_ENV=production`). Fake deploy is **not** the client journey.
+- Reading how paid publish chooses a deploy provider (`DEPLOY_PROVIDER=cloudflare` and related env — see `bot/DEPLOY.md`).
+- Static render of a sample or registry site for inspection:
 
-Every push then auto-deploys.
+  ```bash
+  node build.js
+  # optional local preview of generated HTML
+  node .claude/serve.js   # http://localhost:4173
+  ```
 
-## Notes
-- `dist/` is git-ignored (a build artifact) and excluded from the Vercel/bot builds, so
-  it won't interfere with the current Vercel deploy or the Railway bot image.
-- The Instagram widget is a third-party embed (hearth); its own card/layout is configured
-  in the hearth dashboard, not here.
+Do **not** run live `wrangler pages deploy` against a production Hidook project, attach real custom domains, or change production DNS as “finishing this doc.”
+
+## Out of scope here (owner-only)
+
+Per `PRODUCT.md`, **do not implement** as team work in this slice:
+
+- Production Cloudflare account wiring and live Pages project creation for Hidook (owner-only)
+- Live DNS for `hidook.agency` / `sites.hidook.agency` (owner-only; not this slice)
+- Custom-domain cutover for paying customers (concierge after payment; not required for the launch happy path; owner-only)
+
+When the owner enables production Cloudflare, ops env and Railway notes live in `bot/DEPLOY.md` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, optional `BRAND_DOMAIN`). That is configuration of the **bot’s paid-publish path**, not a manual “deploy the bakery sample” workflow.
+
+## What the sample static tree is (and is not)
+
+`scripts/build-site.js` / `npm run build` can render `index.html` from `template.html` + `config.json` into `dist/` for local inspection. That pipeline is a **renderer demo / sample brochure**, not instructions to ship the repo root as “the product site” under a legacy Pages project name.
+
+- Build inputs (`template.html`, `config.json`) and sample assets are **customer-site examples**.
+- Do **not** teach `--project-name desserdina`, `desserdina.pages.dev`, or a custom domain like `desserdina.ro` as Hidook Site Builder identity.
+- `wrangler.toml` may still carry a legacy `name`; ignore it as product branding.
+
+## Related docs
+
+- `PRODUCT.md` — product contract and owner-only launch gates
+- `bot/DEPLOY.md` — Railway bot + builder 24/7, env vars including Cloudflare for **paid** client sites
+- `bot/README.md` — operator overview of bot + builder
+- `LAUNCH.md` — team-oriented launch notes (local/test unless owner gates)
+- `README.md` — repo map and commercial path
