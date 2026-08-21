@@ -35,9 +35,6 @@ let slugCheckTimer = null;
 let slugValid      = false;
 let slugNormalized = '';
 
-// Countdown timer for success modal
-let countdownTimer = null;
-let trialEndsAt    = null;
 let sitePaymentUrl = null;
 let publishedSiteId = null;
 let publishedSiteUrl = null;
@@ -1473,13 +1470,7 @@ async function execPublish(slug) {
   publishedSiteUrl = data.site.url;
   sitePaymentUrl = data.paymentUrl || null;
 
-  if (data.site.trialEndsAt) {
-    trialEndsAt = new Date(data.site.trialEndsAt);
-  } else {
-    trialEndsAt = null;
-  }
-
-  showSuccessScreen(data.site.url, data.paymentUrl, data.site.trialEndsAt);
+  showSuccessScreen(data.site.url, data.paymentUrl);
 }
 
 function wireAuthForm(onAuthSuccess) {
@@ -1534,7 +1525,7 @@ function wireAuthForm(onAuthSuccess) {
   }
 }
 
-function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
+function showSuccessScreen(url, paymentUrl) {
   const titleEl = $('modal-success-title');
   const draftNote = $('success-draft-note');
   const urlText = $('success-url-text');
@@ -1566,10 +1557,6 @@ function showSuccessScreen(url, paymentUrl, trialEndsAtIso) {
     }
     if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
   }
-
-  const countdownEl = $('trial-countdown');
-  if (countdownEl) hide(countdownEl);
-  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
 
   const waBtn = $('btn-share-wa');
   if (waBtn) {

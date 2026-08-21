@@ -989,22 +989,6 @@ input, textarea, select {
 }
 .success-url-link:hover { text-decoration: underline; }
 
-.trial-countdown {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--warning-bg);
-  border: 1px solid #FDE68A;
-  border-radius: var(--radius-sm);
-  padding: 0.55rem 0.85rem;
-  font-size: 0.85rem;
-  color: #92400E;
-  font-weight: 500;
-  width: 100%;
-  justify-content: center;
-}
-.trial-countdown-icon { font-size: 1rem; }
-
 .success-actions { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
 
 /* Wide modal */
