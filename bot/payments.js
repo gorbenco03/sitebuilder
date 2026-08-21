@@ -96,12 +96,21 @@ async function stripeRequest(method, urlPath, body) {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns true when STRIPE_SECRET_KEY is present in the environment.
- * Use this to guard feature availability before calling other exports.
+ * HIDOOK_TEST_PAY=1 — offline checkout + unsigned webhook for local/E2E only.
+ * Refused when NODE_ENV=production (isConfigured stays false; createCheckout throws).
+ */
+function _isTestPay() {
+    return process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production';
+}
+
+/**
+ * Returns true when Stripe payments can be used: real STRIPE_SECRET_KEY, or
+ * non-production HIDOOK_TEST_PAY=1 (no network).
  *
  * @returns {boolean}
  */
 function isConfigured() {
+    if (_isTestPay()) return true;
     return Boolean(process.env.STRIPE_SECRET_KEY);
 }
 
@@ -131,6 +140,18 @@ async function createCheckout({
     if (!amountCents || amountCents < 1) throw new Error('amountCents must be a positive integer.');
     if (!productName) throw new Error('productName is required.');
     if (!successUrl || !cancelUrl) throw new Error('successUrl and cancelUrl are required.');
+
+    // Offline test adapter — no network, no STRIPE_SECRET_KEY (non-production only).
+    if (process.env.HIDOOK_TEST_PAY === '1') {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('HIDOOK_TEST_PAY=1 is refused in production');
+        }
+        const id = 'cs_test_' + crypto.randomBytes(12).toString('hex');
+        return {
+            id,
+            url: `${String(successUrl).replace(/#.*$/, '')}#test-checkout=${id}`,
+        };
+    }
 
     const params = {
         mode: 'payment',

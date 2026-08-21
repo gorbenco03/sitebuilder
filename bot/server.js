@@ -8,6 +8,7 @@
  *   POST /webhooks/stripe    → Stripe webhook (ACK then process async)
  *
  *   GET  /app/*              → static files from <repo>/builder/
+ *   GET  /live/<slug>/*      → isolated local publish ($DATA_DIR/published/<slug>/)
  *
  *   GET  /api/config         → {amount, amountCents, currency, renewal, renewalCents, brandDomain|null, contactUrl|null} (public)
  *   GET  /api/slug-check?slug= → {available:bool, slug} (public)
@@ -235,6 +236,79 @@ function serveStatic(req, res, urlPath) {
     const ext  = path.extname(targetPath).toLowerCase();
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     const content = fs.readFileSync(targetPath);
+    res.writeHead(200, { 'Content-Type': mime, 'Content-Length': content.length });
+    res.end(content);
+}
+
+// ---------------------------------------------------------------------------
+// Isolated live sites — GET /live/<slug>/* from $DATA_DIR/published/<slug>/
+// Only written by HIDOOK_ISOLATED_DEPLOY after paid publish (unpaid → 404).
+// ---------------------------------------------------------------------------
+
+function serveLive(req, res, urlPath) {
+    // urlPath like /live/<slug> or /live/<slug>/ or /live/<slug>/foo.css
+    const raw = urlPath.replace(/^\/live\/?/, '');
+    const parts = raw.split('/').filter(Boolean);
+    if (parts.length === 0) {
+        return sendJson(res, 404, { error: 'not found' });
+    }
+
+    const slug = parts[0];
+    // Slug must be a single safe path segment (no traversal)
+    if (!/^[a-z0-9-]{3,40}$/i.test(slug) || slug.includes('..')) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
+    const publishedRoot = path.resolve(path.join(dataDir, 'published'));
+    const siteRoot = path.resolve(path.join(publishedRoot, slug.toLowerCase()));
+
+    if (!siteRoot.startsWith(publishedRoot + path.sep) && siteRoot !== publishedRoot) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    let rel = parts.slice(1).join('/') || 'index.html';
+    // Decode once; reject encoded traversal
+    try {
+        rel = decodeURIComponent(rel);
+    } catch {
+        return sendJson(res, 400, { error: 'bad path' });
+    }
+    const normalised = path.normalize(rel);
+    if (normalised.startsWith('..') || path.isAbsolute(normalised) || normalised.includes('..' + path.sep)) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    let filePath = path.join(siteRoot, normalised);
+    let realFile;
+    try {
+        realFile = path.resolve(filePath);
+    } catch {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+    if (!realFile.startsWith(siteRoot + path.sep) && realFile !== siteRoot) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    let stat;
+    try { stat = fs.statSync(realFile); } catch {
+        return sendJson(res, 404, { error: 'not found' });
+    }
+
+    if (stat.isDirectory()) {
+        realFile = path.join(realFile, 'index.html');
+        try { stat = fs.statSync(realFile); } catch {
+            return sendJson(res, 404, { error: 'not found' });
+        }
+    }
+
+    if (!stat.isFile()) {
+        return sendJson(res, 404, { error: 'not found' });
+    }
+
+    const ext  = path.extname(realFile).toLowerCase();
+    const mime = MIME_TYPES[ext] || 'application/octet-stream';
+    const content = fs.readFileSync(realFile);
     res.writeHead(200, { 'Content-Type': mime, 'Content-Length': content.length });
     res.end(content);
 }
@@ -671,7 +745,30 @@ function createHandler({ onStripeEvent } = {}) {
 
             // ── Stripe webhook ─────────────────────────────────────────────
             if (req.method === 'POST' && url === '/webhooks/stripe') {
+                const testPay = process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production';
                 const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+                // HIDOOK_TEST_PAY: accept JSON checkout.session.completed without Stripe signature
+                if (testPay && !secret) {
+                    let raw;
+                    try { raw = await readRawBody(req); }
+                    catch (e) { return sendJson(res, e.code === 'BODY_TOO_LARGE' ? 413 : 400, { error: 'bad body' }); }
+                    let event;
+                    try {
+                        event = JSON.parse(Buffer.isBuffer(raw) ? raw.toString('utf8') : String(raw));
+                    } catch {
+                        return sendJson(res, 400, { error: 'invalid json' });
+                    }
+                    sendJson(res, 200, { received: true });
+                    log('webhook.stripe.received', { type: event && event.type, id: event && event.id, mode: 'test-pay' });
+                    if (onStripeEvent) {
+                        Promise.resolve()
+                            .then(() => onStripeEvent(event))
+                            .catch((e) => log('webhook.stripe.handler_error', { err: e.message, type: event && event.type }, 'error'));
+                    }
+                    return;
+                }
+
                 if (!secret) return sendJson(res, 503, { error: 'webhook not configured' });
                 let raw;
                 try { raw = await readRawBody(req); }
@@ -691,6 +788,11 @@ function createHandler({ onStripeEvent } = {}) {
                         .catch((e) => log('webhook.stripe.handler_error', { err: e.message, type: event.type }, 'error'));
                 }
                 return;
+            }
+
+            // ── Isolated live sites: /live/<slug>/* ────────────────────────
+            if (req.method === 'GET' && (url === '/live' || url === '/live/' || url.startsWith('/live/'))) {
+                return serveLive(req, res, url);
             }
 
             // ── Static: /app and /app/* ────────────────────────────────────

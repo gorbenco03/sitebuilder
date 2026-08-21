@@ -12,7 +12,11 @@
  *     with a payment/reactivation link.
  *
  * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
- * {url:'https://<slug>.test.local', provider:'fake'} — for offline tests.
+ * {url:'https://<slug>.test.local', provider:'fake'} — for offline unit tests.
+ *
+ * HIDOOK_ISOLATED_DEPLOY=1 (refused in production) → copy built site into
+ * $DATA_DIR/published/<slug>/ and return {url: PUBLIC_URL+'/live/'+slug+'/',
+ * provider:'isolated'}. Served by GET /live/<slug>/ (same HTTP server).
  *
  * Commercial amounts come only from ./pricing.js.
  * CommonJS, zero new npm dependencies, Node 18+.
@@ -37,7 +41,7 @@ const SITES_DIR     = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
 
 // ---------------------------------------------------------------------------
-// Fake-deploy stub (tests only)
+// Fake-deploy stub (tests only) + isolated local publish
 // ---------------------------------------------------------------------------
 
 function _isFakeDeploy() {
@@ -50,6 +54,34 @@ function _isFakeDeploy() {
 
 async function _fakeDeploy(slug) {
     return { url: `https://${slug}.test.local`, provider: 'fake' };
+}
+
+function _isIsolatedDeploy() {
+    if (process.env.HIDOOK_ISOLATED_DEPLOY !== '1') return false;
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('HIDOOK_ISOLATED_DEPLOY=1 is refused in production');
+    }
+    return true;
+}
+
+/**
+ * Copy built siteDir into $DATA_DIR/published/<slug>/ and return fetchable local URL.
+ * @param {string} siteDir
+ * @param {string} slug  public path segment (site.slug)
+ */
+async function _isolatedDeploy(siteDir, slug) {
+    const safe = String(slug || '').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+    if (!safe || safe !== String(slug || '').toLowerCase()) {
+        throw new Error('isolated deploy: invalid slug');
+    }
+    const dataDir = process.env.DATA_DIR || PROJECT_ROOT;
+    const dest = path.join(dataDir, 'published', safe);
+    fs.rmSync(dest, { recursive: true, force: true });
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.cpSync(siteDir, dest, { recursive: true });
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    if (!publicUrl) throw new Error('PUBLIC_URL is required for isolated deploy');
+    return { url: `${publicUrl}/live/${safe}/`, provider: 'isolated' };
 }
 
 // ---------------------------------------------------------------------------
@@ -193,12 +225,22 @@ function deletePendingDraft(orderId) {
 
 /**
  * Deploy a built site directory. Returns {url, provider}.
- * Respects HIDOOK_FAKE_DEPLOY=1 for offline tests.
+ * Respects HIDOOK_FAKE_DEPLOY=1 (unit stub) and HIDOOK_ISOLATED_DEPLOY=1 (local /live/).
  * If DEPLOY_PROVIDER=cloudflare and BRAND_DOMAIN is set, also attaches subdomain (best-effort).
+ *
+ * @param {string} siteDir
+ * @param {string} projectName
+ * @param {string} userId
+ * @param {{ slug?: string }} [opts]  opts.slug used for isolated URL path
  */
-async function _deploy(siteDir, projectName, userId) {
+async function _deploy(siteDir, projectName, userId, opts = {}) {
     if (_isFakeDeploy()) {
         return await _fakeDeploy(projectName);
+    }
+
+    if (_isIsolatedDeploy()) {
+        const slug = opts.slug || projectName;
+        return await _isolatedDeploy(siteDir, slug);
     }
 
     const result = await getDeployBuiltSite()(siteDir, projectName, userId);
@@ -295,10 +337,12 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // 5. Deploy
     let url;
     try {
-        const result = await _deploy(siteDir, site.projectName, site.userId);
+        const result = await _deploy(siteDir, site.projectName, site.userId, {
+            slug: site.slug || site.projectName,
+        });
         url = result && result.url;
     } catch (e) {
-        registry.updateSite(site.id, { status: 'needs-retry' });
+        try { registry.updateSite(site.id, { status: 'needs-retry' }); } catch (_) {}
         throw e;
     }
 
@@ -405,7 +449,9 @@ async function deployPlaceholder(site) {
     // Deploy
     let url;
     try {
-        const result = await _deploy(siteDir, site.projectName, site.userId);
+        const result = await _deploy(siteDir, site.projectName, site.userId, {
+            slug: site.slug || site.projectName,
+        });
         url = result && result.url;
     } catch (e) {
         log('webpublish.placeholder.deploy_error', { siteId: site.id, err: e.message }, 'error');
