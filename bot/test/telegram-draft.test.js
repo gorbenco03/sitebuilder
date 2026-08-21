@@ -100,6 +100,19 @@ function productNarrative(text) {
     return i >= 0 ? String(text).slice(0, i) : String(text);
 }
 
+/** Extract top-level async/function body by name from flow.js source (until next top-level fn/export). */
+function extractFnSrc(src, name) {
+    const re = new RegExp(
+        '(?:async\\s+)?function\\s+' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\('
+    );
+    const m = src.match(re);
+    if (!m) return null;
+    const i = m.index;
+    const rest = src.slice(i);
+    const end = rest.search(/\n(?:async\s+)?function\s+\w+|\nmodule\.exports/);
+    return end > 0 ? rest.slice(0, end) : rest.slice(0, 6000);
+}
+
 (async () => {
     // ── S10: /start welcome must not promise Telegram publishes the live site ──
     await check('handleStart welcome source must not promise publică/publica site-ul', () => {
@@ -381,6 +394,190 @@ function productNarrative(text) {
             /builder|editor|\/app\//i.test(joined) || /contin/i.test(joined),
             'legacy pay session should be steered to the browser builder'
         );
+    });
+
+    // ── S11: Telegram paid webhook/poller must not deploy a live site ──
+    await check('handleStripeWebhookEvent source must not deploy or promise Public site-ul', () => {
+        const body = extractFnSrc(flowSrc, 'handleStripeWebhookEvent');
+        assert.ok(body, 'handleStripeWebhookEvent must exist');
+        assert.ok(
+            !/\b_publishAndFinish\s*\(/.test(body),
+            'webhook must not call _publishAndFinish (no Telegram deploy state machine)'
+        );
+        assert.ok(
+            !/\bdeployBuiltSite\s*\(/.test(body) && !/\b_deployWithRetry\s*\(/.test(body),
+            'webhook must not call deployBuiltSite / _deployWithRetry'
+        );
+        const folded = foldRo(body);
+        assert.ok(
+            !/public\s+site-ul/.test(folded),
+            'webhook paid outcome must not say Public site-ul'
+        );
+        assert.ok(
+            !/public\s+site-ul\s+imediat/.test(folded),
+            'webhook must not say public site-ul imediat'
+        );
+    });
+
+    await check('_pollPaymentBackground source must not deploy or promise Public site-ul', () => {
+        const body = extractFnSrc(flowSrc, '_pollPaymentBackground');
+        assert.ok(body, '_pollPaymentBackground must exist');
+        assert.ok(
+            !/\b_publishAndFinish\s*\(/.test(body),
+            'poller must not call _publishAndFinish'
+        );
+        assert.ok(
+            !/\bdeployBuiltSite\s*\(/.test(body) && !/\b_deployWithRetry\s*\(/.test(body),
+            'poller must not call deployBuiltSite / _deployWithRetry'
+        );
+        const folded = foldRo(body);
+        assert.ok(
+            !/public\s+site-ul/.test(folded),
+            'poller must not say Public site-ul / public site-ul imediat'
+        );
+    });
+
+    await check('_publishAndFinish source must not deploy a live site', () => {
+        const body = extractFnSrc(flowSrc, '_publishAndFinish');
+        if (!body) return; // optional if fully removed
+        assert.ok(
+            !/\bdeployBuiltSite\s*\(/.test(body) && !/\b_deployWithRetry\s*\(/.test(body),
+            '_publishAndFinish must not call deployBuiltSite / _deployWithRetry'
+        );
+        const folded = foldRo(body);
+        assert.ok(
+            !/public\s+site-ul/.test(folded),
+            '_publishAndFinish must not promise Public site-ul'
+        );
+        assert.ok(
+            !/site-ul tau e live|site-ul tău e live|e deja live/i.test(body) ||
+            /builder|editor|\/app\//i.test(body),
+            '_publishAndFinish if kept should steer to builder, not claim live deploy'
+        );
+    });
+
+    await check('webhook legacy paid session steers to builder without publishing', async () => {
+        const chatId = 911001;
+        const replies = [];
+        const siteDir = fs.mkdtempSync(path.join(tmpDir, 'wh-site-'));
+        fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify({
+            business: { name: 'Webhook Cafe' },
+            hero: { title: 'Webhook Cafe' },
+        }), 'utf8');
+        flow.sessions.set(chatId, {
+            phase: 'pay',
+            stripeSessionId: 'cs_s11_webhook',
+            data: { name: 'Webhook Cafe' },
+            siteDir,
+            siteSlug: 'webhook-cafe-s11',
+            siteConfig: { business: { name: 'Webhook Cafe' } },
+            published: false,
+            _publishing: false,
+        });
+        // Capture Telegram replies via messenger shim if available
+        const prevMessenger = flow.setMessenger
+            ? (() => { /* setMessenger returns void */ })()
+            : null;
+        if (typeof flow.setMessenger === 'function') {
+            flow.setMessenger(async (id, text) => {
+                if (Number(id) === chatId || String(id) === String(chatId)) {
+                    replies.push(String(text));
+                }
+            });
+        }
+        const evt = {
+            type: 'checkout.session.completed',
+            data: {
+                object: {
+                    id: 'cs_s11_webhook',
+                    payment_status: 'paid',
+                    metadata: { chatId: String(chatId), platform: 'telegram' },
+                },
+            },
+        };
+        const r = await flow.handleStripeWebhookEvent(evt);
+        assert.strictEqual(r.handled, true, 'legacy paid webhook should be handled');
+        const sess = flow.sessions.get(chatId);
+        // Session closed or not left in deploy-publish path
+        if (sess) {
+            assert.ok(
+                sess.phase !== 'deploy' || !sess.published,
+                'must not leave a published live deploy'
+            );
+            assert.ok(!sess.published, 'must not mark session.published');
+            assert.ok(!sess.liveUrl, 'must not set liveUrl from Telegram deploy');
+        }
+        const joined = replies.join('\n');
+        if (joined) {
+            const folded = foldRo(joined);
+            assert.ok(
+                !/public\s+site-ul/.test(folded),
+                'webhook reply must not say Public site-ul'
+            );
+            assert.ok(
+                /builder|editor|\/app\/|auth\/verify|contin/i.test(joined),
+                'webhook should steer leftover pay session to Hidook builder'
+            );
+        }
+        flow.sessions.delete(chatId);
+        void prevMessenger;
+    });
+
+    await check('webhook with registry siteId offers magic-link into that draft', async () => {
+        const chatId = 911002;
+        const replies = [];
+        const user = registry.getOrCreateUserByTelegram(chatId, { username: 's11_wh' });
+        const site = registry.createSite({
+            userId: user.id,
+            templateId: 'product-menu',
+            templateVersion: 1,
+            slug: 's11-wh-' + crypto.randomBytes(3).toString('hex'),
+            platform: 'telegram',
+        });
+        registry.updateSite(site.id, { status: 'draft', paid: false, ownerChatId: String(chatId) });
+        flow.sessions.set(chatId, {
+            phase: 'pay',
+            stripeSessionId: 'cs_s11_reg',
+            data: { name: 'Reg Cafe' },
+            registrySiteId: site.id,
+            published: false,
+            _publishing: false,
+        });
+        if (typeof flow.setMessenger === 'function') {
+            flow.setMessenger(async (id, text) => {
+                if (Number(id) === chatId || String(id) === String(chatId)) {
+                    replies.push(String(text));
+                }
+            });
+        }
+        const r = await flow.handleStripeWebhookEvent({
+            type: 'checkout.session.completed',
+            data: {
+                object: {
+                    id: 'cs_s11_reg',
+                    payment_status: 'paid',
+                    metadata: { chatId: String(chatId), platform: 'telegram' },
+                },
+            },
+        });
+        assert.strictEqual(r.handled, true);
+        const joined = replies.join('\n');
+        assert.ok(joined.length > 0, 'must reply to user');
+        assert.ok(
+            /\/auth\/verify\?token=/.test(joined) || /\/app\//.test(joined),
+            'must open builder via /auth/verify or /app/'
+        );
+        if (/\/auth\/verify\?token=([0-9a-f]{64})/i.test(joined)) {
+            const token = joined.match(/\/auth\/verify\?token=([0-9a-f]{64})/i)[1];
+            const payload = registry.consumeLoginToken(token);
+            assert.ok(payload, 'token valid');
+            assert.strictEqual(payload.siteId, site.id);
+        }
+        const still = registry.getSite(site.id);
+        assert.ok(still);
+        assert.notStrictEqual(still.status, 'live', 'registry site must not become live from TG webhook');
+        assert.ok(!still.url, 'no live URL from Telegram webhook path');
+        flow.sessions.delete(chatId);
     });
 
     // ── server.js auth/verify accepts userId tokens (telegram intake) ──

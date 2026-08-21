@@ -911,21 +911,24 @@ async function handleSterge(ctx) {
 }
 
 /**
- * /retry — resume publishing a paid order that failed to deploy/finish (phase
- * 'paid-needs-retry' or 'deploy'). Idempotent via _publishAndFinish's guards.
+ * /retry — leftover paid-needs-retry / deploy sessions: steer to builder (no TG deploy).
  */
 async function handleRetry(ctx) {
     const chatId  = ctx.chat.id;
     const session = getSession(chatId);
 
-    // Legacy in-memory retry
+    // Legacy in-memory retry → builder only (S11)
     if (session.phase === 'paid-needs-retry' || session.phase === 'deploy') {
-        await ctx.reply('🔁 Reiau publicarea...');
         await _publishAndFinish(ctx, session, chatId);
         return;
     }
     if (session.phase === 'pay') {
-        return ctx.reply('Încă aștept confirmarea plății. Dacă ai plătit, o detectez automat în scurt timp.');
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
+        return ctx.reply(
+            'Încă aștept confirmarea plății pe calea veche din Telegram. ' +
+            `Continuă în builder (${appHint}) — acolo editezi și plătești înainte de publicare.`
+        );
     }
 
     // Registry-based retry: find needs-retry sites for this user
@@ -1347,6 +1350,61 @@ async function _prepareCheckoutAndFinish(ctx, session, chatId) {
     return finishTelegramIntake(ctx, session, chatId);
 }
 
+/**
+ * Builder URL for a leftover Telegram session: magic-link when registry site exists,
+ * otherwise plain /app/. Same intake pattern as finishTelegramIntake — no new checkout.
+ */
+function _builderUrlForSession(session, chatId, from) {
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    let builderUrl = publicUrl ? `${publicUrl}/app/` : '/app/';
+    const siteId = session && session.registrySiteId;
+    if (!siteId) return builderUrl;
+    try {
+        const tgUser = registry.getOrCreateUserByTelegram(chatId, {
+            username:  from && from.username,
+            firstName: from && from.first_name,
+        });
+        const site = registry.getSite(siteId);
+        if (!site || site.userId !== tgUser.id) return builderUrl;
+        const { token } = registry.createLoginToken({
+            userId: tgUser.id,
+            siteId,
+            purpose: 'telegram-intake',
+        });
+        builderUrl = publicUrl
+            ? `${publicUrl}/auth/verify?token=${token}`
+            : `/auth/verify?token=${token}`;
+    } catch (e) {
+        console.error('[_builderUrlForSession] createLoginToken failed', e);
+    }
+    return builderUrl;
+}
+
+/**
+ * Close a legacy pay/deploy session and steer the user to the Hidook builder draft.
+ * Does NOT deploy. Does NOT open Telegram checkout.
+ */
+async function _steerSessionToBuilder(ctx, session, chatId, leadText) {
+    const builderUrl = _builderUrlForSession(session, chatId, ctx && ctx.from);
+    const lead = leadText ||
+        'Continuă în builderul Hidook — acolo editezi ciorna și plătești înainte de publicare.';
+    await ctx.reply(
+        `${lead}\n\n` +
+        `👉 ${builderUrl}\n\n` +
+        'Plata și publicarea live se fac din builder (/app/) — nu din Telegram. ' +
+        'Scrie /start oricând pentru un site nou.'
+    );
+    if (session) {
+        session._publishing = false;
+        session.published = false;
+        session.phase = 'done';
+        delete session.liveUrl;
+    }
+    sessions.delete(chatId);
+    flushSessions();
+    _ledger('steer_builder', { chatId, siteId: session && session.registrySiteId });
+}
+
 // ---------------------------------------------------------------------------
 // Payment phase (LEGACY — for sessions created before pay-before-publish)
 // ---------------------------------------------------------------------------
@@ -1363,9 +1421,10 @@ async function _initiatePayment(ctx, session, chatId) {
             session.phase = 'done';
             return;
         }
-        await ctx.reply('ℹ️ Plata nu e configurată — public direct (mod dev)...');
-        session.phase = 'deploy';
-        await _publishAndFinish(ctx, session, chatId);
+        // Dev path: no Telegram live deploy — same unpaid builder draft.
+        await ctx.reply('ℹ️ Plata nu e configurată (mod dev). Te trimit în builder...');
+        await _steerSessionToBuilder(ctx, session, chatId,
+            'ℹ️ Mod dev: deschide builderul Hidook ca să editezi ciorna (fără deploy din Telegram).');
         return;
     }
 
@@ -1399,10 +1458,12 @@ async function _initiatePayment(ctx, session, chatId) {
 
     const total = (amountCents / 100).toFixed(2);
     const curLabel = String(price.currency).toUpperCase();
+    // Legacy helper remains uncalled from /start; copy must not promise TG deploy.
     await ctx.reply(
         `💳 Total de plată: *${total} ${curLabel}*\n\n` +
         `👉 [Plătește aici](${checkoutUrl})\n\n` +
-        '_Verific automat plata în fundal. După confirmare, public site-ul. Nu închide conversația._'
+        '_Această cale e învechită. După confirmare te trimit în builderul Hidook — ' +
+        'publicarea live se face din /app/, nu din Telegram._'
     );
 
     _pollPaymentBackground(ctx, session, chatId, checkoutId);
@@ -1416,16 +1477,20 @@ function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
             if (!paid) {
                 // Not confirmed this window. Keep phase 'pay' so the periodic sweeper
                 // re-checks later — covers slow bank/3DS payments past the poll window.
+                const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+                const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
                 await ctx.reply(
-                    '⏳ Încă n-am primit confirmarea plății. Verific în continuare automat — ' +
-                    'public site-ul imediat ce se confirmă. (Sau scrie /anuleaza ca să renunți.)'
+                    '⏳ Încă n-am primit confirmarea plății. Verific în continuare automat. ' +
+                    `Poți continua oricând în builderul Hidook (${appHint}) — acolo editezi și plătești înainte de publicare. ` +
+                    '(Sau scrie /anuleaza ca să renunți.)'
                 );
                 return;
             }
-            await ctx.reply('✅ Plată confirmată! Public site-ul...');
-            session.phase = 'deploy';
-            flushSessions();   // durable: a restart now resumes from 'deploy', not 'pay'
-            await _publishAndFinish(ctx, session, chatId);
+            // Paid legacy session: never deploy from Telegram — steer to same builder draft.
+            _ledger('paid', { chatId, via: 'poller', sessionId: checkoutId });
+            await _steerSessionToBuilder(ctx, session, chatId,
+                '✅ Plată confirmată. Publicarea live nu se mai face din Telegram — ' +
+                'continuă în builderul Hidook (edit + plată/publicare în /app/).');
         })
         .catch(async (e) => {
             console.error('[pollPayment error]', e);
@@ -1437,13 +1502,9 @@ function _pollPaymentBackground(ctx, session, chatId, checkoutId) {
 /**
  * Handle a signature-verified Stripe webhook event.
  *
- * Dispatcher (TRIAL MODEL):
- *   1. Try webpublish.handleStripePaid first — it looks up the order in registry
- *      by stripeSessionId regardless of platform. If the order is in the registry
- *      (web or trial-telegram), it handles it, notifies on the owner's channel,
- *      and returns early.
- *   2. Fall back to legacy in-memory session handling (for sessions created before
- *      the trial model that still have chatId metadata and a live session).
+ * Dispatcher:
+ *   1. Registry orders (browser /api/publish) → webpublish.handleStripePaid.
+ *   2. Legacy in-memory Telegram pay sessions → steer to builder (NO deploy).
  *
  * @param {object} event  Parsed Stripe event.
  * @returns {Promise<{handled: boolean, reason?: string}>}
@@ -1459,7 +1520,7 @@ async function handleStripeWebhookEvent(event) {
         return { handled: false, reason: 'not paid yet' };
     }
 
-    // 1. Try registry-based handling first (covers all platforms including telegram trial)
+    // 1. Try registry-based handling first (browser pay / durable orders)
     try {
         const orderInRegistry = registry.getOrderBySession(cs.id);
         if (orderInRegistry) {
@@ -1475,7 +1536,7 @@ async function handleStripeWebhookEvent(event) {
         // Fall through to legacy
     }
 
-    // 2. Legacy: in-memory session lookup by chatId metadata
+    // 2. Legacy: in-memory session lookup by chatId metadata — NO Telegram deploy
     const rawChatId = cs.metadata && cs.metadata.chatId;
     if (!rawChatId) return { handled: false, reason: 'no chatId metadata' };
     const chatId  = Number(rawChatId);
@@ -1496,95 +1557,41 @@ async function handleStripeWebhookEvent(event) {
 
     _ledger('paid', { chatId, via: 'webhook', sessionId: cs.id });
     const ctx = _ctxShim(chatId);
-    await ctx.reply('✅ Plată confirmată! Public site-ul...');
-    session.phase = 'deploy';
-    flushSessions();
-    await _publishAndFinish(ctx, session, chatId);
-    return { handled: true };
+    await _steerSessionToBuilder(ctx, session, chatId,
+        '✅ Plată confirmată. Publicarea live nu se mai face din Telegram — ' +
+        'continuă în builderul Hidook (edit + plată/publicare în /app/).');
+    return { handled: true, reason: 'legacy steered to builder' };
 }
 
 // ---------------------------------------------------------------------------
-// Publish phase (runs AFTER payment is confirmed)
+// Legacy "publish" phase — S11: no longer deploys; steers to builder
 // ---------------------------------------------------------------------------
 
-/** Deploy with a couple of retries + small backoff (transient Vercel/network errors). */
+/** @deprecated kept for callers; does not deploy. Prefer browser /api/publish. */
 async function _deployWithRetry(siteDir, slug, chatId, attempts = 3) {
-    let lastErr;
-    for (let i = 1; i <= attempts; i++) {
-        try {
-            return await deployBuiltSite(siteDir, slug, chatId);
-        } catch (e) {
-            lastErr = e;
-            console.error(`[deploy attempt ${i}/${attempts}]`, e.message);
-            if (i < attempts) await new Promise(r => setTimeout(r, 1500 * i));
-        }
-    }
-    throw lastErr;
+    // Intentionally unused by active Telegram paths after S11.
+    void siteDir; void slug; void chatId; void attempts;
+    throw new Error('Telegram deploy path removed; use builder /app/ publish');
 }
 
 /**
- * LEGACY publish phase — used for sessions created before the trial model (and for
- * /retry on paid-needs-retry sessions). IDEMPOTENT and RETRYABLE.
+ * LEGACY name kept for reconcilePending / handleRetry.
+ * S11: does NOT deploy. Steers leftover sessions to the Hidook builder draft.
  */
 async function _publishAndFinish(ctx, session, chatId) {
-    if (session.published) {
-        const live = session.liveUrl;
-        if (live) await ctx.reply(`✅ Site-ul tău e deja live:\n👉 ${live}`);
-        return;
-    }
-    if (session._publishing) return;
-    session._publishing = true;
-    session.phase = 'deploy';
-    flushSessions();
-
-    const parkForRetry = async (msg) => {
-        session._publishing = false;
-        session.phase = 'paid-needs-retry';
+    if (session && session.published && session.liveUrl) {
+        await ctx.reply(
+            `✅ Ai deja un URL salvat dintr-o sesiune veche:\n👉 ${session.liveUrl}\n\n` +
+            'Pentru editări și republicare folosește builderul Hidook (/app/).'
+        );
+        sessions.delete(chatId);
         flushSessions();
-        notifyAdmin(`⚠️ Publicare eșuată (client PLĂTIT) chat ${chatId}: ${msg}`);
-        _ledger('failed', { chatId, reason: msg });
-        await ctx.reply(`⚠️ ${msg}\n\nAi plătit deja — datele tale sunt în siguranță. Scrie /retry ca să încerc din nou publicarea.`);
-    };
-
-    const siteDir = session.siteDir;
-    const slug    = session.siteSlug;
-    if (!siteDir || !fs.existsSync(siteDir)) {
-        await parkForRetry('Nu găsesc fișierele site-ului pe disc.');
         return;
     }
-
-    let url, projectId, provider;
-    try {
-        await ctx.reply('🚀 Public site-ul...');
-        ({ url, projectId, provider } = await _deployWithRetry(siteDir, slug, chatId));
-    } catch (e) {
-        console.error('[deploy failed after retries]', e);
-        await parkForRetry('Publicarea a eșuat temporar: ' + e.message);
-        return;
-    }
-    if (!url) { await parkForRetry('Deploy-ul nu a returnat un URL.'); return; }
-    session.liveUrl   = url;
-    session.projectId = projectId;
-    flushSessions();
-
-    session.published = true;
-    session._publishing = false;
-    session.phase = 'done';
-    flushSessions();
-
-    const domainMsg = CONTACT_URL
-        ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${CONTACT_URL}`
-        : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
-
-    notifyAdmin(`💰 PLATĂ + PUBLICARE: chat ${chatId} → ${url}`);
-    _ledger('published', { chatId, url });
-    await ctx.reply(
-        `🎉 Gata! Site-ul tău e LIVE:\n\n👉 ${url}\n\n` +
-        `${domainMsg}\n\n` +
-        'Felicitări! Scrie /start oricând să faci un site nou.'
-    );
-    sessions.delete(chatId);
-    flushSessions();
+    if (session && session._publishing) return;
+    await _steerSessionToBuilder(ctx, session, chatId,
+        'Publicarea din Telegram nu mai e disponibilă. Continuă în builderul Hidook ' +
+        'ca să editezi ciorna și să publici după plată din /app/.');
 }
 
 // ---------------------------------------------------------------------------
