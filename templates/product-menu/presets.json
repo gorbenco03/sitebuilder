@@ -1,0 +1,198 @@
+{
+  "presets": [
+    {
+      "id": "dulce-ileana",
+      "name": "Dulce de la Ileana",
+      "config": {
+        "business": {
+          "name": "Dulce de la Ileana",
+          "tagline": "Torturi la comandă, prăjituri de casă, ciocolată artizanală",
+          "title": "Dulce de la Ileana | Cofetărie Artizanală | București",
+          "metaDescription": "Torturi personalizate, prăjituri tradiționale și praline artizanale. Comandă online cu livrare în București și Ilfov.",
+          "about": "La Ileana, fiecare tort este o poveste spusă cu zahăr și dragoste. Suntem o cofetărie mică de familie din Floreasca, unde rețetele se transmit din generație în generație. Folosim unt adevărat, ciocolată belgiană și fructe proaspete de sezon.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Povestea noastră",
+          "instaTitle": "Inspirație dulce pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Descoperă",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#C45C4A",
+          "primaryLight": "#D98A7A",
+          "primaryDark": "#3D2420",
+          "cream": "#FAF6F1"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(160deg, rgba(61,36,32,0.62) 0%, rgba(196,92,74,0.42) 60%, rgba(250,246,241,0.12) 100%), url('https://picsum.photos/seed/pm-ileana-hero/1200/800')",
+          "ctaLabel": "Vezi meniul"
+        },
+        "servicesTitle": "Ce găsești la noi",
+        "services": [
+          { "icon": "", "label": "Torturi la comandă" },
+          { "icon": "", "label": "Praline artizanale" },
+          { "icon": "", "label": "Tarte cu fructe" },
+          { "icon": "", "label": "Prăjituri de casă" },
+          { "icon": "", "label": "Platouri dulci" },
+          { "icon": "", "label": "Cafea de specialitate" }
+        ],
+        "galleryTitle": "Din vitrină",
+        "categories": [
+          {
+            "title": "Torturi de ocazie",
+            "blurb": "Fiecare tort e sculptat manual — de la florile de zahăr până la glazura în oglindă.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/pm-ileana-t1/800/600", "alt": "Tort alb cu flori de zahăr" },
+              { "src": "https://picsum.photos/seed/pm-ileana-t2/800/600", "alt": "Tort ciocolată cu zmeură" },
+              { "src": "https://picsum.photos/seed/pm-ileana-t3/800/600", "alt": "Tort cu glazură oglindă" }
+            ]
+          },
+          {
+            "title": "Praline & ciocolată",
+            "blurb": "Ciocolată belgiană, ganache de fructe, caramel sărat — cutii cadou oricând.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/pm-ileana-p1/800/600", "alt": "Cutie de praline asortate" },
+              { "src": "https://picsum.photos/seed/pm-ileana-p2/800/600", "alt": "Trufe de ciocolată neagră" },
+              { "src": "https://picsum.photos/seed/pm-ileana-p3/800/600", "alt": "Tartă cu căpșuni" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "dulce.de.la.ileana",
+          "url": "https://www.instagram.com/dulce.de.la.ileana",
+          "gallery": [
+            "https://picsum.photos/seed/pm-ig-i1/600/600",
+            "https://picsum.photos/seed/pm-ig-i2/600/600",
+            "https://picsum.photos/seed/pm-ig-i3/600/600",
+            "https://picsum.photos/seed/pm-ig-i4/600/600",
+            "https://picsum.photos/seed/pm-ig-i5/600/600",
+            "https://picsum.photos/seed/pm-ig-i6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Comandă o surpriză",
+          "intro": "Scrie-ne pe WhatsApp sau Instagram — răspundem în câteva ore. Livrare în Floreasca și Dorobanți.",
+          "instagram": { "url": "https://www.instagram.com/dulce.de.la.ileana", "label": "@dulce.de.la.ileana" },
+          "facebook": { "url": "https://www.facebook.com/dulcedelaileana", "label": "Dulce de la Ileana" },
+          "whatsapp": "40722456789",
+          "phone": "+40722456789",
+          "phoneDisplay": "+40 722 456 789",
+          "waHref": "https://wa.me/40722456789?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20s%C4%83%20comand.",
+          "address": "Str. Grigore Alexandrescu 58<br>Sector 1, București",
+          "addressHref": "https://maps.google.com/?q=Str+Grigore+Alexandrescu+58+Bucuresti"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/pm-ileana-hero/1200/800",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Dulce de la Ileana\",\"telephone\":\"+40722456789\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Grigore Alexandrescu 58\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
+        },
+        "footer": {
+          "address": "Str. Grigore Alexandrescu 58, Sector 1, București",
+          "year": 2026,
+          "note": "Cu dragoste și unt adevărat, în fiecare zi."
+        }
+      }
+    },
+    {
+      "id": "bistro-verde",
+      "name": "Bistro Verde",
+      "config": {
+        "business": {
+          "name": "Bistro Verde",
+          "tagline": "Meniu de sezon, produse locale, terasă la umbră",
+          "title": "Bistro Verde | Restaurant de cartier | Cluj-Napoca",
+          "metaDescription": "Bistro cu meniu de sezon în Cluj. Mic dejun, prânz de business și cină cu vinuri românești. Rezervări pe WhatsApp.",
+          "about": "Bistro Verde e locul în care legumele de la piața Mărăști și carnea de la producători din Apuseni se întâlnesc pe farfurie. Meniul se schimbă o dată pe lună. Dimineața ai ouă și pâine de casă; seara, farfurii care merită un pahar de Fetească.",
+          "lang": "ro"
+        },
+        "labels": {
+          "about": "Despre noi",
+          "instaTitle": "Din farfurie, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Meniu",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#2F6B4F",
+          "primaryLight": "#4C8A6A",
+          "primaryDark": "#1A3D2C",
+          "cream": "#F7F4EC"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(155deg, rgba(26,61,44,0.68) 0%, rgba(47,107,79,0.4) 55%, rgba(247,244,236,0.1) 100%), url('https://picsum.photos/seed/pm-bistro-hero/1200/800')",
+          "ctaLabel": "Rezervă o masă"
+        },
+        "servicesTitle": "La masă",
+        "services": [
+          { "icon": "", "label": "Mic dejun" },
+          { "icon": "", "label": "Prânz business" },
+          { "icon": "", "label": "Cină de sezon" },
+          { "icon": "", "label": "Vinuri românești" },
+          { "icon": "", "label": "Terasă" },
+          { "icon": "", "label": "Catering mic" }
+        ],
+        "galleryTitle": "Din bucătărie",
+        "categories": [
+          {
+            "title": "Feluri principale",
+            "blurb": "Porții sincere, legume la cuptor, sosuri de casă.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/pm-bistro-m1/800/600", "alt": "Farfurie cu legume de sezon" },
+              { "src": "https://picsum.photos/seed/pm-bistro-m2/800/600", "alt": "Paste fresh cu sos de roșii" },
+              { "src": "https://picsum.photos/seed/pm-bistro-m3/800/600", "alt": "Desert cu fructe" }
+            ]
+          },
+          {
+            "title": "Terasă & atmosfera",
+            "blurb": "Umbră de castan, lumină caldă seara, muzică pe fundal.",
+            "photos": [
+              { "src": "https://picsum.photos/seed/pm-bistro-a1/800/600", "alt": "Terasă cu mese de lemn" },
+              { "src": "https://picsum.photos/seed/pm-bistro-a2/800/600", "alt": "Interior bistro" },
+              { "src": "https://picsum.photos/seed/pm-bistro-a3/800/600", "alt": "Masă aranjată pentru cină" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "bistro.verde.cluj",
+          "url": "https://www.instagram.com/bistro.verde.cluj",
+          "gallery": [
+            "https://picsum.photos/seed/pm-ig-b1/600/600",
+            "https://picsum.photos/seed/pm-ig-b2/600/600",
+            "https://picsum.photos/seed/pm-ig-b3/600/600",
+            "https://picsum.photos/seed/pm-ig-b4/600/600",
+            "https://picsum.photos/seed/pm-ig-b5/600/600",
+            "https://picsum.photos/seed/pm-ig-b6/600/600"
+          ]
+        },
+        "contact": {
+          "title": "Rezervări",
+          "intro": "Sună sau scrie pe WhatsApp pentru o masă. Deschis marți–duminică, 9–22.",
+          "instagram": { "url": "https://www.instagram.com/bistro.verde.cluj", "label": "@bistro.verde.cluj" },
+          "facebook": { "url": "", "label": "" },
+          "whatsapp": "40733112233",
+          "phone": "+40733112233",
+          "phoneDisplay": "+40 733 112 233",
+          "waHref": "https://wa.me/40733112233?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
+          "address": "Str. Memorandumului 12<br>Cluj-Napoca",
+          "addressHref": "https://maps.google.com/?q=Str+Memorandumului+12+Cluj"
+        },
+        "seo": {
+          "ogImage": "https://picsum.photos/seed/pm-bistro-hero/1200/800",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Bistro Verde\",\"telephone\":\"+40733112233\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 12\",\"addressLocality\":\"Cluj-Napoca\",\"addressCountry\":\"RO\"}}"
+        },
+        "footer": {
+          "address": "Str. Memorandumului 12, Cluj-Napoca",
+          "year": 2026,
+          "note": "Meniu de sezon, mereu."
+        }
+      }
+    }
+  ]
+}

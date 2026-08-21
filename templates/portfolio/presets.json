@@ -27,10 +27,10 @@
           "waBookBtn": "Rezervă pe WhatsApp"
         },
         "theme": {
-          "primary": "#C4956A",
-          "primaryLight": "#D9B08C",
-          "primaryDark": "#A07548",
-          "cream": "#FAF7F4"
+          "primary": "#B76E79",
+          "primaryLight": "#D4A0A8",
+          "primaryDark": "#8E4F5A",
+          "cream": "#F7F4F2"
         },
         "logo": "",
         "showWordmark": true,

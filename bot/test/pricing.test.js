@@ -194,7 +194,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
     }
 
     const templatesDir = path.join(__dirname, '..', '..', 'templates');
-    let tplId = 'patiserie';
+    let tplId = 'product-menu';
     try {
         const dirs = fs.readdirSync(templatesDir).filter((d) => {
             try { return fs.statSync(path.join(templatesDir, d)).isDirectory(); } catch { return false; }

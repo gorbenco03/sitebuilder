@@ -1,10 +1,9 @@
 /* ============================================================
-   PATISERIE — Premium Artisanal Bakery Theme
-   Fonts: System serif (Georgia / Iowan Old Style) for display;
-          system-ui / -apple-system for body. Zero CDN.
-   Palette: cream #FAF6F1 · chocolate --color-primary-dark
-            · rose-pink --color-primary · warm neutrals.
-   Scale: 8px base rhythm; max-width 1140px container.
+   PRODUCT-MENU — Art-directed menu / retail system
+   Type: serif display (Georgia / Iowan) + system sans body. Zero CDN.
+   Layout: full-bleed hero, paper cream surface, rounded menu cards.
+   Photo: soft warm overlays, square-ish gallery tiles, food-first.
+   Distinct from local-service (industrial) and portfolio (gallery editorial).
    ============================================================ */
 
 /* ── Tokens ─────────────────────────────────────────────── */
@@ -53,10 +52,10 @@
     --ease-slow:  cubic-bezier(0.16, 1, 0.3, 1);
 
     /* Radii */
-    --r-sm:  12px;
-    --r-md:  20px;
-    --r-lg:  28px;
-    --r-xl:  36px;
+    --r-sm:  8px;
+    --r-md:  16px;
+    --r-lg:  22px;
+    --r-xl:  28px;
     --r-pill: 999px;
 }
 

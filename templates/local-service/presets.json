@@ -24,10 +24,10 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary":      "#F5A623",
-          "primaryLight": "#F7BA52",
-          "primaryDark":  "#D4891A",
-          "cream":        "#F4F5F0"
+          "primary":      "#E8A317",
+          "primaryLight": "#F0BC4A",
+          "primaryDark":  "#B87A10",
+          "cream":        "#F2F3EF"
         },
         "logo": "",
         "showWordmark": true,

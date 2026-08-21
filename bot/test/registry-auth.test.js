@@ -139,9 +139,9 @@ let testSiteId;
 
 check('createSite returns a valid site object', () => {
     const user = registry.getOrCreateUserByEmail('site-owner@test.com');
-    const site = registry.createSite({ userId: user.id, templateId: 'patiserie', templateVersion: 1, slug: 'patiseria-mea-abc123' });
+    const site = registry.createSite({ userId: user.id, templateId: 'product-menu', templateVersion: 1, slug: 'meniu-meu-abc123' });
     assert.strictEqual(site.userId, user.id);
-    assert.strictEqual(site.templateId, 'patiserie');
+    assert.strictEqual(site.templateId, 'product-menu');
     assert.strictEqual(site.templateVersion, 1);
     assert.strictEqual(site.status, 'draft');
     assert.strictEqual(site.paid, false);
@@ -162,8 +162,8 @@ check('getSite returns null for unknown id', () => {
 
 check('listSites returns all sites for a user', () => {
     const user  = registry.getOrCreateUserByEmail('multi@test.com');
-    registry.createSite({ userId: user.id, templateId: 'constructii', templateVersion: 1 });
-    registry.createSite({ userId: user.id, templateId: 'servicii',    templateVersion: 1 });
+    registry.createSite({ userId: user.id, templateId: 'local-service', templateVersion: 1 });
+    registry.createSite({ userId: user.id, templateId: 'portfolio',    templateVersion: 1 });
     const sites = registry.listSites(user.id);
     assert.strictEqual(sites.length, 2);
 });
@@ -205,7 +205,7 @@ check('getVersionConfig returns null for unknown versionId', () => {
 check('saveVersion keeps at most 10 versions', () => {
     // Save 15 versions
     const user2 = registry.getOrCreateUserByEmail('version-limit@test.com');
-    const site2 = registry.createSite({ userId: user2.id, templateId: 'patiserie', templateVersion: 1 });
+    const site2 = registry.createSite({ userId: user2.id, templateId: 'product-menu', templateVersion: 1 });
     for (let i = 0; i < 15; i++) {
         registry.saveVersion(site2.id, { n: i });
     }
@@ -222,7 +222,7 @@ let testOrder;
 
 check('createOrder returns a pending order', () => {
     const user = registry.getOrCreateUserByEmail('buyer@test.com');
-    const site = registry.createSite({ userId: user.id, templateId: 'patiserie', templateVersion: 1 });
+    const site = registry.createSite({ userId: user.id, templateId: 'product-menu', templateVersion: 1 });
     const order = registry.createOrder({
         siteId:          site.id,
         userId:          user.id,

@@ -1246,7 +1246,7 @@ async function _prepareCheckoutAndFinish(ctx, session, chatId) {
 
     const regSite = registry.createSite({
         userId:          tgUser.id,
-        templateId:      session.data && session.data.templateId || 'patiserie',
+        templateId:      session.data && session.data.templateId || 'product-menu',
         templateVersion: null,
         slug,
         platform:    'telegram',

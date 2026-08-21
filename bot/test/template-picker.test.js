@@ -60,8 +60,8 @@ const ts = require('../template-steps.js');
 
     await check('(a) STEPS[0].prompt contains the registry option names', () => {
         const p = ts.STEPS[0].prompt;
-        assert.ok(p.includes('Patiserie'), 'should include first template name');
-        assert.ok(p.includes('Construcții'), 'should include second template name');
+        assert.ok(p.includes('Meniu'), 'should include first template name');
+        assert.ok(p.includes('Servicii locale'), 'should include second template name');
     });
 
     await check('(a) STEPS[0].prompt uses 1/10 counter (10 data+template steps)', () => {
@@ -87,31 +87,31 @@ const ts = require('../template-steps.js');
         assert.ok(!/\(\d+\/\d+\)/.test(g.prompt), `gallery prompt should not have a (x/y) counter: ${g.prompt}`);
     });
 
-    // ── answer '2' → templateId set to constructii ───────────────────────────
+    // ── answer '2' → templateId set to local-service ───────────────────────────
 
     await check('(a) answering "2" sets session.templateId to second template id', () => {
         const session = { data: {} };
         const result  = ts.handleTemplateStep(session, '2');
         assert.ok(result.handled, 'should be handled');
-        assert.strictEqual(session.templateId, 'constructii', `expected 'constructii', got '${session.templateId}'`);
+        assert.strictEqual(session.templateId, 'local-service', `expected 'local-service', got '${session.templateId}'`);
     });
 
-    // ── answer '1' → templateId set to patiserie ─────────────────────────────
+    // ── answer '1' → templateId set to product-menu ─────────────────────────────
 
     await check('(a) answering "1" sets session.templateId to first template id', () => {
         const session = { data: {} };
         const result  = ts.handleTemplateStep(session, '1');
         assert.ok(result.handled);
-        assert.strictEqual(session.templateId, 'patiserie');
+        assert.strictEqual(session.templateId, 'product-menu');
     });
 
     // ── case-insensitive text match ───────────────────────────────────────────
 
-    await check('(a) answering "servicii" (text, case-insensitive) matches third template', () => {
+    await check('(a) answering "Portofoliu" (text, case-insensitive) matches third template', () => {
         const session = { data: {} };
-        const result  = ts.handleTemplateStep(session, 'Servicii locale');
+        const result  = ts.handleTemplateStep(session, 'Portofoliu');
         assert.ok(result.handled);
-        assert.strictEqual(session.templateId, 'servicii');
+        assert.strictEqual(session.templateId, 'portfolio');
     });
 
     // ── invalid input → re-ask politely ──────────────────────────────────────
@@ -122,7 +122,7 @@ const ts = require('../template-steps.js');
         assert.strictEqual(result.handled, false, 'should not be handled');
         assert.ok(result.errorReply, 'should have errorReply');
         assert.ok(
-            result.errorReply.toLowerCase().includes('1') || result.errorReply.includes('Patiserie'),
+            result.errorReply.toLowerCase().includes('1') || result.errorReply.includes('Meniu'),
             're-ask reply should include the options'
         );
         assert.ok(!session.templateId, 'templateId must NOT be set on invalid input');
@@ -132,10 +132,10 @@ const ts = require('../template-steps.js');
 
     await check('(c) copyTemplateFiles copies template folder files into siteDir', () => {
         const TEMPLATES_DIR = path.join(__dirname, '../../templates');
-        const templateId    = 'patiserie';
+        const templateId    = 'product-menu';
         const tplDir        = path.join(TEMPLATES_DIR, templateId);
         if (!fs.existsSync(tplDir)) {
-            console.log('SKIP (c) — patiserie template folder not found on disc');
+            console.log('SKIP (c) — product-menu template folder not found on disc');
             return;
         }
 
@@ -159,16 +159,16 @@ const ts = require('../template-steps.js');
 
     // ── (d) deriveVertical from registry entry ────────────────────────────────
 
-    await check('(d) deriveVertical for constructii returns "constructii"', () => {
-        const session = { templateId: 'constructii' };
+    await check('(d) deriveVertical for local-service returns "local-service"', () => {
+        const session = { templateId: 'local-service' };
         const v = ts.deriveVertical(session);
-        assert.strictEqual(v, 'constructii');
+        assert.strictEqual(v, 'local-service');
     });
 
-    await check('(d) deriveVertical for patiserie returns "food"', () => {
-        const session = { templateId: 'patiserie' };
+    await check('(d) deriveVertical for product-menu returns "product-menu"', () => {
+        const session = { templateId: 'product-menu' };
         const v = ts.deriveVertical(session);
-        assert.strictEqual(v, 'food');
+        assert.strictEqual(v, 'product-menu');
     });
 
     await check('(d) deriveVertical with unknown templateId falls back to templateId itself', () => {
@@ -202,20 +202,20 @@ const ts = require('../template-steps.js');
 
     await check('(a) templateVersion saved by copyTemplateFiles when not already set', () => {
         const TEMPLATES_DIR = path.join(__dirname, '../../templates');
-        const tplDir = path.join(TEMPLATES_DIR, 'constructii');
+        const tplDir = path.join(TEMPLATES_DIR, 'local-service');
         if (!fs.existsSync(tplDir)) { console.log('SKIP templateVersion from copyTemplateFiles'); return; }
         // Read expected version dynamically
         let expectedVersion = 1;
         try {
             const regPath = path.join(TEMPLATES_DIR, 'registry.json');
             const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
-            const entry = reg && reg.templates && reg.templates.find(t => t.id === 'constructii');
+            const entry = reg && reg.templates && reg.templates.find(t => t.id === 'local-service');
             if (entry && entry.version != null) expectedVersion = entry.version;
         } catch (_) {}
         const fakeSiteDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tpicker-ver-'));
         try {
             const session = {};
-            ts.copyTemplateFiles('constructii', session, fakeSiteDir);
+            ts.copyTemplateFiles('local-service', session, fakeSiteDir);
             assert.strictEqual(session.templateVersion, expectedVersion,
                 `expected ${expectedVersion}, got ${session.templateVersion}`);
         } finally {

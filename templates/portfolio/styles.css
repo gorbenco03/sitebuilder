@@ -1,24 +1,25 @@
 /* ═══════════════════════════════════════════════════════════════════
-   BEAUTY SALON — Premium system stylesheet
-   Palette: nude/blush cream bg · near-black text · golden-biscuit accents
-   Typography: Georgia/Iowan Old Style (serif display) · system-ui (sans body)
-   Spacing: 8px base scale → 8/16/24/32/40/48/56/64/80/96/112/128
+   PORTFOLIO — Art-directed studio / beauty / events system
+   Type: thin serif display + airy system sans. Gallery-first spacing.
+   Layout: full-bleed hero, menu-row services, large photography, minimal chrome.
+   Photo: soft rose/ink frames, generous negative space, editorial crop.
+   Distinct from product-menu (paper menu retail) and local-service (industrial CTA).
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Custom properties (defaults; overridden per-site via <style> in <head>) ── */
 :root {
-    --color-primary:       #C4956A;   /* warm gold-biscuit */
-    --color-primary-light: #D9B08C;
-    --color-primary-dark:  #A07548;
-    --color-cream:         #FAF7F4;   /* nude parchment */
+    --color-primary:       #B76E79;   /* dusty rose */
+    --color-primary-light: #D4A0A8;
+    --color-primary-dark:  #8E4F5A;
+    --color-cream:         #F7F4F2;   /* cool parchment */
 
     /* Derived from above (never override these manually) */
     --color-accent:  var(--color-primary);
     --color-white:   #FFFFFF;
-    --color-ink:     #1A1714;   /* near-black, warm undertone */
+    --color-ink:     #14121A;   /* near-black, cool undertone */
     --color-ink-mid: #5C5651;   /* mid-grey for body copy */
     --color-ink-faint: #9C9690; /* placeholder / muted */
-    --color-rule:    rgba(196,149,106, 0.18);  /* hairline dividers */
+    --color-rule:    rgba(183,110,121, 0.18);  /* hairline dividers */
 
     /* Typography */
     --font-serif: 'Iowan Old Style', 'Georgia', 'Times New Roman', serif;
@@ -47,7 +48,7 @@
     --shadow-sm:  0 4px 18px rgba(26,23,20, 0.07);
     --shadow-md:  0 10px 40px rgba(26,23,20, 0.09);
     --shadow-lg:  0 20px 64px rgba(26,23,20, 0.12);
-    --shadow-gold: 0 8px 28px rgba(196,149,106, 0.28);
+    --shadow-gold: 0 8px 28px rgba(183,110,121, 0.28);
 
     /* Container */
     --container: 1100px;

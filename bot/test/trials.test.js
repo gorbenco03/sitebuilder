@@ -66,7 +66,7 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
     const trialEndsAt = new Date(Date.now() + hoursFromNow * 3600 * 1000).toISOString();
     const site = registry.createSite({
         userId,
-        templateId:      'patiserie',
+        templateId:      'product-menu',
         templateVersion: null,
         slug:            'test-site-' + crypto.randomUUID().slice(0, 8),
         platform:        'web',

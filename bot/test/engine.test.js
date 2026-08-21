@@ -2,12 +2,12 @@
 /**
  * Test: build.js render engine
  *
- * (a) renderHtml pe templates/patiserie cu presetul 1 produce acelasi HTML ca
+ * (a) renderHtml pe templates/product-menu cu presetul 1 produce acelasi HTML ca
  *     build() clasic pe un tmpdir.
  * (b) generated/engine.js incarcat intr-un vm cu window={} produce un HTML
  *     cu <style> inline, fara {{ si fara href="styles.css".
  * (c) node build.js in ROOT produce index.html byte-identic (invariant).
- * (d) renderHtml editMode pe patiserie preset0 → contine data-hb-edit="business.name"
+ * (d) renderHtml editMode pe product-menu preset0 → contine data-hb-edit="business.name"
  *     in context text; {{business.title}} din atribut content= NU e invelit.
  * (e) Token dintr-o bucla @each are index corect: data-hb-edit="services.0.label".
  * (f) Fara editMode, ZERO 'data-hb-edit' in output.
@@ -52,11 +52,11 @@ function loadTemplateHtml(templateId) {
 
 // ─── (a) renderHtml vs build() clasic ────────────────────────────────────────
 
-check('(a) renderHtml(patiserie, preset 0) == build() clasic pe tmpdir', () => {
+check('(a) renderHtml(product-menu, preset 0) == build() clasic pe tmpdir', () => {
     const { build, renderHtml } = require('../../build.js');
 
-    const config = loadPreset('patiserie', 0);
-    const templateHtml = loadTemplateHtml('patiserie');
+    const config = loadPreset('product-menu', 0);
+    const templateHtml = loadTemplateHtml('product-menu');
 
     // Randeaza cu noua functie pura
     const rendered = renderHtml(templateHtml, config);
@@ -67,7 +67,7 @@ check('(a) renderHtml(patiserie, preset 0) == build() clasic pe tmpdir', () => {
         // Copiaza fisierele necesare lui build()
         fs.writeFileSync(path.join(tmpDir, 'config.json'), JSON.stringify(config), 'utf8');
         fs.copyFileSync(
-            path.join(ROOT, 'templates', 'patiserie', 'template.html'),
+            path.join(ROOT, 'templates', 'product-menu', 'template.html'),
             path.join(tmpDir, 'template.html')
         );
 
@@ -106,7 +106,7 @@ check('(b) renderPreview produce <style> inline, fara {{ si fara href="styles.cs
 
     const engine = sandbox.window.HidookEngine;
 
-    const templateId = 'patiserie';
+    const templateId = 'product-menu';
     const tplDir = path.join(ROOT, 'templates', templateId);
 
     const files = {
@@ -116,7 +116,7 @@ check('(b) renderPreview produce <style> inline, fara {{ si fara href="styles.cs
         collageJs:    fs.readFileSync(path.join(tplDir, 'collage.js'),    'utf8'),
     };
 
-    const config = loadPreset('patiserie', 0);
+    const config = loadPreset('product-menu', 0);
     const html = engine.renderPreview(files, config);
 
     // Trebuie sa contina <style> inline (CSS-ul inluit)
@@ -155,8 +155,8 @@ check('(c) node build.js in ROOT produce index.html byte-identic', () => {
 
 check('(d) editMode: business.name apare ca data-hb-edit in context text (h1/p)', () => {
     const { renderHtml } = require('../../build.js');
-    const config = loadPreset('patiserie', 0);
-    const templateHtml = loadTemplateHtml('patiserie');
+    const config = loadPreset('product-menu', 0);
+    const templateHtml = loadTemplateHtml('product-menu');
 
     const html = renderHtml(templateHtml, config, { editMode: true });
 
@@ -175,8 +175,8 @@ check('(d) editMode: business.name apare ca data-hb-edit in context text (h1/p)'
 
 check('(d) editMode: tokenul din atribut content= NU e invelit in span', () => {
     const { renderHtml } = require('../../build.js');
-    const config = loadPreset('patiserie', 0);
-    const templateHtml = loadTemplateHtml('patiserie');
+    const config = loadPreset('product-menu', 0);
+    const templateHtml = loadTemplateHtml('product-menu');
 
     const html = renderHtml(templateHtml, config, { editMode: true });
 
@@ -198,8 +198,8 @@ check('(d) editMode: tokenul din atribut content= NU e invelit in span', () => {
 
 check('(e) editMode: token din @each services are index corect (services.0.label)', () => {
     const { renderHtml } = require('../../build.js');
-    const config = loadPreset('patiserie', 0);
-    const templateHtml = loadTemplateHtml('patiserie');
+    const config = loadPreset('product-menu', 0);
+    const templateHtml = loadTemplateHtml('product-menu');
 
     // Asigura-te ca exista cel putin un element in services
     assert.ok(
@@ -227,8 +227,8 @@ check('(e) editMode: token din @each services are index corect (services.0.label
 
 check('(f) fara editMode: output-ul NU contine niciun data-hb-edit', () => {
     const { renderHtml } = require('../../build.js');
-    const config = loadPreset('patiserie', 0);
-    const templateHtml = loadTemplateHtml('patiserie');
+    const config = loadPreset('product-menu', 0);
+    const templateHtml = loadTemplateHtml('product-menu');
 
     // Fara opts
     const htmlNoOpts = renderHtml(templateHtml, config);
@@ -262,7 +262,7 @@ check('(g) engine.js renderPreview(files, config, {editMode:true}) contine data-
     vm.runInNewContext(engineSrc, sandbox);
 
     const engine = sandbox.window.HidookEngine;
-    const templateId = 'patiserie';
+    const templateId = 'product-menu';
     const tplDir = path.join(ROOT, 'templates', templateId);
 
     const files = {
@@ -272,7 +272,7 @@ check('(g) engine.js renderPreview(files, config, {editMode:true}) contine data-
         collageJs:    fs.readFileSync(path.join(tplDir, 'collage.js'),    'utf8'),
     };
 
-    const config = loadPreset('patiserie', 0);
+    const config = loadPreset('product-menu', 0);
     const html = engine.renderPreview(files, config, { editMode: true });
 
     assert.ok(
@@ -299,7 +299,7 @@ check('(h) editMode: continutul <style>/<script>/<title> NU e invelit (regresie:
     // Bug real: {{theme.primary}} din <style> era invelit in <span data-hb-edit>,
     // corupand intregul stylesheet al temei → editorul se randa complet alb.
     const { renderHtml } = require('../../build.js');
-    for (const tid of ['patiserie', 'constructii', 'servicii', 'beauty', 'evenimente']) {
+    for (const tid of ['product-menu', 'local-service', 'portfolio']) {
         const tpl = fs.readFileSync(path.join(ROOT, 'templates', tid, 'template.html'), 'utf8');
         const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', tid, 'presets.json'), 'utf8')).presets[0].config;
         const html = renderHtml(tpl, cfg, { editMode: true });

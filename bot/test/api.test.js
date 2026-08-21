@@ -384,7 +384,7 @@ const MINIMAL_CONFIG = {
         const res = await fetch(`${base}/api/publish`, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ templateId: 'patiserie', config: MINIMAL_CONFIG, images: [] }),
+            body:    JSON.stringify({ templateId: 'product-menu', config: MINIMAL_CONFIG, images: [] }),
         });
         assert.strictEqual(res.status, 401);
     });
@@ -392,7 +392,7 @@ const MINIMAL_CONFIG = {
     // ── 8. POST /api/publish unpaid → draft (pay-before-publish) ───────────
     await check('POST /api/publish unpaid → draft site, not live, paymentUrl null', async () => {
         const templates = loadTemplatesForTest();
-        const tplId = templates[0] ? templates[0].id : 'patiserie';
+        const tplId = templates[0] ? templates[0].id : 'product-menu';
         const res = await client('/api/publish', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -423,7 +423,7 @@ const MINIMAL_CONFIG = {
             if (!sites.some(s => !s.paid && s.status !== 'deleted')) {
                 require(registryPath).createSite({
                     userId:      meBody.user.id,
-                    templateId:  'patiserie',
+                    templateId:  'product-menu',
                     templateVersion: null,
                     slug:        'my-test-site',
                     platform:    'web',
@@ -433,7 +433,7 @@ const MINIMAL_CONFIG = {
         }
 
         const templates = loadTemplatesForTest();
-        const tplId = templates[0] ? templates[0].id : 'patiserie';
+        const tplId = templates[0] ? templates[0].id : 'product-menu';
         const res = await client('/api/publish', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -517,6 +517,6 @@ function loadTemplatesForTest() {
         const reg = JSON.parse(fs.readFileSync(regPath, 'utf8'));
         return Array.isArray(reg && reg.templates) ? reg.templates : [];
     } catch {
-        return [{ id: 'patiserie' }];
+        return [{ id: 'product-menu' }];
     }
 }

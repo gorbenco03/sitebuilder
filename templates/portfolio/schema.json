@@ -1,51 +1,51 @@
 {
-  "templateId": "evenimente",
+  "templateId": "portfolio",
   "version": 1,
-  "name": "Evenimente & Artiști",
+  "name": "Portofoliu",
   "language": "ro",
   "wizardHints": {
-    "vertical": "evenimente",
-    "aiStyle": "editorial, rafinat, spectaculos — tonul unui fotograf sau artist de top care transformă fiecare eveniment într-o amintire de neuitat"
+    "vertical": "portfolio",
+    "aiStyle": "editorial, galerie-first, elegant — serif subțire pe titluri, spațiu generos, fotografie mare; ton de studio/salon/artist, nu de formular admin"
   },
   "sections": [
     {
       "id": "business",
-      "title": "Despre afacere",
+      "title": "Despre salon",
       "fields": [
         {
           "key": "business.name",
           "type": "text",
-          "label": "Numele artistului / studioului / trupei",
+          "label": "Numele studioului / salonului / brandului",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "business.tagline",
           "type": "text",
-          "label": "Slogan scurt (ex: Fotograf de nuntă & portrete în Cluj)",
+          "label": "Slogan scurt (ex: Frumusețe autentică, îngrijire cu suflet)",
           "required": true,
           "maxLen": 100
         },
         {
           "key": "business.title",
           "type": "text",
-          "label": "Titlul paginii (pentru browser și Google)",
+          "label": "Titlul paginii pentru browser și Google",
           "required": true,
           "maxLen": 80
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere SEO (1–2 propoziții despre servicii și zona de activitate)",
+          "label": "Descriere SEO (1–2 propoziții despre servicii și localitate)",
           "required": true,
           "maxLen": 160
         },
         {
           "key": "business.about",
           "type": "textarea",
-          "label": "Textul secțiunii «Despre noi» (povestea ta, stilul, experiența)",
+          "label": "Povestea salonului — secțiunea «Despre noi»",
           "required": true,
-          "maxLen": 700
+          "maxLen": 600
         },
         {
           "key": "business.lang",
@@ -77,14 +77,14 @@
         {
           "key": "labels.instaFollow",
           "type": "text",
-          "label": "Textul butonului de follow",
+          "label": "Textul butonului de follow Instagram",
           "required": true,
           "maxLen": 20
         },
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Textul indicatorului de scroll de pe hero",
+          "label": "Textul indicatorului de scroll pe hero",
           "required": true,
           "maxLen": 20
         },
@@ -103,47 +103,82 @@
           "maxLen": 60
         },
         {
-          "key": "labels.reviewsEyebrow",
+          "key": "labels.servicesEyebrow",
           "type": "text",
-          "label": "Eticheta eyebrow deasupra titlului de testimoniale (ex: Ce spun clienții)",
-          "required": false,
+          "label": "Textul mic deasupra secțiunii servicii (ex: Meniu servicii)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.scheduleEyebrow",
+          "type": "text",
+          "label": "Textul mic deasupra secțiunii program (ex: Program)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.galleryEyebrow",
+          "type": "text",
+          "label": "Textul mic deasupra galeriei (ex: Lucrările noastre)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.teamEyebrow",
+          "type": "text",
+          "label": "Textul mic deasupra secțiunii echipă (ex: Echipa noastră)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.bookingEyebrow",
+          "type": "text",
+          "label": "Textul mic deasupra secțiunii contact (ex: Rezervări)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.waBookBtn",
+          "type": "text",
+          "label": "Textul butonului WhatsApp din secțiunea contact (ex: Rezervă pe WhatsApp)",
+          "required": true,
           "maxLen": 60
         }
       ]
     },
     {
       "id": "theme",
-      "title": "Culori & aspect",
+      "title": "Culori & temă vizuală",
       "fields": [
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Culoarea de accent (implicit auriu #C9A227 — recomandăm să nu schimbi pe dark)",
+          "label": "Culoarea principală — accent auriu-bej (ex: #C4956A)",
           "required": true
         },
         {
           "key": "theme.primaryLight",
           "type": "color",
-          "label": "Varianta deschisă a accentului",
+          "label": "Varianta deschisă a accentului (ex: #D9B08C)",
           "required": true
         },
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Varianta închisă a accentului",
+          "label": "Varianta închisă a accentului (ex: #A07548)",
           "required": true
         },
         {
           "key": "theme.cream",
           "type": "color",
-          "label": "Culoarea de fond (implicit #101014 — dark editorial)",
+          "label": "Culoarea de fond (crem nude, ex: #FAF7F4)",
           "required": true
         }
       ]
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima vedere)",
+      "title": "Secțiunea hero",
       "fields": [
         {
           "key": "logo",
@@ -155,20 +190,20 @@
         {
           "key": "showWordmark",
           "type": "text",
-          "label": "Afișează numele ca text pe hero și în nav? (true / false)",
+          "label": "Afișează numele ca text pe hero dacă nu ai logo? (true / false)",
           "required": false
         },
         {
           "key": "hero.background",
           "type": "text",
-          "label": "Fundalul hero — url('images/hero.jpg') sau gradient CSS dark",
+          "label": "Fundalul heroului — url('images/hero.jpg') sau gradient CSS",
           "required": true,
           "maxLen": 300
         },
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Textul butonului principal de pe hero (ex: Vezi portofoliul)",
+          "label": "Textul butonului principal (ex: Rezervă acum)",
           "required": true,
           "maxLen": 40
         }
@@ -176,89 +211,82 @@
     },
     {
       "id": "services",
-      "title": "Servicii oferite",
+      "title": "Servicii & prețuri",
       "fields": [
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Titlul listei de servicii (ex: Ce ofer)",
+          "label": "Titlul meniului de servicii (ex: Serviciile noastre)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "services",
           "type": "list",
-          "label": "Lista de servicii (SVG icon inline + denumire)",
+          "label": "Lista serviciilor (icon SVG + denumire + preț opțional)",
           "required": false,
           "min": 0,
-          "max": 12,
+          "max": 16,
           "itemShape": {
             "icon": "text",
-            "label": "text"
+            "label": "text",
+            "price": "text"
           }
-        }
-      ]
-    },
-    {
-      "id": "packages",
-      "title": "Pachete & prețuri (opțional)",
-      "fields": [
-        {
-          "key": "packages.title",
-          "type": "text",
-          "label": "Titlul secțiunii de pachete (ex: Pachete disponibile)",
-          "required": false,
-          "maxLen": 60
         },
         {
-          "key": "packages.items",
+          "key": "pricing",
           "type": "list",
-          "label": "Lista de pachete (nume, preț, descriere scurtă)",
+          "label": "Tabel de prețuri detaliat (opțional — afișat în plus față de lista de servicii)",
           "required": false,
           "min": 0,
-          "max": 6,
+          "max": 20,
           "itemShape": {
             "name": "text",
-            "price": "text",
-            "desc": "text"
+            "price": "text"
           }
         }
       ]
     },
     {
-      "id": "video",
-      "title": "Showreel video (opțional)",
+      "id": "schedule",
+      "title": "Program de lucru (opțional)",
       "fields": [
         {
-          "key": "video.url",
-          "type": "url",
-          "label": "URL embed YouTube (https://www.youtube.com/embed/VIDEO_ID) sau lasă gol",
-          "required": false
-        },
-        {
-          "key": "video.label",
+          "key": "schedule.title",
           "type": "text",
-          "label": "Eticheta secțiunii video (ex: Showreel 2025)",
+          "label": "Titlul secțiunii program (ex: Program de lucru)",
           "required": false,
           "maxLen": 60
+        },
+        {
+          "key": "schedule.rows",
+          "type": "list",
+          "label": "Rânduri program (zi + ore)",
+          "required": false,
+          "min": 0,
+          "max": 7,
+          "itemShape": {
+            "day": "text",
+            "hours": "text"
+          }
         }
       ]
     },
     {
       "id": "gallery",
-      "title": "Portofoliu foto",
+      "title": "Galerie lucrări",
       "fields": [
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Titlul secțiunii portofoliu (ex: Portofoliu) sau lasă gol",
+          "label": "Titlul secțiunii galerie (ex: Portofoliul nostru) sau lasă gol",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "categories",
           "type": "list",
-          "label": "Categorii de portofoliu (nunți, portrete, corporate etc.)",
+          "label": "Categorii de lucrări (ex: Manichiură, Coafuri, Make-up)",
           "required": true,
           "min": 1,
           "max": 6,
@@ -271,27 +299,28 @@
       ]
     },
     {
-      "id": "reviews",
-      "title": "Testimoniale (opțional)",
+      "id": "team",
+      "title": "Echipa (opțional)",
       "fields": [
         {
-          "key": "reviews.title",
+          "key": "team.title",
           "type": "text",
-          "label": "Titlul secțiunii testimoniale (ex: Clienți fericiți)",
+          "label": "Titlul secțiunii echipă (ex: Echipa noastră)",
           "required": false,
           "maxLen": 60
         },
         {
-          "key": "reviews.items",
+          "key": "team.members",
           "type": "list",
-          "label": "Lista de recenzii (text, autor, eveniment opțional)",
+          "label": "Membrii echipei",
           "required": false,
           "min": 0,
-          "max": 6,
+          "max": 8,
           "itemShape": {
-            "text": "textarea",
-            "author": "text",
-            "event": "text"
+            "name": "text",
+            "role": "text",
+            "bio": "text",
+            "photo": "text"
           }
         }
       ]
@@ -312,32 +341,24 @@
           "type": "url",
           "label": "Link complet Instagram (https://www.instagram.com/...)",
           "required": false
-        },
-        {
-          "key": "instagram.gallery",
-          "type": "photos",
-          "label": "Poze pentru grila Instagram (opțional — 6–9 imagini pătrate)",
-          "required": false,
-          "min": 0,
-          "max": 9
         }
       ]
     },
     {
       "id": "contact",
-      "title": "Contact",
+      "title": "Contact & rezervări",
       "fields": [
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Titlul cardului de contact (ex: Haide să lucrăm împreună)",
+          "label": "Titlul secțiunii de contact (ex: Rezervă o programare)",
           "required": true,
-          "maxLen": 60
+          "maxLen": 50
         },
         {
           "key": "contact.intro",
           "type": "textarea",
-          "label": "Textul introductiv al cardului de contact",
+          "label": "Textul introductiv pentru contact / rezervare",
           "required": true,
           "maxLen": 200
         },
@@ -362,7 +383,7 @@
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Numărul afișat (ex: +40 721 000 000)",
+          "label": "Numărul de telefon afișat (ex: +40 721 000 000)",
           "required": false,
           "maxLen": 30
         },
@@ -375,7 +396,7 @@
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Textul linkului Instagram (ex: @fotograf_ro)",
+          "label": "Textul linkului Instagram în contact (ex: @salonul_tau)",
           "required": false,
           "maxLen": 60
         },
@@ -395,7 +416,7 @@
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresa sau zona de activitate (poți folosi <br> pentru rânduri noi)",
+          "label": "Adresa fizică (poți folosi <br> pentru rânduri noi)",
           "required": false,
           "maxLen": 200
         },
@@ -414,7 +435,7 @@
         {
           "key": "seo.ogImage",
           "type": "url",
-          "label": "URL imagine pentru partajare pe social media (og:image) — recomandăm o fotografie reprezentativă 1200×630",
+          "label": "URL imagine pentru partajare pe social media (og:image)",
           "required": false
         },
         {
@@ -432,20 +453,21 @@
         {
           "key": "footer.address",
           "type": "text",
-          "label": "Adresa / zona din footer",
+          "label": "Adresa scurtă din footer",
           "required": true,
           "maxLen": 120
         },
         {
           "key": "footer.year",
-          "type": "number",
+          "type": "text",
           "label": "Anul pentru copyright (ex: 2026)",
-          "required": true
+          "required": true,
+          "maxLen": 4
         },
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Notița mică din footer (ex: Fiecare eveniment, o amintire.)",
+          "label": "Notița mică din footer (ex: Frumusețe cu suflet.)",
           "required": false,
           "maxLen": 100
         }

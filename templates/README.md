@@ -1,6 +1,6 @@
 # Templates — sistem multi-vertical
 
-Fiecare folder din `templates/` reprezintă un **șablon** pentru o verticală de afaceri (patiserie, construcții, servicii etc.). Botul Telegram generează un `config.json` conform contractului, iar `build.js` produce un site static complet.
+Fiecare folder din `templates/` reprezintă un **șablon** pentru o verticală de afaceri (product-menu, local-service, portfolio). Botul Telegram generează un `config.json` conform contractului, iar `build.js` produce un site static complet.
 
 ## Structura unui șablon
 
@@ -62,10 +62,10 @@ footer{ address, year, note }
 1. Creează `templates/<id-vertical>/`
 2. Copiază identic fișierele de bază:
    ```bash
-   cp templates/patiserie/template.html templates/<id>/template.html
-   cp templates/patiserie/styles.css   templates/<id>/styles.css
-   cp templates/patiserie/script.js    templates/<id>/script.js
-   cp templates/patiserie/collage.js   templates/<id>/collage.js
+   cp templates/product-menu/template.html templates/<id>/template.html
+   cp templates/product-menu/styles.css   templates/<id>/styles.css
+   cp templates/product-menu/script.js    templates/<id>/script.js
+   cp templates/product-menu/collage.js   templates/<id>/collage.js
    ```
 3. Scrie `schema.json` — definește câmpurile specifice verticalei (poți adăuga chei extra față de contractul standard, dar acestea trebuie gardate cu `@if` în template)
 4. Scrie `presets.json` — 2 config-uri demo realiste cu texte românești naturale și imagini `picsum.photos/seed/<cuvant-unic>/1200/800`
@@ -80,7 +80,7 @@ footer{ address, year, note }
   "name": "<Nume afișat în bot>",
   "language": "ro",
   "wizardHints": {
-    "vertical": "<food|constructii|servicii|...>",
+    "vertical": "<product-menu|local-service|portfolio>",
     "aiStyle": "<ton pentru polish AI>"
   },
   "sections": [
@@ -135,14 +135,14 @@ node /Users/kirill/Downloads/desserdirina/build.js
 TMPDIR=$(mktemp -d)
 
 # 2. Copiază fișierele șablonului
-cp templates/patiserie/template.html "$TMPDIR/"
-cp templates/patiserie/styles.css    "$TMPDIR/"
-cp templates/patiserie/script.js     "$TMPDIR/"
-cp templates/patiserie/collage.js    "$TMPDIR/"
+cp templates/product-menu/template.html "$TMPDIR/"
+cp templates/product-menu/styles.css    "$TMPDIR/"
+cp templates/product-menu/script.js     "$TMPDIR/"
+cp templates/product-menu/collage.js    "$TMPDIR/"
 
 # 3. Extrage config-ul presetului (ex. preset index 0) și scrie-l în dir
 node -e "
-  const p = require('./templates/patiserie/presets.json');
+  const p = require('./templates/product-menu/presets.json');
   const fs = require('fs');
   fs.writeFileSync('$TMPDIR/config.json', JSON.stringify(p.presets[0].config, null, 2));
 "

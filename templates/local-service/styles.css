@@ -1,8 +1,9 @@
 /* ============================================================
-   CONSTRUCTII TEMPLATE — styles.css  (v2 premium redesign)
-   Palette: Anthracite #1F2933 + White + Yellow #F5A623 accent
-   Typography: system grotesque stack (no CDN, no Google Fonts)
-   Spacing: multiples of 8px throughout
+   LOCAL-SERVICE — Art-directed lead-gen / trades system
+   Type: condensed grotesque display (Arial Black stack) + system body.
+   Layout: sticky phone CTA, stats in hero, almost-square industrial radii.
+   Photo: high-contrast overlays, project grid, trust-first.
+   Distinct from product-menu (warm paper menu) and portfolio (editorial gallery).
    ============================================================ */
 
 /* ============================================================
@@ -10,10 +11,10 @@
    ============================================================ */
 :root {
     /* Brand colours — overridden per-site by inline :root in template.html */
-    --color-primary:       #F5A623;
-    --color-primary-light: #F7BA52;
-    --color-primary-dark:  #D4891A;
-    --color-cream:         #F4F5F0;
+    --color-primary:       #E8A317;
+    --color-primary-light: #F0BC4A;
+    --color-primary-dark:  #B87A10;
+    --color-cream:         #F2F3EF;
     --color-accent:        #F5A623;
 
     /* Structural palette */
@@ -47,9 +48,9 @@
     --container-pad: clamp(1.25rem, 4vw, 2.5rem);
 
     /* Radii — almost-square, 4px industrial */
-    --radius-sm:  3px;
-    --radius:     4px;
-    --radius-md:  6px;
+    --radius-sm:  2px;
+    --radius:     3px;
+    --radius-md:  4px;
 
     /* Transitions */
     --ease-out:  cubic-bezier(0.25, 0.46, 0.45, 0.94);
