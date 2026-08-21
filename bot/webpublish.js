@@ -107,8 +107,76 @@ function savePendingDraft(orderId, draft) {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `_pending-${orderId}.json`);
     const tmp  = file + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(draft), 'utf8');
+    const payload = {
+        ...draft,
+        savedAt: (draft && draft.savedAt) || new Date().toISOString(),
+    };
+    fs.writeFileSync(tmp, JSON.stringify(payload), 'utf8');
     fs.renameSync(tmp, file);
+}
+
+/**
+ * Pick the newest publishable snapshot for first public deploy after pay.
+ * Compares pending draft savedAt (or file mtime) vs last saveVersion publishedAt.
+ * @returns {{ config: object, images: array, siteDirAlreadyBuilt: boolean }|null}
+ */
+function resolvePublishPayload(siteId, orderId) {
+    const draft = loadPendingDraft(orderId);
+    let draftTime = 0;
+    if (draft) {
+        if (draft.savedAt) draftTime = Date.parse(draft.savedAt) || 0;
+        if (!draftTime) {
+            try {
+                const file = path.join(process.env.DATA_DIR || __dirname, `_pending-${orderId}.json`);
+                draftTime = fs.statSync(file).mtimeMs || 0;
+            } catch { /* ignore */ }
+        }
+    }
+
+    const versions = registry.listVersions(siteId);
+    let lastVer = null;
+    let verTime = 0;
+    if (versions.length > 0) {
+        lastVer = versions[versions.length - 1];
+        verTime = Date.parse(lastVer.publishedAt) || 0;
+        // listVersions is chronological push order; also consider max publishedAt
+        for (const v of versions) {
+            const t = Date.parse(v.publishedAt) || 0;
+            if (t >= verTime) {
+                verTime = t;
+                lastVer = v;
+            }
+        }
+    }
+
+    if (draft && (!lastVer || draftTime >= verTime)) {
+        return {
+            config: draft.config || {},
+            images: draft.images || [],
+            siteDirAlreadyBuilt: !!draft.siteDirAlreadyBuilt,
+            source: 'pending-draft',
+        };
+    }
+    if (lastVer) {
+        const config = registry.getVersionConfig(siteId, lastVer.versionId);
+        if (config) {
+            return {
+                config,
+                images: (draft && draft.images) || [],
+                siteDirAlreadyBuilt: false,
+                source: 'version',
+            };
+        }
+    }
+    if (draft) {
+        return {
+            config: draft.config || {},
+            images: draft.images || [],
+            siteDirAlreadyBuilt: !!draft.siteDirAlreadyBuilt,
+            source: 'pending-draft-fallback',
+        };
+    }
+    return null;
 }
 
 /** Delete pending draft after successful publish (best-effort). */
@@ -377,12 +445,11 @@ function _esc(s) {
 
 /**
  * Idempotent: called after Stripe confirms payment for any order (web or telegram).
- * - Marks order paid.
- * - Marks site paid.
- * - If site was expired: republishes the last saved version.
- * - If site had a pending draft (web flow): publishes that.
- * - Notifies owner on owner's channel.
- * - Sends concierge domain message to user if messenger is injected.
+ * - Marks order paid once (markOrderPaid returns null if already paid).
+ * - Same Stripe event id is claimed once (claimStripeEvent).
+ * - First publish payment: site.paid + paidUntil ≈ now+12 months; deploy newest draft/version.
+ * - Renewal: extends paidUntil by 12 months; does not require a second 100 fee or new site.
+ * - Notifies owner on owner's channel + concierge domain msg when a deploy happens.
  *
  * @param {object} event            Stripe checkout.session.completed event
  * @param {object} [opts]
@@ -394,24 +461,28 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     if (!cs) return;
 
     const sessionId = cs.id;
+    const eventId   = event && event.id;
 
-    // Idempotency: markOrderPaid returns null if already paid
+    // Session-level: markOrderPaid returns null if already paid or unknown
     const order = registry.markOrderPaid(sessionId);
     if (!order) {
-        log('webpublish.stripe_paid.already_handled', { sessionId });
+        log('webpublish.stripe_paid.already_handled', { sessionId, eventId });
         return;
+    }
+
+    // Event-level bookkeeping after a successful paid transition (duplicate event ids)
+    if (eventId && typeof registry.claimStripeEvent === 'function') {
+        registry.claimStripeEvent(eventId);
     }
 
     const siteId  = (cs.metadata && cs.metadata.siteId) || order.siteId;
     const orderId = order.id;
+    const kind    = (cs.metadata && cs.metadata.kind) || order.kind || 'publish';
 
     if (!siteId) {
         log('webpublish.stripe_paid.no_site_id', { sessionId, orderId }, 'error');
         return;
     }
-
-    // Mark the site as paid
-    try { registry.updateSite(siteId, { paid: true }); } catch (_) {}
 
     const site = registry.getSite(siteId);
     if (!site) {
@@ -419,12 +490,56 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
         return;
     }
 
-    const paidSite = { ...site, paid: true };
-
     // Owner notification
     if (typeof notifyAdmin === 'function') {
-        notifyAdmin(`💰 Plată confirmată! Site: ${site.slug || site.projectName} (${site.platform || 'web'})`);
+        notifyAdmin(`💰 Plată confirmată! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
     }
+
+    // ── Renewal: extend hosting year; do not re-run first-publish fee path ──
+    if (kind === 'renewal') {
+        const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
+            ? site.paidUntil
+            : new Date().toISOString();
+        const paidUntil = registry.addMonthsIso(baseIso, 12);
+        try {
+            registry.updateSite(siteId, { paid: true, paidUntil });
+        } catch (_) {}
+        log('webpublish.stripe_paid.renewed', { siteId, orderId, paidUntil });
+        // If expired, republish last version so the site is live again
+        const fresh = registry.getSite(siteId);
+        if (fresh && fresh.status === 'expired') {
+            const versions = registry.listVersions(siteId);
+            if (versions.length > 0) {
+                const last = versions[versions.length - 1];
+                const lastConfig = registry.getVersionConfig(siteId, last.versionId);
+                if (lastConfig) {
+                    try {
+                        const result = await module.exports.publishSite({
+                            site: { ...fresh, paid: true },
+                            config: lastConfig,
+                            images: [],
+                            siteDirAlreadyBuilt: false,
+                        });
+                        registry.updateSite(siteId, { status: 'live', url: result.url, paid: true, paidUntil });
+                        _notifyOwnerChannel({ ...fresh, paid: true }, result.url, messenger, notifyAdmin);
+                        log('webpublish.stripe_paid.renewal_reactivated', { siteId, orderId, url: result.url });
+                    } catch (e) {
+                        log('webpublish.stripe_paid.renewal_reactivate_failed', { siteId, orderId, err: e.message }, 'error');
+                        registry.updateSite(siteId, { status: 'needs-retry', paid: true, paidUntil });
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    // ── First publish / reactivation payment ───────────────────────────────
+    const paidUntil = registry.addMonthsIso(new Date().toISOString(), 12);
+    try {
+        registry.updateSite(siteId, { paid: true, paidUntil });
+    } catch (_) {}
+
+    const paidSite = { ...registry.getSite(siteId), paid: true, paidUntil };
 
     // If reactivation (expired trial): republish last version
     if (site.status === 'expired') {
@@ -434,8 +549,13 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
                             || registry.getVersionConfig(siteId, versions[0].versionId);
             if (lastConfig) {
                 try {
-                    const result = await publishSite({ site: paidSite, config: lastConfig, images: [], siteDirAlreadyBuilt: false });
-                    registry.updateSite(siteId, { status: 'live', url: result.url, paid: true });
+                    const result = await module.exports.publishSite({
+                        site: paidSite,
+                        config: lastConfig,
+                        images: [],
+                        siteDirAlreadyBuilt: false,
+                    });
+                    registry.updateSite(siteId, { status: 'live', url: result.url, paid: true, paidUntil });
                     _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
                     log('webpublish.stripe_paid.reactivated', { siteId, orderId, url: result.url });
                 } catch (e) {
@@ -445,48 +565,30 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
                 return;
             }
         }
-        // No versions — mark needs-retry
         log('webpublish.stripe_paid.no_version_for_reactivation', { siteId, orderId }, 'error');
         registry.updateSite(siteId, { status: 'needs-retry' });
         return;
     }
 
-    // Normal flow: read pending draft saved at /api/publish time
-    const draft = loadPendingDraft(orderId);
-    if (draft) {
+    // Prefer newest of pending draft vs last saved version (edit-latest)
+    const payload = resolvePublishPayload(siteId, orderId);
+    if (payload) {
         try {
-            const result = await publishSite({
+            const result = await module.exports.publishSite({
                 site: paidSite,
-                config: draft.config,
-                images: draft.images || [],
-                siteDirAlreadyBuilt: !!draft.siteDirAlreadyBuilt,
+                config: payload.config,
+                images: payload.images || [],
+                siteDirAlreadyBuilt: !!payload.siteDirAlreadyBuilt,
             });
             deletePendingDraft(orderId);
             _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
-            log('webpublish.stripe_paid.published', { siteId, orderId, url: result.url });
+            log('webpublish.stripe_paid.published', {
+                siteId, orderId, url: result.url, source: payload.source,
+            });
         } catch (e) {
             log('webpublish.stripe_paid.publish_failed', { siteId, orderId, err: e.message }, 'error');
-            // site status already set to needs-retry inside publishSite
         }
         return;
-    }
-
-    // No draft — try republishing last known version (site already live, user just paid)
-    const versions = registry.listVersions(siteId);
-    if (versions.length > 0) {
-        const lastConfig = registry.getVersionConfig(siteId, versions[versions.length - 1].versionId)
-                        || registry.getVersionConfig(siteId, versions[0].versionId);
-        if (lastConfig) {
-            try {
-                const result = await publishSite({ site: paidSite, config: lastConfig, images: [] });
-                _notifyOwnerChannel(paidSite, result.url, messenger, notifyAdmin);
-                log('webpublish.stripe_paid.republished', { siteId, orderId, url: result.url });
-            } catch (e) {
-                log('webpublish.stripe_paid.republish_failed', { siteId, orderId, err: e.message }, 'error');
-                registry.updateSite(siteId, { status: 'needs-retry' });
-            }
-            return;
-        }
     }
 
     log('webpublish.stripe_paid.no_draft_no_version', { orderId, siteId }, 'error');
@@ -522,4 +624,5 @@ module.exports = {
     deployPlaceholder,
     savePendingDraft,
     loadPendingDraft,
+    resolvePublishPayload,
 };

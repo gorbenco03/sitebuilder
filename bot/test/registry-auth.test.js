@@ -253,10 +253,9 @@ check('markOrderPaid marks the order as paid', () => {
     assert.ok(typeof paid.paidAt === 'string');
 });
 
-check('markOrderPaid is idempotent (second call still returns paid order)', () => {
+check('markOrderPaid returns null when already paid (no re-entry)', () => {
     const paid2 = registry.markOrderPaid('cs_test_abc123');
-    assert.ok(paid2, 'should still return the order on second call');
-    assert.strictEqual(paid2.status, 'paid');
+    assert.strictEqual(paid2, null, 'second mark must return null so webhooks do not re-publish');
 });
 
 check('markOrderPaid returns null for unknown stripeSessionId', () => {

@@ -436,7 +436,6 @@ async function handleSiteCheckout(req, res, siteId) {
     const site = await reg.getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
-    if (site.paid) return sendJson(res, 409, { error: 'Site-ul este deja plătit.' });
 
     if (!payments.isConfigured()) {
         return sendJson(res, 503, { error: 'Plata nu este configurată.' });
@@ -446,40 +445,41 @@ async function handleSiteCheckout(req, res, siteId) {
     const currency  = p.currency;
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
 
+    // Paid site → yearly renewal (29); unpaid → first publish (100)
+    const isRenewal  = !!site.paid;
+    const amountCents = isRenewal ? p.renewalCents : p.amountCents;
+    const kind        = isRenewal ? 'renewal' : 'publish';
+    const productName = isRenewal ? 'Reînnoire hosting Hidook (12 luni)' : 'Activare site Hidook';
+
     const order = await reg.createOrder({
         siteId: site.id,
         userId,
-        amountCents: p.amountCents,
+        amountCents,
         currency,
         stripeSessionId: 'pending',
+        kind,
     });
 
     let checkout;
     try {
         checkout = await payments.createCheckout({
-            amountCents: p.amountCents,
+            amountCents,
             currency,
-            productName: 'Activare site Hidook',
+            productName,
             successUrl:  publicUrl + '/app/#platit',
             cancelUrl:   publicUrl + '/app/#anulat',
-            metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
-            clientReferenceId: 'web-' + site.id,
+            metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind },
+            clientReferenceId: (isRenewal ? 'renew-' : 'web-') + site.id,
         });
     } catch (e) {
-        log('server.checkout.error', { siteId, err: e.message }, 'error');
+        log('server.checkout.error', { siteId, err: e.message, kind }, 'error');
         return sendJson(res, 503, { error: 'Nu am putut iniția plata: ' + e.message });
     }
 
-    // Update order with real Stripe session id
-    await reg.createOrder({
-        siteId: site.id,
-        userId,
-        amountCents: p.amountCents,
-        currency,
-        stripeSessionId: checkout.id,
-    });
+    // Attach real Stripe session id to the same pending order (no second row)
+    await reg.attachStripeSession(order.id, checkout.id);
 
-    sendJson(res, 200, { paymentUrl: checkout.url });
+    sendJson(res, 200, { paymentUrl: checkout.url, kind });
 }
 
 /**
@@ -604,6 +604,7 @@ async function handlePublish(req, res) {
                     amountCents: price.amountCents,
                     currency: price.currency,
                     stripeSessionId: 'pending',
+                    kind: 'publish',
                 });
                 const checkout = await payments.createCheckout({
                     amountCents: price.amountCents,
@@ -611,21 +612,17 @@ async function handlePublish(req, res) {
                     productName: 'Activare site Hidook',
                     successUrl:  publicUrl + '/app/#platit',
                     cancelUrl:   publicUrl + '/app/#anulat',
-                    metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id },
+                    metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind: 'publish' },
                     clientReferenceId: 'web-' + site.id,
                 });
-                await reg.createOrder({
+                await reg.attachStripeSession(order.id, checkout.id);
+                // Pending draft keyed by the single durable order id
+                webpublish.savePendingDraft(order.id, {
+                    config,
+                    images: imgList,
                     siteId: site.id,
-                    userId,
-                    amountCents: price.amountCents,
-                    currency: price.currency,
-                    stripeSessionId: checkout.id,
+                    savedAt: new Date().toISOString(),
                 });
-                // Pending draft is keyed by the order id that markOrderPaid will return
-                // (the row with the real stripe session id).
-                const paidOrder = await reg.getOrderBySession(checkout.id);
-                const draftOrderId = (paidOrder && paidOrder.id) || order.id;
-                webpublish.savePendingDraft(draftOrderId, { config, images: imgList, siteId: site.id });
                 paymentUrl = checkout.url;
             } catch (e) {
                 log('server.publish.checkout_error', { siteId: site.id, err: e.message }, 'warn');

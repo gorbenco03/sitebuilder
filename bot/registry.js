@@ -314,13 +314,15 @@ function getVersionConfig(siteId, versionId) {
 /**
  * Create a new pending order.
  *
- * @param {{ siteId: string, userId: string, amountCents: number, currency: string, stripeSessionId: string }} opts
+ * @param {{ siteId: string, userId: string, amountCents: number, currency: string,
+ *           stripeSessionId: string, kind?: 'publish'|'renewal' }} opts
  * @returns {object} order
  */
-function createOrder({ siteId, userId, amountCents, currency, stripeSessionId }) {
+function createOrder({ siteId, userId, amountCents, currency, stripeSessionId, kind }) {
     const db = _load();
     db.orders = db.orders || {};
     const id = crypto.randomUUID();
+    const orderKind = kind === 'renewal' ? 'renewal' : 'publish';
     const order = {
         id,
         siteId,
@@ -328,6 +330,7 @@ function createOrder({ siteId, userId, amountCents, currency, stripeSessionId })
         amountCents,
         currency: currency || 'eur',
         stripeSessionId,
+        kind:      orderKind,
         status:    'pending',
         createdAt: new Date().toISOString(),
     };
@@ -337,18 +340,39 @@ function createOrder({ siteId, userId, amountCents, currency, stripeSessionId })
 }
 
 /**
- * Mark the order associated with a Stripe session as paid.
- * Idempotent — already-paid orders are returned as-is (no double-mark).
+ * Attach a real Stripe Checkout session id to an existing pending order (in-place).
+ * Does not create a second order row.
  *
+ * @param {string} orderId
  * @param {string} stripeSessionId
  * @returns {object|null} updated order or null if not found
+ */
+function attachStripeSession(orderId, stripeSessionId) {
+    if (!orderId || !stripeSessionId) return null;
+    const db = _load();
+    db.orders = db.orders || {};
+    const order = db.orders[orderId];
+    if (!order) return null;
+    order.stripeSessionId = stripeSessionId;
+    db.orders[orderId] = order;
+    _save(db);
+    return { ...order };
+}
+
+/**
+ * Mark the order associated with a Stripe session as paid.
+ * Returns the order only on the first pending→paid transition.
+ * Returns null if unknown session OR already paid (callers must not re-publish).
+ *
+ * @param {string} stripeSessionId
+ * @returns {object|null} freshly paid order, or null
  */
 function markOrderPaid(stripeSessionId) {
     const db = _load();
     db.orders = db.orders || {};
     const order = Object.values(db.orders).find(o => o.stripeSessionId === stripeSessionId);
     if (!order) return null;
-    if (order.status === 'paid') return { ...order }; // already paid — idempotent
+    if (order.status === 'paid') return null; // already paid — no re-entry
     order.status = 'paid';
     order.paidAt = new Date().toISOString();
     db.orders[order.id] = order;
@@ -364,6 +388,51 @@ function getOrderBySession(stripeSessionId) {
     const db = _load();
     const order = Object.values(db.orders || {}).find(o => o.stripeSessionId === stripeSessionId);
     return order ? { ...order } : null;
+}
+
+/**
+ * @param {string} orderId
+ * @returns {object|null}
+ */
+function getOrder(orderId) {
+    const db = _load();
+    const order = (db.orders || {})[orderId];
+    return order ? { ...order } : null;
+}
+
+/**
+ * Claim a Stripe event id for one-shot processing.
+ * @param {string} eventId
+ * @returns {boolean} true if this is the first time seeing the event
+ */
+function claimStripeEvent(eventId) {
+    if (!eventId || typeof eventId !== 'string') return true; // no id → do not block
+    const db = _load();
+    db.stripeEvents = db.stripeEvents || {};
+    if (db.stripeEvents[eventId]) return false;
+    db.stripeEvents[eventId] = { seenAt: new Date().toISOString() };
+    // Bound growth: keep last ~500 event ids
+    const keys = Object.keys(db.stripeEvents);
+    if (keys.length > 500) {
+        keys.sort((a, b) => String(db.stripeEvents[a].seenAt).localeCompare(String(db.stripeEvents[b].seenAt)));
+        for (const k of keys.slice(0, keys.length - 500)) delete db.stripeEvents[k];
+    }
+    _save(db);
+    return true;
+}
+
+/**
+ * Add calendar months to an ISO date string (or now). Returns ISO string.
+ * @param {string|null|undefined} fromIso
+ * @param {number} months
+ * @returns {string}
+ */
+function addMonthsIso(fromIso, months) {
+    const base = fromIso ? new Date(fromIso) : new Date();
+    const d = Number.isFinite(base.getTime()) ? base : new Date();
+    const out = new Date(d.getTime());
+    out.setUTCMonth(out.getUTCMonth() + (months || 0));
+    return out.toISOString();
 }
 
 // ---------------------------------------------------------------------------
@@ -385,6 +454,10 @@ module.exports = {
     listVersions,
     getVersionConfig,
     createOrder,
+    attachStripeSession,
     markOrderPaid,
     getOrderBySession,
+    getOrder,
+    claimStripeEvent,
+    addMonthsIso,
 };
