@@ -1786,9 +1786,6 @@ function buildSiteCard(site) {
     } catch (_) {}
   }
 
-  const now = Date.now();
-  const trialEnd = site.trialEndsAt ? new Date(site.trialEndsAt) : null;
-  const remaining = trialEnd ? (trialEnd - now) : null;
   let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
 
   if (site.paid && (site.status === 'live' || site.status === 'active')) {
@@ -1819,12 +1816,7 @@ function buildSiteCard(site) {
   badge.textContent = badgeLabel;
   meta.appendChild(badge);
 
-  if (remaining != null && remaining > 0 && !site.paid) {
-    const countdown = document.createElement('span');
-    countdown.className = 'trial-time';
-    countdown.textContent = 'expiră în ' + fmtTimeRemaining(remaining);
-    meta.appendChild(countdown);
-  }
+  // Unpaid drafts: no trialEndsAt countdown chrome (pay-before-publish)
 
   if (site.url) {
     const link = document.createElement('a');
@@ -1853,8 +1845,9 @@ function buildSiteCard(site) {
   if (!site.paid || site.status === 'expired') {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
-    keepBtn.textContent = site.status === 'expired' ? 'Reactivează' : 'Păstrează';
-    keepBtn.setAttribute('aria-label', (site.status === 'expired' ? 'Reactivează' : 'Păstrează') + ' site-ul');
+    const payLabel = site.status === 'expired' ? 'Reactivează' : 'Plătește și publică';
+    keepBtn.textContent = payLabel;
+    keepBtn.setAttribute('aria-label', payLabel + ' site-ul');
     keepBtn.addEventListener('click', async () => {
       try {
         setBtnLoading(keepBtn, true, 'Se procesează...');
