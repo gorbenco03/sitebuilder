@@ -1,73 +1,91 @@
-# Deploy DESSERD bot 24/7 on Railway
+# Deploy Hidook Site Builder (bot + browser builder) 24/7 on Railway
 
-The bot uses Telegram **long-polling**, so it needs no public URL — just a process
-that stays running. Railway runs the `Dockerfile` at the repo root.
+One process serves:
+
+- **Browser builder** (commercial product): static UI under `/app/*`, account/API, **pay before public publish**
+- **Telegram bot**: long-polling intake that opens the **same** unpaid draft in the builder (not a second checkout/deploy state machine)
+
+Telegram long-polling needs no public URL for polling itself; the HTTP server still needs a public URL for webhooks, magic links, and the builder. Railway runs the `Dockerfile` at the repo root.
+
+**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** same currency / year. Payment **before** first public production publish. No unpaid live trial.
 
 ## 1. Push the repo to GitHub
-Railway deploys from a Git repo. Make sure the repo (with `Dockerfile`) is on GitHub.
+
+Railway deploys from a Git repo. Ensure the repo (with `Dockerfile`) is on GitHub.
 
 ## 2. Create the Railway project
+
 1. https://railway.app → **New Project** → **Deploy from GitHub repo** → pick this repo.
-2. Railway auto-detects the `Dockerfile` and builds it.
+2. Railway auto-detects the `Dockerfile` and builds it (including `npm run build:app` / builder bake).
 
-## 3. Add a persistent volume (so sessions survive redeploys)
-1. In the service → **Variables/Settings** → **Volumes** → add a volume mounted at **`/data`**.
-   (`DATA_DIR=/data` is already set in the Dockerfile; `.sessions.json` + `.sites-map.json` live there.)
+## 3. Add a persistent volume
 
-## 4. Set environment variables (Service → Variables)
-Required:
-- `TELEGRAM_BOT_TOKEN` — from @BotFather
+1. Service → **Variables/Settings** → **Volumes** → mount at **`/data`**.
+   (`DATA_DIR=/data` is set in the Dockerfile; sessions, registry, and built artifacts live there.)
 
-Recommended / for full functionality:
-- `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (+ optional `AI_MODEL=claude-haiku-4-5-20251001`)
-- `VERCEL_TOKEN` (+ optional `VERCEL_TEAM_ID`) — site deploy + domains
-- `DEPLOY_PROVIDER=cloudflare` + `CLOUDFLARE_API_TOKEN` (Pages:Edit) + `CLOUDFLARE_ACCOUNT_ID`
-  — deploy client sites to Cloudflare Pages (`https://<slug>.pages.dev`) instead of Vercel.
-  The image ships the `wrangler` CLI, which the deploy adapter shells out to.
-- **Payments (Stripe, UK Ltd):** `PAYMENT_PROVIDER=stripe` + `STRIPE_SECRET_KEY` +
-  `STRIPE_WEBHOOK_SECRET` (from the Stripe Dashboard webhook endpoint pointing at
-  `https://<railway-public-domain>/webhooks/stripe`, event `checkout.session.completed`).
-  The webhook is the source of truth for "paid"; the poller/sweeper remain as fallback.
-  Railway injects `PORT` — the in-process HTTP server (`bot/server.js`) binds it and also
-  serves `GET /health`.
-- `REVOLUT_SECRET_KEY` + `REVOLUT_ENV` (`sandbox` or `production`) — alternative payments (polling only)
-- `BUILD_FEE_EUR` (default 49), `DOMAIN_MARKUP_USD` (default 0)
-- `ADMIN_CHAT_ID` — your Telegram numeric id, to get a DM on each new site/payment
-  (get it by messaging @userinfobot)
-- For real domain purchases: `REGISTRANT_FIRST_NAME`, `REGISTRANT_LAST_NAME`, `REGISTRANT_EMAIL`,
-  `REGISTRANT_PHONE` (E.164, e.g. `+40.721234567`), `REGISTRANT_ADDRESS1`, `REGISTRANT_CITY`,
-  `REGISTRANT_STATE`, `REGISTRANT_ZIP`, `REGISTRANT_COUNTRY` (ISO-2) — and a card on the Vercel account.
+## 4. Environment variables (Service → Variables)
 
-## 5. Web Builder (API + site editor)
+### Required
 
-The same process also serves the web-based site builder on the same PORT:
+- `TELEGRAM_BOT_TOKEN` — from @BotFather (if you run Telegram intake)
+- `SERVER_SECRET` — random 32+ char secret for builder session cookies (`openssl rand -hex 32`). Without it, builder auth routes return 503.
+- `PUBLIC_URL` — full public URL of this service (magic links + Stripe returns), e.g. `https://myapp.up.railway.app`
 
-| Env var | Required | Description |
-|---------|----------|-------------|
-| `SERVER_SECRET` | **yes** | Random 32-char secret for HMAC session cookies. Without it, all `/api/auth/*` and `/api/me` routes respond 503. Generate with: `openssl rand -hex 32` |
-| `PUBLIC_URL` | yes for magic links | Full public URL of the service, e.g. `https://myapp.up.railway.app`. Used to build the `/auth/verify?token=…` link in magic-link emails. |
-| `RESEND_API_KEY` | no | When set, magic-link emails are sent via [Resend](https://resend.com). Without it, the link is logged to stdout (`devLink` is also returned in the API response for dev mode). |
-| `EMAIL_FROM` | no | Sender address for magic-link emails (default: `onboarding@resend.dev`). Only used when `RESEND_API_KEY` is set. |
-| `BUILD_FEE_EUR` | no | One-time site build fee in EUR (default `49`). Same env as the Telegram bot. |
-| `TRIAL_DAYS` | no | Number of free trial days (default `3`). Sites are published immediately for free; payment activates them permanently. |
-| `CONTACT_URL` | no | URL or text shown after payment for "custom domain" concierge message (e.g. `https://t.me/hidook`). If unset, a plain text fallback is shown. |
-| `BRAND_DOMAIN` | no | If set AND `DEPLOY_PROVIDER=cloudflare`, the platform will try to attach `<slug>.<BRAND_DOMAIN>` to each Pages project after deploy (best-effort). Requires CF zone for `BRAND_DOMAIN` accessible with `CLOUDFLARE_API_TOKEN`. |
-| `HIDOOK_FAKE_DEPLOY` | test only | Set to `1` to stub all deploys (returns `https://<slug>.test.local`). **Refused in production (`NODE_ENV=production`).** |
-| `ALLOW_FREE_PUBLISH` | dev only | Legacy flag — no longer needed for trial flow. Set to `1` to skip payment in old legacy sessions. **Never set in production.** |
-| `SITES_DIR` / `DATA_DIR` | no | Persistent volume for built sites and registry data. Railway mounts `/data`; `DATA_DIR=/data` is set in the Dockerfile. |
+### Recommended / full functionality
 
-Static files for the builder UI are served from `<repo>/builder/` at `GET /app/*`.
-The parallel agent builds the full UI; a minimal `builder/index.html` is shipped as a placeholder.
+- `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (+ optional `AI_MODEL=...`) — Telegram guided intake
+- `RESEND_API_KEY` + optional `EMAIL_FROM` — magic-link email for builder sign-in
+- **Deploy (paid publish only):**
+  - `DEPLOY_PROVIDER=cloudflare` + `CLOUDFLARE_API_TOKEN` (Pages:Edit) + `CLOUDFLARE_ACCOUNT_ID`
+    — client sites to Cloudflare Pages. Image includes `wrangler`.
+  - and/or `VERCEL_TOKEN` (+ optional `VERCEL_TEAM_ID`) — Vercel deploy + domains path
+- **Payments (Stripe):** `PAYMENT_PROVIDER=stripe` + `STRIPE_SECRET_KEY` +
+  `STRIPE_WEBHOOK_SECRET` (Dashboard webhook → `https://<railway-public-domain>/webhooks/stripe`,
+  event `checkout.session.completed`). Webhook is source of truth for “paid”; poller/sweeper may remain as fallback.
+  Railway injects `PORT` — `bot/server.js` binds it and serves `GET /health`.
+- Optional alternate payments: `REVOLUT_SECRET_KEY` + `REVOLUT_ENV` (`sandbox` or `production`)
+- `ADMIN_CHAT_ID` — Telegram numeric id for ops DMs on notable events
+- `CONTACT_URL` — URL/text after payment for custom-domain concierge (e.g. `https://t.me/hidook`)
+- `BRAND_DOMAIN` — if set with Cloudflare deploy, best-effort `<slug>.<BRAND_DOMAIN>` attach
+- Domain purchase extras (only if you enable registrar purchase): `REGISTRANT_*` fields + card on the provider account
 
-Stripe webhook for web payments: the existing `POST /webhooks/stripe` endpoint now dispatches
-events by `metadata.platform`: `web` → `webpublish.handleStripePaid`; `telegram` (default) → `flow.handleStripeWebhookEvent`.
-Make sure the Stripe webhook in the dashboard sends `checkout.session.completed` to `https://<domain>/webhooks/stripe`.
+### Pricing (do not use legacy fee defaults)
+
+Commercial amounts are **not** `BUILD_FEE_EUR` default 49. Operators should leave fee overrides unset and rely on **`bot/pricing.js`**:
+
+| | First publish | Renewal |
+|---|---|---|
+| EU → EUR | **100** | **29** / year |
+| UK → GBP | **100** | **29** / year |
+| Rest → USD | **100** | **29** / year |
+
+Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “sites are published immediately for free” model. Unpaid sites stay drafts until pay-before-publish in the builder.
+
+### Test-only (never production)
+
+| Env var | Notes |
+|---------|--------|
+| `HIDOOK_FAKE_DEPLOY=1` | Stub deploys (`https://<slug>.test.local`). **Refused when `NODE_ENV=production`.** Not the client journey. |
+| `ALLOW_FREE_PUBLISH=1` | Legacy dev skip. **Never set in production.** |
+
+### Persistence
+
+| Env var | Notes |
+|---------|--------|
+| `SITES_DIR` / `DATA_DIR` | Persistent volume paths. Railway: `DATA_DIR=/data`. |
+
+## 5. Web builder
+
+Static builder UI is served from `<repo>/builder/` at `GET /app/*` (image bake runs the builder build so `/app/` is not empty).
+
+Stripe webhook dispatches by `metadata.platform`: `web` → builder paid publish path; Telegram metadata must not reintroduce a separate Telegram live-deploy commerce path as the happy path. Ensure Dashboard sends `checkout.session.completed` to `https://<domain>/webhooks/stripe`.
 
 ## 6. Deploy
-Railway builds + starts automatically. Logs should show `🤖 Bot pornit ca @<username>`.
-The bot is now live 24/7. Only one instance may poll a token at a time — keep replicas = 1.
+
+Railway builds + starts automatically. Logs should show the bot starting as `@<username>` when the token is set, and the HTTP server on `PORT`. Keep replicas = 1 for Telegram long-polling (one poller per token).
 
 ## Notes
-- To run locally instead: `cd bot && node --env-file=.env bot.js`.
-- Build the image locally to test: `docker build -t desserd-bot . && docker run --rm --env-file bot/.env -e DATA_DIR=/data desserd-bot`.
-- Health: the process exits non-zero only on fatal startup errors; Railway restarts it automatically.
+
+- Local: `cd bot && node --env-file=.env bot.js` (or your process manager).
+- Build image locally: `docker build -t hidook-site-builder . && docker run --rm --env-file bot/.env -e DATA_DIR=/data -e SERVER_SECRET=... hidook-site-builder`.
+- Health: non-zero exit only on fatal startup; platform restarts the process. `GET /health` on the bound port.
