@@ -1,6 +1,6 @@
 'use strict';
 /**
- * bot/ai.js — Provider-agnostic AI adapter for DESSERD site builder.
+ * bot/ai.js — Provider-agnostic AI adapter for Hidook site builder.
  *
  * Turns a client's free-form Telegram conversation (+ optional photos) into a
  * valid site config.json object, writing all marketing copy itself.
@@ -490,7 +490,7 @@ async function generateSiteConfig(conversation, opts = {}) {
         ? `The client's language is "${lang}". Write all copy and the followUp question in that language.`
         : `Detect the client's language from the conversation and write all copy and the followUp question in that language.`;
 
-    const systemPrompt = `You are the DESSERD site-builder assistant. Your ONLY function is to help a client build a marketing landing page for a legitimate small business (bakery, café, salon, boutique, catering, shop, services, etc.).
+    const systemPrompt = `You are the Hidook site-builder assistant. Your ONLY function is to help a client build a marketing landing page for a legitimate small business (bakery, café, salon, boutique, catering, shop, services, etc.).
 
 Your job: read the client conversation below and produce a complete JSON object for their landing page.
 
