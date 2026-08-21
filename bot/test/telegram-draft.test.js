@@ -75,7 +75,92 @@ function makeSession(overrides = {}) {
     };
 }
 
+/**
+ * Stranger /start welcome product copy only (Salut! … before consentNote()).
+ * Excludes legacy start=paid deep-link replies and GDPR consent tail.
+ */
+function extractStrangerStartWelcomeSrc(src) {
+    // Literal concat that ends with consentNote() then STEPS[0]
+    const m = src.match(
+        /['"]👋 Salut![\s\S]{0,1200}?consentNote\(\)/
+    );
+    return m ? m[0] : null;
+}
+
+function foldRo(s) {
+    return String(s)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+}
+
+/** Product narrative only — drop GDPR ℹ️ block (may mention publish as data purpose). */
+function productNarrative(text) {
+    const i = String(text).indexOf('ℹ️');
+    return i >= 0 ? String(text).slice(0, i) : String(text);
+}
+
 (async () => {
+    // ── S10: /start welcome must not promise Telegram publishes the live site ──
+    await check('handleStart welcome source must not promise publică/publica site-ul', () => {
+        const welcome = extractStrangerStartWelcomeSrc(flowSrc);
+        assert.ok(welcome, 'stranger /start Salut! welcome must exist before consentNote()');
+        const folded = foldRo(welcome);
+        // Exact bad product promise from pre-S10 copy (with/without diacritics)
+        assert.ok(
+            !/publica\s+site-ul/.test(folded),
+            'handleStart welcome must not say publică/publica site-ul (Telegram is not the publisher)'
+        );
+        // AI/we publish here as the Telegram outcome
+        assert.ok(
+            !/si\s+publica\s+site/.test(folded) &&
+            !/alege\s+culorile\s+si\s+publica/.test(folded) &&
+            !/publicam\s+(automat\s+)?site/.test(folded),
+            'handleStart welcome must not promise Telegram/AI publishes the site'
+        );
+    });
+
+    await check('handleStart welcome may point to Hidook builder draft (edit + pay before publish)', () => {
+        const welcome = extractStrangerStartWelcomeSrc(flowSrc);
+        assert.ok(welcome, 'stranger /start Salut! welcome must exist');
+        const folded = foldRo(welcome);
+        assert.ok(
+            /builder|editor|draft|hidook/.test(folded),
+            'welcome should mention the Hidook builder / draft path'
+        );
+        assert.ok(
+            /plat|edit/.test(folded),
+            'welcome may note edit and/or pay before publish'
+        );
+    });
+
+    await check('handleStart runtime welcome reply does not promise Telegram publishes', async () => {
+        const replies = [];
+        const chatId = 910001;
+        const ctx = {
+            chat: { id: chatId, type: 'private' },
+            from: { id: chatId, username: 'start_user', first_name: 'Ana' },
+            match: '',
+            reply: async (text) => { replies.push(String(text)); },
+        };
+        await flow.handleStart(ctx);
+        assert.ok(replies.length >= 1, 'handleStart must send a welcome reply');
+        // Product outcome only (GDPR consentNote may still say data is used to build/publish)
+        const folded = foldRo(productNarrative(replies[0]));
+        assert.ok(
+            !/publica\s+site-ul/.test(folded),
+            'runtime welcome product copy must not contain publică/publica site-ul'
+        );
+        assert.ok(
+            !/alege\s+culorile\s+si\s+publica/.test(folded),
+            'runtime welcome must not promise AI publishes the site'
+        );
+        assert.ok(
+            /builder|editor|draft|hidook/.test(folded),
+            'runtime welcome should open path to Hidook builder draft'
+        );
+    });
+
     // ── Source contract: active finish must not be Telegram-checkout commerce ──
     await check('flow.js finish path must not create Stripe checkout with platform=telegram', () => {
         // Isolate the active finish helper body (exported or legacy name).

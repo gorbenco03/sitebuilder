@@ -827,10 +827,12 @@ async function handleStart(ctx) {
     const session = resetSession(chatId);
     session.phase     = 'wizard';
     session.stepIndex = 0;
+    // Welcome: Telegram is intake only — same unpaid Hidook builder draft; pay/publish in /app/.
     await ctx.reply(
         '👋 Salut! Îți construiesc un site web profesional pentru afacerea ta.\n\n' +
         'Îți pun câteva întrebări scurte despre afacere, apoi un AI îți aranjează frumos ' +
-        'textele, alege culorile și publică site-ul. Hai să începem!\n\n' +
+        'textele și culorile. După aceea deschid același draft în builderul Hidook, unde ' +
+        'poți edita și plăti înainte de publicare. Hai să începem!\n\n' +
         'Oricând poți scrie /anuleaza ca să o iei de la capăt.\n\n' +
         consentNote()
     );
