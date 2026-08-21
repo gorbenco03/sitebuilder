@@ -1211,8 +1211,8 @@ async function fetchAppConfig() {
   const heroRenewal = $('hero-renewal');
   if (heroPrice) heroPrice.textContent = priceLabel;
   if (heroRenewal) heroRenewal.textContent = renewalLabel;
-  const bulletPrice = $('trial-bullet-price');
-  const bulletRenewal = $('trial-bullet-renewal');
+  const bulletPrice = $('publish-price');
+  const bulletRenewal = $('publish-renewal');
   if (bulletPrice) bulletPrice.textContent = priceLabel;
   if (bulletRenewal) bulletRenewal.textContent = renewalLabel;
 }
@@ -1546,14 +1546,14 @@ function showSuccessScreen(url, paymentUrl) {
     if (copyBtn) hide(copyBtn);
   }
 
-  const keepBtn = $('btn-keep-site');
+  const payBtn = $('btn-pay-publish');
   const successPrice = $('success-price');
-  if (keepBtn) {
+  if (payBtn) {
     if (paymentUrl) {
-      show(keepBtn);
-      keepBtn.onclick = () => { window.location.href = paymentUrl; };
+      show(payBtn);
+      payBtn.onclick = () => { window.location.href = paymentUrl; };
     } else {
-      hide(keepBtn);
+      hide(payBtn);
     }
     if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
   }
@@ -1779,7 +1779,7 @@ function buildSiteCard(site) {
     badgeClass = 'status-live'; badgeLabel = 'Activ';
   } else if (site.status === 'live' && !site.paid) {
     // Legacy unpaid live (pre pay-before-publish)
-    badgeClass = 'status-trial'; badgeLabel = 'Neplătit';
+    badgeClass = 'status-unpaid'; badgeLabel = 'Neplătit';
   } else if (site.status === 'expired') {
     badgeClass = 'status-expired'; badgeLabel = 'Expirat';
   } else if (site.status === 'needs-retry') {
