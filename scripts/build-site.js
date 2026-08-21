@@ -1,10 +1,14 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * scripts/build-site.js — assemble the desserdina static site into dist/ for
- * Cloudflare Pages (or any static host). Zero dependencies, Node 18+.
+ * scripts/build-site.js — assemble a sample static site into dist/ for local/dev
+ * static hosting checks. Zero dependencies, Node 18+.
  *
  *   node scripts/build-site.js        (or:  npm run build)
+ *
+ * Commercial product identity is Hidook Site Builder (browser builder via
+ * `npm run build:app`). This script only packs the root sample landing page —
+ * do not treat legacy sample labels as the product.
  *
  * It renders index.html from template.html + config.json, then copies ONLY the
  * files that make up the live site into dist/ (build inputs like template.html and
@@ -61,4 +65,5 @@ fs.writeFileSync(path.join(DIST, '_headers'), `/*
 `);
 
 console.log(`✅ dist/ ready — ${files} files + ${imgs} images.`);
-console.log('   Deploy:  npx wrangler pages deploy dist --project-name desserdina');
+console.log('   Sample static assemble only (local/dev). Commercial product: browser builder (npm run build:app).');
+console.log('   Do not deploy this sample as Hidook Site Builder identity; see CLOUDFLARE-DEPLOY.md.');

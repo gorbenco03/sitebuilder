@@ -1,8 +1,8 @@
 {
-  "name": "desserdina-site",
+  "name": "hidook-site-builder",
   "version": "1.0.0",
   "private": true,
-  "description": "DESSERD by Irina — static landing page. `npm run build` renders index.html and assembles dist/ for Cloudflare Pages.",
+  "description": "Hidook Site Builder — commercial product is the browser builder (`npm run build:app`). `npm run build` assembles a sample static site into dist/ for local/dev only.",
   "scripts": {
     "build": "node scripts/build-site.js",
     "gallery": "node scripts/build-gallery.js",
