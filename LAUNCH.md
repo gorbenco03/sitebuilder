@@ -1,60 +1,76 @@
-# DESSERD — ghid de lansare business (cum aduci bani)
+# Hidook Site Builder — team launch notes
 
-Serviciu: **site-uri web profesionale generate automat printr-un bot Telegram cu AI.**
-Clientul povestește despre afacere + trimite poze → primește un site live în câteva minute.
+Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, **pay before first public publish**, then go live on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
+
+**Price:** **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** same currency / year. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
 
 ---
 
-## 1. Ce vinzi și la ce preț
+## 1. What you sell
 
-| Pachet | Preț (sugerat) | Ce include |
+| Offer | Price | Includes |
 |---|---|---|
-| **Site pe vercel.app** | **$29 one-time** (`BUILD_FEE_USD`) | Site complet, live pe `nume.vercel.app` |
-| **+ Domeniu custom** | + prețul domeniului (~$12–15/an) + markup opțional (`DOMAIN_MARKUP_USD`) | `afacereata.ro`/`.com` cumpărat + atașat automat |
-| **Bespoke / custom** | 500 / 1000 / până la 1🍋 | Design la comandă, funcții speciale (manual, nu prin bot) |
+| **Brochure / lead-gen site** | **100** EUR or GBP or USD (bucket) | Builder + first public publish + 12 months managed hosting on agency subdomain + self-service edits + basic SEO/contact + version history |
+| **Renewal** | **29** / year (same currency) | Continued hosting + edit/republish |
+| **Custom domain** | At cost (+ optional concierge) | After payment; not required for the launch happy path |
+| **Bespoke work** | Quote separately | Manual design/features outside the product SKU |
 
-> Marja: la $29 pe site, costurile tale per site sunt ~câțiva cenți (AI Haiku) + hosting fix.
-> Practic profit ~$28/site. La domeniu, încasezi prețul + markup-ul tău.
+Do **not** promise permanent hosting from one payment. No public unpaid trial.
 
-## 2. Costuri lunare (mici, fixe)
-- **Railway** (bot 24/7): ~$5/lună
-- **Vercel**: gratis pentru zeci de site-uri (Hobby); domenii = cost per domeniu, pe care îl pasezi clientului
-- **Anthropic (AI)**: ~$0.01–0.05 per site generat (Haiku + prompt caching)
-- **Stripe/Revolut**: ~1.5–3% per tranzacție
-→ Break-even: **1 client/lună** acoperă tot. Restul e profit.
+## 2. Surfaces (one product)
 
-## 3. Pașii ca să încasezi (checklist tehnic)
-1. **Deploy bot pe Railway** (vezi `bot/DEPLOY.md`) → bot live non-stop.
-2. **Plată live**: pune cheia **Revolut live** (`REVOLUT_SECRET_KEY` + `REVOLUT_ENV=production`).
-3. **Domenii auto** (opțional): card pe Vercel + datele `REGISTRANT_*` în env.
-4. **`ADMIN_CHAT_ID`** → primești notificare la fiecare site + plată.
-5. Gata: trimiți oamenilor link-ul botului (`t.me/<bot>`), ei scriu `/start`.
+| Surface | Role |
+|---|---|
+| Browser builder | Account, editor, pay, publish, edit, renew — commercial happy path |
+| Telegram | Acquisition / guided intake → same draft + magic-link or open-in-builder URL |
+| Static renderer | `build.js` pipeline behind paid publish |
 
-## 4. Cum obții primii clienți (go-to-market)
-**Ai deja cel mai bun argument de vânzare: desserdina.vercel.app** — un site real, frumos, făcut de sistemul tău. Folosește-l ca portofoliu.
+Happy path a stranger can complete (team verifies end-to-end; client does not QA slices):
 
-Primele 10 vânzări, concret:
-1. **Afaceri mici locale fără site** (cofetării, saloane, frizerii, florării, catering, pensiuni).
-   Mesaj direct pe Instagram/Facebook/WhatsApp: *„Salut! Am văzut că nu aveți site. Vă fac unul
-   profesional în 10 minute, live azi. Uitați un exemplu: desserdina.vercel.app. $29, fără bătăi de cap."*
-2. **Grupuri Telegram/Facebook de antreprenori** din Chișinău/România — postează exemplul + botul.
-3. **Oferta de lansare**: primele 5 site-uri la $15 (sau gratis pe vercel.app, plătesc doar domeniul)
-   ca să strângi **testimoniale + exemple** reale în portofoliu.
-4. **Referral**: fiecare client mulțumit aduce 2–3 cunoștințe cu afaceri.
-5. **Demo video** de 30 sec: cum scrii în bot și apare site-ul → postezi pe TikTok/Reels.
+1. Open builder → design → copy/images → preview  
+2. Sign in → **pay 100** → live HTTPS on agency subdomain  
+3. Return later → edit → republish; renew at 29 / year  
 
-## 5. Operare
-- Notificările pe Telegram (`ADMIN_CHAT_ID`) îți spun când cineva face un site / plătește.
-- Site-urile clienților rămân pe contul tău Vercel (le poți gestiona din dashboard).
-- Pentru cereri „bespoke", răspunzi manual și ceri 500+.
+## 3. In-scope for the team (local / staging)
 
-## 6. Următorii pași de produs (când ai tracțiune)
-- **behold.so** pentru feed Instagram live perfect în site-uri.
-- 2–3 **teme/șabloane** la alegere (acum e unul, roz — bun pentru cofetării; adaugi unul „neutru business").
-- DB pentru istoricul comenzilor + panou simplu de admin.
-- Abonament lunar opțional (hosting + editări) = venit recurent.
+- Local bot + builder API with **test** Stripe keys (`sk_test_…`) and webhook signing secrets for staging.
+- Fake-or-isolated deploy (`HIDOOK_FAKE_DEPLOY=1`) for automated tests — **refused in production**; not the client journey.
+- Running `node bot/test/*.test.js` and fixing regressions.
+- Ops docs: `bot/README.md`, `bot/DEPLOY.md`.
+
+See `bot/DEPLOY.md` for env tables. Commercial amounts always come from `bot/pricing.js`.
+
+## 4. Owner-only launch gates (do not implement as this slice)
+
+These stay with the owner. Do **not** treat the following as a team checklist to execute live from this document:
+
+- Production Stripe (or other live payment) keys and live mode  
+- Production Cloudflare / DNS for `hidook.agency` / `builder.hidook.agency` / `*.sites.hidook.agency`  
+- Production email sender and legal entity / VAT copy  
+- Live Railway (or other host) production cutover with real charges  
+
+When the owner runs those gates, follow their runbooks — not an ad-hoc “put live keys and ship” path from this file.
+
+## 5. Go-to-market (positioning only)
+
+- Lead with the **browser builder** and a paid live example on the agency domain — not a Telegram-only “site in minutes” pitch.
+- Small local businesses without a site remain the ICP (cafés, salons, trades, events, portfolios).
+- Message shape: professional brochure site, edit yourself after pay, 100 once then 29 / year hosting — open the builder link (Telegram optional as intake).
+- Collect testimonials after real paid publishes; referral and short demo video of the **builder** pay → publish path.
+
+## 6. Operating model
+
+- Payments and first public publish live in the **builder** after pay-before-publish.
+- Telegram notifies / steers users into the same draft; it does not own deploy after pay.
+- Admin/ops monitoring: see env and webhooks in `bot/README.md` / `bot/DEPLOY.md`.
+- Bespoke requests: handle manually outside the 100 SKU.
+
+## 7. Product backlog (when you have traction)
+
+- Three design systems (product/menu, local service/lead-gen, portfolio/beauty/events) — current sample template look is not the approved commercial design.
+- Neutral `socialFeed` slot only (Instafidget is another team).
+- Clearer admin/history tooling for operators.
 
 ---
-**TL;DR:** tehnic ești la ~1 pas (Railway + cheie Revolut live) de a încasa real. Restul e
-vânzare: folosește desserdina ca exemplu și abordează 20 de afaceri locale fără site. La $29/site
-și costuri ~$5/lună, profitul vine de la primul client.
+
+**TL;DR:** Sell **Hidook Site Builder** (browser builder). Telegram = same-draft intake. **Pay before public publish** at **100** EUR/GBP/USD; renewal **29** / year (`bot/pricing.js`, `PRODUCT.md`). Team works local/test Stripe and isolated deploy; **owner-only** for live keys, live DNS, and production cutover.
