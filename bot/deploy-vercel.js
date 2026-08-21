@@ -144,7 +144,7 @@ function isConfigured() {
  *
  * @param {string} siteDir        Absolute path to the built site directory.
  * @param {object} opts
- * @param {string} opts.name      Vercel project name (must be URL-safe, e.g. 'desserd-by-irina').
+ * @param {string} opts.name      Vercel project name (must be URL-safe, e.g. 'my-hidook-site').
  * @returns {Promise<{url: string, deploymentId: string, projectId: string|undefined}>}
  */
 async function deploySite(siteDir, { name }) {
@@ -253,7 +253,7 @@ if (require.main === module) {
     if (!isConfigured()) {
         console.log('  VERCEL_TOKEN not set — all API calls would throw a clear Error. ✓');
         console.log('  Example:');
-        console.log('    deploySite("/path/to/site", { name: "my-desserd-site" })');
+        console.log('    deploySite("/path/to/site", { name: "my-hidook-site" })');
         console.log('    → throws: "VERCEL_TOKEN is not set. Cannot call Vercel API."');
         console.log('  API version constants (easy to bump):');
         console.log('    Files upload : ' + FILES_API_VER + '  → POST /v2/files');
