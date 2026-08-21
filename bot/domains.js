@@ -199,7 +199,7 @@ async function buyDomain(name, expectedPriceUsd, contactInformation, opts = {}) 
  * Suggest available domains by probing a set of TLDs for the given base name.
  * Best-effort: uses Promise.allSettled so individual TLD failures don't abort the list.
  *
- * @param {string} base  Base name without TLD, e.g. 'myshop' or 'desserd'
+ * @param {string} base  Base name without TLD, e.g. 'myshop' or 'example-shop'
  * @returns {Promise<Array<{name: string, available: boolean, priceUsd: number|null, period: number|null}>>}
  *   Only the available domains, sorted by priceUsd ascending (nulls last).
  */
