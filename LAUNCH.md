@@ -27,9 +27,9 @@ Do **not** promise permanent hosting from one payment. No public unpaid trial.
 
 Happy path a stranger can complete (team verifies end-to-end; client does not QA slices):
 
-1. Open builder → design → copy/images → preview  
-2. Sign in → **pay 100** → live HTTPS on agency subdomain  
-3. Return later → edit → republish; renew at 29 / year  
+1. Open builder → design → copy/images → preview
+2. Sign in → **pay 100** → live HTTPS on agency subdomain
+3. Return later → edit → republish; renew at 29 / year
 
 ## 3. In-scope for the team (local / staging)
 
@@ -44,10 +44,10 @@ See `bot/DEPLOY.md` for env tables. Commercial amounts always come from `bot/pri
 
 These stay with the owner. Do **not** treat the following as a team checklist to execute live from this document:
 
-- Production Stripe (or other live payment) keys and live mode  
-- Production Cloudflare / DNS for `hidook.agency` / `builder.hidook.agency` / `*.sites.hidook.agency`  
-- Production email sender and legal entity / VAT copy  
-- Live Railway (or other host) production cutover with real charges  
+- Production Stripe (or other live payment) keys and live mode
+- Production Cloudflare / DNS for `hidook.agency` / `builder.hidook.agency` / `*.sites.hidook.agency`
+- Production email sender and legal entity / VAT copy
+- Live Railway (or other host) production cutover with real charges
 
 When the owner runs those gates, follow their runbooks — not an ad-hoc “put live keys and ship” path from this file.
 
