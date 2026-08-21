@@ -1,205 +1,104 @@
 <!DOCTYPE html>
-<!-- GENERATED FILE NOTE: index.html is built from this template + config.json via `node build.js`. Edit template.html, not index.html. -->
 <html lang="{{business.lang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{business.title}}</title>
     <meta name="description" content="{{business.metaDescription}}">
-
-    <!-- Open Graph / social sharing -->
     <meta property="og:title" content="{{business.title}}">
     <meta property="og:description" content="{{business.metaDescription}}">
     <!-- @if seo.ogImage -->
     <meta property="og:image" content="{{seo.ogImage}}">
     <!-- @endif -->
     <meta property="og:type" content="website">
-    <!-- @if seo.ogImage -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{business.title}}">
     <meta name="twitter:description" content="{{business.metaDescription}}">
+    <!-- @if seo.ogImage -->
     <meta name="twitter:image" content="{{seo.ogImage}}">
     <!-- @endif -->
-
-    <!-- SEO: canonical + crawlability -->
     <meta name="robots" content="index, follow, max-image-preview:large">
     <!-- @if seo.canonical -->
     <link rel="canonical" href="{{seo.canonical}}">
     <meta property="og:url" content="{{seo.canonical}}">
     <!-- @endif -->
-
-    <!-- Favicon: inline SVG in brand colour -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23C4956A'/%3E%3C/svg%3E">
-
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F4F1EA'/%3E%3Crect x='6' y='8' width='20' height='16' fill='none' stroke='%230D7377' stroke-width='2'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
     <style>
         :root {
-            --color-primary: {{theme.primary}};
+            --color-primary:       {{theme.primary}};
             --color-primary-light: {{theme.primaryLight}};
-            --color-primary-dark: {{theme.primaryDark}};
-            --color-cream: {{theme.cream}};
-            --color-accent: {{theme.primary}};
+            --color-primary-dark:  {{theme.primaryDark}};
+            --color-cream:         {{theme.cream}};
         }
     </style>
-
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>
     <!-- @endif -->
-
-    <!-- Boot: marks JS as available before any content renders.
-         This class gates all opacity:0 hero + fade-in-section animations.
-         Without JS, .js-loaded is never added → elements are visible by default (see styles.css). -->
     <script>document.documentElement.classList.add('js-loaded');</script>
-    <!-- Explicit noscript safety net: ensures reveal classes never hide content when JS is disabled -->
     <noscript><style>
-        .hero-mark, .hero-wordmark, .hero-tagline, .hero-cta, .scroll-hint, .fade-in-section, .collage-photo {
-            opacity: 1 !important;
-            transform: none !important;
-            animation: none !important;
-        }
+        .hero-content, .scroll-hint, .fade-in-section, .collage-photo { opacity: 1 !important; transform: none !important; animation: none !important; }
     </style></noscript>
 </head>
-<body>
+<body class="pf-body">
 
-    <!-- ═══════════════════════════════════════════════════════
-         HERO — editorial full-bleed with layered overlay
-         ═══════════════════════════════════════════════════════ -->
-    <header class="hero">
-        <div class="hero-bg" style="background-image: {{& hero.background}}"></div>
-        <div class="hero-overlay" aria-hidden="true"></div>
-
-        <div class="hero-content">
+    <!-- Thin editorial chrome — gallery-first after mast -->
+    <div class="pf-chrome">
+        <div class="pf-chrome__inner">
             <!-- @if logo -->
-            <span class="hero-mark">
-                <img src="{{logo}}" alt="{{business.name}}" class="hero-logo">
-            </span>
-            <h1 class="sr-only">{{business.name}}</h1>
+            <img src="{{logo}}" alt="{{business.name}}" class="pf-chrome__logo">
             <!-- @endif -->
-            <!-- @if showWordmark --><!-- @if !logo --><h1 class="hero-wordmark">{{business.name}}</h1><!-- @endif --><!-- @endif -->
-            <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
-
-            <p class="hero-tagline">{{business.tagline}}</p>
-
-            <a href="#booking" class="hero-cta">
-                <span>{{hero.ctaLabel}}</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </a>
+            <!-- @if showWordmark --><!-- @if !logo --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
+            <!-- @if !logo --><!-- @if !showWordmark --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
+            <nav class="pf-chrome__nav" aria-label="Navigare">
+                <a href="#gallery-heading">Gallery</a>
+                <a href="#services-heading">Work</a>
+                <a href="#booking">Book</a>
+            </nav>
+            <a href="#booking" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
         </div>
+    </div>
 
-        <button class="scroll-hint" type="button" aria-label="{{labels.scroll}}">
+    <header class="hero pf-hero">
+        <div class="pf-hero__frame">
+            <div class="pf-hero__bg" style="background-image: {{& hero.background}}"></div>
+            <div class="pf-hero__veil" aria-hidden="true"></div>
+            <div class="hero-content pf-hero__copy">
+                <!-- @if logo -->
+                <span class="pf-hero__mark-wrap"><img src="{{logo}}" alt="{{business.name}}" class="pf-hero__logo"></span>
+                <h1 class="sr-only">{{business.name}}</h1>
+                <!-- @endif -->
+                <!-- @if showWordmark --><!-- @if !logo --><h1 class="pf-hero__word">{{business.name}}</h1><!-- @endif --><!-- @endif -->
+                <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
+                <p class="hero-tagline pf-hero__tag">{{business.tagline}}</p>
+                <a href="#booking" class="hero-cta pf-hero__cta"><span>{{hero.ctaLabel}}</span></a>
+            </div>
+        </div>
+        <button class="scroll-hint pf-hint" type="button" aria-label="{{labels.scroll}}">
             <span class="scroll-hint__label">{{labels.scroll}}</span>
             <span class="scroll-hint__line" aria-hidden="true"></span>
         </button>
     </header>
 
-    <!-- ═══════════════════════════════════════════════════════
-         MAIN
-         ═══════════════════════════════════════════════════════ -->
-    <main>
-
-        <!-- ── About ── -->
-        <section class="section about-section fade-in-section" aria-labelledby="about-heading">
-            <div class="container about-grid">
-                <div class="about-text-col">
-                    <p class="eyebrow">{{business.tagline}}</p>
-                    <h2 class="section-title" id="about-heading">{{labels.about}}</h2>
-                    <p class="body-text">{{business.about}}</p>
-                </div>
-                <div class="about-accent-col" aria-hidden="true">
-                    <div class="about-accent-ring"></div>
-                    <svg class="about-accent-svg" viewBox="0 0 120 120" fill="none">
-                        <circle cx="60" cy="60" r="58" stroke="var(--color-primary)" stroke-width="1" stroke-dasharray="4 8" opacity="0.35"/>
-                        <circle cx="60" cy="60" r="42" stroke="var(--color-primary)" stroke-width="0.6" opacity="0.2"/>
-                        <!-- Stylised flower petals -->
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.15" transform="rotate(0 60 60)"/>
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.15" transform="rotate(60 60 60)"/>
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.15" transform="rotate(120 60 60)"/>
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.12" transform="rotate(180 60 60)"/>
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.12" transform="rotate(240 60 60)"/>
-                        <ellipse cx="60" cy="30" rx="8" ry="16" fill="var(--color-primary)" opacity="0.12" transform="rotate(300 60 60)"/>
-                        <circle cx="60" cy="60" r="10" fill="var(--color-primary)" opacity="0.22"/>
-                    </svg>
-                </div>
-            </div>
-        </section>
-
-        <!-- ── Services / Price Menu ── -->
-        <!-- @if services -->
-        <section class="section services-section fade-in-section" aria-labelledby="services-heading">
-            <div class="container">
-                <p class="eyebrow eyebrow--center">{{labels.servicesEyebrow}}</p>
-                <h2 class="section-title section-title--center" id="services-heading">{{servicesTitle}}</h2>
-                <ul class="services-menu" role="list">
-                    <!-- @each services -->
-                    <li class="menu-item">
-                        <span class="menu-item__icon" aria-hidden="true">
-                            {{& icon}}
-                        </span>
-                        <span class="menu-item__label">{{label}}</span>
-                        <!-- @if price -->
-                        <span class="menu-item__price">{{price}}</span>
-                        <!-- @endif -->
-                        <span class="menu-item__rule" aria-hidden="true"></span>
-                    </li>
-                    <!-- @end -->
-                </ul>
-
-                <!-- Extra pricing block for beauty-specific pricing array -->
-                <!-- @if pricing -->
-                <div class="pricing-grid">
-                    <!-- @each pricing -->
-                    <div class="pricing-card">
-                        <span class="pricing-card__name">{{name}}</span>
-                        <span class="pricing-card__dots" aria-hidden="true"></span>
-                        <span class="pricing-card__price">{{price}}</span>
-                    </div>
-                    <!-- @end -->
-                </div>
-                <!-- @endif -->
-            </div>
-        </section>
-        <!-- @endif -->
-
-        <!-- ── Schedule ── -->
-        <!-- @if schedule.rows -->
-        <section class="section schedule-section fade-in-section" aria-labelledby="schedule-heading">
-            <div class="container">
-                <p class="eyebrow eyebrow--center">{{labels.scheduleEyebrow}}</p>
-                <h2 class="section-title section-title--center" id="schedule-heading">{{schedule.title}}</h2>
-                <ul class="schedule-list" role="list">
-                    <!-- @each schedule.rows -->
-                    <li class="schedule-row">
-                        <span class="schedule-row__day">{{day}}</span>
-                        <span class="schedule-row__sep" aria-hidden="true"></span>
-                        <span class="schedule-row__hours">{{hours}}</span>
-                    </li>
-                    <!-- @end -->
-                </ul>
-            </div>
-        </section>
-        <!-- @endif -->
-
-        <!-- ── Gallery ── -->
-        <section class="section gallery-section fade-in-section" aria-labelledby="gallery-heading">
-            <div class="container">
+    <main class="pf-main">
+        <!-- Gallery first — editorial magazine crops -->
+        <section class="pf-gal fade-in-section" aria-labelledby="gallery-heading">
+            <div class="pf-shell pf-gal__head">
                 <!-- @if galleryTitle -->
-                <p class="eyebrow eyebrow--center">{{labels.galleryEyebrow}}</p>
-                <h2 class="section-title section-title--center" id="gallery-heading">{{galleryTitle}}</h2>
+                <p class="pf-kicker">{{labels.galleryEyebrow}}</p>
+                <h2 class="pf-display" id="gallery-heading">{{galleryTitle}}</h2>
                 <!-- @endif -->
             </div>
-
             <!-- @each categories -->
-            <div class="gallery-category">
-                <div class="container gallery-category__header">
-                    <!-- @if title --><h3 class="gallery-category__title">{{title}}</h3><!-- @endif -->
-                    <!-- @if blurb --><p class="gallery-category__blurb">{{blurb}}</p><!-- @endif -->
+            <div class="pf-series">
+                <div class="pf-shell pf-series__meta">
+                    <!-- @if title --><h3 class="pf-series__t">{{title}}</h3><!-- @endif -->
+                    <!-- @if blurb --><p class="pf-series__b">{{blurb}}</p><!-- @endif -->
                 </div>
-                <div class="collage-stage">
+                <div class="collage-stage pf-series__stage">
                     <div class="collage-deck">
                         <!-- @each photos -->
-                        <figure class="collage-photo">
+                        <figure class="collage-photo pf-frame">
                             <img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy">
                         </figure>
                         <!-- @end -->
@@ -209,23 +108,83 @@
             <!-- @end -->
         </section>
 
-        <!-- ── Team ── -->
-        <!-- @if team.members -->
-        <section class="section team-section fade-in-section" aria-labelledby="team-heading">
-            <div class="container">
-                <p class="eyebrow eyebrow--center">{{labels.teamEyebrow}}</p>
-                <h2 class="section-title section-title--center" id="team-heading">{{team.title}}</h2>
-                <div class="team-grid">
-                    <!-- @each team.members -->
-                    <article class="team-card">
-                        <!-- @if photo -->
-                        <div class="team-card__photo-wrap">
-                            <img class="team-card__photo" src="{{photo}}" alt="{{name}}" loading="lazy">
-                        </div>
+        <section class="pf-about fade-in-section" aria-labelledby="about-heading">
+            <div class="pf-shell pf-about__grid">
+                <div class="pf-about__quote">
+                    <p class="pf-kicker">{{business.tagline}}</p>
+                    <h2 class="pf-display" id="about-heading">{{labels.about}}</h2>
+                    <p class="pf-body">{{business.about}}</p>
+                </div>
+                <div class="pf-about__rule" aria-hidden="true">
+                    <span class="pf-about__num">01</span>
+                    <span class="pf-about__slash"></span>
+                    <span class="pf-about__cap">Editorial</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- @if services -->
+        <section class="pf-svc fade-in-section" aria-labelledby="services-heading">
+            <div class="pf-shell">
+                <p class="pf-kicker pf-kicker--center">{{labels.servicesEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="services-heading">{{servicesTitle}}</h2>
+                <ul class="pf-chips" role="list">
+                    <!-- @each services -->
+                    <li class="pf-chip">
+                        <span class="pf-chip__icon" aria-hidden="true">{{& icon}}</span>
+                        <span class="pf-chip__label">{{label}}</span>
+                        <!-- @if price -->
+                        <span class="pf-chip__price">{{price}}</span>
                         <!-- @endif -->
-                        <h3 class="team-card__name">{{name}}</h3>
-                        <!-- @if role --><p class="team-card__role">{{role}}</p><!-- @endif -->
-                        <!-- @if bio --><p class="team-card__bio">{{bio}}</p><!-- @endif -->
+                    </li>
+                    <!-- @end -->
+                </ul>
+                <!-- @if pricing -->
+                <div class="pf-price">
+                    <!-- @each pricing -->
+                    <div class="pf-price__row">
+                        <span class="pf-price__name">{{name}}</span>
+                        <span class="pf-price__dots" aria-hidden="true"></span>
+                        <span class="pf-price__val">{{price}}</span>
+                    </div>
+                    <!-- @end -->
+                </div>
+                <!-- @endif -->
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if schedule.rows -->
+        <section class="pf-sched fade-in-section" aria-labelledby="schedule-heading">
+            <div class="pf-shell">
+                <p class="pf-kicker pf-kicker--center">{{labels.scheduleEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="schedule-heading">{{schedule.title}}</h2>
+                <ul class="pf-sched__list" role="list">
+                    <!-- @each schedule.rows -->
+                    <li class="pf-sched__row">
+                        <span class="pf-sched__day">{{day}}</span>
+                        <span class="pf-sched__hours">{{hours}}</span>
+                    </li>
+                    <!-- @end -->
+                </ul>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if team.members -->
+        <section class="pf-team fade-in-section" aria-labelledby="team-heading">
+            <div class="pf-shell">
+                <p class="pf-kicker pf-kicker--center">{{labels.teamEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="team-heading">{{team.title}}</h2>
+                <div class="pf-team__grid">
+                    <!-- @each team.members -->
+                    <article class="pf-person">
+                        <!-- @if photo -->
+                        <div class="pf-person__pic"><img src="{{photo}}" alt="{{name}}" loading="lazy"></div>
+                        <!-- @endif -->
+                        <h3 class="pf-person__name">{{name}}</h3>
+                        <!-- @if role --><p class="pf-person__role">{{role}}</p><!-- @endif -->
+                        <!-- @if bio --><p class="pf-body pf-body--sm">{{bio}}</p><!-- @endif -->
                     </article>
                     <!-- @end -->
                 </div>
@@ -233,31 +192,21 @@
         </section>
         <!-- @endif -->
 
-        <!-- ── Instagram ── -->
         <!-- @if instagram.handle -->
-        <section class="section instagram-section fade-in-section" aria-labelledby="insta-heading">
-            <div class="container insta-header">
-                <span class="insta-logo-wrap" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                    </svg>
-                </span>
-                <div class="insta-title-block">
-                    <h2 id="insta-heading">{{labels.instaTitle}}</h2>
-                    <p class="insta-handle">@{{instagram.handle}}</p>
+        <section class="pf-ig fade-in-section" aria-labelledby="insta-heading">
+            <div class="pf-shell pf-ig__head">
+                <div>
+                    <h2 class="pf-display" id="insta-heading">{{labels.instaTitle}}</h2>
+                    <p class="pf-ig__handle">@{{instagram.handle}}</p>
                 </div>
-                <a href="{{instagram.url}}" class="btn-follow" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
+                <a href="{{instagram.url}}" class="pf-follow" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
             </div>
-
             <!-- @if instagram.gallery -->
-            <div class="container">
-                <div class="insta-grid">
+            <div class="pf-shell">
+                <div class="pf-ig__grid">
                     <!-- @each instagram.gallery -->
-                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="insta-card">
+                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pf-ig__cell">
                         <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
-                        <span class="insta-badge" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                        </span>
                     </a>
                     <!-- @end -->
                 </div>
@@ -266,132 +215,78 @@
         </section>
         <!-- @endif -->
 
-        <!-- ── Booking / Contact ── -->
-        <section class="section booking-section fade-in-section" aria-labelledby="booking-heading" id="booking">
-            <div class="container booking-grid">
-
-                <div class="booking-text">
-                    <p class="eyebrow">{{labels.bookingEyebrow}}</p>
-                    <h2 class="section-title" id="booking-heading">{{contact.title}}</h2>
-                    <p class="body-text">{{contact.intro}}</p>
-
-                    <div class="contact-list">
+        <section class="pf-book fade-in-section" aria-labelledby="booking-heading" id="booking">
+            <div class="pf-shell pf-book__grid">
+                <div>
+                    <p class="pf-kicker">{{labels.bookingEyebrow}}</p>
+                    <h2 class="pf-display" id="booking-heading">{{contact.title}}</h2>
+                    <p class="pf-body">{{contact.intro}}</p>
+                    <div class="pf-book__list">
                         <!-- @if contact.phone -->
-                        <a href="tel:{{contact.phone}}" class="contact-row">
-                            <span class="contact-row__icon">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                            </span>
-                            <span>{{contact.phoneDisplay}}</span>
-                        </a>
+                        <a href="tel:{{contact.phone}}" class="contact-item pf-row"><span>{{contact.phoneDisplay}}</span></a>
                         <!-- @endif -->
-
                         <!-- @if contact.waHref -->
-                        <a href="{{contact.waHref}}" class="contact-row contact-row--wa" target="_blank" rel="noopener">
-                            <span class="contact-row__icon">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            </span>
-                            <span>WhatsApp</span>
-                        </a>
+                        <a href="{{contact.waHref}}" class="contact-item pf-row" target="_blank" rel="noopener"><span>WhatsApp</span></a>
                         <!-- @endif -->
-
                         <!-- @if contact.instagram.url -->
-                        <a href="{{contact.instagram.url}}" class="contact-row" target="_blank" rel="noopener">
-                            <span class="contact-row__icon">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                            </span>
-                            <span>{{contact.instagram.label}}</span>
-                        </a>
+                        <a href="{{contact.instagram.url}}" class="contact-item pf-row" target="_blank" rel="noopener"><span>{{contact.instagram.label}}</span></a>
                         <!-- @endif -->
-
                         <!-- @if contact.facebook.url -->
-                        <a href="{{contact.facebook.url}}" class="contact-row" target="_blank" rel="noopener">
-                            <span class="contact-row__icon">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                            </span>
-                            <span>{{contact.facebook.label}}</span>
-                        </a>
+                        <a href="{{contact.facebook.url}}" class="contact-item pf-row" target="_blank" rel="noopener"><span>{{contact.facebook.label}}</span></a>
                         <!-- @endif -->
-
                         <!-- @if contact.addressHref -->
-                        <a href="{{contact.addressHref}}" class="contact-row" target="_blank" rel="noopener">
-                            <span class="contact-row__icon">
-                                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                            </span>
-                            <span>{{& contact.address}}</span>
-                        </a>
+                        <a href="{{contact.addressHref}}" class="contact-item pf-row" target="_blank" rel="noopener"><span>{{& contact.address}}</span></a>
                         <!-- @endif -->
                     </div>
                 </div>
-
-                <div class="booking-cta-col">
+                <div class="pf-book__panel">
                     <!-- @if contact.waHref -->
-                    <a href="{{contact.waHref}}" class="booking-wa-btn" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        {{labels.waBookBtn}}
-                    </a>
+                    <a href="{{contact.waHref}}" class="pf-book__wa" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
                     <!-- @endif -->
-
                     <!-- @if schedule.rows -->
-                    <div class="booking-hours">
-                        <p class="booking-hours__label">{{labels.scheduleEyebrow}}</p>
+                    <div class="pf-book__hours">
+                        <p class="pf-kicker">{{labels.scheduleEyebrow}}</p>
                         <!-- @each schedule.rows -->
-                        <p class="booking-hours__row"><strong>{{day}}</strong><span>{{hours}}</span></p>
+                        <p class="pf-book__hr"><strong>{{day}}</strong><span>{{hours}}</span></p>
                         <!-- @end -->
                     </div>
                     <!-- @endif -->
                 </div>
-
             </div>
         </section>
-
     </main>
 
-    <!-- ═══════════════════════════════════════════════════════
-         FOOTER
-         ═══════════════════════════════════════════════════════ -->
-    <footer class="footer">
-        <div class="container footer-inner">
-            <!-- @if logo --><img src="{{logo}}" alt="{{business.name}}" class="footer-logo"><!-- @endif -->
-            <div class="footer-info">
-                <p class="footer-address">{{footer.address}}</p>
-                <p class="footer-copy">&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
+    <footer class="pf-foot">
+        <div class="pf-shell pf-foot__inner">
+            <!-- @if logo -->
+            <img src="{{logo}}" alt="{{business.name}}" class="pf-foot__logo">
+            <!-- @endif -->
+            <div>
+                <p>{{footer.address}}</p>
+                <p>&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
             </div>
-            <nav class="footer-social" aria-label="Social media">
+            <div class="pf-foot__soc">
                 <!-- @if contact.instagram.url -->
-                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram" class="footer-social__link">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                </a>
+                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
                 <!-- @endif -->
                 <!-- @if contact.facebook.url -->
-                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook" class="footer-social__link">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                </a>
+                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook">FB</a>
                 <!-- @endif -->
-            </nav>
+            </div>
         </div>
     </footer>
 
-    <!-- ═══════════════════════════════════════════════════════
-         WHATSAPP QR MODAL (desktop only)
-         ═══════════════════════════════════════════════════════ -->
-    <!-- @if contact.waHref -->
+    <!-- @if contact.whatsapp -->
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
             <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
-            <span class="wa-qr__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            </span>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
             <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
         </div>
     </div>
-
-    <!-- Floating WhatsApp Button -->
-    <a href="{{contact.waHref}}" class="wa-float" target="_blank" rel="noopener" aria-label="WhatsApp">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    </a>
+    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
     <!-- @endif -->
 
     <script src="script.js"></script>

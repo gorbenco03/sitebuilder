@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<!-- GENERATED FILE NOTE: index.html is built from this template + config.json via `node build.js`. Edit template.html, not index.html. -->
 <html lang="{{business.lang}}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{business.title}}</title>
     <meta name="description" content="{{business.metaDescription}}">
-
-    <!-- Open Graph / social sharing -->
     <meta property="og:title" content="{{business.title}}">
     <meta property="og:description" content="{{business.metaDescription}}">
     <!-- @if seo.ogImage -->
@@ -20,318 +17,215 @@
     <!-- @if seo.ogImage -->
     <meta name="twitter:image" content="{{seo.ogImage}}">
     <!-- @endif -->
-
     <meta name="robots" content="index, follow, max-image-preview:large">
     <!-- @if seo.canonical -->
     <link rel="canonical" href="{{seo.canonical}}">
     <meta property="og:url" content="{{seo.canonical}}">
     <!-- @endif -->
-
-    <!-- Favicon: inline SVG hard-hat in brand colour — no external request -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='3' fill='%231F2933'/%3E%3Cpath d='M5 21h22v3H5zm2-2 2.5-8h2L13 15l3-7 3 7 1.5-4h2L25 19z' fill='%23F5A623'/%3E%3C/svg%3E">
-
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0C0F'/%3E%3Cpath d='M4 24h24M8 16h16M12 8h8' stroke='%23FF4D00' stroke-width='3'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
     <style>
         :root {
-            --color-primary: {{theme.primary}};
+            --color-primary:       {{theme.primary}};
             --color-primary-light: {{theme.primaryLight}};
-            --color-primary-dark: {{theme.primaryDark}};
-            --color-cream: {{theme.cream}};
-            --color-accent: {{theme.primary}};
+            --color-primary-dark:  {{theme.primaryDark}};
+            --color-cream:         {{theme.cream}};
         }
     </style>
-
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>
     <!-- @endif -->
 </head>
-<body>
+<body class="ls-body">
+    <noscript><style>
+        .hero-content, .scroll-indicator, .fade-in-section, .service-card { opacity: 1 !important; transform: none !important; }
+    </style></noscript>
 
-    <!-- ============================================================
-         HERO
-         ============================================================ -->
-    <header class="hero" id="top">
-        <div class="hero-bg" style="background: {{& hero.background}}"></div>
-        <div class="hero-overlay"></div>
-
-        <!-- Top navigation bar -->
-        <nav class="hero-nav" aria-label="Navigare principala">
-            <!-- @if logo -->
-            <img src="{{logo}}" alt="{{business.name}}" class="nav-logo">
+    <!-- Utility strip + diagonal industrial hero -->
+    <header class="hero ls-hero" id="top">
+        <div class="ls-util">
+            <!-- @if contact.phone -->
+            <a href="tel:{{contact.phone}}" class="ls-util__phone">{{contact.phoneDisplay}}</a>
             <!-- @endif -->
-            <!-- @if showWordmark --><!-- @if !logo --><span class="nav-wordmark">{{business.name}}</span><!-- @endif --><!-- @endif -->
-            <div class="nav-actions">
-                <!-- @if contact.phone -->
-                <a href="tel:{{contact.phone}}" class="nav-phone" aria-label="Suna acum">
-                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="14" height="14"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                    {{contact.phoneDisplay}}
-                </a>
+            <!-- @if business.zone -->
+            <span class="ls-util__zone">{{business.zone}}</span>
+            <!-- @endif -->
+            <!-- @if contact.whatsapp -->
+            <a href="{{contact.waHref}}" class="ls-util__cta" target="_blank" rel="noopener">{{hero.ctaLabel}}</a>
+            <!-- @endif -->
+        </div>
+
+        <div class="ls-hero__cut">
+            <div class="ls-hero__media" style="background: {{& hero.background}}"></div>
+            <div class="ls-hero__haze" aria-hidden="true"></div>
+            <div class="hero-content ls-hero__copy">
+                <!-- @if logo -->
+                <img src="{{logo}}" alt="{{business.name}}" class="ls-hero__logo">
+                <h1 class="sr-only">{{business.name}}</h1>
                 <!-- @endif -->
-                <!-- @if contact.whatsapp -->
-                <a href="{{contact.waHref}}" class="nav-cta" target="_blank" rel="noopener">{{hero.ctaLabel}}</a>
-                <!-- @endif -->
-            </div>
-        </nav>
+                <!-- @if showWordmark --><!-- @if !logo --><h1 class="ls-hero__name">{{business.name}}</h1><!-- @endif --><!-- @endif -->
+                <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
+                <p class="hero-tagline ls-hero__tag">{{business.tagline}}</p>
 
-        <!-- Hero content — always visible, no scroll required -->
-        <div class="hero-content">
-            <!-- @if logo -->
-            <img src="{{logo}}" alt="{{business.name}}" class="hero-logo" aria-hidden="true">
-            <h1 class="sr-only">{{business.name}}</h1>
-            <!-- @endif -->
-            <!-- @if showWordmark --><!-- @if !logo --><h1 class="hero-name">{{business.name}}</h1><!-- @endif --><!-- @endif -->
-            <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
-            <p class="hero-tagline">{{business.tagline}}</p>
-
-            <!-- Key statistics — extra fields guarded by @if -->
-            <!-- @if stats -->
-            <div class="hero-stats">
-                <!-- @each stats -->
-                <div class="hero-stat">
-                    <span class="hero-stat__number">{{number}}</span>
-                    <span class="hero-stat__label">{{label}}</span>
-                </div>
-                <!-- @end -->
-            </div>
-            <!-- @endif -->
-
-            <!-- Inline stats when no stats array but yearsExp is set -->
-            <!-- @if business.yearsExp --><!-- @if !stats -->
-            <div class="hero-stats">
-                <div class="hero-stat">
-                    <span class="hero-stat__number">{{business.yearsExp}}<sup>+</sup></span>
-                    <span class="hero-stat__label">ani experienta</span>
-                </div>
-                <!-- @if business.projectsDone -->
-                <div class="hero-stat">
-                    <span class="hero-stat__number">{{business.projectsDone}}+</span>
-                    <span class="hero-stat__label">proiecte finalizate</span>
+                <!-- @if stats -->
+                <div class="ls-meters">
+                    <!-- @each stats -->
+                    <div class="ls-meter">
+                        <span class="ls-meter__n">{{number}}</span>
+                        <span class="ls-meter__l">{{label}}</span>
+                    </div>
+                    <!-- @end -->
                 </div>
                 <!-- @endif -->
-            </div>
-            <!-- @endif --><!-- @endif -->
+                <!-- @if business.yearsExp --><!-- @if !stats -->
+                <div class="ls-meters">
+                    <div class="ls-meter">
+                        <span class="ls-meter__n">{{business.yearsExp}}+</span>
+                        <span class="ls-meter__l">ani experienta</span>
+                    </div>
+                    <!-- @if business.projectsDone -->
+                    <div class="ls-meter">
+                        <span class="ls-meter__n">{{business.projectsDone}}+</span>
+                        <span class="ls-meter__l">proiecte</span>
+                    </div>
+                    <!-- @endif -->
+                </div>
+                <!-- @endif --><!-- @endif -->
 
-            <div class="hero-actions">
-                <a href="#contact" class="hero-cta">
-                    {{hero.ctaLabel}}
-                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="18" height="18"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-                </a>
-                <!-- @if contact.phone -->
-                <a href="tel:{{contact.phone}}" class="hero-phone-btn">
-                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" width="16" height="16"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
-                    {{contact.phoneDisplay}}
-                </a>
-                <!-- @endif -->
+                <div class="ls-hero__actions">
+                    <a href="#contact" class="hero-cta ls-btn ls-btn--fill">{{hero.ctaLabel}}</a>
+                    <!-- @if contact.phone -->
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost">{{contact.phoneDisplay}}</a>
+                    <!-- @endif -->
+                </div>
             </div>
         </div>
 
-        <button class="scroll-indicator" type="button" aria-label="{{labels.scroll}}">
+        <button class="scroll-indicator ls-scroll" type="button" aria-label="{{labels.scroll}}">
             <span class="scroll-indicator__label">{{labels.scroll}}</span>
             <span class="scroll-indicator__line" aria-hidden="true"></span>
         </button>
     </header>
 
-    <!-- ============================================================
-         MAIN CONTENT
-         ============================================================ -->
-    <main id="main-content">
+    <main id="main-content" class="ls-main">
+        <section class="ls-block fade-in-section" aria-labelledby="about-heading">
+            <div class="ls-wrap ls-about">
+                <div class="ls-about__copy">
+                    <p class="ls-eyebrow">{{business.tagline}}</p>
+                    <h2 class="ls-h" id="about-heading">{{labels.about}}</h2>
+                    <p class="ls-text">{{business.about}}</p>
+                    <!-- @if business.yearsExp -->
+                    <div class="ls-badge"><strong>{{business.yearsExp}}+</strong><span>ani pe teren</span></div>
+                    <!-- @endif -->
+                    <!-- @if business.zone -->
+                    <p class="ls-zone">{{business.zone}}</p>
+                    <!-- @endif -->
+                    <!-- @if certifications -->
+                    <div class="ls-certs">
+                        <!-- @each certifications -->
+                        <span class="ls-cert">{{.}}</span>
+                        <!-- @end -->
+                    </div>
+                    <!-- @endif -->
+                </div>
 
-        <!-- ============================================================
-             ABOUT + CONTACT — two column
-             ============================================================ -->
-        <section class="section about-section fade-in-section" aria-labelledby="about-heading">
-            <div class="container">
-                <div class="about-layout">
-
-                    <!-- About column -->
-                    <div class="about-col">
-                        <p class="eyebrow">{{business.tagline}}</p>
-                        <h2 class="section-title" id="about-heading">{{labels.about}}</h2>
-                        <p class="about-text">{{business.about}}</p>
-
-                        <!-- Years experience badge -->
-                        <!-- @if business.yearsExp -->
-                        <div class="exp-badge">
-                            <strong class="exp-badge__number">{{business.yearsExp}}<sup>+</sup></strong>
-                            <span class="exp-badge__label">ani de experienta dovedita</span>
-                        </div>
+                <div class="ls-lead" id="contact">
+                    <h2 class="ls-h ls-h--sm">{{contact.title}}</h2>
+                    <p class="ls-text">{{contact.intro}}</p>
+                    <div class="ls-lead__list">
+                        <!-- @if contact.phone -->
+                        <a href="tel:{{contact.phone}}" class="contact-item ls-lead__row"><span>{{contact.phoneDisplay}}</span></a>
                         <!-- @endif -->
-
-                        <!-- Zone badge -->
-                        <!-- @if business.zone -->
-                        <p class="zone-badge">
-                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="zone-badge__icon" width="16" height="16"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
-                            {{business.zone}}
-                        </p>
+                        <!-- @if contact.whatsapp -->
+                        <a href="{{contact.waHref}}" class="contact-item ls-lead__row" target="_blank" rel="noopener"><span>WhatsApp</span></a>
                         <!-- @endif -->
-
-                        <!-- Certification pills -->
-                        <!-- @if certifications -->
-                        <div class="cert-list" role="list" aria-label="Certificari si autorizatii">
-                            <!-- @each certifications -->
-                            <span class="cert-pill" role="listitem">
-                                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" width="11" height="11"><path d="M13.485 1.431a1.473 1.473 0 00-2.084 0l-6.272 6.272L3.79 6.364a1.473 1.473 0 00-2.084 2.084l2.38 2.38a1.473 1.473 0 002.084 0l7.315-7.314a1.473 1.473 0 000-2.084z"/></svg>
-                                {{.}}
-                            </span>
-                            <!-- @end -->
-                        </div>
+                        <!-- @if contact.instagram.url -->
+                        <a href="{{contact.instagram.url}}" class="contact-item ls-lead__row" target="_blank" rel="noopener"><span>{{contact.instagram.label}}</span></a>
+                        <!-- @endif -->
+                        <!-- @if contact.facebook.url -->
+                        <a href="{{contact.facebook.url}}" class="contact-item ls-lead__row" target="_blank" rel="noopener"><span>{{contact.facebook.label}}</span></a>
+                        <!-- @endif -->
+                        <!-- @if contact.addressHref -->
+                        <a href="{{contact.addressHref}}" class="contact-item ls-lead__row" target="_blank" rel="noopener"><span>{{& contact.address}}</span></a>
+                        <!-- @endif -->
+                        <!-- @if contact.addressNoHref -->
+                        <span class="contact-item ls-lead__row"><span>{{& contact.address}}</span></span>
                         <!-- @endif -->
                     </div>
-
-                    <!-- Contact card -->
-                    <div class="contact-card" id="contact">
-                        <h2 class="contact-card__title">{{contact.title}}</h2>
-                        <p class="contact-card__intro">{{contact.intro}}</p>
-                        <div class="contact-list">
-                            <!-- @if contact.phone -->
-                            <a href="tel:{{contact.phone}}" class="contact-item">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                                </span>
-                                <span>{{contact.phoneDisplay}}</span>
-                            </a>
-                            <!-- @endif -->
-                            <!-- @if contact.whatsapp -->
-                            <a href="{{contact.waHref}}" class="contact-item" target="_blank" rel="noopener">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                </span>
-                                <span>WhatsApp</span>
-                            </a>
-                            <!-- @endif -->
-                            <!-- @if contact.instagram.url -->
-                            <a href="{{contact.instagram.url}}" class="contact-item" target="_blank" rel="noopener">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                                </span>
-                                <span>{{contact.instagram.label}}</span>
-                            </a>
-                            <!-- @endif -->
-                            <!-- @if contact.facebook.url -->
-                            <a href="{{contact.facebook.url}}" class="contact-item" target="_blank" rel="noopener">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                                </span>
-                                <span>{{contact.facebook.label}}</span>
-                            </a>
-                            <!-- @endif -->
-                            <!-- @if contact.addressHref -->
-                            <a href="{{contact.addressHref}}" class="contact-item" target="_blank" rel="noopener">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                                </span>
-                                <span>{{& contact.address}}</span>
-                            </a>
-                            <!-- @endif -->
-                            <!-- @if contact.addressNoHref -->
-                            <span class="contact-item">
-                                <span class="contact-item__icon" aria-hidden="true">
-                                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                                </span>
-                                <span>{{& contact.address}}</span>
-                            </span>
-                            <!-- @endif -->
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- ============================================================
-             SERVICES GRID
-             ============================================================ -->
         <!-- @if services -->
-        <section class="section services-section fade-in-section" aria-labelledby="services-heading">
-            <div class="container">
-                <div class="section-header section-header--center">
-                    <p class="eyebrow">Ce facem</p>
-                    <h2 class="section-title" id="services-heading">{{servicesTitle}}</h2>
-                </div>
-                <ul class="services-grid" role="list">
+        <section class="ls-block ls-block--dark fade-in-section" aria-labelledby="services-heading">
+            <div class="ls-wrap">
+                <p class="ls-eyebrow ls-eyebrow--hi">Specificații</p>
+                <h2 class="ls-h ls-h--light" id="services-heading">{{servicesTitle}}</h2>
+                <ol class="ls-punch">
                     <!-- @each services -->
-                    <li class="service-card" role="listitem">
-                        <span class="service-card__icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        </span>
-                        <span class="service-card__label">{{label}}</span>
+                    <li class="service-card ls-punch__row">
+                        <span class="ls-punch__n" aria-hidden="true"></span>
+                        <span class="ls-punch__label">{{label}}</span>
                     </li>
                     <!-- @end -->
-                </ul>
+                </ol>
             </div>
         </section>
         <!-- @endif -->
 
-        <!-- ============================================================
-             HOW WE WORK — 3 numbered steps
-             ============================================================ -->
         <!-- @if steps -->
-        <section class="section steps-section fade-in-section" aria-labelledby="steps-heading">
-            <div class="container">
-                <div class="section-header section-header--center">
-                    <p class="eyebrow">Procesul nostru</p>
-                    <h2 class="section-title" id="steps-heading">Cum lucram</h2>
-                </div>
-                <ol class="steps-list" role="list">
+        <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
+            <div class="ls-wrap">
+                <p class="ls-eyebrow">Flux</p>
+                <h2 class="ls-h" id="steps-heading">Cum lucram</h2>
+                <ol class="ls-flow">
                     <!-- @each steps -->
-                    <li class="step-card" role="listitem">
-                        <span class="step-card__number" aria-hidden="true">{{step}}</span>
-                        <h3 class="step-card__title">{{title}}</h3>
-                        <p class="step-card__text">{{text}}</p>
+                    <li class="ls-flow__card">
+                        <span class="ls-flow__n">{{step}}</span>
+                        <h3 class="ls-flow__t">{{title}}</h3>
+                        <p class="ls-text">{{text}}</p>
                     </li>
                     <!-- @end -->
                 </ol>
             </div>
         </section>
         <!-- @endif -->
-
-        <!-- Default 3 steps when no custom steps array provided -->
         <!-- @if !steps -->
-        <section class="section steps-section fade-in-section" aria-labelledby="steps-heading">
-            <div class="container">
-                <div class="section-header section-header--center">
-                    <p class="eyebrow">Procesul nostru</p>
-                    <h2 class="section-title" id="steps-heading">Cum lucram</h2>
-                </div>
-                <ol class="steps-list" role="list">
-                    <li class="step-card" role="listitem">
-                        <span class="step-card__number" aria-hidden="true">01</span>
-                        <h3 class="step-card__title">Evaluare gratuita</h3>
-                        <p class="step-card__text">Va contactam in maximum 24 de ore pentru o vizita de evaluare. Analizam spatiul, discutam cerintele si intocmim un deviz detaliat — fara costuri ascunse.</p>
+        <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
+            <div class="ls-wrap">
+                <p class="ls-eyebrow">Flux</p>
+                <h2 class="ls-h" id="steps-heading">Cum lucram</h2>
+                <ol class="ls-flow">
+                    <li class="ls-flow__card">
+                        <span class="ls-flow__n">01</span>
+                        <h3 class="ls-flow__t">Evaluare gratuita</h3>
+                        <p class="ls-text">Contact in 24h, vizita pe teren, deviz clar — fara costuri ascunse.</p>
                     </li>
-                    <li class="step-card" role="listitem">
-                        <span class="step-card__number" aria-hidden="true">02</span>
-                        <h3 class="step-card__title">Executie cu garantie</h3>
-                        <p class="step-card__text">Echipa noastra lucreaza curat si ordonat, respecta termenele agreate si va tine la curent cu evolutia lucrarilor. Folosim materiale de calitate certificata.</p>
+                    <li class="ls-flow__card">
+                        <span class="ls-flow__n">02</span>
+                        <h3 class="ls-flow__t">Executie controlata</h3>
+                        <p class="ls-text">Echipa pe santier, termene scrise, materiale verificate.</p>
                     </li>
-                    <li class="step-card" role="listitem">
-                        <span class="step-card__number" aria-hidden="true">03</span>
-                        <h3 class="step-card__title">Receptie si garantie</h3>
-                        <p class="step-card__text">La finalizare facem receptia impreuna cu dumneavoastra. Oferim garantie scrisa la toate lucrarile efectuate si ramanem disponibili pentru orice problema post-executie.</p>
+                    <li class="ls-flow__card">
+                        <span class="ls-flow__n">03</span>
+                        <h3 class="ls-flow__t">Receptie + garantie</h3>
+                        <p class="ls-text">Predare impreuna cu tine si garantie pe lucrare.</p>
                     </li>
                 </ol>
             </div>
         </section>
         <!-- @endif -->
 
-        <!-- ============================================================
-             TRUST / DE CE NOI
-             ============================================================ -->
         <!-- @if trust -->
-        <section class="trust-section fade-in-section" aria-labelledby="trust-heading">
-            <div class="container">
-                <div class="section-header section-header--center section-header--light">
-                    <p class="eyebrow eyebrow--light">Angajamentul nostru</p>
-                    <h2 class="section-title section-title--light" id="trust-heading">De ce sa ne alegi</h2>
-                </div>
-                <div class="trust-grid">
+        <section class="ls-trust fade-in-section" aria-labelledby="trust-heading">
+            <div class="ls-wrap">
+                <p class="ls-eyebrow ls-eyebrow--hi">Angajament</p>
+                <h2 class="ls-h ls-h--light" id="trust-heading">De ce sa ne alegi</h2>
+                <div class="ls-trust__grid">
                     <!-- @each trust -->
-                    <div class="trust-card">
-                        <span class="trust-card__icon" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                        </span>
-                        <h3 class="trust-card__title">{{title}}</h3>
-                        <p class="trust-card__text">{{text}}</p>
+                    <div class="ls-trust__card">
+                        <h3 class="ls-trust__t">{{title}}</h3>
+                        <p class="ls-text">{{text}}</p>
                     </div>
                     <!-- @end -->
                 </div>
@@ -339,29 +233,21 @@
         </section>
         <!-- @endif -->
 
-        <!-- ============================================================
-             PORTFOLIO / LUCRARI REALIZATE
-             ============================================================ -->
         <!-- @if categories -->
-        <section class="section gallery-section fade-in-section" aria-labelledby="gallery-heading">
-            <div class="container">
+        <section class="ls-block fade-in-section" aria-labelledby="gallery-heading">
+            <div class="ls-wrap">
                 <!-- @if galleryTitle -->
-                <div class="section-header section-header--center">
-                    <p class="eyebrow">Portofoliu</p>
-                    <h2 class="section-title" id="gallery-heading">{{galleryTitle}}</h2>
-                </div>
+                <p class="ls-eyebrow">Lucrari</p>
+                <h2 class="ls-h" id="gallery-heading">{{galleryTitle}}</h2>
                 <!-- @endif -->
-
                 <!-- @each categories -->
-                <div class="category-block">
-                    <div class="category-block__header">
-                        <h3 class="category-block__title">{{title}}</h3>
-                        <p class="category-block__blurb">{{blurb}}</p>
-                    </div>
+                <div class="ls-work">
+                    <h3 class="ls-work__t">{{title}}</h3>
+                    <p class="ls-text">{{blurb}}</p>
                     <!-- @if photos -->
-                    <div class="photo-grid">
+                    <div class="ls-shots">
                         <!-- @each photos -->
-                        <figure class="photo-card">
+                        <figure class="photo-card ls-shot">
                             <img src="{{src}}" alt="{{alt}}" loading="lazy">
                             <figcaption class="sr-only">{{alt}}</figcaption>
                         </figure>
@@ -374,62 +260,40 @@
         </section>
         <!-- @endif -->
 
-        <!-- ============================================================
-             CTA BAND — repeated call to action
-             ============================================================ -->
-        <section class="cta-band fade-in-section" aria-label="Contacteaza-ne">
-            <div class="container">
-                <div class="cta-band__inner">
-                    <div class="cta-band__text">
-                        <h2 class="cta-band__title">Gata sa incepem?</h2>
-                        <p class="cta-band__sub">Cere o evaluare gratuita — raspundem in aceeasi zi.</p>
-                    </div>
-                    <div class="cta-band__actions">
-                        <!-- @if contact.whatsapp -->
-                        <a href="{{contact.waHref}}" class="btn btn--primary" target="_blank" rel="noopener">
-                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            {{hero.ctaLabel}}
-                        </a>
-                        <!-- @endif -->
-                        <!-- @if contact.phone -->
-                        <a href="tel:{{contact.phone}}" class="btn btn--outline">
-                            {{contact.phoneDisplay}}
-                        </a>
-                        <!-- @endif -->
-                    </div>
+        <section class="ls-band fade-in-section" aria-label="Contacteaza-ne">
+            <div class="ls-wrap ls-band__inner">
+                <div>
+                    <h2 class="ls-h ls-h--light">Gata sa incepem?</h2>
+                    <p class="ls-text">Cere o evaluare — raspundem in aceeasi zi.</p>
+                </div>
+                <div class="ls-band__acts">
+                    <!-- @if contact.whatsapp -->
+                    <a href="{{contact.waHref}}" class="ls-btn ls-btn--fill" target="_blank" rel="noopener">{{hero.ctaLabel}}</a>
+                    <!-- @endif -->
+                    <!-- @if contact.phone -->
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost">{{contact.phoneDisplay}}</a>
+                    <!-- @endif -->
                 </div>
             </div>
         </section>
 
-        <!-- ============================================================
-             INSTAGRAM SECTION
-             ============================================================ -->
         <!-- @if instagram.handle -->
-        <section class="section instagram-section fade-in-section" aria-labelledby="instagram-heading">
-            <div class="container">
-                <div class="instagram-header">
-                    <span class="instagram-header__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="26" height="26">
-                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                        </svg>
-                    </span>
-                    <div class="instagram-header__text">
-                        <h2 class="instagram-header__title" id="instagram-heading">{{labels.instaTitle}}</h2>
-                        <p class="instagram-header__handle">@{{instagram.handle}}</p>
+        <section class="ls-block fade-in-section" aria-labelledby="instagram-heading">
+            <div class="ls-wrap">
+                <div class="ls-ighead">
+                    <div>
+                        <h2 class="ls-h" id="instagram-heading">{{labels.instaTitle}}</h2>
+                        <p class="ls-ighead__h">@{{instagram.handle}}</p>
                     </div>
                     <!-- @if instagram.url -->
-                    <a href="{{instagram.url}}" class="btn btn--nav" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
+                    <a href="{{instagram.url}}" class="ls-btn ls-btn--ghost" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
                     <!-- @endif -->
                 </div>
-
                 <!-- @if instagram.gallery -->
-                <div class="instagram-grid">
+                <div class="ls-iggrid">
                     <!-- @each instagram.gallery -->
-                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="insta-card">
+                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="ls-igcell">
                         <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
-                        <span class="insta-card__overlay" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                        </span>
                     </a>
                     <!-- @end -->
                 </div>
@@ -437,92 +301,61 @@
             </div>
         </section>
         <!-- @endif -->
-
     </main>
 
-    <!-- ============================================================
-         FOOTER
-         ============================================================ -->
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-inner">
-                <!-- @if logo -->
-                <img src="{{logo}}" alt="{{business.name}}" class="footer-logo">
+    <!-- Sticky phone dock — industrial CTA architecture -->
+    <!-- @if contact.phone -->
+    <div class="ls-dock" role="region" aria-label="Apel rapid">
+        <a href="tel:{{contact.phone}}" class="ls-dock__call">SUNĂ {{contact.phoneDisplay}}</a>
+        <!-- @if contact.whatsapp -->
+        <a href="{{contact.waHref}}" class="ls-dock__wa" target="_blank" rel="noopener">WA</a>
+        <!-- @endif -->
+    </div>
+    <!-- @endif -->
+
+    <footer class="ls-foot">
+        <div class="ls-wrap ls-foot__inner">
+            <!-- @if logo -->
+            <img src="{{logo}}" alt="{{business.name}}" class="ls-foot__logo">
+            <!-- @endif -->
+            <div>
+                <p>{{footer.address}}</p>
+                <p>&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
+            </div>
+            <div class="ls-foot__soc">
+                <!-- @if contact.instagram.url -->
+                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
                 <!-- @endif -->
-                <div class="footer-info">
-                    <p class="footer-address">{{footer.address}}</p>
-                    <p class="footer-copy">&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
-                </div>
-                <div class="footer-social">
-                    <!-- @if contact.instagram.url -->
-                    <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram" class="footer-social__link">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-                    </a>
-                    <!-- @endif -->
-                    <!-- @if contact.facebook.url -->
-                    <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook" class="footer-social__link">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    </a>
-                    <!-- @endif -->
-                    <!-- @if contact.whatsapp -->
-                    <a href="{{contact.waHref}}" target="_blank" rel="noopener" aria-label="WhatsApp" class="footer-social__link">
-                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    </a>
-                    <!-- @endif -->
-                </div>
+                <!-- @if contact.facebook.url -->
+                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook">FB</a>
+                <!-- @endif -->
+                <!-- @if contact.whatsapp -->
+                <a href="{{contact.waHref}}" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
+                <!-- @endif -->
             </div>
         </div>
     </footer>
 
-    <!-- ============================================================
-         WHATSAPP QR MODAL (desktop)
-         ============================================================ -->
     <!-- @if contact.whatsapp -->
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Inchide">
-                <svg viewBox="0 0 20 20" fill="currentColor" width="20" height="20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-            </button>
-            <span class="wa-qr__icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            </span>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Inchide">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
-            <div class="wa-qr__code">
-                <img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240">
-            </div>
+            <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
         </div>
     </div>
+    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
     <!-- @endif -->
 
-    <!-- Floating WhatsApp Button -->
-    <!-- @if contact.whatsapp -->
-    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="28" height="28"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-    </a>
-    <!-- @endif -->
-
-    <!-- Lightbox -->
     <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Previzualizare fotografie">
-        <button class="lightbox__close" id="lightbox-close" aria-label="Inchide">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="24" height="24"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-        </button>
-        <button class="lightbox__nav lightbox__prev" id="lightbox-prev" aria-label="Anterioara">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="24" height="24"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-        </button>
+        <button class="lightbox__close" id="lightbox-close" aria-label="Inchide">&times;</button>
+        <button class="lightbox__nav lightbox__prev" id="lightbox-prev" aria-label="Anterioara">‹</button>
         <img class="lightbox__img" id="lightbox-img" src="" alt="">
-        <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="Urmatoarea">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="24" height="24"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-        </button>
+        <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="Urmatoarea">›</button>
     </div>
 
     <script src="script.js"></script>
-    <noscript><style>
-        .fade-in-section,
-        .fade-in-section .service-card,
-        .fade-in-section .trust-card,
-        .fade-in-section .step-card { opacity: 1 !important; transform: none !important; }
-    </style></noscript>
 </body>
 </html>

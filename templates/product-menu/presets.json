@@ -21,25 +21,43 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary": "#C45C4A",
-          "primaryLight": "#D98A7A",
-          "primaryDark": "#3D2420",
-          "cream": "#FAF6F1"
+          "primary": "#E8F06A",
+          "primaryLight": "#F3F7A8",
+          "primaryDark": "#0B1016",
+          "cream": "#D7DCD4"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(61,36,32,0.62) 0%, rgba(196,92,74,0.42) 60%, rgba(250,246,241,0.12) 100%), url('https://picsum.photos/seed/pm-ileana-hero/1200/800')",
+          "background": "linear-gradient(160deg, rgba(11,16,22,0.72) 0%, rgba(232,240,106,0.28) 60%, rgba(215,220,212,0.15) 100%), url('https://picsum.photos/seed/pm-ileana-hero/1200/800')",
           "ctaLabel": "Vezi meniul"
         },
         "servicesTitle": "Ce găsești la noi",
         "services": [
-          { "icon": "", "label": "Torturi la comandă" },
-          { "icon": "", "label": "Praline artizanale" },
-          { "icon": "", "label": "Tarte cu fructe" },
-          { "icon": "", "label": "Prăjituri de casă" },
-          { "icon": "", "label": "Platouri dulci" },
-          { "icon": "", "label": "Cafea de specialitate" }
+          {
+            "icon": "",
+            "label": "Torturi la comandă"
+          },
+          {
+            "icon": "",
+            "label": "Praline artizanale"
+          },
+          {
+            "icon": "",
+            "label": "Tarte cu fructe"
+          },
+          {
+            "icon": "",
+            "label": "Prăjituri de casă"
+          },
+          {
+            "icon": "",
+            "label": "Platouri dulci"
+          },
+          {
+            "icon": "",
+            "label": "Cafea de specialitate"
+          }
         ],
         "galleryTitle": "Din vitrină",
         "categories": [
@@ -47,18 +65,36 @@
             "title": "Torturi de ocazie",
             "blurb": "Fiecare tort e sculptat manual — de la florile de zahăr până la glazura în oglindă.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-ileana-t1/800/600", "alt": "Tort alb cu flori de zahăr" },
-              { "src": "https://picsum.photos/seed/pm-ileana-t2/800/600", "alt": "Tort ciocolată cu zmeură" },
-              { "src": "https://picsum.photos/seed/pm-ileana-t3/800/600", "alt": "Tort cu glazură oglindă" }
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-t1/800/600",
+                "alt": "Tort alb cu flori de zahăr"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-t2/800/600",
+                "alt": "Tort ciocolată cu zmeură"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-t3/800/600",
+                "alt": "Tort cu glazură oglindă"
+              }
             ]
           },
           {
             "title": "Praline & ciocolată",
             "blurb": "Ciocolată belgiană, ganache de fructe, caramel sărat — cutii cadou oricând.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-ileana-p1/800/600", "alt": "Cutie de praline asortate" },
-              { "src": "https://picsum.photos/seed/pm-ileana-p2/800/600", "alt": "Trufe de ciocolată neagră" },
-              { "src": "https://picsum.photos/seed/pm-ileana-p3/800/600", "alt": "Tartă cu căpșuni" }
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-p1/800/600",
+                "alt": "Cutie de praline asortate"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-p2/800/600",
+                "alt": "Trufe de ciocolată neagră"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-ileana-p3/800/600",
+                "alt": "Tartă cu căpșuni"
+              }
             ]
           }
         ],
@@ -77,8 +113,14 @@
         "contact": {
           "title": "Comandă o surpriză",
           "intro": "Scrie-ne pe WhatsApp sau Instagram — răspundem în câteva ore. Livrare în Floreasca și Dorobanți.",
-          "instagram": { "url": "https://www.instagram.com/dulce.de.la.ileana", "label": "@dulce.de.la.ileana" },
-          "facebook": { "url": "https://www.facebook.com/dulcedelaileana", "label": "Dulce de la Ileana" },
+          "instagram": {
+            "url": "https://www.instagram.com/dulce.de.la.ileana",
+            "label": "@dulce.de.la.ileana"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/dulcedelaileana",
+            "label": "Dulce de la Ileana"
+          },
           "whatsapp": "40722456789",
           "phone": "+40722456789",
           "phoneDisplay": "+40 722 456 789",
@@ -118,10 +160,10 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary": "#2F6B4F",
-          "primaryLight": "#4C8A6A",
-          "primaryDark": "#1A3D2C",
-          "cream": "#F7F4EC"
+          "primary": "#E8F06A",
+          "primaryLight": "#F3F7A8",
+          "primaryDark": "#0B1016",
+          "cream": "#D7DCD4"
         },
         "logo": "",
         "showWordmark": true,
@@ -131,12 +173,30 @@
         },
         "servicesTitle": "La masă",
         "services": [
-          { "icon": "", "label": "Mic dejun" },
-          { "icon": "", "label": "Prânz business" },
-          { "icon": "", "label": "Cină de sezon" },
-          { "icon": "", "label": "Vinuri românești" },
-          { "icon": "", "label": "Terasă" },
-          { "icon": "", "label": "Catering mic" }
+          {
+            "icon": "",
+            "label": "Mic dejun"
+          },
+          {
+            "icon": "",
+            "label": "Prânz business"
+          },
+          {
+            "icon": "",
+            "label": "Cină de sezon"
+          },
+          {
+            "icon": "",
+            "label": "Vinuri românești"
+          },
+          {
+            "icon": "",
+            "label": "Terasă"
+          },
+          {
+            "icon": "",
+            "label": "Catering mic"
+          }
         ],
         "galleryTitle": "Din bucătărie",
         "categories": [
@@ -144,18 +204,36 @@
             "title": "Feluri principale",
             "blurb": "Porții sincere, legume la cuptor, sosuri de casă.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-bistro-m1/800/600", "alt": "Farfurie cu legume de sezon" },
-              { "src": "https://picsum.photos/seed/pm-bistro-m2/800/600", "alt": "Paste fresh cu sos de roșii" },
-              { "src": "https://picsum.photos/seed/pm-bistro-m3/800/600", "alt": "Desert cu fructe" }
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-m1/800/600",
+                "alt": "Farfurie cu legume de sezon"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-m2/800/600",
+                "alt": "Paste fresh cu sos de roșii"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-m3/800/600",
+                "alt": "Desert cu fructe"
+              }
             ]
           },
           {
             "title": "Terasă & atmosfera",
             "blurb": "Umbră de castan, lumină caldă seara, muzică pe fundal.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-bistro-a1/800/600", "alt": "Terasă cu mese de lemn" },
-              { "src": "https://picsum.photos/seed/pm-bistro-a2/800/600", "alt": "Interior bistro" },
-              { "src": "https://picsum.photos/seed/pm-bistro-a3/800/600", "alt": "Masă aranjată pentru cină" }
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-a1/800/600",
+                "alt": "Terasă cu mese de lemn"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-a2/800/600",
+                "alt": "Interior bistro"
+              },
+              {
+                "src": "https://picsum.photos/seed/pm-bistro-a3/800/600",
+                "alt": "Masă aranjată pentru cină"
+              }
             ]
           }
         ],
@@ -174,8 +252,14 @@
         "contact": {
           "title": "Rezervări",
           "intro": "Sună sau scrie pe WhatsApp pentru o masă. Deschis marți–duminică, 9–22.",
-          "instagram": { "url": "https://www.instagram.com/bistro.verde.cluj", "label": "@bistro.verde.cluj" },
-          "facebook": { "url": "", "label": "" },
+          "instagram": {
+            "url": "https://www.instagram.com/bistro.verde.cluj",
+            "label": "@bistro.verde.cluj"
+          },
+          "facebook": {
+            "url": "",
+            "label": ""
+          },
           "whatsapp": "40733112233",
           "phone": "+40733112233",
           "phoneDisplay": "+40 733 112 233",

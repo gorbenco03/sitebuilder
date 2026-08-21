@@ -27,10 +27,10 @@
           "waBookBtn": "Rezervă pe WhatsApp"
         },
         "theme": {
-          "primary": "#B76E79",
-          "primaryLight": "#D4A0A8",
-          "primaryDark": "#8E4F5A",
-          "cream": "#F7F4F2"
+          "primary": "#0D7377",
+          "primaryLight": "#14919B",
+          "primaryDark": "#0A0A0A",
+          "cream": "#F4F1EA"
         },
         "logo": "",
         "showWordmark": true,
@@ -72,23 +72,62 @@
           }
         ],
         "pricing": [
-          { "name": "Tuns + uscat", "price": "80–120 lei" },
-          { "name": "Vopsit rădăcini", "price": "160–220 lei" },
-          { "name": "Balayage complet", "price": "350–550 lei" },
-          { "name": "Manichiură simplă", "price": "80 lei" },
-          { "name": "Manichiură gel color", "price": "130 lei" },
-          { "name": "Nail art (per unghie)", "price": "15–30 lei" },
-          { "name": "Pedichiură clasică", "price": "80 lei" },
-          { "name": "Pedichiură SPA + gel", "price": "180 lei" },
-          { "name": "Make-up zi", "price": "200 lei" },
-          { "name": "Make-up mireasă", "price": "400 lei" }
+          {
+            "name": "Tuns + uscat",
+            "price": "80–120 lei"
+          },
+          {
+            "name": "Vopsit rădăcini",
+            "price": "160–220 lei"
+          },
+          {
+            "name": "Balayage complet",
+            "price": "350–550 lei"
+          },
+          {
+            "name": "Manichiură simplă",
+            "price": "80 lei"
+          },
+          {
+            "name": "Manichiură gel color",
+            "price": "130 lei"
+          },
+          {
+            "name": "Nail art (per unghie)",
+            "price": "15–30 lei"
+          },
+          {
+            "name": "Pedichiură clasică",
+            "price": "80 lei"
+          },
+          {
+            "name": "Pedichiură SPA + gel",
+            "price": "180 lei"
+          },
+          {
+            "name": "Make-up zi",
+            "price": "200 lei"
+          },
+          {
+            "name": "Make-up mireasă",
+            "price": "400 lei"
+          }
         ],
         "schedule": {
           "title": "Program de lucru",
           "rows": [
-            { "day": "Luni – Vineri", "hours": "09:00 – 20:00" },
-            { "day": "Sâmbătă", "hours": "09:00 – 18:00" },
-            { "day": "Duminică", "hours": "10:00 – 15:00" }
+            {
+              "day": "Luni – Vineri",
+              "hours": "09:00 – 20:00"
+            },
+            {
+              "day": "Sâmbătă",
+              "hours": "09:00 – 18:00"
+            },
+            {
+              "day": "Duminică",
+              "hours": "10:00 – 15:00"
+            }
           ]
         },
         "team": {
@@ -120,20 +159,44 @@
             "title": "Coafuri & culori",
             "blurb": "De la balayage discret la culori curajase — fiecare tuns e o semnătură.",
             "photos": [
-              { "src": "https://picsum.photos/seed/lumina-par1/800/1000", "alt": "Balayage elegant cu tonuri de miere" },
-              { "src": "https://picsum.photos/seed/lumina-par2/800/1000", "alt": "Ondulare cu volum și strălucire" },
-              { "src": "https://picsum.photos/seed/lumina-par3/800/1000", "alt": "Tuns modern cu textură" },
-              { "src": "https://picsum.photos/seed/lumina-par4/800/1000", "alt": "Highlights discrete pe păr șaten" }
+              {
+                "src": "https://picsum.photos/seed/lumina-par1/800/1000",
+                "alt": "Balayage elegant cu tonuri de miere"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-par2/800/1000",
+                "alt": "Ondulare cu volum și strălucire"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-par3/800/1000",
+                "alt": "Tuns modern cu textură"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-par4/800/1000",
+                "alt": "Highlights discrete pe păr șaten"
+              }
             ]
           },
           {
             "title": "Manichiură & nail art",
             "blurb": "Gel, acryl, BIAB sau simplu — unghii îngrijite care vorbesc de la sine.",
             "photos": [
-              { "src": "https://picsum.photos/seed/lumina-mani1/800/800", "alt": "Manichiură gel nude cu linie aurie" },
-              { "src": "https://picsum.photos/seed/lumina-mani2/800/800", "alt": "Nail art floral primăvară" },
-              { "src": "https://picsum.photos/seed/lumina-mani3/800/800", "alt": "Ombre roz-alb pe unghii scurte" },
-              { "src": "https://picsum.photos/seed/lumina-mani4/800/800", "alt": "Manichiură clasică roșu aprins" }
+              {
+                "src": "https://picsum.photos/seed/lumina-mani1/800/800",
+                "alt": "Manichiură gel nude cu linie aurie"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-mani2/800/800",
+                "alt": "Nail art floral primăvară"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-mani3/800/800",
+                "alt": "Ombre roz-alb pe unghii scurte"
+              },
+              {
+                "src": "https://picsum.photos/seed/lumina-mani4/800/800",
+                "alt": "Manichiură clasică roșu aprins"
+              }
             ]
           }
         ],
@@ -205,10 +268,10 @@
           "waBookBtn": "Rezervă pe WhatsApp"
         },
         "theme": {
-          "primary": "#B08460",
-          "primaryLight": "#C9A07E",
-          "primaryDark": "#8C6342",
-          "cream": "#FBF8F5"
+          "primary": "#0D7377",
+          "primaryLight": "#14919B",
+          "primaryDark": "#0A0A0A",
+          "cream": "#F4F1EA"
         },
         "logo": "",
         "showWordmark": true,
@@ -250,22 +313,58 @@
           }
         ],
         "pricing": [
-          { "name": "Extensii tape-in (50 șuvițe)", "price": "1.200 MDL" },
-          { "name": "Extensii micro-ring (100 fire)", "price": "2.400 MDL" },
-          { "name": "Corectare extensii (lunar)", "price": "600 MDL" },
-          { "name": "Coafură mireasă", "price": "800–1.200 MDL" },
-          { "name": "Coafură domnișoară de onoare", "price": "500 MDL" },
-          { "name": "Make-up mireasă", "price": "900 MDL" },
-          { "name": "Make-up ocazie", "price": "600 MDL" },
-          { "name": "Manichiură gel", "price": "280 MDL" },
-          { "name": "Manichiură + Pedichiură", "price": "500 MDL" },
-          { "name": "Balayage complet", "price": "1.000–1.600 MDL" }
+          {
+            "name": "Extensii tape-in (50 șuvițe)",
+            "price": "1.200 MDL"
+          },
+          {
+            "name": "Extensii micro-ring (100 fire)",
+            "price": "2.400 MDL"
+          },
+          {
+            "name": "Corectare extensii (lunar)",
+            "price": "600 MDL"
+          },
+          {
+            "name": "Coafură mireasă",
+            "price": "800–1.200 MDL"
+          },
+          {
+            "name": "Coafură domnișoară de onoare",
+            "price": "500 MDL"
+          },
+          {
+            "name": "Make-up mireasă",
+            "price": "900 MDL"
+          },
+          {
+            "name": "Make-up ocazie",
+            "price": "600 MDL"
+          },
+          {
+            "name": "Manichiură gel",
+            "price": "280 MDL"
+          },
+          {
+            "name": "Manichiură + Pedichiură",
+            "price": "500 MDL"
+          },
+          {
+            "name": "Balayage complet",
+            "price": "1.000–1.600 MDL"
+          }
         ],
         "schedule": {
           "title": "Program",
           "rows": [
-            { "day": "Luni – Sâmbătă", "hours": "09:00 – 19:00" },
-            { "day": "Duminică", "hours": "la cerere (nunți & ocazii)" }
+            {
+              "day": "Luni – Sâmbătă",
+              "hours": "09:00 – 19:00"
+            },
+            {
+              "day": "Duminică",
+              "hours": "la cerere (nunți & ocazii)"
+            }
           ]
         },
         "team": {
@@ -297,19 +396,40 @@
             "title": "Extensii & coafuri de ocazie",
             "blurb": "Extensii din păr natural și coafuri pentru nunți, botezuri și evenimente.",
             "photos": [
-              { "src": "https://picsum.photos/seed/mihaela-ext1/800/1000", "alt": "Extensii tape-in pe păr brunet" },
-              { "src": "https://picsum.photos/seed/mihaela-ext2/800/1000", "alt": "Coafură mireasă cu bucle moi" },
-              { "src": "https://picsum.photos/seed/mihaela-ext3/800/1000", "alt": "Updo elegant pentru cununie" },
-              { "src": "https://picsum.photos/seed/mihaela-ext4/800/1000", "alt": "Extensii blonde pe păr șaten" }
+              {
+                "src": "https://picsum.photos/seed/mihaela-ext1/800/1000",
+                "alt": "Extensii tape-in pe păr brunet"
+              },
+              {
+                "src": "https://picsum.photos/seed/mihaela-ext2/800/1000",
+                "alt": "Coafură mireasă cu bucle moi"
+              },
+              {
+                "src": "https://picsum.photos/seed/mihaela-ext3/800/1000",
+                "alt": "Updo elegant pentru cununie"
+              },
+              {
+                "src": "https://picsum.photos/seed/mihaela-ext4/800/1000",
+                "alt": "Extensii blonde pe păr șaten"
+              }
             ]
           },
           {
             "title": "Make-up & look complet",
             "blurb": "Makeup natural sau dramatic — fiecare look creat după personalitatea ta.",
             "photos": [
-              { "src": "https://picsum.photos/seed/mihaela-mua1/800/900", "alt": "Make-up mireasă natural cu glow" },
-              { "src": "https://picsum.photos/seed/mihaela-mua2/800/900", "alt": "Look de seară cu smoky eye" },
-              { "src": "https://picsum.photos/seed/mihaela-mua3/800/900", "alt": "Make-up editorial pe shooting" }
+              {
+                "src": "https://picsum.photos/seed/mihaela-mua1/800/900",
+                "alt": "Make-up mireasă natural cu glow"
+              },
+              {
+                "src": "https://picsum.photos/seed/mihaela-mua2/800/900",
+                "alt": "Look de seară cu smoky eye"
+              },
+              {
+                "src": "https://picsum.photos/seed/mihaela-mua3/800/900",
+                "alt": "Make-up editorial pe shooting"
+              }
             ]
           }
         ],

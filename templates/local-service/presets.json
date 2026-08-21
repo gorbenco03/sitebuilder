@@ -24,27 +24,51 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary":      "#E8A317",
-          "primaryLight": "#F0BC4A",
-          "primaryDark":  "#B87A10",
-          "cream":        "#F2F3EF"
+          "primary": "#FF4D00",
+          "primaryLight": "#FF7A3D",
+          "primaryDark": "#0A0C0F",
+          "cream": "#DCD8CF"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(31,41,51,.60) 0%, rgba(45,61,80,.40) 60%, rgba(26,45,26,.55) 100%), url('https://picsum.photos/seed/prorenov-hero/1600/900') center/cover no-repeat",
+          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('https://picsum.photos/seed/prorenov-hero/1600/900') center/cover no-repeat",
           "ctaLabel": "Cere oferta gratuita"
         },
         "servicesTitle": "Serviciile noastre",
         "services": [
-          { "icon": "", "label": "Zidarie si structura" },
-          { "icon": "", "label": "Rigips si tavane false" },
-          { "icon": "", "label": "Vopsitorie si tencuiala" },
-          { "icon": "", "label": "Gresie si faianta" },
-          { "icon": "", "label": "Instalatii sanitare" },
-          { "icon": "", "label": "Instalatii electrice" },
-          { "icon": "", "label": "Parchet si laminat" },
-          { "icon": "", "label": "Renovare completa casa" }
+          {
+            "icon": "",
+            "label": "Zidarie si structura"
+          },
+          {
+            "icon": "",
+            "label": "Rigips si tavane false"
+          },
+          {
+            "icon": "",
+            "label": "Vopsitorie si tencuiala"
+          },
+          {
+            "icon": "",
+            "label": "Gresie si faianta"
+          },
+          {
+            "icon": "",
+            "label": "Instalatii sanitare"
+          },
+          {
+            "icon": "",
+            "label": "Instalatii electrice"
+          },
+          {
+            "icon": "",
+            "label": "Parchet si laminat"
+          },
+          {
+            "icon": "",
+            "label": "Renovare completa casa"
+          }
         ],
         "galleryTitle": "Lucrari realizate",
         "trust": [
@@ -80,26 +104,50 @@
             "title": "Renovari baie completa",
             "blurb": "Transformam baia dumneavoastra de la zero: demolare, impermeabilizare, gresie, faianta, instalatii sanitare si accesorii de calitate.",
             "photos": [
-              { "src": "https://picsum.photos/seed/baie-moderna-lon/1200/800", "alt": "Baie moderna renovata complet" },
-              { "src": "https://picsum.photos/seed/baie-gresie-lon/1200/800", "alt": "Gresie si faianta baie premium" },
-              { "src": "https://picsum.photos/seed/baie-dus-lon/1200/800", "alt": "Dus walk-in cu faianta marmura" }
+              {
+                "src": "https://picsum.photos/seed/baie-moderna-lon/1200/800",
+                "alt": "Baie moderna renovata complet"
+              },
+              {
+                "src": "https://picsum.photos/seed/baie-gresie-lon/1200/800",
+                "alt": "Gresie si faianta baie premium"
+              },
+              {
+                "src": "https://picsum.photos/seed/baie-dus-lon/1200/800",
+                "alt": "Dus walk-in cu faianta marmura"
+              }
             ]
           },
           {
             "title": "Bucatarii si spatii open-space",
             "blurb": "Amenajam spatii de living moderne: demolare pereti, rigips, electricitate, gresie portelanata si vopsitorie pentru un rezultat impecabil.",
             "photos": [
-              { "src": "https://picsum.photos/seed/bucatarie-lon1/1200/800", "alt": "Bucatarie open-space renovata modern" },
-              { "src": "https://picsum.photos/seed/living-parquet-lon/1200/800", "alt": "Living cu parchet si gresie portelanata" },
-              { "src": "https://picsum.photos/seed/bucatarie-tavan-lon/1200/800", "alt": "Tavan fals LED in bucatarie" }
+              {
+                "src": "https://picsum.photos/seed/bucatarie-lon1/1200/800",
+                "alt": "Bucatarie open-space renovata modern"
+              },
+              {
+                "src": "https://picsum.photos/seed/living-parquet-lon/1200/800",
+                "alt": "Living cu parchet si gresie portelanata"
+              },
+              {
+                "src": "https://picsum.photos/seed/bucatarie-tavan-lon/1200/800",
+                "alt": "Tavan fals LED in bucatarie"
+              }
             ]
           },
           {
             "title": "Extinderi si lucrari structurale",
             "blurb": "Extinderi casa, mansardari, demolare pereti portanti cu autorizatie, constructii noi in gradina (annex, garage, garden office).",
             "photos": [
-              { "src": "https://picsum.photos/seed/extensie-lon1/1200/800", "alt": "Extensie casa cu structura otel" },
-              { "src": "https://picsum.photos/seed/annex-lon1/1200/800", "alt": "Annex finalizat in gradina" }
+              {
+                "src": "https://picsum.photos/seed/extensie-lon1/1200/800",
+                "alt": "Extensie casa cu structura otel"
+              },
+              {
+                "src": "https://picsum.photos/seed/annex-lon1/1200/800",
+                "alt": "Annex finalizat in gradina"
+              }
             ]
           }
         ],
@@ -169,27 +217,51 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary":      "#E8701A",
-          "primaryLight": "#F08C40",
-          "primaryDark":  "#C25C0F",
-          "cream":        "#F5F3F1"
+          "primary": "#FF4D00",
+          "primaryLight": "#FF7A3D",
+          "primaryDark": "#0A0C0F",
+          "cream": "#DCD8CF"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(31,41,51,.60) 0%, rgba(31,41,51,.40) 50%, rgba(31,41,51,.55) 100%), url('https://picsum.photos/seed/acoperis-hero-man/1600/900') center/cover no-repeat",
+          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(10,12,15,0.72) 50%, rgba(10,12,15,0.72) 100%), url('https://picsum.photos/seed/acoperis-hero-man/1600/900') center/cover no-repeat",
           "ctaLabel": "Cere oferta gratuita"
         },
         "servicesTitle": "Ce facem",
         "services": [
-          { "icon": "", "label": "Montaj tigla ceramica" },
-          { "icon": "", "label": "Tigla metalica si tabla faltuita" },
-          { "icon": "", "label": "Membrane bituminoase EPDM" },
-          { "icon": "", "label": "Fatade ventilate composite" },
-          { "icon": "", "label": "Izolatie termica EPS / vata" },
-          { "icon": "", "label": "Urgente scurgeri 24/7" },
-          { "icon": "", "label": "Luminatoare Velux" },
-          { "icon": "", "label": "Jgheaburi si burlane" }
+          {
+            "icon": "",
+            "label": "Montaj tigla ceramica"
+          },
+          {
+            "icon": "",
+            "label": "Tigla metalica si tabla faltuita"
+          },
+          {
+            "icon": "",
+            "label": "Membrane bituminoase EPDM"
+          },
+          {
+            "icon": "",
+            "label": "Fatade ventilate composite"
+          },
+          {
+            "icon": "",
+            "label": "Izolatie termica EPS / vata"
+          },
+          {
+            "icon": "",
+            "label": "Urgente scurgeri 24/7"
+          },
+          {
+            "icon": "",
+            "label": "Luminatoare Velux"
+          },
+          {
+            "icon": "",
+            "label": "Jgheaburi si burlane"
+          }
         ],
         "galleryTitle": "Proiecte finalizate",
         "trust": [
@@ -225,26 +297,50 @@
             "title": "Acoperisuri rezidentiale",
             "blurb": "Montam si inlocuim complet acoperisuri de case: tigla ceramica, beton, metalica, tabla faltuita, membrane EPDM si bituminoase de calitate superioara.",
             "photos": [
-              { "src": "https://picsum.photos/seed/acoperis-rez-man1/1200/800", "alt": "Acoperis rezidential nou cu tigla ceramica" },
-              { "src": "https://picsum.photos/seed/acoperis-tabla-man/1200/800", "alt": "Acoperis tabla faltuita moderna" },
-              { "src": "https://picsum.photos/seed/mansarda-velux-man/1200/800", "alt": "Mansarda amenajata cu luminatoare Velux" }
+              {
+                "src": "https://picsum.photos/seed/acoperis-rez-man1/1200/800",
+                "alt": "Acoperis rezidential nou cu tigla ceramica"
+              },
+              {
+                "src": "https://picsum.photos/seed/acoperis-tabla-man/1200/800",
+                "alt": "Acoperis tabla faltuita moderna"
+              },
+              {
+                "src": "https://picsum.photos/seed/mansarda-velux-man/1200/800",
+                "alt": "Mansarda amenajata cu luminatoare Velux"
+              }
             ]
           },
           {
             "title": "Fatade ventilate si termoizolatie",
             "blurb": "Sisteme de fatade ventilate cu vata minerala si panouri composite — reduceti facturile la energie pana la 40% in primul an.",
             "photos": [
-              { "src": "https://picsum.photos/seed/fatada-vent-man1/1200/800", "alt": "Fatada ventilata moderna casa" },
-              { "src": "https://picsum.photos/seed/izolatie-eps-man/1200/800", "alt": "Termoizolatie exterioara EPS aplicata" }
+              {
+                "src": "https://picsum.photos/seed/fatada-vent-man1/1200/800",
+                "alt": "Fatada ventilata moderna casa"
+              },
+              {
+                "src": "https://picsum.photos/seed/izolatie-eps-man/1200/800",
+                "alt": "Termoizolatie exterioara EPS aplicata"
+              }
             ]
           },
           {
             "title": "Reparatii si interventii urgente",
             "blurb": "Intervenim rapid la scurgeri, tigle deplasate de vant, stricaciuni dupa furtuna si orice urgenta de acoperis, 7 zile din 7.",
             "photos": [
-              { "src": "https://picsum.photos/seed/reparatie-man1/1200/800", "alt": "Reparatie urgenta acoperis dupa furtuna" },
-              { "src": "https://picsum.photos/seed/jgheab-cupru-man/1200/800", "alt": "Montaj jgheaburi si burlane cupru" },
-              { "src": "https://picsum.photos/seed/cos-tigla-man/1200/800", "alt": "Refacere cos de fum si inchidere tigla" }
+              {
+                "src": "https://picsum.photos/seed/reparatie-man1/1200/800",
+                "alt": "Reparatie urgenta acoperis dupa furtuna"
+              },
+              {
+                "src": "https://picsum.photos/seed/jgheab-cupru-man/1200/800",
+                "alt": "Montaj jgheaburi si burlane cupru"
+              },
+              {
+                "src": "https://picsum.photos/seed/cos-tigla-man/1200/800",
+                "alt": "Refacere cos de fum si inchidere tigla"
+              }
             ]
           }
         ],
