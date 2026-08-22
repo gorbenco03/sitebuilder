@@ -1803,8 +1803,6 @@ function buildSiteCard(site) {
   badge.textContent = badgeLabel;
   meta.appendChild(badge);
 
-  // Unpaid drafts: no trialEndsAt countdown chrome (pay-before-publish)
-
   if (site.url) {
     const link = document.createElement('a');
     link.className = 'site-live-link';
