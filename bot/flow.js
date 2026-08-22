@@ -820,7 +820,11 @@ async function handleStart(ctx) {
         if (payload === 'cancel') {
             return ctx.reply('Ai întrerupt plata. Redeschide linkul de plată ca să finalizezi, sau scrie /anuleaza ca să o iei de la capăt.');
         }
-        return ctx.reply('✅ Mulțumim! Verific plata și public site-ul automat — durează un moment. Nu închide conversația.');
+        // Leftover start=paid deep-link: Telegram does not publish. Steer to same Hidook draft.
+        return ctx.reply(
+            '✅ Mulțumim! Continuă în builderul Hidook Site Builder — deschide același draft în /app/ ' +
+            'ca să editezi și să plătești înainte de publicare. Publicarea live nu se face din Telegram.'
+        );
     }
 
     const session = resetSession(chatId);
