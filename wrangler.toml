@@ -1,5 +1,6 @@
-# Cloudflare Pages — desserdina static site.
-# Deploy the assembled output:  npm run build && npx wrangler pages deploy dist
-name = "desserdina"
+# Cloudflare Pages — Hidook Site Builder (commercial product is the browser builder).
+# npm run build → dist/ is local/dev sample assemble only — not bakery-as-product deploy.
+# Do not use legacy name "desserdina" as the Pages project; owner-only launch gates stay owner-only.
+name = "hidook-site-builder"
 compatibility_date = "2024-06-01"
 pages_build_output_dir = "dist"
