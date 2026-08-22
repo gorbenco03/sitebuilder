@@ -1,15 +1,16 @@
 'use strict';
 /**
- * bot/test/trials.test.js — Legacy trial sweeper + paid republish tests.
+ * bot/test/trials.test.js — Trial module contract + paid republish tests.
  *
- * New commercial path does not create unpaid live trial sites. These tests still
- * cover the sweeper for any legacy live unpaid rows and paid reactivation.
+ * S25: sweepTrials is a documented no-op (pay-before-publish; no unpaid live trial).
+ * Paid reactivation and deployPlaceholder (direct) remain covered here.
  *
  * Tests:
- *   - legacy live unpaid with trialEndsAt → sweepTrials (reminder < 24h)
- *   - expired unpaid → deployPlaceholder + status expired
+ *   - sweepTrials never expires, reminds, or notifies (no-op counts)
+ *   - sweepTrials never calls deployPlaceholder / sets reminded / status expired
  *   - markOrderPaid on expired → republish → live
- *   - reminder sent only once (reminded flag)
+ *   - deployPlaceholder (direct) still works for callers that need it
+ *   - publishSite with siteDirAlreadyBuilt=true
  *
  * Uses HIDOOK_FAKE_DEPLOY=1 for offline operation.
  *
@@ -59,8 +60,8 @@ function createTestUser() {
 }
 
 /**
- * Create a 'live' trial site and write a minimal index.html so deployPlaceholder
- * and publishSite can operate without a real build.js.
+ * Create a 'live' unpaid site with trialEndsAt and a minimal site dir so
+ * deployPlaceholder / publishSite can operate without a real build.js.
  */
 function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
     const trialEndsAt = new Date(Date.now() + hoursFromNow * 3600 * 1000).toISOString();
@@ -74,7 +75,6 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
     });
     registry.updateSite(site.id, { status: 'live', url: `https://${site.slug}.test.local` });
 
-    // Write a minimal site dir so publishSite(siteDirAlreadyBuilt=true) doesn't fail
     const siteDir = path.join(tmpDir, 'sites', site.projectName);
     fs.mkdirSync(siteDir, { recursive: true });
     fs.writeFileSync(path.join(siteDir, 'index.html'), '<html><body>Test</body></html>', 'utf8');
@@ -87,45 +87,47 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
 
 (async () => {
 
-    // ── 1. Reminder: site expiring in <24h → reminder sent once ─────────────
-    await check('sweepTrials: reminder sent for site expiring in <24h', async () => {
-        const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: 12 }); // < 24h
-
-        const messages = [];
-        const messenger = (chatId, text) => { messages.push({ chatId, text }); return Promise.resolve(); };
-
-        const result = await sweepTrials({ messenger });
-        assert.strictEqual(result.reminders, 1, 'should have sent 1 reminder');
-        assert.strictEqual(result.expired,   0, 'should not have expired');
-
-        // Site should now have reminded=true
-        const updated = registry.getSite(site.id);
-        assert.strictEqual(updated.reminded, true, 'reminded flag must be true');
-    });
-
-    // ── 2. Reminder is only sent once ─────────────────────────────────────
-    await check('sweepTrials: reminder not sent twice (reminded flag)', async () => {
+    // ── 1. No-op: near-expiry unpaid live site is left alone ────────────────
+    await check('sweepTrials: no-op for site expiring in <24h (no reminder)', async () => {
         const user = createTestUser();
         const site = createLiveSite(user.id, { hoursFromNow: 12 });
-        registry.updateSite(site.id, { reminded: true }); // pre-set reminded
 
         const messages = [];
+        const adminMsgs = [];
         const messenger = (chatId, text) => { messages.push({ chatId, text }); return Promise.resolve(); };
+        const notifyAdmin = (text) => { adminMsgs.push(text); };
 
-        const result = await sweepTrials({ messenger });
-        assert.strictEqual(result.reminders, 0, 'reminded=true must suppress second reminder');
+        let placeholderCalled = false;
+        const origDeploy = webpublish.deployPlaceholder;
+        webpublish.deployPlaceholder = async (s) => {
+            placeholderCalled = true;
+            return origDeploy(s);
+        };
+
+        const result = await sweepTrials({ messenger, notifyAdmin });
+        webpublish.deployPlaceholder = origDeploy;
+
+        assert.deepStrictEqual(result, { reminders: 0, expired: 0 },
+            'sweepTrials must return zero counts (no-op)');
+        assert.strictEqual(placeholderCalled, false, 'must not call deployPlaceholder');
+        assert.strictEqual(messages.length, 0, 'must not message owner');
+        assert.strictEqual(adminMsgs.length, 0, 'must not notify admin');
+
+        const updated = registry.getSite(site.id);
+        assert.notStrictEqual(updated.reminded, true, 'must not set reminded');
+        assert.strictEqual(updated.status, 'live', 'status must remain live');
     });
 
-    // ── 3. Expired unpaid → deployPlaceholder + status=expired ────────────
-    await check('sweepTrials: expired site → deployPlaceholder called → status=expired', async () => {
+    // ── 2. No-op: already-expired unpaid live site is left alone ────────────
+    await check('sweepTrials: no-op for expired unpaid live site (no expire/placeholder)', async () => {
         const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: -1 }); // already expired
+        const site = createLiveSite(user.id, { hoursFromNow: -1 });
 
-        const notifications = [];
-        const notifyAdmin = (text) => { notifications.push(text); };
+        const messages = [];
+        const adminMsgs = [];
+        const messenger = (chatId, text) => { messages.push({ chatId, text }); return Promise.resolve(); };
+        const notifyAdmin = (text) => { adminMsgs.push(text); };
 
-        // Track deployPlaceholder calls
         let placeholderCalled = false;
         const origDeploy = webpublish.deployPlaceholder;
         webpublish.deployPlaceholder = async (s) => {
@@ -134,24 +136,37 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
             return { url: `https://${s.slug}.test.local` };
         };
 
-        const result = await sweepTrials({ notifyAdmin });
-
-        // Restore
+        const result = await sweepTrials({ messenger, notifyAdmin });
         webpublish.deployPlaceholder = origDeploy;
 
-        assert.strictEqual(result.expired, 1,  'should have expired 1 site');
-        assert.strictEqual(placeholderCalled, true, 'deployPlaceholder must be called');
-        assert.ok(notifications.length > 0, 'admin must be notified');
+        assert.deepStrictEqual(result, { reminders: 0, expired: 0 },
+            'sweepTrials must return zero counts (no-op)');
+        assert.strictEqual(placeholderCalled, false, 'deployPlaceholder must not be called');
+        assert.strictEqual(messages.length, 0, 'must not message owner');
+        assert.strictEqual(adminMsgs.length, 0, 'must not notify admin');
 
         const updated = registry.getSite(site.id);
-        assert.strictEqual(updated.status, 'expired', 'site status must be expired');
+        assert.strictEqual(updated.status, 'live', 'site status must stay live (sweeper no-op)');
+        assert.notStrictEqual(updated.reminded, true, 'must not set reminded');
+    });
+
+    // ── 3. No-op: paid sites still yield zeros (harmless) ───────────────────
+    await check('sweepTrials: paid sites yield zero counts', async () => {
+        const user = createTestUser();
+        createLiveSite(user.id, { hoursFromNow: -1 });
+        // create another and mark paid
+        const site = createLiveSite(user.id, { hoursFromNow: -1 });
+        registry.updateSite(site.id, { paid: true });
+
+        const result = await sweepTrials({});
+        assert.deepStrictEqual(result, { reminders: 0, expired: 0 });
     });
 
     // ── 4. deployPlaceholder (direct) — writes HTML + fake deploy ─────────
     await check('deployPlaceholder: writes placeholder HTML + deploys (fake)', async () => {
         const user = createTestUser();
         const site = createLiveSite(user.id, { hoursFromNow: -1 });
-        registry.updateSite(site.id, { status: 'live' }); // reset to live
+        registry.updateSite(site.id, { status: 'live' });
 
         const fresh = registry.getSite(site.id);
         const result = await webpublish.deployPlaceholder(fresh);
@@ -168,11 +183,9 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
     await check('handleStripePaid on expired site → republish → status=live', async () => {
         const user = createTestUser();
         const site = createLiveSite(user.id, { hoursFromNow: -1 });
-        // Mark expired and save version
         registry.updateSite(site.id, { status: 'expired', paid: false });
         registry.saveVersion(site.id, { business: { name: 'Test Afacere' } });
 
-        // Create an order so markOrderPaid finds it
         const order = registry.createOrder({
             siteId:          site.id,
             userId:          user.id,
@@ -181,7 +194,6 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
             stripeSessionId: 'cs_test_' + crypto.randomUUID().slice(0, 8),
         });
 
-        // Build a mock Stripe event
         const event = {
             type: 'checkout.session.completed',
             data: {
@@ -220,16 +232,6 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
         assert.ok(result.url, 'publishSite must return url');
         assert.ok(result.url.endsWith('.test.local') || result.url.includes(freshSite.projectName),
             'fake deploy url must reference the project');
-    });
-
-    // ── 7. sweepTrials: paid sites are skipped ─────────────────────────────
-    await check('sweepTrials: paid sites are not expired or reminded', async () => {
-        const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: -1 });
-        registry.updateSite(site.id, { paid: true });
-
-        const result = await sweepTrials({});
-        assert.strictEqual(result.expired, 0, 'paid site must not be expired');
     });
 
     // ── Cleanup ──────────────────────────────────────────────────────────────
