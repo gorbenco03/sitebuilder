@@ -22,6 +22,8 @@
  *   GET  /api/sites/:id/versions    → version list
  *   POST /api/sites/:id/rollback    → republish a past version (paid only)
  *   POST /api/sites/:id/checkout    → {paymentUrl} for dashboard / reactivation
+ *   POST /api/sites/:id/social-feed/grant          → Instafidget Year-1 grant; stores instagram.embedUrl
+ *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
@@ -41,6 +43,7 @@ const { log }  = require('./logger.js');
 function getRegistry() { return require('./registry.js'); }
 function getAuth()     { return require('./auth.js'); }
 function getEmail()    { return require('./email.js'); }
+function getPartner()  { return require('./instafidget-partner.js'); }
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -556,6 +559,140 @@ async function handleSiteCheckout(req, res, siteId) {
     sendJson(res, 200, { paymentUrl: checkout.url, kind });
 }
 
+function latestSiteConfig(reg, siteId) {
+    const versions = reg.listVersions(siteId) || [];
+    if (!versions.length) return {};
+    const latest = versions[versions.length - 1];
+    return reg.getVersionConfig(siteId, latest.versionId) || {};
+}
+
+function persistEmbedUrl(reg, siteId, embedUrl) {
+    if (typeof embedUrl !== 'string' || !embedUrl) return latestSiteConfig(reg, siteId);
+    const config = latestSiteConfig(reg, siteId);
+    if (!config.instagram || typeof config.instagram !== 'object') config.instagram = {};
+    config.instagram.embedUrl = embedUrl;
+    reg.saveVersion(siteId, config);
+    return config;
+}
+
+function publicGrantPayload(json) {
+    return {
+        embedUrl: typeof json.embedUrl === 'string' ? json.embedUrl : null,
+        entitlement: typeof json.entitlement === 'string' ? json.entitlement : null,
+        showWatermark: typeof json.showWatermark === 'boolean' ? json.showWatermark : null,
+        siteBundleExpiresAt: typeof json.siteBundleExpiresAt === 'string' ? json.siteBundleExpiresAt : null,
+    };
+}
+
+async function requireOwnedSiteWithEmail(req, res, siteId) {
+    const userId = requireAuth(req, res);
+    if (!userId) return null;
+    const reg = getRegistry();
+    const site = await reg.getSite(siteId);
+    if (!site) {
+        sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
+        return null;
+    }
+    if (site.userId !== userId) {
+        sendJson(res, 403, { error: 'Acces interzis.' });
+        return null;
+    }
+    const user = await reg.getUser(userId);
+    const email = user && typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(res, 400, { error: 'Intră cu email ca să conectezi Instagram. Nu folosim un alt cont.' });
+        return null;
+    }
+    const partner = getPartner();
+    if (!partner.isConfigured()) {
+        sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+        return null;
+    }
+    return { reg, site, email };
+}
+
+/**
+ * POST /api/sites/:id/social-feed/grant
+ * Server-to-server Instafidget Year-1 grant. Stores embedUrl on the draft if returned.
+ */
+async function handleSocialFeedGrant(req, res, siteId) {
+    let body;
+    try { body = await parseJson(req); } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Body invalid.' });
+    }
+    if (!body || body.acceptedTerms !== true) {
+        return sendJson(res, 400, { error: 'Bifează Termenii și Confidențialitatea Instafidget.' });
+    }
+    const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
+    if (!ctx) return;
+
+    let partnerRes;
+    try {
+        partnerRes = await getPartner().grantYear1(ctx.email);
+    } catch (e) {
+        if (e && e.code === 'SECRET_MISSING') {
+            return sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+        }
+        log('server.social_feed.grant.error', { siteId, err: e.message }, 'error');
+        return sendJson(res, 502, { error: 'Nu am putut vorbi cu Instafidget. Încearcă din nou.' });
+    }
+
+    if (partnerRes.status === 401) {
+        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurația serverului.' });
+    }
+    if (partnerRes.status === 400) {
+        return sendJson(res, 400, { error: 'Instafidget a refuzat cererea. Verifică acordul Terms + Privacy.' });
+    }
+    if (partnerRes.status < 200 || partnerRes.status >= 300) {
+        return sendJson(res, 502, { error: 'Instafidget nu a putut crea bonusul Instagram.' });
+    }
+
+    persistEmbedUrl(ctx.reg, siteId, partnerRes.json.embedUrl);
+    sendJson(res, 200, publicGrantPayload(partnerRes.json));
+}
+
+/**
+ * POST /api/sites/:id/social-feed/editor-session
+ * Returns Instafidget editorUrl. Does not change billing.
+ */
+async function handleSocialFeedEditor(req, res, siteId) {
+    try { await parseJson(req); } catch (_) { /* empty body ok */ }
+    const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
+    if (!ctx) return;
+
+    let partnerRes;
+    try {
+        partnerRes = await getPartner().editorSession(ctx.email);
+    } catch (e) {
+        if (e && e.code === 'SECRET_MISSING') {
+            return sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+        }
+        log('server.social_feed.editor.error', { siteId, err: e.message }, 'error');
+        return sendJson(res, 502, { error: 'Nu am putut deschide editorul Instagram. Încearcă din nou.' });
+    }
+
+    if (partnerRes.status === 401) {
+        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurația serverului.' });
+    }
+    if (partnerRes.status === 404) {
+        return sendJson(res, 404, { error: 'Conectează Instagram întâi (acord + Adaugă Instagram).' });
+    }
+    if (partnerRes.status === 400) {
+        return sendJson(res, 400, { error: 'Nu am putut deschide editorul Instagram.' });
+    }
+    if (partnerRes.status < 200 || partnerRes.status >= 300) {
+        return sendJson(res, 502, { error: 'Instafidget nu a putut deschide editorul.' });
+    }
+
+    const editorUrl = partnerRes.json && typeof partnerRes.json.editorUrl === 'string'
+        ? partnerRes.json.editorUrl
+        : null;
+    if (!editorUrl) {
+        return sendJson(res, 502, { error: 'Instafidget nu a trimis linkul de editor.' });
+    }
+    sendJson(res, 200, { editorUrl });
+}
+
 /**
  * POST /api/publish — pay before first public production publish.
  *
@@ -849,6 +986,16 @@ function createHandler({ onStripeEvent } = {}) {
             const checkoutMatch = url.match(/^\/api\/sites\/([^/]+)\/checkout$/);
             if (req.method === 'POST' && checkoutMatch) {
                 return await handleSiteCheckout(req, res, checkoutMatch[1]);
+            }
+
+            const grantMatch = url.match(/^\/api\/sites\/([^/]+)\/social-feed\/grant$/);
+            if (req.method === 'POST' && grantMatch) {
+                return await handleSocialFeedGrant(req, res, grantMatch[1]);
+            }
+
+            const editorMatch = url.match(/^\/api\/sites\/([^/]+)\/social-feed\/editor-session$/);
+            if (req.method === 'POST' && editorMatch) {
+                return await handleSocialFeedEditor(req, res, editorMatch[1]);
             }
 
             // /api/sites/:id

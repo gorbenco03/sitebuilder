@@ -1172,6 +1172,103 @@ function saveDraft() {
 function loadDraft() { return lsGet(DRAFT_KEY); }
 
 // ---------------------------------------------------------------------------
+// 15b. Add Instagram (Instafidget partner slot)
+// ---------------------------------------------------------------------------
+
+function siteIdForInstagram() {
+  return currentSiteId || publishedSiteId;
+}
+
+function setIgStatus(msg, isError) {
+  const el = $('ig-status');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('ig-error', !!isError);
+}
+
+function applyEmbedUrl(embedUrl) {
+  if (!draft.config) draft.config = {};
+  if (!draft.config.instagram || typeof draft.config.instagram !== 'object') {
+    draft.config.instagram = {};
+  }
+  draft.config.instagram.embedUrl = embedUrl;
+  saveDraft();
+  fullRerender();
+}
+
+function openInstagramModal() {
+  const siteId = siteIdForInstagram();
+  if (!currentUser) {
+    showToast('Intră în cont ca să conectezi Instagram.', 'error', 4000);
+    return;
+  }
+  if (!currentUser.email) {
+    showToast('Intră cu email ca să conectezi Instagram. Nu folosim un alt cont.', 'error', 5000);
+    return;
+  }
+  if (!siteId) {
+    showToast('Salvează mai întâi ciorna (Publică site-ul → salvează draft), apoi conectează Instagram.', 'error', 6000);
+    return;
+  }
+  const check = $('ig-terms-check');
+  const btn = $('btn-ig-connect');
+  if (check) check.checked = false;
+  if (btn) btn.disabled = true;
+  setIgStatus('');
+  openModal('modal-instagram');
+}
+
+async function connectInstagram() {
+  const siteId = siteIdForInstagram();
+  const check = $('ig-terms-check');
+  const btn = $('btn-ig-connect');
+  if (!siteId) {
+    setIgStatus('Salvează mai întâi ciorna.', true);
+    return;
+  }
+  if (!check || !check.checked) {
+    setIgStatus('Bifează Termenii și Confidențialitatea Instafidget.', true);
+    return;
+  }
+  setBtnLoading(btn, true);
+  setIgStatus('Conectez Instagram…');
+  try {
+    const grant1 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
+      acceptedTerms: true,
+    });
+    const session = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/editor-session', {});
+    if (session.editorUrl) {
+      window.open(session.editorUrl, 'instafidget-editor', 'noopener,width=920,height=720');
+    }
+    setIgStatus('După ce termini în Instafidget, revenim și luăm widgetul.');
+    const onFocus = async () => {
+      window.removeEventListener('focus', onFocus);
+      try {
+        const grant2 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
+          acceptedTerms: true,
+        });
+        if (grant2.embedUrl) {
+          applyEmbedUrl(grant2.embedUrl);
+          setIgStatus('Instagram e pe site.');
+          showToast('Instagram e conectat.', 'success', 3500);
+          closeModal('modal-instagram');
+        } else {
+          setIgStatus('Widgetul încă nu e gata. Deschide din nou Instagram după ce salvezi în Instafidget.');
+        }
+      } catch (e) {
+        setIgStatus(e.message || 'Nu am putut reîncărca widgetul.', true);
+      }
+    };
+    window.addEventListener('focus', onFocus);
+    if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
+  } catch (e) {
+    setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 16. API
 // ---------------------------------------------------------------------------
 
@@ -2018,6 +2115,17 @@ function wireStaticButtons() {
   // Publish button in topbar
   const pubBtn = $('btn-publish');
   if (pubBtn) pubBtn.addEventListener('click', openPublishModal);
+
+  const igBtn = $('btn-add-instagram');
+  if (igBtn) igBtn.addEventListener('click', openInstagramModal);
+  const igClose = $('btn-close-instagram');
+  if (igClose) igClose.addEventListener('click', () => closeModal('modal-instagram'));
+  const igCheck = $('ig-terms-check');
+  const igGo = $('btn-ig-connect');
+  if (igCheck && igGo) {
+    igCheck.addEventListener('change', () => { igGo.disabled = !igCheck.checked; });
+  }
+  if (igGo) igGo.addEventListener('click', () => { connectInstagram(); });
 
   // Drawer
   const drawerBtn = $('btn-open-drawer');

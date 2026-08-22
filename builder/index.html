@@ -69,6 +69,14 @@
       </svg>
       <span id="checklist-text">...</span>
     </div>
+    <button id="btn-add-instagram" class="btn-topbar" type="button" aria-label="Adaugă Instagram">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="7.5" cy="7.5" r="2.4" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="11" cy="4.2" r=".7" fill="currentColor"/>
+      </svg>
+      <span class="btn-topbar-label">Adaugă Instagram</span>
+    </button>
     <button id="btn-color-picker" class="btn-topbar" aria-label="Culoare temă" title="Culoare temă">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
         <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
@@ -350,6 +358,26 @@
     <button class="modal-close" id="btn-close-gallery" aria-label="Închide">&times;</button>
     <h2 id="modal-gallery-title" class="modal-title">Galerie foto</h2>
     <div id="gallery-modal-body" class="gallery-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ADD INSTAGRAM ===== -->
+<div id="modal-instagram" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-instagram-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-instagram" aria-label="Închide">&times;</button>
+    <h2 id="modal-instagram-title" class="modal-title">Adaugă Instagram</h2>
+    <p class="modal-sub">Conectezi Instagram prin Instafidget. Widgetul apare pe site. Nu vorbim cu Meta din Hidook Site Builder.</p>
+    <label class="ig-terms" for="ig-terms-check">
+      <input id="ig-terms-check" type="checkbox" />
+      <span>Sunt de acord cu
+        <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a>
+        și
+        <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Confidențialitatea</a>
+        Instafidget. Se creează un cont Instafidget pe același email.
+      </span>
+    </label>
+    <p id="ig-status" class="ig-status" aria-live="polite"></p>
+    <button id="btn-ig-connect" class="btn-primary btn-full" type="button" disabled>Conectează Instagram</button>
   </div>
 </div>
 

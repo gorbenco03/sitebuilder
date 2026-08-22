@@ -1198,6 +1198,27 @@ input, textarea, select {
 }
 .toast.toast-error   { background: var(--error); }
 .toast.toast-success { background: var(--success); }
+
+.ig-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 1rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.45;
+  cursor: pointer;
+}
+.ig-terms input { margin-top: 0.2rem; flex-shrink: 0; }
+.ig-terms a { color: var(--accent); }
+.ig-status {
+  min-height: 1.2em;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+}
+.ig-status.ig-error { color: var(--error); }
+
 @keyframes toastIn {
   from { transform: translateX(-50%) translateY(10px); opacity: 0; }
   to   { transform: translateX(-50%) translateY(0);   opacity: 1; }
