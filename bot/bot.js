@@ -198,8 +198,8 @@ const COMMAND_MENU = [
     { command: 'preturi',  description: 'Vezi prețurile și ce e inclus' },
     { command: 'help',     description: 'Ajutor și cum funcționează' },
     { command: 'anuleaza', description: 'Anulează procesul curent' },
-    { command: 'retry',    description: 'Reîncearcă publicarea / plata' },
-    { command: 'sterge',   description: 'Șterge un site publicat' },
+    { command: 'retry',    description: 'Reîncearcă plata / deschide builderul' },
+    { command: 'sterge',   description: 'Șterge datele tale (GDPR)' },
 ];
 
 /* ── Start polling, auto-retry on startup failure (e.g. transient network) ── */
