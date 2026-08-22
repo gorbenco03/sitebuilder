@@ -886,8 +886,8 @@ async function handleSterge(ctx) {
             fs.writeFileSync(SITES_MAP_FILE, JSON.stringify(m, null, 2));
         }
     } catch (_) {}
-    // 4) Registry sites for this chat — mark deleted (GDPR). Do not replace the
-    // live URL with a trial-expired placeholder page (pay-before-publish).
+    // 4) Registry sites for this chat — mark deleted (GDPR). Do not replace a
+    // live URL with an expiry placeholder; mark deleted (pay-before-publish).
     try {
         const tgUser = registry.getOrCreateUserByTelegram(chatId);
         const regSites = registry.listSites(tgUser.id);
