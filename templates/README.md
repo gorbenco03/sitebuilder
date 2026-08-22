@@ -1,6 +1,10 @@
-# Templates — sistem multi-vertical
+# Templates — Hidook Site Builder design systems
 
-Fiecare folder din `templates/` reprezintă un **șablon** pentru o verticală de afaceri (product-menu, local-service, portfolio). Botul Telegram generează un `config.json` conform contractului, iar `build.js` produce un site static complet.
+**Hidook Site Builder** ships three **design systems** under `templates/` (`product-menu`, `local-service`, `portfolio`). Each folder is a vertical template: HTML/CSS/JS plus `schema.json` / `presets.json` for the wizard.
+
+The **browser builder** is the commercial product (account, editor, pay, publish). **Telegram** is draft-intake that creates or opens the **same** draft in that editor — not a second product that publishes a live site by itself. Do not treat legacy bakery names (`desserdina` / DESSERD) or absolute machine paths as the product.
+
+A filled `config.json` plus `build.js` produce a static site for local/dev assembly and the builder pipeline. Live production DNS / owner launch gates are out of scope here — see `PRODUCT.md`.
 
 ## Structura unui șablon
 
@@ -12,7 +16,7 @@ templates/
     styles.css               # stiluri complete (se copiază nemodificat)
     script.js                # interacțiuni vanilla JS (se copiază nemodificat)
     collage.js               # galerie foto drag-and-drop (se copiază nemodificat)
-    schema.json              # definția câmpurilor pentru wizard-ul botului
+    schema.json              # definția câmpurilor pentru wizard (browser + Telegram intake)
     presets.json             # 2 config-uri demo realiste pentru previzualizare
 ```
 
@@ -24,12 +28,12 @@ templates/
 | `styles.css` | Stiluri CSS complete — variabilele de culoare sunt injectate via `<style>` în `<head>` |
 | `script.js` | JS vanilla defensiv (fiecare `init*` face early-return dacă elementele lipsesc) |
 | `collage.js` | Galerie foto drag-and-drop + lightbox; funcționează pe orice deck `.collage-deck` |
-| `schema.json` | Contract pentru botul Telegram: câmpuri, tipuri, validări, etichete în română |
-| `presets.json` | Exemple demo cu config complet — folosite de bot pentru previzualizare |
+| `schema.json` | Contract pentru wizard: câmpuri, tipuri, validări, etichete în română |
+| `presets.json` | Exemple demo cu config complet — previzualizare în builder / intake |
 
 ## Contractul config.json
 
-Botul produce exact aceste chei; șablonul trebuie să le consume corect:
+Pipeline-ul produce exact aceste chei; șablonul trebuie să le consume corect:
 
 ```
 business{ name, tagline, title, metaDescription, about, lang }
@@ -77,7 +81,7 @@ footer{ address, year, note }
 {
   "templateId": "<id>",
   "version": 1,
-  "name": "<Nume afișat în bot>",
+  "name": "<Nume afișat în wizard>",
   "language": "ro",
   "wizardHints": {
     "vertical": "<product-menu|local-service|portfolio>",
@@ -126,9 +130,11 @@ Pentru câmpuri de tip `list` cu obiecte, adaugă `"itemShape": { "cheie": "tip"
 
 ## Comandă de build și testare
 
+From the **repository root** (repo-relative paths only — do not use machine-absolute Downloads paths):
+
 ```bash
-# Construiește site-ul principal (desserdina)
-node /Users/kirill/Downloads/desserdirina/build.js
+# Static assemble with root build.js (local/dev; not a production DNS cutover)
+node build.js
 
 # Testează un preset al unui șablon:
 # 1. Creează un dir temporar
