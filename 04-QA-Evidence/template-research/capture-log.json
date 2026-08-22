@@ -1,0 +1,272 @@
+[
+  {
+    "cat": "01-restaurants",
+    "slug": "atelier-crenn",
+    "url": "https://www.ateliercrenn.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Atelier Crenn Homepage & Reservations",
+    "http": 200
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "atelier-crenn",
+    "url": "https://www.ateliercrenn.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Atelier Crenn Homepage & Reservations",
+    "http": 200
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "noma",
+    "url": "https://noma.dk/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Checking your browser...",
+    "http": 403
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "noma",
+    "url": "https://noma.dk/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Checking your browser...",
+    "http": 403
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "dishoom",
+    "url": "https://www.dishoom.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Dishoom | Indian Restaurants | From Bombay with Love",
+    "http": 200
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "dishoom",
+    "url": "https://www.dishoom.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Dishoom | Indian Restaurants | From Bombay with Love",
+    "http": 200
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "rules",
+    "url": "https://rules.co.uk/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Checking your browser...",
+    "http": 403
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "rules",
+    "url": "https://rules.co.uk/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Checking your browser...",
+    "http": 403
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "cora-pearl",
+    "url": "https://www.corapearl.co.uk/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Cora Pearl Restaurant | Covent Garden | London",
+    "http": 200
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "cora-pearl",
+    "url": "https://www.corapearl.co.uk/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Cora Pearl Restaurant | Covent Garden | London",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "exhale-spa",
+    "url": "https://exhalespa.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Wellness Spa & Fitness Classes | Massages, Facials | Barre, Yoga, HIIT",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "exhale-spa",
+    "url": "https://exhalespa.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Wellness Spa & Fitness Classes | Massages, Facials | Barre, Yoga, HIIT",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "minimale-skin",
+    "url": "https://minimaleskin.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "MINIMALE SKIN",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "minimale-skin",
+    "url": "https://minimaleskin.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "MINIMALE SKIN",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "bluemercury",
+    "url": "https://www.bluemercury.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Bluemercury | Skincare, Makeup, Hair Care, Fragrance & More",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "bluemercury",
+    "url": "https://www.bluemercury.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Bluemercury | Skincare, Makeup, Hair Care, Fragrance & More",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "blow-ltd",
+    "url": "https://www.blowltd.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Mobile Hair and Makeup Artists in London, Birmingham, Manchester & UK",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "blow-ltd",
+    "url": "https://www.blowltd.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Mobile Hair and Makeup Artists in London, Birmingham, Manchester & UK",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "sally-hershberger",
+    "url": "https://www.sallyhershberger.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Sally Hershberger",
+    "http": 200
+  },
+  {
+    "cat": "02-beauty",
+    "slug": "sally-hershberger",
+    "url": "https://www.sallyhershberger.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Sally Hershberger",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "turner",
+    "url": "https://www.turnerconstruction.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Making a Difference | Turner Construction Company",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "turner",
+    "url": "https://www.turnerconstruction.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Making a Difference | Turner Construction Company",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "matheson",
+    "url": "https://mathesonconstructors.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Matheson Constructors | We are partners",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "matheson",
+    "url": "https://mathesonconstructors.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Matheson Constructors | We are partners",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "woodhull",
+    "url": "https://www.woodhull.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "www.woodhull.com",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "woodhull",
+    "url": "https://www.woodhull.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "www.woodhull.com",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "mortenson",
+    "url": "https://www.mortenson.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Construction and Real Estate Development | Mortenson",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "mortenson",
+    "url": "https://www.mortenson.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Construction and Real Estate Development | Mortenson",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "clark",
+    "url": "https://www.clarkconstruction.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Clark Construction | Building What Matters, Together",
+    "http": 200
+  },
+  {
+    "cat": "03-construction",
+    "slug": "clark",
+    "url": "https://www.clarkconstruction.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Clark Construction | Building What Matters, Together",
+    "http": 200
+  }
+]

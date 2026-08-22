@@ -1,0 +1,42 @@
+[
+  {
+    "cat": "01-restaurants",
+    "slug": "spring",
+    "url": "https://www.springrestaurant.co.uk/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Spring Restaurant | Skye Gyngell | London",
+    "http": 200,
+    "bytes": 1227150
+  },
+  {
+    "cat": "01-restaurants",
+    "slug": "spring",
+    "url": "https://www.springrestaurant.co.uk/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Spring Restaurant | Skye Gyngell | London",
+    "http": 200,
+    "bytes": 80772
+  },
+  {
+    "cat": "03-construction",
+    "slug": "layton",
+    "url": "https://www.laytonconstruction.com/",
+    "vp": "desktop",
+    "status": "ok",
+    "title": "Layton Construction: Raising the bar, then building past it.",
+    "http": 200,
+    "bytes": 1001726
+  },
+  {
+    "cat": "03-construction",
+    "slug": "layton",
+    "url": "https://www.laytonconstruction.com/",
+    "vp": "mobile",
+    "status": "ok",
+    "title": "Layton Construction: Raising the bar, then building past it.",
+    "http": 200,
+    "bytes": 330968
+  }
+]
