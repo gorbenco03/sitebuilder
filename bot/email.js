@@ -27,13 +27,13 @@ async function sendMagicLink(email, url) {
     }
 
     const from    = process.env.EMAIL_FROM || 'onboarding@resend.dev';
-    const subject = 'Link de autentificare Hidook';
+    const subject = 'Link de autentificare Hidook Site Builder';
     const html    = `
 <!DOCTYPE html>
 <html lang="ro">
 <head><meta charset="UTF-8"></head>
 <body style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-  <h2 style="color:#333">Autentifică-te în Hidook</h2>
+  <h2 style="color:#333">Autentifică-te în Hidook Site Builder</h2>
   <p>Apasă butonul de mai jos pentru a te autentifica. Link-ul este valabil <strong>15 minute</strong>.</p>
   <p style="text-align:center;margin:32px 0">
     <a href="${url}"
