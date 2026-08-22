@@ -29,7 +29,6 @@ const crypto = require('crypto');
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'trials-test-'));
 process.env.DATA_DIR           = tmpDir;
 process.env.HIDOOK_FAKE_DEPLOY = '1';
-process.env.TRIAL_DAYS        = '3';
 delete process.env.STRIPE_SECRET_KEY;
 delete process.env.VERCEL_TOKEN;
 delete process.env.NETLIFY_TOKEN;

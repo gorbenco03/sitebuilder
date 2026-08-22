@@ -11,9 +11,10 @@
  * that machine.
  *
  * CommonJS, Node 18+.
+ *
+ * S28: no trial-length product constant, no trial-days env read, no default
+ * 3-day unpaid trial window — payment before first public publish.
  */
-
-const TRIAL_DAYS = Number(process.env.TRIAL_DAYS) || 3;
 
 /**
  * No-op trial sweep. Does not list sites, deploy placeholders, set status,
@@ -26,4 +27,4 @@ async function sweepTrials(_opts = {}) {
     return { reminders: 0, expired: 0 };
 }
 
-module.exports = { sweepTrials, TRIAL_DAYS };
+module.exports = { sweepTrials };
