@@ -1423,7 +1423,7 @@ async function _initiatePayment(ctx, session, chatId) {
         return;
     }
 
-    const productName = 'Site web hidook';
+    const productName = 'Hidook Site Builder';
     const uname       = getBotUsername();
     const successUrl  = `https://t.me/${uname}?start=paid`;
     const cancelUrl   = `https://t.me/${uname}?start=cancel`;
