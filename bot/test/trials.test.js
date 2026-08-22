@@ -1,17 +1,9 @@
 'use strict';
 /**
- * bot/test/trials.test.js — Trial module contract + paid republish tests.
+ * bot/test/trials.test.js — Paid republish + placeholder no-op (no trials module).
  *
- * S25: sweepTrials is a documented no-op (pay-before-publish; no unpaid live trial).
- * S27: deployPlaceholder is a documented no-op (no expired-trial page deploy).
- * Paid reactivation / publishSite remain covered here.
- *
- * Tests:
- *   - sweepTrials never expires, reminds, or notifies (no-op counts)
- *   - sweepTrials never calls deployPlaceholder / sets reminded / status expired
- *   - markOrderPaid on expired → republish → live
- *   - deployPlaceholder (direct) is no-op: no deploy, no status expired
- *   - publishSite with siteDirAlreadyBuilt=true
+ * S29: bot/trials.js removed; no sweepTrials import. Remaining coverage:
+ * S27 deployPlaceholder no-op, paid reactivation / publishSite.
  *
  * Uses HIDOOK_FAKE_DEPLOY=1 for offline operation.
  *
@@ -35,10 +27,9 @@ delete process.env.NETLIFY_TOKEN;
 delete process.env.DEPLOY_PROVIDER;
 delete process.env.CLOUDFLARE_API_TOKEN;
 
-// ── Load real modules ──────────────────────────────────────────────────────
+// ── Load real modules (no trials.js — S29) ────────────────────────────────
 const registry   = require('../registry.js');
 const webpublish = require('../webpublish.js');
-const { sweepTrials } = require('../trials.js');
 
 // ── Test harness ────────────────────────────────────────────────────────────
 let failed = false;
@@ -60,18 +51,16 @@ function createTestUser() {
 }
 
 /**
- * Create a 'live' unpaid site with trialEndsAt and a minimal site dir so
+ * Create a 'live' unpaid site with a minimal site dir so
  * deployPlaceholder / publishSite can operate without a real build.js.
  */
-function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
-    const trialEndsAt = new Date(Date.now() + hoursFromNow * 3600 * 1000).toISOString();
+function createLiveSite(userId) {
     const site = registry.createSite({
         userId,
         templateId:      'product-menu',
         templateVersion: null,
         slug:            'test-site-' + crypto.randomUUID().slice(0, 8),
         platform:        'web',
-        trialEndsAt,
     });
     registry.updateSite(site.id, { status: 'live', url: `https://${site.slug}.test.local` });
 
@@ -87,85 +76,10 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
 
 (async () => {
 
-    // ── 1. No-op: near-expiry unpaid live site is left alone ────────────────
-    await check('sweepTrials: no-op for site expiring in <24h (no reminder)', async () => {
-        const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: 12 });
-
-        const messages = [];
-        const adminMsgs = [];
-        const messenger = (chatId, text) => { messages.push({ chatId, text }); return Promise.resolve(); };
-        const notifyAdmin = (text) => { adminMsgs.push(text); };
-
-        let placeholderCalled = false;
-        const origDeploy = webpublish.deployPlaceholder;
-        webpublish.deployPlaceholder = async (s) => {
-            placeholderCalled = true;
-            return origDeploy(s);
-        };
-
-        const result = await sweepTrials({ messenger, notifyAdmin });
-        webpublish.deployPlaceholder = origDeploy;
-
-        assert.deepStrictEqual(result, { reminders: 0, expired: 0 },
-            'sweepTrials must return zero counts (no-op)');
-        assert.strictEqual(placeholderCalled, false, 'must not call deployPlaceholder');
-        assert.strictEqual(messages.length, 0, 'must not message owner');
-        assert.strictEqual(adminMsgs.length, 0, 'must not notify admin');
-
-        const updated = registry.getSite(site.id);
-        assert.notStrictEqual(updated.reminded, true, 'must not set reminded');
-        assert.strictEqual(updated.status, 'live', 'status must remain live');
-    });
-
-    // ── 2. No-op: already-expired unpaid live site is left alone ────────────
-    await check('sweepTrials: no-op for expired unpaid live site (no expire/placeholder)', async () => {
-        const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: -1 });
-
-        const messages = [];
-        const adminMsgs = [];
-        const messenger = (chatId, text) => { messages.push({ chatId, text }); return Promise.resolve(); };
-        const notifyAdmin = (text) => { adminMsgs.push(text); };
-
-        let placeholderCalled = false;
-        const origDeploy = webpublish.deployPlaceholder;
-        webpublish.deployPlaceholder = async (s) => {
-            placeholderCalled = true;
-            registry.updateSite(s.id, { status: 'expired', url: `https://${s.slug}.test.local` });
-            return { url: `https://${s.slug}.test.local` };
-        };
-
-        const result = await sweepTrials({ messenger, notifyAdmin });
-        webpublish.deployPlaceholder = origDeploy;
-
-        assert.deepStrictEqual(result, { reminders: 0, expired: 0 },
-            'sweepTrials must return zero counts (no-op)');
-        assert.strictEqual(placeholderCalled, false, 'deployPlaceholder must not be called');
-        assert.strictEqual(messages.length, 0, 'must not message owner');
-        assert.strictEqual(adminMsgs.length, 0, 'must not notify admin');
-
-        const updated = registry.getSite(site.id);
-        assert.strictEqual(updated.status, 'live', 'site status must stay live (sweeper no-op)');
-        assert.notStrictEqual(updated.reminded, true, 'must not set reminded');
-    });
-
-    // ── 3. No-op: paid sites still yield zeros (harmless) ───────────────────
-    await check('sweepTrials: paid sites yield zero counts', async () => {
-        const user = createTestUser();
-        createLiveSite(user.id, { hoursFromNow: -1 });
-        // create another and mark paid
-        const site = createLiveSite(user.id, { hoursFromNow: -1 });
-        registry.updateSite(site.id, { paid: true });
-
-        const result = await sweepTrials({});
-        assert.deepStrictEqual(result, { reminders: 0, expired: 0 });
-    });
-
-    // ── 4. deployPlaceholder (direct) — documented no-op (S27) ────────────
+    // ── 1. deployPlaceholder (direct) — documented no-op (S27) ────────────
     await check('deployPlaceholder: no-op (no deploy, status stays live)', async () => {
         const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: -1 });
+        const site = createLiveSite(user.id);
         registry.updateSite(site.id, { status: 'live' });
 
         const fresh = registry.getSite(site.id);
@@ -183,10 +97,10 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
         assert.strictEqual(afterHtml, beforeHtml, 'must not overwrite index.html');
     });
 
-    // ── 5. markOrderPaid on expired site → republish → live ───────────────
+    // ── 2. markOrderPaid on expired site → republish → live ───────────────
     await check('handleStripePaid on expired site → republish → status=live', async () => {
         const user = createTestUser();
-        const site = createLiveSite(user.id, { hoursFromNow: -1 });
+        const site = createLiveSite(user.id);
         registry.updateSite(site.id, { status: 'expired', paid: false });
         registry.saveVersion(site.id, { business: { name: 'Test Afacere' } });
 
@@ -220,7 +134,7 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
         }
     });
 
-    // ── 6. publishSite with siteDirAlreadyBuilt=true ───────────────────────
+    // ── 3. publishSite with siteDirAlreadyBuilt=true ───────────────────────
     await check('publishSite(siteDirAlreadyBuilt=true) skips build and deploys (fake)', async () => {
         const user = createTestUser();
         const site = createLiveSite(user.id);

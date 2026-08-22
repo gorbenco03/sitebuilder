@@ -1,10 +1,10 @@
 'use strict';
 /**
- * bot/test/no-trial-days.test.js — S28 trials.js must not export TRIAL_DAYS.
+ * bot/test/no-trial-days.test.js — S28/S29: no TRIAL_DAYS surface; trials module gone.
  *
- * Pay-before-publish: no public unpaid trial length constant. The legacy
- * trials module must not define/export TRIAL_DAYS, read process.env.TRIAL_DAYS,
- * or default any trial length to 3 days.
+ * Pay-before-publish: no public unpaid trial length constant. After S29 the
+ * leftover trials.js module is removed entirely — assert absence (no TRIAL_DAYS
+ * export path remains).
  *
  * Run: node bot/test/no-trial-days.test.js
  * Exits non-zero on failed assertion.
@@ -15,7 +15,6 @@ const fs = require('fs');
 const path = require('path');
 
 const trialsPath = path.join(__dirname, '..', 'trials.js');
-const trialsSrc = fs.readFileSync(trialsPath, 'utf8');
 
 let failed = false;
 function check(name, fn) {
@@ -28,46 +27,24 @@ function check(name, fn) {
     }
 }
 
-check('trials.js source must not define TRIAL_DAYS', () => {
+check('bot/trials.js must not exist (no TRIAL_DAYS export surface)', () => {
     assert.ok(
-        !/\bTRIAL_DAYS\b/.test(trialsSrc),
-        'trials.js must not contain TRIAL_DAYS identifier'
+        !fs.existsSync(trialsPath),
+        'bot/trials.js must not exist — TRIAL_DAYS and trial-length exports are not product'
     );
 });
 
-check('trials.js must not read process.env.TRIAL_DAYS', () => {
+check('require(trials.js) must fail (module absent)', () => {
+    let err = null;
+    try {
+        require('../trials.js');
+    } catch (e) {
+        err = e;
+    }
+    assert.ok(err, 'require(\"../trials.js\") must throw when module is removed');
     assert.ok(
-        !/process\.env\.TRIAL_DAYS/.test(trialsSrc),
-        'trials.js must not read process.env.TRIAL_DAYS'
-    );
-});
-
-check('trials.js must not default a trial length to 3 days', () => {
-    // Catch `|| 3`, `?? 3`, or `= 3` near trial-day wording without banning unrelated 3s in comments
-    assert.ok(
-        !/(?:TRIAL_DAYS|trial\s*days?)\s*[=:].{0,40}\|\|\s*3\b/i.test(trialsSrc) &&
-            !/\|\|\s*3\b/.test(trialsSrc) &&
-            !/\?\?\s*3\b/.test(trialsSrc),
-        'trials.js must not default trial length with || 3 or ?? 3'
-    );
-});
-
-check('trials.js exports must not include TRIAL_DAYS', () => {
-    // Fresh require so we assert the live export surface
-    const exp = require('../trials.js');
-    assert.ok(
-        !Object.prototype.hasOwnProperty.call(exp, 'TRIAL_DAYS'),
-        'module.exports must not include TRIAL_DAYS'
-    );
-    assert.strictEqual(
-        exp.TRIAL_DAYS,
-        undefined,
-        'require(\"../trials.js\").TRIAL_DAYS must be undefined'
-    );
-    assert.strictEqual(
-        typeof exp.sweepTrials,
-        'function',
-        'sweepTrials must remain exported'
+        err.code === 'MODULE_NOT_FOUND' || /Cannot find module/.test(String(err.message)),
+        'expected MODULE_NOT_FOUND, got: ' + (err && err.message)
     );
 });
 
