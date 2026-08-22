@@ -14,7 +14,6 @@
 const { Bot } = require('grammy');
 const flow = require('./flow.js');
 const webpublish = require('./webpublish.js');
-const { sweepTrials } = require('./trials.js');
 const { log } = require('./logger.js');
 const { startServer } = require('./server.js');
 
@@ -223,13 +222,6 @@ async function start() {
                 if (!sweepTimer) {
                     sweepTimer = setInterval(() => {
                         try { reconcilePending(); } catch (e) { console.error('[sweep] failed:', e.message); }
-                        // Trial model: reminder + expire unpaid trial sites
-                        sweepTrials({
-                            messenger:   (chatId, text) => bot.api.sendMessage(chatId, text).catch(() => {}),
-                            notifyAdmin: ADMIN_CHAT_ID
-                                ? (text) => bot.api.sendMessage(ADMIN_CHAT_ID, text).catch(() => {})
-                                : undefined,
-                        }).catch((e) => console.error('[sweepTrials] failed:', e.message));
                     }, SWEEP_INTERVAL_MS);
                     if (sweepTimer.unref) sweepTimer.unref();
                 }
