@@ -523,7 +523,7 @@ async function handleSiteCheckout(req, res, siteId) {
     const isRenewal  = !!site.paid;
     const amountCents = isRenewal ? p.renewalCents : p.amountCents;
     const kind        = isRenewal ? 'renewal' : 'publish';
-    const productName = isRenewal ? 'Reînnoire hosting Hidook (12 luni)' : 'Activare site Hidook';
+    const productName = isRenewal ? 'Reînnoire hosting Hidook Site Builder (12 luni)' : 'Activare site Hidook Site Builder';
 
     const order = await reg.createOrder({
         siteId: site.id,
@@ -681,7 +681,7 @@ async function handlePublish(req, res) {
                 const checkout = await payments.createCheckout({
                     amountCents: price.amountCents,
                     currency: price.currency,
-                    productName: 'Activare site Hidook',
+                    productName: 'Activare site Hidook Site Builder',
                     successUrl:  publicUrl + '/app/#platit',
                     cancelUrl:   publicUrl + '/app/#anulat',
                     metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind: 'publish' },
