@@ -272,12 +272,21 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         );
     });
 
-    await check('webpublish.js uses pricing.js for checkout amounts', async () => {
+    await check('webpublish.js has no local checkout amounts (pricing via server)', async () => {
         const src = fs.readFileSync(path.join(__dirname, '..', 'webpublish.js'), 'utf8');
-        assert.ok(src.includes("require('./pricing.js')") || src.includes('require("./pricing.js")'),
-            'webpublish.js must require pricing.js');
+        // S27: deployPlaceholder no longer opens checkout; webpublish must not
+        // invent fees — commercial amounts stay in server.js + pricing.js.
+        assert.ok(
+            !/createCheckout\s*\(/.test(src),
+            'webpublish must not call createCheckout (no local amount path)'
+        );
         assert.ok(!/parseFloat\(process\.env\.BUILD_FEE_EUR\)\s*\|\|\s*parseFloat\(process\.env\.BUILD_FEE_USD\)\s*\|\|\s*49/.test(src),
             'webpublish must not hardcode BUILD_FEE default 49');
+        const serverSrc = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        assert.ok(
+            serverSrc.includes("require('./pricing.js')") || serverSrc.includes('require("./pricing.js")'),
+            'server.js must require pricing.js for commercial checkout amounts'
+        );
     });
 
     await check('builder copy: no free trial / GRATUIT publish promises', async () => {

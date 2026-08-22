@@ -8,8 +8,8 @@
  *   - handleStripePaid: generalized across platforms; if site was expired →
  *     republish last version; if pending draft → first public publish after pay;
  *     notify owner on owner's channel + concierge domain msg.
- *   - deployPlaceholder: deploy a self-contained page for expired legacy trial sites
- *     with a payment/reactivation link.
+ *   - deployPlaceholder: documented no-op (pay-before-publish; no public unpaid
+ *     trial expiry page). Kept exported so legacy callers do not throw.
  *
  * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
  * {url:'https://<slug>.test.local', provider:'fake'} — for offline unit tests.
@@ -370,119 +370,23 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
 }
 
 // ---------------------------------------------------------------------------
-// deployPlaceholder
+// deployPlaceholder — documented no-op (pay-before-publish)
 // ---------------------------------------------------------------------------
 
 /**
- * Deploy a self-contained branded placeholder page for an expired trial site.
- * The page includes a payment/reactivation link.
+ * Historical entry point for an unpaid-trial expiry page. Product rule is
+ * payment before first public publish — no public unpaid trial and no
+ * customer-facing trial-expired placeholder deploy.
  *
- * @param {object} site   — registry site record (must have site.id, site.projectName)
- * @returns {Promise<{url: string}>}
+ * Remains exported so legacy require() call sites do not throw. Does not
+ * write files, deploy, open payments, change registry status, or store
+ * reactivation checkout ids. Does not mutate disk or registry.
+ *
+ * @param {object} [_site] — ignored
+ * @returns {Promise<void>}
  */
-async function deployPlaceholder(site) {
-    const siteDir = path.join(SITES_DIR, site.projectName);
-    fs.mkdirSync(siteDir, { recursive: true });
-
-    // Generate a checkout/reactivation link
-    let paymentUrl = null;
-    try {
-        const payments = require('./payments.js');
-        if (payments.isConfigured()) {
-            const pricing   = require('./pricing.js');
-            const p         = pricing.getPricing();
-            const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-            const checkout = await payments.createCheckout({
-                amountCents: p.amountCents,
-                currency:    p.currency,
-                productName: 'Reactivare site Hidook',
-                successUrl:  publicUrl + '/app/#platit',
-                cancelUrl:   publicUrl + '/app/#anulat',
-                metadata: { platform: 'web', siteId: site.id, reactivate: '1' },
-                clientReferenceId: 'reactivate-' + site.id,
-            });
-            paymentUrl = checkout.url;
-            // Persist latest checkout session for this site
-            registry.updateSite(site.id, { reactivateSessionId: checkout.id });
-        }
-    } catch (e) {
-        log('webpublish.placeholder.checkout_error', { siteId: site.id, err: e.message }, 'warn');
-    }
-
-    const bizName = _getBizName(site);
-    const payBtn = paymentUrl
-        ? `<a href="${paymentUrl}" class="btn">Reactivează site-ul</a>`
-        : '<p class="sub">Contactați-ne pentru reactivare.</p>';
-
-    const html = `<!DOCTYPE html>
-<html lang="ro">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${_esc(bizName)} — Perioadă de probă expirată</title>
-<style>
-  body{margin:0;font-family:system-ui,sans-serif;background:#f7f3f0;color:#333;
-       display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
-  .card{background:#fff;border-radius:16px;padding:48px 32px;max-width:480px;
-        box-shadow:0 4px 32px rgba(0,0,0,.1)}
-  h1{font-size:1.4rem;margin-bottom:8px}
-  .sub{color:#777;font-size:.95rem;margin-bottom:24px}
-  .btn{display:inline-block;background:#E8588C;color:#fff;text-decoration:none;
-       padding:14px 32px;border-radius:8px;font-weight:600;font-size:1rem}
-  .btn:hover{background:#d14477}
-  .brand{margin-top:32px;font-size:.75rem;color:#bbb}
-</style>
-</head>
-<body>
-<div class="card">
-  <h1>${_esc(bizName)}</h1>
-  <p class="sub">Perioada de acces a expirat.</p>
-  <p class="sub">Plătește pentru a-ți reactiva site-ul și 12 luni de hosting gestionat.</p>
-  ${payBtn}
-  <div class="brand">Hidook · site builder</div>
-</div>
-</body>
-</html>`;
-
-    fs.writeFileSync(path.join(siteDir, 'index.html'), html, 'utf8');
-
-    // Deploy
-    let url;
-    try {
-        const result = await _deploy(siteDir, site.projectName, site.userId, {
-            slug: site.slug || site.projectName,
-        });
-        url = result && result.url;
-    } catch (e) {
-        log('webpublish.placeholder.deploy_error', { siteId: site.id, err: e.message }, 'error');
-        throw e;
-    }
-
-    if (!url) {
-        throw new Error('Placeholder deploy nu a returnat un URL.');
-    }
-
-    registry.updateSite(site.id, { status: 'expired', url });
-    try { ledger.append({ event: 'placeholder_deployed', siteId: site.id, url }); } catch (_) {}
-
-    return { url };
-}
-
-/** Extract business name from site metadata (best-effort). */
-function _getBizName(site) {
-    if (site.businessName) return site.businessName;
-    // Try reading config from last saved version
-    try {
-        const siteDir = path.join(SITES_DIR, site.projectName);
-        const cfg = JSON.parse(fs.readFileSync(path.join(siteDir, 'config.json'), 'utf8'));
-        return (cfg && cfg.business && cfg.business.name) || site.projectName;
-    } catch (_) {}
-    return site.projectName || 'Site';
-}
-
-/** HTML-escape a string. */
-function _esc(s) {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+async function deployPlaceholder(_site) {
+    return;
 }
 
 // ---------------------------------------------------------------------------

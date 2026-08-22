@@ -3,13 +3,14 @@
  * bot/test/trials.test.js — Trial module contract + paid republish tests.
  *
  * S25: sweepTrials is a documented no-op (pay-before-publish; no unpaid live trial).
- * Paid reactivation and deployPlaceholder (direct) remain covered here.
+ * S27: deployPlaceholder is a documented no-op (no expired-trial page deploy).
+ * Paid reactivation / publishSite remain covered here.
  *
  * Tests:
  *   - sweepTrials never expires, reminds, or notifies (no-op counts)
  *   - sweepTrials never calls deployPlaceholder / sets reminded / status expired
  *   - markOrderPaid on expired → republish → live
- *   - deployPlaceholder (direct) still works for callers that need it
+ *   - deployPlaceholder (direct) is no-op: no deploy, no status expired
  *   - publishSite with siteDirAlreadyBuilt=true
  *
  * Uses HIDOOK_FAKE_DEPLOY=1 for offline operation.
@@ -162,21 +163,25 @@ function createLiveSite(userId, { hoursFromNow = 48 } = {}) {
         assert.deepStrictEqual(result, { reminders: 0, expired: 0 });
     });
 
-    // ── 4. deployPlaceholder (direct) — writes HTML + fake deploy ─────────
-    await check('deployPlaceholder: writes placeholder HTML + deploys (fake)', async () => {
+    // ── 4. deployPlaceholder (direct) — documented no-op (S27) ────────────
+    await check('deployPlaceholder: no-op (no deploy, status stays live)', async () => {
         const user = createTestUser();
         const site = createLiveSite(user.id, { hoursFromNow: -1 });
         registry.updateSite(site.id, { status: 'live' });
 
         const fresh = registry.getSite(site.id);
+        const beforeUrl = fresh.url;
+        const siteDir = path.join(tmpDir, 'sites', fresh.projectName);
+        const beforeHtml = fs.readFileSync(path.join(siteDir, 'index.html'), 'utf8');
+
         const result = await webpublish.deployPlaceholder(fresh);
 
-        assert.ok(result.url, 'deployPlaceholder must return a url');
-        assert.ok(result.url.includes(fresh.projectName) || result.url.includes(fresh.slug),
-            'url must reference the site');
-
+        assert.ok(result == null || !result.url, 'no-op must not return a deploy url');
         const updated = registry.getSite(fresh.id);
-        assert.strictEqual(updated.status, 'expired', 'site status must be expired after placeholder');
+        assert.strictEqual(updated.status, 'live', 'status must remain live (no expired placeholder)');
+        assert.strictEqual(updated.url, beforeUrl, 'url must be unchanged');
+        const afterHtml = fs.readFileSync(path.join(siteDir, 'index.html'), 'utf8');
+        assert.strictEqual(afterHtml, beforeHtml, 'must not overwrite index.html');
     });
 
     // ── 5. markOrderPaid on expired site → republish → live ───────────────

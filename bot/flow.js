@@ -886,16 +886,13 @@ async function handleSterge(ctx) {
             fs.writeFileSync(SITES_MAP_FILE, JSON.stringify(m, null, 2));
         }
     } catch (_) {}
-    // 4) Registry sites for this chat — deploy placeholder + mark deleted (GDPR)
+    // 4) Registry sites for this chat — mark deleted (GDPR). Do not replace the
+    // live URL with a trial-expired placeholder page (pay-before-publish).
     try {
         const tgUser = registry.getOrCreateUserByTelegram(chatId);
         const regSites = registry.listSites(tgUser.id);
         for (const site of regSites) {
             if (site.status === 'deleted') continue;
-            // Deploy placeholder (best-effort) and mark deleted
-            try {
-                await webpublish.deployPlaceholder({ ...site, businessName: 'Site șters' });
-            } catch (_) {}
             registry.updateSite(site.id, { status: 'deleted', url: null });
         }
     } catch (_) {}
