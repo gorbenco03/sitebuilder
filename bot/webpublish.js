@@ -8,8 +8,8 @@
  *   - handleStripePaid: generalized across platforms; if site was expired →
  *     republish last version; if pending draft → first public publish after pay;
  *     notify owner on owner's channel + concierge domain msg.
- *   - deployPlaceholder: documented no-op (pay-before-publish; no public unpaid
- *     trial expiry page). Kept exported so legacy callers do not throw.
+ *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
+ *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
  *
  * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
  * {url:'https://<slug>.test.local', provider:'fake'} — for offline unit tests.
@@ -374,9 +374,9 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
 // ---------------------------------------------------------------------------
 
 /**
- * Historical entry point for an unpaid-trial expiry page. Product rule is
- * payment before first public publish — no public unpaid trial and no
- * customer-facing trial-expired placeholder deploy.
+ * Historical unused expiry-placeholder entry. Product rule is
+ * payment before first public publish — no public unpaid hosting and no
+ * customer-facing expired-hosting placeholder deploy.
  *
  * Remains exported so legacy require() call sites do not throw. Does not
  * write files, deploy, open payments, change registry status, or store
@@ -491,7 +491,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 
     const paidSite = { ...registry.getSite(siteId), paid: true, paidUntil };
 
-    // If reactivation (expired trial): republish last version
+    // If reactivation (hosting expired / status === 'expired'): republish last version
     if (site.status === 'expired') {
         const versions = registry.listVersions(siteId);
         if (versions.length > 0) {
