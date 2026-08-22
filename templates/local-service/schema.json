@@ -372,6 +372,12 @@
           "required": false
         },
         {
+          "key": "instagram.embedUrl",
+          "type": "url",
+          "label": "URL embed Instagram / partner feed (iframe) — optional",
+          "required": false
+        },
+        {
           "key": "instagram.gallery",
           "type": "photos",
           "label": "Poze pentru grila Instagram (max 6) — optional",

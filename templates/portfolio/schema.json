@@ -341,6 +341,18 @@
           "type": "url",
           "label": "Link complet Instagram (https://www.instagram.com/...)",
           "required": false
+        },
+        {
+          "key": "instagram.embedUrl",
+          "type": "url",
+          "label": "URL embed Instagram / partner feed (iframe) — optional",
+          "required": false
+        },
+        {
+          "key": "instagram.gallery",
+          "type": "photos",
+          "label": "Poze grilă Instagram (rezultate / fallback) — optional",
+          "required": false
         }
       ]
     },

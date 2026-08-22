@@ -17,23 +17,26 @@
         },
         "labels": {
           "about": "Despre noi",
-          "instaTitle": "Urmariti-ne pe Instagram",
+          "instaTitle": "De pe șantier",
           "instaFollow": "Urmareste",
           "scroll": "Deruleaza",
           "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web"
+          "waOpen": "Sau deschide WhatsApp Web",
+          "callCta": "Sună",
+          "estimateCta": "Cere ofertă"
         },
         "theme": {
-          "primary": "#FF4D00",
-          "primaryLight": "#FF7A3D",
-          "primaryDark": "#0A0C0F",
-          "cream": "#DCD8CF"
+          "primary": "#0b3d91",
+          "primaryLight": "#1a5bbf",
+          "primaryDark": "#0f1720",
+          "cream": "#eef1f4"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('https://picsum.photos/seed/prorenov-hero/1600/900') center/cover no-repeat",
-          "ctaLabel": "Cere oferta gratuita"
+          "ctaLabel": "Cere ofertă",
+          "callLabel": "Sună acum"
         },
         "servicesTitle": "Serviciile noastre",
         "services": [
@@ -106,15 +109,18 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/baie-moderna-lon/1200/800",
-                "alt": "Baie moderna renovata complet"
+                "alt": "Baie moderna renovata complet · Londra si imprejurimi (Essex",
+                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
               },
               {
                 "src": "https://picsum.photos/seed/baie-gresie-lon/1200/800",
-                "alt": "Gresie si faianta baie premium"
+                "alt": "Gresie si faianta baie premium · Londra si imprejurimi (Essex",
+                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
               },
               {
                 "src": "https://picsum.photos/seed/baie-dus-lon/1200/800",
-                "alt": "Dus walk-in cu faianta marmura"
+                "alt": "Dus walk-in cu faianta marmura · Londra si imprejurimi (Essex",
+                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
               }
             ]
           },
@@ -124,15 +130,18 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/bucatarie-lon1/1200/800",
-                "alt": "Bucatarie open-space renovata modern"
+                "alt": "Bucatarie open-space renovata modern · Londra si imprejurimi (Essex",
+                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
               },
               {
                 "src": "https://picsum.photos/seed/living-parquet-lon/1200/800",
-                "alt": "Living cu parchet si gresie portelanata"
+                "alt": "Living cu parchet si gresie portelanata · Londra si imprejurimi (Essex",
+                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
               },
               {
                 "src": "https://picsum.photos/seed/bucatarie-tavan-lon/1200/800",
-                "alt": "Tavan fals LED in bucatarie"
+                "alt": "Tavan fals LED in bucatarie · Londra si imprejurimi (Essex",
+                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
               }
             ]
           },
@@ -142,11 +151,13 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/extensie-lon1/1200/800",
-                "alt": "Extensie casa cu structura otel"
+                "alt": "Extensie casa cu structura otel · Londra si imprejurimi (Essex",
+                "caption": "Extinderi si lucrari structurale · Londra si imprejurimi (Essex"
               },
               {
                 "src": "https://picsum.photos/seed/annex-lon1/1200/800",
-                "alt": "Annex finalizat in gradina"
+                "alt": "Annex finalizat in gradina · Londra si imprejurimi (Essex",
+                "caption": "Extinderi si lucrari structurale · Londra si imprejurimi (Essex"
               }
             ]
           }
@@ -161,7 +172,8 @@
             "https://picsum.photos/seed/insta-prorenov-4/600/600",
             "https://picsum.photos/seed/insta-prorenov-5/600/600",
             "https://picsum.photos/seed/insta-prorenov-6/600/600"
-          ]
+          ],
+          "embedUrl": "https://www.instagram.com/prorenov.london/embed"
         },
         "contact": {
           "title": "Cere oferta gratuita",
@@ -210,23 +222,26 @@
         },
         "labels": {
           "about": "Despre noi",
-          "instaTitle": "Urmariti-ne pe Instagram",
+          "instaTitle": "De pe șantier",
           "instaFollow": "Urmareste",
           "scroll": "Deruleaza",
           "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web"
+          "waOpen": "Sau deschide WhatsApp Web",
+          "callCta": "Sună",
+          "estimateCta": "Cere ofertă"
         },
         "theme": {
-          "primary": "#FF4D00",
-          "primaryLight": "#FF7A3D",
-          "primaryDark": "#0A0C0F",
-          "cream": "#DCD8CF"
+          "primary": "#ff4d00",
+          "primaryLight": "#ff7a3d",
+          "primaryDark": "#0a0c0f",
+          "cream": "#eef1f4"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(10,12,15,0.72) 50%, rgba(10,12,15,0.72) 100%), url('https://picsum.photos/seed/acoperis-hero-man/1600/900') center/cover no-repeat",
-          "ctaLabel": "Cere oferta gratuita"
+          "ctaLabel": "Cere ofertă",
+          "callLabel": "Sună acum"
         },
         "servicesTitle": "Ce facem",
         "services": [
@@ -299,15 +314,18 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/acoperis-rez-man1/1200/800",
-                "alt": "Acoperis rezidential nou cu tigla ceramica"
+                "alt": "Acoperis rezidential nou cu tigla ceramica · Manchester",
+                "caption": "Acoperisuri rezidentiale · Manchester"
               },
               {
                 "src": "https://picsum.photos/seed/acoperis-tabla-man/1200/800",
-                "alt": "Acoperis tabla faltuita moderna"
+                "alt": "Acoperis tabla faltuita moderna · Manchester",
+                "caption": "Acoperisuri rezidentiale · Manchester"
               },
               {
                 "src": "https://picsum.photos/seed/mansarda-velux-man/1200/800",
-                "alt": "Mansarda amenajata cu luminatoare Velux"
+                "alt": "Mansarda amenajata cu luminatoare Velux · Manchester",
+                "caption": "Acoperisuri rezidentiale · Manchester"
               }
             ]
           },
@@ -317,11 +335,13 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/fatada-vent-man1/1200/800",
-                "alt": "Fatada ventilata moderna casa"
+                "alt": "Fatada ventilata moderna casa · Manchester",
+                "caption": "Fatade ventilate si termoizolatie · Manchester"
               },
               {
                 "src": "https://picsum.photos/seed/izolatie-eps-man/1200/800",
-                "alt": "Termoizolatie exterioara EPS aplicata"
+                "alt": "Termoizolatie exterioara EPS aplicata · Manchester",
+                "caption": "Fatade ventilate si termoizolatie · Manchester"
               }
             ]
           },
@@ -331,15 +351,18 @@
             "photos": [
               {
                 "src": "https://picsum.photos/seed/reparatie-man1/1200/800",
-                "alt": "Reparatie urgenta acoperis dupa furtuna"
+                "alt": "Reparatie urgenta acoperis dupa furtuna · Manchester",
+                "caption": "Reparatii si interventii urgente · Manchester"
               },
               {
                 "src": "https://picsum.photos/seed/jgheab-cupru-man/1200/800",
-                "alt": "Montaj jgheaburi si burlane cupru"
+                "alt": "Montaj jgheaburi si burlane cupru · Manchester",
+                "caption": "Reparatii si interventii urgente · Manchester"
               },
               {
                 "src": "https://picsum.photos/seed/cos-tigla-man/1200/800",
-                "alt": "Refacere cos de fum si inchidere tigla"
+                "alt": "Refacere cos de fum si inchidere tigla · Manchester",
+                "caption": "Reparatii si interventii urgente · Manchester"
               }
             ]
           }
@@ -354,7 +377,8 @@
             "https://picsum.photos/seed/insta-consttop-4/600/600",
             "https://picsum.photos/seed/insta-consttop-5/600/600",
             "https://picsum.photos/seed/insta-consttop-6/600/600"
-          ]
+          ],
+          "embedUrl": "https://www.instagram.com/consttop.roofing/embed"
         },
         "contact": {
           "title": "Cere oferta gratuita",

@@ -153,6 +153,104 @@ check('systems are not DESSERD clones (css prop values + class names < 40%; forb
     }
 });
 
+/** S47 — vertical products: restaurant / salon / trade (not bakery theatre or shared Apple paper). */
+check('S47: every system ships instagram.embedUrl iframe markup', () => {
+    for (const tid of EXPECTED) {
+        const html = fs.readFileSync(path.join(ROOT, 'templates', tid, 'template.html'), 'utf8');
+        assert.ok(
+            html.includes('instagram.embedUrl'),
+            `${tid}: missing instagram.embedUrl @if path`
+        );
+        assert.ok(
+            /class="[^"]*instagram-embed-iframe/.test(html) || html.includes('instagram-embed-iframe'),
+            `${tid}: missing instagram-embed-iframe class on iframe`
+        );
+        assert.ok(
+            html.includes('instagram.gallery'),
+            `${tid}: missing instagram.gallery fallback path`
+        );
+    }
+});
+
+check('S47: no MENU BOARD / chalkboard bakery identity copy', () => {
+    const forbidden = [/MENU\s*BOARD/i, /chalkboard/i];
+    for (const tid of EXPECTED) {
+        const html = fs.readFileSync(path.join(ROOT, 'templates', tid, 'template.html'), 'utf8');
+        const css = fs.readFileSync(path.join(ROOT, 'templates', tid, 'styles.css'), 'utf8');
+        const presets = fs.readFileSync(path.join(ROOT, 'templates', tid, 'presets.json'), 'utf8');
+        const blob = `${html}\n${css}\n${presets}`;
+        for (const re of forbidden) {
+            assert.ok(!re.test(blob), `${tid}: still contains forbidden identity pattern ${re}`);
+        }
+    }
+    const pmPresets = JSON.parse(
+        fs.readFileSync(path.join(ROOT, 'templates', 'product-menu', 'presets.json'), 'utf8')
+    );
+    for (const p of pmPresets.presets) {
+        const name = String(p.name || '') + String(p.config?.business?.name || '');
+        const about = String(p.config?.business?.about || '');
+        const title = String(p.config?.business?.title || '');
+        const blob = `${name} ${about} ${title}`.toLowerCase();
+        assert.ok(
+            !/cofet[aă]rie|patiserie|pr[aă]jitur|torturi la comand[aă]|dulce de la/i.test(blob),
+            `product-menu preset "${p.id}" still bakery/patisserie default persona`
+        );
+    }
+});
+
+check('S47: three systems do not share one identical Apple #f5f5f7 paper token', () => {
+    function defaultPaperToken(css) {
+        // Prefer --paper, then --color-cream, from the :root block defaults (not comments).
+        const root = css.match(/:root\s*\{[\s\S]*?\}/);
+        assert.ok(root, 'missing :root block');
+        const block = root[0];
+        const paper = block.match(/--paper\s*:\s*([^;]+);/i);
+        const cream = block.match(/--color-cream\s*:\s*([^;]+);/i);
+        const raw = (paper && paper[1]) || (cream && cream[1]);
+        assert.ok(raw, 'missing --paper / --color-cream default');
+        return raw.trim().toLowerCase().replace(/\s+/g, '');
+    }
+    const papers = {};
+    for (const tid of EXPECTED) {
+        const css = fs.readFileSync(path.join(ROOT, 'templates', tid, 'styles.css'), 'utf8');
+        papers[tid] = defaultPaperToken(css);
+        console.log(`  ${tid} paper=${papers[tid]}`);
+    }
+    const vals = Object.values(papers);
+    const allSame = vals.every((v) => v === vals[0]);
+    assert.ok(!allSame, `all three systems share the same paper token ${vals[0]}`);
+    const apple = '#f5f5f7';
+    const appleCount = vals.filter((v) => v === apple).length;
+    assert.ok(
+        appleCount < 3,
+        'all three systems still default to Apple paper #f5f5f7'
+    );
+});
+
+check('S47: renderHtml resolves presets with embedUrl when present', () => {
+    const { renderHtml } = require('../../build.js');
+    for (const tid of EXPECTED) {
+        const dir = path.join(ROOT, 'templates', tid);
+        const presets = JSON.parse(fs.readFileSync(path.join(dir, 'presets.json'), 'utf8')).presets;
+        const tpl = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
+        const cfg = JSON.parse(JSON.stringify(presets[0].config));
+        if (!cfg.instagram) cfg.instagram = {};
+        if (!cfg.instagram.handle) cfg.instagram.handle = 'demo.handle';
+        if (!cfg.instagram.url) cfg.instagram.url = 'https://www.instagram.com/demo.handle';
+        cfg.instagram.embedUrl = 'https://example.com/embed/demo';
+        if (!cfg.instagram.gallery || !cfg.instagram.gallery.length) {
+            cfg.instagram.gallery = ['https://picsum.photos/seed/s47-ig/600/600'];
+        }
+        const html = renderHtml(tpl, cfg);
+        assert.ok(!html.includes('{{'), `${tid}: unresolved tokens with embedUrl`);
+        assert.ok(
+            html.includes('https://example.com/embed/demo'),
+            `${tid}: embedUrl not rendered into iframe src`
+        );
+        assert.ok(html.includes('instagram-embed-iframe'), `${tid}: embed iframe class missing in output`);
+    }
+});
+
 if (failed) {
     console.error('\ns3-design-systems.test.js: FAILED');
     process.exit(1);

@@ -22,7 +22,7 @@
     <link rel="canonical" href="{{seo.canonical}}">
     <meta property="og:url" content="{{seo.canonical}}">
     <!-- @endif -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F4F1EA'/%3E%3Crect x='6' y='8' width='20' height='16' fill='none' stroke='%230D7377' stroke-width='2'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23e8eef2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%236b7f5a' stroke-width='2'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
     <style>
         :root {
@@ -42,7 +42,7 @@
 </head>
 <body class="pf-body">
 
-    <!-- Thin editorial chrome — gallery-first after mast -->
+    <!-- Beauty chrome — Book always in nav + pill -->
     <div class="pf-chrome">
         <div class="pf-chrome__inner">
             <!-- @if logo -->
@@ -52,7 +52,7 @@
             <!-- @if !logo --><!-- @if !showWordmark --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
             <nav class="pf-chrome__nav" aria-label="Navigare">
                 <a href="#gallery-heading">Gallery</a>
-                <a href="#services-heading">Work</a>
+                <a href="#services-heading">Services</a>
                 <a href="#booking">Book</a>
             </nav>
             <a href="#booking" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
@@ -118,7 +118,7 @@
                 <div class="pf-about__rule" aria-hidden="true">
                     <span class="pf-about__num">01</span>
                     <span class="pf-about__slash"></span>
-                    <span class="pf-about__cap">Editorial</span>
+                    <span class="pf-about__cap">Studio</span>
                 </div>
             </div>
         </section>
@@ -201,6 +201,11 @@
                 </div>
                 <a href="{{instagram.url}}" class="pf-follow" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
             </div>
+            <!-- @if instagram.embedUrl -->
+            <div class="pf-shell pf-ig__embed">
+                <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            <!-- @endif -->
             <!-- @if instagram.gallery -->
             <div class="pf-shell">
                 <div class="pf-ig__grid">

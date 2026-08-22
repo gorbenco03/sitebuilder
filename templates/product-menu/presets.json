@@ -1,158 +1,178 @@
 {
   "presets": [
     {
-      "id": "dulce-ileana",
-      "name": "Dulce de la Ileana",
+      "id": "casa-nord",
+      "name": "Casa Nord",
       "config": {
         "business": {
-          "name": "Dulce de la Ileana",
-          "tagline": "Torturi la comandă, prăjituri de casă, ciocolată artizanală",
-          "title": "Dulce de la Ileana | Cofetărie Artizanală | București",
-          "metaDescription": "Torturi personalizate, prăjituri tradiționale și praline artizanale. Comandă online cu livrare în București și Ilfov.",
-          "about": "La Ileana, fiecare tort este o poveste spusă cu zahăr și dragoste. Suntem o cofetărie mică de familie din Floreasca, unde rețetele se transmit din generație în generație. Folosim unt adevărat, ciocolată belgiană și fructe proaspete de sezon.",
+          "name": "Casa Nord",
+          "tagline": "Cină de seară, vinuri de pivniță, masă lungă",
+          "title": "Casa Nord | Restaurant | București",
+          "metaDescription": "Restaurant de seară în București. Meniu de sezon, pivniță românească, rezervări pe WhatsApp.",
+          "about": "Casa Nord e o sală mică pe lângă Parcul Herăstrău. Gatim seara — legume de la producători din Ilfov, pește de la Marea Neagră, deserturi simple. Meniul se schimbă o dată pe lună. Vinuri românești pe pahar și pe sticlă.",
           "lang": "ro"
         },
         "labels": {
           "about": "Povestea noastră",
-          "instaTitle": "Inspirație dulce pe Instagram",
+          "heroEyebrow": "Restaurant · București",
+          "instaTitle": "Din bucătărie, pe Instagram",
           "instaFollow": "Urmărește",
           "scroll": "Descoperă",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary": "#E8F06A",
-          "primaryLight": "#F3F7A8",
-          "primaryDark": "#0B1016",
-          "cream": "#D7DCD4"
+          "primary": "#c4a574",
+          "primaryLight": "#dcc49a",
+          "primaryDark": "#0a0a0a",
+          "cream": "#f3eee8"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(11,16,22,0.72) 0%, rgba(232,240,106,0.28) 60%, rgba(215,220,212,0.15) 100%), url('https://picsum.photos/seed/pm-ileana-hero/1200/800')",
-          "ctaLabel": "Vezi meniul"
+          "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('https://picsum.photos/seed/pm-casanord-hero/1400/900')",
+          "ctaLabel": "Rezervă o masă"
         },
-        "servicesTitle": "Ce găsești la noi",
+        "servicesTitle": "La masă",
         "services": [
-          {
-            "icon": "",
-            "label": "Torturi la comandă"
-          },
-          {
-            "icon": "",
-            "label": "Praline artizanale"
-          },
-          {
-            "icon": "",
-            "label": "Tarte cu fructe"
-          },
-          {
-            "icon": "",
-            "label": "Prăjituri de casă"
-          },
-          {
-            "icon": "",
-            "label": "Platouri dulci"
-          },
-          {
-            "icon": "",
-            "label": "Cafea de specialitate"
-          }
+          { "icon": "", "label": "Cină de sezon" },
+          { "icon": "", "label": "Meniu degustare" },
+          { "icon": "", "label": "Vinuri românești" },
+          { "icon": "", "label": "Masă privată" },
+          { "icon": "", "label": "Bar de cocktailuri" },
+          { "icon": "", "label": "Weekend brunch" }
         ],
-        "galleryTitle": "Din vitrină",
+        "menu": {
+          "title": "Meniu",
+          "en": [
+            {
+              "category": "Starters",
+              "items": [
+                "Grilled sourdough, cultured butter",
+                "Beetroot tartare, horseradish cream",
+                "Day-boat oysters, mignonette"
+              ]
+            },
+            {
+              "category": "Mains",
+              "items": [
+                "Dry-aged ribeye, bone marrow jus",
+                "Black sea turbot, brown butter",
+                "Roasted celeriac, hazelnut, sage"
+              ]
+            },
+            {
+              "category": "Dessert",
+              "items": [
+                "Dark chocolate, sea salt, olive oil",
+                "Seasonal fruit, crème fraîche"
+              ]
+            }
+          ],
+          "ro": [
+            {
+              "category": "Aperitive",
+              "items": [
+                "Pâine sourdough, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de zi, mignonette"
+              ]
+            },
+            {
+              "category": "Feluri principale",
+              "items": [
+                "Antricot maturat, jus cu măduvă",
+                "Calcan de Marea Neagră, unt brun",
+                "Țelină la cuptor, alune, salvie"
+              ]
+            },
+            {
+              "category": "Desert",
+              "items": [
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
+              ]
+            }
+          ]
+        },
+        "galleryTitle": "Din farfurie",
         "categories": [
           {
-            "title": "Torturi de ocazie",
-            "blurb": "Fiecare tort e sculptat manual — de la florile de zahăr până la glazura în oglindă.",
+            "title": "Feluri de seară",
+            "blurb": "Porții sincere, sosuri de casă, legume la cuptor.",
             "photos": [
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-t1/800/600",
-                "alt": "Tort alb cu flori de zahăr"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-t2/800/600",
-                "alt": "Tort ciocolată cu zmeură"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-t3/800/600",
-                "alt": "Tort cu glazură oglindă"
-              }
+              { "src": "https://picsum.photos/seed/pm-casanord-d1/800/600", "alt": "Farfurie cu pește și legume de sezon" },
+              { "src": "https://picsum.photos/seed/pm-casanord-d2/800/600", "alt": "Antricot pe farfurie ceramică" },
+              { "src": "https://picsum.photos/seed/pm-casanord-d3/800/600", "alt": "Desert cu ciocolată" }
             ]
           },
           {
-            "title": "Praline & ciocolată",
-            "blurb": "Ciocolată belgiană, ganache de fructe, caramel sărat — cutii cadou oricând.",
+            "title": "Sala & pivnița",
+            "blurb": "Lumină joasă, mese de lemn, rafturi de vin.",
             "photos": [
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-p1/800/600",
-                "alt": "Cutie de praline asortate"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-p2/800/600",
-                "alt": "Trufe de ciocolată neagră"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-ileana-p3/800/600",
-                "alt": "Tartă cu căpșuni"
-              }
+              { "src": "https://picsum.photos/seed/pm-casanord-r1/800/600", "alt": "Interior restaurant seara" },
+              { "src": "https://picsum.photos/seed/pm-casanord-r2/800/600", "alt": "Masă aranjată pentru cină" },
+              { "src": "https://picsum.photos/seed/pm-casanord-r3/800/600", "alt": "Pahare de vin pe bar" }
             ]
           }
         ],
         "instagram": {
-          "handle": "dulce.de.la.ileana",
-          "url": "https://www.instagram.com/dulce.de.la.ileana",
+          "handle": "casa.nord.bucuresti",
+          "url": "https://www.instagram.com/casa.nord.bucuresti",
+          "embedUrl": "https://www.instagram.com/casa.nord.bucuresti/embed",
           "gallery": [
-            "https://picsum.photos/seed/pm-ig-i1/600/600",
-            "https://picsum.photos/seed/pm-ig-i2/600/600",
-            "https://picsum.photos/seed/pm-ig-i3/600/600",
-            "https://picsum.photos/seed/pm-ig-i4/600/600",
-            "https://picsum.photos/seed/pm-ig-i5/600/600",
-            "https://picsum.photos/seed/pm-ig-i6/600/600"
+            "https://picsum.photos/seed/pm-ig-cn1/600/600",
+            "https://picsum.photos/seed/pm-ig-cn2/600/600",
+            "https://picsum.photos/seed/pm-ig-cn3/600/600",
+            "https://picsum.photos/seed/pm-ig-cn4/600/600",
+            "https://picsum.photos/seed/pm-ig-cn5/600/600",
+            "https://picsum.photos/seed/pm-ig-cn6/600/600"
           ]
         },
         "contact": {
-          "title": "Comandă o surpriză",
-          "intro": "Scrie-ne pe WhatsApp sau Instagram — răspundem în câteva ore. Livrare în Floreasca și Dorobanți.",
+          "title": "Rezervări",
+          "intro": "Scrie pe WhatsApp sau sună pentru o masă. Marți–sâmbătă, 18–23. Duminică brunch 11–15.",
           "instagram": {
-            "url": "https://www.instagram.com/dulce.de.la.ileana",
-            "label": "@dulce.de.la.ileana"
+            "url": "https://www.instagram.com/casa.nord.bucuresti",
+            "label": "@casa.nord.bucuresti"
           },
           "facebook": {
-            "url": "https://www.facebook.com/dulcedelaileana",
-            "label": "Dulce de la Ileana"
+            "url": "https://www.facebook.com/casanordbucuresti",
+            "label": "Casa Nord"
           },
-          "whatsapp": "40722456789",
-          "phone": "+40722456789",
-          "phoneDisplay": "+40 722 456 789",
-          "waHref": "https://wa.me/40722456789?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20s%C4%83%20comand.",
-          "address": "Str. Grigore Alexandrescu 58<br>Sector 1, București",
-          "addressHref": "https://maps.google.com/?q=Str+Grigore+Alexandrescu+58+Bucuresti"
+          "whatsapp": "40722123456",
+          "phone": "+407****3456",
+          "phoneDisplay": "+40 722 123 456",
+          "waHref": "https://wa.me/40722123456?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
+          "address": "Str. Nordului 42<br>Sector 1, București",
+          "addressHref": "https://maps.google.com/?q=Str+Nordului+42+Bucuresti"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pm-ileana-hero/1200/800",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Dulce de la Ileana\",\"telephone\":\"+40722456789\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Grigore Alexandrescu 58\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
+          "ogImage": "https://picsum.photos/seed/pm-casanord-hero/1200/800",
+          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"Casa Nord\",\"telephone\":\"+407****3456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Nordului 42\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
-          "address": "Str. Grigore Alexandrescu 58, Sector 1, București",
+          "address": "Str. Nordului 42, Sector 1, București",
           "year": 2026,
-          "note": "Cu dragoste și unt adevărat, în fiecare zi."
+          "note": "Masă de seară, mereu de sezon."
         }
       }
     },
     {
-      "id": "bistro-verde",
-      "name": "Bistro Verde",
+      "id": "traista-verde",
+      "name": "Traista Verde",
       "config": {
         "business": {
-          "name": "Bistro Verde",
-          "tagline": "Meniu de sezon, produse locale, terasă la umbră",
-          "title": "Bistro Verde | Restaurant de cartier | Cluj-Napoca",
-          "metaDescription": "Bistro cu meniu de sezon în Cluj. Mic dejun, prânz de business și cină cu vinuri românești. Rezervări pe WhatsApp.",
-          "about": "Bistro Verde e locul în care legumele de la piața Mărăști și carnea de la producători din Apuseni se întâlnesc pe farfurie. Meniul se schimbă o dată pe lună. Dimineața ai ouă și pâine de casă; seara, farfurii care merită un pahar de Fetească.",
+          "name": "Traista Verde",
+          "tagline": "Meniu de prânz, terasă la umbră, produse locale",
+          "title": "Traista Verde | Bistro de cartier | Chișinău",
+          "metaDescription": "Bistro de cartier în Chișinău. Mic dejun, prânz de business și cină ușoară. Rezervări pe WhatsApp.",
+          "about": "Traista Verde e locul de pe strada București unde legumele de la piața Centrală și pâinea de la brutăria din cartier se întâlnesc pe farfurie. Dimineața ouă și cafea; la prânz farfurii sincere; seara salate și vin pe pahar.",
           "lang": "ro"
         },
         "labels": {
           "about": "Despre noi",
+          "heroEyebrow": "Bistro · Chișinău",
           "instaTitle": "Din farfurie, pe Instagram",
           "instaFollow": "Urmărește",
           "scroll": "Meniu",
@@ -160,119 +180,115 @@
           "waOpen": "Sau deschide WhatsApp Web"
         },
         "theme": {
-          "primary": "#E8F06A",
-          "primaryLight": "#F3F7A8",
-          "primaryDark": "#0B1016",
-          "cream": "#D7DCD4"
+          "primary": "#2f5d50",
+          "primaryLight": "#4a7d6c",
+          "primaryDark": "#1a1410",
+          "cream": "#f7f2eb"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(155deg, rgba(26,61,44,0.68) 0%, rgba(47,107,79,0.4) 55%, rgba(247,244,236,0.1) 100%), url('https://picsum.photos/seed/pm-bistro-hero/1200/800')",
+          "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('https://picsum.photos/seed/pm-traista-hero/1400/900')",
           "ctaLabel": "Rezervă o masă"
         },
-        "servicesTitle": "La masă",
+        "servicesTitle": "Ce găsești",
         "services": [
-          {
-            "icon": "",
-            "label": "Mic dejun"
-          },
-          {
-            "icon": "",
-            "label": "Prânz business"
-          },
-          {
-            "icon": "",
-            "label": "Cină de sezon"
-          },
-          {
-            "icon": "",
-            "label": "Vinuri românești"
-          },
-          {
-            "icon": "",
-            "label": "Terasă"
-          },
-          {
-            "icon": "",
-            "label": "Catering mic"
-          }
+          { "icon": "", "label": "Mic dejun" },
+          { "icon": "", "label": "Prânz business" },
+          { "icon": "", "label": "Cină ușoară" },
+          { "icon": "", "label": "Vin pe pahar" },
+          { "icon": "", "label": "Terasă" },
+          { "icon": "", "label": "Catering mic" }
         ],
+        "menu": {
+          "title": "Meniu",
+          "en": [
+            {
+              "category": "Breakfast",
+              "items": ["Eggs any style, house bread", "Yogurt, honey, seasonal fruit", "Avocado toast, soft herbs"]
+            },
+            {
+              "category": "Lunch",
+              "items": ["Market salad, roasted seeds", "Soup of the day", "Grilled chicken, greens"]
+            },
+            {
+              "category": "Evening",
+              "items": ["Cheese board, local honey", "Pasta of the day", "House cake"]
+            }
+          ],
+          "ro": [
+            {
+              "category": "Mic dejun",
+              "items": ["Ouă la alegere, pâine de casă", "Iaurt, miere, fructe de sezon", "Toast cu avocado și ierburi"]
+            },
+            {
+              "category": "Prânz",
+              "items": ["Salată de piață, semințe prăjite", "Supa zilei", "Pui la grătar, verdețuri"]
+            },
+            {
+              "category": "Seara",
+              "items": ["Platou de brânzeturi, miere", "Pastele zilei", "Prăjitură de casă"]
+            }
+          ]
+        },
         "galleryTitle": "Din bucătărie",
         "categories": [
           {
-            "title": "Feluri principale",
-            "blurb": "Porții sincere, legume la cuptor, sosuri de casă.",
+            "title": "Farfurii",
+            "blurb": "Porții sincere, legume de sezon, sosuri de casă.",
             "photos": [
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-m1/800/600",
-                "alt": "Farfurie cu legume de sezon"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-m2/800/600",
-                "alt": "Paste fresh cu sos de roșii"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-m3/800/600",
-                "alt": "Desert cu fructe"
-              }
+              { "src": "https://picsum.photos/seed/pm-traista-m1/800/600", "alt": "Salată de legume pe farfurie" },
+              { "src": "https://picsum.photos/seed/pm-traista-m2/800/600", "alt": "Paste fresh cu sos de roșii" },
+              { "src": "https://picsum.photos/seed/pm-traista-m3/800/600", "alt": "Mic dejun pe masă de lemn" }
             ]
           },
           {
-            "title": "Terasă & atmosfera",
-            "blurb": "Umbră de castan, lumină caldă seara, muzică pe fundal.",
+            "title": "Terasă & atmosferă",
+            "blurb": "Umbră de castan, lumină caldă seara.",
             "photos": [
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-a1/800/600",
-                "alt": "Terasă cu mese de lemn"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-a2/800/600",
-                "alt": "Interior bistro"
-              },
-              {
-                "src": "https://picsum.photos/seed/pm-bistro-a3/800/600",
-                "alt": "Masă aranjată pentru cină"
-              }
+              { "src": "https://picsum.photos/seed/pm-traista-a1/800/600", "alt": "Terasă cu mese de lemn" },
+              { "src": "https://picsum.photos/seed/pm-traista-a2/800/600", "alt": "Interior bistro luminos" },
+              { "src": "https://picsum.photos/seed/pm-traista-a3/800/600", "alt": "Masă aranjată pentru prânz" }
             ]
           }
         ],
         "instagram": {
-          "handle": "bistro.verde.cluj",
-          "url": "https://www.instagram.com/bistro.verde.cluj",
+          "handle": "traista.verde.md",
+          "url": "https://www.instagram.com/traista.verde.md",
+          "embedUrl": "https://www.instagram.com/traista.verde.md/embed",
           "gallery": [
-            "https://picsum.photos/seed/pm-ig-b1/600/600",
-            "https://picsum.photos/seed/pm-ig-b2/600/600",
-            "https://picsum.photos/seed/pm-ig-b3/600/600",
-            "https://picsum.photos/seed/pm-ig-b4/600/600",
-            "https://picsum.photos/seed/pm-ig-b5/600/600",
-            "https://picsum.photos/seed/pm-ig-b6/600/600"
+            "https://picsum.photos/seed/pm-ig-tv1/600/600",
+            "https://picsum.photos/seed/pm-ig-tv2/600/600",
+            "https://picsum.photos/seed/pm-ig-tv3/600/600",
+            "https://picsum.photos/seed/pm-ig-tv4/600/600",
+            "https://picsum.photos/seed/pm-ig-tv5/600/600",
+            "https://picsum.photos/seed/pm-ig-tv6/600/600"
           ]
         },
         "contact": {
           "title": "Rezervări",
-          "intro": "Sună sau scrie pe WhatsApp pentru o masă. Deschis marți–duminică, 9–22.",
+          "intro": "Sună sau scrie pe WhatsApp. Deschis marți–duminică, 9–22.",
           "instagram": {
-            "url": "https://www.instagram.com/bistro.verde.cluj",
-            "label": "@bistro.verde.cluj"
+            "url": "https://www.instagram.com/traista.verde.md",
+            "label": "@traista.verde.md"
           },
           "facebook": {
             "url": "",
             "label": ""
           },
-          "whatsapp": "40733112233",
-          "phone": "+40733112233",
-          "phoneDisplay": "+40 733 112 233",
-          "waHref": "https://wa.me/40733112233?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
-          "address": "Str. Memorandumului 12<br>Cluj-Napoca",
-          "addressHref": "https://maps.google.com/?q=Str+Memorandumului+12+Cluj"
+          "whatsapp": "37369112233",
+          "phone": "+373****2233",
+          "phoneDisplay": "+373 69 112 233",
+          "waHref": "https://wa.me/37369112233?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
+          "address": "Str. București 18<br>Chișinău",
+          "addressHref": "https://maps.google.com/?q=Str+Bucuresti+18+Chisinau"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pm-bistro-hero/1200/800",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Bistro Verde\",\"telephone\":\"+40733112233\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 12\",\"addressLocality\":\"Cluj-Napoca\",\"addressCountry\":\"RO\"}}"
+          "ogImage": "https://picsum.photos/seed/pm-traista-hero/1200/800",
+          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"Traista Verde\",\"telephone\":\"+373****2233\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. București 18\",\"addressLocality\":\"Chișinău\",\"addressCountry\":\"MD\"}}"
         },
         "footer": {
-          "address": "Str. Memorandumului 12, Cluj-Napoca",
+          "address": "Str. București 18, Chișinău",
           "year": 2026,
           "note": "Meniu de sezon, mereu."
         }

@@ -22,7 +22,7 @@
     <link rel="canonical" href="{{seo.canonical}}">
     <meta property="og:url" content="{{seo.canonical}}">
     <!-- @endif -->
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230A0C0F'/%3E%3Cpath d='M4 24h24M8 16h16M12 8h8' stroke='%23FF4D00' stroke-width='3'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230f1720'/%3E%3Cpath d='M6 22h20M10 14h12M14 6h4' stroke='%23ff4d00' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
     <style>
         :root {
@@ -41,7 +41,7 @@
         .hero-content, .scroll-indicator, .fade-in-section, .service-card { opacity: 1 !important; transform: none !important; }
     </style></noscript>
 
-    <!-- Utility strip + diagonal industrial hero -->
+    <!-- Utility strip: phone + zone + estimate — trade trust chrome -->
     <header class="hero ls-hero" id="top">
         <div class="ls-util">
             <!-- @if contact.phone -->
@@ -95,7 +95,7 @@
                 <div class="ls-hero__actions">
                     <a href="#contact" class="hero-cta ls-btn ls-btn--fill">{{hero.ctaLabel}}</a>
                     <!-- @if contact.phone -->
-                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost">{{contact.phoneDisplay}}</a>
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
                     <!-- @endif -->
                 </div>
             </div>
@@ -249,13 +249,48 @@
                         <!-- @each photos -->
                         <figure class="photo-card ls-shot">
                             <img src="{{src}}" alt="{{alt}}" loading="lazy">
-                            <figcaption class="sr-only">{{alt}}</figcaption>
+                            <!-- @if caption -->
+                            <figcaption class="ls-shot__cap">{{caption}}</figcaption>
+                            <!-- @endif -->
+                            <!-- @if !caption -->
+                            <figcaption class="ls-shot__cap">{{alt}}</figcaption>
+                            <!-- @endif -->
                         </figure>
                         <!-- @end -->
                     </div>
                     <!-- @endif -->
                 </div>
                 <!-- @end -->
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if instagram.handle -->
+        <section class="ls-block ls-ig fade-in-section" aria-labelledby="instagram-heading">
+            <div class="ls-wrap">
+                <div class="ls-ighead">
+                    <div>
+                        <h2 class="ls-h" id="instagram-heading">{{labels.instaTitle}}</h2>
+                        <p class="ls-ighead__h">@{{instagram.handle}}</p>
+                    </div>
+                    <!-- @if instagram.url -->
+                    <a href="{{instagram.url}}" class="ls-btn ls-btn--ghost ls-btn--ink" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
+                    <!-- @endif -->
+                </div>
+                <!-- @if instagram.embedUrl -->
+                <div class="ls-embed">
+                    <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <!-- @endif -->
+                <!-- @if instagram.gallery -->
+                <div class="ls-iggrid">
+                    <!-- @each instagram.gallery -->
+                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="ls-igcell">
+                        <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
+                    </a>
+                    <!-- @end -->
+                </div>
+                <!-- @endif -->
             </div>
         </section>
         <!-- @endif -->
@@ -271,36 +306,11 @@
                     <a href="{{contact.waHref}}" class="ls-btn ls-btn--fill" target="_blank" rel="noopener">{{hero.ctaLabel}}</a>
                     <!-- @endif -->
                     <!-- @if contact.phone -->
-                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost">{{contact.phoneDisplay}}</a>
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
                     <!-- @endif -->
                 </div>
             </div>
         </section>
-
-        <!-- @if instagram.handle -->
-        <section class="ls-block fade-in-section" aria-labelledby="instagram-heading">
-            <div class="ls-wrap">
-                <div class="ls-ighead">
-                    <div>
-                        <h2 class="ls-h" id="instagram-heading">{{labels.instaTitle}}</h2>
-                        <p class="ls-ighead__h">@{{instagram.handle}}</p>
-                    </div>
-                    <!-- @if instagram.url -->
-                    <a href="{{instagram.url}}" class="ls-btn ls-btn--ghost" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
-                    <!-- @endif -->
-                </div>
-                <!-- @if instagram.gallery -->
-                <div class="ls-iggrid">
-                    <!-- @each instagram.gallery -->
-                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="ls-igcell">
-                        <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
-                    </a>
-                    <!-- @end -->
-                </div>
-                <!-- @endif -->
-            </div>
-        </section>
-        <!-- @endif -->
     </main>
 
     <!-- Sticky phone dock — industrial CTA architecture -->
