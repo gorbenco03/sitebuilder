@@ -640,8 +640,6 @@ async function handlePublish(req, res) {
             templateVersion: tpl.version,
             slug,
             platform: 'web',
-            // No free live trial window
-            trialEndsAt: null,
         });
     }
 

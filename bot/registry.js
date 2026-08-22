@@ -177,13 +177,14 @@ function _buildSlug(name, siteId) {
 }
 
 /**
- * Create a new site record.
+ * Create a new site record (unpaid draft; pay before first public publish).
+ * No trial clock fields — payment is required before live hosting.
  *
  * @param {{ userId: string, templateId: string, templateVersion: number|null, slug?: string,
- *           platform?: string, trialEndsAt?: string }} opts
+ *           platform?: string }} opts
  * @returns {object} site
  */
-function createSite({ userId, templateId, templateVersion, slug, platform, trialEndsAt }) {
+function createSite({ userId, templateId, templateVersion, slug, platform }) {
     const db = _load();
     db.sites = db.sites || {};
     const id          = crypto.randomUUID();
@@ -199,8 +200,6 @@ function createSite({ userId, templateId, templateVersion, slug, platform, trial
         status:    'draft',
         paid:      false,
         url:       null,
-        trialEndsAt: trialEndsAt || null,
-        reminded:    false,
         createdAt: new Date().toISOString(),
     };
     db.sites[id] = site;

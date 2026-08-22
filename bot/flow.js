@@ -193,8 +193,7 @@ function _emptySession() {
         stripeSessionId: null,
         projectId: null,
         liveUrl: null,
-        registrySiteId: null,  // id in registry after trial publish
-        trialEndsAt: null,     // ISO string
+        registrySiteId: null,  // id in registry after draft is registered
     };
 }
 
@@ -1284,7 +1283,6 @@ async function finishTelegramIntake(ctx, session, chatId) {
         templateVersion,
         slug,
         platform:    'telegram',
-        trialEndsAt: null,
     });
 
     registry.updateSite(regSite.id, {

@@ -93,7 +93,7 @@ const REGISTRY_STUB = {
         _tokens.delete(hash);
         return entry;
     },
-    createSite({ userId, templateId, templateVersion, slug, platform, trialEndsAt }) {
+    createSite({ userId, templateId, templateVersion, slug, platform }) {
         const id   = crypto.randomUUID();
         const safe = (slug || 'site').replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'site';
         const projectName = safe + '-' + id.slice(0, 8);
@@ -101,8 +101,6 @@ const REGISTRY_STUB = {
             id, userId, templateId, templateVersion, slug: safe, projectName,
             platform: platform || 'web',
             status: 'draft', paid: false, url: null,
-            trialEndsAt: trialEndsAt || null,
-            reminded: false,
             createdAt: new Date().toISOString(),
         };
         _sites.set(id, site);
@@ -427,7 +425,6 @@ const MINIMAL_CONFIG = {
                     templateVersion: null,
                     slug:        'my-test-site',
                     platform:    'web',
-                    trialEndsAt: null,
                 });
             }
         }
