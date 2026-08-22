@@ -855,7 +855,13 @@ async function handleAnuleaza(ctx) {
     const s = sessions.get(chatId);
     // Never silently discard a PAID order (would lose the customer's money).
     if (s && (s.phase === 'deploy' || s.phase === 'paid-needs-retry')) {
-        return ctx.reply('Ai o comandă deja PLĂTITĂ în curs de publicare — nu o anulez ca să nu pierzi banii. Scrie /retry ca să finalizez publicarea.');
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
+        return ctx.reply(
+            'Ai o comandă deja PLĂTITĂ — nu o anulez ca să nu pierzi banii. ' +
+            `Continuă în builderul Hidook (${appHint}) — acolo editezi și publici după plată. ` +
+            'Scrie /retry dacă vrei din nou linkul către builder.'
+        );
     }
     resetSession(chatId);
     await ctx.reply('🔄 Am resetat sesiunea. Scrie /start ca să o iei de la capăt.');
@@ -873,7 +879,13 @@ async function handleSterge(ctx) {
 
     // Guard a paid-but-unpublished order, same as /anuleaza.
     if (s && (s.phase === 'deploy' || s.phase === 'paid-needs-retry')) {
-        return ctx.reply('Ai o comandă deja PLĂTITĂ în curs de publicare — nu o pot șterge acum ca să nu pierzi banii. Scrie /retry ca să finalizez publicarea, apoi poți cere ștergerea datelor.');
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
+        return ctx.reply(
+            'Ai o comandă deja PLĂTITĂ — nu o pot șterge acum ca să nu pierzi banii. ' +
+            `Continuă în builderul Hidook (${appHint}) — acolo editezi și publici după plată; ` +
+            'după aceea poți cere ștergerea datelor. Scrie /retry dacă vrei din nou linkul către builder.'
+        );
     }
 
     // 1) Temp uploads
@@ -931,31 +943,22 @@ async function handleRetry(ctx) {
         );
     }
 
-    // Registry-based retry: find needs-retry sites for this user
+    // Registry leftover needs-retry: never deploy from Telegram — steer to builder (S42).
     try {
         const tgUser = registry.getOrCreateUserByTelegram(chatId);
         const regSites = registry.listSites(tgUser.id).filter(s => s.status === 'needs-retry');
         if (regSites.length > 0) {
-            await ctx.reply('🔁 Reiau publicarea site-ului...');
-            for (const site of regSites) {
-                try {
-                    const result = await webpublish.publishSite({
-                        site,
-                        config: {},
-                        images: [],
-                        siteDirAlreadyBuilt: true,
-                    });
-                    registry.updateSite(site.id, { status: 'live', url: result.url });
-                    await ctx.reply(`✅ Site publicat: ${result.url}`);
-                } catch (e) {
-                    await ctx.reply('❌ Publicarea a eșuat din nou: ' + e.message);
-                }
-            }
-            return;
+            const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+            const appHint = publicUrl ? `${publicUrl}/app/` : '/app/';
+            return ctx.reply(
+                'Ai o ciornă neterminată legată de contul tău. ' +
+                `Continuă în builderul Hidook (${appHint}) — acolo editezi și publici după plată. ` +
+                'Publicarea live nu se mai face din Telegram.'
+            );
         }
     } catch (_) {}
 
-    return ctx.reply('Nu ai o publicare în așteptare. Scrie /start ca să creezi un site.');
+    return ctx.reply('Nu ai o sesiune de reluat. Scrie /start ca să creezi un site.');
 }
 
 /**
