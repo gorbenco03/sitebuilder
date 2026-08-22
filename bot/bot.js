@@ -116,7 +116,7 @@ async function onStripeEvent(event) {
         return;
     }
 
-    // Telegram / trial-telegram / unknown platform:
+    // Telegram / unknown platform:
     // handleStripeWebhookEvent now tries registry first, then legacy sessions.
     try {
         const r = await handleStripeWebhookEvent(event);
