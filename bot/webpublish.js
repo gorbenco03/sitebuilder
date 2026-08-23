@@ -90,34 +90,140 @@ async function _isolatedDeploy(siteDir, slug) {
 
 /** Decode a data-URL to a Buffer. Returns null if the format is unexpected. */
 function decodeDataUrl(dataUrl) {
-    const m = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+    const m = /^data:([^;]+);base64,(.+)$/.exec(String(dataUrl || '').replace(/\s+/g, ''));
     if (!m) return null;
     return { mimeType: m[1], buffer: Buffer.from(m[2], 'base64') };
 }
 
+function extFromMime(mime) {
+    const m = String(mime || '').toLowerCase();
+    if (m.includes('png')) return 'png';
+    if (m.includes('webp')) return 'webp';
+    return 'jpg';
+}
+
 /** Determine the filename for an image slot from the frontend name hint. */
-function imageFilename(name) {
+function imageFilename(name, mimeHint) {
     if (!name || typeof name !== 'string') return null;
     const lower = name.toLowerCase().replace(/\s+/g, '-');
-    if (lower === 'logo') return 'logo.jpg';
-    if (/^gallery-\d+$/.test(lower)) return lower + '.jpg';
+    // Already has extension (logo.png, gallery-1.jpg, hero.webp)
+    if (/\.(jpe?g|png|webp)$/i.test(lower)) {
+        const safe = lower.replace(/[^a-z0-9._-]/g, '').slice(0, 60);
+        return safe || null;
+    }
+    const ext = extFromMime(mimeHint);
+    if (lower === 'logo') return 'logo.' + ext;
+    if (lower === 'hero') return 'hero.' + ext;
+    if (/^gallery-\d+$/.test(lower)) return lower + '.' + ext;
+    if (/^hero-\d+$/.test(lower)) return lower + '.' + ext;
     const safe = lower.replace(/[^a-z0-9-]/g, '').slice(0, 40);
-    return safe ? safe + '.jpg' : null;
+    return safe ? safe + '.' + ext : null;
 }
 
 /**
- * Recursively walk obj and replace any string value equal to `dataUrl` with `localPath`.
+ * Recursively walk obj and replace any string value equal to `dataUrl` with `localPath`,
+ * or embedded occurrences inside CSS url(...) values.
+ * Bare data-URL on background-ish keys becomes url('images/...').
  */
 function rewriteDataUrl(obj, dataUrl, localPath) {
     if (!obj || typeof obj !== 'object') return;
+    const bare = String(dataUrl || '').replace(/\s+/g, '');
     for (const key of Object.keys(obj)) {
         const val = obj[key];
-        if (val === dataUrl) {
-            obj[key] = localPath;
+        if (typeof val === 'string') {
+            const compact = val.replace(/\s+/g, '');
+            if (val === dataUrl || compact === bare) {
+                if (/background|style|gradient/i.test(key)) {
+                    obj[key] = "url('" + localPath + "')";
+                } else {
+                    obj[key] = localPath;
+                }
+            } else if (val.includes(dataUrl) || (bare && compact.includes(bare))) {
+                // Prefer original substring match; fall back to whitespace-stripped
+                if (val.includes(dataUrl)) {
+                    obj[key] = val.split(dataUrl).join(localPath);
+                } else {
+                    // rebuild by replacing bare form occurrences carefully
+                    obj[key] = val.replace(
+                        /data:image\/(?:jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+/gi,
+                        (m) => (m.replace(/\s+/g, '') === bare ? localPath : m)
+                    );
+                }
+            }
         } else if (typeof val === 'object' && val !== null) {
             rewriteDataUrl(val, dataUrl, localPath);
         }
     }
+}
+
+/**
+ * Write explicit image payloads + any leftover data:image blobs still in cfg onto disk.
+ * Mutates cfg in place (rewrites to images/… paths / url(images/…)).
+ * @returns {Buffer[]} buffers written (for moderation)
+ */
+function materializeImages(cfg, imagesDir, explicitImages) {
+    const imageBuffers = [];
+    const written = new Set();
+
+    function writeOne(name, dataUrl) {
+        const decoded = decodeDataUrl(dataUrl);
+        if (!decoded) return null;
+        let fname = imageFilename(name, decoded.mimeType);
+        if (!fname) return null;
+        // Avoid clobbering distinct payloads onto the same filename
+        if (written.has(fname)) {
+            const base = fname.replace(/\.(jpe?g|png|webp)$/i, '');
+            const ext = (fname.match(/\.(jpe?g|png|webp)$/i) || ['.jpg'])[0];
+            let n = 2;
+            while (written.has(base + '-' + n + ext)) n++;
+            fname = base + '-' + n + ext;
+        }
+        fs.mkdirSync(imagesDir, { recursive: true });
+        fs.writeFileSync(path.join(imagesDir, fname), decoded.buffer);
+        written.add(fname);
+        imageBuffers.push(decoded.buffer);
+        const localPath = 'images/' + fname;
+        rewriteDataUrl(cfg, dataUrl, localPath);
+        return localPath;
+    }
+
+    for (const img of (explicitImages || [])) {
+        if (!img || !img.dataUrl || !img.name) continue;
+        writeOne(img.name, img.dataUrl);
+    }
+
+    // Defense: materialize any remaining data:image still embedded in config
+    const DATA_RE = /data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+/gi;
+    function walkLeftovers(obj, parentKey) {
+        if (!obj || typeof obj !== 'object') return;
+        if (Array.isArray(obj)) {
+            obj.forEach((item, i) => walkLeftovers(item, parentKey || String(i)));
+            return;
+        }
+        for (const key of Object.keys(obj)) {
+            const val = obj[key];
+            if (typeof val === 'string' && val.includes('data:image/')) {
+                if (val.startsWith('data:image/')) {
+                    const hint = /logo/i.test(key) ? 'logo' : (/background/i.test(key) ? 'hero' : 'gallery');
+                    writeOne(hint, val);
+                } else {
+                    const found = val.match(DATA_RE) || [];
+                    let n = 0;
+                    for (const raw of found) {
+                        n++;
+                        const hint = /background/i.test(key)
+                            ? (n === 1 ? 'hero' : 'hero-' + n)
+                            : 'gallery';
+                        writeOne(hint, raw);
+                    }
+                }
+            } else if (typeof val === 'object' && val !== null) {
+                walkLeftovers(val, key);
+            }
+        }
+    }
+    walkLeftovers(cfg, '');
+    return imageBuffers;
 }
 
 /**
@@ -292,19 +398,8 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         }
 
         // 2. Decode images and write to disk; rewrite src in config
-        const imageBuffers = [];
         const cfgCopy = JSON.parse(JSON.stringify(config || {}));
-
-        for (const img of (images || [])) {
-            if (!img || !img.dataUrl || !img.name) continue;
-            const decoded = decodeDataUrl(img.dataUrl);
-            if (!decoded) continue;
-            const fname = imageFilename(img.name);
-            if (!fname) continue;
-            fs.writeFileSync(path.join(imagesDir, fname), decoded.buffer);
-            imageBuffers.push(decoded.buffer);
-            rewriteDataUrl(cfgCopy, img.dataUrl, 'images/' + fname);
-        }
+        const imageBuffers = materializeImages(cfgCopy, imagesDir, images);
 
         // 3. Image moderation (if configured)
         if (typeof ai.moderateImages === 'function' && imageBuffers.length > 0) {

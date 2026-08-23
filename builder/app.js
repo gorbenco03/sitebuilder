@@ -723,6 +723,25 @@ function onListRemove(path) {
 // 10. Image file input handler
 // ---------------------------------------------------------------------------
 
+/** Apply a replaced photo onto a config path (logo/src = bare data URL; CSS backgrounds keep url()). */
+function applyImageDataUrl(configPath, dataUrl) {
+  const prev = getPath(draft.config, configPath);
+  const isBgPath = /background|gradient/i.test(configPath || '');
+  if (isBgPath && typeof prev === 'string' && /url\s*\(/i.test(prev)) {
+    setPath(
+      draft.config,
+      configPath,
+      prev.replace(/url\(\s*['"]?[^'")]+['"]?\s*\)/i, "url('" + dataUrl + "')")
+    );
+    return;
+  }
+  if (isBgPath) {
+    setPath(draft.config, configPath, "url('" + dataUrl + "')");
+    return;
+  }
+  setPath(draft.config, configPath, dataUrl);
+}
+
 function initImageFileInput() {
   const fileInput = $('img-file-input');
   if (!fileInput) return;
@@ -734,7 +753,7 @@ function initImageFileInput() {
     try {
       showPreviewSpinner(true);
       const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
-      setPath(draft.config, path, dataUrl);
+      applyImageDataUrl(path, dataUrl);
       saveDraft();
       fullRerender();
     } catch (e) {
@@ -1442,22 +1461,76 @@ function setDeviceMode(mode) {
 function extractImages(config) {
   const images = [];
   const clean = deepClone(config);
+  const DATA_URL_RE = /data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+/gi;
+
+  function extOf(dataUrl) {
+    const m = /^data:image\/(jpeg|jpg|png|webp)/i.exec(dataUrl || '');
+    if (!m) return 'jpg';
+    const t = m[1].toLowerCase();
+    return t === 'jpeg' ? 'jpg' : t;
+  }
+
+  function isCssish(key, val) {
+    return /background|style|gradient/i.test(key || '') ||
+      /url\s*\(/i.test(val || '') ||
+      /linear-gradient/i.test(val || '');
+  }
+
+  function allocate(key, dataUrl) {
+    const ext = extOf(dataUrl);
+    const k = String(key || '');
+    if (k === 'logo' || /logo/i.test(k)) {
+      return { name: 'logo', file: 'logo.' + ext };
+    }
+    if (/background/i.test(k) || /^hero$/i.test(k)) {
+      const n = images.filter((x) => String(x.name).startsWith('hero')).length + 1;
+      const name = n === 1 ? 'hero' : 'hero-' + n;
+      return { name, file: name + '.' + ext };
+    }
+    const n = images.filter((x) => String(x.name).startsWith('gallery')).length + 1;
+    const name = 'gallery-' + n;
+    return { name, file: name + '.' + ext };
+  }
+
+  function takeDataUrl(raw) {
+    return String(raw || '').replace(/\s+/g, '');
+  }
+
   function walk(obj) {
     if (!obj || typeof obj !== 'object') return;
     if (Array.isArray(obj)) { obj.forEach(walk); return; }
     for (const [k, v] of Object.entries(obj)) {
-      if (typeof v === 'string' && v.startsWith('data:image/')) {
-        let name;
-        if (k === 'logo' || (obj._parentKey || '').includes('logo')) {
-          name = 'logo';
-        } else {
-          name = 'gallery-' + (images.filter(x => x.name.startsWith('gallery')).length + 1);
-        }
-        images.push({ name, dataUrl: v });
-        obj[k] = 'images/' + (name === 'logo' ? 'logo.jpg' : name + '.jpg');
-      } else {
+      if (typeof v !== 'string') {
         walk(v);
+        continue;
       }
+
+      // Pure data-URL field (logo, photo src, etc.)
+      if (v.startsWith('data:image/')) {
+        const dataUrl = takeDataUrl(v);
+        const { name, file } = allocate(k, dataUrl);
+        images.push({ name, dataUrl });
+        const local = 'images/' + file;
+        obj[k] = isCssish(k, v) ? "url('" + local + "')" : local;
+        continue;
+      }
+
+      // CSS / mixed strings with url(data:image...) (hero.background)
+      if (v.includes('data:image/')) {
+        let next = v;
+        const found = v.match(DATA_URL_RE) || [];
+        for (const raw of found) {
+          const dataUrl = takeDataUrl(raw);
+          const { name, file } = allocate(k, dataUrl);
+          images.push({ name, dataUrl });
+          const local = 'images/' + file;
+          next = next.split(raw).join(local);
+        }
+        obj[k] = next;
+        continue;
+      }
+
+      walk(v);
     }
   }
   walk(clean);
