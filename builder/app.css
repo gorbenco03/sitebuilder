@@ -796,6 +796,13 @@ input, textarea, select {
 
 .site-card-info { flex: 1; min-width: 0; }
 .site-card-name { font-weight: 700; font-size: 0.97rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
+.site-hosting-until {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
 .site-card-meta {
   font-size: 0.8rem;
   color: var(--text-muted);

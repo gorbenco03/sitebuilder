@@ -339,6 +339,28 @@ function createOrder({ siteId, userId, amountCents, currency, stripeSessionId, k
 }
 
 /**
+ * Find an existing pending order for the same site + kind (durable checkout reuse).
+ * Prefer newest pending row if several exist from older bugs.
+ *
+ * @param {string} siteId
+ * @param {'publish'|'renewal'} kind
+ * @returns {object|null}
+ */
+function findPendingOrder(siteId, kind) {
+    if (!siteId) return null;
+    const db = _load();
+    const want = kind === 'renewal' ? 'renewal' : 'publish';
+    const rows = Object.values(db.orders || {}).filter((o) => {
+        if (!o || o.siteId !== siteId || o.status !== 'pending') return false;
+        const k = o.kind === 'renewal' ? 'renewal' : 'publish';
+        return k === want;
+    });
+    if (!rows.length) return null;
+    rows.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    return { ...rows[0] };
+}
+
+/**
  * Attach a real Stripe Checkout session id to an existing pending order (in-place).
  * Does not create a second order row.
  *
@@ -453,6 +475,7 @@ module.exports = {
     listVersions,
     getVersionConfig,
     createOrder,
+    findPendingOrder,
     attachStripeSession,
     markOrderPaid,
     getOrderBySession,

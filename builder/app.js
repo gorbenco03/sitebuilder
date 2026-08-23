@@ -1347,6 +1347,32 @@ function formatRenewalLabel(cfg) {
   return '$' + amount;
 }
 
+/** Human calendar date for hosting-until (not ISO dump, not trial countdown). */
+function formatHostingUntilDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  try {
+    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (_) {
+    const day = d.getUTCDate();
+    const month = d.getUTCMonth() + 1;
+    const year = d.getUTCFullYear();
+    return day + '.' + month + '.' + year;
+  }
+}
+
+/** Hosting expired: status expired or paidUntil in the past. */
+function isHostingExpired(site) {
+  if (!site) return false;
+  if (site.status === 'expired') return true;
+  if (site.paidUntil) {
+    const t = Date.parse(site.paidUntil);
+    if (Number.isFinite(t) && t < Date.now()) return true;
+  }
+  return false;
+}
+
 // ---------------------------------------------------------------------------
 // 18. Auth
 // ---------------------------------------------------------------------------
@@ -1647,7 +1673,7 @@ function showSuccessScreen(url, paymentUrl) {
   const isLive = !!(url && String(url).indexOf('http') === 0);
 
   if (isLive) {
-    if (titleEl) titleEl.textContent = 'Site-ul tău e live!';
+    if (titleEl) titleEl.textContent = 'Site-ul tău e live — hosting 12 luni';
     if (draftNote) hide(draftNote);
     if (urlText) urlText.textContent = url;
     if (urlLink) { urlLink.href = url; show(urlLink); }
@@ -1662,13 +1688,16 @@ function showSuccessScreen(url, paymentUrl) {
   const payBtn = $('btn-pay-publish');
   const successPrice = $('success-price');
   if (payBtn) {
-    if (paymentUrl) {
+    // Paid/live: never show first-publish pay CTA
+    if (isLive) {
+      hide(payBtn);
+    } else if (paymentUrl) {
       show(payBtn);
       payBtn.onclick = () => { window.location.href = paymentUrl; };
+      if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
     } else {
       hide(payBtn);
     }
-    if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
   }
 
   const waBtn = $('btn-share-wa');
@@ -1887,9 +1916,12 @@ function buildSiteCard(site) {
     } catch (_) {}
   }
 
+  const hostingExpired = isHostingExpired(site);
   let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
 
-  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+  if (site.paid && hostingExpired) {
+    badgeClass = 'status-expired'; badgeLabel = 'Expirat';
+  } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
     badgeClass = 'status-live'; badgeLabel = 'Activ';
   } else if (site.status === 'live' && !site.paid) {
     // Legacy unpaid live (pre pay-before-publish)
@@ -1931,6 +1963,17 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
+  // Paid + active: stranger-readable hosting-until (calendar date from paidUntil)
+  if (site.paid && !hostingExpired && site.paidUntil) {
+    const untilStr = formatHostingUntilDate(site.paidUntil);
+    if (untilStr) {
+      const hostLine = document.createElement('div');
+      hostLine.className = 'site-hosting-until';
+      hostLine.textContent = 'Hosting până la ' + untilStr;
+      info.appendChild(hostLine);
+    }
+  }
+
   const actions = document.createElement('div');
   actions.className = 'site-card-actions';
 
@@ -1941,10 +1984,16 @@ function buildSiteCard(site) {
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
-  if (!site.paid || site.status === 'expired') {
+  // Unpaid → first publish 100; paid+expired → renew 29; paid+active → no pay CTA
+  if (!site.paid || hostingExpired) {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
-    const payLabel = site.status === 'expired' ? 'Reactivează' : 'Plătește și publică';
+    let payLabel;
+    if (site.paid && hostingExpired) {
+      payLabel = 'Reînnoiește hosting — ' + formatRenewalLabel(appConfig);
+    } else {
+      payLabel = 'Plătește și publică';
+    }
     keepBtn.textContent = payLabel;
     keepBtn.setAttribute('aria-label', payLabel + ' site-ul');
     keepBtn.addEventListener('click', async () => {

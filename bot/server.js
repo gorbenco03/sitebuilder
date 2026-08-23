@@ -528,14 +528,20 @@ async function handleSiteCheckout(req, res, siteId) {
     const kind        = isRenewal ? 'renewal' : 'publish';
     const productName = isRenewal ? 'Reînnoire hosting Hidook Site Builder (12 luni)' : 'Activare site Hidook Site Builder';
 
-    const order = await reg.createOrder({
-        siteId: site.id,
-        userId,
-        amountCents,
-        currency,
-        stripeSessionId: 'pending',
-        kind,
-    });
+    // Reuse pending same-site same-kind order (no second unpaid 100/29 row)
+    let order = typeof reg.findPendingOrder === 'function'
+        ? await reg.findPendingOrder(site.id, kind)
+        : null;
+    if (!order) {
+        order = await reg.createOrder({
+            siteId: site.id,
+            userId,
+            amountCents,
+            currency,
+            stripeSessionId: 'pending',
+            kind,
+        });
+    }
 
     let checkout;
     try {
@@ -556,7 +562,12 @@ async function handleSiteCheckout(req, res, siteId) {
     // Attach real Stripe session id to the same pending order (no second row)
     await reg.attachStripeSession(order.id, checkout.id);
 
-    sendJson(res, 200, { paymentUrl: checkout.url, kind });
+    sendJson(res, 200, {
+        paymentUrl: checkout.url,
+        kind,
+        amountCents,
+        paidUntil: site.paidUntil || null,
+    });
 }
 
 function latestSiteConfig(reg, siteId) {
