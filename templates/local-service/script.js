@@ -1,5 +1,5 @@
-// CONSTRUCTII template — script.js (v2 premium redesign)
-// Vanilla JS, zero dependencies, fully defensive (early-return when elements absent).
+// Trade / construction vertical — defensive vanilla JS.
+// Zero dependencies; every init returns early when its elements are absent.
 
 document.addEventListener('DOMContentLoaded', () => {
     initScrollAnimations();
