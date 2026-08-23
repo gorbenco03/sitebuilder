@@ -67,6 +67,18 @@ const renderPreviewSrc = `
 function renderPreview(files, config, opts) {
     let html = renderHtml(files.templateHtml, config, opts);
 
+    // Inline local template images (images/…) as data URLs so iframe srcdoc
+    // previews show opened default presets without a network fetch.
+    if (files.imageMap && typeof files.imageMap === 'object') {
+        const keys = Object.keys(files.imageMap).sort(function (a, b) { return b.length - a.length; });
+        for (var ki = 0; ki < keys.length; ki++) {
+            var rel = keys[ki];
+            var dataUrl = files.imageMap[rel];
+            if (!rel || !dataUrl) continue;
+            html = html.split(rel).join(dataUrl);
+        }
+    }
+
     // Inline <link rel="stylesheet" href="styles.css">
     html = html.replace(
         /<link\\s[^>]*rel=["']stylesheet["'][^>]*href=["']styles\\.css["'][^>]*>/gi,
@@ -216,6 +228,26 @@ for (const entry of registry.templates) {
     const collageFile = path.join(dir, 'collage.js');
     if (fs.existsSync(collageFile)) {
         files.collageJs = fs.readFileSync(collageFile, 'utf8');
+    }
+
+    // Bake templates/<id>/images/* as data URLs for srcdoc preview (presets stay relative on disk).
+    const imgDir = path.join(dir, 'images');
+    if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
+        const imageMap = {};
+        for (const name of fs.readdirSync(imgDir)) {
+            const abs = path.join(imgDir, name);
+            if (!fs.statSync(abs).isFile()) continue;
+            const ext = path.extname(name).toLowerCase();
+            let mime = 'application/octet-stream';
+            if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
+            else if (ext === '.png') mime = 'image/png';
+            else if (ext === '.webp') mime = 'image/webp';
+            else if (ext === '.gif') mime = 'image/gif';
+            else if (ext === '.svg') mime = 'image/svg+xml';
+            else continue;
+            imageMap['images/' + name] = 'data:' + mime + ';base64,' + fs.readFileSync(abs).toString('base64');
+        }
+        if (Object.keys(imageMap).length) files.imageMap = imageMap;
     }
 
     templatesData[id] = { schema, presets, files };

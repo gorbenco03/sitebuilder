@@ -30,42 +30,60 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('https://picsum.photos/seed/pm-casanord-hero/1400/900')",
+          "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('images/cn-hero.jpg')",
           "ctaLabel": "Rezervă o masă"
         },
         "servicesTitle": "La masă",
         "services": [
-          { "icon": "", "label": "Cină de sezon" },
-          { "icon": "", "label": "Meniu degustare" },
-          { "icon": "", "label": "Vinuri românești" },
-          { "icon": "", "label": "Masă privată" },
-          { "icon": "", "label": "Bar de cocktailuri" },
-          { "icon": "", "label": "Weekend brunch" }
+          {
+            "icon": "",
+            "label": "Cină de sezon"
+          },
+          {
+            "icon": "",
+            "label": "Meniu degustare"
+          },
+          {
+            "icon": "",
+            "label": "Vinuri românești"
+          },
+          {
+            "icon": "",
+            "label": "Masă privată"
+          },
+          {
+            "icon": "",
+            "label": "Bar de cocktailuri"
+          },
+          {
+            "icon": "",
+            "label": "Weekend brunch"
+          }
         ],
         "menu": {
           "title": "Meniu",
           "en": [
             {
-              "category": "Starters",
+              "category": "Aperitive",
               "items": [
-                "Grilled sourdough, cultured butter",
-                "Beetroot tartare, horseradish cream",
-                "Day-boat oysters, mignonette"
+                "Pâine sourdough, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de zi, mignonette"
               ]
             },
             {
-              "category": "Mains",
+              "category": "Feluri principale",
               "items": [
-                "Dry-aged ribeye, bone marrow jus",
-                "Black sea turbot, brown butter",
-                "Roasted celeriac, hazelnut, sage"
+                "Antricot maturat, jus cu măduvă",
+                "Calcan de Marea Neagră, unt brun",
+                "Țelină la cuptor, alune, salvie"
               ]
             },
             {
-              "category": "Dessert",
+              "category": "Desert",
               "items": [
-                "Dark chocolate, sea salt, olive oil",
-                "Seasonal fruit, crème fraîche"
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
               ]
             }
           ],
@@ -101,18 +119,36 @@
             "title": "Feluri de seară",
             "blurb": "Porții sincere, sosuri de casă, legume la cuptor.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-casanord-d1/800/600", "alt": "Farfurie cu pește și legume de sezon" },
-              { "src": "https://picsum.photos/seed/pm-casanord-d2/800/600", "alt": "Antricot pe farfurie ceramică" },
-              { "src": "https://picsum.photos/seed/pm-casanord-d3/800/600", "alt": "Desert cu ciocolată" }
+              {
+                "src": "images/cn-d1.jpg",
+                "alt": "Farfurie cu pește și legume de sezon"
+              },
+              {
+                "src": "images/cn-d2.jpg",
+                "alt": "Antricot pe farfurie ceramică"
+              },
+              {
+                "src": "images/cn-d3.jpg",
+                "alt": "Desert cu ciocolată"
+              }
             ]
           },
           {
             "title": "Sala & pivnița",
             "blurb": "Lumină joasă, mese de lemn, rafturi de vin.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-casanord-r1/800/600", "alt": "Interior restaurant seara" },
-              { "src": "https://picsum.photos/seed/pm-casanord-r2/800/600", "alt": "Masă aranjată pentru cină" },
-              { "src": "https://picsum.photos/seed/pm-casanord-r3/800/600", "alt": "Pahare de vin pe bar" }
+              {
+                "src": "images/cn-r1.jpg",
+                "alt": "Interior restaurant seara"
+              },
+              {
+                "src": "images/cn-r2.jpg",
+                "alt": "Masă aranjată pentru cină"
+              },
+              {
+                "src": "images/cn-r3.jpg",
+                "alt": "Pahare de vin pe bar"
+              }
             ]
           }
         ],
@@ -121,12 +157,12 @@
           "url": "https://www.instagram.com/casa.nord.bucuresti",
           "embedUrl": "https://www.instagram.com/casa.nord.bucuresti/embed",
           "gallery": [
-            "https://picsum.photos/seed/pm-ig-cn1/600/600",
-            "https://picsum.photos/seed/pm-ig-cn2/600/600",
-            "https://picsum.photos/seed/pm-ig-cn3/600/600",
-            "https://picsum.photos/seed/pm-ig-cn4/600/600",
-            "https://picsum.photos/seed/pm-ig-cn5/600/600",
-            "https://picsum.photos/seed/pm-ig-cn6/600/600"
+            "images/cn-ig1.jpg",
+            "images/cn-ig2.jpg",
+            "images/cn-ig3.jpg",
+            "images/cn-ig4.jpg",
+            "images/cn-ig5.jpg",
+            "images/cn-ig6.jpg"
           ]
         },
         "contact": {
@@ -148,7 +184,7 @@
           "addressHref": "https://maps.google.com/?q=Str+Nordului+42+Bucuresti"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pm-casanord-hero/1200/800",
+          "ogImage": "images/cn-og.jpg",
           "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"Casa Nord\",\"telephone\":\"+407****3456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Nordului 42\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
@@ -188,46 +224,88 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('https://picsum.photos/seed/pm-traista-hero/1400/900')",
+          "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('images/tv-hero.jpg')",
           "ctaLabel": "Rezervă o masă"
         },
         "servicesTitle": "Ce găsești",
         "services": [
-          { "icon": "", "label": "Mic dejun" },
-          { "icon": "", "label": "Prânz business" },
-          { "icon": "", "label": "Cină ușoară" },
-          { "icon": "", "label": "Vin pe pahar" },
-          { "icon": "", "label": "Terasă" },
-          { "icon": "", "label": "Catering mic" }
+          {
+            "icon": "",
+            "label": "Mic dejun"
+          },
+          {
+            "icon": "",
+            "label": "Prânz business"
+          },
+          {
+            "icon": "",
+            "label": "Cină ușoară"
+          },
+          {
+            "icon": "",
+            "label": "Vin pe pahar"
+          },
+          {
+            "icon": "",
+            "label": "Terasă"
+          },
+          {
+            "icon": "",
+            "label": "Catering mic"
+          }
         ],
         "menu": {
           "title": "Meniu",
           "en": [
             {
               "category": "Breakfast",
-              "items": ["Eggs any style, house bread", "Yogurt, honey, seasonal fruit", "Avocado toast, soft herbs"]
+              "items": [
+                "Eggs any style, house bread",
+                "Yogurt, honey, seasonal fruit",
+                "Avocado toast, soft herbs"
+              ]
             },
             {
               "category": "Lunch",
-              "items": ["Market salad, roasted seeds", "Soup of the day", "Grilled chicken, greens"]
+              "items": [
+                "Market salad, roasted seeds",
+                "Soup of the day",
+                "Grilled chicken, greens"
+              ]
             },
             {
               "category": "Evening",
-              "items": ["Cheese board, local honey", "Pasta of the day", "House cake"]
+              "items": [
+                "Cheese board, local honey",
+                "Pasta of the day",
+                "House cake"
+              ]
             }
           ],
           "ro": [
             {
               "category": "Mic dejun",
-              "items": ["Ouă la alegere, pâine de casă", "Iaurt, miere, fructe de sezon", "Toast cu avocado și ierburi"]
+              "items": [
+                "Ouă la alegere, pâine de casă",
+                "Iaurt, miere, fructe de sezon",
+                "Toast cu avocado și ierburi"
+              ]
             },
             {
               "category": "Prânz",
-              "items": ["Salată de piață, semințe prăjite", "Supa zilei", "Pui la grătar, verdețuri"]
+              "items": [
+                "Salată de piață, semințe prăjite",
+                "Supa zilei",
+                "Pui la grătar, verdețuri"
+              ]
             },
             {
               "category": "Seara",
-              "items": ["Platou de brânzeturi, miere", "Pastele zilei", "Prăjitură de casă"]
+              "items": [
+                "Platou de brânzeturi, miere",
+                "Pastele zilei",
+                "Prăjitură de casă"
+              ]
             }
           ]
         },
@@ -237,18 +315,36 @@
             "title": "Farfurii",
             "blurb": "Porții sincere, legume de sezon, sosuri de casă.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-traista-m1/800/600", "alt": "Salată de legume pe farfurie" },
-              { "src": "https://picsum.photos/seed/pm-traista-m2/800/600", "alt": "Paste fresh cu sos de roșii" },
-              { "src": "https://picsum.photos/seed/pm-traista-m3/800/600", "alt": "Mic dejun pe masă de lemn" }
+              {
+                "src": "images/tv-m1.jpg",
+                "alt": "Salată de legume pe farfurie"
+              },
+              {
+                "src": "images/tv-m2.jpg",
+                "alt": "Paste fresh cu sos de roșii"
+              },
+              {
+                "src": "images/tv-m3.jpg",
+                "alt": "Mic dejun pe masă de lemn"
+              }
             ]
           },
           {
             "title": "Terasă & atmosferă",
             "blurb": "Umbră de castan, lumină caldă seara.",
             "photos": [
-              { "src": "https://picsum.photos/seed/pm-traista-a1/800/600", "alt": "Terasă cu mese de lemn" },
-              { "src": "https://picsum.photos/seed/pm-traista-a2/800/600", "alt": "Interior bistro luminos" },
-              { "src": "https://picsum.photos/seed/pm-traista-a3/800/600", "alt": "Masă aranjată pentru prânz" }
+              {
+                "src": "images/tv-a1.jpg",
+                "alt": "Terasă cu mese de lemn"
+              },
+              {
+                "src": "images/tv-a2.jpg",
+                "alt": "Interior bistro luminos"
+              },
+              {
+                "src": "images/tv-a3.jpg",
+                "alt": "Masă aranjată pentru prânz"
+              }
             ]
           }
         ],
@@ -257,12 +353,12 @@
           "url": "https://www.instagram.com/traista.verde.md",
           "embedUrl": "https://www.instagram.com/traista.verde.md/embed",
           "gallery": [
-            "https://picsum.photos/seed/pm-ig-tv1/600/600",
-            "https://picsum.photos/seed/pm-ig-tv2/600/600",
-            "https://picsum.photos/seed/pm-ig-tv3/600/600",
-            "https://picsum.photos/seed/pm-ig-tv4/600/600",
-            "https://picsum.photos/seed/pm-ig-tv5/600/600",
-            "https://picsum.photos/seed/pm-ig-tv6/600/600"
+            "images/tv-ig1.jpg",
+            "images/tv-ig2.jpg",
+            "images/tv-ig3.jpg",
+            "images/tv-ig4.jpg",
+            "images/tv-ig5.jpg",
+            "images/tv-ig6.jpg"
           ]
         },
         "contact": {
@@ -284,7 +380,7 @@
           "addressHref": "https://maps.google.com/?q=Str+Bucuresti+18+Chisinau"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pm-traista-hero/1200/800",
+          "ogImage": "images/tv-og.jpg",
           "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"Traista Verde\",\"telephone\":\"+373****2233\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. București 18\",\"addressLocality\":\"Chișinău\",\"addressCountry\":\"MD\"}}"
         },
         "footer": {

@@ -34,7 +34,7 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('https://picsum.photos/seed/prorenov-hero/1600/900') center/cover no-repeat",
+          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('images/pr-hero.jpg') center/cover no-repeat",
           "ctaLabel": "Cere ofertă",
           "callLabel": "Sună acum"
         },
@@ -108,19 +108,19 @@
             "blurb": "Transformam baia dumneavoastra de la zero: demolare, impermeabilizare, gresie, faianta, instalatii sanitare si accesorii de calitate.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/baie-moderna-lon/1200/800",
-                "alt": "Baie moderna renovata complet · Londra si imprejurimi (Essex",
-                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
+                "src": "images/pr-baie1.jpg",
+                "alt": "Baie modernă renovată complet · Londra",
+                "caption": "Renovări baie completă · Londra"
               },
               {
-                "src": "https://picsum.photos/seed/baie-gresie-lon/1200/800",
-                "alt": "Gresie si faianta baie premium · Londra si imprejurimi (Essex",
-                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
+                "src": "images/pr-baie2.jpg",
+                "alt": "Gresie și faianță baie premium · Londra",
+                "caption": "Renovări baie completă · Londra"
               },
               {
-                "src": "https://picsum.photos/seed/baie-dus-lon/1200/800",
-                "alt": "Dus walk-in cu faianta marmura · Londra si imprejurimi (Essex",
-                "caption": "Renovari baie completa · Londra si imprejurimi (Essex"
+                "src": "images/pr-baie3.jpg",
+                "alt": "Duș walk-in cu faianță · Londra",
+                "caption": "Renovări baie completă · Londra"
               }
             ]
           },
@@ -129,19 +129,19 @@
             "blurb": "Amenajam spatii de living moderne: demolare pereti, rigips, electricitate, gresie portelanata si vopsitorie pentru un rezultat impecabil.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/bucatarie-lon1/1200/800",
-                "alt": "Bucatarie open-space renovata modern · Londra si imprejurimi (Essex",
-                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
+                "src": "images/pr-buc1.jpg",
+                "alt": "Bucătărie open-space renovată · Londra",
+                "caption": "Bucătării și spații open-space · Londra"
               },
               {
-                "src": "https://picsum.photos/seed/living-parquet-lon/1200/800",
-                "alt": "Living cu parchet si gresie portelanata · Londra si imprejurimi (Essex",
-                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
+                "src": "images/pr-buc2.jpg",
+                "alt": "Living cu parchet · Londra",
+                "caption": "Bucătării și spații open-space · Londra"
               },
               {
-                "src": "https://picsum.photos/seed/bucatarie-tavan-lon/1200/800",
-                "alt": "Tavan fals LED in bucatarie · Londra si imprejurimi (Essex",
-                "caption": "Bucatarii si spatii open-space · Londra si imprejurimi (Essex"
+                "src": "images/pr-buc3.jpg",
+                "alt": "Tavan fals LED în bucătărie · Londra",
+                "caption": "Bucătării și spații open-space · Londra"
               }
             ]
           },
@@ -150,14 +150,14 @@
             "blurb": "Extinderi casa, mansardari, demolare pereti portanti cu autorizatie, constructii noi in gradina (annex, garage, garden office).",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/extensie-lon1/1200/800",
-                "alt": "Extensie casa cu structura otel · Londra si imprejurimi (Essex",
-                "caption": "Extinderi si lucrari structurale · Londra si imprejurimi (Essex"
+                "src": "images/pr-ext1.jpg",
+                "alt": "Extensie casă cu structură oțel · Londra",
+                "caption": "Extinderi și lucrări structurale · Londra"
               },
               {
-                "src": "https://picsum.photos/seed/annex-lon1/1200/800",
-                "alt": "Annex finalizat in gradina · Londra si imprejurimi (Essex",
-                "caption": "Extinderi si lucrari structurale · Londra si imprejurimi (Essex"
+                "src": "images/pr-ext2.jpg",
+                "alt": "Annex finalizat în grădină · Londra",
+                "caption": "Extinderi și lucrări structurale · Londra"
               }
             ]
           }
@@ -166,12 +166,12 @@
           "handle": "prorenov.london",
           "url": "https://www.instagram.com/prorenov.london",
           "gallery": [
-            "https://picsum.photos/seed/insta-prorenov-1/600/600",
-            "https://picsum.photos/seed/insta-prorenov-2/600/600",
-            "https://picsum.photos/seed/insta-prorenov-3/600/600",
-            "https://picsum.photos/seed/insta-prorenov-4/600/600",
-            "https://picsum.photos/seed/insta-prorenov-5/600/600",
-            "https://picsum.photos/seed/insta-prorenov-6/600/600"
+            "images/pr-ig1.jpg",
+            "images/pr-ig2.jpg",
+            "images/pr-ig3.jpg",
+            "images/pr-ig4.jpg",
+            "images/pr-ig5.jpg",
+            "images/pr-ig6.jpg"
           ],
           "embedUrl": "https://www.instagram.com/prorenov.london/embed"
         },
@@ -194,7 +194,7 @@
           "addressHref": ""
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/prorenov-og/1200/630",
+          "ogImage": "images/pr-og.jpg",
           "canonical": "https://prorenov-construct.co.uk",
           "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovari interioare complete in Londra si imprejurimi\",\"telephone\":\"+447900112233\",\"areaServed\":\"London\",\"url\":\"https://prorenov-construct.co.uk\"}"
         },
@@ -239,7 +239,7 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(10,12,15,0.72) 50%, rgba(10,12,15,0.72) 100%), url('https://picsum.photos/seed/acoperis-hero-man/1600/900') center/cover no-repeat",
+          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(10,12,15,0.72) 50%, rgba(10,12,15,0.72) 100%), url('images/ct-hero.jpg') center/cover no-repeat",
           "ctaLabel": "Cere ofertă",
           "callLabel": "Sună acum"
         },
@@ -313,19 +313,19 @@
             "blurb": "Montam si inlocuim complet acoperisuri de case: tigla ceramica, beton, metalica, tabla faltuita, membrane EPDM si bituminoase de calitate superioara.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/acoperis-rez-man1/1200/800",
-                "alt": "Acoperis rezidential nou cu tigla ceramica · Manchester",
-                "caption": "Acoperisuri rezidentiale · Manchester"
+                "src": "images/ct-ac1.jpg",
+                "alt": "Acoperiș rezidențial nou cu țiglă ceramică · Manchester",
+                "caption": "Acoperișuri rezidențiale · Manchester"
               },
               {
-                "src": "https://picsum.photos/seed/acoperis-tabla-man/1200/800",
-                "alt": "Acoperis tabla faltuita moderna · Manchester",
-                "caption": "Acoperisuri rezidentiale · Manchester"
+                "src": "images/ct-ac2.jpg",
+                "alt": "Acoperiș tablă fălțuită modernă · Manchester",
+                "caption": "Acoperișuri rezidențiale · Manchester"
               },
               {
-                "src": "https://picsum.photos/seed/mansarda-velux-man/1200/800",
-                "alt": "Mansarda amenajata cu luminatoare Velux · Manchester",
-                "caption": "Acoperisuri rezidentiale · Manchester"
+                "src": "images/ct-ac3.jpg",
+                "alt": "Mansardă amenajată cu luminatoare · Manchester",
+                "caption": "Acoperișuri rezidențiale · Manchester"
               }
             ]
           },
@@ -334,14 +334,14 @@
             "blurb": "Sisteme de fatade ventilate cu vata minerala si panouri composite — reduceti facturile la energie pana la 40% in primul an.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/fatada-vent-man1/1200/800",
-                "alt": "Fatada ventilata moderna casa · Manchester",
-                "caption": "Fatade ventilate si termoizolatie · Manchester"
+                "src": "images/ct-fat1.jpg",
+                "alt": "Fațadă ventilată modernă · Manchester",
+                "caption": "Fațade ventilate și termoizolație · Manchester"
               },
               {
-                "src": "https://picsum.photos/seed/izolatie-eps-man/1200/800",
-                "alt": "Termoizolatie exterioara EPS aplicata · Manchester",
-                "caption": "Fatade ventilate si termoizolatie · Manchester"
+                "src": "images/ct-fat2.jpg",
+                "alt": "Termoizolație exterioară aplicată · Manchester",
+                "caption": "Fațade ventilate și termoizolație · Manchester"
               }
             ]
           },
@@ -350,19 +350,19 @@
             "blurb": "Intervenim rapid la scurgeri, tigle deplasate de vant, stricaciuni dupa furtuna si orice urgenta de acoperis, 7 zile din 7.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/reparatie-man1/1200/800",
-                "alt": "Reparatie urgenta acoperis dupa furtuna · Manchester",
-                "caption": "Reparatii si interventii urgente · Manchester"
+                "src": "images/ct-rep1.jpg",
+                "alt": "Reparație urgentă acoperiș după furtună · Manchester",
+                "caption": "Reparații și intervenții urgente · Manchester"
               },
               {
-                "src": "https://picsum.photos/seed/jgheab-cupru-man/1200/800",
-                "alt": "Montaj jgheaburi si burlane cupru · Manchester",
-                "caption": "Reparatii si interventii urgente · Manchester"
+                "src": "images/ct-rep2.jpg",
+                "alt": "Montaj jgheaburi și burlane · Manchester",
+                "caption": "Reparații și intervenții urgente · Manchester"
               },
               {
-                "src": "https://picsum.photos/seed/cos-tigla-man/1200/800",
-                "alt": "Refacere cos de fum si inchidere tigla · Manchester",
-                "caption": "Reparatii si interventii urgente · Manchester"
+                "src": "images/ct-rep3.jpg",
+                "alt": "Refacere coș de fum · Manchester",
+                "caption": "Reparații și intervenții urgente · Manchester"
               }
             ]
           }
@@ -371,12 +371,12 @@
           "handle": "consttop.roofing",
           "url": "https://www.instagram.com/consttop.roofing",
           "gallery": [
-            "https://picsum.photos/seed/insta-consttop-1/600/600",
-            "https://picsum.photos/seed/insta-consttop-2/600/600",
-            "https://picsum.photos/seed/insta-consttop-3/600/600",
-            "https://picsum.photos/seed/insta-consttop-4/600/600",
-            "https://picsum.photos/seed/insta-consttop-5/600/600",
-            "https://picsum.photos/seed/insta-consttop-6/600/600"
+            "images/ct-ig1.jpg",
+            "images/ct-ig2.jpg",
+            "images/ct-ig3.jpg",
+            "images/ct-ig4.jpg",
+            "images/ct-ig5.jpg",
+            "images/ct-ig6.jpg"
           ],
           "embedUrl": "https://www.instagram.com/consttop.roofing/embed"
         },
@@ -399,7 +399,7 @@
           "addressHref": "https://maps.google.com/?q=Manchester"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/consttop-og/1200/630",
+          "ogImage": "images/ct-og.jpg",
           "canonical": "https://consttop-roofing.co.uk",
           "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Acoperisuri si fatade in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"https://consttop-roofing.co.uk\"}"
         },

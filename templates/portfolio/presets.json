@@ -23,8 +23,8 @@
           "scheduleEyebrow": "Program",
           "galleryEyebrow": "Lucrările noastre",
           "teamEyebrow": "Echipa noastră",
-          "bookingEyebrow": "Book",
-          "waBookBtn": "Book pe WhatsApp"
+          "bookingEyebrow": "Programare",
+          "waBookBtn": "Programează pe WhatsApp"
         },
         "theme": {
           "primary": "#6b7f5a",
@@ -35,8 +35,8 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(180deg, rgba(28,34,40,0.15), rgba(28,34,40,0.55)), url('https://picsum.photos/seed/pf-ivoire-hero/1600/1000') center/cover no-repeat",
-          "ctaLabel": "Book now"
+          "background": "linear-gradient(180deg, rgba(28,34,40,0.15), rgba(28,34,40,0.55)), url('images/iv-hero.jpg') center/cover no-repeat",
+          "ctaLabel": "Programează-te"
         },
         "servicesTitle": "Servicii",
         "services": [
@@ -131,25 +131,25 @@
           ]
         },
         "team": {
-          "title": "Echipa Salon Lumina",
+          "title": "Echipa Atelier Ivoire",
           "members": [
             {
               "name": "Cristina Ionescu",
               "role": "Coafor senior & colorist",
               "bio": "15 ani de experiență în coafură și coloristică, specializată în tehnici balayage și vopsit la rece.",
-              "photo": "https://picsum.photos/seed/lumina-team-cristina/400/400"
+              "photo": "images/iv-team-c.jpg"
             },
             {
               "name": "Diana Popa",
               "role": "Specialist manichiură & nail art",
               "bio": "Certificată internațional în tehnici gel și acryl, pasionată de nail art minimalist și floral.",
-              "photo": "https://picsum.photos/seed/lumina-team-diana/400/400"
+              "photo": "images/iv-team-d.jpg"
             },
             {
               "name": "Laura Mihai",
               "role": "Make-up artist & esteticiană",
               "bio": "Formată la școli de beauty din București și Viena — make-up de zi, seară și ocazii speciale.",
-              "photo": "https://picsum.photos/seed/lumina-team-laura/400/400"
+              "photo": "images/iv-team-l.jpg"
             }
           ]
         },
@@ -160,19 +160,19 @@
             "blurb": "De la balayage discret la culori curajase — fiecare tuns e o semnătură.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/lumina-par1/800/1000",
+                "src": "images/iv-par1.jpg",
                 "alt": "Balayage elegant cu tonuri de miere"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-par2/800/1000",
+                "src": "images/iv-par2.jpg",
                 "alt": "Ondulare cu volum și strălucire"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-par3/800/1000",
+                "src": "images/iv-par3.jpg",
                 "alt": "Tuns modern cu textură"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-par4/800/1000",
+                "src": "images/iv-par4.jpg",
                 "alt": "Highlights discrete pe păr șaten"
               }
             ]
@@ -182,19 +182,19 @@
             "blurb": "Gel, acryl, BIAB sau simplu — unghii îngrijite care vorbesc de la sine.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/lumina-mani1/800/800",
+                "src": "images/iv-mani1.jpg",
                 "alt": "Manichiură gel nude cu linie aurie"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-mani2/800/800",
+                "src": "images/iv-mani2.jpg",
                 "alt": "Nail art floral primăvară"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-mani3/800/800",
+                "src": "images/iv-mani3.jpg",
                 "alt": "Ombre roz-alb pe unghii scurte"
               },
               {
-                "src": "https://picsum.photos/seed/lumina-mani4/800/800",
+                "src": "images/iv-mani4.jpg",
                 "alt": "Manichiură clasică roșu aprins"
               }
             ]
@@ -204,17 +204,17 @@
           "handle": "atelier.ivoire",
           "url": "https://www.instagram.com/atelier.ivoire",
           "gallery": [
-            "https://picsum.photos/seed/pf-ivoire-ig1/600/600",
-            "https://picsum.photos/seed/pf-ivoire-ig2/600/600",
-            "https://picsum.photos/seed/pf-ivoire-ig3/600/600",
-            "https://picsum.photos/seed/pf-ivoire-ig4/600/600",
-            "https://picsum.photos/seed/pf-ivoire-ig5/600/600",
-            "https://picsum.photos/seed/pf-ivoire-ig6/600/600"
+            "images/iv-ig1.jpg",
+            "images/iv-ig2.jpg",
+            "images/iv-ig3.jpg",
+            "images/iv-ig4.jpg",
+            "images/iv-ig5.jpg",
+            "images/iv-ig6.jpg"
           ],
           "embedUrl": "https://www.instagram.com/atelier.ivoire/embed"
         },
         "contact": {
-          "title": "Book o programare",
+          "title": "Programează-te",
           "intro": "Scrie-ne pe WhatsApp și confirmăm data și ora în cel mult 2 ore. Te așteptăm în salonul nostru din Floreasca!",
           "instagram": {
             "url": "https://www.instagram.com/atelier.ivoire",
@@ -232,7 +232,7 @@
           "addressHref": "https://maps.google.com/?q=Str+Dorobanti+62+Bucuresti"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pf-ivoire-hero/1200/630",
+          "ogImage": "images/iv-og.jpg",
           "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Salon Lumina\",\"url\":\"https://salonlumina.ro\",\"telephone\":\"+40745123456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Dorobanți 62\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
         },
         "footer": {
@@ -250,13 +250,13 @@
           "name": "Studio Forma",
           "tagline": "Tuns editorial, culoare curată — Chișinău",
           "title": "Studio Forma | Coafură editorială | Chișinău",
-          "metaDescription": "Salon editorial în Chișinău — tuns, culoare, make-up. Book pe WhatsApp.",
+          "metaDescription": "Salon editorial în Chișinău — tuns, culoare, make-up. Programări pe WhatsApp.",
           "about": "Studio Forma lucrează cu formă și contrast. Tunsuri precise, balayage controlat, make-up de ocazie. Echipă mică, programări rare, rezultat fotografiat.",
           "lang": "ro"
         },
         "labels": {
           "about": "Despre atelier",
-          "instaTitle": "From the chair",
+          "instaTitle": "Din scaun, pe Instagram",
           "instaFollow": "Urmărește",
           "scroll": "Descoperă",
           "waQr": "Deschide WhatsApp pe telefon",
@@ -265,8 +265,8 @@
           "scheduleEyebrow": "Program",
           "galleryEyebrow": "Lucrările noastre",
           "teamEyebrow": "Echipa noastră",
-          "bookingEyebrow": "Book",
-          "waBookBtn": "Book pe WhatsApp"
+          "bookingEyebrow": "Programare",
+          "waBookBtn": "Programează pe WhatsApp"
         },
         "theme": {
           "primary": "#1c1c1c",
@@ -277,8 +277,8 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url('https://picsum.photos/seed/pf-forma-hero/1600/1000') center/cover no-repeat",
-          "ctaLabel": "Book now"
+          "background": "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url('images/sf-hero.jpg') center/cover no-repeat",
+          "ctaLabel": "Programează-te"
         },
         "servicesTitle": "Servicii",
         "services": [
@@ -375,19 +375,19 @@
               "name": "Mihaela Rusu",
               "role": "Fondatoare & coafor senior",
               "bio": "12 ani de experiență, formată la școli de coafură din București și Milano.",
-              "photo": "https://picsum.photos/seed/mihaela-rusu/400/400"
+              "photo": "images/sf-team-m.jpg"
             },
             {
               "name": "Ana Ciorici",
               "role": "Make-up artist",
               "bio": "Specializată în make-up de mireasă și shooting editorial.",
-              "photo": "https://picsum.photos/seed/ana-ciorici/400/400"
+              "photo": "images/sf-team-a.jpg"
             },
             {
               "name": "Olesea Bivol",
               "role": "Specialist unghii",
               "bio": "Nail art, extensii unghii și pedichiură SPA — cu răbdare și precizie.",
-              "photo": "https://picsum.photos/seed/olesea-bivol/400/400"
+              "photo": "images/sf-team-o.jpg"
             }
           ]
         },
@@ -398,19 +398,19 @@
             "blurb": "Extensii din păr natural și coafuri pentru nunți, botezuri și evenimente.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/mihaela-ext1/800/1000",
+                "src": "images/sf-ext1.jpg",
                 "alt": "Extensii tape-in pe păr brunet"
               },
               {
-                "src": "https://picsum.photos/seed/mihaela-ext2/800/1000",
+                "src": "images/sf-ext2.jpg",
                 "alt": "Coafură mireasă cu bucle moi"
               },
               {
-                "src": "https://picsum.photos/seed/mihaela-ext3/800/1000",
+                "src": "images/sf-ext3.jpg",
                 "alt": "Updo elegant pentru cununie"
               },
               {
-                "src": "https://picsum.photos/seed/mihaela-ext4/800/1000",
+                "src": "images/sf-ext4.jpg",
                 "alt": "Extensii blonde pe păr șaten"
               }
             ]
@@ -420,15 +420,15 @@
             "blurb": "Makeup natural sau dramatic — fiecare look creat după personalitatea ta.",
             "photos": [
               {
-                "src": "https://picsum.photos/seed/mihaela-mua1/800/900",
+                "src": "images/sf-mua1.jpg",
                 "alt": "Make-up mireasă natural cu glow"
               },
               {
-                "src": "https://picsum.photos/seed/mihaela-mua2/800/900",
+                "src": "images/sf-mua2.jpg",
                 "alt": "Look de seară cu smoky eye"
               },
               {
-                "src": "https://picsum.photos/seed/mihaela-mua3/800/900",
+                "src": "images/sf-mua3.jpg",
                 "alt": "Make-up editorial pe shooting"
               }
             ]
@@ -438,17 +438,17 @@
           "handle": "studio.forma.md",
           "url": "https://www.instagram.com/studio.forma.md",
           "gallery": [
-            "https://picsum.photos/seed/pf-forma-ig1/600/600",
-            "https://picsum.photos/seed/pf-forma-ig2/600/600",
-            "https://picsum.photos/seed/pf-forma-ig3/600/600",
-            "https://picsum.photos/seed/pf-forma-ig4/600/600",
-            "https://picsum.photos/seed/pf-forma-ig5/600/600",
-            "https://picsum.photos/seed/pf-forma-ig6/600/600"
+            "images/sf-ig1.jpg",
+            "images/sf-ig2.jpg",
+            "images/sf-ig3.jpg",
+            "images/sf-ig4.jpg",
+            "images/sf-ig5.jpg",
+            "images/sf-ig6.jpg"
           ],
           "embedUrl": "https://www.instagram.com/studio.forma.md/embed"
         },
         "contact": {
-          "title": "Book o programare",
+          "title": "Programează-te",
           "intro": "Scrie-ne pe WhatsApp pentru o programare sau pentru o consultație gratuită privind extensiile. Răspundem în aceeași zi!",
           "instagram": {
             "url": "https://www.instagram.com/studio.forma.md",
@@ -466,7 +466,7 @@
           "addressHref": "https://maps.google.com/?q=Bd+Stefan+cel+Mare+120+Chisinau"
         },
         "seo": {
-          "ogImage": "https://picsum.photos/seed/pf-forma-hero/1200/630",
+          "ogImage": "images/sf-og.jpg",
           "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Mihaela\",\"url\":\"https://ateliermihaela.md\",\"telephone\":\"+37369234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Bd. Ștefan cel Mare 120\",\"addressLocality\":\"Chișinău\",\"postalCode\":\"MD-2001\",\"addressCountry\":\"MD\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
         },
         "footer": {

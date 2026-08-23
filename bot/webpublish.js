@@ -386,13 +386,24 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         fs.mkdirSync(imagesDir, { recursive: true });
 
         // 1. Copy template files (excluding schema/presets/md)
+        //    Also copy templates/<id>/images/* so opened default presets that
+        //    reference relative images/… paths render without a network fetch.
         const templateDir = path.join(TEMPLATES_DIR, site.templateId);
         if (fs.existsSync(templateDir)) {
             for (const entry of fs.readdirSync(templateDir)) {
                 if (TEMPLATE_EXCLUDES.test(entry)) continue;
                 const src = path.join(templateDir, entry);
-                if (fs.statSync(src).isFile()) {
+                const st = fs.statSync(src);
+                if (st.isFile()) {
                     fs.copyFileSync(src, path.join(siteDir, entry));
+                } else if (st.isDirectory() && entry === 'images') {
+                    fs.mkdirSync(imagesDir, { recursive: true });
+                    for (const img of fs.readdirSync(src)) {
+                        const from = path.join(src, img);
+                        if (fs.statSync(from).isFile()) {
+                            fs.copyFileSync(from, path.join(imagesDir, img));
+                        }
+                    }
                 }
             }
         }
