@@ -4,21 +4,21 @@
       "id": "product-menu",
       "name": "Restaurant",
       "vertical": "product-menu",
-      "description": "Restaurante, cafenele, baruri — meniu, rezervări și Instagram din bucătărie",
+      "description": "Restaurante, cafenele, baruri — meniu, rezervări și Instagram din bucătărie. Alege acest design pentru localuri cu listă de mâncare.",
       "version": 1
     },
     {
       "id": "local-service",
       "name": "Meseriași",
       "vertical": "local-service",
-      "description": "Construcții, renovari, reparații, meseriași locali — lead-gen și telefon vizibil",
+      "description": "Construcții, renovari, reparații și alte servicii locale — lead-gen, telefon vizibil, meseriași la lucru",
       "version": 1
     },
     {
       "id": "portfolio",
       "name": "Salon",
       "vertical": "portfolio",
-      "description": "Saloane de frumusețe, cosmetica, coafor, nail — rezervări și portofoliu lucrări",
+      "description": "Saloane de frumusețe, cosmetică, coafor, nail — rezervări și portofoliu de lucrări",
       "version": 1
     }
   ]

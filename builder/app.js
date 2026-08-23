@@ -258,6 +258,22 @@ function getTemplateById(id) {
   return d.templates[id] || null;
 }
 
+/** Human catalog badge — never show raw API ids (product-menu / local-service / portfolio). */
+const DESIGN_BADGE_BY_ID = {
+  'product-menu': 'Restaurant',
+  'local-service': 'Meseriași',
+  'portfolio': 'Salon',
+};
+
+function designBadgeLabel(tpl) {
+  if (!tpl) return 'Design';
+  const fromMap = DESIGN_BADGE_BY_ID[tpl.id] || DESIGN_BADGE_BY_ID[tpl.vertical];
+  if (fromMap) return fromMap;
+  const name = (tpl.name && String(tpl.name).trim()) || '';
+  if (name && name !== tpl.id && name !== tpl.vertical) return name;
+  return 'Design';
+}
+
 // ---------------------------------------------------------------------------
 // 6. Schema helpers — identify inline vs drawer fields
 // ---------------------------------------------------------------------------
@@ -916,7 +932,7 @@ function buildDrawer() {
   body.innerHTML = '';
 
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) {
-    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Selectează un șablon mai întâi.</p>';
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Alege un design mai întâi.</p>';
     return;
   }
 
@@ -1681,7 +1697,7 @@ function renderTemplatesGrid() {
 
   const registry = getTemplateList();
   if (!registry || registry.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Șabloanele nu sunt disponibile momentan.</p></div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Designurile nu sunt disponibile momentan.</p></div>';
     return;
   }
 
@@ -1709,12 +1725,13 @@ function renderTemplatesGrid() {
 
     const body = document.createElement('div');
     body.className = 'template-card-body';
+    const badge = designBadgeLabel(tpl);
     body.innerHTML = `
-      <span class="template-card-badge">${escHtml(tpl.vertical || tpl.id)}</span>
+      <span class="template-card-badge">${escHtml(badge)}</span>
       <div class="template-card-title">${escHtml(tpl.name)}</div>
       <div class="template-card-desc">${escHtml(tpl.description || '')}</div>
       <div class="template-card-actions">
-        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Începe cu șablonul ${escHtml(tpl.name)}">Începe</button>
+        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Începe cu designul ${escHtml(tpl.name)}">Începe</button>
         <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Vezi exemplu pentru ${escHtml(tpl.name)}">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><ellipse cx="8" cy="8" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
           Exemplu
@@ -1744,7 +1761,7 @@ function loadCardPreview(templateId, wrap, shimmer) {
 
     const iframe = document.createElement('iframe');
     iframe.className = 'template-card-preview-frame';
-    iframe.title = 'Previzualizare șablon';
+    iframe.title = 'Previzualizare design';
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
@@ -1761,7 +1778,7 @@ function startWithTemplate(templateId) {
   const meta = registry.find(t => t.id === templateId);
 
   if (!tplData || !meta) {
-    showToast('Șablonul nu a putut fi încărcat.', 'error');
+    showToast('Designul nu a putut fi încărcat.', 'error');
     return;
   }
 
