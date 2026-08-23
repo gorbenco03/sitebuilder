@@ -1487,7 +1487,7 @@ function scheduleSlugCheck(value) {
 function updateSlugPreview(slug, state) {
   const preview = $('slug-preview');
   const icon = $('slug-status-icon');
-  const domain = appConfig.brandDomain || 'hidook.ro';
+  const domain = appConfig.brandDomain || 'sites.hidook.agency';
 
   if (!slug) {
     if (preview) { preview.textContent = ''; preview.className = 'slug-preview'; }
