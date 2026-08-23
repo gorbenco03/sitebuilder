@@ -30,7 +30,7 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body.pf-body {
+body.pf-page {
     font-family: var(--font);
     background: var(--void);
     color: var(--snow);
@@ -138,8 +138,8 @@ ul { list-style: none; }
     font-weight: 500; line-height: 1.15; letter-spacing: -0.01em; margin-bottom: 1.5rem;
 }
 .pf-display--center { text-align: center; }
-.pf-body { color: var(--soft); max-width: 36rem; }
-.pf-body--sm { font-size: 0.92rem; margin-top: 0.5rem; }
+.pf-copy { color: var(--soft); max-width: 36rem; }
+.pf-copy--sm { font-size: 0.92rem; margin-top: 0.5rem; }
 
 .pf-series { margin: 2.5rem 0 3.5rem; }
 .pf-series__t { font-family: var(--display); font-size: 1.35rem; font-weight: 500; }
@@ -155,7 +155,7 @@ ul { list-style: none; }
 }
 .pf-about .pf-kicker { color: rgba(255,255,255,0.48); }
 .pf-about .pf-display { color: var(--snow); }
-.pf-about .pf-body { color: rgba(255,255,255,0.72); }
+.pf-about .pf-copy { color: rgba(255,255,255,0.72); }
 .pf-about__grid {
     display: grid; gap: 2rem;
 }
@@ -246,7 +246,7 @@ ul { list-style: none; }
 }
 .pf-appt .pf-kicker { color: rgba(255,255,255,0.48); }
 .pf-appt .pf-display { color: var(--snow); }
-.pf-appt .pf-body { color: rgba(255,255,255,0.72); }
+.pf-appt .pf-copy { color: rgba(255,255,255,0.72); }
 .pf-appt__grid {
     display: grid; gap: 2rem;
 }

@@ -40,7 +40,7 @@
         .hero-content, .scroll-hint, .fade-in-section, .collage-photo { opacity: 1 !important; transform: none !important; animation: none !important; }
     </style></noscript>
 </head>
-<body class="pf-body">
+<body class="pf-page">
 
     <!-- Salon chrome — programare always in nav + pill -->
     <div class="pf-chrome">
@@ -113,7 +113,7 @@
                 <div class="pf-about__quote">
                     <p class="pf-kicker">{{business.tagline}}</p>
                     <h2 class="pf-display" id="about-heading">{{labels.about}}</h2>
-                    <p class="pf-body">{{business.about}}</p>
+                    <p class="pf-copy">{{business.about}}</p>
                 </div>
                 <div class="pf-about__rule" aria-hidden="true">
                     <span class="pf-about__num">01</span>
@@ -184,7 +184,7 @@
                         <!-- @endif -->
                         <h3 class="pf-person__name">{{name}}</h3>
                         <!-- @if role --><p class="pf-person__role">{{role}}</p><!-- @endif -->
-                        <!-- @if bio --><p class="pf-body pf-body--sm">{{bio}}</p><!-- @endif -->
+                        <!-- @if bio --><p class="pf-copy pf-copy--sm">{{bio}}</p><!-- @endif -->
                     </article>
                     <!-- @end -->
                 </div>
@@ -225,7 +225,7 @@
                 <div>
                     <p class="pf-kicker">{{labels.bookingEyebrow}}</p>
                     <h2 class="pf-display" id="booking-heading">{{contact.title}}</h2>
-                    <p class="pf-body">{{contact.intro}}</p>
+                    <p class="pf-copy">{{contact.intro}}</p>
                     <div class="pf-appt__list">
                         <!-- @if contact.phone -->
                         <a href="tel:{{contact.phone}}" class="contact-item pf-row"><span>{{contact.phoneDisplay}}</span></a>
