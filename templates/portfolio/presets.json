@@ -24,7 +24,10 @@
           "galleryEyebrow": "Lucrările noastre",
           "teamEyebrow": "Echipa noastră",
           "bookingEyebrow": "Programare",
-          "waBookBtn": "Programează pe WhatsApp"
+          "waBookBtn": "Programează pe WhatsApp",
+          "navGallery": "Galerie",
+          "navServices": "Servicii",
+          "navBooking": "Programare"
         },
         "theme": {
           "primary": "#6b7f5a",
@@ -266,7 +269,10 @@
           "galleryEyebrow": "Lucrările noastre",
           "teamEyebrow": "Echipa noastră",
           "bookingEyebrow": "Programare",
-          "waBookBtn": "Programează pe WhatsApp"
+          "waBookBtn": "Programează pe WhatsApp",
+          "navGallery": "Galerie",
+          "navServices": "Servicii",
+          "navBooking": "Programare"
         },
         "theme": {
           "primary": "#1c1c1c",

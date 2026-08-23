@@ -64,24 +64,24 @@
             <a href="#contact-card" class="pm-mast__pill">{{hero.ctaLabel}}</a>
         </div>
         <div class="pm-mast__stage">
-            <div class="pm-board">
-                <div class="hero-content pm-board__copy">
+            <div class="pm-hero">
+                <div class="hero-content pm-hero__copy">
                     <!-- @if labels.heroEyebrow -->
                     <p class="pm-kicker">{{labels.heroEyebrow}}</p>
                     <!-- @endif -->
-                    <p class="hero-tagline pm-board__tag">{{business.tagline}}</p>
-                    <div class="pm-board__acts">
-                        <a href="#contact-card" class="hero-cta pm-board__cta pm-board__cta--fill">
+                    <p class="hero-tagline pm-hero__tag">{{business.tagline}}</p>
+                    <div class="pm-hero__acts">
+                        <a href="#contact-card" class="hero-cta pm-hero__cta pm-hero__cta--fill">
                             <span>{{hero.ctaLabel}}</span>
                         </a>
                         <!-- @if menu -->
-                        <a href="#pm-menu-block" class="pm-board__cta pm-board__cta--ghost">
+                        <a href="#pm-menu-block" class="pm-hero__cta pm-hero__cta--ghost">
                             <span>{{menu.title}}</span>
                         </a>
                         <!-- @endif -->
                     </div>
                 </div>
-                <div class="pm-board__frame" style="background-image: {{& hero.background}}" role="img" aria-label="{{business.name}}"></div>
+                <div class="pm-hero__frame" style="background-image: {{& hero.background}}" role="img" aria-label="{{business.name}}"></div>
             </div>
         </div>
         <button class="scroll-indicator pm-scroll" type="button" aria-label="{{labels.scroll}}">

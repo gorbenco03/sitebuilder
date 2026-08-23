@@ -143,6 +143,27 @@
           "label": "Textul butonului WhatsApp din secțiunea contact (ex: Rezervă pe WhatsApp)",
           "required": true,
           "maxLen": 60
+        },
+        {
+          "key": "labels.navGallery",
+          "type": "text",
+          "label": "Link navigare galerie (ex: Galerie)",
+          "required": true,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.navServices",
+          "type": "text",
+          "label": "Link navigare servicii (ex: Servicii)",
+          "required": true,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.navBooking",
+          "type": "text",
+          "label": "Link navigare programare (ex: Programare)",
+          "required": true,
+          "maxLen": 24
         }
       ]
     },

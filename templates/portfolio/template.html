@@ -42,7 +42,7 @@
 </head>
 <body class="pf-body">
 
-    <!-- Beauty chrome — Book always in nav + pill -->
+    <!-- Salon chrome — programare always in nav + pill -->
     <div class="pf-chrome">
         <div class="pf-chrome__inner">
             <!-- @if logo -->
@@ -51,9 +51,9 @@
             <!-- @if showWordmark --><!-- @if !logo --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
             <!-- @if !logo --><!-- @if !showWordmark --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
             <nav class="pf-chrome__nav" aria-label="Navigare">
-                <a href="#gallery-heading">Gallery</a>
-                <a href="#services-heading">Services</a>
-                <a href="#booking">Book</a>
+                <a href="#gallery-heading">{{labels.navGallery}}</a>
+                <a href="#services-heading">{{labels.navServices}}</a>
+                <a href="#booking">{{labels.navBooking}}</a>
             </nav>
             <a href="#booking" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
         </div>
@@ -81,7 +81,7 @@
     </header>
 
     <main class="pf-main">
-        <!-- Gallery first — editorial magazine crops -->
+        <!-- Work gallery first — editorial magazine crops -->
         <section class="pf-gal fade-in-section" aria-labelledby="gallery-heading">
             <div class="pf-shell pf-gal__head">
                 <!-- @if galleryTitle -->
@@ -220,13 +220,13 @@
         </section>
         <!-- @endif -->
 
-        <section class="pf-book fade-in-section" aria-labelledby="booking-heading" id="booking">
-            <div class="pf-shell pf-book__grid">
+        <section class="pf-appt fade-in-section" aria-labelledby="booking-heading" id="booking">
+            <div class="pf-shell pf-appt__grid">
                 <div>
                     <p class="pf-kicker">{{labels.bookingEyebrow}}</p>
                     <h2 class="pf-display" id="booking-heading">{{contact.title}}</h2>
                     <p class="pf-body">{{contact.intro}}</p>
-                    <div class="pf-book__list">
+                    <div class="pf-appt__list">
                         <!-- @if contact.phone -->
                         <a href="tel:{{contact.phone}}" class="contact-item pf-row"><span>{{contact.phoneDisplay}}</span></a>
                         <!-- @endif -->
@@ -244,15 +244,15 @@
                         <!-- @endif -->
                     </div>
                 </div>
-                <div class="pf-book__panel">
+                <div class="pf-appt__panel">
                     <!-- @if contact.waHref -->
-                    <a href="{{contact.waHref}}" class="pf-book__wa" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
+                    <a href="{{contact.waHref}}" class="pf-appt__wa" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
                     <!-- @endif -->
                     <!-- @if schedule.rows -->
-                    <div class="pf-book__hours">
+                    <div class="pf-appt__hours">
                         <p class="pf-kicker">{{labels.scheduleEyebrow}}</p>
                         <!-- @each schedule.rows -->
-                        <p class="pf-book__hr"><strong>{{day}}</strong><span>{{hours}}</span></p>
+                        <p class="pf-appt__hr"><strong>{{day}}</strong><span>{{hours}}</span></p>
                         <!-- @end -->
                     </div>
                     <!-- @endif -->
