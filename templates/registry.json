@@ -2,23 +2,23 @@
   "templates": [
     {
       "id": "product-menu",
-      "name": "Meniu & magazin",
+      "name": "Restaurant",
       "vertical": "product-menu",
-      "description": "Restaurante, cafenele, magazin local, meniuri și produse",
+      "description": "Restaurante, cafenele, baruri — meniu, rezervări și Instagram din bucătărie",
       "version": 1
     },
     {
       "id": "local-service",
-      "name": "Servicii locale",
+      "name": "Meseriași",
       "vertical": "local-service",
-      "description": "Meseriași, curățenie, reparații, lead-gen local",
+      "description": "Construcții, renovari, reparații, meseriași locali — lead-gen și telefon vizibil",
       "version": 1
     },
     {
       "id": "portfolio",
-      "name": "Portofoliu",
+      "name": "Salon",
       "vertical": "portfolio",
-      "description": "Saloane, studio, fotografi, artiști, evenimente",
+      "description": "Saloane de frumusețe, cosmetica, coafor, nail — rezervări și portofoliu lucrări",
       "version": 1
     }
   ]

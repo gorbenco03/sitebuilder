@@ -1,11 +1,11 @@
 {
   "templateId": "product-menu",
   "version": 1,
-  "name": "Meniu & magazin",
+  "name": "Restaurant",
   "language": "ro",
   "wizardHints": {
     "vertical": "product-menu",
-    "aiStyle": "cald, apetisant, editorial de meniu — tipografie serif pe titluri, fond crem, accente coral; ton de magazin artizanal sau restaurant de cartier, zero clișee corporate"
+    "aiStyle": "cald, apetisant, editorial de meniu — tipografie serif pe titluri, fond crem, accente coral; ton de restaurant de cartier sau bistro, zero clișee corporate"
   },
   "sections": [
     {
@@ -70,7 +70,7 @@
         {
           "key": "labels.instaTitle",
           "type": "text",
-          "label": "Titlul secțiunii Instagram (ex: Inspirație dulce pe Instagram)",
+          "label": "Titlul secțiunii Instagram (ex: Instagram din bucătărie)",
           "required": true,
           "maxLen": 60
         },
@@ -111,7 +111,7 @@
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Culoarea de accent a brandului (ex: #B85C5C pentru roz-cărămiziu)",
+          "label": "Culoarea de accent a brandului (ex: #B85C5C coral de restaurant)",
           "required": true
         },
         {
@@ -123,7 +123,7 @@
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Culoarea de contrast (ciocolată închis, ex: #4A2C2A)",
+          "label": "Culoarea de contrast (antracit cald, ex: #4A2C2A)",
           "required": true
         },
         {
@@ -161,7 +161,7 @@
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Textul butonului principal (ex: Comandă acum)",
+          "label": "Textul butonului principal (ex: Rezervă o masă)",
           "required": true,
           "maxLen": 40
         }
@@ -174,7 +174,7 @@
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Titlul listei de specialități (ex: Ce găsești la noi)",
+          "label": "Titlul listei de specialități (ex: Meniu de sezon)",
           "required": false,
           "maxLen": 60
         },
@@ -199,7 +199,7 @@
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Titlul secțiunii galerie (ex: Creații cu suflet) — lasă gol pentru a omite",
+          "label": "Titlul secțiunii galerie (ex: Din farfurie) — lasă gol pentru a omite",
           "required": false,
           "maxLen": 60
         },
@@ -256,7 +256,7 @@
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Titlul cardului de contact (ex: Comandă o surpriză)",
+          "label": "Titlul cardului de contact (ex: Rezervă masa)",
           "required": true,
           "maxLen": 50
         },
@@ -314,7 +314,7 @@
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Textul linkului Facebook (ex: Cofetăria Noastră)",
+          "label": "Textul linkului Facebook (ex: Restaurantul Nostru)",
           "required": false,
           "maxLen": 60
         },
@@ -372,7 +372,7 @@
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Notița caldă din footer (ex: Cu dragoste și unt adevărat.)",
+          "label": "Notița caldă din footer (ex: Poftă bună la masa noastră.)",
           "required": false,
           "maxLen": 100
         }

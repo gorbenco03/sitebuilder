@@ -60,8 +60,8 @@ const ts = require('../template-steps.js');
 
     await check('(a) STEPS[0].prompt contains the registry option names', () => {
         const p = ts.STEPS[0].prompt;
-        assert.ok(p.includes('Meniu'), 'should include first template name');
-        assert.ok(p.includes('Servicii locale'), 'should include second template name');
+        assert.ok(p.includes('Restaurant'), 'should include first template name');
+        assert.ok(p.includes('Meseriași'), 'should include second template name');
     });
 
     await check('(a) STEPS[0].prompt uses 1/10 counter (10 data+template steps)', () => {
@@ -107,9 +107,9 @@ const ts = require('../template-steps.js');
 
     // ── case-insensitive text match ───────────────────────────────────────────
 
-    await check('(a) answering "Portofoliu" (text, case-insensitive) matches third template', () => {
+    await check('(a) answering "Salon" (text, case-insensitive) matches third template', () => {
         const session = { data: {} };
-        const result  = ts.handleTemplateStep(session, 'Portofoliu');
+        const result  = ts.handleTemplateStep(session, 'Salon');
         assert.ok(result.handled);
         assert.strictEqual(session.templateId, 'portfolio');
     });
@@ -122,7 +122,7 @@ const ts = require('../template-steps.js');
         assert.strictEqual(result.handled, false, 'should not be handled');
         assert.ok(result.errorReply, 'should have errorReply');
         assert.ok(
-            result.errorReply.toLowerCase().includes('1') || result.errorReply.includes('Meniu'),
+            result.errorReply.toLowerCase().includes('1') || result.errorReply.includes('Restaurant'),
             're-ask reply should include the options'
         );
         assert.ok(!session.templateId, 'templateId must NOT be set on invalid input');
