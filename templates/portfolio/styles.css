@@ -51,7 +51,7 @@ ul { list-style: none; }
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .pf-chrome__inner {
-    max-width: 1120px; margin: 0 auto; min-height: 52px; padding: 0 22px;
+    max-width: 1120px; margin: 0 auto; min-height: 56px; padding: 0 22px;
     display: flex; align-items: center; justify-content: space-between; gap: 1rem;
 }
 .pf-chrome__mark, .pf-chrome__logo {
@@ -65,8 +65,11 @@ ul { list-style: none; }
 @media (min-width: 720px) { .pf-chrome__nav { display: flex; } }
 .pf-chrome__nav a:hover { color: #fff; }
 .pf-chrome__cta {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; white-space: nowrap;
     background: var(--cta); color: #fff; border-radius: var(--r-pill);
-    padding: 9px 16px; font-size: 12px; font-weight: 600;
+    padding: 10px 18px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
 }
@@ -77,7 +80,7 @@ ul { list-style: none; }
 .pf-hero__bg { position: absolute; inset: 0; background-size: cover; background-position: center; }
 .pf-hero__veil {
     position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(28,34,40,0.15) 0%, rgba(28,34,40,0.72) 100%);
+    background: linear-gradient(180deg, rgba(28,34,40,0.08) 0%, rgba(28,34,40,0.45) 100%);
 }
 .pf-hero__copy { position: relative; z-index: 1; padding: 0 22px 4rem; max-width: var(--max); }
 .pf-hero__logo { height: 40px; margin-bottom: 1rem; }
