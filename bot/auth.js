@@ -36,9 +36,41 @@ function safeEqual(a, b) {
     return crypto.timingSafeEqual(a, b);
 }
 
-/** Guard: returns true when SERVER_SECRET is set and not empty. */
+/**
+ * In-memory session secret for isolated/dev/test boots when the owner has not
+ * set SERVER_SECRET. Never written to disk or process.env (no factory leak).
+ * @type {string|null}
+ */
+let _ephemeralSecret = null;
+
+/** True when an ephemeral local secret is allowed (never in production). */
+function _allowEphemeralSecret() {
+    if (process.env.NODE_ENV === 'production') return false;
+    return (
+        process.env.HIDOOK_ISOLATED_DEPLOY === '1' ||
+        process.env.HIDOOK_TEST_PAY === '1' ||
+        process.env.NODE_ENV === 'development' ||
+        process.env.NODE_ENV === 'test'
+    );
+}
+
+/**
+ * Resolve the HMAC secret: owner env wins; else ephemeral in isolated/dev/test.
+ * @returns {string|null}
+ */
+function _resolveSecret() {
+    const envSecret = process.env.SERVER_SECRET;
+    if (typeof envSecret === 'string' && envSecret.length > 0) return envSecret;
+    if (!_allowEphemeralSecret()) return null;
+    if (!_ephemeralSecret) {
+        _ephemeralSecret = crypto.randomBytes(32).toString('hex');
+    }
+    return _ephemeralSecret;
+}
+
+/** Guard: returns true when a session secret is available. */
 function _hasSecret() {
-    return typeof process.env.SERVER_SECRET === 'string' && process.env.SERVER_SECRET.length > 0;
+    return _resolveSecret() != null;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,11 +87,13 @@ function _hasSecret() {
  * @returns {string}
  */
 function signSession(userId, { days = 30 } = {}) {
-    if (!_hasSecret()) throw new Error('SERVER_SECRET este neconfigurat — sesiunile nu pot fi semnate.');
+    const secret = _resolveSecret();
+    // Human Romanian only — never name env vars (browser/JSON must not see them).
+    if (!secret) throw new Error('Sesiunile nu pot fi semnate. Reîncearcă mai târziu.');
     const exp     = Math.floor(Date.now() / 1000) + days * 86400;
     const payload = b64url(Buffer.from(JSON.stringify({ uid: userId, exp })));
     const sig     = b64url(
-        crypto.createHmac('sha256', process.env.SERVER_SECRET)
+        crypto.createHmac('sha256', secret)
             .update(`v1.${payload}`)
             .digest()
     );
@@ -73,7 +107,8 @@ function signSession(userId, { days = 30 } = {}) {
  * @returns {string|null} userId or null
  */
 function verifySession(cookieValue) {
-    if (!_hasSecret()) return null;
+    const secret = _resolveSecret();
+    if (!secret) return null;
     if (!cookieValue || typeof cookieValue !== 'string') return null;
 
     const parts = cookieValue.split('.');
@@ -82,7 +117,7 @@ function verifySession(cookieValue) {
 
     // Verify HMAC
     const expectedSig = b64url(
-        crypto.createHmac('sha256', process.env.SERVER_SECRET)
+        crypto.createHmac('sha256', secret)
             .update(`v1.${payloadB64}`)
             .digest()
     );

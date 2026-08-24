@@ -412,8 +412,14 @@ async function handleAuthVerify(req, res, query) {
     let auth;
     try { auth = getAuth(); } catch { return sendRedirect(res, '/app/#login-expirat'); }
 
-    const cookieValue = auth.signSession(user.id);
-    const cookie      = auth.buildSessionCookie(cookieValue);
+    let cookieValue;
+    try {
+        cookieValue = auth.signSession(user.id);
+    } catch {
+        // Missing secret outside isolated/dev: fail closed, no env names in body.
+        return sendRedirect(res, '/app/#login-expirat');
+    }
+    const cookie = auth.buildSessionCookie(cookieValue);
     // Draft from Telegram lands on dashboard (same registry site; pay/publish in /app/).
     res.writeHead(302, { 'Set-Cookie': cookie, 'Location': '/app/#dashboard' });
     res.end();
@@ -1022,7 +1028,13 @@ function createHandler({ onStripeEvent } = {}) {
             return sendJson(res, 404, { error: 'not found' });
         } catch (e) {
             log('server.error', { err: e.message, url }, 'error');
-            try { sendJson(res, e.status || 500, { error: e.message || 'Eroare internă.' }); } catch (_) {}
+            // Never forward env var names / stack traces to the browser (factory leak).
+            const raw = (e && e.message) || 'Eroare internă.';
+            const leaksEnv =
+                /SERVER_SECRET|STRIPE_SECRET|STRIPE_WEBHOOK|TELEGRAM_BOT_TOKEN|process\.env|HIDOOK_[A-Z0-9_]+/i.test(raw) ||
+                /\bat\s+\S+\s+\([^)]+:\d+:\d+\)/.test(raw);
+            const safe = leaksEnv ? 'Eroare internă.' : raw;
+            try { sendJson(res, e.status || 500, { error: safe }); } catch (_) {}
         }
     };
 }
