@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="{{business.lang}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{business.title}}</title>
+    <meta name="description" content="{{business.metaDescription}}">
+    <meta property="og:title" content="{{business.title}}">
+    <meta property="og:description" content="{{business.metaDescription}}">
+    <!-- @if seo.ogImage -->
+    <meta property="og:image" content="{{seo.ogImage}}">
+    <!-- @endif -->
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{business.title}}">
+    <meta name="twitter:description" content="{{business.metaDescription}}">
+    <!-- @if seo.ogImage -->
+    <meta name="twitter:image" content="{{seo.ogImage}}">
+    <!-- @endif -->
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <!-- @if seo.canonical -->
+    <link rel="canonical" href="{{seo.canonical}}">
+    <meta property="og:url" content="{{seo.canonical}}">
+    <!-- @endif -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F3EFE8'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='%239A4030' stroke-width='2'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --color-primary:       {{theme.primary}};
+            --color-primary-light: {{theme.primaryLight}};
+            --color-primary-dark:  {{theme.primaryDark}};
+            --color-cream:         {{theme.cream}};
+        }
+    </style>
+    <!-- @if seo.jsonLd -->
+    <script type="application/ld+json">{{& seo.jsonLd}}</script>
+    <!-- @endif -->
+    <script>document.documentElement.classList.add('js-loaded');</script>
+    <noscript><style>
+        .pr-reveal, .pr-hero__copy { opacity: 1 !important; transform: none !important; }
+    </style></noscript>
+</head>
+<body class="pr-page">
+
+    <header class="pr-nav" id="top">
+        <div class="pr-nav__inner">
+            <!-- @if logo -->
+            <a href="#top" class="pr-nav__brand"><img src="{{logo}}" alt="{{business.name}}" class="pr-nav__logo"></a>
+            <!-- @endif -->
+            <!-- @if showWordmark --><!-- @if !logo --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
+            <!-- @if !logo --><!-- @if !showWordmark --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
+            <nav class="pr-nav__links" aria-label="Navigare">
+                <a href="#services">{{labels.navServices}}</a>
+                <a href="#about">{{labels.navAbout}}</a>
+                <a href="#faq">{{labels.navFaq}}</a>
+                <a href="#contact">{{labels.navContact}}</a>
+            </nav>
+            <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+        </div>
+    </header>
+
+    <section class="pr-hero" aria-labelledby="hero-heading">
+        <div class="pr-hero__bg" style="background: {{& hero.background}}" aria-hidden="true"></div>
+        <div class="pr-hero__veil" aria-hidden="true"></div>
+        <div class="pr-shell pr-hero__copy">
+            <!-- @if business.profession -->
+            <p class="pr-kicker">{{business.profession}}</p>
+            <!-- @endif -->
+            <h1 class="pr-display" id="hero-heading">{{business.tagline}}</h1>
+            <!-- @if hero.qualifier -->
+            <p class="pr-lede">{{hero.qualifier}}</p>
+            <!-- @endif -->
+            <div class="pr-hero__actions">
+                <a href="#appointment" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
+                <a href="#services" class="pr-btn pr-btn--ghost">{{labels.secondaryCta}}</a>
+            </div>
+            <!-- @if business.modes -->
+            <p class="pr-hero__meta">{{business.modes}}<!-- @if business.languages --> · {{business.languages}}<!-- @endif --></p>
+            <!-- @endif -->
+        </div>
+        <a href="#services" class="pr-scroll" aria-label="{{labels.scroll}}">
+            <span>{{labels.scroll}}</span>
+        </a>
+    </section>
+
+    <main>
+        <!-- @if business.profession -->
+        <section class="pr-strip pr-reveal" aria-label="Credibilitate">
+            <div class="pr-shell pr-strip__row">
+                <span class="pr-strip__item">{{business.profession}}</span>
+                <!-- @if business.languages -->
+                <span class="pr-strip__dot" aria-hidden="true"></span>
+                <span class="pr-strip__item">{{business.languages}}</span>
+                <!-- @endif -->
+                <!-- @if business.modes -->
+                <span class="pr-strip__dot" aria-hidden="true"></span>
+                <span class="pr-strip__item">{{business.modes}}</span>
+                <!-- @endif -->
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if services -->
+        <section class="pr-sec pr-reveal" id="services" aria-labelledby="services-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.servicesEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="services-heading">{{servicesTitle}}</h2>
+                <ul class="pr-svc" role="list">
+                    <!-- @each services -->
+                    <li class="pr-svc__card">
+                        <h3 class="pr-svc__title">{{label}}</h3>
+                        <!-- @if blurb --><p class="pr-copy">{{blurb}}</p><!-- @endif -->
+                    </li>
+                    <!-- @end -->
+                </ul>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if process.steps -->
+        <section class="pr-sec pr-sec--alt pr-reveal" id="process" aria-labelledby="process-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.processEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="process-heading">{{process.title}}</h2>
+                <ol class="pr-steps">
+                    <!-- @each process.steps -->
+                    <li class="pr-steps__item">
+                        <span class="pr-steps__num" aria-hidden="true"></span>
+                        <div>
+                            <h3 class="pr-steps__title">{{title}}</h3>
+                            <!-- @if text --><p class="pr-copy">{{text}}</p><!-- @endif -->
+                        </div>
+                    </li>
+                    <!-- @end -->
+                </ol>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <section class="pr-sec pr-reveal" id="about" aria-labelledby="about-heading">
+            <div class="pr-shell pr-about">
+                <div>
+                    <p class="pr-kicker">{{labels.aboutEyebrow}}</p>
+                    <h2 class="pr-display pr-display--sec" id="about-heading">{{business.name}}</h2>
+                    <p class="pr-copy pr-copy--lg">{{business.about}}</p>
+                </div>
+                <!-- @if credentials.items -->
+                <aside class="pr-cred" aria-labelledby="cred-heading">
+                    <!-- @if credentials.title -->
+                    <h3 class="pr-cred__title" id="cred-heading">{{credentials.title}}</h3>
+                    <!-- @endif -->
+                    <!-- @if credentials.lead -->
+                    <p class="pr-copy">{{credentials.lead}}</p>
+                    <!-- @endif -->
+                    <ul class="pr-cred__list" role="list">
+                        <!-- @each credentials.items -->
+                        <li>{{label}}</li>
+                        <!-- @end -->
+                    </ul>
+                </aside>
+                <!-- @endif -->
+            </div>
+        </section>
+
+        <!-- @if appointment.enabled -->
+        <section class="pr-sec pr-sec--book pr-reveal" id="appointment" aria-labelledby="book-heading"
+            data-pr-appt="1"
+            data-tz="{{appointment.timezone}}"
+            data-interval="{{appointment.slotIntervalMinutes}}"
+            data-duration="{{appointment.durationMin}}"
+            data-lead="{{appointment.minLeadMinutes}}"
+            data-mode="{{appointment.modeLabel}}"
+            data-confirm="{{appointment.confirmationText}}"
+            data-empty="{{appointment.emptySlotsText}}"
+            data-submit="{{appointment.submitLabel}}">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.bookEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
+                <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
+                <!-- @if appointment.confidentialityWarning -->
+                <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
+                <!-- @endif -->
+
+                <form class="pr-appt" id="pr-appt-form" novalidate>
+                    <fieldset class="pr-appt__fieldset">
+                        <legend class="pr-appt__legend">Tip discuție</legend>
+                        <div class="pr-appt__types" role="radiogroup" aria-label="Tip discuție">
+                            <!-- @each appointment.types -->
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="{{id}}"
+                                    data-label="{{label}}"
+                                    data-duration="{{durationMin}}"
+                                    data-mode="{{mode}}">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">{{label}}</span>
+                                    <span class="pr-type__meta">{{durationMin}} min · {{mode}}</span>
+                                </span>
+                            </label>
+                            <!-- @end -->
+                        </div>
+                    </fieldset>
+
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-appt-date">Data</label>
+                            <select class="pr-input" id="pr-appt-date" name="date" required></select>
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-appt-slot">Interval</label>
+                            <select class="pr-input" id="pr-appt-slot" name="slot" required></select>
+                        </div>
+                    </div>
+
+                    <p class="pr-appt__hint" id="pr-appt-hint" hidden></p>
+
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-name">Nume</label>
+                            <input class="pr-input" id="pr-name" name="name" type="text" autocomplete="name" required maxlength="80">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-email">Email</label>
+                            <input class="pr-input" id="pr-email" name="email" type="email" autocomplete="email" required maxlength="120">
+                        </div>
+                    </div>
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-phone">Telefon <span class="pr-opt">(opțional)</span></label>
+                            <input class="pr-input" id="pr-phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-note">Notă <span class="pr-opt">(opțional, fără date confidențiale)</span></label>
+                            <input class="pr-input" id="pr-note" name="note" type="text" maxlength="200">
+                        </div>
+                    </div>
+
+                    <!-- @if appointment.privacyNotice -->
+                    <p class="pr-privacy">{{appointment.privacyNotice}}</p>
+                    <!-- @endif -->
+
+                    <button type="submit" class="pr-btn pr-btn--primary pr-appt__submit" id="pr-appt-submit">
+                        <span>{{appointment.submitLabel}}</span>
+                    </button>
+                    <p class="pr-appt__fallback">
+                        Preferi alt canal?
+                        <!-- @if contact.email -->
+                        <a href="mailto:{{contact.email}}">{{contact.email}}</a>
+                        <!-- @endif -->
+                        <!-- @if contact.phone -->
+                        · <a href="tel:{{contact.phone}}">{{contact.phoneDisplay}}</a>
+                        <!-- @endif -->
+                    </p>
+                </form>
+
+                <div class="pr-appt-done" id="pr-appt-done" hidden>
+                    <h3 class="pr-appt-done__title">Cerere trimisă — în așteptarea confirmării</h3>
+                    <p class="pr-copy" id="pr-appt-done-body"></p>
+                    <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
+                </div>
+
+                <div id="pr-weekly" hidden aria-hidden="true">
+                    <!-- @each appointment.weekly -->
+                    <span data-w="{{weekday}}" data-s="{{start}}" data-e="{{end}}"></span>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if faq.items -->
+        <section class="pr-sec pr-reveal" id="faq" aria-labelledby="faq-heading">
+            <div class="pr-shell pr-faq-wrap">
+                <p class="pr-kicker">{{labels.faqEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="faq-heading">{{faq.title}}</h2>
+                <div class="pr-faq">
+                    <!-- @each faq.items -->
+                    <details class="pr-faq__item">
+                        <summary class="pr-faq__q">{{q}}</summary>
+                        <p class="pr-copy">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if instagram.handle -->
+        <section class="pr-sec pr-sec--alt pr-reveal" id="instagram" aria-labelledby="insta-heading">
+            <div class="pr-shell">
+                <div class="pr-ig-head">
+                    <div>
+                        <h2 class="pr-display pr-display--sec" id="insta-heading">{{labels.instaTitle}}</h2>
+                        <p class="pr-ig-handle">@{{instagram.handle}}</p>
+                    </div>
+                    <!-- @if instagram.url -->
+                    <a href="{{instagram.url}}" class="pr-btn pr-btn--ghost" target="_blank" rel="noopener">{{labels.instaFollow}}</a>
+                    <!-- @endif -->
+                </div>
+                <!-- @if instagram.embedUrl -->
+                <div class="pr-ig-embed">
+                    <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </div>
+                <!-- @endif -->
+                <!-- @if instagram.gallery -->
+                <div class="pr-ig-grid">
+                    <!-- @each instagram.gallery -->
+                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pr-ig-cell">
+                        <img src="{{.}}" alt="{{business.name}}" loading="lazy">
+                    </a>
+                    <!-- @end -->
+                </div>
+                <!-- @endif -->
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <section class="pr-sec pr-reveal" id="contact" aria-labelledby="contact-heading">
+            <div class="pr-shell pr-contact">
+                <div>
+                    <p class="pr-kicker">{{labels.contactEyebrow}}</p>
+                    <h2 class="pr-display pr-display--sec" id="contact-heading">{{contact.title}}</h2>
+                    <p class="pr-copy pr-copy--lg">{{contact.intro}}</p>
+                    <!-- @if contact.hoursNote -->
+                    <p class="pr-copy pr-copy--sm">{{contact.hoursNote}}</p>
+                    <!-- @endif -->
+                </div>
+                <ul class="pr-contact__list" role="list">
+                    <!-- @if contact.phone -->
+                    <li><a class="pr-contact__row" href="tel:{{contact.phone}}">{{contact.phoneDisplay}}</a></li>
+                    <!-- @endif -->
+                    <!-- @if contact.email -->
+                    <li><a class="pr-contact__row" href="mailto:{{contact.email}}">{{contact.email}}</a></li>
+                    <!-- @endif -->
+                    <!-- @if contact.waHref -->
+                    <li><a class="pr-contact__row" href="{{contact.waHref}}" target="_blank" rel="noopener">WhatsApp</a></li>
+                    <!-- @endif -->
+                    <!-- @if contact.addressHref -->
+                    <li><a class="pr-contact__row" href="{{contact.addressHref}}" target="_blank" rel="noopener">{{& contact.address}}</a></li>
+                    <!-- @endif -->
+                    <!-- @if contact.address --><!-- @if !contact.addressHref -->
+                    <li><span class="pr-contact__row pr-contact__row--static">{{& contact.address}}</span></li>
+                    <!-- @endif --><!-- @endif -->
+                    <!-- @if contact.instagram.url -->
+                    <li><a class="pr-contact__row" href="{{contact.instagram.url}}" target="_blank" rel="noopener">{{contact.instagram.label}}</a></li>
+                    <!-- @endif -->
+                    <!-- @if contact.facebook.url -->
+                    <li><a class="pr-contact__row" href="{{contact.facebook.url}}" target="_blank" rel="noopener">{{contact.facebook.label}}</a></li>
+                    <!-- @endif -->
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="pr-foot">
+        <div class="pr-shell pr-foot__inner">
+            <div>
+                <p class="pr-foot__name">{{business.name}}</p>
+                <!-- @if footer.address --><p class="pr-copy pr-copy--sm">{{footer.address}}</p><!-- @endif -->
+            </div>
+            <p class="pr-copy pr-copy--sm">&copy; {{footer.year}} {{business.name}}. <!-- @if footer.note -->{{footer.note}}<!-- @endif --></p>
+        </div>
+    </footer>
+
+    <!-- @if contact.whatsapp -->
+    <div class="wa-qr" id="wa-qr" hidden>
+        <div class="wa-qr__backdrop" data-wa-close></div>
+        <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
+            <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
+            <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
+            <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
+        </div>
+    </div>
+    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
+    <!-- @endif -->
+
+    <script src="script.js"></script>
+</body>
+</html>

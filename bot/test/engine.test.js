@@ -299,7 +299,7 @@ check('(h) editMode: continutul <style>/<script>/<title> NU e invelit (regresie:
     // Bug real: {{theme.primary}} din <style> era invelit in <span data-hb-edit>,
     // corupand intregul stylesheet al temei → editorul se randa complet alb.
     const { renderHtml } = require('../../build.js');
-    for (const tid of ['product-menu', 'local-service', 'portfolio']) {
+    for (const tid of ['product-menu', 'local-service', 'portfolio', 'professionals']) {
         const tpl = fs.readFileSync(path.join(ROOT, 'templates', tid, 'template.html'), 'utf8');
         const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', tid, 'presets.json'), 'utf8')).presets[0].config;
         const html = renderHtml(tpl, cfg, { editMode: true });

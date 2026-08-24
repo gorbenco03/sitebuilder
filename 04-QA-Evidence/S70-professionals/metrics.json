@@ -1,0 +1,23 @@
+{
+  "browser": "brave-headless",
+  "html": "professionals-cabinet-marin.html",
+  "shots": [
+    { "file": "professionals-desktop-1440.png", "w": 1440, "bytes": 645337 },
+    { "file": "professionals-mobile-390.png", "w": 390, "bytes": 226641 }
+  ],
+  "checks": {
+    "hasAppt": true,
+    "hasBusiness": true,
+    "noCalendly": true,
+    "requestLanguage": true
+  },
+  "tests": {
+    "s70-professionals-appointments": "ok",
+    "s3-design-systems": "ok",
+    "builder-editor-commercial": "ok",
+    "templates-readme-commercial": "ok",
+    "engine": "ok",
+    "s48-editor-vertical-labels": "ok",
+    "telegram-draft": "ok"
+  }
+}

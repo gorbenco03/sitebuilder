@@ -265,6 +265,7 @@ const DESIGN_BADGE_BY_ID = {
   'product-menu': 'Restaurant',
   'local-service': 'Meseriași',
   'portfolio': 'Salon',
+  'professionals': 'Servicii profesionale',
 };
 
 function designBadgeLabel(tpl) {

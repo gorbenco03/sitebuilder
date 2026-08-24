@@ -1,6 +1,6 @@
 # Templates — Hidook Site Builder design systems
 
-**Hidook Site Builder** ships three **design systems** under `templates/` (`product-menu`, `local-service`, `portfolio`). Each folder is a vertical template: HTML/CSS/JS plus `schema.json` / `presets.json` for the wizard.
+**Hidook Site Builder** ships four **design systems** under `templates/` (`product-menu`, `local-service`, `portfolio`, `professionals`). Each folder is a vertical template: HTML/CSS/JS plus `schema.json` / `presets.json` for the wizard. The professionals system includes a local appointment-*request* flow (no external calendar).
 
 The **browser builder** is the commercial product (account, editor, pay, publish). **Telegram** is draft-intake that creates or opens the **same** draft in that editor — not a second product that publishes a live site by itself. Do not treat legacy bakery names (`desserdina` / DESSERD) or absolute machine paths as the product.
 

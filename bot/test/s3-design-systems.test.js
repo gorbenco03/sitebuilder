@@ -1,6 +1,6 @@
 'use strict';
 /**
- * S3: commercial catalog is exactly three art-directed systems.
+ * S3: commercial catalog is four art-directed systems (S70 added professionals).
  * Includes causal anti-clone checks vs pre-S3 DESSERD verticals on cdf1ba2.
  * Run: node bot/test/s3-design-systems.test.js
  */
@@ -10,7 +10,7 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const EXPECTED = ['product-menu', 'local-service', 'portfolio'];
+const EXPECTED = ['product-menu', 'local-service', 'portfolio', 'professionals'];
 const REJECTED = ['patiserie', 'constructii', 'servicii', 'beauty', 'evenimente'];
 
 /** Parent accepted before S3; DESSERD-era verticals live here for similarity baselines. */
@@ -75,7 +75,7 @@ function jaccard(a, b) {
     return uni === 0 ? 0 : inter / uni;
 }
 
-check('registry.templates maps to exactly product-menu, local-service, portfolio', () => {
+check('registry.templates maps to product-menu, local-service, portfolio, professionals', () => {
     const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'registry.json'), 'utf8'));
     assert.ok(Array.isArray(reg.templates), 'registry.templates must be an array');
     const ids = reg.templates.map((t) => t.id);
@@ -83,7 +83,7 @@ check('registry.templates maps to exactly product-menu, local-service, portfolio
     for (const bad of REJECTED) {
         assert.ok(!ids.includes(bad), `rejected id still listed: ${bad}`);
     }
-    assert.strictEqual(reg.templates.length, 3);
+    assert.strictEqual(reg.templates.length, 4);
 });
 
 check('each system folder renders via renderHtml (no unresolved {{, editMode fields)', () => {

@@ -260,12 +260,12 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 8000, inte
         assert.ok(html.length > 50, 'builder HTML body');
     });
 
-    await check('GET /api/templates includes product-menu, local-service, portfolio', async () => {
+    await check('GET /api/templates includes product-menu, local-service, portfolio, professionals', async () => {
         const res = await fetch(`${base}/api/templates`);
         assert.strictEqual(res.status, 200);
         const body = await res.json();
         const ids = (body.templates || []).map((t) => t.id);
-        for (const id of ['product-menu', 'local-service', 'portfolio']) {
+        for (const id of ['product-menu', 'local-service', 'portfolio', 'professionals']) {
             assert.ok(ids.includes(id), `missing template ${id}: ${ids.join(',')}`);
         }
     });

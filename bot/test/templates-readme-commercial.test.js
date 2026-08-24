@@ -105,14 +105,15 @@ async function run() {
     });
 
     await check(
-        'templates/README.md describes three Hidook design systems (product-menu, local-service, portfolio)',
+        'templates/README.md describes Hidook design systems (product-menu, local-service, portfolio, professionals)',
         () => {
             assert.ok(/product-menu/i.test(readme), 'must mention product-menu');
             assert.ok(/local-service/i.test(readme), 'must mention local-service');
             assert.ok(/portfolio/i.test(readme), 'must mention portfolio');
+            assert.ok(/professionals/i.test(readme), 'must mention professionals');
             assert.ok(
                 /design system/i.test(readme),
-                'must frame the three verticals as Hidook design systems'
+                'must frame the verticals as Hidook design systems'
             );
         }
     );

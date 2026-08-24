@@ -26,6 +26,7 @@
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
+ *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  * Pricing amounts come only from ./pricing.js.
@@ -565,6 +566,207 @@ async function handleRollback(req, res, siteId) {
         log('server.rollback.error', { siteId, err: e.message }, 'error');
         sendJson(res, 500, { error: 'Republicarea a eșuat: ' + e.message });
     }
+}
+
+// ---------------------------------------------------------------------------
+// Appointments — local request store (no external calendar; status=requested only)
+// ---------------------------------------------------------------------------
+
+function appointmentsDataDir() {
+    return process.env.DATA_DIR || path.join(__dirname, '..');
+}
+
+function appointmentsFileForSlug(slug) {
+    const safe = String(slug || '').toLowerCase();
+    return path.join(appointmentsDataDir(), 'appointments', `${safe}.json`);
+}
+
+function loadAppointmentRequests(slug) {
+    try {
+        const raw = fs.readFileSync(appointmentsFileForSlug(slug), 'utf8');
+        const data = JSON.parse(raw);
+        return Array.isArray(data.requests) ? data.requests : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveAppointmentRequests(slug, requests) {
+    const dir = path.join(appointmentsDataDir(), 'appointments');
+    fs.mkdirSync(dir, { recursive: true });
+    const file = appointmentsFileForSlug(slug);
+    const tmp = file + '.tmp';
+    const payload = JSON.stringify({ slug, updatedAt: new Date().toISOString(), requests }, null, 2);
+    fs.writeFileSync(tmp, payload, 'utf8');
+    fs.renameSync(tmp, file);
+}
+
+function liveSiteExists(slug) {
+    const dataDir = appointmentsDataDir();
+    const publishedRoot = path.resolve(path.join(dataDir, 'published'));
+    const siteRoot = path.resolve(path.join(publishedRoot, String(slug).toLowerCase()));
+    if (!siteRoot.startsWith(publishedRoot + path.sep) && siteRoot !== publishedRoot) return false;
+    try {
+        return fs.statSync(path.join(siteRoot, 'index.html')).isFile();
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * POST /api/appointments — public visitor appointment *request* for a published live slug.
+ * Never returns confirmed booking. Persists under DATA_DIR/appointments/<slug>.json.
+ */
+async function handleCreateAppointment(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 64 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
+    }
+
+    const slug = String((body && body.slug) || '').toLowerCase().trim();
+    if (!SLUG_RE.test(slug)) {
+        return sendJson(res, 400, { error: 'Site invalid.' });
+    }
+    if (!liveSiteExists(slug)) {
+        return sendJson(res, 404, { error: 'Site-ul nu este publicat.' });
+    }
+
+    const visitorName = String((body && body.visitorName) || '').trim().slice(0, 80);
+    const visitorEmail = String((body && body.visitorEmail) || '').trim().slice(0, 120);
+    const visitorPhone = String((body && body.visitorPhone) || '').trim().slice(0, 40);
+    const note = String((body && body.note) || '').trim().slice(0, 400);
+    const appointmentTypeId = String((body && body.appointmentTypeId) || '').trim().slice(0, 64);
+    const appointmentTypeLabel = String((body && body.appointmentTypeLabel) || '').trim().slice(0, 80);
+    const timezone = String((body && body.timezone) || 'Europe/Bucharest').trim().slice(0, 64);
+    const requestedStartISO = String((body && body.requestedStartISO) || '').trim();
+    const durationMin = Math.min(480, Math.max(15, parseInt((body && body.durationMin) || '45', 10) || 45));
+    const mode = String((body && body.mode) || '').trim().slice(0, 40);
+
+    if (!visitorName || !visitorEmail) {
+        return sendJson(res, 400, { error: 'Numele și emailul sunt obligatorii.' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail)) {
+        return sendJson(res, 400, { error: 'Email invalid.' });
+    }
+    const startMs = Date.parse(requestedStartISO);
+    if (!Number.isFinite(startMs)) {
+        return sendJson(res, 400, { error: 'Interval invalid.' });
+    }
+    // Soft lead: reject far-past starts (allow 5 min clock skew)
+    if (startMs < Date.now() - 5 * 60 * 1000) {
+        return sendJson(res, 400, { error: 'Intervalul ales nu mai este disponibil.' });
+    }
+    if (!appointmentTypeId) {
+        return sendJson(res, 400, { error: 'Tipul de discuție lipsește.' });
+    }
+
+    const id = crypto.randomBytes(12).toString('hex');
+    const now = new Date().toISOString();
+    const record = {
+        id,
+        slug,
+        appointmentTypeId,
+        appointmentTypeLabel: appointmentTypeLabel || appointmentTypeId,
+        requestedStartISO: new Date(startMs).toISOString(),
+        timezone,
+        durationMin,
+        mode,
+        visitorName,
+        visitorEmail,
+        visitorPhone: visitorPhone || undefined,
+        note: note || undefined,
+        status: 'requested',
+        createdAt: now,
+        updatedAt: now,
+    };
+
+    const existing = loadAppointmentRequests(slug);
+    // Idempotency: same email + same start within 2 minutes → return existing
+    const dup = existing.find((r) =>
+        r &&
+        r.status === 'requested' &&
+        String(r.visitorEmail).toLowerCase() === visitorEmail.toLowerCase() &&
+        r.requestedStartISO === record.requestedStartISO &&
+        Math.abs(Date.parse(r.createdAt) - Date.parse(now)) < 2 * 60 * 1000
+    );
+    if (dup) {
+        return sendJson(res, 200, {
+            ok: true,
+            id: dup.id,
+            status: 'requested',
+            requestedStartISO: dup.requestedStartISO,
+            timezone: dup.timezone,
+            appointmentTypeLabel: dup.appointmentTypeLabel,
+            alreadyRecorded: true,
+        });
+    }
+
+    existing.push(record);
+    // Cap per site for local demo
+    const trimmed = existing.slice(-500);
+    try {
+        saveAppointmentRequests(slug, trimmed);
+    } catch (e) {
+        log('appointments.save_error', { slug, err: e.message }, 'error');
+        return sendJson(res, 500, { error: 'Nu am putut salva cererea.' });
+    }
+
+    log('appointments.requested', { slug, id, type: appointmentTypeId });
+    return sendJson(res, 200, {
+        ok: true,
+        id,
+        status: 'requested',
+        requestedStartISO: record.requestedStartISO,
+        timezone,
+        appointmentTypeLabel: record.appointmentTypeLabel,
+    });
+}
+
+/**
+ * GET /api/appointments?slug= — owner-only list of requests for a live slug.
+ * Requires auth + site ownership (visitorName/visitorEmail are PII). POST stays public.
+ */
+async function handleListAppointments(req, res, query) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const slug = String((query && typeof query.get === 'function' ? query.get('slug') : '') || '').toLowerCase().trim();
+    if (!SLUG_RE.test(slug)) {
+        return sendJson(res, 400, { error: 'Site invalid.' });
+    }
+    if (!liveSiteExists(slug)) {
+        return sendJson(res, 404, { error: 'Site-ul nu este publicat.' });
+    }
+
+    const reg = getRegistry();
+    const owned = (await reg.listSites(userId)).some(
+        (s) => s && (
+            String(s.slug || '').toLowerCase() === slug ||
+            String(s.projectName || '').toLowerCase() === slug
+        )
+    );
+    if (!owned) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    const requests = loadAppointmentRequests(slug).map((r) => ({
+        id: r.id,
+        status: r.status,
+        requestedStartISO: r.requestedStartISO,
+        timezone: r.timezone,
+        appointmentTypeId: r.appointmentTypeId,
+        appointmentTypeLabel: r.appointmentTypeLabel,
+        visitorName: r.visitorName,
+        visitorEmail: r.visitorEmail,
+        visitorPhone: r.visitorPhone,
+        note: r.note,
+        mode: r.mode,
+        durationMin: r.durationMin,
+        createdAt: r.createdAt,
+    }));
+    return sendJson(res, 200, { ok: true, slug, requests });
 }
 
 /**
@@ -1206,6 +1408,14 @@ function createHandler({ onStripeEvent } = {}) {
             // Offline test-pay return from /app/#test-checkout=cs_test_* (non-production only)
             if (req.method === 'POST' && url === '/api/test-pay/complete') {
                 return await handleTestPayComplete(req, res);
+            }
+
+            // Public appointment requests (local isolated store; live slug required)
+            if (req.method === 'POST' && url === '/api/appointments') {
+                return await handleCreateAppointment(req, res);
+            }
+            if (req.method === 'GET' && url === '/api/appointments') {
+                return await handleListAppointments(req, res, query);
             }
 
             // Unknown route: browser document → short RO HTML; API → JSON

@@ -16,7 +16,7 @@ const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
 
-const CATALOG = ['product-menu', 'local-service', 'portfolio'];
+const CATALOG = ['product-menu', 'local-service', 'portfolio', 'professionals'];
 const REJECTED = ['patiserie', 'constructii', 'servicii', 'beauty', 'evenimente'];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'tg-draft-'));

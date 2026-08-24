@@ -20,6 +20,13 @@
       "vertical": "portfolio",
       "description": "Saloane de frumusețe, cosmetică, coafor, nail — rezervări și portofoliu de lucrări",
       "version": 1
+    },
+    {
+      "id": "professionals",
+      "name": "Servicii profesionale",
+      "vertical": "professionals",
+      "description": "Avocați, consultanți, contabili, notari, brokeri, coach — expertiză, încredere și programări pe cerere, fără calendar extern.",
+      "version": 1
     }
   ]
 }

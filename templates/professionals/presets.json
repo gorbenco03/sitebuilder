@@ -1,0 +1,367 @@
+{
+  "presets": [
+    {
+      "id": "cabinet-marin",
+      "name": "Cabinet Marin",
+      "config": {
+        "business": {
+          "name": "Cabinet Marin",
+          "tagline": "Claritate pentru deciziile care contează.",
+          "title": "Cabinet Marin | Consultanță juridică | București",
+          "metaDescription": "Consultanță juridică pentru contracte, societăți și negocieri. Discuții pe programare, online sau la birou în București.",
+          "about": "Lucrăm cu antreprenori și profesioniști care vor explicații clare înainte de a semna. Fiecare discuție începe cu contextul tău, nu cu un pachet standard. Nu promitem rezultate — promitem rigoare și comunicare directă.",
+          "lang": "ro",
+          "profession": "Avocat — consultanță civilă și comercială",
+          "languages": "Română, Engleză",
+          "modes": "Online și la birou"
+        },
+        "labels": {
+          "navServices": "Servicii",
+          "navAbout": "Despre",
+          "navFaq": "Întrebări",
+          "navContact": "Contact",
+          "navBook": "Programare",
+          "servicesEyebrow": "Expertiză",
+          "processEyebrow": "Cum lucrăm",
+          "aboutEyebrow": "Despre cabinet",
+          "faqEyebrow": "Întrebări frecvente",
+          "bookEyebrow": "Programare",
+          "contactEyebrow": "Contact",
+          "secondaryCta": "Vezi serviciile",
+          "scroll": "Mai departe",
+          "instaTitle": "Actualizări",
+          "instaFollow": "Urmărește",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#9A4030",
+          "primaryLight": "#C4A574",
+          "primaryDark": "#14120F",
+          "cream": "#F3EFE8"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(145deg, #F3EFE8 0%, #E8E2D6 48%, #D9D2C4 100%)",
+          "ctaLabel": "Programează o discuție",
+          "qualifier": "Consultații online și la birou, pe bază de programare."
+        },
+        "servicesTitle": "Servicii",
+        "services": [
+          {
+            "label": "Contracte și negocieri",
+            "blurb": "Citire atentă, riscuri pe înțelesul tău, propuneri de reformulare."
+          },
+          {
+            "label": "Societăți și guvernanță",
+            "blurb": "Structuri simple, acte constitutive, relații între asociați."
+          },
+          {
+            "label": "Consultanță civilă",
+            "blurb": "Orientare înainte de litigiu — opțiuni, termene, pași concreți."
+          },
+          {
+            "label": "Due diligence ușor",
+            "blurb": "Checklist-uri pentru tranzacții mici și medii, fără jargon inutil."
+          }
+        ],
+        "process": {
+          "title": "De la cerere la discuție",
+          "steps": [
+            {
+              "title": "Trimiți cererea",
+              "text": "Alegi tipul de discuție și un interval potrivit. Este o cerere, nu o rezervare confirmată."
+            },
+            {
+              "title": "Confirmăm intervalul",
+              "text": "Îți scriem pe email sau telefon ca să stabilim împreună ora finală."
+            },
+            {
+              "title": "Discutăm opțiunile",
+              "text": "Online sau la birou — cu agenda pe care o pregătești tu."
+            }
+          ]
+        },
+        "credentials": {
+          "title": "Credențiale",
+          "lead": "Experiență, rigoare și comunicare directă.",
+          "items": [
+            { "label": "Consultanță civilă și comercială" },
+            { "label": "Limbi: română, engleză" },
+            { "label": "Discuții pe programare — online sau la birou" }
+          ]
+        },
+        "faq": {
+          "title": "Întrebări frecvente",
+          "items": [
+            {
+              "q": "Cum mă pregătesc pentru discuție?",
+              "a": "Trimite pe scurt contextul și documentele publice pe care vrei să le discutăm. Nu trimite secrete pe formularul de programare."
+            },
+            {
+              "q": "Pot discuta online?",
+              "a": "Da. Alegi modul la cerere; îți trimitem legătura după confirmare."
+            },
+            {
+              "q": "Cât durează o primă discuție?",
+              "a": "De obicei 45–60 de minute, în funcție de tipul ales."
+            },
+            {
+              "q": "Trimiterea cererii înseamnă programare confirmată?",
+              "a": "Nu. Cererea este înregistrată; confirmăm disponibilitatea înainte ca întâlnirea să fie stabilită."
+            }
+          ]
+        },
+        "appointment": {
+          "enabled": "da",
+          "title": "Solicită o programare",
+          "intro": "Alege un interval potrivit. Îți confirmăm cererea prin datele de contact oferite — nu este o rezervare automată.",
+          "timezone": "Europe/Bucharest",
+          "slotIntervalMinutes": "60",
+          "durationMin": "45",
+          "minLeadMinutes": "120",
+          "modeLabel": "Online sau la birou",
+          "types": [
+            {
+              "id": "consult-init",
+              "label": "Prima discuție",
+              "durationMin": "45",
+              "mode": "online"
+            },
+            {
+              "id": "contract-review",
+              "label": "Revizuire contract",
+              "durationMin": "60",
+              "mode": "office"
+            },
+            {
+              "id": "follow-up",
+              "label": "Follow-up",
+              "durationMin": "30",
+              "mode": "phone"
+            }
+          ],
+          "weekly": [
+            { "weekday": "1", "start": "09:00", "end": "17:00" },
+            { "weekday": "2", "start": "09:00", "end": "17:00" },
+            { "weekday": "3", "start": "09:00", "end": "17:00" },
+            { "weekday": "4", "start": "09:00", "end": "17:00" },
+            { "weekday": "5", "start": "09:00", "end": "15:00" }
+          ],
+          "confirmationText": "Cererea ta a fost înregistrată. Îți vom confirma disponibilitatea înainte ca întâlnirea să fie stabilită.",
+          "privacyNotice": "Folosim datele doar pentru a răspunde la cererea ta de programare.",
+          "confidentialityWarning": "Nu trimite documente sau informații confidențiale prin acest formular.",
+          "emptySlotsText": "Nu există intervale disponibile în această perioadă. Lasă-ne datele tale și revenim cu o propunere.",
+          "submitLabel": "Trimite cererea"
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "Preferi email sau telefon? Scrie-ne — răspundem în zilele lucrătoare.",
+          "phone": "+40211234567",
+          "phoneDisplay": "+40 21 123 4567",
+          "email": "contact@cabinet-marin.example",
+          "whatsapp": "40722123456",
+          "waHref": "https://wa.me/40722123456?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20discu%C8%9Bie.",
+          "address": "Str. Exemplu 12<br>București",
+          "addressHref": "",
+          "hoursNote": "Luni–Vineri, pe programare",
+          "instagram": { "url": "", "label": "Instagram" },
+          "facebook": { "url": "", "label": "Facebook" }
+        },
+        "instagram": {
+          "handle": "",
+          "url": "",
+          "embedUrl": "",
+          "gallery": []
+        },
+        "seo": {
+          "ogImage": "",
+          "canonical": "",
+          "jsonLd": ""
+        },
+        "footer": {
+          "address": "București · pe programare",
+          "year": "2026",
+          "note": "Cerere de programare — confirmare separată."
+        }
+      }
+    },
+    {
+      "id": "atelier-nord",
+      "name": "Atelier Nord Consult",
+      "config": {
+        "business": {
+          "name": "Atelier Nord Consult",
+          "tagline": "Sprijin profesionist, explicat pe înțelesul tău.",
+          "title": "Atelier Nord Consult | Strategie & organizare | Cluj",
+          "metaDescription": "Consultanță de strategie și organizare pentru echipe mici. Discuții pe programare, online sau la birou în Cluj.",
+          "about": "Ajutăm fondatori și manageri să clarifice prioritățile, procesele și comunicarea internă. Lucrăm pe sesiuni scurte, cu teme clare și pași următori scriși. Fără promisiuni de creștere garantată — doar structură și întrebări bune.",
+          "lang": "ro",
+          "profession": "Consultant strategie & organizare",
+          "languages": "Română, Engleză",
+          "modes": "Online · birou Cluj"
+        },
+        "labels": {
+          "navServices": "Servicii",
+          "navAbout": "Despre",
+          "navFaq": "Întrebări",
+          "navContact": "Contact",
+          "navBook": "Programare",
+          "servicesEyebrow": "Cum te putem ajuta",
+          "processEyebrow": "Proces",
+          "aboutEyebrow": "Despre noi",
+          "faqEyebrow": "Întrebări",
+          "bookEyebrow": "Programare",
+          "contactEyebrow": "Contact",
+          "secondaryCta": "Explorează serviciile",
+          "scroll": "Derulează",
+          "instaTitle": "Note scurte",
+          "instaFollow": "Urmărește",
+          "waQr": "WhatsApp pe telefon",
+          "waOpen": "WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#8B4518",
+          "primaryLight": "#B58A4B",
+          "primaryDark": "#152237",
+          "cream": "#F7F4EE"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(160deg, #F7F4EE 0%, #EEE8DC 55%, #E0D8C8 100%)",
+          "ctaLabel": "Programează o discuție",
+          "qualifier": "Sesiuni pe programare — online sau la birou."
+        },
+        "servicesTitle": "Servicii",
+        "services": [
+          {
+            "label": "Strategie și prioritizare",
+            "blurb": "Ce merită atenție acum — și ce poate aștepta."
+          },
+          {
+            "label": "Organizare de echipă",
+            "blurb": "Roluri, ritm de întâlniri, decizii care nu se blochează."
+          },
+          {
+            "label": "Planificare financiară operațională",
+            "blurb": "Cash, bugete simple, semnale de alarmă pe care le poți citi singur."
+          },
+          {
+            "label": "Coaching de leadership",
+            "blurb": "Sesiuni 1:1 pentru decizii grele, fără jargon de dezvoltare personală."
+          }
+        ],
+        "process": {
+          "title": "Cum începe colaborarea",
+          "steps": [
+            {
+              "title": "Trimiți cererea",
+              "text": "Alegi tema și un interval. Rămâne o cerere până confirmăm."
+            },
+            {
+              "title": "Confirmăm",
+              "text": "Îți propunem ora finală și modul (online / birou)."
+            },
+            {
+              "title": "Lucrăm pe agendă",
+              "text": "Ieși cu note și următorii pași scriși."
+            }
+          ]
+        },
+        "credentials": {
+          "title": "Despre practică",
+          "lead": "Structură, întrebări bune, zero hype.",
+          "items": [
+            { "label": "Strategie pentru echipe mici" },
+            { "label": "Sesiuni pe programare" },
+            { "label": "Cluj și online" }
+          ]
+        },
+        "faq": {
+          "title": "Întrebări",
+          "items": [
+            {
+              "q": "Lucrați cu companii mari?",
+              "a": "Ne concentrăm pe echipe mici și medii. Dacă ai nevoie de alt tip de suport, îți spunem din prima discuție."
+            },
+            {
+              "q": "Cât costă?",
+              "a": "Tarifele se stabilesc după prima discuție, în funcție de temă și frecvență. Nu publicăm pachete generice."
+            },
+            {
+              "q": "Pot anula?",
+              "a": "Da — scrie-ne pe email sau telefon înainte de intervalul confirmat."
+            }
+          ]
+        },
+        "appointment": {
+          "enabled": "da",
+          "title": "Solicită o programare",
+          "intro": "Alege un interval. Îți confirmăm cererea pe email — nu este o rezervare automată în calendar.",
+          "timezone": "Europe/Bucharest",
+          "slotIntervalMinutes": "60",
+          "durationMin": "50",
+          "minLeadMinutes": "180",
+          "modeLabel": "Online sau birou Cluj",
+          "types": [
+            {
+              "id": "discovery",
+              "label": "Discuție de orientare",
+              "durationMin": "40",
+              "mode": "online"
+            },
+            {
+              "id": "strategy-session",
+              "label": "Sesiune strategie",
+              "durationMin": "60",
+              "mode": "office"
+            }
+          ],
+          "weekly": [
+            { "weekday": "1", "start": "10:00", "end": "18:00" },
+            { "weekday": "2", "start": "10:00", "end": "18:00" },
+            { "weekday": "3", "start": "10:00", "end": "18:00" },
+            { "weekday": "4", "start": "10:00", "end": "18:00" }
+          ],
+          "confirmationText": "Cererea ta a fost înregistrată. Îți vom confirma disponibilitatea înainte ca întâlnirea să fie stabilită.",
+          "privacyNotice": "Datele tale rămân pentru răspunsul la această cerere.",
+          "confidentialityWarning": "",
+          "emptySlotsText": "Nu există intervale disponibile acum. Lasă datele de contact și revenim cu o propunere.",
+          "submitLabel": "Trimite cererea"
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "Scrie-ne pe email sau cere o programare din formular.",
+          "phone": "+40730111222",
+          "phoneDisplay": "+40 730 111 222",
+          "email": "hello@atelier-nord.example",
+          "whatsapp": "",
+          "waHref": "",
+          "address": "Cluj-Napoca<br>pe programare",
+          "addressHref": "",
+          "hoursNote": "Marți–Vineri, pe programare",
+          "instagram": { "url": "", "label": "Instagram" },
+          "facebook": { "url": "", "label": "Facebook" }
+        },
+        "instagram": {
+          "handle": "",
+          "url": "",
+          "embedUrl": "",
+          "gallery": []
+        },
+        "seo": {
+          "ogImage": "",
+          "canonical": "",
+          "jsonLd": ""
+        },
+        "footer": {
+          "address": "Cluj-Napoca",
+          "year": "2026",
+          "note": "Programare pe cerere."
+        }
+      }
+    }
+  ]
+}

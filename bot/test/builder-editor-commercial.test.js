@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
-const IDS = ['product-menu', 'local-service', 'portfolio'];
+const IDS = ['product-menu', 'local-service', 'portfolio', 'professionals'];
 const BUILDER_HTML = path.join(ROOT, 'builder', 'index.html');
 const BUILDER_JS = path.join(ROOT, 'builder', 'app.js');
 const REGISTRY = path.join(ROOT, 'templates', 'registry.json');
@@ -44,7 +44,7 @@ function deepClone(o) {
   return JSON.parse(JSON.stringify(o));
 }
 
-check('three design systems remain in registry with stable ids', () => {
+check('four design systems remain in registry with stable ids', () => {
   const reg = JSON.parse(read(REGISTRY));
   assert.ok(Array.isArray(reg.templates), 'registry.templates array');
   const ids = reg.templates.map((t) => t.id);
@@ -59,6 +59,7 @@ check('three design systems remain in registry with stable ids', () => {
   assert.ok(/restaurant/i.test(byId['product-menu'].name), 'product-menu name restaurant');
   assert.ok(/salon/i.test(byId['portfolio'].name), 'portfolio name salon');
   assert.ok(/meseria|construc/i.test(byId['local-service'].name), 'local-service trade name');
+  assert.ok(/profesion/i.test(byId['professionals'].name), 'professionals name');
   // Telegram-friendly substrings stay somewhere in registry copy (S48 contract)
   const blob = JSON.stringify(reg);
   assert.ok(/Meniu|meniu/i.test(blob), 'registry keeps Meniu/meniu for picker tests');
