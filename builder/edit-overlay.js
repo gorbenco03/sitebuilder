@@ -418,16 +418,51 @@
     });
 
     /* ── 5b. Elements with inline background / background-image (e.g. hero) ── */
-    /* Templates often use style="background: linear-gradient(...), url(...)" — not only background-image:url */
+    /* Templates often use style="background: linear-gradient(...), url(...)" — not only background-image:url.
+       Must NOT split the declaration on ';' — data:image/jpeg;base64,... embeds semicolons. */
+    function extractBackgroundUrls(styleAttr) {
+      var style = String(styleAttr || '');
+      if (!/(?:^|;)\s*(?:background(?:-image)?)\s*:/i.test(style)) return [];
+      var urls = [];
+      var re = /url\s*\(\s*/gi;
+      var m;
+      while ((m = re.exec(style))) {
+        var i = m.index + m[0].length;
+        if (i >= style.length) break;
+        var ch = style.charAt(i);
+        var raw;
+        if (ch === '"' || ch === "'") {
+          var endQ = style.indexOf(ch, i + 1);
+          if (endQ < 0) break;
+          raw = style.slice(i + 1, endQ);
+          re.lastIndex = endQ + 1;
+        } else {
+          var endP = style.indexOf(')', i);
+          if (endP < 0) break;
+          raw = style.slice(i, endP).replace(/^\s+|\s+$/g, '');
+          re.lastIndex = endP + 1;
+        }
+        if (raw) urls.push(raw);
+      }
+      return urls;
+    }
+
     var allEls = Array.prototype.slice.call(document.querySelectorAll('[style]'));
     allEls.forEach(function (el) {
       var style = el.getAttribute('style') || '';
-      var declMatch = style.match(/(?:^|;)\s*(?:background(?:-image)?)\s*:\s*([^;]+)/i);
-      if (!declMatch) return;
-      var bgDecl = declMatch[1] || '';
-      var urlMatch = bgDecl.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
-      if (!urlMatch) return;
-      var bgUrl = urlMatch[1];
+      var bgUrls = extractBackgroundUrls(style);
+      if (!bgUrls.length) return;
+      // Prefer a photographic/data/file URL over gradient-only layers
+      var bgUrl = null;
+      for (var ui = 0; ui < bgUrls.length; ui++) {
+        var cand = bgUrls[ui];
+        if (/^data:image\//i.test(cand) || /\.(jpe?g|png|webp|gif)(\?|$)/i.test(cand) ||
+            /^images\//i.test(cand) || /^https?:\/\//i.test(cand)) {
+          bgUrl = cand;
+          break;
+        }
+      }
+      if (!bgUrl) bgUrl = bgUrls[bgUrls.length - 1];
 
       el.classList.add('hb-bg-wrap');
 

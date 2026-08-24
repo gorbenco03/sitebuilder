@@ -15,6 +15,8 @@ const draft = { templateId: null, config: null };
 
 let currentUser    = null;
 let currentSiteId  = null;
+let currentSitePaid = false;
+let currentSiteSlug = '';
 let currentTemplate = null;
 
 // Runtime config from /api/config
@@ -1445,6 +1447,14 @@ async function connectInstagram() {
       acceptedTerms: true,
     });
     const session = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/editor-session', {});
+    if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
+    // Isolated/test finish: grant already stored embed; no partner editor UI required
+    if (grant1.embedUrl && !(session && session.editorUrl)) {
+      setIgStatus('Instagram e pe site.');
+      showToast('Instagram e conectat.', 'success', 3500);
+      closeModal('modal-instagram');
+      return;
+    }
     if (session.editorUrl) {
       window.open(session.editorUrl, 'instafidget-editor', 'noopener,width=920,height=720');
     }
@@ -1468,7 +1478,6 @@ async function connectInstagram() {
       }
     };
     window.addEventListener('focus', onFocus);
-    if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
   } catch (e) {
     setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);
   } finally {
@@ -1736,9 +1745,20 @@ function openPublishModal() {
     }
   }
 
+  // Paid #edit republish: keep existing slug — never ask for a new address that collides
+  if (currentSiteId && currentSitePaid) {
+    doActualPublish(currentSiteSlug || undefined);
+    return;
+  }
+
   const businessName = getPath(draft.config, 'business.name') || '';
   const slugInput = $('input-slug');
-  if (slugInput && businessName) {
+  if (slugInput && currentSiteSlug) {
+    // Unpaid draft already has a reserved slug — reuse it
+    slugInput.value = currentSiteSlug;
+    slugInput.dataset.manuallyEdited = '';
+    scheduleSlugCheck(currentSiteSlug);
+  } else if (slugInput && businessName) {
     const s = toSlug(businessName);
     slugInput.value = s;
     slugInput.dataset.manuallyEdited = '';
@@ -1793,10 +1813,21 @@ async function checkSlug(rawSlug) {
     return;
   }
 
+  // Own site slug is always OK (republish / unpaid draft)
+  const own = currentSiteSlug && String(rawSlug) === String(currentSiteSlug);
+  if (own) {
+    slugNormalized = rawSlug;
+    updateSlugPreview(rawSlug, 'valid');
+    if (errorEl) hide(errorEl);
+    slugValid = true;
+    if (slugInput) slugInput.value = rawSlug;
+    return;
+  }
+
   try {
     const data = await apiGet('/api/slug-check?slug=' + encodeURIComponent(rawSlug));
     slugNormalized = data.slug || rawSlug;
-    if (data.available) {
+    if (data.available || (currentSiteSlug && slugNormalized === currentSiteSlug)) {
       updateSlugPreview(slugNormalized, 'valid');
       if (errorEl) hide(errorEl);
       slugValid = true;
@@ -1854,6 +1885,8 @@ async function execPublish(slug) {
   publishedSiteId = data.site.id;
   publishedSiteUrl = data.site.url;
   sitePaymentUrl = data.paymentUrl || null;
+  currentSitePaid = !!data.site.paid;
+  if (data.site.slug) currentSiteSlug = data.site.slug;
 
   showSuccessScreen(data.site.url, data.paymentUrl);
 }
@@ -1992,6 +2025,8 @@ async function completeTestCheckout(sessionId) {
       currentSiteId = site.id;
       publishedSiteId = site.id;
       publishedSiteUrl = site.url || null;
+      currentSitePaid = !!site.paid;
+      if (site.slug) currentSiteSlug = site.slug;
     }
     if (site && site.url && String(site.url).indexOf('http') === 0) {
       sitePaymentUrl = null;
@@ -2135,6 +2170,8 @@ function startWithTemplate(templateId) {
   }
 
   currentSiteId = null;
+  currentSitePaid = false;
+  currentSiteSlug = '';
   draft.templateId = templateId;
 
   const saved = loadDraft();
@@ -2361,6 +2398,8 @@ async function loadSiteForEdit(siteId) {
     if (!site || !config) throw new Error('Date incomplete de la server.');
 
     currentSiteId = site.id;
+    currentSitePaid = !!site.paid;
+    currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
 

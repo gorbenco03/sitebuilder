@@ -743,6 +743,23 @@ function publicGrantPayload(json) {
     };
 }
 
+/** Isolated + test-pay only: finish Instagram connect without live Instafidget / partner secret. */
+function isIsolatedTestSocial() {
+    return (
+        process.env.HIDOOK_ISOLATED_DEPLOY === '1' &&
+        process.env.HIDOOK_TEST_PAY === '1' &&
+        process.env.NODE_ENV !== 'production'
+    );
+}
+
+function isolatedStubEmbedUrl(email) {
+    const key = crypto.createHash('sha256')
+        .update(String(email || 'isolated') + '|ig-stub')
+        .digest('hex')
+        .slice(0, 16);
+    return 'https://instafidget.hidook.agency/embed/instagram?widgetKey=isolated-' + key;
+}
+
 async function requireOwnedSiteWithEmail(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return null;
@@ -763,16 +780,17 @@ async function requireOwnedSiteWithEmail(req, res, siteId) {
         return null;
     }
     const partner = getPartner();
-    if (!partner.isConfigured()) {
+    if (!partner.isConfigured() && !isIsolatedTestSocial()) {
         sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
         return null;
     }
-    return { reg, site, email };
+    return { reg, site, email, partnerConfigured: partner.isConfigured() };
 }
 
 /**
  * POST /api/sites/:id/social-feed/grant
  * Server-to-server Instafidget Year-1 grant. Stores embedUrl on the draft if returned.
+ * Isolated/test-pay without partner secret: local stub embed (no live partner call).
  */
 async function handleSocialFeedGrant(req, res, siteId) {
     let body;
@@ -784,6 +802,18 @@ async function handleSocialFeedGrant(req, res, siteId) {
     }
     const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
     if (!ctx) return;
+
+    // Isolated QA path: finish without SITEBUILDER_PARTNER_SECRET / live Instafidget
+    if (!ctx.partnerConfigured && isIsolatedTestSocial()) {
+        const embedUrl = isolatedStubEmbedUrl(ctx.email);
+        persistEmbedUrl(ctx.reg, siteId, embedUrl);
+        return sendJson(res, 200, publicGrantPayload({
+            embedUrl,
+            entitlement: 'site_bundle_isolated',
+            showWatermark: true,
+            siteBundleExpiresAt: new Date(Date.now() + 365 * 864e5).toISOString(),
+        }));
+    }
 
     let partnerRes;
     try {
@@ -813,11 +843,17 @@ async function handleSocialFeedGrant(req, res, siteId) {
 /**
  * POST /api/sites/:id/social-feed/editor-session
  * Returns Instafidget editorUrl. Does not change billing.
+ * Isolated/test-pay without partner secret: no live partner; empty editorUrl (grant already stubs embed).
  */
 async function handleSocialFeedEditor(req, res, siteId) {
     try { await parseJson(req); } catch (_) { /* empty body ok */ }
     const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
     if (!ctx) return;
+
+    if (!ctx.partnerConfigured && isIsolatedTestSocial()) {
+        // No real Instafidget UI in isolated mode — client keeps embed from grant.
+        return sendJson(res, 200, { editorUrl: null, isolated: true });
+    }
 
     let partnerRes;
     try {
