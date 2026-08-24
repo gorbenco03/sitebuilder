@@ -13,5 +13,6 @@
   "noIndigoCss": true,
   "hasPopulateStage": true,
   "hasCatalogFilter": true,
-  "editorOutlineForest": true
+  "editorOutlineForest": true,
+  "headerCtaSpecificity": true
 }

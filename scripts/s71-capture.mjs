@@ -46,8 +46,18 @@ async function withPlaywright() {
   const browser = await pw.chromium.launch(launchOpts);
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
   await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
-  await page.waitForTimeout(1500);
-  const metrics = await page.evaluate(() => ({
+  // Allow catalog iframes / stage paint
+  await page.waitForTimeout(3500);
+  try {
+    await page.waitForSelector('#templates-grid .template-card', { timeout: 15000 });
+  } catch { /* continue */ }
+
+  const headerCtaDisplay1440 = await page.evaluate(() => {
+    const el = document.querySelector('#header-cta');
+    return el ? getComputedStyle(el).display : null;
+  });
+
+  const metricsBase = await page.evaluate(() => ({
     title: document.title,
     bg: getComputedStyle(document.body).backgroundColor,
     font: getComputedStyle(document.body).fontFamily,
@@ -57,27 +67,41 @@ async function withPlaywright() {
     indigoCss: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
     paper: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim(),
     ink: getComputedStyle(document.documentElement).getPropertyValue('--ink').trim(),
+    accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
     chips: document.querySelectorAll('.catalog-chip').length,
     cards: document.querySelectorAll('.template-card').length,
     stage: !!document.querySelector('.hero-stage-stack'),
     how: !!document.querySelector('#cum-e'),
   }));
+
   await page.screenshot({ path: path.join(outDir, 'landing-desktop-1440.png'), fullPage: true });
+
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.waitForTimeout(400);
+  // Longer wait after resize so layout + catalog iframes settle
+  await page.waitForTimeout(2500);
+  const headerCtaDisplay390 = await page.evaluate(() => {
+    const el = document.querySelector('#header-cta');
+    return el ? getComputedStyle(el).display : null;
+  });
   await page.screenshot({ path: path.join(outDir, 'landing-mobile-390.png'), fullPage: true });
-  // Catalog crop
+
+  // Catalog crop at desktop after another settle
   await page.setViewportSize({ width: 1440, height: 900 });
+  await page.waitForTimeout(2000);
   const grid = await page.$('#templates-grid');
   if (grid) await grid.screenshot({ path: path.join(outDir, 'catalog-grid.png') });
   await browser.close();
-  return metrics;
+
+  return {
+    ...metricsBase,
+    headerCtaDisplay390,
+    headerCtaDisplay1440,
+  };
 }
 
 async function main() {
   let metrics = await withPlaywright();
   if (!metrics) {
-    // try npx playwright without install write — may fail
     console.error('playwright not available locally');
     process.exit(2);
   }
@@ -87,8 +111,11 @@ async function main() {
   if (metrics.badge) fails.push('hero-badge still present');
   if (metrics.techBadgeText) fails.push('tech badge text present');
   if (String(metrics.indigoCss).toUpperCase().includes('5B5BD6')) fails.push('accent still indigo');
-  if (!String(metrics.paper || '').toLowerCase().includes('f3efe8') && metrics.paper !== 'rgb(243, 239, 232)') {
-    // ok if computed rgb
+  if (metrics.headerCtaDisplay390 !== 'none') {
+    fails.push(`header-cta @390 expected none got ${metrics.headerCtaDisplay390}`);
+  }
+  if (!metrics.headerCtaDisplay1440 || metrics.headerCtaDisplay1440 === 'none') {
+    fails.push(`header-cta @1440 expected visible got ${metrics.headerCtaDisplay1440}`);
   }
   if (fails.length) {
     console.error('VERIFY FAIL', fails);

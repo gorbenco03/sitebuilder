@@ -22,6 +22,9 @@ const metrics = {
   hasPopulateStage: js.includes('populateHeroStage'),
   hasCatalogFilter: js.includes('applyCatalogFilter'),
   editorOutlineForest: js.includes('#1E3A32'),
+  // Mobile header CTA must beat .btn-primary display (S71-fix)
+  headerCtaSpecificity: /\.app-header\s+(?:a\.)?header-cta[\s\S]{0,80}display:\s*none/.test(css)
+    && /@media\s*\(\s*min-width:\s*640px\s*\)[\s\S]{0,200}\.app-header\s+(?:a\.)?header-cta/.test(css),
 };
 const outDir = path.join(root, '04-QA-Evidence/S71-remake');
 fs.mkdirSync(outDir, { recursive: true });

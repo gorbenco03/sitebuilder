@@ -187,12 +187,17 @@ input, textarea, select {
   text-decoration-thickness: 1.5px;
 }
 
-.header-cta {
+/* Beat .btn-primary { display: inline-flex } (same single-class specificity, later in file) */
+.app-header a.header-cta,
+.app-header .header-cta {
   display: none;
   margin-left: 0.35rem;
 }
 @media (min-width: 640px) {
-  .header-cta { display: inline-flex; }
+  .app-header a.header-cta,
+  .app-header .header-cta {
+    display: inline-flex;
+  }
 }
 
 .header-right {
