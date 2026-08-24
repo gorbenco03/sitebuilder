@@ -1,0 +1,17 @@
+{
+  "hasNewsreader": true,
+  "hasHeroStage": true,
+  "hasChips": true,
+  "hasHow": true,
+  "hasProof": true,
+  "noBadge": true,
+  "noIndigoHtml": true,
+  "paperToken": true,
+  "accentToken": true,
+  "inkToken": true,
+  "tallPreview": true,
+  "noIndigoCss": true,
+  "hasPopulateStage": true,
+  "hasCatalogFilter": true,
+  "editorOutlineForest": true
+}

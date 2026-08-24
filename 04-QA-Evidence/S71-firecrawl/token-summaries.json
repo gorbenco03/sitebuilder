@@ -1,0 +1,1417 @@
+{
+  "awwwards": {
+    "title": "Awwwards - Website Awards - Best Web Design Trends",
+    "url": "https://www.awwwards.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Awwwards",
+    "fonts": [
+      {
+        "family": "Inter Tight",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#FA5D29",
+      "secondary": "#FF0000",
+      "accent": "#27AE60",
+      "background": "#F8F8F8",
+      "textPrimary": "#222222",
+      "link": "#27AE60"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Inter Tight",
+        "heading": "Inter Tight"
+      },
+      "fontStacks": {
+        "heading": [
+          "Inter Tight"
+        ],
+        "body": [
+          "Inter Tight"
+        ],
+        "paragraph": [
+          "Inter Tight"
+        ]
+      },
+      "fontSizes": {
+        "h1": "14px",
+        "h2": "14px",
+        "body": "15px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "8px"
+    },
+    "components": {
+      "input": {
+        "background": "transparent",
+        "textColor": "#222222",
+        "borderColor": null,
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#222222",
+        "textColor": "#FFFFFF",
+        "borderColor": "#FFFFFF",
+        "borderRadius": "8px",
+        "borderRadiusCorners": {
+          "topLeft": "8px",
+          "topRight": "8px",
+          "bottomRight": "8px",
+          "bottomLeft": "8px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#E9E9E9",
+        "textColor": "#222222",
+        "borderColor": "#222222",
+        "borderRadius": "8px",
+        "borderRadiusCorners": {
+          "topLeft": "8px",
+          "topRight": "8px",
+          "bottomRight": "8px",
+          "bottomLeft": "8px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "high",
+      "targetAudience": "web designers and developers"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "Submit Website",
+        "reasoning": "Button #0 ('Submit Website') has a dark background (#222222) and is action-oriented, making it a strong candidate for the primary CTA."
+      },
+      "secondary": {
+        "index": 2,
+        "text": "Submit Website",
+        "reasoning": "Button #2 ('Submit Website') has a light background (#E9E9E9), providing a contrast to the primary button's dark background."
+      },
+      "confidence": 0.9
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.9,
+      "overall": 0.9
+    },
+    "image_count": 60,
+    "http_images": [
+      "https://assets.awwwards.com/awards/media/cache/thumb_834_598/asset/2026/08/6a71b303146db099238168.jpg",
+      "https://assets.awwwards.com/awards/images/2021/05/gradients-trends-thumb-2.jpg",
+      "https://assets.awwwards.com/awards/media/cache/thumb_user_70/avatar/70867/589c36b0eac98.jpg",
+      "https://assets.awwwards.com/awards/media/cache/thumb_834_598/asset/2026/08/6a7db0e65e81f101330124.png",
+      "https://assets.awwwards.com/awards/media/cache/thumb_user_70/default/user2.jpg",
+      "https://assets.awwwards.com/awards/media/cache/thumb_440_330/submissions/2026/07/6a4687f45bf83853560900.jpg",
+      "https://assets.awwwards.com/awards/media/cache/thumb_440_330/submissions/2023/02/63ef9b96d1b92671425234.jpg",
+      "https://assets.awwwards.com/awards/images/2025/07/free-fonts-2025.jpg",
+      "https://assets.awwwards.com/awards/media/cache/thumb_user_70/avatar/238047/678a568868562334891345.png",
+      "https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/08/6a7b33d4a482e323591067.png",
+      "https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/06/6a3ea31c78f5b788025408.png",
+      "https://assets.awwwards.com/awards/media/cache/thumb_user_70/avatar/909151/67773dc59fbaa976276114.jpg"
+    ]
+  },
+  "ballena": {
+    "title": "Ballena | Fine Dining Restaurant in San Jos\u00e9 del Cabo, Los Cabos",
+    "url": "https://ballenacabo.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Ballena | Restaurante Fine Dining en Casa Ballena, Los Cabo",
+    "fonts": [
+      {
+        "family": "Sweet Sans Pro",
+        "role": "heading"
+      },
+      {
+        "family": "TT Commons Pro",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#779580",
+      "accent": "#779580",
+      "background": "#F8F2E5",
+      "textPrimary": "#779580",
+      "link": "#779580"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "TT Commons Pro",
+        "heading": "Sweet Sans Pro"
+      },
+      "fontStacks": {
+        "heading": [
+          "Sweet Sans Pro",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif"
+        ],
+        "body": [
+          "Sweet Sans Pro",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Sweet Sans Pro",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "91.1111px",
+        "h2": "91.1111px",
+        "body": "15.5556px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "2px"
+    },
+    "components": {
+      "input": {
+        "background": "#F8F2E6",
+        "textColor": "#000000",
+        "borderColor": null,
+        "borderRadius": "8.5px",
+        "borderRadiusCorners": {
+          "topLeft": "8.5px",
+          "topRight": "8.5px",
+          "bottomRight": "8.5px",
+          "bottomLeft": "8.5px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#C9C6BC",
+        "textColor": "#FFFEFD",
+        "borderColor": "#FAF5EC",
+        "borderRadius": "3.33333px",
+        "borderRadiusCorners": {
+          "topLeft": "3.33333px",
+          "topRight": "3.33333px",
+          "bottomRight": "3.33333px",
+          "bottomLeft": "3.33333px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "professional",
+      "energy": "medium",
+      "targetAudience": "affluent diners and tourists in Los Cabos"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "BOOK NOW",
+        "reasoning": "The 'BOOK NOW' button is the only button detected and uses a distinct color (#C9C6BC) that stands out as a call-to-action, making it the primary CTA."
+      },
+      "secondary": {
+        "index": -1,
+        "text": "N/A",
+        "reasoning": "There is only one button detected, so no secondary button is available."
+      },
+      "confidence": 0.9
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.9,
+      "overall": 0.9
+    },
+    "image_count": 9,
+    "http_images": [
+      "https://ballenacabo.com/wp-content/uploads/2026/02/logo-black.png",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/Events-1-823x1024.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/O1A8814-scaled.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/O1A8961-823x1024.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/Gift-Cards-1-821x1024.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/DJI_20251024194532_0039_D-scaled.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/menu-3.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/BALLENA-FINALS5-1.jpg",
+      "https://ballenacabo.com/wp-content/uploads/2026/02/menu.jpg"
+    ]
+  },
+  "dishoom": {
+    "title": "Dishoom | Indian Restaurants | From Bombay with Love",
+    "url": "https://www.dishoom.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Dishoom",
+    "fonts": [
+      {
+        "family": "Cheltenham BT",
+        "role": "heading"
+      },
+      {
+        "family": "Gill Sans Nova",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#1863DC",
+      "secondary": "#F0ECE0",
+      "accent": "#151515",
+      "background": "#F0ECE0",
+      "textPrimary": "#353839",
+      "link": "#2563EB"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Gill Sans Nova",
+        "heading": "Cheltenham BT"
+      },
+      "fontStacks": {
+        "heading": [
+          "cheltenhamBT",
+          "cheltenhamBT Fallback",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "Times",
+          "serif"
+        ],
+        "body": [
+          "cheltenhamBT",
+          "cheltenhamBT Fallback",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "Times",
+          "serif"
+        ],
+        "paragraph": [
+          "cheltenhamBT",
+          "cheltenhamBT Fallback",
+          "ui-serif",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "Times",
+          "serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "32px",
+        "h2": "30px",
+        "body": "18px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "2px"
+    },
+    "components": {
+      "input": {
+        "background": "transparent",
+        "textColor": "#353839",
+        "borderColor": "#C4BFAF",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#151515",
+        "textColor": "#FFFDF9",
+        "borderColor": "#FFFDF9",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#353839",
+        "textColor": "#FFFDF9",
+        "borderColor": "#353839",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "medium",
+      "targetAudience": "urban diners and food enthusiasts"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 11,
+        "text": "Book a table",
+        "reasoning": "Button #8 'Book a table' has a distinct dark background (#151515) and is action-oriented, making it a strong primary CTA."
+      },
+      "secondary": {
+        "index": 3,
+        "text": "Subscribe",
+        "reasoning": "Button #2 'Subscribe' has a neutral background (#353839) and serves as a secondary action, complementing the primary CTA."
+      },
+      "confidence": 0.9
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.9,
+      "overall": 0.9
+    },
+    "image_count": 22,
+    "http_images": [
+      "https://www.dishoom.com/assets/icons/icon-arrow-scalable.svg",
+      "https://cdn-cookieyes.com/assets/images/poweredbtcky.svg",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2Ffa97961966b61e29f3b795162a311f546e5c33bc-2000x1500.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2F4cf15bba73173e569b708cf9298dcba5467557ba-1200x1602.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://cdn.sanity.io/images/daku84np/production/eb78d4a0ab3a682436a9c4725bab56a6c4e2b67e-253x65.svg",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2Fc4e0b12c320026f98c3764c8ffec5ba54f016ff5-1486x1440.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2F5cc0fb82206c308a20c938dd916292eac886257a-1200x801.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/%23b",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2F18a4cab088bb395e3316a47ec015cffb9b72a19a-1200x900.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2F42163a6aeb9af4ea764220d37b3fcf7a5f428eac-1706x2560.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2Ff5c3854b0467129cff6b90d441db3f7a06101819-800x1200.jpg%3Frect%3D0%2C281%2C800%2C690%26fit%3Dmax%26auto%3Dformat&w=3840&q=75",
+      "https://www.dishoom.com/_next/image/?url=https%3A%2F%2Fcdn.sanity.io%2Fimages%2Fdaku84np%2Fproduction%2F1454ac1fbd11963d5c7a221b84b1b000f57d58db-1200x800.jpg%3Ffit%3Dmax%26auto%3Dformat&w=3840&q=75"
+    ]
+  },
+  "framer": {
+    "title": "Framer: AI design agent",
+    "url": "https://www.framer.com/",
+    "status": 200,
+    "color_scheme": "dark",
+    "brandName": "Framer",
+    "fonts": [
+      {
+        "family": "Inter Variable",
+        "role": "body"
+      },
+      {
+        "family": "GT Walsheim Medium",
+        "role": "heading"
+      }
+    ],
+    "colors": {
+      "primary": "#0000EE",
+      "secondary": "#0099FF",
+      "accent": "#0066FF",
+      "background": "#000000",
+      "textPrimary": "#000000",
+      "link": "#0066FF"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Inter Variable",
+        "heading": "GT Walsheim Medium"
+      },
+      "fontStacks": {
+        "heading": [
+          "GT Walsheim Medium",
+          "sans-serif"
+        ],
+        "body": [
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Inter Variable",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "54px",
+        "h2": "44px",
+        "body": "14px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 10,
+      "borderRadius": "8px"
+    },
+    "components": {
+      "input": {
+        "background": "transparent",
+        "textColor": "#FFFFFF",
+        "borderColor": null,
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#FFFFFF",
+        "textColor": "#0000EE",
+        "borderRadius": "8px",
+        "borderRadiusCorners": {
+          "topLeft": "8px",
+          "topRight": "8px",
+          "bottomRight": "8px",
+          "bottomLeft": "8px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#1A1A1A",
+        "textColor": "#0000EE",
+        "borderRadius": "8px",
+        "borderRadiusCorners": {
+          "topLeft": "8px",
+          "topRight": "8px",
+          "bottomRight": "8px",
+          "bottomLeft": "8px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "high",
+      "targetAudience": "designers and developers"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 1,
+        "text": "Get started for free",
+        "reasoning": "Button #1 ('Get started for free') is likely the primary CTA due to its action-oriented text and contrasting light background, making it stand out as a call-to-action."
+      },
+      "secondary": {
+        "index": 0,
+        "text": "Start with agents",
+        "reasoning": "Button #0 ('Start with agents') is selected as secondary due to its different background color and supportive action text."
+      },
+      "confidence": 0.9
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.9,
+      "overall": 0.9
+    },
+    "image_count": 118,
+    "http_images": [
+      "https://framerusercontent.com/images/QSALLMZz20lUztB4mySTDLq6mE.png?width=2800&height=1804",
+      "https://framerusercontent.com/images/WDlxZ5aairNkZSH0cyHqAzB2w.png?width=3200&height=2072",
+      "https://framerusercontent.com/images/FnIAILjnZeFuwBoETfTs4DaTubU.jpg?width=450&height=450",
+      "https://framerusercontent.com/images/GjvoTAZBS3bbZCkT9BvgvSP3Tio.jpg?width=450&height=450",
+      "https://framerusercontent.com/images/OmKDjH7juzfJ8ETRwLy9hglwa0.png?width=192&height=192",
+      "https://framerusercontent.com/images/jmDZzRZa7eG7o6UwM4myFdsE.png?width=900&height=980",
+      "https://framerusercontent.com/images/RtheNIazFJm6EqfeKh66Bi7wyGI.png?width=880&height=1808",
+      "https://framerusercontent.com/images/wVxwU0qi5YsLHBFbDaX8c3jTcU.png?width=3222&height=2078",
+      "https://framerusercontent.com/images/CijpUPlN5zOHYpIxnwrXuL3SJAA.png?width=1600&height=1200",
+      "https://framerusercontent.com/images/Hmpf3NeQjpUx0q8s2c8riF2jpQ.jpg?width=120&height=120",
+      "https://framerusercontent.com/images/CRKaWbZDqmciaZB3o8TLxfNfg.jpg?width=750&height=1080",
+      "https://framerusercontent.com/images/CC3vnYoPhqbdIEFTrhc9At8bgWo.png?width=2874&height=1834"
+    ]
+  },
+  "giacosa": {
+    "title": "Giacosa 1815",
+    "url": "https://www.giacosafirenze.com/en",
+    "status": 200,
+    "color_scheme": "dark",
+    "brandName": "Giacosa 1815",
+    "fonts": [
+      {
+        "family": "Spartan",
+        "role": "body"
+      },
+      {
+        "family": "Moniqa",
+        "role": "heading"
+      },
+      {
+        "family": "Georgia",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#223A40",
+      "secondary": "#ABC4CA",
+      "accent": "#D3AD93",
+      "background": "#223A40",
+      "textPrimary": "#959EA9",
+      "link": "#D3AD93"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Spartan",
+        "heading": "Moniqa"
+      },
+      "fontStacks": {
+        "heading": [
+          "Spartan",
+          "sans-serif"
+        ],
+        "body": [
+          "Spartan",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Spartan",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "20px",
+        "h2": "76.8px",
+        "body": "35.2px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "5px"
+    },
+    "components": {
+      "buttonPrimary": {
+        "background": "#D3AD93",
+        "textColor": "#FCFCFC",
+        "borderRadius": "9px",
+        "borderRadiusCorners": {
+          "topLeft": "9px",
+          "topRight": "9px",
+          "bottomRight": "9px",
+          "bottomLeft": "9px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#223A40",
+        "textColor": "#FCFCFC",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "professional",
+      "energy": "medium",
+      "targetAudience": "luxury travelers"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "BOOK NOW",
+        "reasoning": "The 'BOOK NOW' button is the primary CTA due to its vibrant accent color (#D3AD93) and action-oriented text, making it the most prominent call-to-action on the page."
+      },
+      "secondary": {
+        "index": 1,
+        "text": "Back to top",
+        "reasoning": "The 'Back to top' button is secondary as it has a neutral background color (#223A40) and serves a navigational purpose rather than a primary action."
+      },
+      "confidence": 0.95
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "image_count": 53,
+    "http_images": [
+      "https://www.giacosafirenze.com/media/gallery/4_1.jpg",
+      "https://www.giacosafirenze.com/media/gallery/6_1200.webp",
+      "https://www.giacosafirenze.com/media/contents/1960s-Giacosa-Khi-copia-2_800.jpg",
+      "https://www.giacosafirenze.com/media/gallery/6_1200.jpg",
+      "https://www.giacosafirenze.com/media/gallery/3.jpg",
+      "https://www.giacosafirenze.com/media/contents/Giacosa_Photo2-ok_800.webp",
+      "https://www.giacosafirenze.com/media/contents/Giacosa_Photo2-ok.jpg",
+      "https://www.giacosafirenze.com/media/gallery/1_1200.webp",
+      "https://www.giacosafirenze.com/media/gallery/2_1200.webp",
+      "https://www.giacosafirenze.com/media/gallery/3_1200.jpg",
+      "https://www.giacosafirenze.com/media/gallery/3_600.jpg",
+      "https://www.giacosafirenze.com/media/gallery/8_1200.webp"
+    ]
+  },
+  "gilli": {
+    "title": "Caff\u00e8 Gilli",
+    "url": "https://www.caffegilli.com/en",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Caff\u00e8 Gilli",
+    "fonts": [
+      {
+        "family": "Greycliff CF",
+        "role": "body"
+      },
+      {
+        "family": "Cosen",
+        "role": "heading"
+      }
+    ],
+    "colors": {
+      "primary": "#DAC773",
+      "secondary": "#142342",
+      "accent": "#DAC773",
+      "background": "#FCFCFC",
+      "textPrimary": "#142342",
+      "link": "#C7D0E2"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Greycliff CF",
+        "heading": "Cosen"
+      },
+      "fontStacks": {
+        "heading": [
+          "Cosen",
+          "sans-serif"
+        ],
+        "body": [
+          "greycliff-cf",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "greycliff-cf",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "54.4px",
+        "h2": "16px",
+        "body": "16px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "4px"
+    },
+    "components": {
+      "buttonPrimary": {
+        "background": "#DAC773",
+        "textColor": "#FCFCFC",
+        "borderRadius": "54.4px",
+        "borderRadiusCorners": {
+          "topLeft": "54.4px",
+          "topRight": "54.4px",
+          "bottomRight": "54.4px",
+          "bottomLeft": "54.4px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#C7D0E2",
+        "textColor": "#142342",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "traditional",
+      "energy": "medium",
+      "targetAudience": "affluent tourists and locals"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 1,
+        "text": "Learn more and customize",
+        "reasoning": "Button #1 has a vibrant brand color (#DAC773) and action-oriented text ('Learn more and customize'), making it the primary CTA."
+      },
+      "secondary": {
+        "index": 3,
+        "text": "Back to top",
+        "reasoning": "Button #3 has a different color (#C7D0E2) and serves a secondary function ('Back to top'), making it suitable as a secondary button."
+      },
+      "confidence": 0.95
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "image_count": 93,
+    "http_images": [
+      "https://www.caffegilli.com/media/contents/DEI4429_1_1200.webp",
+      "https://www.caffegilli.com/media/contents/home-storia_2.avif",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-1_1200.webp",
+      "https://www.caffegilli.com/media/contents/home-storia_2_1200.avif",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-4_800.jpg",
+      "https://www.caffegilli.com/media/articoli/eclair-al-cioccolato.avif",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-1.webp",
+      "https://www.caffegilli.com/media/contents/DEI4429_1_1200.jpg",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-5_800.jpg",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-3_1200.webp",
+      "https://www.caffegilli.com/media/articoli/saint-honore.avif",
+      "https://www.caffegilli.com/media/contents/2026-Gilli-homepage-5_1200.jpg"
+    ]
+  },
+  "joakim": {
+    "title": "La table de Joakim | Chef \u00e0 domicile sur Nantes",
+    "url": "https://latabledejoakim.fr/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "La table de Joakim",
+    "fonts": [
+      {
+        "family": "Geist Mono",
+        "role": "monospace"
+      },
+      {
+        "family": "Instrument Serif",
+        "role": "heading"
+      }
+    ],
+    "colors": {
+      "primary": "#9B7C6D",
+      "secondary": "#D8E1EB",
+      "accent": "#553D34",
+      "background": "#F6F4F3",
+      "textPrimary": "#000000",
+      "link": "#553D34"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Geist Mono",
+        "heading": "Instrument Serif"
+      },
+      "fontStacks": {
+        "heading": [
+          "Instrument Serif",
+          "sans-serif"
+        ],
+        "body": [
+          "Geist Mono",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Geist Mono",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "64px",
+        "h2": "52.8px",
+        "body": "14.4px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "0px"
+    },
+    "components": {},
+    "personality": {
+      "tone": "professional",
+      "energy": "medium",
+      "targetAudience": "Individuals seeking personal chef services in Nantes."
+    },
+    "cta_reasoning": {},
+    "confidence": {
+      "buttons": 0.5,
+      "colors": 0.9,
+      "overall": 0.7
+    },
+    "image_count": 14,
+    "http_images": [
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e201a_arrow-left.svg",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1eeb/69cfca03068f619e5d014d49_joakimbirch_64_1_1x.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e201b_arrow-right.svg",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69d8bde8c104e91c625c61dc_scrolltop_2.svg",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e2018_joakim_cuisine.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e200f_menu-contact.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1eeb/69cfccc3159e08f170820ab2_joakimbirch_132_1_1x.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e1ffc_menu_experience.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1eeb/69cfc604dae6db6fc0d0dd2a_sergej_kaldesic_dkuz6t6mruo_unsplash_1_1x.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1eeb/69cfc3857c944401bfe9468c_marisol_benitez_qvkaqtnj4zk_unsplash_1_1x.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1ee4/69c91556f0e16cc3966e2019_plat_1.webp",
+      "https://cdn.prod.website-files.com/69c91556f0e16cc3966e1eeb/69c91556f0e16cc3966e2074_blog_1.webp"
+    ]
+  },
+  "linear": {
+    "title": "Linear \u2013 The system for product development",
+    "url": "https://linear.app/",
+    "status": 200,
+    "color_scheme": "dark",
+    "brandName": "Linear",
+    "fonts": [
+      {
+        "family": "Inter",
+        "role": "body"
+      },
+      {
+        "family": "SF Pro Display",
+        "role": "heading"
+      },
+      {
+        "family": "Roboto",
+        "role": "body"
+      },
+      {
+        "family": "Open Sans",
+        "role": "body"
+      },
+      {
+        "family": "Ubuntu",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#5E6AD2",
+      "secondary": "#D0D6E0",
+      "accent": "#E4F222",
+      "background": "#08090A",
+      "textPrimary": "#08090A",
+      "link": "#E4F222"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Inter",
+        "heading": "SF Pro Display"
+      },
+      "fontStacks": {
+        "heading": [
+          "Inter",
+          "SF Pro Display",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Cantarell",
+          "Open Sans",
+          "Helvetica Neue",
+          "sans-serif"
+        ],
+        "body": [
+          "Inter",
+          "SF Pro Display",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Cantarell",
+          "Open Sans",
+          "Helvetica Neue",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Inter",
+          "SF Pro Display",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Roboto",
+          "Oxygen",
+          "Ubuntu",
+          "Cantarell",
+          "Open Sans",
+          "Helvetica Neue",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "64px",
+        "h2": "48px",
+        "body": "15px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "8px"
+    },
+    "components": {
+      "input": {
+        "background": "transparent",
+        "textColor": "#F7F8F8",
+        "borderColor": null,
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#E5E5E6",
+        "textColor": "#08090A",
+        "borderColor": "#E5E5E6",
+        "borderRadius": "9999px",
+        "borderRadiusCorners": {
+          "topLeft": "9999px",
+          "topRight": "9999px",
+          "bottomRight": "9999px",
+          "bottomLeft": "9999px"
+        },
+        "shadow": "rgba(0, 0, 0, 0) 0px 8px 2px 0px, rgba(0, 0, 0, 0.01) 0px 5px 2px 0px, rgba(0, 0, 0, 0.04) 0px 3px 2px 0px, rgba(0, 0, 0, 0.07) 0px 1px 1px 0px, rgba(0, 0, 0, 0.08) 0px 0px 1px 0px"
+      },
+      "buttonSecondary": {
+        "background": "#141516",
+        "textColor": "#F7F8F8",
+        "borderRadius": "9999px",
+        "borderRadiusCorners": {
+          "topLeft": "9999px",
+          "topRight": "9999px",
+          "bottomRight": "9999px",
+          "bottomLeft": "9999px"
+        },
+        "shadow": "rgba(255, 255, 255, 0.03) 0px 0px 0px 1px inset, rgba(255, 255, 255, 0.04) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.6) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 4px 4px 0px"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "medium",
+      "targetAudience": "tech-savvy professionals"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 1,
+        "text": "Get started",
+        "reasoning": "Button #1 with text 'Get started' is the primary CTA due to its action-oriented text and distinct blue color, which stands out as a call-to-action."
+      },
+      "secondary": {
+        "index": 0,
+        "text": "Contact sales",
+        "reasoning": "Button #0 'Contact sales' is secondary due to its less vibrant dark color and supportive action text."
+      },
+      "confidence": 0.95
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "image_count": 25,
+    "http_images": [
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/c8aeedda-7726-4a4f-226a-f573f85d8d00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/6550520e-9e50-441d-b9e8-579be321f900/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/4d3381aa-fb2f-4d3d-1a06-957fc616d400/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/7ea107e7-c1a0-4c99-756d-5837fd91f200/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/7d7115d9-a0eb-4a92-5900-3ca3ee077d00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/a482eab9-69d1-412f-f2ce-8f72444fcb00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/229693cb-2eda-40d1-ba64-ce6762435200/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/c16152f3-a36c-468e-89ae-f87c2f244d00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/13a0909f-186f-4d83-3fd3-d04883ec2d00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/584d7dbd-ff4a-41bb-4fab-74fd5217a400/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/e408d7c9-e3a3-4802-e4d4-51ed197c3a00/f=auto,fit=scale-down,metadata=none",
+      "https://linear.app/cdn-cgi/imagedelivery/fO02fVwohEs9s9UHFwon6A/086b510a-f5da-414b-bc9d-228afb968600/f=auto,fit=scale-down,metadata=none"
+    ]
+  },
+  "squarespace": {
+    "title": "Website Builder \u2013 Easily Create Your Own Website \u2014 Squarespace",
+    "url": "https://www.squarespace.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Squarespace",
+    "fonts": [
+      {
+        "family": "Clarkson",
+        "role": "heading"
+      },
+      {
+        "family": "Helvetica",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#1E4C41",
+      "secondary": "#008000",
+      "accent": "#FF0000",
+      "background": "#FFFFFF",
+      "textPrimary": "#000000",
+      "link": "#FF0000"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Helvetica",
+        "heading": "Clarkson"
+      },
+      "fontStacks": {
+        "heading": [
+          "Clarkson",
+          "Helvetica",
+          "sans-serif"
+        ],
+        "body": [
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Clarkson",
+          "Helvetica",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "72px",
+        "h2": "50px",
+        "body": "50px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "0px"
+    },
+    "components": {
+      "input": {
+        "background": "#FFFFFF",
+        "textColor": "#FFFFFF",
+        "borderColor": null,
+        "borderRadius": "8px",
+        "borderRadiusCorners": {
+          "topLeft": "8px",
+          "topRight": "8px",
+          "bottomRight": "8px",
+          "bottomLeft": "8px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#FFFFFF",
+        "textColor": "#000000",
+        "borderRadius": "4px",
+        "borderRadiusCorners": {
+          "topLeft": "4px",
+          "topRight": "4px",
+          "bottomRight": "4px",
+          "bottomLeft": "4px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#000000",
+        "textColor": "#000000",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "medium",
+      "targetAudience": "creative professionals and small business owners"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "Get started\u2192",
+        "reasoning": "Button #0 ('Get started\u2192') is the primary CTA due to its action-oriented text and prominent placement, suggesting it is the main call-to-action for new users."
+      },
+      "secondary": {
+        "index": 1,
+        "text": "Previous",
+        "reasoning": "Button #1 ('Previous') is selected as secondary because it has a different background color group (#000000) and serves a navigational purpose, which is typical for secondary actions."
+      },
+      "confidence": 0.9
+    },
+    "confidence": {
+      "buttons": 0.9,
+      "colors": 0.9,
+      "overall": 0.9
+    },
+    "image_count": 729,
+    "http_images": [
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/scheduling-desktop-1000w.jpg",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/invoicing-tablet-1000w.jpg",
+      "https://media-www.sqspcdn.com/images/components/card-carousel/design-intelligence-3-1500w.webp",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/online-store-tablet-100w.jpg",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/customers-served/headshot-1-1000w.jpg",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/scheduling-mobile-1500w.webp",
+      "https://media-www.sqspcdn.com/images/auto/f2051f0f/barber-1500w.jpg",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/donations-tablet-500w.webp",
+      "https://media-www.sqspcdn.com/images/auto/f1f95a06/tutor-300w.webp",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/online-store-desktop-750w.jpg",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/get-started/entrypoint-bg-500w.png",
+      "https://media-www.sqspcdn.com/images/pages/homepage-2025/grow-your-business/portfolio-tablet-1500w.jpg"
+    ]
+  },
+  "stripe": {
+    "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+    "url": "https://stripe.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Stripe",
+    "fonts": [
+      {
+        "family": "SF Pro Display",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#533AFD",
+      "secondary": "#FFE0EF",
+      "accent": "#533AFD",
+      "background": "#FFFFFF",
+      "textPrimary": "#0D1738",
+      "link": "#FFE0D1"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "SF Pro Display",
+        "heading": "SF Pro Display"
+      },
+      "fontStacks": {
+        "heading": [
+          "sohne-var",
+          "SF Pro Display",
+          "sans-serif"
+        ],
+        "body": [
+          "sohne-var",
+          "SF Pro Display",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "sohne-var",
+          "SF Pro Display",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "48px",
+        "h2": "32px",
+        "body": "32px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 8,
+      "borderRadius": "0px"
+    },
+    "components": {
+      "input": {
+        "background": "#FFFFFF",
+        "textColor": "#000000",
+        "borderColor": null,
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#533AFD",
+        "textColor": "#FFFFFF",
+        "borderRadius": "4px",
+        "borderRadiusCorners": {
+          "topLeft": "4px",
+          "topRight": "4px",
+          "bottomRight": "4px",
+          "bottomLeft": "4px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#FFFFFF",
+        "textColor": "#533AFD",
+        "borderColor": "#B9B9F9",
+        "borderRadius": "4px",
+        "borderRadiusCorners": {
+          "topLeft": "4px",
+          "topRight": "4px",
+          "bottomRight": "4px",
+          "bottomLeft": "4px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "professional",
+      "energy": "medium",
+      "targetAudience": "businesses and developers"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 7,
+        "text": "Get started",
+        "reasoning": "Button #0 has a vibrant brand color (#533AFD) and action-oriented text ('Get started'), making it the primary CTA."
+      },
+      "secondary": {
+        "index": 2,
+        "text": "Sign up with Google",
+        "reasoning": "Button #2 has a different background color (#FFFFFF) and serves as a secondary action with 'Sign up with Google'."
+      },
+      "confidence": 0.95
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "image_count": 217,
+    "http_images": [
+      "https://images.stripeassets.com/fzn2n1nzq965/m9HBEK464p46FeNIhs2PV/f5054a93c8a0a6aabdd1c47675d610ae/wave_crop.jpg?w=608&fm=webp&q=80",
+      "https://images.stripeassets.com/fzn2n1nzq965/1hreJwxuVJ5ucPtuA7pRKH/3c5630387bca898d01ae17fc7ae2890a/decagon.png?w=432&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/115d4Vd5LVAsqFGDR1ClAv/0ceb2c44a7a7182cd624262420af7544/wave-fallback-desktop.png?w=1392&fm=webp&q=60",
+      "https://images.stripeassets.com/fzn2n1nzq965/3SSo3PvsWE5lIEvc8xdMxs/df73b1b2269139f7466517ee14967847/uptime-fallback_2x.png?w=1632&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/1v5hJ2NWvKpQfVbMqOzCpE/c900b9ed4c288f7cf0a0dced5f4983f2/enterprise-accordion-instacart.png?w=608&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/1v5hJ2NWvKpQfVbMqOzCpE/c900b9ed4c288f7cf0a0dced5f4983f2/enterprise-accordion-instacart.png?w=816&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/5AQ9A87KzwpPy4CD3uPz5C/4afd1a1e9d6e1d698c4c7c74a4868822/enterprise-accordion-lemonde.png?w=816&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/m9HBEK464p46FeNIhs2PV/f5054a93c8a0a6aabdd1c47675d610ae/wave_crop.jpg?w=296&q=80",
+      "https://images.stripeassets.com/fzn2n1nzq965/6fpvaTP1TZWXKWVMewABjV/4412b9ca2940d89d3834ac65c1fc329d/Runway.png?w=864&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/1NiQJZA0rKbwXZ7mD4BCrM/0abdaba77e564f858a33241a9aab0939/browserbase.png?w=864&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/4oTkzvOAoM5Ruub2qYNVRC/cfb038e66b1d8bc034b6a178484862a8/KurtisMoyer.png?w=48&fm=webp&q=90",
+      "https://images.stripeassets.com/fzn2n1nzq965/1Vf8oT9Fm6dEwpnEx5PgK1/055956f38d7fd8b0cc7419692ef29778/bento-terminal.png?w=308&fm=webp&q=90"
+    ]
+  },
+  "webflow": {
+    "title": "Webflow: The agentic web platform for modern businesses",
+    "url": "https://webflow.com/",
+    "status": 200,
+    "color_scheme": "light",
+    "brandName": "Webflow",
+    "fonts": [
+      {
+        "family": "WF Visual Sans Variable",
+        "role": "body"
+      },
+      {
+        "family": "Arial",
+        "role": "body"
+      },
+      {
+        "family": "Roboto",
+        "role": "body"
+      }
+    ],
+    "colors": {
+      "primary": "#146EF5",
+      "secondary": "#3B82F6",
+      "accent": "#146EF5",
+      "background": "#FFFFFF",
+      "textPrimary": "#080808",
+      "link": "#E8F1FE"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "WF Visual Sans Variable",
+        "heading": "WF Visual Sans Variable"
+      },
+      "fontStacks": {
+        "heading": [
+          "WF Visual Sans Variable",
+          "Arial",
+          "sans-serif"
+        ],
+        "body": [
+          "WF Visual Sans Variable",
+          "Arial",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "WF Visual Sans Variable",
+          "Arial",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "80px",
+        "h2": "24px",
+        "body": "16px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 4,
+      "borderRadius": "4px"
+    },
+    "components": {
+      "buttonPrimary": {
+        "background": "#146EF5",
+        "textColor": "#FFFFFF",
+        "borderRadius": "4px",
+        "borderRadiusCorners": {
+          "topLeft": "4px",
+          "topRight": "4px",
+          "bottomRight": "4px",
+          "bottomLeft": "4px"
+        },
+        "shadow": "none"
+      },
+      "buttonSecondary": {
+        "background": "#FFFFFF",
+        "textColor": "#080808",
+        "borderRadius": "0px",
+        "borderRadiusCorners": {
+          "topLeft": "0px",
+          "topRight": "0px",
+          "bottomRight": "0px",
+          "bottomLeft": "0px"
+        },
+        "shadow": "none"
+      }
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "high",
+      "targetAudience": "modern businesses"
+    },
+    "cta_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "Start for free",
+        "reasoning": "Button #0 'Start for free' uses the vibrant brand color #146EF5 and has action-oriented text, making it the primary CTA."
+      },
+      "secondary": {
+        "index": 2,
+        "text": "Log in",
+        "reasoning": "Button #2 'Log in' has a different background color (#FFFFFF) and serves a secondary function, making it suitable as the secondary CTA."
+      },
+      "confidence": 0.95
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "image_count": 95,
+    "http_images": [
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9b81cadb885bb05458762_home_agencies_client-asset-1.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9a822c1523f8503b861db_10c329f7149d3fa3464c27ae4da04a3c_home_creative-teams_impact-asset-2.png",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b90da86442bfc2198964c6_home_marketing-teams_scale-asset-1.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b90da8eb8a5deea2887f17_home_marketing-teams_agility-asset-3.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9af7b6ac159171d4f1770_a6a0b6659c395b1985055b72dab73b4c_home_engineering-teams_efficiency-asset-1.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9af7b4ec113052cd43f80_home_engineering-teams_efficiency-asset-4.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9db37e24f32b1ca018c98_2dee5d6aad5e282a6794932a58ed9885_home_engineering-teams_integration-group.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b85448e80f2aef9f59b6fb_158d56d074b6096d5f6e86ac7094e6cb_interactions-hero-04.avif",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68c9a39c128261b2128439d8_TED.svg",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68c9a39c128261b2128439d0_webflow-desktop.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b73f9075bb5485f0eef9fe_all-features_interactions-tab-bg.webp",
+      "https://cdn.prod.website-files.com/686294e263eb7e215bd232f7/68b9af7b1b7fa62454f0d433_home_engineering-teams_scale-asset-1.webp"
+    ]
+  }
+}

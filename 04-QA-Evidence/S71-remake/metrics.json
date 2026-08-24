@@ -1,0 +1,15 @@
+{
+  "title": "Hidook Site Builder",
+  "bg": "rgb(243, 239, 232)",
+  "font": "Inter, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", sans-serif",
+  "h1": "Site-ul afacerii tale,gata azi",
+  "badge": false,
+  "techBadgeText": false,
+  "indigoCss": "#9A4030",
+  "paper": "#F3EFE8",
+  "ink": "#14120F",
+  "chips": 4,
+  "cards": 3,
+  "stage": true,
+  "how": true
+}

@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Site-ul afacerii tale, gata azi — public live după plată" />
   <title>Hidook Site Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="app.css" />
 </head>
 <body>
@@ -18,16 +21,15 @@
 <!-- ===== HEADER ===== -->
 <header class="app-header" id="app-header">
   <a href="#templates" class="logo" aria-label="Hidook Site Builder — Acasă">
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-      <rect width="26" height="26" rx="7" fill="#5B5BD6"/>
-      <path d="M7 13h12M13 7v12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-    </svg>
-    <span>Hidook Site Builder</span>
+    <span class="logo-mark" aria-hidden="true">H</span>
+    <span class="logo-word">Hidook<span class="logo-word-full"> Site Builder</span></span>
   </a>
   <nav class="header-nav" id="header-nav" aria-label="Navigare principală">
     <a href="#templates" data-route="templates">Designuri</a>
+    <a href="#cum-e" data-route="how">Cum e</a>
     <a href="#dashboard" data-route="dashboard" id="nav-dashboard" style="display:none">Proiectele mele</a>
   </nav>
+  <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
   <div class="header-right">
     <span id="user-badge" style="display:none" class="user-badge" aria-label="Utilizator autentificat"></span>
     <button id="btn-logout" style="display:none" class="btn-ghost btn-sm" aria-label="Ieșire din cont">Ieșire</button>
@@ -108,14 +110,34 @@
   <!-- ========== SCREEN: TEMPLATES ========== -->
   <section id="screen-templates" class="screen" role="main" aria-label="Alege un design">
     <div class="hero-section">
-      <div class="hero-badge" aria-hidden="true">Builder + hosting gestionat</div>
-      <h1 class="hero-title">Site-ul afacerii tale,<br><em>gata azi</em></h1>
-      <p class="hero-sub" id="hero-sub">
-        Alege un design, editează textul și imaginile, previzualizează.
-        Publici live pe HTTPS după o plată de <strong id="hero-price">—</strong>
-        (include 12 luni hosting; reînnoire <strong id="hero-renewal">—</strong>/an).
-      </p>
+      <div class="hero-copy">
+        <h1 class="hero-title">Site-ul afacerii tale,<br><em>gata azi</em></h1>
+        <p class="hero-sub" id="hero-sub">
+          Alege un design, editează textul și imaginile, previzualizează.
+          Publici live pe HTTPS după o plată de <strong id="hero-price">—</strong>
+          (include 12 luni hosting; reînnoire <strong id="hero-renewal">—</strong>/an).
+        </p>
+        <div class="hero-actions">
+          <a href="#templates-grid" class="btn-primary" id="hero-cta">Alege un design</a>
+          <a href="#cum-e" class="btn-text">Cum funcționează</a>
+        </div>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="hero-stage-stack" id="hero-stage-stack">
+          <div class="hero-stage-card hero-stage-card--side hero-stage-card--left" data-stage-slot="0"></div>
+          <div class="hero-stage-card hero-stage-card--center" data-stage-slot="1"></div>
+          <div class="hero-stage-card hero-stage-card--side hero-stage-card--right" data-stage-slot="2"></div>
+        </div>
+      </div>
     </div>
+
+    <div class="catalog-chips" id="catalog-chips" role="group" aria-label="Tip de afacere">
+      <button type="button" class="catalog-chip" data-filter="all" aria-pressed="true">Toate</button>
+      <button type="button" class="catalog-chip" data-filter="product-menu" aria-pressed="false">Restaurant</button>
+      <button type="button" class="catalog-chip" data-filter="portfolio" aria-pressed="false">Portofoliu</button>
+      <button type="button" class="catalog-chip" data-filter="local-service" aria-pressed="false">Servicii locale</button>
+    </div>
+
     <div id="templates-grid" class="templates-grid" role="list" aria-label="Designuri disponibile">
       <div class="card-skeleton" aria-hidden="true">
         <div class="skeleton-preview"></div>
@@ -142,6 +164,56 @@
         </div>
       </div>
     </div>
+
+    <div class="proof-row" aria-label="Fapte despre produs">
+      <div class="proof-item">
+        <div class="proof-value" id="proof-price">—</div>
+        <div class="proof-label">prima publicare + 12 luni</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value" id="proof-renewal">—</div>
+        <div class="proof-label">reînnoire pe an</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value">Plată întâi</div>
+        <div class="proof-label">site-ul e live pe HTTPS după plată</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value">Editezi oricând</div>
+        <div class="proof-label">republici același site după ce ai plătit</div>
+      </div>
+    </div>
+
+    <section class="how-section" id="cum-e" aria-labelledby="how-title">
+      <h2 id="how-title">Cum e</h2>
+      <div class="how-grid">
+        <article class="how-step">
+          <div class="how-step-num">01</div>
+          <h3>Alegi un design</h3>
+          <p>Restaurant, salon sau meseriași — vezi site-ul real, nu un schelet gol.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">02</div>
+          <h3>Editezi în browser</h3>
+          <p>Text, poze, meniu, culoare. Poți lega Instagram înainte de plată.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">03</div>
+          <h3>Plătești 100</h3>
+          <p>Publicarea live pe HTTPS urmează după plată — fără trial neplătit pe net.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">04</div>
+          <h3>Editezi și republici</h3>
+          <p>După plată revii pe același site, schimbi ce vrei și publici din nou. Reînnoire 29/an.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <p>Hidook Site Builder — <strong id="footer-price">—</strong> primul an, apoi <strong id="footer-renewal">—</strong>/an.</p>
+      <p>Fără AI agents. Fără trial live neplătit. Site-ul tău, editat de tine.</p>
+    </footer>
   </section>
 
   <!-- ========== SCREEN: EDITOR (Inline) ========== -->
@@ -212,9 +284,8 @@
     <div id="publish-step-1" class="publish-step">
       <div class="publish-icon" aria-hidden="true">
         <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="10" fill="#EEF2FF"/>
-          <path d="M8 16c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8-8-3.6-8-8z" stroke="#5B5BD6" stroke-width="1.8"/>
-          <path d="M13 16l2.5 2.5L20 13" stroke="#5B5BD6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect width="32" height="32" rx="8" fill="#F3EFE8" stroke="#D9D2C6"/>
+          <path d="M10 16.5l4 4 8-9" stroke="#1E3A32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <h2 id="modal-publish-title" class="modal-title">Pregătește publicarea</h2>

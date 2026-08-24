@@ -357,7 +357,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '  if(msg.hb==="highlight"&&msg.path){',
   '    document.querySelectorAll("[data-hb]").forEach(function(el){',
   '      if(el.dataset.hb!==msg.path)return;',
-  '      el.style.outline="3px solid #5B5BD6";',
+  '      el.style.outline="3px solid #1E3A32";',
   '      el.style.outlineOffset="3px";',
   '      el.scrollIntoView({behavior:"smooth",block:"center"});',
   '      setTimeout(function(){el.style.outline="";el.style.outlineOffset="";},2500);',
@@ -372,7 +372,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '  el.style.cursor="text";el.style.outline="none";el.style.minWidth="1em";',
   '  el.addEventListener("keydown",function(e){if(e.key==="Enter")e.preventDefault();});',
   '  el.addEventListener("focus",function(){',
-  '    el.style.boxShadow="0 0 0 2px #5B5BD6,0 0 0 5px rgba(91,91,214,.18)";',
+  '    el.style.boxShadow="0 0 0 2px #1E3A32,0 0 0 5px rgba(30,58,50,.16)";',
   '    el.style.borderRadius="3px";el.style.zIndex="10";',
   '    send({hb:"focus",path:path});',
   '  });',
@@ -417,7 +417,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '    var btn=document.createElement("button");',
   '    btn.type="button";btn.textContent="+ Adauga element";',
   '    btn.style.marginTop="8px";btn.style.padding="5px 10px";btn.style.fontSize="12px";',
-  '    btn.style.fontFamily="system-ui";btn.style.background="#5B5BD6";btn.style.color="#fff";',
+  '    btn.style.fontFamily="system-ui";btn.style.background="#14120F";btn.style.color="#FFFcf7";',
   '    btn.style.border="none";btn.style.borderRadius="8px";btn.style.cursor="pointer";btn.style.display="block";',
   '    btn.addEventListener("click",function(){send({hb:"list-add",listPath:lp});});',
   '    el.after(btn);',
@@ -1661,6 +1661,14 @@ async function fetchAppConfig() {
   const heroRenewal = $('hero-renewal');
   if (heroPrice) heroPrice.textContent = priceLabel;
   if (heroRenewal) heroRenewal.textContent = renewalLabel;
+  const proofPrice = $('proof-price');
+  const proofRenewal = $('proof-renewal');
+  if (proofPrice) proofPrice.textContent = priceLabel;
+  if (proofRenewal) proofRenewal.textContent = renewalLabel;
+  const footerPrice = $('footer-price');
+  const footerRenewal = $('footer-renewal');
+  if (footerPrice) footerPrice.textContent = priceLabel;
+  if (footerRenewal) footerRenewal.textContent = renewalLabel;
   const bulletPrice = $('publish-price');
   const bulletRenewal = $('publish-renewal');
   if (bulletPrice) bulletPrice.textContent = priceLabel;
@@ -2239,7 +2247,9 @@ function renderTemplatesGrid() {
   registry.forEach(tpl => {
     const card = document.createElement('div');
     card.className = 'template-card';
-    card.setAttribute('role','listitem');
+    card.setAttribute('role', 'listitem');
+    card.dataset.templateId = tpl.id;
+    card.dataset.vertical = tpl.vertical || tpl.id;
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'template-card-preview';
@@ -2281,6 +2291,65 @@ function renderTemplatesGrid() {
     card.appendChild(body);
     grid.appendChild(card);
   });
+
+  applyCatalogFilter(activeCatalogFilter);
+  populateHeroStage(registry);
+}
+
+let activeCatalogFilter = 'all';
+let heroStagePopulated = false;
+
+function applyCatalogFilter(filter) {
+  activeCatalogFilter = filter || 'all';
+  document.querySelectorAll('#catalog-chips .catalog-chip').forEach((chip) => {
+    const on = chip.dataset.filter === activeCatalogFilter;
+    chip.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('#templates-grid .template-card').forEach((card) => {
+    const vert = card.dataset.vertical || card.dataset.templateId || '';
+    const id = card.dataset.templateId || '';
+    const show = activeCatalogFilter === 'all'
+      || vert === activeCatalogFilter
+      || id === activeCatalogFilter;
+    card.hidden = !show;
+  });
+}
+
+function populateHeroStage(registry) {
+  const stack = $('hero-stage-stack');
+  if (!stack || !registry || !registry.length) return;
+  if (heroStagePopulated) return;
+  const slots = stack.querySelectorAll('[data-stage-slot]');
+  if (!slots.length) return;
+  // Center restaurant (product proof), sides = other owned templates
+  const ordered = [];
+  const rest = registry.find((t) => t.id === 'product-menu' || t.vertical === 'product-menu');
+  const others = registry.filter((t) => t !== rest);
+  if (others[0]) ordered.push(others[0]);
+  ordered.push(rest || registry[0]);
+  if (others[1]) ordered.push(others[1]);
+  else if (others[0] && ordered.length < 3) ordered.push(others[0]);
+  while (ordered.length < slots.length) ordered.push(registry[ordered.length % registry.length]);
+
+  slots.forEach((slot, i) => {
+    const tpl = ordered[i];
+    if (!tpl) return;
+    const tplData = getTemplateById(tpl.id);
+    if (!tplData || typeof window.HidookEngine === 'undefined') return;
+    try {
+      const presets = tplData.presets || [];
+      const config = presets.length > 0 ? presets[0].config : {};
+      const html = window.HidookEngine.renderPreview(tplData.files, config);
+      const iframe = document.createElement('iframe');
+      iframe.title = '';
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      iframe.setAttribute('tabindex', '-1');
+      iframe.srcdoc = html;
+      slot.innerHTML = '';
+      slot.appendChild(iframe);
+    } catch (_) { /* keep empty paper card */ }
+  });
+  heroStagePopulated = true;
 }
 
 function loadCardPreview(templateId, wrap, shimmer) {
@@ -2668,9 +2737,15 @@ async function handleRoute(hash) {
   }
   const route = raw;
 
-  if (route === 'templates') {
+  if (route === 'templates' || route === 'cum-e' || route === 'templates-grid') {
     showScreen('templates');
     renderTemplatesGrid();
+    if (route === 'cum-e' || route === 'templates-grid') {
+      requestAnimationFrame(() => {
+        const target = document.getElementById(route === 'cum-e' ? 'cum-e' : 'templates-grid');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
   } else if (route === 'edit') {
     if (!draft.templateId) {
       if (resumeLocalDraft()) {
@@ -2717,6 +2792,16 @@ function wireStaticButtons() {
   // Back to templates
   const backBtn = $('btn-back-templates');
   if (backBtn) backBtn.addEventListener('click', () => { window.location.hash = '#templates'; });
+
+  // Catalog filter chips (landing)
+  const chips = $('catalog-chips');
+  if (chips) {
+    chips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.catalog-chip');
+      if (!btn) return;
+      applyCatalogFilter(btn.dataset.filter || 'all');
+    });
+  }
 
   // Device toggle
   const desktopBtn = $('btn-preview-desktop');
