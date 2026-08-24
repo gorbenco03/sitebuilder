@@ -16,7 +16,10 @@
  *      (ignores CF unknowns XX / T1)
  *   2. Explicit country or region on the request (opts.country, opts.region,
  *      or query.country / query.region)
- *   3. Default US → USD bucket
+ *   3. Isolated local boot (HIDOOK_ISOLATED_DEPLOY=1 + HIDOOK_TEST_PAY=1,
+ *      non-production): Accept-Language ro/ro-* → RO; else default RO → EUR
+ *      (Romanian stranger QA without CF country header must not see $100)
+ *   4. Default US → USD bucket (production / non-isolated)
  *
  * Callers must not hardcode BUILD_FEE / RETAINER defaults of 49.
  */
@@ -52,12 +55,44 @@ function normalizeCountryCode(raw) {
 }
 
 /**
+ * True for local/isolated QA boots (not production). Used only as a soft
+ * default when CF-IPCountry is absent so RO strangers see EUR, not USD.
+ */
+function isIsolatedDevBoot() {
+    return (
+        process.env.HIDOOK_ISOLATED_DEPLOY === '1' &&
+        process.env.HIDOOK_TEST_PAY === '1' &&
+        process.env.NODE_ENV !== 'production'
+    );
+}
+
+/**
+ * Map Accept-Language to a country code when the primary tag is Romanian.
+ * @param {Record<string, string|string[]|undefined>} headers
+ * @returns {string|null}
+ */
+function countryFromAcceptLanguage(headers) {
+    const raw = _header(headers, 'accept-language');
+    if (raw == null || raw === '') return null;
+    const parts = String(raw).split(',');
+    for (const part of parts) {
+        const tag = part.split(';')[0].trim().toLowerCase();
+        if (!tag) continue;
+        if (tag === 'ro' || tag.startsWith('ro-')) return 'RO';
+        // First non-empty tag wins; only RO is special-cased for isolated EUR.
+        break;
+    }
+    return null;
+}
+
+/**
  * Resolve the customer country code used for currency bucketing.
  *
  * Precedence:
  *   1. CF-IPCountry header (case-insensitive header name)
  *   2. Explicit country / region (opts or query)
- *   3. 'US' (USD default)
+ *   3. Isolated local boot: Accept-Language ro → RO; else RO default
+ *   4. 'US' (USD default)
  *
  * @param {object} [opts]
  * @param {Record<string, string|string[]|undefined>} [opts.headers]
@@ -86,6 +121,12 @@ function resolveCountryCode(opts = {}) {
 
     const explicit = normalizeCountryCode(opts.country || opts.region || qCountry || qRegion);
     if (explicit) return explicit;
+
+    if (isIsolatedDevBoot()) {
+        const fromLang = countryFromAcceptLanguage(headers);
+        if (fromLang) return fromLang;
+        return 'RO';
+    }
 
     return 'US';
 }
@@ -170,4 +211,6 @@ module.exports = {
     getPricing,
     getPricingFromRequest,
     formatMoney,
+    isIsolatedDevBoot,
+    countryFromAcceptLanguage,
 };

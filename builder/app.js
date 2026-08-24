@@ -1718,7 +1718,7 @@ function wireAuthForm(onAuthSuccess) {
         if (sentDiv) show(sentDiv);
         if (res.devLink && devLink) {
           devLink.href = res.devLink;
-          devLink.textContent = 'Deschide linkul de testare';
+          devLink.textContent = 'Deschide site-ul';
           show(devLink);
           devLink.addEventListener('click', async () => {
             await new Promise(r => setTimeout(r, 800));

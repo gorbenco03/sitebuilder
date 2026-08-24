@@ -127,6 +127,59 @@ function sendRedirect(res, location, status = 302) {
     res.end();
 }
 
+/** Browser navigation prefers text/html over application/json. */
+function wantsHtmlDocument(req) {
+    const accept = String((req && req.headers && (req.headers.accept || req.headers.Accept)) || '');
+    if (!accept) return false;
+    const lower = accept.toLowerCase();
+    const hi = lower.indexOf('text/html');
+    if (hi === -1) return false;
+    const ji = lower.indexOf('application/json');
+    return ji === -1 || hi < ji;
+}
+
+/**
+ * Short Romanian product 404 for normal browser navigations.
+ * API clients still get JSON via sendNotFound when Accept is not HTML-first.
+ */
+function sendHtmlNotFound(res) {
+    const html = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pagină negăsită — Hidook Site Builder</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e8eef8}
+  main{max-width:28rem;padding:2rem;text-align:center}
+  h1{font-size:1.35rem;margin:0 0 .75rem;font-weight:650}
+  p{margin:0 0 1rem;line-height:1.5;color:#b7c2d6}
+  a{color:#7dd3fc;text-decoration:none;font-weight:600}
+  a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<main>
+  <h1>Pagina nu a fost găsită</h1>
+  <p>Linkul pe care l-ai deschis nu există sau a fost mutat.</p>
+  <p><a href="/app/">Deschide Hidook Site Builder</a></p>
+</main>
+</body>
+</html>`;
+    const buf = Buffer.from(html, 'utf8');
+    res.writeHead(404, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Length': buf.length,
+    });
+    res.end(buf);
+}
+
+/** Prefer HTML product page for browser docs; keep JSON for API-style clients. */
+function sendNotFound(req, res, jsonError = 'not found') {
+    if (wantsHtmlDocument(req)) return sendHtmlNotFound(res);
+    return sendJson(res, 404, { error: jsonError });
+}
+
 // ---------------------------------------------------------------------------
 // Auth helper
 // ---------------------------------------------------------------------------
@@ -1025,7 +1078,11 @@ function createHandler({ onStripeEvent } = {}) {
                 return await handlePublish(req, res);
             }
 
-            return sendJson(res, 404, { error: 'not found' });
+            // Unknown route: browser document → short RO HTML; API → JSON
+            if (url.startsWith('/api/') || url.startsWith('/webhooks/')) {
+                return sendJson(res, 404, { error: 'not found' });
+            }
+            return sendNotFound(req, res, 'not found');
         } catch (e) {
             log('server.error', { err: e.message, url }, 'error');
             // Never forward env var names / stack traces to the browser (factory leak).

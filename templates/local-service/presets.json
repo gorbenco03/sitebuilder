@@ -2,18 +2,18 @@
   "presets": [
     {
       "id": "renovari-interioare-londra",
-      "name": "ProRenov Construct — Londra",
+      "name": "ProRenov Construct — București",
       "config": {
         "business": {
           "name": "ProRenov Construct",
-          "tagline": "Renovari interioare & finisaje premium",
-          "title": "ProRenov Construct | Renovari Interioare Londra | Finisaje de Calitate",
-          "metaDescription": "Renovari interioare complete in Londra si imprejurimi. Gresie, faianta, rigips, vopsitorie, instalatii. Echipa de profesionisti romani cu 12 ani experienta. Cere oferta gratuita!",
-          "about": "ProRenov Construct este o firma de constructii si renovari infiintata de o echipa de mesteri romani cu experienta bogata in Londra. Oferim servicii complete de renovare interioara: de la demolare si structura pana la finisaje de lux. Lucram curat, respectam termenele si oferim garantie scrisa la toate lucrarile.",
+          "tagline": "Renovări interioare & finisaje premium",
+          "title": "ProRenov Construct | Renovări Interioare București | Finisaje de Calitate",
+          "metaDescription": "Renovări interioare complete în București și Ilfov. Gresie, faianță, rigips, vopsitorie, instalații. Echipă de profesioniști cu 12 ani experiență. Cere ofertă gratuită!",
+          "about": "ProRenov Construct este o firmă de construcții și renovări din București. Oferim servicii complete de renovare interioară: de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la toate lucrările.",
           "lang": "ro",
           "yearsExp": "12",
           "projectsDone": "240",
-          "zone": "Londra si imprejurimi (Essex, Kent, Surrey)"
+          "zone": "București și Ilfov (Sector 1–6, Voluntari, Otopeni, Pipera)"
         },
         "labels": {
           "about": "Despre noi",
@@ -78,7 +78,7 @@
           {
             "icon": "",
             "title": "12 ani experienta",
-            "text": "Peste un deceniu de lucrari in Londra. Cunoastem standardele britanice si lucram conform normativelor in vigoare."
+            "text": "Peste un deceniu de lucrări în București și Ilfov. Cunoaștem normativele locale și livrăm la standarde ridicate."
           },
           {
             "icon": "",
@@ -93,14 +93,14 @@
           {
             "icon": "",
             "title": "Asigurare completa",
-            "text": "Firma asigurata complet (public liability & employer's liability). Lucrari sigure pentru dumneavoastra si familia dvs."
+            "text": "Firmă asigurată pentru lucrări la domiciliu. Șantier ordonat și comunicare clară pe tot parcursul proiectului."
           }
         ],
         "certifications": [
-          "Gas Safe Registered",
-          "NICEIC Approved",
-          "Federation of Master Builders",
-          "UTR Registered"
+          "Autorizație construcții",
+          "ANRE instalatori",
+          "ISCIR verificări",
+          "Garanție scrisă 2 ani"
         ],
         "categories": [
           {
@@ -109,18 +109,18 @@
             "photos": [
               {
                 "src": "images/pr-baie1.jpg",
-                "alt": "Baie modernă renovată complet · Londra",
-                "caption": "Renovări baie completă · Londra"
+                "alt": "Baie modernă renovată complet · București",
+                "caption": "Renovări baie completă · București"
               },
               {
                 "src": "images/pr-baie2.jpg",
-                "alt": "Gresie și faianță baie premium · Londra",
-                "caption": "Renovări baie completă · Londra"
+                "alt": "Gresie și faianță baie premium · București",
+                "caption": "Renovări baie completă · București"
               },
               {
                 "src": "images/pr-baie3.jpg",
-                "alt": "Duș walk-in cu faianță · Londra",
-                "caption": "Renovări baie completă · Londra"
+                "alt": "Duș walk-in cu faianță · București",
+                "caption": "Renovări baie completă · București"
               }
             ]
           },
@@ -130,41 +130,41 @@
             "photos": [
               {
                 "src": "images/pr-buc1.jpg",
-                "alt": "Bucătărie open-space renovată · Londra",
-                "caption": "Bucătării și spații open-space · Londra"
+                "alt": "Bucătărie open-space renovată · București",
+                "caption": "Bucătării și spații open-space · București"
               },
               {
                 "src": "images/pr-buc2.jpg",
-                "alt": "Living cu parchet · Londra",
-                "caption": "Bucătării și spații open-space · Londra"
+                "alt": "Living cu parchet · București",
+                "caption": "Bucătării și spații open-space · București"
               },
               {
                 "src": "images/pr-buc3.jpg",
-                "alt": "Tavan fals LED în bucătărie · Londra",
-                "caption": "Bucătării și spații open-space · Londra"
+                "alt": "Tavan fals LED în bucătărie · București",
+                "caption": "Bucătării și spații open-space · București"
               }
             ]
           },
           {
             "title": "Extinderi si lucrari structurale",
-            "blurb": "Extinderi casa, mansardari, demolare pereti portanti cu autorizatie, constructii noi in gradina (annex, garage, garden office).",
+            "blurb": "Extinderi casa, mansardari, demolare pereti portanti cu autorizatie, constructii noi anexe în curte.",
             "photos": [
               {
                 "src": "images/pr-ext1.jpg",
-                "alt": "Extensie casă cu structură oțel · Londra",
-                "caption": "Extinderi și lucrări structurale · Londra"
+                "alt": "Extensie casă cu structură oțel · București",
+                "caption": "Extinderi și lucrări structurale · București"
               },
               {
                 "src": "images/pr-ext2.jpg",
-                "alt": "Annex finalizat în grădină · Londra",
-                "caption": "Extinderi și lucrări structurale · Londra"
+                "alt": "Annex finalizat în grădină · București",
+                "caption": "Extinderi și lucrări structurale · București"
               }
             ]
           }
         ],
         "instagram": {
-          "handle": "prorenov.london",
-          "url": "https://www.instagram.com/prorenov.london",
+          "handle": "prorenov.bucuresti",
+          "url": "https://www.instagram.com/prorenov.bucuresti",
           "gallery": [
             "images/pr-ig1.jpg",
             "images/pr-ig2.jpg",
@@ -173,33 +173,33 @@
             "images/pr-ig5.jpg",
             "images/pr-ig6.jpg"
           ],
-          "embedUrl": "https://www.instagram.com/prorenov.london/embed"
+          "embedUrl": "https://www.instagram.com/prorenov.bucuresti/embed"
         },
         "contact": {
           "title": "Cere oferta gratuita",
-          "intro": "Sunati-ne sau scrieti pe WhatsApp pentru o evaluare gratuita la domiciliu. Raspundem in aceeasi zi.",
+          "intro": "Sunați-ne sau scrieți pe WhatsApp pentru o evaluare gratuită la domiciliu. Răspundem în aceeași zi.",
           "instagram": {
-            "url": "https://www.instagram.com/prorenov.london",
-            "label": "@prorenov.london"
+            "url": "https://www.instagram.com/prorenov.bucuresti",
+            "label": "@prorenov.bucuresti"
           },
           "facebook": {
-            "url": "https://www.facebook.com/prorenov.london",
+            "url": "https://www.facebook.com/prorenov.bucuresti",
             "label": "ProRenov Construct"
           },
-          "whatsapp": "447900112233",
-          "phone": "+447900112233",
-          "phoneDisplay": "+44 7900 112 233",
-          "waHref": "https://wa.me/447900112233?text=Salut!%20Vreau%20o%20oferta%20gratuita%20pentru%20renovare.",
-          "address": "East London, Essex & Surrey",
-          "addressHref": ""
+          "whatsapp": "40721000112",
+          "phone": "+40721000112",
+          "phoneDisplay": "+40 721 000 112",
+          "waHref": "https://wa.me/40721000112?text=Salut!%20Vreau%20o%20oferta%20gratuita%20pentru%20renovare.",
+          "address": "București, Sector 2 — Lucrăm în tot Ilfovul",
+          "addressHref": "https://maps.google.com/?q=Bucuresti"
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
-          "canonical": "https://prorenov-construct.co.uk",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovari interioare complete in Londra si imprejurimi\",\"telephone\":\"+447900112233\",\"areaServed\":\"London\",\"url\":\"https://prorenov-construct.co.uk\"}"
+          "canonical": "https://prorenov-construct.ro",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721000112\",\"areaServed\":\"București\",\"url\":\"https://prorenov-construct.ro\"}"
         },
         "footer": {
-          "address": "East London, Essex & Surrey",
+          "address": "București și Ilfov",
           "year": "2026",
           "note": "Calitate garantata. Lucrari curate, termene respectate."
         }
