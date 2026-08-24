@@ -625,7 +625,16 @@ function initPostMessageListener() {
 function buildImgMap(config) {
   // Build a src→path reverse-lookup map for all image values in config.
   // Used by the modern edit-overlay.js to resolve {hb:'image', path} on img clicks.
+  // Also maps url(...) fragments inside CSS backgrounds (hero.background).
   const map = {};
+  function indexUrl(full, u) {
+    if (!u || typeof u !== 'string') return;
+    const t = u.trim();
+    if (!t) return;
+    if (t.startsWith('data:image') || t.startsWith('images/') || t.startsWith('http') || t.startsWith('/')) {
+      map[t] = full;
+    }
+  }
   function walk(obj, prefix) {
     if (!obj || typeof obj !== 'object') return;
     if (Array.isArray(obj)) {
@@ -634,9 +643,14 @@ function buildImgMap(config) {
     }
     Object.entries(obj).forEach(([k, v]) => {
       const full = prefix ? prefix + '.' + k : k;
-      if (typeof v === 'string' && v.length > 0 &&
-          (v.startsWith('data:image') || v.startsWith('images/') || v.startsWith('http'))) {
-        map[v] = full;
+      if (typeof v === 'string' && v.length > 0) {
+        indexUrl(full, v);
+        // CSS multi-layer backgrounds: linear-gradient(...), url('images/hero.jpg')
+        if (/url\s*\(/i.test(v)) {
+          const re = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
+          let m;
+          while ((m = re.exec(v))) indexUrl(full, m[1]);
+        }
       } else if (typeof v === 'object' && v !== null) {
         walk(v, full);
       }
@@ -689,18 +703,47 @@ function onListAdd(listPath) {
       if (f.key === listPath && f.type === 'list') itemShape = f.itemShape;
     });
   }
-  const arr = getPath(draft.config, listPath) || [];
+  const arr = Array.isArray(getPath(draft.config, listPath))
+    ? getPath(draft.config, listPath).slice()
+    : [];
   let newItem;
-  if (typeof itemShape === 'string') {
-    newItem = '';
+  // Restaurant menu: menu.en / menu.ro are section lists; *.items are string dishes
+  if (/^menu\.(en|ro)$/.test(listPath)) {
+    if (!draft.config.menu || typeof draft.config.menu !== 'object') {
+      draft.config.menu = { title: 'Meniu', en: [], ro: [] };
+    }
+    if (!Array.isArray(draft.config.menu.en)) draft.config.menu.en = [];
+    if (!Array.isArray(draft.config.menu.ro)) draft.config.menu.ro = [];
+    newItem = { category: 'Secțiune nouă', items: ['Articol nou'] };
+  } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
+    newItem = 'Articol nou';
+  } else if (typeof itemShape === 'string') {
+    newItem = itemShape === 'photos' ? [] : '';
   } else if (typeof itemShape === 'object' && itemShape !== null) {
     newItem = {};
-    Object.keys(itemShape).forEach(k => { newItem[k] = itemShape[k] === 'photos' ? [] : ''; });
+    Object.keys(itemShape).forEach(k => {
+      if (itemShape[k] === 'photos') newItem[k] = [];
+      else if (itemShape[k] === 'list' || k === 'items') newItem[k] = [''];
+      else newItem[k] = '';
+    });
   } else {
     newItem = '';
   }
   arr.push(newItem);
   setPath(draft.config, listPath, arr);
+  // Keep bilingual restaurant menus in sync when adding a section on one language
+  const mLang = /^menu\.(en|ro)$/.exec(listPath);
+  if (mLang && draft.config && draft.config.menu) {
+    const other = mLang[1] === 'en' ? 'ro' : 'en';
+    const otherPath = 'menu.' + other;
+    const otherArr = Array.isArray(getPath(draft.config, otherPath))
+      ? getPath(draft.config, otherPath).slice()
+      : [];
+    if (otherArr.length === arr.length - 1) {
+      otherArr.push(JSON.parse(JSON.stringify(newItem)));
+      setPath(draft.config, otherPath, otherArr);
+    }
+  }
   saveDraft();
   fullRerender();
 }
@@ -1212,7 +1255,7 @@ function saveDraft() {
 function loadDraft() { return lsGet(DRAFT_KEY); }
 
 // ---------------------------------------------------------------------------
-// 15b. Add Instagram (Instafidget partner slot)
+// 15b. Add Instagram (Instafidget partner slot) — works before payment
 // ---------------------------------------------------------------------------
 
 function siteIdForInstagram() {
@@ -1236,34 +1279,154 @@ function applyEmbedUrl(embedUrl) {
   fullRerender();
 }
 
+/** Show auth panel vs connect panel inside the Instagram modal. */
+function syncInstagramModalPanels() {
+  const authPanel = $('ig-auth-panel');
+  const connectPanel = $('ig-connect-panel');
+  const hasUser = !!(currentUser && currentUser.email);
+  if (authPanel) authPanel.style.display = hasUser ? 'none' : '';
+  if (connectPanel) connectPanel.style.display = hasUser ? '' : 'none';
+}
+
+/**
+ * Ensure an unpaid draft site exists so partner APIs have a siteId.
+ * Does not open the publish success UI or require payment.
+ */
+async function ensureDraftSiteForInstagram() {
+  let siteId = siteIdForInstagram();
+  if (siteId) return siteId;
+  if (!currentUser || !currentUser.email) {
+    throw new Error('Intră în cont ca să salvezi ciorna.');
+  }
+  if (!draft.config || !draft.templateId) {
+    throw new Error('Alege mai întâi un design.');
+  }
+  setIgStatus('Salvez ciorna ca să pot conecta Instagram…');
+  const { cleanConfig, images } = extractImages(draft.config);
+  const baseSlug = toSlug(
+    (draft.config.business && draft.config.business.name) ||
+    'site-' + String(Date.now()).slice(-6)
+  ) || ('site-' + String(Date.now()).slice(-6));
+  const payload = {
+    templateId: draft.templateId,
+    config: cleanConfig,
+    images,
+    slug: baseSlug,
+  };
+  if (currentSiteId) payload.siteId = currentSiteId;
+  const data = await apiPost('/api/publish', payload);
+  if (!data.site || !data.site.id) {
+    throw new Error('Nu am putut salva ciorna.');
+  }
+  currentSiteId = data.site.id;
+  publishedSiteId = data.site.id;
+  if (data.paymentUrl) sitePaymentUrl = data.paymentUrl;
+  // Keep unpaid — no live requirement for Instagram connect
+  return currentSiteId;
+}
+
+function wireIgAuthForm() {
+  const form = $('form-ig-auth-email');
+  const sentDiv = $('ig-auth-sent');
+  const errorDiv = $('ig-auth-error');
+  const devLink = $('ig-dev-link');
+  if (!form) return;
+
+  if (form) form.style.display = '';
+  if (sentDiv) sentDiv.style.display = 'none';
+  if (errorDiv) errorDiv.style.display = 'none';
+  if (devLink) { hide(devLink); devLink.removeAttribute('href'); }
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const emailInput = $('input-ig-email');
+    const email = emailInput ? emailInput.value.trim() : '';
+    if (!email) {
+      if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
+      return;
+    }
+    const submitBtn = $('btn-ig-send-magic');
+    setBtnLoading(submitBtn, true, 'Se trimite...');
+    if (errorDiv) hide(errorDiv);
+    try {
+      const res = await apiPost('/api/auth/email', { email });
+      if (form) hide(form);
+      if (sentDiv) show(sentDiv);
+      if (res.devLink && devLink) {
+        devLink.href = res.devLink;
+        devLink.textContent = 'Deschide linkul de autentificare';
+        show(devLink);
+        // One-shot handler: verify in-place, stay in editor, continue IG flow
+        const onDev = async (ev) => {
+          ev.preventDefault();
+          try {
+            const href = devLink.getAttribute('href') || res.devLink;
+            await fetch(href, { credentials: 'include', redirect: 'follow' });
+            const user = await fetchCurrentUser().catch(() => null);
+            if (user) {
+              updateUserUI(user);
+              syncInstagramModalPanels();
+              setIgStatus('Cont activ. Pregătesc conectarea…');
+              try {
+                await ensureDraftSiteForInstagram();
+                setIgStatus('Poți conecta Instagram. Bifează termenii, apoi apasă Conectează.');
+              } catch (err) {
+                setIgStatus(err.message || 'Nu am putut salva ciorna.', true);
+              }
+            } else {
+              window.location.href = href;
+            }
+          } catch (_) {
+            window.location.href = devLink.href || res.devLink;
+          }
+        };
+        devLink.onclick = onDev;
+      }
+    } catch (err) {
+      if (errorDiv) {
+        errorDiv.textContent = err.message || 'Nu am putut trimite linkul.';
+        show(errorDiv);
+      }
+    } finally {
+      setBtnLoading(submitBtn, false);
+    }
+  };
+}
+
 function openInstagramModal() {
-  const siteId = siteIdForInstagram();
-  if (!currentUser) {
-    showToast('Intră în cont ca să conectezi Instagram.', 'error', 4000);
-    return;
-  }
-  if (!currentUser.email) {
-    showToast('Intră cu email ca să conectezi Instagram. Nu folosim un alt cont.', 'error', 5000);
-    return;
-  }
-  if (!siteId) {
-    showToast('Salvează mai întâi ciorna (Publică site-ul → salvează draft), apoi conectează Instagram.', 'error', 6000);
-    return;
-  }
   const check = $('ig-terms-check');
   const btn = $('btn-ig-connect');
   if (check) check.checked = false;
   if (btn) btn.disabled = true;
   setIgStatus('');
+
+  // Always open the modal — never a dead toast-only button.
   openModal('modal-instagram');
+  syncInstagramModalPanels();
+
+  if (!currentUser || !currentUser.email) {
+    wireIgAuthForm();
+    return;
+  }
+
+  // Logged in: ensure draft siteId (unpaid OK), then show connect controls.
+  (async () => {
+    try {
+      await ensureDraftSiteForInstagram();
+      setIgStatus('');
+    } catch (e) {
+      setIgStatus(e.message || 'Nu am putut pregăti Instagram.', true);
+    }
+  })();
 }
 
 async function connectInstagram() {
-  const siteId = siteIdForInstagram();
   const check = $('ig-terms-check');
   const btn = $('btn-ig-connect');
-  if (!siteId) {
-    setIgStatus('Salvează mai întâi ciorna.', true);
+  if (!currentUser || !currentUser.email) {
+    setIgStatus('Intră în cont ca să conectezi Instagram.', true);
+    syncInstagramModalPanels();
+    wireIgAuthForm();
     return;
   }
   if (!check || !check.checked) {
@@ -1273,6 +1436,11 @@ async function connectInstagram() {
   setBtnLoading(btn, true);
   setIgStatus('Conectez Instagram…');
   try {
+    const siteId = await ensureDraftSiteForInstagram();
+    if (!siteId) {
+      setIgStatus('Salvează mai întâi ciorna.', true);
+      return;
+    }
     const grant1 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
       acceptedTerms: true,
     });

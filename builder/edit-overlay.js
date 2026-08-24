@@ -235,11 +235,18 @@
 
   /** Is `path` a known "safe" list for add/remove? */
   function isSafeList(rootPath) {
+    if (!rootPath) return false;
     for (var i = 0; i < SAFE_LIST_PATHS.length; i++) {
       if (rootPath === SAFE_LIST_PATHS[i] || rootPath.endsWith('.' + SAFE_LIST_PATHS[i])) {
         return true;
       }
     }
+    // Restaurant menu: bilingual section lists + nested dish arrays
+    // e.g. menu.en, menu.ro, menu.en.0.items
+    if (/^menu\.(en|ro)$/.test(rootPath)) return true;
+    if (/^menu\.(en|ro)\.\d+\.items$/.test(rootPath)) return true;
+    // Gallery photo category blocks (restaurant)
+    if (rootPath === 'categories' || /\.categories$/.test(rootPath)) return true;
     return false;
   }
 
@@ -410,13 +417,17 @@
       wrap.appendChild(btn);
     });
 
-    /* ── 5b. Elements with inline background-image (e.g. hero) ── */
+    /* ── 5b. Elements with inline background / background-image (e.g. hero) ── */
+    /* Templates often use style="background: linear-gradient(...), url(...)" — not only background-image:url */
     var allEls = Array.prototype.slice.call(document.querySelectorAll('[style]'));
     allEls.forEach(function (el) {
       var style = el.getAttribute('style') || '';
-      var m = style.match(/background-image\s*:\s*url\(['"]?([^'")\s]+)['"]?\)/i);
-      if (!m) return;
-      var bgUrl = m[1];
+      var declMatch = style.match(/(?:^|;)\s*(?:background(?:-image)?)\s*:\s*([^;]+)/i);
+      if (!declMatch) return;
+      var bgDecl = declMatch[1] || '';
+      var urlMatch = bgDecl.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+      if (!urlMatch) return;
+      var bgUrl = urlMatch[1];
 
       el.classList.add('hb-bg-wrap');
 
@@ -428,6 +439,8 @@
         e.stopPropagation();
         e.preventDefault();
         var resolvedPath = resolveImgPath(bgUrl);
+        // Prefer explicit hero.background when CSS multi-layer maps through imgMap
+        if (!resolvedPath && imgMap[bgUrl]) resolvedPath = imgMap[bgUrl];
         if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
       });
       el.appendChild(btn);
@@ -498,7 +511,14 @@
       var addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'hb-add-btn';
-      addBtn.textContent = '+ Adaugă';
+      // Romanian labels for restaurant menu structure
+      if (/^menu\.(en|ro)$/.test(root)) {
+        addBtn.textContent = '+ Adaugă secțiune';
+      } else if (/^menu\.(en|ro)\.\d+\.items$/.test(root)) {
+        addBtn.textContent = '+ Adaugă articol';
+      } else {
+        addBtn.textContent = '+ Adaugă';
+      }
       addBtn.addEventListener('click', function () {
         toParent({ hb: 'list-add', listPath: root });
       });

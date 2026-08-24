@@ -366,18 +366,40 @@
   <div class="modal-box">
     <button class="modal-close" id="btn-close-instagram" aria-label="Închide">&times;</button>
     <h2 id="modal-instagram-title" class="modal-title">Adaugă Instagram</h2>
-    <p class="modal-sub">Conectezi Instagram prin Instafidget. Widgetul apare pe site. Nu vorbim cu Meta din Hidook Site Builder.</p>
-    <label class="ig-terms" for="ig-terms-check">
-      <input id="ig-terms-check" type="checkbox" />
-      <span>Sunt de acord cu
-        <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a>
-        și
-        <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Confidențialitatea</a>
-        Instafidget. Se creează un cont Instafidget pe același email.
-      </span>
-    </label>
-    <p id="ig-status" class="ig-status" aria-live="polite"></p>
-    <button id="btn-ig-connect" class="btn-primary btn-full" type="button" disabled>Conectează Instagram</button>
+    <p class="modal-sub">Conectezi Instagram din editor, înainte de plată. Widgetul apare pe site. Nu vorbim cu Meta din Hidook Site Builder.</p>
+
+    <!-- Step A: sign-in (before payment / without leaving editor) -->
+    <div id="ig-auth-panel" style="display:none">
+      <p class="modal-sub" id="ig-auth-lead">Intră cu email ca să conectezi Instagram. Contul e același ca la publicare — fără parolă.</p>
+      <form id="form-ig-auth-email" novalidate autocomplete="off">
+        <div class="field-group">
+          <label class="field-label" for="input-ig-email">Adresa de email</label>
+          <input id="input-ig-email" class="field-input" type="email" placeholder="email@exemplu.ro" autocomplete="email" required />
+        </div>
+        <div id="ig-auth-error" class="field-error" role="alert" style="display:none"></div>
+        <button class="btn-primary btn-full" type="submit" id="btn-ig-send-magic" style="margin-top:.75rem">Trimite link magic</button>
+      </form>
+      <div id="ig-auth-sent" class="auth-sent" style="display:none">
+        <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
+        <p class="auth-sent-sub">Deschide emailul, apoi revii aici — rămâi în editor.</p>
+        <a id="ig-dev-link" href="#" class="dev-link" style="display:none" aria-label="Deschide linkul de autentificare">Deschide linkul de autentificare</a>
+      </div>
+    </div>
+
+    <!-- Step B: terms + connect (after account; draft may auto-save) -->
+    <div id="ig-connect-panel" style="display:none">
+      <label class="ig-terms" for="ig-terms-check">
+        <input id="ig-terms-check" type="checkbox" />
+        <span>Sunt de acord cu
+          <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a>
+          și
+          <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Confidențialitatea</a>
+          Instafidget. Se creează un cont Instafidget pe același email.
+        </span>
+      </label>
+      <p id="ig-status" class="ig-status" aria-live="polite"></p>
+      <button id="btn-ig-connect" class="btn-primary btn-full" type="button" disabled>Conectează Instagram</button>
+    </div>
   </div>
 </div>
 

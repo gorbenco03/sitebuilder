@@ -193,6 +193,43 @@
       ]
     },
     {
+      "id": "menu",
+      "title": "Meniu restaurant",
+      "fields": [
+        {
+          "key": "menu.title",
+          "type": "text",
+          "label": "Titlul blocului de meniu (ex: Meniu)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "menu.en",
+          "type": "list",
+          "label": "Secțiuni meniu (EN) — fiecare cu categorie + articole",
+          "required": false,
+          "min": 0,
+          "max": 20,
+          "itemShape": {
+            "category": "text",
+            "items": "list"
+          }
+        },
+        {
+          "key": "menu.ro",
+          "type": "list",
+          "label": "Secțiuni meniu (RO) — fiecare cu categorie + articole",
+          "required": false,
+          "min": 0,
+          "max": 20,
+          "itemShape": {
+            "category": "text",
+            "items": "list"
+          }
+        }
+      ]
+    },
+    {
       "id": "gallery",
       "title": "Galerie foto",
       "fields": [
