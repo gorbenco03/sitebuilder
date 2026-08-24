@@ -50,7 +50,7 @@
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Codul limbii paginii (ex: ro, en) — folosit in <html lang>",
+          "label": "Limba paginii (ex: ro, en)",
           "required": true,
           "maxLen": 10
         },
@@ -292,20 +292,20 @@
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Telefon (format international, ex: +447911123456)",
+          "label": "Telefon (format internațional, ex: +40 721 123 456)",
           "required": false
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Telefon afisat (ex: +44 7911 123 456)",
+          "label": "Telefon afișat (ex: +40 721 123 456)",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "Numar WhatsApp (fara +, ex: 447911123456)",
+          "label": "Număr WhatsApp (fără +, ex: 40721123456)",
           "required": false
         },
         {
@@ -374,7 +374,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "URL embed Instagram (opțional)",
+          "label": "Link feed Instagram (opțional)",
           "required": false
         },
         {
@@ -398,7 +398,7 @@
         {
           "key": "seo.jsonLd",
           "type": "textarea",
-          "label": "JSON-LD Schema.org (generat automat de bot) — optional",
+          "label": "Informații pentru căutare Google (opțional — completate automat)",
           "required": false
         },
         {

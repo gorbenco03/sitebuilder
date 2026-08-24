@@ -1306,9 +1306,82 @@ function buildGalleryModal() {
 
 function saveDraft() {
   if (!draft.templateId || !draft.config) return;
-  lsSet(DRAFT_KEY, { templateId: draft.templateId, config: draft.config });
+  const payload = { templateId: draft.templateId, config: draft.config };
+  // Persist paid-site bind so fresh #edit (no dashboard «Editează») can republish
+  if (currentSiteId) {
+    payload.siteId = currentSiteId;
+    payload.paid = !!currentSitePaid;
+    if (currentSiteSlug) payload.slug = currentSiteSlug;
+  }
+  lsSet(DRAFT_KEY, payload);
 }
 function loadDraft() { return lsGet(DRAFT_KEY); }
+
+/**
+ * After pay, a fresh /app/#edit (or resume without loadSiteForEdit) must bind the
+ * signed-in paid site so «Publică» republishes the same slug — never the new-address modal.
+ */
+async function bindSignedInPaidSiteForEdit() {
+  if (currentSiteId && currentSitePaid && currentSiteSlug) return;
+  try {
+    if (!currentUser) {
+      const user = await fetchCurrentUser().catch(() => null);
+      if (user) updateUserUI(user);
+      if (!currentUser) return;
+    }
+
+    const saved = loadDraft();
+    if (saved && saved.siteId && saved.paid) {
+      currentSiteId = saved.siteId;
+      currentSitePaid = true;
+      if (saved.slug) currentSiteSlug = saved.slug;
+      publishedSiteId = saved.siteId;
+      if (currentSiteId && currentSitePaid && currentSiteSlug) {
+        saveDraft();
+        return;
+      }
+    }
+
+    const data = await apiGet('/api/sites');
+    const sites = (data && data.sites) || [];
+    if (!sites.length) return;
+
+    const tpl = draft.templateId || (saved && saved.templateId) || '';
+    const nameSlug = toSlug(getPath(draft.config, 'business.name') || '') || '';
+    const wantSlug = String(currentSiteSlug || (saved && saved.slug) || nameSlug || '').trim();
+
+    let match = null;
+    if (currentSiteId) {
+      match = sites.find(s => s && s.id === currentSiteId) || null;
+    }
+    if (!match && wantSlug) {
+      match = sites.find(s => s && s.paid && (s.slug === wantSlug || s.projectName === wantSlug)) || null;
+    }
+    if (!match && tpl) {
+      const paidTpl = sites.filter(s => s && s.paid && s.templateId === tpl);
+      if (paidTpl.length === 1) match = paidTpl[0];
+      else if (paidTpl.length > 1 && wantSlug) {
+        match = paidTpl.find(s => s.slug === wantSlug || s.projectName === wantSlug) || paidTpl[0];
+      } else if (paidTpl.length > 1) {
+        match = paidTpl[0];
+      }
+    }
+    if (!match) {
+      const paid = sites.filter(s => s && s.paid);
+      if (paid.length === 1) match = paid[0];
+    }
+    if (!match) return;
+
+    currentSiteId = match.id;
+    currentSitePaid = !!match.paid;
+    currentSiteSlug = match.slug || match.projectName || currentSiteSlug || '';
+    publishedSiteId = match.id;
+    if (match.url) publishedSiteUrl = match.url;
+    saveDraft();
+  } catch (_) {
+    /* unsigned / offline — leave unbound */
+  }
+}
 
 // ---------------------------------------------------------------------------
 // 15b. Add Instagram (feed slot) — works before payment
@@ -1782,7 +1855,7 @@ function extractImages(config) {
   return { cleanConfig: clean, images };
 }
 
-function openPublishModal() {
+async function openPublishModal() {
   show($('publish-step-1'));
   hide($('publish-step-2'));
   hide($('auth-sent'));
@@ -1807,6 +1880,9 @@ function openPublishModal() {
       return;
     }
   }
+
+  // Fresh #edit after pay may not have gone through loadSiteForEdit — bind first
+  await bindSignedInPaidSiteForEdit();
 
   // Paid #edit republish: keep existing slug — never ask for a new address that collides
   if (currentSiteId && currentSitePaid) {
@@ -1950,6 +2026,7 @@ async function execPublish(slug) {
   sitePaymentUrl = data.paymentUrl || null;
   currentSitePaid = !!data.site.paid;
   if (data.site.slug) currentSiteSlug = data.site.slug;
+  saveDraft();
 
   showSuccessScreen(data.site.url, data.paymentUrl);
 }
@@ -2090,6 +2167,7 @@ async function completeTestCheckout(sessionId) {
       publishedSiteUrl = site.url || null;
       currentSitePaid = !!site.paid;
       if (site.slug) currentSiteSlug = site.slug;
+      saveDraft();
     }
     if (site && site.url && String(site.url).indexOf('http') === 0) {
       sitePaymentUrl = null;
@@ -2128,6 +2206,13 @@ function resumeLocalDraft() {
   if (!tplData || !meta) return false;
   draft.templateId = saved.templateId;
   draft.config = deepClone(saved.config);
+  // Restore paid-site bind from draft (fresh #edit without loadSiteForEdit)
+  if (saved.siteId) {
+    currentSiteId = saved.siteId;
+    currentSitePaid = !!saved.paid;
+    if (saved.slug) currentSiteSlug = saved.slug;
+    publishedSiteId = saved.siteId;
+  }
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;
   iframeReady = false;
@@ -2465,6 +2550,7 @@ async function loadSiteForEdit(siteId) {
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    saveDraft();
 
     const tplData = getTemplateById(site.templateId);
     const registry = getTemplateList();
@@ -2594,6 +2680,8 @@ async function handleRoute(hash) {
         return;
       }
     }
+    // Bind signed-in paid site so Publică skips slug modal without dashboard Editează
+    await bindSignedInPaidSiteForEdit();
     showScreen('edit');
     updateChecklist();
     scheduleRerender(true);

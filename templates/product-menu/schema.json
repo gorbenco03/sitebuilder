@@ -275,7 +275,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "URL embed Instagram (opțional)",
+          "label": "Link feed Instagram (opțional)",
           "required": false
         },
         {
@@ -383,7 +383,7 @@
         {
           "key": "seo.jsonLd",
           "type": "textarea",
-          "label": "JSON-LD Schema.org (tip Restaurant — generat automat de bot)",
+          "label": "Informații pentru căutare Google (opțional — completate automat)",
           "required": false
         }
       ]
