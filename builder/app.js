@@ -1720,16 +1720,29 @@ function wireAuthForm(onAuthSuccess) {
           devLink.href = res.devLink;
           devLink.textContent = 'Deschide site-ul';
           show(devLink);
-          devLink.addEventListener('click', async () => {
-            await new Promise(r => setTimeout(r, 800));
-            const user = await fetchCurrentUser().catch(() => null);
-            if (user) {
-              updateUserUI(user);
-              closeModal('modal-publish');
-              if (onAuthSuccess) {
-                setLoading(true, 'Se publică...');
-                try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
+          devLink.addEventListener('click', async (ev) => {
+            // Keep SPA: verify via fetch so draft/publish resume works (S62)
+            ev.preventDefault();
+            try {
+              const href = devLink.getAttribute('href') || res.devLink;
+              await fetch(href, { credentials: 'include', redirect: 'follow' });
+              const user = await fetchCurrentUser().catch(() => null);
+              if (user) {
+                updateUserUI(user);
+                closeModal('modal-publish');
+                if (onAuthSuccess) {
+                  setLoading(true, 'Se publică...');
+                  try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
+                } else if (resumeLocalDraft()) {
+                  window.location.hash = '#edit';
+                } else {
+                  window.location.hash = '#dashboard';
+                }
+              } else {
+                window.location.href = href;
               }
+            } catch (_) {
+              window.location.href = devLink.href || res.devLink;
             }
           });
         }
@@ -1791,6 +1804,70 @@ function showSuccessScreen(url, paymentUrl) {
   }
 
   openModal('modal-success');
+}
+
+/**
+ * HIDOOK_TEST_PAY offline return: #test-checkout=cs_test_* completes the same
+ * paid transition as the unsigned test webhook (POST /api/test-pay/complete).
+ */
+async function completeTestCheckout(sessionId) {
+  const id = String(sessionId || '').trim();
+  if (!/^cs_test_[A-Za-z0-9]+$/.test(id)) {
+    showToast('Sesiune de plată invalidă.', 'error');
+    return;
+  }
+  setLoading(true, 'Confirmăm plata...');
+  try {
+    const data = await apiPost('/api/test-pay/complete', { sessionId: id });
+    const site = data && data.site;
+    if (site && site.id) {
+      currentSiteId = site.id;
+      publishedSiteId = site.id;
+      publishedSiteUrl = site.url || null;
+    }
+    if (site && site.url && String(site.url).indexOf('http') === 0) {
+      sitePaymentUrl = null;
+      showSuccessScreen(site.url, null);
+      showToast('Plata a fost confirmată. Site-ul tău e live.', 'success', 6000);
+    } else if (site && site.paid) {
+      try {
+        const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
+        const s = fresh && fresh.site;
+        if (s && s.url) {
+          publishedSiteUrl = s.url;
+          showSuccessScreen(s.url, null);
+        } else {
+          showToast('Plata a fost confirmată. Publicarea finalizează în câteva momente.', 'success', 6000);
+        }
+      } catch (_) {
+        showToast('Plata a fost confirmată. Publicarea finalizează în câteva momente.', 'success', 6000);
+      }
+    } else {
+      showToast('Plata a fost procesată.', 'success', 5000);
+    }
+  } catch (e) {
+    showToast('Eroare la confirmarea plății: ' + (e.message || 'reîncearcă'), 'error', 6000);
+  } finally {
+    setLoading(false);
+  }
+}
+
+/** Restore local draft into editor state (after magic-link / empty dashboard). */
+function resumeLocalDraft() {
+  const saved = loadDraft();
+  if (!saved || !saved.templateId || !saved.config) return false;
+  const tplData = getTemplateById(saved.templateId);
+  const registryList = getTemplateList();
+  const meta = (registryList || []).find(t => t.id === saved.templateId);
+  if (!tplData || !meta) return false;
+  draft.templateId = saved.templateId;
+  draft.config = deepClone(saved.config);
+  currentTemplate = { meta, data: tplData };
+  previewFirstRender = false;
+  iframeReady = false;
+  const nameEl = $('editor-template-name');
+  if (nameEl) nameEl.textContent = meta.name;
+  return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1959,6 +2036,12 @@ async function loadDashboard() {
     const sites = data.sites || [];
 
     if (sites.length === 0) {
+      // Magic-link / verify landed on empty dashboard — resume in-progress local draft
+      const saved = loadDraft();
+      if (saved && saved.templateId && saved.config && resumeLocalDraft()) {
+        window.location.hash = '#edit';
+        return;
+      }
       list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>Nu ai site-uri create încă.</p><a href="#templates" class="btn-primary">Creează primul tău site</a></div>`;
       return;
     }
@@ -2207,13 +2290,38 @@ function showScreen(name) {
 }
 
 async function handleRoute(hash) {
-  const route = (hash || '').replace('#','') || 'templates';
+  const raw = (hash || '').replace(/^#/, '') || 'templates';
+  // Offline test-pay return: #test-checkout=cs_test_*
+  if (/^test-checkout=/.test(raw)) {
+    const sessionId = raw.slice('test-checkout='.length).split('&')[0];
+    // Clear hash so refresh does not re-fire
+    if (history && history.replaceState) {
+      try { history.replaceState(null, '', window.location.pathname + window.location.search + '#dashboard'); }
+      catch (_) { window.location.hash = '#dashboard'; }
+    } else {
+      window.location.hash = '#dashboard';
+    }
+    await completeTestCheckout(sessionId);
+    showScreen('dashboard');
+    const user = await fetchCurrentUser().catch(() => null);
+    updateUserUI(user);
+    if (user) loadDashboard();
+    return;
+  }
+  const route = raw;
 
   if (route === 'templates') {
     showScreen('templates');
     renderTemplatesGrid();
   } else if (route === 'edit') {
-    if (!draft.templateId) { window.location.hash = '#templates'; return; }
+    if (!draft.templateId) {
+      if (resumeLocalDraft()) {
+        /* restored */
+      } else {
+        window.location.hash = '#templates';
+        return;
+      }
+    }
     showScreen('edit');
     updateChecklist();
     scheduleRerender(true);

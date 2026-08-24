@@ -25,6 +25,7 @@
  *   POST /api/sites/:id/social-feed/grant          → Instafidget Year-1 grant; stores instagram.embedUrl
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
+ *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  * Pricing amounts come only from ./pricing.js.
@@ -306,7 +307,8 @@ function serveLive(req, res, urlPath) {
     const raw = urlPath.replace(/^\/live\/?/, '');
     const parts = raw.split('/').filter(Boolean);
     if (parts.length === 0) {
-        return sendJson(res, 404, { error: 'not found' });
+        // Browser nav → Romanian HTML 404; API Accept → JSON
+        return sendNotFound(req, res, 'not found');
     }
 
     const slug = parts[0];
@@ -348,18 +350,19 @@ function serveLive(req, res, urlPath) {
 
     let stat;
     try { stat = fs.statSync(realFile); } catch {
-        return sendJson(res, 404, { error: 'not found' });
+        // Unpaid / missing live site: HTML 404 for browsers (S62), JSON for API clients
+        return sendNotFound(req, res, 'not found');
     }
 
     if (stat.isDirectory()) {
         realFile = path.join(realFile, 'index.html');
         try { stat = fs.statSync(realFile); } catch {
-            return sendJson(res, 404, { error: 'not found' });
+            return sendNotFound(req, res, 'not found');
         }
     }
 
     if (!stat.isFile()) {
-        return sendJson(res, 404, { error: 'not found' });
+        return sendNotFound(req, res, 'not found');
     }
 
     const ext  = path.extname(realFile).toLowerCase();
@@ -562,6 +565,92 @@ async function handleRollback(req, res, siteId) {
         log('server.rollback.error', { siteId, err: e.message }, 'error');
         sendJson(res, 500, { error: 'Republicarea a eșuat: ' + e.message });
     }
+}
+
+/**
+ * HIDOOK_TEST_PAY only (non-production): complete an offline #test-checkout=cs_test_* return
+ * with the same paid transition as the unsigned Stripe test webhook.
+ * Auth required; order must belong to the session user.
+ */
+async function handleTestPayComplete(req, res) {
+    const testPay = process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production';
+    if (!testPay) {
+        return sendJson(res, 403, { error: 'Plata de test nu este disponibilă.' });
+    }
+
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    let body;
+    try {
+        body = await parseJson(req);
+    } catch {
+        return sendJson(res, 400, { error: 'Cerere invalidă.' });
+    }
+    const sessionId = body && typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
+    if (!sessionId || !/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
+        return sendJson(res, 400, { error: 'Sesiune de plată invalidă.' });
+    }
+
+    const reg = getRegistry();
+    const order = typeof reg.getOrderBySession === 'function'
+        ? await reg.getOrderBySession(sessionId)
+        : null;
+    if (!order) {
+        return sendJson(res, 404, { error: 'Comanda nu a fost găsită.' });
+    }
+    if (order.userId && order.userId !== userId) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    const sitePre = order.siteId ? await reg.getSite(order.siteId) : null;
+    if (sitePre && sitePre.userId !== userId) {
+        return sendJson(res, 403, { error: 'Acces interzis.' });
+    }
+
+    const kind = order.kind || 'publish';
+    const event = {
+        id: 'evt_testpay_' + crypto.randomBytes(8).toString('hex'),
+        type: 'checkout.session.completed',
+        data: {
+            object: {
+                id: sessionId,
+                payment_status: 'paid',
+                metadata: {
+                    platform: 'web',
+                    orderId: order.id,
+                    siteId: order.siteId,
+                    kind,
+                    userId,
+                },
+            },
+        },
+    };
+
+    const webpublish = require('./webpublish.js');
+    try {
+        await webpublish.handleStripePaid(event, { notifyAdmin: () => {} });
+    } catch (e) {
+        log('server.test_pay.complete.error', { sessionId, err: e.message }, 'error');
+        return sendJson(res, 500, { error: 'Confirmarea plății a eșuat.' });
+    }
+
+    const site = order.siteId ? await reg.getSite(order.siteId) : null;
+    if (!site) {
+        return sendJson(res, 200, { ok: true, site: null });
+    }
+    // Fresh paid site may still be deploying; return current registry row
+    return sendJson(res, 200, {
+        ok: true,
+        site: {
+            id: site.id,
+            slug: site.slug,
+            paid: !!site.paid,
+            status: site.status,
+            url: site.url || null,
+            paidUntil: site.paidUntil || null,
+        },
+    });
 }
 
 async function handleSiteCheckout(req, res, siteId) {
@@ -1076,6 +1165,11 @@ function createHandler({ onStripeEvent } = {}) {
 
             if (req.method === 'POST' && url === '/api/publish') {
                 return await handlePublish(req, res);
+            }
+
+            // Offline test-pay return from /app/#test-checkout=cs_test_* (non-production only)
+            if (req.method === 'POST' && url === '/api/test-pay/complete') {
+                return await handleTestPayComplete(req, res);
             }
 
             // Unknown route: browser document → short RO HTML; API → JSON
