@@ -959,7 +959,9 @@ function isolatedStubEmbedUrl(email) {
         .update(String(email || 'isolated') + '|ig-stub')
         .digest('hex')
         .slice(0, 16);
-    return 'https://instafidget.hidook.agency/embed/instagram?widgetKey=isolated-' + key;
+    // Isolated only: never write the live partner host into Detalii-visible embedUrl.
+    // Still a non-empty URL so applyEmbedUrl / «Instagram e pe site.» finish cleanly.
+    return 'https://isolated.local/social-feed/isolated-' + key;
 }
 
 async function requireOwnedSiteWithEmail(req, res, siteId) {

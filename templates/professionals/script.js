@@ -299,8 +299,10 @@ function initAppointment() {
     if (dateSel) dateSel.addEventListener('change', fillSlots);
     fillDates();
 
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    // Click path (not native form submit): builder preview iframe sandbox is
+    // allow-scripts only — form submit is blocked without allow-forms.
+    async function sendRequest(e) {
+        if (e) e.preventDefault();
         if (submitBtn && submitBtn.disabled) return;
 
         const type = selectedType();
@@ -385,7 +387,7 @@ function initAppointment() {
                 const prev = JSON.parse(sessionStorage.getItem(key) || '[]');
                 prev.push({ ...payload, id, status: 'requested', createdAt: new Date().toISOString() });
                 sessionStorage.setItem(key, JSON.stringify(prev.slice(-40)));
-            } catch (_) { /* ignore */ }
+            } catch (_) { /* ignore — sandbox may lack storage */ }
         }
 
         form.hidden = true;
@@ -413,7 +415,10 @@ function initAppointment() {
                 doneConfirm.textContent = confirmText;
             }
         }
-    });
+    }
+
+    if (submitBtn) submitBtn.addEventListener('click', sendRequest);
+    form.addEventListener('submit', sendRequest);
 }
 
 function initWhatsAppQR() {

@@ -50,7 +50,7 @@
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Codul limbii paginii (ro / en)",
+          "label": "Limba site-ului (ro sau en)",
           "required": true,
           "maxLen": 5
         }
@@ -377,7 +377,7 @@
         {
           "key": "seo.ogImage",
           "type": "url",
-          "label": "URL imagine pentru partajare socială (og:image) — recomandat 1200×630px",
+          "label": "Imagine la partajare pe rețele (recomandat 1200×630px)",
           "required": false
         },
         {

@@ -50,7 +50,7 @@
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Limba paginii (ro / en)",
+          "label": "Limba site-ului (ro sau en)",
           "required": true,
           "maxLen": 5
         },
@@ -614,7 +614,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Link feed Instagram (dacă ai feed încorporat)",
+          "label": "Link feed Instagram (opțional)",
           "required": false,
           "maxLen": 400
         },
@@ -652,7 +652,7 @@
         {
           "key": "seo.jsonLd",
           "type": "textarea",
-          "label": "Informații pentru căutare Google (JSON-LD, opțional)",
+          "label": "Informații pentru căutare Google (opțional — completate automat)",
           "required": false,
           "maxLen": 2000
         }
