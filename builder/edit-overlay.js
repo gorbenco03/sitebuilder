@@ -350,13 +350,14 @@
   /**
    * Resolve the config path for a given image src via the imgMap.
    * Limit: if two images share the same src URL, only the first match is returned.
+   * Preview inlines images/* → data: URLs; parent should also map those data URLs.
    */
   function resolveImgPath(src) {
     if (!src) return null;
     // Exact match.
     if (imgMap[src]) return imgMap[src];
-    // Try without query string (data URLs don't have query strings, but http URLs might).
-    var base = src.split('?')[0];
+    // Try without query string — never split data: URLs (base64 may contain '?').
+    var base = src.indexOf('data:') === 0 ? src : src.split('?')[0];
     if (imgMap[base]) return imgMap[base];
     // Fallback: search by suffix for relative paths that may have been resolved.
     var keys = Object.keys(imgMap);
@@ -365,6 +366,30 @@
       if (keys[i] && keys[i].indexOf(src) !== -1) return imgMap[keys[i]];
     }
     return null;
+  }
+
+  /**
+   * When preview has inlined images/* as data URLs but imgMap only has file paths,
+   * pick the best *.background config path so «Schimbă poza» still opens the chooser.
+   */
+  function resolveBackgroundPathFallback() {
+    var keys = Object.keys(imgMap);
+    var bgPaths = [];
+    var seen = {};
+    for (var i = 0; i < keys.length; i++) {
+      var p = imgMap[keys[i]];
+      if (!p || seen[p]) continue;
+      if (/\.background$|background/i.test(p)) {
+        seen[p] = true;
+        bgPaths.push(p);
+      }
+    }
+    if (bgPaths.indexOf('hero.background') >= 0) return 'hero.background';
+    for (var j = 0; j < bgPaths.length; j++) {
+      if (/^hero\./.test(bgPaths[j])) return bgPaths[j];
+    }
+    if (bgPaths.length === 1) return bgPaths[0];
+    return bgPaths[0] || null;
   }
 
   /** Create a "Schimbă poza" button and attach it to a wrapper element. */
@@ -412,6 +437,19 @@
         e.preventDefault();
         // Re-resolve on click in case imgMap arrived after mount.
         var resolvedPath = resolveImgPath(img.getAttribute('src') || '');
+        if (!resolvedPath && /^data:image\//i.test(img.getAttribute('src') || '')) {
+          // Preview inlined images/* → data:; try any single matching images/ path by type
+          var keys2 = Object.keys(imgMap);
+          for (var ki = 0; ki < keys2.length; ki++) {
+            if (/^images\//i.test(keys2[ki]) && imgMap[keys2[ki]]) {
+              // Prefer non-background (img tags) paths first
+              if (!/background/i.test(imgMap[keys2[ki]])) {
+                resolvedPath = imgMap[keys2[ki]];
+                break;
+              }
+            }
+          }
+        }
         if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
       });
       wrap.appendChild(btn);
@@ -476,6 +514,8 @@
         var resolvedPath = resolveImgPath(bgUrl);
         // Prefer explicit hero.background when CSS multi-layer maps through imgMap
         if (!resolvedPath && imgMap[bgUrl]) resolvedPath = imgMap[bgUrl];
+        // Preview inlines images/* → data:; map may still be path-only
+        if (!resolvedPath) resolvedPath = resolveBackgroundPathFallback();
         if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
       });
       el.appendChild(btn);

@@ -989,8 +989,8 @@ input, textarea, select {
   flex: 1;
   font-size: 0.85rem; font-weight: 600;
   color: var(--accent); text-decoration: none;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  display: flex; align-items: center; gap: 0.3rem;
+  overflow: visible; white-space: normal; word-break: break-all; overflow-wrap: anywhere;
+  display: flex; align-items: flex-start; gap: 0.3rem;
 }
 .success-url-link:hover { text-decoration: underline; }
 

@@ -628,6 +628,7 @@ function buildImgMap(config) {
   // Build a src→path reverse-lookup map for all image values in config.
   // Used by the modern edit-overlay.js to resolve {hb:'image', path} on img clicks.
   // Also maps url(...) fragments inside CSS backgrounds (hero.background).
+  // Must not split data:image/jpeg;base64,... on ';' or ')' incorrectly.
   const map = {};
   function indexUrl(full, u) {
     if (!u || typeof u !== 'string') return;
@@ -636,6 +637,31 @@ function buildImgMap(config) {
     if (t.startsWith('data:image') || t.startsWith('images/') || t.startsWith('http') || t.startsWith('/')) {
       map[t] = full;
     }
+  }
+  function extractCssUrls(styleVal) {
+    const style = String(styleVal || '');
+    const urls = [];
+    const re = /url\s*\(\s*/gi;
+    let m;
+    while ((m = re.exec(style))) {
+      let i = m.index + m[0].length;
+      if (i >= style.length) break;
+      const ch = style.charAt(i);
+      let raw;
+      if (ch === '"' || ch === "'") {
+        const endQ = style.indexOf(ch, i + 1);
+        if (endQ < 0) break;
+        raw = style.slice(i + 1, endQ);
+        re.lastIndex = endQ + 1;
+      } else {
+        const endP = style.indexOf(')', i);
+        if (endP < 0) break;
+        raw = style.slice(i, endP).replace(/^\s+|\s+$/g, '');
+        re.lastIndex = endP + 1;
+      }
+      if (raw) urls.push(raw);
+    }
+    return urls;
   }
   function walk(obj, prefix) {
     if (!obj || typeof obj !== 'object') return;
@@ -648,10 +674,9 @@ function buildImgMap(config) {
       if (typeof v === 'string' && v.length > 0) {
         indexUrl(full, v);
         // CSS multi-layer backgrounds: linear-gradient(...), url('images/hero.jpg')
+        // and url('data:image/jpeg;base64,...') — full data URL, no semicolon split
         if (/url\s*\(/i.test(v)) {
-          const re = /url\(\s*['"]?([^'")]+)['"]?\s*\)/gi;
-          let m;
-          while ((m = re.exec(v))) indexUrl(full, m[1]);
+          extractCssUrls(v).forEach((u) => indexUrl(full, u));
         }
       } else if (typeof v === 'object' && v !== null) {
         walk(v, full);
@@ -662,6 +687,32 @@ function buildImgMap(config) {
   return map;
 }
 
+/**
+ * Preview renderPreview inlines images/* → data: URLs in srcdoc.
+ * Merge those data URLs onto the same config paths so overlay resolveImgPath works.
+ */
+function mergePreviewImageMap(map, imageMap) {
+  const out = map && typeof map === 'object' ? Object.assign({}, map) : {};
+  if (!imageMap || typeof imageMap !== 'object') return out;
+  Object.keys(imageMap).forEach((rel) => {
+    const dataUrl = imageMap[rel];
+    if (!rel || !dataUrl) return;
+    const path = out[rel] || out['images/' + rel.replace(/^images\//, '')];
+    if (path) {
+      out[dataUrl] = path;
+      // Also key without images/ prefix variants
+      if (rel.indexOf('images/') === 0 && out[rel]) out[dataUrl] = out[rel];
+    } else if (out[rel]) {
+      out[dataUrl] = out[rel];
+    }
+    // If config mapped images/foo.jpg, reverse-map the inlined data URL
+    const withPrefix = rel.indexOf('images/') === 0 ? rel : 'images/' + rel;
+    if (out[withPrefix]) out[dataUrl] = out[withPrefix];
+    if (out[rel]) out[dataUrl] = out[rel];
+  });
+  return out;
+}
+
 function onIframeReady() {
   iframeReady = true;
   clearTimeout(previewSpinTimer);
@@ -669,7 +720,10 @@ function onIframeReady() {
   // Send imgmap to modern overlay so image src→config-path resolution works.
   const iframe = getPreviewIframe();
   if (iframe && draft.config) {
-    const map = buildImgMap(draft.config);
+    let map = buildImgMap(draft.config);
+    const tpl = draft.templateId ? getTemplateById(draft.templateId) : null;
+    const imageMap = tpl && tpl.files && tpl.files.imageMap;
+    if (imageMap) map = mergePreviewImageMap(map, imageMap);
     iframe.contentWindow.postMessage({ hb: 'imgmap', map }, '*');
   }
 }
@@ -1257,7 +1311,7 @@ function saveDraft() {
 function loadDraft() { return lsGet(DRAFT_KEY); }
 
 // ---------------------------------------------------------------------------
-// 15b. Add Instagram (Instafidget partner slot) — works before payment
+// 15b. Add Instagram (feed slot) — works before payment
 // ---------------------------------------------------------------------------
 
 function siteIdForInstagram() {
@@ -1291,12 +1345,19 @@ function syncInstagramModalPanels() {
 }
 
 /**
- * Ensure an unpaid draft site exists so partner APIs have a siteId.
+ * Ensure an unpaid draft site exists so Instagram APIs have a siteId.
  * Does not open the publish success UI or require payment.
+ * Sets currentSiteSlug so first «Publică site-ul» reuses the reserved address.
  */
 async function ensureDraftSiteForInstagram() {
   let siteId = siteIdForInstagram();
-  if (siteId) return siteId;
+  if (siteId) {
+    // Keep reserved slug in session so first Publică does not treat it as taken
+    if (!currentSiteSlug && draft.config && draft.config.business && draft.config.business.name) {
+      currentSiteSlug = toSlug(draft.config.business.name) || currentSiteSlug;
+    }
+    return siteId;
+  }
   if (!currentUser || !currentUser.email) {
     throw new Error('Intră în cont ca să salvezi ciorna.');
   }
@@ -1322,6 +1383,8 @@ async function ensureDraftSiteForInstagram() {
   }
   currentSiteId = data.site.id;
   publishedSiteId = data.site.id;
+  // First Publică must reuse this unpaid draft slug — never treat it as taken
+  currentSiteSlug = (data.site.slug || baseSlug || currentSiteSlug || '').trim();
   if (data.paymentUrl) sitePaymentUrl = data.paymentUrl;
   // Keep unpaid — no live requirement for Instagram connect
   return currentSiteId;
@@ -1432,7 +1495,7 @@ async function connectInstagram() {
     return;
   }
   if (!check || !check.checked) {
-    setIgStatus('Bifează Termenii și Confidențialitatea Instafidget.', true);
+    setIgStatus('Bifează Termenii și Confidențialitatea pentru feed-ul Instagram.', true);
     return;
   }
   setBtnLoading(btn, true);
@@ -1456,9 +1519,9 @@ async function connectInstagram() {
       return;
     }
     if (session.editorUrl) {
-      window.open(session.editorUrl, 'instafidget-editor', 'noopener,width=920,height=720');
+      window.open(session.editorUrl, 'instagram-feed-editor', 'noopener,width=920,height=720');
     }
-    setIgStatus('După ce termini în Instafidget, revenim și luăm widgetul.');
+    setIgStatus('După ce termini conectarea, revenim și actualizăm feed-ul pe site.');
     const onFocus = async () => {
       window.removeEventListener('focus', onFocus);
       try {
@@ -1471,10 +1534,10 @@ async function connectInstagram() {
           showToast('Instagram e conectat.', 'success', 3500);
           closeModal('modal-instagram');
         } else {
-          setIgStatus('Widgetul încă nu e gata. Deschide din nou Instagram după ce salvezi în Instafidget.');
+          setIgStatus('Feed-ul încă nu e gata. Deschide din nou Instagram după ce salvezi conexiunea.');
         }
       } catch (e) {
-        setIgStatus(e.message || 'Nu am putut reîncărca widgetul.', true);
+        setIgStatus(e.message || 'Nu am putut reîncărca feed-ul Instagram.', true);
       }
     };
     window.addEventListener('focus', onFocus);
@@ -2438,14 +2501,16 @@ async function loadVersions(siteId) {
     }
 
     list.innerHTML = '';
-    versions.forEach(v => {
+    versions.forEach((v, idx) => {
       const item = document.createElement('div');
       item.className = 'version-item';
       const d = new Date(v.publishedAt);
       const dateStr = d.toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+      const verNum = versions.length - idx;
+      const label = 'Versiunea ' + verNum;
       item.innerHTML = `
         <span class="version-date">${escHtml(dateStr)}</span>
-        <span style="font-size:.76rem;color:var(--text-light);flex:1;padding:0 .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(v.versionId.slice(0,8))}</span>
+        <span style="font-size:.76rem;color:var(--text-light);flex:1;padding:0 .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>
         <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restaurează</button>`;
       item.querySelector('.btn-rollback').addEventListener('click', async (e) => {
         const btn = e.currentTarget;

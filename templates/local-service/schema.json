@@ -374,7 +374,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "URL embed Instagram / partner feed (iframe) — optional",
+          "label": "URL embed Instagram (opțional)",
           "required": false
         },
         {
