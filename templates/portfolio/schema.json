@@ -164,6 +164,13 @@
           "label": "Link navigare programare (ex: Programare)",
           "required": true,
           "maxLen": 24
+        },
+        {
+          "key": "labels.aboutCap",
+          "type": "text",
+          "label": "Etichetă scurtă lângă «Despre» (ex: Salon / Atelier — nu engleză factory)",
+          "required": false,
+          "maxLen": 24
         }
       ]
     },

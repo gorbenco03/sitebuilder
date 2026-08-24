@@ -753,7 +753,12 @@ function initImageFileInput() {
     try {
       showPreviewSpinner(true);
       const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
-      applyImageDataUrl(path, dataUrl);
+      // Logo/src: bare data URL then full preview rebuild. Backgrounds: url() rewrite.
+      if (/background|gradient/i.test(path || '')) {
+        applyImageDataUrl(path, dataUrl);
+      } else {
+        setPath(draft.config, path, dataUrl);
+      }
       saveDraft();
       fullRerender();
     } catch (e) {

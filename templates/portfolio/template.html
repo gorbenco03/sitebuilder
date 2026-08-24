@@ -118,7 +118,9 @@
                 <div class="pf-about__rule" aria-hidden="true">
                     <span class="pf-about__num">01</span>
                     <span class="pf-about__slash"></span>
-                    <span class="pf-about__cap">Studio</span>
+                    <!-- @if labels.aboutCap -->
+                    <span class="pf-about__cap">{{labels.aboutCap}}</span>
+                    <!-- @endif -->
                 </div>
             </div>
         </section>
