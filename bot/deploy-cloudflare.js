@@ -219,13 +219,42 @@ async function attachDomain(projectName, domainName) {
  * throws — any failure is logged and the caller falls back to the pages.dev URL.
  *
  * Steps:
- *   1. Lookup zone id for BRAND_DOMAIN (GET /zones?name=BRAND_DOMAIN).
+ *   1. Find the zone governing BRAND_DOMAIN (it may be a parent zone).
  *   2. Attach <slug>.<BRAND_DOMAIN> to the Pages project (POST /pages/projects/:name/domains).
- *   3. Create a CNAME record in the zone: slug → <name>.pages.dev (best-effort).
+ *   3. Create a CNAME record in that zone: <slug>.<BRAND_DOMAIN> → <name>.pages.dev.
+ *
+ * brandUrl is returned only when the DNS record actually exists — handing the
+ * customer a branded URL that does not resolve is worse than the pages.dev one.
  *
  * @param {string} projectName  Pages project name (= slug).
  * @returns {Promise<{url: string, brandUrl: string|null}>}
  */
+/**
+ * Find the Cloudflare zone that governs a hostname.
+ *
+ * A brand domain is frequently a subdomain of the real zone — `sites.example.com`
+ * inside the `example.com` zone — and Cloudflare has no zone under that name, so
+ * a direct lookup returns nothing. Walk up the labels until a zone matches.
+ *
+ * @param {string} hostname
+ * @returns {Promise<object|null>}  zone object, or null when none matches
+ */
+async function findZoneFor(hostname) {
+    const labels = String(hostname || '').split('.').filter(Boolean);
+    // Stop before the TLD — a single label is never a zone.
+    for (let i = 0; i <= labels.length - 2; i++) {
+        const candidate = labels.slice(i).join('.');
+        try {
+            const zones = await cfRequest('GET', `/zones?name=${encodeURIComponent(candidate)}`);
+            const zone  = Array.isArray(zones) ? zones[0] : null;
+            if (zone && zone.id) return zone;
+        } catch (e) {
+            console.warn(`[findZoneFor] lookup failed for "${candidate}":`, e.message);
+        }
+    }
+    return null;
+}
+
 async function ensureSubdomain(projectName) {
     const brandDomain = process.env.BRAND_DOMAIN;
     if (!brandDomain || !isConfigured()) {
@@ -234,9 +263,10 @@ async function ensureSubdomain(projectName) {
 
     const subdomain = `${projectName}.${brandDomain}`;
     try {
-        // 1. Look up zone
-        const zones = await cfRequest('GET', `/zones?name=${encodeURIComponent(brandDomain)}`);
-        const zone  = Array.isArray(zones) ? zones[0] : null;
+        // 1. Find the governing zone. BRAND_DOMAIN is often NOT a zone itself
+        //    (e.g. sites.example.com lives inside the example.com zone), so walk
+        //    up the labels until one matches a real zone.
+        const zone   = await findZoneFor(brandDomain);
         const zoneId = zone && zone.id;
 
         // 2. Attach domain to Pages project (idempotent — 409 = already attached)
@@ -250,23 +280,35 @@ async function ensureSubdomain(projectName) {
             if (e.status !== 409) throw e; // 409 = already registered, fine
         }
 
-        // 3. Create CNAME in zone (best-effort)
+        // 3. Create the CNAME. Use the fully-qualified name: it is correct whether
+        //    the zone is BRAND_DOMAIN itself or a parent of it.
+        let dnsReady = false;
         if (zoneId) {
             try {
                 await cfRequest('POST', `/zones/${zoneId}/dns_records`, {
                     type:    'CNAME',
-                    name:    projectName,         // <slug> relative to brandDomain zone
+                    name:    subdomain,
                     content: `${projectName}.pages.dev`,
                     proxied: true,
                     ttl:     1,
                 });
+                dnsReady = true;
             } catch (e) {
-                // 409 duplicate or other errors — best-effort, ignore
-                console.warn('[ensureSubdomain] CNAME create (best-effort):', e.message);
+                // 409 means the record is already there — equally fine.
+                if (e.status === 409) {
+                    dnsReady = true;
+                } else {
+                    console.warn('[ensureSubdomain] CNAME create failed:', e.message);
+                }
             }
+        } else {
+            console.warn(`[ensureSubdomain] no Cloudflare zone found for BRAND_DOMAIN "${brandDomain}"`);
         }
 
-        return { url: `https://${projectName}.pages.dev`, brandUrl: `https://${subdomain}` };
+        return {
+            url:      `https://${projectName}.pages.dev`,
+            brandUrl: dnsReady ? `https://${subdomain}` : null,
+        };
     } catch (e) {
         console.warn('[ensureSubdomain] failed (best-effort):', e.message);
         return { url: `https://${projectName}.pages.dev`, brandUrl: null };
