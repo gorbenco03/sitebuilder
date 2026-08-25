@@ -25,4 +25,7 @@ ENV DATA_DIR=/data
 RUN mkdir -p /data
 
 WORKDIR /app/bot
-CMD ["node", "bot.js"]
+# Web-only by default: bot.js exits at boot without TELEGRAM_BOT_TOKEN, which
+# would crash-loop a web deployment. Override the start command with
+# `node bot.js` to add Telegram draft intake (one replica — one poller/token).
+CMD ["node", "web.js"]
