@@ -1333,9 +1333,11 @@ function loadDraft() { return lsGet(DRAFT_KEY); }
 /**
  * After pay, a fresh /app/#edit (or resume without loadSiteForEdit) must bind the
  * signed-in paid site so «Publică» republishes the same slug — never the new-address modal.
+ *
+ * Never attach a paid site whose templateId differs from the current draft — a second
+ * design must not silently overwrite another live URL (S78/S80).
  */
 async function bindSignedInPaidSiteForEdit() {
-  if (currentSiteId && currentSitePaid && currentSiteSlug) return;
   try {
     if (!currentUser) {
       const user = await fetchCurrentUser().catch(() => null);
@@ -1344,31 +1346,66 @@ async function bindSignedInPaidSiteForEdit() {
     }
 
     const saved = loadDraft();
-    if (saved && saved.siteId && saved.paid) {
-      currentSiteId = saved.siteId;
-      currentSitePaid = true;
-      if (saved.slug) currentSiteSlug = saved.slug;
-      publishedSiteId = saved.siteId;
-      if (currentSiteId && currentSitePaid && currentSiteSlug) {
-        saveDraft();
-        return;
-      }
-    }
+    const tpl = draft.templateId || (saved && saved.templateId) || '';
 
     const data = await apiGet('/api/sites');
     const sites = (data && data.sites) || [];
-    if (!sites.length) return;
+    if (!sites.length) {
+      // No sites — drop any stale in-memory / draft bind
+      if (currentSiteId || (saved && saved.siteId)) {
+        currentSiteId = null;
+        currentSitePaid = false;
+        currentSiteSlug = '';
+        saveDraft();
+      }
+      return;
+    }
 
-    const tpl = draft.templateId || (saved && saved.templateId) || '';
+    const siteMatchesDraftTpl = (s) => {
+      if (!s) return false;
+      if (!tpl) return true;
+      if (!s.templateId) return false;
+      return s.templateId === tpl;
+    };
+
+    // Already bound: keep only if still paid + same template as draft
+    if (currentSiteId && currentSitePaid && currentSiteSlug) {
+      const cur = sites.find(s => s && s.id === currentSiteId) || null;
+      if (cur && cur.paid && siteMatchesDraftTpl(cur)) return;
+      currentSiteId = null;
+      currentSitePaid = false;
+      currentSiteSlug = '';
+    }
+
+    // Draft bind is only a hint — verify against /api/sites + same templateId
+    if (saved && saved.siteId && saved.paid) {
+      const fromDraft = sites.find(s => s && s.id === saved.siteId && s.paid) || null;
+      if (fromDraft && siteMatchesDraftTpl(fromDraft)) {
+        currentSiteId = fromDraft.id;
+        currentSitePaid = true;
+        currentSiteSlug = fromDraft.slug || fromDraft.projectName || saved.slug || '';
+        publishedSiteId = fromDraft.id;
+        if (fromDraft.url) publishedSiteUrl = fromDraft.url;
+        if (currentSiteId && currentSitePaid && currentSiteSlug) {
+          saveDraft();
+          return;
+        }
+      }
+      // Stale or cross-template draft.siteId — scrub so Publică cannot reuse it
+      saveDraft();
+    }
+
     const nameSlug = toSlug(getPath(draft.config, 'business.name') || '') || '';
     const wantSlug = String(currentSiteSlug || (saved && saved.slug) || nameSlug || '').trim();
 
     let match = null;
     if (currentSiteId) {
-      match = sites.find(s => s && s.id === currentSiteId) || null;
+      match = sites.find(s => s && s.id === currentSiteId && siteMatchesDraftTpl(s)) || null;
     }
     if (!match && wantSlug) {
-      match = sites.find(s => s && s.paid && (s.slug === wantSlug || s.projectName === wantSlug)) || null;
+      match = sites.find(s =>
+        s && s.paid && siteMatchesDraftTpl(s) && (s.slug === wantSlug || s.projectName === wantSlug)
+      ) || null;
     }
     if (!match && tpl) {
       const paidTpl = sites.filter(s => s && s.paid && s.templateId === tpl);
@@ -1379,10 +1416,8 @@ async function bindSignedInPaidSiteForEdit() {
         match = paidTpl[0];
       }
     }
-    if (!match) {
-      const paid = sites.filter(s => s && s.paid);
-      if (paid.length === 1) match = paid[0];
-    }
+    // Do NOT fall back to "the only paid site" across templates — that overwrites
+    // a live restaurant when starting professionals (S78).
     if (!match) return;
 
     currentSiteId = match.id;
@@ -2399,9 +2434,13 @@ function startWithTemplate(templateId) {
     return;
   }
 
+  // Always drop paid-site bind when starting a design from the catalog.
+  // Same-template republish re-binds via bindSignedInPaidSiteForEdit (template match).
+  // Different template must never keep the previous paid siteId in draft (S78/S80).
   currentSiteId = null;
   currentSitePaid = false;
   currentSiteSlug = '';
+  publishedSiteId = null;
   draft.templateId = templateId;
 
   const saved = loadDraft();
@@ -2410,8 +2449,9 @@ function startWithTemplate(templateId) {
   } else {
     const presets = tplData.presets || [];
     draft.config = presets.length > 0 ? deepClone(presets[0].config) : {};
-    saveDraft();
   }
+  // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
+  saveDraft();
 
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;

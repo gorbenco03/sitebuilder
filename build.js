@@ -152,8 +152,10 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
         if (token[0] === '&') { raw = true; token = token.slice(1).trim(); }
         const value = resolver(token);
         if (value === undefined || value === null) {
-            if (warn) console.warn(`  ⚠️  unresolved token: {{${token}}}`);
-            return match;
+            // Never leave factory mustache in published/preview HTML (S78/S80).
+            // Missing keys render empty — stranger-visible {{labels.about}} is a defect.
+            if (warn) console.warn(`  ⚠️  unresolved token: {{${token}}} (omitted)`);
+            return '';
         }
         if (raw) {
             // Per-sink sanitization — each raw sink must be explicitly handled here.
