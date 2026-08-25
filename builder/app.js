@@ -159,9 +159,9 @@ function setPath(obj, path, value) {
 
 /**
  * When a stranger changes business.name, keep live identity fields in sync if they
- * still mirror the previous name: business.title (and og/twitter that read it),
- * contact.facebook.label when it equals the old name, and about when it begins
- * with the old name. No second SEO panel — only leftover factory identity.
+ * still mirror the previous name or its slug tokens (casa-nord / casa.nord / casanord,
+ * cabinet-marin, …): title, about, facebook label/url, instagram handle/urls/labels,
+ * and contact.email. No second SEO panel — only leftover factory identity.
  */
 function cascadeBusinessNameIdentity(config, oldName, newName) {
   if (!config || oldName == null || newName == null) return;
@@ -169,24 +169,105 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
   const newN = String(newName);
   if (!oldN || !newN || oldN === newN) return;
 
+  // Local slugify so cascade is self-contained (tests extract this fn alone).
+  function slugify(str) {
+    return String(str || '')
+      .toLowerCase()
+      .replace(/[ăâ]/g, 'a').replace(/[îì]/g, 'i')
+      .replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/[é]/g, 'e')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/[\s_]+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 40);
+  }
+
+  function slugTokens(name) {
+    const base = slugify(name);
+    if (!base) return [];
+    const compact = base.replace(/-/g, '');
+    const dotted = base.replace(/-/g, '.');
+    const out = [];
+    // Longest first so casa.nord beats casa when both match
+    [base, dotted, compact].forEach((t) => {
+      if (t && t.length >= 3 && out.indexOf(t) === -1) out.push(t);
+    });
+    out.sort((a, b) => b.length - a.length);
+    return out;
+  }
+
+  function escapeRegExp(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function rewriteIdentityString(val) {
+    if (typeof val !== 'string' || !val) return val;
+    let out = val;
+    if (out.indexOf(oldN) !== -1) {
+      out = out.split(oldN).join(newN);
+    }
+    const oldToks = slugTokens(oldN);
+    const newBase = slugify(newN) || 'site';
+    const newCompact = newBase.replace(/-/g, '');
+    const newDotted = newBase.replace(/-/g, '.');
+    const map = {};
+    oldToks.forEach((t) => {
+      if (t.indexOf('-') !== -1) map[t] = newBase;
+      else if (t.indexOf('.') !== -1) map[t] = newDotted;
+      else map[t] = newCompact;
+    });
+    oldToks.forEach((t) => {
+      const repl = map[t];
+      if (!repl || t === repl) return;
+      out = out.replace(new RegExp(escapeRegExp(t), 'gi'), repl);
+    });
+    return out;
+  }
+
+  function cascadeStringPath(path) {
+    const cur = getPath(config, path);
+    if (typeof cur !== 'string' || !cur) return;
+    const next = rewriteIdentityString(cur);
+    if (next !== cur) setPath(config, path, next);
+  }
+
   const title = getPath(config, 'business.title');
   if (typeof title === 'string' && title.length) {
     if (title === oldN) {
       setPath(config, 'business.title', newN);
     } else if (title.startsWith(oldN + ' |') || title.startsWith(oldN + '|') || title.startsWith(oldN)) {
       setPath(config, 'business.title', newN + title.slice(oldN.length));
+    } else {
+      cascadeStringPath('business.title');
     }
   }
 
   const about = getPath(config, 'business.about');
-  if (typeof about === 'string' && about.startsWith(oldN)) {
-    setPath(config, 'business.about', newN + about.slice(oldN.length));
+  if (typeof about === 'string' && about.length) {
+    if (about.startsWith(oldN)) {
+      setPath(config, 'business.about', newN + about.slice(oldN.length));
+    } else if (about.indexOf(oldN) !== -1) {
+      setPath(config, 'business.about', about.split(oldN).join(newN));
+    }
   }
 
   const fbLabel = getPath(config, 'contact.facebook.label');
-  if (typeof fbLabel === 'string' && fbLabel === oldN) {
-    setPath(config, 'contact.facebook.label', newN);
+  if (typeof fbLabel === 'string' && fbLabel.length) {
+    if (fbLabel === oldN || fbLabel.indexOf(oldN) !== -1) {
+      setPath(config, 'contact.facebook.label', rewriteIdentityString(fbLabel));
+    }
   }
+
+  // Social / contact identity that still encodes the old name or slug
+  [
+    'contact.facebook.url',
+    'contact.instagram.url',
+    'contact.instagram.label',
+    'instagram.handle',
+    'instagram.url',
+    'instagram.embedUrl',
+    'contact.email',
+  ].forEach(cascadeStringPath);
 }
 
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
@@ -781,16 +862,27 @@ function onInlineTextEdit(path, value) {
   setPath(draft.config, path, value);
   if (path === 'business.name' && prevName != null) {
     cascadeBusinessNameIdentity(draft.config, prevName, value);
+    // Re-render so about + social chips pick up cascaded identity immediately
+    scheduleRerender(true);
     // Keep drawer fields for cascaded identity in sync when open
-    syncDrawerField('business.title', getPath(draft.config, 'business.title'));
-    syncDrawerField('business.about', getPath(draft.config, 'business.about'));
-    syncDrawerField('contact.facebook.label', getPath(draft.config, 'contact.facebook.label'));
+    [
+      'business.title',
+      'business.about',
+      'contact.facebook.label',
+      'contact.facebook.url',
+      'contact.instagram.url',
+      'contact.instagram.label',
+      'instagram.handle',
+      'instagram.url',
+      'instagram.embedUrl',
+      'contact.email',
+    ].forEach((p) => syncDrawerField(p, getPath(draft.config, p)));
   }
   saveDraft();
   updateChecklist();
   // Update drawer field if open
   syncDrawerField(path, value);
-  // No re-render — text is already visible in contenteditable
+  // No re-render for ordinary text — already visible in contenteditable
 }
 
 function onImageChangeRequest(path) {
@@ -1222,9 +1314,20 @@ function buildDrawerField(field) {
     setPath(draft.config, key, input.value);
     if (key === 'business.name' && prevName != null) {
       cascadeBusinessNameIdentity(draft.config, prevName, input.value);
-      syncDrawerField('business.title', getPath(draft.config, 'business.title'));
-      syncDrawerField('business.about', getPath(draft.config, 'business.about'));
-      syncDrawerField('contact.facebook.label', getPath(draft.config, 'contact.facebook.label'));
+      // Immediate iframe refresh so about + chips match cascaded identity
+      scheduleRerender(true);
+      [
+        'business.title',
+        'business.about',
+        'contact.facebook.label',
+        'contact.facebook.url',
+        'contact.instagram.url',
+        'contact.instagram.label',
+        'instagram.handle',
+        'instagram.url',
+        'instagram.embedUrl',
+        'contact.email',
+      ].forEach((p) => syncDrawerField(p, getPath(draft.config, p)));
     }
     saveDraft();
     updateChecklist();
@@ -2140,6 +2243,26 @@ async function execPublish(slug) {
   showSuccessScreen(data.site.url, data.paymentUrl);
 }
 
+/** Unauth #dashboard Intră — same magic-link modal as publish (no second auth system). */
+function wireDashboardAuthButton() {
+  const btn = $('btn-dashboard-auth');
+  if (!btn) return;
+  btn.onclick = () => {
+    hide($('publish-step-1'));
+    show($('publish-step-2'));
+    show($('form-auth-email'));
+    hide($('auth-sent'));
+    hideId('auth-error');
+    openModal('modal-publish');
+    wireAuthForm(async () => {
+      closeModal('modal-publish');
+      const user = await fetchCurrentUser().catch(() => null);
+      updateUserUI(user);
+      if (user) await loadDashboard();
+    });
+  };
+}
+
 function wireAuthForm(onAuthSuccess) {
   const form = $('form-auth-email');
   const sentDiv = $('auth-sent');
@@ -2578,7 +2701,8 @@ async function loadDashboard() {
     sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>';
+      list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Intră</button></div>';
+      wireDashboardAuthButton();
     } else {
       list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
     }
@@ -2873,7 +2997,10 @@ async function handleRoute(hash) {
     if (user) loadDashboard();
     else {
       const list = $('sites-list');
-      if (list) list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p></div>';
+      if (list) {
+        list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Intră</button></div>';
+        wireDashboardAuthButton();
+      }
     }
   } else if (route === 'platit') {
     showToast('Plata a fost procesată! Site-ul tău va fi publicat în câteva momente.', 'success', 6000);

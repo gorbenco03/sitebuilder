@@ -566,7 +566,7 @@
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Link Instagram contact",
+          "label": "Link Instagram la contact",
           "required": false,
           "maxLen": 200
         },

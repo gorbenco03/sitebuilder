@@ -408,7 +408,7 @@ function initAppointment() {
             }
             if (doneBody) {
                 doneBody.textContent =
-                    `${type.label} · ${when} (${tz})` +
+                    `${type.label} · ${when}` +
                     (localOnly ? ' · stare locală de previzualizare' : '');
             }
             if (doneConfirm) {
