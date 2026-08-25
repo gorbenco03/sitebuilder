@@ -18,7 +18,7 @@
         "labels": {
           "about": "Despre noi",
           "instaTitle": "De pe șantier",
-          "instaFollow": "Urmareste",
+          "instaFollow": "Urmărește",
           "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web",
@@ -42,7 +42,7 @@
         "services": [
           {
             "icon": "",
-            "label": "Zidarie si structura"
+            "label": "Zidărie și structură"
           },
           {
             "icon": "",
@@ -73,7 +73,7 @@
             "label": "Renovare completa casa"
           }
         ],
-        "galleryTitle": "Lucrari realizate",
+        "galleryTitle": "Lucrări realizate",
         "trust": [
           {
             "icon": "",
@@ -82,13 +82,13 @@
           },
           {
             "icon": "",
-            "title": "Garantie scrisa 2 ani",
-            "text": "Oferim garantie de 2 ani la toate lucrarile de constructii si finisaje. Calitatea noastra vorbeste de la sine."
+            "title": "Garanție scrisă 2 ani",
+            "text": "Oferim garanție de 2 ani la toate lucrările de construcții și finisaje. Calitatea noastră vorbește de la sine."
           },
           {
             "icon": "",
-            "title": "Oferta transparenta",
-            "text": "Deviz detaliat inainte de inceperea lucrarilor. Fara costuri ascunse, fara surprize neplacute pe parcurs."
+            "title": "Ofertă transparentă",
+            "text": "Deviz detaliat înainte de începerea lucrărilor. Fără costuri ascunse, fără surprize neplăcute pe parcurs."
           },
           {
             "icon": "",
@@ -104,8 +104,8 @@
         ],
         "categories": [
           {
-            "title": "Renovari baie completa",
-            "blurb": "Transformam baia dumneavoastra de la zero: demolare, impermeabilizare, gresie, faianta, instalatii sanitare si accesorii de calitate.",
+            "title": "Renovări baie completă",
+            "blurb": "Transformăm baia dumneavoastră de la zero: demolare, impermeabilizare, gresie, faianță, instalații sanitare și accesorii de calitate.",
             "photos": [
               {
                 "src": "images/pr-baie1.jpg",
@@ -176,7 +176,7 @@
           "embedUrl": "https://www.instagram.com/prorenov.bucuresti"
         },
         "contact": {
-          "title": "Cere oferta gratuita",
+          "title": "Cere ofertă gratuită",
           "intro": "Sunați-ne sau scrieți pe WhatsApp pentru o evaluare gratuită la domiciliu. Răspundem în aceeași zi.",
           "instagram": {
             "url": "https://www.instagram.com/prorenov.bucuresti",
@@ -187,7 +187,7 @@
             "label": "ProRenov Construct"
           },
           "whatsapp": "40721000112",
-          "phone": "+40721000112",
+          "phone": "+407****0112",
           "phoneDisplay": "+40 721 000 112",
           "waHref": "https://wa.me/40721000112",
           "address": "București, Sector 2 — Lucrăm în tot Ilfovul",
@@ -196,12 +196,12 @@
         "seo": {
           "ogImage": "images/pr-og.jpg",
           "canonical": "https://prorenov-construct.ro",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721000112\",\"areaServed\":\"București\",\"url\":\"https://prorenov-construct.ro\"}"
+          "jsonLd": "{\"@context\":\"https://***@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+407****0112\",\"areaServed\":\"București\",\"url\":\"https://prorenov-construct.ro\"}"
         },
         "footer": {
           "address": "București și Ilfov",
           "year": "2026",
-          "note": "Calitate garantata. Lucrari curate, termene respectate."
+          "note": "Calitate garantată. Lucrări curate, termene respectate."
         }
       }
     },
@@ -223,7 +223,7 @@
         "labels": {
           "about": "Despre noi",
           "instaTitle": "De pe șantier",
-          "instaFollow": "Urmareste",
+          "instaFollow": "Urmărește",
           "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web",
@@ -381,7 +381,7 @@
           "embedUrl": "https://www.instagram.com/consttop.roofing"
         },
         "contact": {
-          "title": "Cere oferta gratuita",
+          "title": "Cere ofertă gratuită",
           "intro": "Disponibili 7 zile din 7. Sunati sau scrieti pe WhatsApp — evaluare gratuita la domiciliu, fara obligatii.",
           "instagram": {
             "url": "https://www.instagram.com/consttop.roofing",

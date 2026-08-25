@@ -510,7 +510,7 @@
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Telefon (doar cifre + pentru tel:)",
+          "label": "Telefon (format internațional)",
           "required": false,
           "maxLen": 20
         },
@@ -538,14 +538,14 @@
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "Link WhatsApp (https://wa.me/...)",
+          "label": "Link WhatsApp",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresă birou (poți folosi &lt;br&gt;)",
+          "label": "Adresă birou",
           "required": false,
           "maxLen": 200
         },
@@ -566,7 +566,7 @@
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "URL Instagram contact",
+          "label": "Link Instagram contact",
           "required": false,
           "maxLen": 200
         },
@@ -580,7 +580,7 @@
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "URL Facebook",
+          "label": "Link Facebook",
           "required": false,
           "maxLen": 200
         },
@@ -607,7 +607,7 @@
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "URL profil Instagram",
+          "label": "Link profil Instagram",
           "required": false,
           "maxLen": 200
         },

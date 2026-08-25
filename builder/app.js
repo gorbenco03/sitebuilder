@@ -157,6 +157,38 @@ function setPath(obj, path, value) {
   }
 }
 
+/**
+ * When a stranger changes business.name, keep live identity fields in sync if they
+ * still mirror the previous name: business.title (and og/twitter that read it),
+ * contact.facebook.label when it equals the old name, and about when it begins
+ * with the old name. No second SEO panel — only leftover factory identity.
+ */
+function cascadeBusinessNameIdentity(config, oldName, newName) {
+  if (!config || oldName == null || newName == null) return;
+  const oldN = String(oldName);
+  const newN = String(newName);
+  if (!oldN || !newN || oldN === newN) return;
+
+  const title = getPath(config, 'business.title');
+  if (typeof title === 'string' && title.length) {
+    if (title === oldN) {
+      setPath(config, 'business.title', newN);
+    } else if (title.startsWith(oldN + ' |') || title.startsWith(oldN + '|') || title.startsWith(oldN)) {
+      setPath(config, 'business.title', newN + title.slice(oldN.length));
+    }
+  }
+
+  const about = getPath(config, 'business.about');
+  if (typeof about === 'string' && about.startsWith(oldN)) {
+    setPath(config, 'business.about', newN + about.slice(oldN.length));
+  }
+
+  const fbLabel = getPath(config, 'contact.facebook.label');
+  if (typeof fbLabel === 'string' && fbLabel === oldN) {
+    setPath(config, 'contact.facebook.label', newN);
+  }
+}
+
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 function lsGet(key) {
@@ -742,7 +774,18 @@ function onIframeReady() {
 
 function onInlineTextEdit(path, value) {
   if (!path) return;
+  let prevName = null;
+  if (path === 'business.name' && draft.config) {
+    prevName = getPath(draft.config, 'business.name');
+  }
   setPath(draft.config, path, value);
+  if (path === 'business.name' && prevName != null) {
+    cascadeBusinessNameIdentity(draft.config, prevName, value);
+    // Keep drawer fields for cascaded identity in sync when open
+    syncDrawerField('business.title', getPath(draft.config, 'business.title'));
+    syncDrawerField('business.about', getPath(draft.config, 'business.about'));
+    syncDrawerField('contact.facebook.label', getPath(draft.config, 'contact.facebook.label'));
+  }
   saveDraft();
   updateChecklist();
   // Update drawer field if open
@@ -1172,7 +1215,17 @@ function buildDrawerField(field) {
 
   // Sync to config on change
   input.addEventListener('input', () => {
+    let prevName = null;
+    if (key === 'business.name') {
+      prevName = getPath(draft.config, key);
+    }
     setPath(draft.config, key, input.value);
+    if (key === 'business.name' && prevName != null) {
+      cascadeBusinessNameIdentity(draft.config, prevName, input.value);
+      syncDrawerField('business.title', getPath(draft.config, 'business.title'));
+      syncDrawerField('business.about', getPath(draft.config, 'business.about'));
+      syncDrawerField('contact.facebook.label', getPath(draft.config, 'contact.facebook.label'));
+    }
     saveDraft();
     updateChecklist();
     // Try chirurgical update if field has a visible representation
