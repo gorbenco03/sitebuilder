@@ -162,7 +162,7 @@
           "phoneDisplay": "+40 21 123 4567",
           "email": "contact@cabinet-marin.example",
           "whatsapp": "40722123456",
-          "waHref": "https://wa.me/40722123456?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20discu%C8%9Bie.",
+          "waHref": "https://wa.me/40722123456",
           "address": "Str. Exemplu 12<br>București",
           "addressHref": "",
           "hoursNote": "Luni–Vineri, pe programare",

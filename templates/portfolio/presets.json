@@ -215,7 +215,7 @@
             "images/iv-ig5.jpg",
             "images/iv-ig6.jpg"
           ],
-          "embedUrl": "https://www.instagram.com/atelier.ivoire/embed"
+          "embedUrl": "https://www.instagram.com/atelier.ivoire"
         },
         "contact": {
           "title": "Programează-te",
@@ -231,7 +231,7 @@
           "whatsapp": "40745123456",
           "phone": "+40745123456",
           "phoneDisplay": "+40 745 123 456",
-          "waHref": "https://wa.me/40745123456?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20s%C4%83%20fac%20o%20programare%20la%20Salon%20Lumina.",
+          "waHref": "https://wa.me/40745123456",
           "address": "Str. Dorobanți 62<br>București, Sector 1",
           "addressHref": "https://maps.google.com/?q=Str+Dorobanti+62+Bucuresti"
         },
@@ -453,7 +453,7 @@
             "images/sf-ig5.jpg",
             "images/sf-ig6.jpg"
           ],
-          "embedUrl": "https://www.instagram.com/studio.forma.md/embed"
+          "embedUrl": "https://www.instagram.com/studio.forma.md"
         },
         "contact": {
           "title": "Programează-te",
@@ -469,7 +469,7 @@
           "whatsapp": "37369234567",
           "phone": "+37369234567",
           "phoneDisplay": "+373 69 234 567",
-          "waHref": "https://wa.me/37369234567?text=Bun%C4%83%20ziua%2C%20Mihaela!%20A%C8%99%20dori%20s%C4%83%20m%C4%83%20programez%20la%20atelier.",
+          "waHref": "https://wa.me/37369234567",
           "address": "Bd. Ștefan cel Mare 120<br>Chișinău, MD-2001",
           "addressHref": "https://maps.google.com/?q=Bd+Stefan+cel+Mare+120+Chisinau"
         },

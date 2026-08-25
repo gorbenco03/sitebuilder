@@ -155,7 +155,7 @@
         "instagram": {
           "handle": "casa.nord.bucuresti",
           "url": "https://www.instagram.com/casa.nord.bucuresti",
-          "embedUrl": "https://www.instagram.com/casa.nord.bucuresti/embed",
+          "embedUrl": "https://www.instagram.com/casa.nord.bucuresti",
           "gallery": [
             "images/cn-ig1.jpg",
             "images/cn-ig2.jpg",
@@ -179,7 +179,7 @@
           "whatsapp": "40722123456",
           "phone": "+407****3456",
           "phoneDisplay": "+40 722 123 456",
-          "waHref": "https://wa.me/40722123456?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
+          "waHref": "https://wa.me/40722123456",
           "address": "Str. Nordului 42<br>Sector 1, București",
           "addressHref": "https://maps.google.com/?q=Str+Nordului+42+Bucuresti"
         },
@@ -351,7 +351,7 @@
         "instagram": {
           "handle": "traista.verde.md",
           "url": "https://www.instagram.com/traista.verde.md",
-          "embedUrl": "https://www.instagram.com/traista.verde.md/embed",
+          "embedUrl": "https://www.instagram.com/traista.verde.md",
           "gallery": [
             "images/tv-ig1.jpg",
             "images/tv-ig2.jpg",
@@ -375,7 +375,7 @@
           "whatsapp": "37369112233",
           "phone": "+373****2233",
           "phoneDisplay": "+373 69 112 233",
-          "waHref": "https://wa.me/37369112233?text=Bun%C4%83%20ziua%2C%20a%C8%99%20vrea%20o%20rezervare.",
+          "waHref": "https://wa.me/37369112233",
           "address": "Str. București 18<br>Chișinău",
           "addressHref": "https://maps.google.com/?q=Str+Bucuresti+18+Chisinau"
         },

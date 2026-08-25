@@ -641,20 +641,6 @@
           "label": "Imagine partajare (images/... sau URL)",
           "required": false,
           "maxLen": 300
-        },
-        {
-          "key": "seo.canonical",
-          "type": "url",
-          "label": "URL canonic (opțional)",
-          "required": false,
-          "maxLen": 300
-        },
-        {
-          "key": "seo.jsonLd",
-          "type": "textarea",
-          "label": "Informații pentru căutare Google (opțional — completate automat)",
-          "required": false,
-          "maxLen": 2000
         }
       ]
     },

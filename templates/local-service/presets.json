@@ -19,7 +19,7 @@
           "about": "Despre noi",
           "instaTitle": "De pe șantier",
           "instaFollow": "Urmareste",
-          "scroll": "Deruleaza",
+          "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web",
           "callCta": "Sună",
@@ -77,7 +77,7 @@
         "trust": [
           {
             "icon": "",
-            "title": "12 ani experienta",
+            "title": "12 ani experiență",
             "text": "Peste un deceniu de lucrări în București și Ilfov. Cunoaștem normativele locale și livrăm la standarde ridicate."
           },
           {
@@ -173,7 +173,7 @@
             "images/pr-ig5.jpg",
             "images/pr-ig6.jpg"
           ],
-          "embedUrl": "https://www.instagram.com/prorenov.bucuresti/embed"
+          "embedUrl": "https://www.instagram.com/prorenov.bucuresti"
         },
         "contact": {
           "title": "Cere oferta gratuita",
@@ -189,7 +189,7 @@
           "whatsapp": "40721000112",
           "phone": "+40721000112",
           "phoneDisplay": "+40 721 000 112",
-          "waHref": "https://wa.me/40721000112?text=Salut!%20Vreau%20o%20oferta%20gratuita%20pentru%20renovare.",
+          "waHref": "https://wa.me/40721000112",
           "address": "București, Sector 2 — Lucrăm în tot Ilfovul",
           "addressHref": "https://maps.google.com/?q=Bucuresti"
         },
@@ -213,7 +213,7 @@
           "name": "ConstTop Roofing",
           "tagline": "Acoperisuri, fatade si izolatie termica",
           "title": "ConstTop Roofing | Acoperisuri si Fatade Manchester | Reparatii & Montaj",
-          "metaDescription": "Montaj si reparatii acoperisuri, fatade ventilate, izolatie termica in Manchester si imprejurimi. Mesteri romani cu 15 ani experienta. Urgente 24/7. Oferta gratuita!",
+          "metaDescription": "Montaj si reparatii acoperisuri, fatade ventilate, izolatie termica in Manchester si imprejurimi. Mesteri romani cu 15 ani experiență. Urgente 24/7. Oferta gratuita!",
           "about": "ConstTop Roofing este specializata in lucrari de acoperisuri si fatade in Manchester si nord-vestul Angliei. Montam tigla ceramica si metalica, membrane bituminoase, fatade ventilate si izolatie termica la standarde ridicate. Intervenim si in urgente — scurgeri, stricaciuni dupa furtuna — in cel mai scurt timp posibil.",
           "lang": "ro",
           "yearsExp": "15",
@@ -224,7 +224,7 @@
           "about": "Despre noi",
           "instaTitle": "De pe șantier",
           "instaFollow": "Urmareste",
-          "scroll": "Deruleaza",
+          "scroll": "Derulează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web",
           "callCta": "Sună",
@@ -378,7 +378,7 @@
             "images/ct-ig5.jpg",
             "images/ct-ig6.jpg"
           ],
-          "embedUrl": "https://www.instagram.com/consttop.roofing/embed"
+          "embedUrl": "https://www.instagram.com/consttop.roofing"
         },
         "contact": {
           "title": "Cere oferta gratuita",
@@ -394,7 +394,7 @@
           "whatsapp": "447755443322",
           "phone": "+447755443322",
           "phoneDisplay": "+44 7755 443 322",
-          "waHref": "https://wa.me/447755443322?text=Buna%20ziua!%20Vreau%20o%20oferta%20pentru%20acoperis.",
+          "waHref": "https://wa.me/447755443322",
           "address": "Manchester, Greater Manchester M1",
           "addressHref": "https://maps.google.com/?q=Manchester"
         },

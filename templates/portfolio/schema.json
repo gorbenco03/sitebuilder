@@ -379,7 +379,7 @@
         {
           "key": "instagram.gallery",
           "type": "photos",
-          "label": "Poze grilă Instagram (rezultate / fallback) — optional",
+          "label": "Poze grilă Instagram (rezultate / fallback)",
           "required": false
         }
       ]
@@ -456,7 +456,7 @@
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresa fizică (poți folosi <br> pentru rânduri noi)",
+          "label": "Adresa fizică (câte un rând pe linie)",
           "required": false,
           "maxLen": 200
         },
@@ -476,12 +476,6 @@
           "key": "seo.ogImage",
           "type": "url",
           "label": "Imagine la partajare pe rețele",
-          "required": false
-        },
-        {
-          "key": "seo.jsonLd",
-          "type": "textarea",
-          "label": "Informații pentru căutare Google (opțional — completate automat)",
           "required": false
         }
       ]

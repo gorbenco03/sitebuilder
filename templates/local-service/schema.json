@@ -10,7 +10,7 @@
   "sections": [
     {
       "id": "business",
-      "title": "Informatii firma",
+      "title": "Informații firmă",
       "fields": [
         {
           "key": "business.name",
@@ -57,21 +57,21 @@
         {
           "key": "business.yearsExp",
           "type": "text",
-          "label": "Ani de experienta (ex: 12) — optional",
+          "label": "Ani de experiență (ex: 12)",
           "required": false,
           "maxLen": 4
         },
         {
           "key": "business.projectsDone",
           "type": "text",
-          "label": "Numar proiecte finalizate (ex: 240) — optional, afisat in hero si statistici",
+          "label": "Număr proiecte finalizate (ex: 240) — afișat în hero și statistici",
           "required": false,
           "maxLen": 10
         },
         {
           "key": "business.zone",
           "type": "text",
-          "label": "Zona de activitate (ex: Londra si imprejurimi) — optional",
+          "label": "Zona de activitate (ex: Londra și împrejurimi)",
           "required": false,
           "maxLen": 100
         }
@@ -105,7 +105,7 @@
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Text indicator scroll (ex: Deruleaza)",
+          "label": "Text indicator scroll (ex: Derulează)",
           "required": true,
           "maxLen": 30
         },
@@ -213,12 +213,12 @@
     },
     {
       "id": "trust",
-      "title": "De ce noi (argumente incredere)",
+      "title": "De ce noi (argumente de încredere)",
       "fields": [
         {
           "key": "trust",
           "type": "list",
-          "label": "Argumente 'De ce noi' (3-4 carduri cu icon, titlu si text scurt) — optional",
+          "label": "Argumente «De ce noi» (3–4 carduri cu icon, titlu și text scurt)",
           "required": false,
           "min": 0,
           "max": 6,
@@ -263,7 +263,7 @@
         {
           "key": "certifications",
           "type": "list",
-          "label": "Certificari / autorizatii (ex: Autorizatie Constructii, ISO 9001) — optional",
+          "label": "Certificări / autorizații (ex: Autorizație construcții, ISO 9001)",
           "required": false,
           "min": 0,
           "max": 8,
@@ -311,45 +311,45 @@
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "Link WhatsApp complet cu mesaj pre-completat",
+          "label": "Link WhatsApp (https://wa.me/...)",
           "required": false
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "URL Instagram — optional",
+          "label": "Link Instagram",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Label Instagram (ex: @firmamea)",
+          "label": "Text link Instagram (ex: @firmamea)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "URL Facebook — optional",
+          "label": "Link Facebook",
           "required": false
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Label Facebook (ex: Firma Mea)",
+          "label": "Text link Facebook (ex: Firma Mea)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresa (poate contine <br> pentru linii noi)",
+          "label": "Adresa fizică (câte un rând pe linie)",
           "required": false
         },
         {
           "key": "contact.addressHref",
           "type": "url",
-          "label": "Link Google Maps — optional",
+          "label": "Link Google Maps",
           "required": false
         }
       ]
@@ -361,14 +361,14 @@
         {
           "key": "instagram.handle",
           "type": "text",
-          "label": "Username Instagram fara @ (ex: firmamea) — optional",
+          "label": "Username Instagram fără @ (ex: firmamea)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "URL profil Instagram — optional",
+          "label": "Link profil Instagram",
           "required": false
         },
         {
@@ -380,31 +380,19 @@
         {
           "key": "instagram.gallery",
           "type": "photos",
-          "label": "Poze pentru grila Instagram (max 6) — optional",
+          "label": "Poze pentru grila Instagram (max 6)",
           "required": false
         }
       ]
     },
     {
       "id": "seo",
-      "title": "SEO & Social",
+      "title": "Partajare pe rețele",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "url",
           "label": "Imagine la partajare pe rețele (1200×630px)",
-          "required": false
-        },
-        {
-          "key": "seo.jsonLd",
-          "type": "textarea",
-          "label": "Informații pentru căutare Google (opțional — completate automat)",
-          "required": false
-        },
-        {
-          "key": "seo.canonical",
-          "type": "url",
-          "label": "URL canonical al site-ului — optional",
           "required": false
         }
       ]

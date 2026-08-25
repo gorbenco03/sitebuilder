@@ -284,8 +284,19 @@ function designBadgeLabel(tpl) {
 // Field types that go in the drawer (not editable inline on the canvas)
 const DRAWER_TYPES = new Set(['phone', 'url', 'color']);
 const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waHref', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
+// Factory/SEO machinery — keep in config for publish, never show in Detalii
+const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical'];
+
+function isHiddenDrawerField(field) {
+  const k = field && field.key ? String(field.key) : '';
+  if (HIDDEN_DRAWER_KEYS.includes(k)) return true;
+  if (k === 'jsonLd' || k.endsWith('.jsonLd')) return true;
+  if (k === 'canonical' || k.endsWith('.canonical')) return true;
+  return false;
+}
 
 function isDrawerField(field) {
+  if (isHiddenDrawerField(field)) return false;
   if (DRAWER_TYPES.has(field.type)) return true;
   const k = field.key || '';
   return DRAWER_KEYS_PARTIAL.some(p => k.includes(p));
@@ -1114,6 +1125,7 @@ function buildDrawer() {
 }
 
 function buildDrawerField(field) {
+  if (isHiddenDrawerField(field)) return null;
   const wrap = document.createElement('div');
   wrap.className = 'field-group';
 
