@@ -50,7 +50,7 @@
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Limba site-ului (ro sau en)",
+          "label": "Limba site-ului",
           "required": true,
           "maxLen": 5
         },
@@ -566,7 +566,7 @@
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Link Instagram la contact",
+          "label": "Instagram (secțiunea contact)",
           "required": false,
           "maxLen": 200
         },
