@@ -167,7 +167,9 @@ async function deploySite(siteDir, { name }) {
     if (!name) throw new Error('name is required.');
     if (!isConfigured()) throw new Error('CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set.');
 
-    await ensureProject(name);
+    const project = await ensureProject(name);
+    // Use the subdomain Cloudflare assigned, never <name>.pages.dev — see pagesHostOf.
+    const pagesHost = pagesHostOf(project, name);
 
     const { stdout } = await runWrangler([
         'pages', 'deploy', siteDir,
@@ -180,7 +182,7 @@ async function deploySite(siteDir, { name }) {
     // the stable production URL is the project subdomain.
     const m = stdout.match(/https:\/\/[^\s"']+\.pages\.dev/);
     return {
-        url: `https://${name}.pages.dev`,
+        url: `https://${pagesHost}`,
         deploymentUrl: m ? m[0] : null,
         deploymentId: null,
         projectId: name,
@@ -221,7 +223,8 @@ async function attachDomain(projectName, domainName) {
  * Steps:
  *   1. Find the zone governing BRAND_DOMAIN (it may be a parent zone).
  *   2. Attach <slug>.<BRAND_DOMAIN> to the Pages project (POST /pages/projects/:name/domains).
- *   3. Create a CNAME record in that zone: <slug>.<BRAND_DOMAIN> → <name>.pages.dev.
+ *   3. Create a CNAME record in that zone: <slug>.<BRAND_DOMAIN> → the project's
+ *      real *.pages.dev host (never a guessed one — see pagesHostOf).
  *
  * brandUrl is returned only when the DNS record actually exists — handing the
  * customer a branded URL that does not resolve is worse than the pages.dev one.
@@ -229,6 +232,46 @@ async function attachDomain(projectName, domainName) {
  * @param {string} projectName  Pages project name (= slug).
  * @returns {Promise<{url: string, brandUrl: string|null}>}
  */
+/**
+ * The *.pages.dev hostname Cloudflare actually assigned to a project.
+ *
+ * It is NOT always <name>.pages.dev. Those subdomains are globally unique across
+ * every Cloudflare user, so when the name is already taken Cloudflare appends a
+ * suffix — project "kirill" can be served at "kirill-vlt.pages.dev".
+ *
+ * Guessing the hostname aimed the customer's CNAME at a stranger's Pages project,
+ * which Cloudflare refuses with error 1014 (CNAME Cross-User Banned), and handed
+ * the customer a fallback URL that belonged to someone else entirely.
+ *
+ * @param {object|null} project  Pages project object from the API
+ * @param {string} name          project name, used only as a last resort
+ * @returns {string} hostname, no protocol
+ */
+function pagesHostOf(project, name) {
+    const sub = project && typeof project.subdomain === 'string' ? project.subdomain.trim() : '';
+    return sub || `${name}.pages.dev`;
+}
+
+/**
+ * Look up the assigned *.pages.dev hostname for an existing project.
+ *
+ * @param {string} name
+ * @returns {Promise<string|null>} hostname, or null when it cannot be determined
+ */
+async function fetchPagesHost(name) {
+    try {
+        const project = await cfRequest(
+            'GET',
+            `/accounts/{account}/pages/projects/${encodeURIComponent(name)}`
+        );
+        const sub = project && typeof project.subdomain === 'string' ? project.subdomain.trim() : '';
+        return sub || null;
+    } catch (e) {
+        console.warn(`[fetchPagesHost] lookup failed for "${name}":`, e.message);
+        return null;
+    }
+}
+
 /**
  * True when Cloudflare is telling us the custom domain is already attached to the
  * Pages project. That is success, not failure — but it is reported inconsistently:
@@ -271,11 +314,19 @@ async function findZoneFor(hostname) {
 async function ensureSubdomain(projectName) {
     const brandDomain = process.env.BRAND_DOMAIN;
     if (!brandDomain || !isConfigured()) {
-        return { url: `https://${projectName}.pages.dev`, brandUrl: null };
+        return { url: null, brandUrl: null };
     }
 
     const subdomain = `${projectName}.${brandDomain}`;
     try {
+        // 0. Resolve the real *.pages.dev host. Without it we must not write a
+        //    CNAME at all: a guessed target can belong to another Cloudflare user.
+        const pagesHost = await fetchPagesHost(projectName);
+        if (!pagesHost) {
+            console.warn(`[ensureSubdomain] could not resolve the pages.dev host for "${projectName}" — skipping DNS`);
+            return { url: null, brandUrl: null };
+        }
+
         // 1. Find the governing zone. BRAND_DOMAIN is often NOT a zone itself
         //    (e.g. sites.example.com lives inside the example.com zone), so walk
         //    up the labels until one matches a real zone.
@@ -307,7 +358,7 @@ async function ensureSubdomain(projectName) {
                 await cfRequest('POST', `/zones/${zoneId}/dns_records`, {
                     type:    'CNAME',
                     name:    subdomain,
-                    content: `${projectName}.pages.dev`,
+                    content: pagesHost,
                     proxied: true,
                     ttl:     1,
                 });
@@ -325,12 +376,12 @@ async function ensureSubdomain(projectName) {
         }
 
         return {
-            url:      `https://${projectName}.pages.dev`,
+            url:      `https://${pagesHost}`,
             brandUrl: dnsReady ? `https://${subdomain}` : null,
         };
     } catch (e) {
         console.warn('[ensureSubdomain] failed (best-effort):', e.message);
-        return { url: `https://${projectName}.pages.dev`, brandUrl: null };
+        return { url: null, brandUrl: null };
     }
 }
 
