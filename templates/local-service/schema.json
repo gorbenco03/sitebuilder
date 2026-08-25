@@ -317,13 +317,13 @@
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Link Instagram",
+          "label": "Instagram (secțiunea contact)",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Text link Instagram (ex: @firmamea)",
+          "label": "Text Instagram (ex: @firmamea)",
           "required": false,
           "maxLen": 40
         },

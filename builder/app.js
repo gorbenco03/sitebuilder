@@ -2399,6 +2399,9 @@ async function completeTestCheckout(sessionId) {
       publishedSiteUrl = site.url || null;
       currentSitePaid = !!site.paid;
       if (site.slug) currentSiteSlug = site.slug;
+      // Dashboard pay often has empty in-memory draft — bind template+config so
+      // «Înapoi la editor» / fresh #edit open the paid site, not the catalog (S92).
+      await ensureDraftBoundToPaidSite(site.id);
       saveDraft();
     }
     if (site && site.url && String(site.url).indexOf('http') === 0) {
@@ -2426,6 +2429,90 @@ async function completeTestCheckout(sessionId) {
   } finally {
     setLoading(false);
   }
+}
+
+/**
+ * After dashboard test-pay (or bare #edit with empty local draft), load the paid
+ * site's templateId+config into draft so the editor opens that site — not #templates.
+ * Does not overwrite an in-progress draft that already has a templateId.
+ */
+async function ensureDraftBoundToPaidSite(preferredSiteId) {
+  try {
+    if (draft.templateId && draft.config) {
+      // Keep current editor work; still refresh bind ids if preferred matches
+      if (preferredSiteId && currentSiteId === preferredSiteId) saveDraft();
+      return true;
+    }
+    const saved = loadDraft();
+    if (saved && saved.templateId && saved.config) {
+      return resumeLocalDraft();
+    }
+
+    let site = null;
+    let config = null;
+    const wantId = preferredSiteId || currentSiteId || (saved && saved.siteId) || null;
+
+    if (wantId) {
+      try {
+        const data = await apiGet('/api/sites/' + encodeURIComponent(wantId));
+        site = data && data.site;
+        config = data && data.config;
+      } catch (_) { /* fall through to list */ }
+    }
+
+    if (!site || !config) {
+      const list = await apiGet('/api/sites').catch(() => null);
+      const sites = (list && list.sites) || [];
+      const paid = sites.filter((s) => s && s.paid);
+      let pick = null;
+      if (wantId) pick = paid.find((s) => s.id === wantId) || null;
+      if (!pick && paid.length === 1) pick = paid[0];
+      else if (!pick && paid.length > 1) {
+        // Prefer product-menu restaurant if present (common dash-pay path); else first paid
+        pick = paid.find((s) => s.templateId === 'product-menu') || paid[0];
+      }
+      if (!pick) return false;
+      try {
+        const data = await apiGet('/api/sites/' + encodeURIComponent(pick.id));
+        site = data && data.site;
+        config = data && data.config;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    if (!site || !config || !site.templateId) return false;
+
+    currentSiteId = site.id;
+    currentSitePaid = !!site.paid;
+    currentSiteSlug = site.slug || site.projectName || '';
+    publishedSiteId = site.id;
+    if (site.url) publishedSiteUrl = site.url;
+    draft.templateId = site.templateId;
+    draft.config = deepClone(config);
+
+    const tplData = getTemplateById(site.templateId);
+    const registry = getTemplateList();
+    const meta = (registry || []).find((t) => t.id === site.templateId) || {
+      id: site.templateId,
+      name: site.templateId,
+      description: '',
+    };
+    currentTemplate = { meta, data: tplData };
+    previewFirstRender = false;
+    iframeReady = false;
+    const nameEl = $('editor-template-name');
+    if (nameEl) nameEl.textContent = meta.name;
+    saveDraft();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/** Alias used by #edit empty-draft path (S92). */
+async function loadPaidSiteForEmptyEdit() {
+  return ensureDraftBoundToPaidSite(null);
 }
 
 /** Restore local draft into editor state (after magic-link / empty dashboard). */
@@ -2979,7 +3066,9 @@ async function handleRoute(hash) {
   } else if (route === 'edit') {
     if (!draft.templateId) {
       if (resumeLocalDraft()) {
-        /* restored */
+        /* restored from localStorage */
+      } else if (await loadPaidSiteForEmptyEdit()) {
+        /* dashboard pay / empty draft: bind matching paid site (S92) */
       } else {
         window.location.hash = '#templates';
         return;
@@ -3141,7 +3230,18 @@ function wireStaticButtons() {
   wireModalClose('btn-close-gallery',  'modal-gallery');
 
   const successCloseBtn = $('btn-success-close');
-  if (successCloseBtn) successCloseBtn.addEventListener('click', () => closeModal('modal-success'));
+  if (successCloseBtn) {
+    successCloseBtn.addEventListener('click', async () => {
+      closeModal('modal-success');
+      // After pay, open the paid site editor — not stay on dashboard/catalog (S92)
+      if (!draft.templateId) {
+        await ensureDraftBoundToPaidSite(currentSiteId);
+      }
+      if (draft.templateId) {
+        window.location.hash = '#edit';
+      }
+    });
+  }
 
   // Preview modal device toggle
   const modalDesktopBtn = $('modal-preview-desktop');
