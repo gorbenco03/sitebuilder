@@ -1301,7 +1301,8 @@ input, textarea, select {
 .success-url-block {
   width: 100%;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.5rem;
   background: var(--accent-light);
   border: 1px solid var(--accent-muted);
@@ -1311,8 +1312,9 @@ input, textarea, select {
   -webkit-overflow-scrolling: touch;
 }
 .success-url-link {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  width: 100%;
   font-size: 0.85rem; font-weight: 600;
   color: var(--accent); text-decoration: none;
   /* Keep /live/<slug>/ intact: normal breaks only; block scrolls if needed. */
@@ -1323,10 +1325,14 @@ input, textarea, select {
   display: flex; align-items: flex-start; gap: 0.3rem;
 }
 .success-url-link #success-url-text {
-  /* Keep /live/<slug>/ as one token; parent .success-url-block scrolls if needed. */
+  /* Keep /live/<slug>/ as one token; full-width row (Copiază stacked below). */
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: keep-all;
+}
+.success-url-block > .btn-copy {
+  align-self: flex-end;
+  flex-shrink: 0;
 }
 .success-url-link:hover { text-decoration: underline; }
 
