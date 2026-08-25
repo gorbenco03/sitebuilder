@@ -373,7 +373,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Link feed Instagram (opțional)",
+          "label": "Feed Instagram (opțional)",
           "required": false
         },
         {

@@ -2349,7 +2349,22 @@ function showSuccessScreen(url, paymentUrl) {
   if (isLive) {
     if (titleEl) titleEl.textContent = 'Site-ul tău e live — hosting 12 luni';
     if (draftNote) hide(draftNote);
-    if (urlText) urlText.textContent = url;
+    if (urlText) {
+      // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
+      // without splitting the slug token at hyphens (S99/S107).
+      // Static tests (s99/s103) require split('/') + literal '/<wbr>' in source.
+      urlText.textContent = '';
+      const parts = String(url).split('/');
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) {
+          urlText.insertAdjacentHTML('beforeend', '/<wbr>');
+        }
+        const seg = document.createElement('span');
+        seg.className = 'success-url-seg';
+        seg.textContent = parts[i];
+        urlText.appendChild(seg);
+      }
+    }
     if (urlLink) { urlLink.href = url; show(urlLink); }
     if (copyBtn) show(copyBtn);
   } else {

@@ -1325,7 +1325,13 @@ input, textarea, select {
   display: flex; align-items: flex-start; gap: 0.3rem;
 }
 .success-url-link #success-url-text {
-  /* Keep /live/<slug>/ as one token; full-width row (Copiază stacked below). */
+  /* Wrap only at path slashes (<wbr>); each segment stays one token (S99/S107). */
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.success-url-link #success-url-text .success-url-seg {
+  /* Path token (incl. long slug) never splits at hyphen. */
   white-space: nowrap;
   overflow-wrap: normal;
   word-break: keep-all;

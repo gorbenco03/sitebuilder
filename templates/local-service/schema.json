@@ -368,13 +368,13 @@
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Link profil Instagram",
+          "label": "Profil Instagram",
           "required": false
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Link feed Instagram (opțional)",
+          "label": "Feed Instagram (opțional)",
           "required": false
         },
         {
