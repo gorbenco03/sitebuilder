@@ -283,7 +283,13 @@ function serveStatic(req, res, urlPath) {
         const indexPath = path.join(BUILDER_DIR, 'index.html');
         try {
             const content = fs.readFileSync(indexPath);
-            res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': content.length });
+            const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': content.length };
+            if (req.method === 'HEAD') {
+                res.writeHead(200, headers);
+                res.end();
+                return;
+            }
+            res.writeHead(200, headers);
             res.end(content);
         } catch {
             sendJson(res, 404, { error: 'Fișier negăsit.' });
@@ -294,7 +300,13 @@ function serveStatic(req, res, urlPath) {
     const ext  = path.extname(targetPath).toLowerCase();
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     const content = fs.readFileSync(targetPath);
-    res.writeHead(200, { 'Content-Type': mime, 'Content-Length': content.length });
+    const headers = { 'Content-Type': mime, 'Content-Length': content.length };
+    if (req.method === 'HEAD') {
+        res.writeHead(200, headers);
+        res.end();
+        return;
+    }
+    res.writeHead(200, headers);
     res.end(content);
 }
 
@@ -369,7 +381,13 @@ function serveLive(req, res, urlPath) {
     const ext  = path.extname(realFile).toLowerCase();
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     const content = fs.readFileSync(realFile);
-    res.writeHead(200, { 'Content-Type': mime, 'Content-Length': content.length });
+    const headers = { 'Content-Type': mime, 'Content-Length': content.length };
+    if (req.method === 'HEAD') {
+        res.writeHead(200, headers);
+        res.end();
+        return;
+    }
+    res.writeHead(200, headers);
     res.end(content);
 }
 
@@ -1268,12 +1286,16 @@ function createHandler({ onStripeEvent } = {}) {
 
         try {
             // ── Redirect root → /app/ ──────────────────────────────────────
-            if (req.method === 'GET' && url === '/') {
+            if ((req.method === 'GET' || req.method === 'HEAD') && url === '/') {
                 return sendRedirect(res, '/app/');
             }
 
             // ── Health ─────────────────────────────────────────────────────
-            if (req.method === 'GET' && url === '/health') {
+            if ((req.method === 'GET' || req.method === 'HEAD') && url === '/health') {
+                if (req.method === 'HEAD') {
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    return res.end();
+                }
                 return sendJson(res, 200, { ok: true, service: 'hidook-bot', uptimeSec: Math.round(process.uptime()) });
             }
 
@@ -1325,12 +1347,17 @@ function createHandler({ onStripeEvent } = {}) {
             }
 
             // ── Isolated live sites: /live/<slug>/* ────────────────────────
-            if (req.method === 'GET' && (url === '/live' || url === '/live/' || url.startsWith('/live/'))) {
+            if ((req.method === 'GET' || req.method === 'HEAD') && (url === '/live' || url === '/live/' || url.startsWith('/live/'))) {
                 return serveLive(req, res, url);
             }
 
             // ── Static: /app and /app/* ────────────────────────────────────
-            if (req.method === 'GET' && (url === '/app' || url === '/app/' || url.startsWith('/app/'))) {
+            // Bare /app (no trailing slash) must redirect so relative assets resolve under /app/.
+            if ((req.method === 'GET' || req.method === 'HEAD') && url === '/app') {
+                const q = qIdx >= 0 ? rawUrl.slice(qIdx) : '';
+                return sendRedirect(res, '/app/' + q);
+            }
+            if ((req.method === 'GET' || req.method === 'HEAD') && (url === '/app/' || url.startsWith('/app/'))) {
                 return serveStatic(req, res, url);
             }
 

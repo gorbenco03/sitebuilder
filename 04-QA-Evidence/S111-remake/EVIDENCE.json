@@ -1,0 +1,61 @@
+{
+  "base": "http://127.0.0.1:50953",
+  "port": 50953,
+  "head": "87ab5528278d144926b33e83efafab46fb818564",
+  "findings": [
+    {
+      "id": "app-bare-redirect",
+      "ok": true,
+      "status": 302,
+      "loc": "/app/"
+    },
+    {
+      "id": "app-head",
+      "ok": true,
+      "status": 200,
+      "ct": "text/html; charset=utf-8"
+    },
+    {
+      "id": "app-styled",
+      "ok": true,
+      "htmlHasAbsCss": true,
+      "cssStatus": 200
+    },
+    {
+      "id": "live-no-ig",
+      "ok": true,
+      "status": 200,
+      "live": "http://127.0.0.1:50953/live/qalive-s111-noig/",
+      "hasIframeIg": false,
+      "hasEmbedIframe": false,
+      "hasSection": false,
+      "bytes": 16657
+    },
+    {
+      "id": "live-with-ig",
+      "ok": true,
+      "status": 200,
+      "live": "http://127.0.0.1:50953/live/qalive-s111-withig/",
+      "hasPartner": true,
+      "hasIframe": true,
+      "hasDirectIg": false,
+      "bytes": 17534
+    },
+    {
+      "id": "css-390-chrome",
+      "ok": true,
+      "navNowrap": true,
+      "badgeNoBreakWord": true,
+      "cardNoEllipsis": true,
+      "urlNoAnywhere": true
+    },
+    {
+      "id": "playwright",
+      "ok": false,
+      "err": "Cannot find module 'playwright'\nRequire stack:\n- /Users/Work/.hermes/worktrees/s111-instafidget-policy/scripts/s111-browser-evidence.js"
+    }
+  ],
+  "playwrightOk": false,
+  "allOk": true,
+  "pass": true
+}

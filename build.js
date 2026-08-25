@@ -69,8 +69,59 @@ const URL_TOKENS = new Set([
     'contact.instagram.url',
     'contact.facebook.url',
     'instagram.url',
+    'instagram.embedUrl',
     'seo.canonical',
 ]);
+
+/**
+ * True only for a real social-feed partner embed (Instafidget / isolated stub / tests).
+ * Direct instagram.com (and related) profile URLs are never valid iframe targets —
+ * Instagram sets X-Frame-Options: deny and the live site shows a gray hole.
+ */
+function isConnectedSocialFeedEmbed(url) {
+    if (typeof url !== 'string') return false;
+    const s = url.trim();
+    if (!s) return false;
+    if (!/^https?:\/\//i.test(s)) return false;
+    try {
+        const u = new URL(s);
+        const host = u.hostname.toLowerCase().replace(/^www\./, '');
+        if (host === 'instagram.com' || host.endsWith('.instagram.com')) return false;
+        if (host === 'instagr.am' || host.endsWith('.instagr.am')) return false;
+        if (host === 'facebook.com' || host.endsWith('.facebook.com')) return false;
+        if (host === 'fb.com' || host.endsWith('.fb.com')) return false;
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
+ * S111 owner policy: public Instagram section only when Instafidget (or partner) is
+ * connected. No direct instagram.com iframe, no empty section, no fake gallery
+ * pretending to be a live feed. Mutates the shallow-cloned render config only.
+ */
+function normalizeInstagramForPublic(cfg) {
+    if (!cfg || !cfg.instagram || typeof cfg.instagram !== 'object') return;
+    const ig = Object.assign({}, cfg.instagram);
+    const rawEmbed = typeof ig.embedUrl === 'string' ? ig.embedUrl.trim() : '';
+    if (isConnectedSocialFeedEmbed(rawEmbed)) {
+        ig.embedUrl = rawEmbed;
+        // Connected: partner embed only — drop posts/gallery filler on live/preview.
+        ig.posts = [];
+        ig.gallery = [];
+        // Section templates gate on handle; keep a stable handle for @line when present.
+        if (typeof ig.handle === 'string') ig.handle = ig.handle.trim();
+        if (!ig.handle) ig.handle = 'instagram';
+    } else {
+        // Not connected: omit the whole public Instagram block.
+        ig.embedUrl = '';
+        ig.posts = [];
+        ig.gallery = [];
+        ig.handle = '';
+    }
+    cfg.instagram = ig;
+}
 
 /**
  * Phone number tokens that appear in tel: href attributes.
@@ -458,6 +509,8 @@ function renderHtml(templateHtml, config, opts) {
         cfg.contact.addressNoHref =
             (cfg.contact.address && !cfg.contact.addressHref) ? 'true' : '';
     }
+    // Public Instagram: Instafidget embed only when connected (S111).
+    normalizeInstagramForPublic(cfg);
 
     const editMode  = !!(opts && opts.editMode);
     const editOpts  = editMode ? { editMode: true, pathPrefix: '' } : undefined;
@@ -488,7 +541,13 @@ function build(siteDir = ROOT) {
     return { outputPath, bytes: html.length };
 }
 
-module.exports = { build, escapeHtml, renderHtml };
+module.exports = {
+    build,
+    escapeHtml,
+    renderHtml,
+    isConnectedSocialFeedEmbed,
+    normalizeInstagramForPublic,
+};
 
 // Run from CLI:  node build.js [siteDir]
 if (require.main === module) {
