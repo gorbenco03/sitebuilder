@@ -230,6 +230,19 @@ async function attachDomain(projectName, domainName) {
  * @returns {Promise<{url: string, brandUrl: string|null}>}
  */
 /**
+ * True when Cloudflare is telling us the custom domain is already attached to the
+ * Pages project. That is success, not failure — but it is reported inconsistently:
+ * 409 on some paths, and 400 "You have already added this custom domain" on others.
+ *
+ * @param {Error & {status?: number}} err
+ */
+function isAlreadyAttached(err) {
+    if (!err) return false;
+    if (err.status === 409) return true;
+    return /already\s+added|already\s+exists/i.test(String(err.message || ''));
+}
+
+/**
  * Find the Cloudflare zone that governs a hostname.
  *
  * A brand domain is frequently a subdomain of the real zone — `sites.example.com`
@@ -269,7 +282,11 @@ async function ensureSubdomain(projectName) {
         const zone   = await findZoneFor(brandDomain);
         const zoneId = zone && zone.id;
 
-        // 2. Attach domain to Pages project (idempotent — 409 = already attached)
+        // 2. Attach domain to the Pages project. This must never abort the function:
+        //    step 3 is what actually makes the hostname resolve, and a project whose
+        //    domain was attached on an earlier run still needs its DNS record. Before
+        //    this, an "already added" 400 threw and step 3 was skipped forever, so a
+        //    site could never recover a missing CNAME by republishing.
         try {
             await cfRequest(
                 'POST',
@@ -277,7 +294,9 @@ async function ensureSubdomain(projectName) {
                 { name: subdomain }
             );
         } catch (e) {
-            if (e.status !== 409) throw e; // 409 = already registered, fine
+            if (!isAlreadyAttached(e)) {
+                console.warn('[ensureSubdomain] attach to Pages project failed:', e.message);
+            }
         }
 
         // 3. Create the CNAME. Use the fully-qualified name: it is correct whether
