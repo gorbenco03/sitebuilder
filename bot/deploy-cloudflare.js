@@ -352,6 +352,13 @@ async function ensureSubdomain(projectName) {
 
         // 3. Create the CNAME. Use the fully-qualified name: it is correct whether
         //    the zone is BRAND_DOMAIN itself or a parent of it.
+        //
+        //    proxied:false is deliberate. A proxied record answers public DNS with
+        //    Cloudflare's own IPs, which hides the CNAME target — and that target is
+        //    exactly what Pages checks to verify a custom domain, so proxying left
+        //    every new site stuck on "Verifying / Complete your DNS setup". Resolving
+        //    straight to the pages.dev host lets verification finish, after which
+        //    Pages issues and renews the certificate for the hostname itself.
         let dnsReady = false;
         if (zoneId) {
             try {
@@ -359,7 +366,7 @@ async function ensureSubdomain(projectName) {
                     type:    'CNAME',
                     name:    subdomain,
                     content: pagesHost,
-                    proxied: true,
+                    proxied: false,
                     ttl:     1,
                 });
                 dnsReady = true;
