@@ -169,7 +169,13 @@ input, textarea, select {
   display: flex;
   gap: 0.1rem;
   flex: 1;
+  min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.header-nav::-webkit-scrollbar { display: none; }
 .header-nav a {
   padding: 0.35rem 0.65rem;
   border-radius: var(--radius-md);
@@ -177,6 +183,9 @@ input, textarea, select {
   font-weight: 500;
   color: var(--text-muted);
   transition: color var(--transition);
+  /* S111: never shred «Cum e» / «Proiectele mele» mid-word at 390. */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .header-nav a:hover { color: var(--text); text-decoration: none; }
 .header-nav a.active {
@@ -185,6 +194,16 @@ input, textarea, select {
   text-decoration: underline;
   text-underline-offset: 0.35em;
   text-decoration-thickness: 1.5px;
+}
+@media (max-width: 420px) {
+  .app-header {
+    padding: 0 0.65rem;
+    gap: 0.35rem;
+  }
+  .header-nav a {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* Beat .btn-primary { display: inline-flex } (same single-class specificity, later in file) */
@@ -209,11 +228,22 @@ input, textarea, select {
 .user-badge {
   font-size: 0.8rem;
   color: var(--text-muted);
-  max-width: min(280px, 42vw);
-  overflow: visible;
-  white-space: normal;
-  word-break: break-word;
+  /* S111: keep email one token — ellipsis if tight, never letter-shred (break-word). */
+  max-width: min(220px, 36vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
   line-height: 1.25;
+  flex-shrink: 1;
+  min-width: 0;
+}
+@media (max-width: 420px) {
+  .user-badge {
+    max-width: min(148px, 34vw);
+    font-size: 0.72rem;
+  }
 }
 
 /* ---------- Editor Topbar ---------- */
@@ -1082,7 +1112,20 @@ input, textarea, select {
   justify-content: space-between;
   margin-bottom: 1.25rem;
 }
-.dashboard-header h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+.dashboard-header h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  /* S111: «Proiectele mele» stays one phrase at 390. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+@media (max-width: 420px) {
+  .dashboard-header h2 { font-size: 1.1rem; }
+  .dashboard-container { padding-left: 0.85rem; padding-right: 0.85rem; }
+}
 
 .sites-list { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -1118,7 +1161,18 @@ input, textarea, select {
 }
 
 .site-card-info { flex: 1; min-width: 0; }
-.site-card-name { font-weight: 700; font-size: 0.97rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; letter-spacing: -0.01em; }
+/* S111: full site name readable at 390 — wrap whole words, no qaliv… mid-clip. */
+.site-card-name {
+  font-weight: 700;
+  font-size: 0.97rem;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
 .site-hosting-until {
   margin-top: 0.35rem;
   font-size: 0.78rem;
@@ -1452,12 +1506,12 @@ input, textarea, select {
   appearance: none;
   line-height: 1.4;
 }
-/* Detalii URL fields: full handle readable (wrap), never mid-clip ellipsis. */
+/* Detalii URL fields: full handle readable; scroll if tight — never mid-token shred. */
 .field-input--url,
 .field-textarea--url {
   white-space: pre-wrap;
   word-break: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   overflow-x: auto;
   text-overflow: clip;
   min-height: 2.6rem;
