@@ -221,55 +221,55 @@ check('causal RED: parent appointment confirmation still prints Europe/Bucharest
 });
 
 // ── GREEN on HEAD ──────────────────────────────────────────────────────────
-check('HEAD: restaurant name cascade clears Casa Nord / casa.nord / casanord identity', () => {
+check('HEAD: restaurant name cascade clears North House / north.house / northhouse identity', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  assert.strictEqual(cfg.business.name, 'Casa Nord');
+  assert.strictEqual(cfg.business.name, 'North House');
   const newName = 'Advocate S85';
-  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
+  const next = runCascade(appSrc, cfg, 'North House', newName);
   assert.strictEqual(next.business.name, newName);
-  assert.ok(next.business.about && !/Casa Nord/.test(next.business.about), 'about free of Casa Nord');
-  assert.ok(next.business.about.startsWith(newName) || !/Casa Nord/.test(next.business.about), 'about updated');
-  assert.ok(!/Casa Nord/.test(next.contact.facebook.label || ''), 'fb label free');
-  assert.ok(!/casanord|casa\.nord|casa-nord/i.test(next.contact.facebook.url || ''), 'fb url free of old slug');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.handle || ''), 'ig handle free');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.url || ''), 'ig url free');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test((next.contact.instagram && next.contact.instagram.url) || ''), 'contact ig url free');
-  assert.ok(!/casa\.nord|casanord|Casa Nord/i.test((next.contact.instagram && next.contact.instagram.label) || ''), 'contact ig label free');
+  assert.ok(next.business.about && !/North House/.test(next.business.about), 'about free of North House');
+  assert.ok(next.business.about.startsWith(newName) || !/North House/.test(next.business.about), 'about updated');
+  assert.ok(!/North House/.test(next.contact.facebook.label || ''), 'fb label free');
+  assert.ok(!/northhouse|north\.house|north-house/i.test(next.contact.facebook.url || ''), 'fb url free of old slug');
+  assert.ok(!/north\.house|northhouse|north-house/i.test(next.instagram.handle || ''), 'ig handle free');
+  assert.ok(!/north\.house|northhouse|north-house/i.test(next.instagram.url || ''), 'ig url free');
+  assert.ok(!/north\.house|northhouse|north-house/i.test((next.contact.instagram && next.contact.instagram.url) || ''), 'contact ig url free');
+  assert.ok(!/north\.house|northhouse|North House/i.test((next.contact.instagram && next.contact.instagram.label) || ''), 'contact ig label free');
   const blob = JSON.stringify({
     about: next.business.about,
     fb: next.contact.facebook,
     ig: next.instagram,
     cig: next.contact.instagram,
   });
-  assert.ok(!/Casa Nord|casa\.nord|casanord/i.test(blob), 'identity blob free of factory: ' + blob.slice(0, 200));
+  assert.ok(!/North House|north\.house|northhouse/i.test(blob), 'identity blob free of factory: ' + blob.slice(0, 200));
 });
 
 check('HEAD: after restaurant cascade, renderHtml has no factory IG/FB slug', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  const next = runCascade(appSrc, cfg, 'Casa Nord', 'Advocate S85');
+  const next = runCascade(appSrc, cfg, 'North House', 'Advocate S85');
   const html = renderHtml(read(PM_TPL), next);
-  assert.ok(!/Casa Nord/.test(html), 'html free of Casa Nord');
-  assert.ok(!/casa\.nord\.bucuresti/i.test(html), 'html free of @casa.nord.bucuresti');
-  assert.ok(!/casanordbucuresti/i.test(html), 'html free of facebook casanord');
+  assert.ok(!/North House/.test(html), 'html free of North House');
+  assert.ok(!/north\.house\.chicago/i.test(html), 'html free of @north.house.chicago');
+  assert.ok(!/northhousechicago/i.test(html), 'html free of facebook northhouse slug');
   assert.ok(/Advocate S85/.test(html), 'html shows new name');
 });
 
-check('HEAD: professionals cascade clears Cabinet Marin heading leftovers and cabinet-marin email', () => {
+check('HEAD: professionals cascade clears Whitfield Law heading leftovers and whitfieldlaw email', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PRO_PRESETS);
-  assert.ok(/Cabinet Marin/.test(cfg.business.name), 'factory name');
-  assert.ok(/cabinet-marin\.example/.test(cfg.contact.email), 'factory email before');
+  assert.ok(/Whitfield Law/.test(cfg.business.name), 'factory name');
+  assert.ok(/whitfieldlaw\.example/.test(cfg.contact.email), 'factory email before');
   const newName = 'Cabinet Advocate S85';
-  const next = runCascade(appSrc, cfg, 'Cabinet Marin', newName);
+  const next = runCascade(appSrc, cfg, 'Whitfield Law', newName);
   assert.strictEqual(next.business.name, newName);
-  assert.ok(!/Cabinet Marin/.test(next.business.title || ''), 'title free of Cabinet Marin');
-  assert.ok(!/cabinet-marin/i.test(next.contact.email || ''), 'email free of cabinet-marin');
-  assert.ok(!/Cabinet Marin/.test(JSON.stringify(next.business)), 'business block free of Cabinet Marin');
+  assert.ok(!/Whitfield Law/.test(next.business.title || ''), 'title free of Whitfield Law');
+  assert.ok(!/whitfieldlaw/i.test(next.contact.email || ''), 'email free of whitfieldlaw');
+  assert.ok(!/Whitfield Law/.test(JSON.stringify(next.business)), 'business block free of Whitfield Law');
   const html = renderHtml(read(PRO_TPL), next);
-  assert.ok(!/Cabinet Marin/.test(html), 'live html free of Cabinet Marin');
-  assert.ok(!/cabinet-marin\.example/i.test(html), 'live html free of factory email');
+  assert.ok(!/Whitfield Law/.test(html), 'live html free of Whitfield Law');
+  assert.ok(!/whitfieldlaw\.example/i.test(html), 'live html free of factory email');
   assert.ok(html.includes(newName), 'live html has new name');
 });
 
@@ -280,16 +280,16 @@ check('HEAD: Meseriași first opened preset/template has no S85 ASCII leftovers'
   for (const s of MESERIASI_ASCII_S85) {
     assert.ok(!joined.includes(s), 'no leftover: ' + s);
   }
-  // Positive diacritic forms
-  assert.ok(/Rigips și tavane false/.test(joined), 'Rigips și');
-  assert.ok(/Vopsitorie și tencuială/.test(joined), 'Vopsitorie și tencuială');
-  assert.ok(/Gresie și faianță/.test(joined), 'Gresie și faianță');
-  assert.ok(/Instalații sanitare/.test(joined), 'Instalații sanitare');
-  assert.ok(/Instalații electrice/.test(joined), 'Instalații electrice');
-  assert.ok(/Parchet și laminat/.test(joined), 'Parchet și laminat');
-  assert.ok(/Renovare completă casă/.test(joined), 'Renovare completă casă');
-  assert.ok(/Gata să începem\?/.test(joined), 'Gata să începem?');
-  assert.ok(/răspundem în aceeași zi/.test(joined), 'răspundem în aceeași zi');
+  // Positive finished-English forms
+  assert.ok(/Drywall & suspended ceilings/.test(joined), 'Drywall & suspended ceilings');
+  assert.ok(/Painting & plastering/.test(joined), 'Painting & plastering');
+  assert.ok(/Tile & flooring/.test(joined), 'Tile & flooring');
+  assert.ok(/Plumbing/.test(joined), 'Plumbing');
+  assert.ok(/Electrical work/.test(joined), 'Electrical work');
+  assert.ok(/Hardwood & laminate flooring/.test(joined), 'Hardwood & laminate flooring');
+  assert.ok(/Whole-house renovations/.test(joined), 'Whole-house renovations');
+  assert.ok(/Ready to get started\?/.test(joined), 'Ready to get started?');
+  assert.ok(/we reply the same day/i.test(joined), 'we reply the same day');
 });
 
 check('HEAD: professionals Detalii labels have no Link Instagram contact and no tel:', () => {
@@ -319,27 +319,27 @@ check('HEAD: professionals Detalii labels have no Link Instagram contact and no 
   );
 });
 
-check('HEAD: unauth dashboard empty-state source includes visible Intră control', () => {
+check('HEAD: unauth dashboard empty-state source includes visible Sign in control', () => {
   const src = read(APP_JS);
   assert.ok(
-    /Trebuie s[ăa] te autentifici pentru a vedea proiectele/.test(src),
+    /Sign in to see your projects/.test(src),
     'unauth message remains'
   );
-  // Every unauth empty-state assignment includes Intră
+  // Every unauth empty-state assignment includes a Sign in control
   const re =
     /(?:list\.innerHTML\s*=\s*)(['`])([\s\S]*?)\1/g;
   let m;
   let unauthBlocks = 0;
   while ((m = re.exec(src))) {
     const body = m[2];
-    if (!/Trebuie s[ăa] te autentifici pentru a vedea proiectele/.test(body)) continue;
+    if (!/Sign in to see your projects/.test(body)) continue;
     unauthBlocks++;
-    assert.ok(/Intr[ăa]/.test(body), 'unauth block has Intră: ' + body.slice(0, 160));
+    assert.ok(/Sign in/.test(body), 'unauth block has Sign in: ' + body.slice(0, 160));
     // Prefer a real control (button or anchor), not only the word in a sentence
     assert.ok(
-      /<(?:button|a)\b[^>]*>[\s\S]*?Intr[ăa]/i.test(body) ||
-        /Intr[ăa][\s\S]{0,40}<\/(?:button|a)>/i.test(body),
-      'Intră is a visible control'
+      /<(?:button|a)\b[^>]*>[\s\S]*?Sign in/i.test(body) ||
+        /Sign in[\s\S]{0,40}<\/(?:button|a)>/i.test(body),
+      'Sign in is a visible control'
     );
   }
   assert.ok(unauthBlocks >= 1, 'at least one unauth empty-state block');
@@ -403,16 +403,16 @@ check('HEAD non-regress: catalog chips still name four systems', () => {
   const html = read('builder/index.html');
   const chips = (html.match(/id=["']catalog-chips["'][\s\S]*?<\/div>/i) || [''])[0];
   assert.ok(/Restaurant/.test(chips), 'Restaurant chip');
-  assert.ok(/Meseriaș/.test(chips), 'Meseriași chip');
+  assert.ok(/Trades/.test(chips), 'Trades chip');
   assert.ok(/Salon/.test(chips), 'Salon chip');
-  assert.ok(/Servicii profesionale/.test(chips), 'Servicii profesionale chip');
+  assert.ok(/Professional services/.test(chips), 'Professional services chip');
 });
 
-check('HEAD non-regress: landing still shows 100€ / 29€ and Fără roboți', () => {
+check('HEAD non-regress: landing still shows 100€ / 29€ and No bots', () => {
   const html = read('builder/index.html');
   assert.ok(/100\s*€|100€/.test(html), '100€');
   assert.ok(/29\s*€|29€/.test(html), '29€');
-  assert.ok(/Fără roboț/i.test(html), 'Fără roboți');
+  assert.ok(/No bots/i.test(html), 'No bots');
 });
 
 if (failed) {

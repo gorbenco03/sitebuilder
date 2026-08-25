@@ -175,10 +175,10 @@ function readOrdersForSite(siteId) {
         );
     });
 
-    await check('expired / past paidUntil CTA is Reînnoiește hosting (not Reactivează / Păstrează)', () => {
+    await check('expired / past paidUntil CTA is Renew hosting (not Reactivează / Păstrează)', () => {
         assert.ok(
-            /Reînnoiește hosting/.test(buildSiteCardSrc),
-            'expired/past-paidUntil CTA must say Reînnoiește hosting'
+            /Renew hosting/.test(buildSiteCardSrc),
+            'expired/past-paidUntil CTA must say Renew hosting'
         );
         assert.ok(
             !/Reactivează/.test(buildSiteCardSrc),
@@ -222,7 +222,7 @@ function readOrdersForSite(siteId) {
     await check('showSuccessScreen paid/live: hosting 12 months + pay CTA hidden', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
         assert.ok(
-            /hosting\s*12\s*luni|12\s*luni\s*hosting/i.test(showSuccessSrc),
+            /hosting\s*12\s*months|12\s*months\s*hosting/i.test(showSuccessSrc),
             'live success title/copy must mention hosting 12 months'
         );
         // When live, pay button must be hidden (not only when paymentUrl null)

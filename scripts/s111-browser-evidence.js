@@ -165,7 +165,7 @@ async function publishPaid(base, cookie, templateId, config, slug) {
     const hasIframeIg = /src=["']https?:\/\/(www\.)?instagram\.com/i.test(html);
     const hasEmbedIframe = /instagram-embed-iframe/.test(html);
     const hasSection =
-      /instagram-heading|pm-social|Din bucătărie, pe Instagram|pe Instagram/i.test(html) &&
+      /instagram-heading|pm-social|on Instagram/i.test(html) &&
       /class="[^"]*pm-social|id="instagram/.test(html);
     const ok = lr.status === 200 && !hasIframeIg && !hasEmbedIframe;
     findings.push({

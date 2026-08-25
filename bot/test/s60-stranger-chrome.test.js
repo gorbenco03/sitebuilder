@@ -231,20 +231,20 @@ function httpGet(port, urlPath, headers = {}) {
     assert.ok(!/desserdina/i.test(surface));
     assert.ok(!/MENU\s*BOARD/i.test(surface));
     assert.ok(!/SERVER_SECRET/.test(surface));
-    // Commercial Romanian verbs ok
-    assert.ok(/Publică site-ul|publicare/i.test(html), 'Romanian publish verb expected');
-    assert.ok(/Deschide site-ul/i.test(surface), 'live site label expected');
+    // Commercial English verbs ok
+    assert.ok(/Publish site/i.test(html), 'English publish verb expected');
+    assert.ok(/Open the site/i.test(surface), 'live site label expected');
   });
 
-  await check('HEAD first local-service preset is commercial EU/RO (not Londra +44)', () => {
+  await check('HEAD first local-service preset is commercial US market (not Londra +44)', () => {
     const data = JSON.parse(headRead('templates/local-service/presets.json'));
     const first = data.presets[0];
     assert.strictEqual(first.id, 'renovari-interioare-londra', 'keep stable id');
     const surface = JSON.stringify({ name: first.name, config: first.config });
     assert.ok(!/\bLondra\b/i.test(surface), 'no Londra in human surface');
     assert.ok(!/\+44\b|4479/i.test(surface), 'no +44 contact');
-    assert.ok(/\+40|40\d{8,}/.test(surface), 'RO phone expected');
-    assert.ok(/București|Bucuresti|România|Romania|Ilfov/i.test(surface), 'RO zone expected');
+    assert.ok(/\+1[\s-]?512|512-555/.test(surface), 'US (Austin) phone expected');
+    assert.ok(/Austin/i.test(surface), 'US zone expected');
     // Keep image refs
     assert.ok(/images\/pr-hero\.jpg/.test(surface), 'keep existing images/ refs');
     assert.ok(!/picsum|unsplash/i.test(surface), 'no external stock conveyor');
@@ -282,7 +282,7 @@ function httpGet(port, urlPath, headers = {}) {
     assert.strictEqual(json.currency, 'eur');
   });
 
-  await check('HEAD browser unknown path → Romanian HTML 404 (not raw JSON)', async () => {
+  await check('HEAD browser unknown path → English HTML 404 (not raw JSON)', async () => {
     const res = await httpGet(port, '/this-route-does-not-exist-s60', {
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     });
@@ -291,8 +291,8 @@ function httpGet(port, urlPath, headers = {}) {
     assert.ok(/text\/html/i.test(ct), 'content-type must be text/html, got ' + ct);
     assert.ok(!/^\s*\{/.test(res.body.trim()), 'body must not be JSON object');
     assert.ok(
-      /Pagina nu a fost g[ăa]sit[ăa]|neg[ăa]sit/i.test(res.body),
-      'Romanian not-found copy required'
+      /Page not found/i.test(res.body),
+      'English not-found copy required'
     );
     assert.ok(/\/app\//.test(res.body), 'should link back to /app/');
     assert.ok(!/SERVER_SECRET/.test(res.body));

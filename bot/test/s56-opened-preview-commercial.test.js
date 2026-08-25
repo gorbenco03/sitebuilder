@@ -32,8 +32,15 @@ const FORBIDDEN = [
   /Apple\.com/i,
 ];
 
-// Opened English factory chrome that a stranger must not see on first salon preset.
-const FACTORY_NAV = [/>\s*Gallery\s*</i, />\s*Services\s*</i, />\s*Book\s*</i];
+// Product is now English throughout, so "Gallery/Services/Book" nav words are no
+// longer a factory-vs-commercial signal by themselves (raw hardcoded-markup
+// regressions are still caught below by the HEAD worktree surface check, which
+// reads the template source rather than rendered copy). The stronger, English-era
+// version of "not raw factory chrome" is: the opened preview must show the
+// preset's OWN configured labels (proof it's config-driven), carry zero
+// unresolved {{token}} placeholders, and carry zero leftover Romanian diacritics.
+const UNRESOLVED_TOKEN = /\{\{\s*[\w.]+\s*\}\}/;
+const ROMANIAN_DIACRITICS = /[ăâîșşțţĂÂÎȘŞȚŢ]/;
 
 let failed = false;
 function check(name, fn) {
@@ -101,12 +108,23 @@ function assertCommercialPreview(id, html, preset) {
     assert.ok(!re.test(html), `${id}: forbidden leftover in opened preview: ${re}`);
   }
   if (id === 'portfolio') {
-    for (const re of FACTORY_NAV) {
-      assert.ok(!re.test(html), `${id}: English factory nav still in opened preview: ${re}`);
-    }
+    const labels = (preset.config && preset.config.labels) || {};
     assert.ok(
-      /Galerie|Servicii|Programare/i.test(html),
-      `${id}: expected Romanian salon nav labels in opened preview`
+      labels.navGallery && html.includes(labels.navGallery),
+      `${id}: expected preset's own nav gallery label in opened preview`
+    );
+    assert.ok(
+      labels.navServices && html.includes(labels.navServices),
+      `${id}: expected preset's own nav services label in opened preview`
+    );
+    assert.ok(
+      labels.navBooking && html.includes(labels.navBooking),
+      `${id}: expected preset's own nav booking label in opened preview`
+    );
+    assert.ok(!UNRESOLVED_TOKEN.test(html), `${id}: unresolved {{token}} leaked into opened preview`);
+    assert.ok(
+      !ROMANIAN_DIACRITICS.test(html),
+      `${id}: Romanian diacritics leaked into opened English preview`
     );
   }
   // Class language: no MENU BOARD-era pm-board chrome in restaurant system.
@@ -151,11 +169,14 @@ check('product-menu opened preview is restaurant (not bakery persona)', () => {
   assert.ok(tag && html.includes(tag), 'restaurant tagline missing from preview');
 });
 
-check('portfolio opened preview is salon programare (not Book now factory)', () => {
+check('portfolio opened preview is salon booking CTA (not generic Book now factory)', () => {
   const { html, preset } = previews.portfolio;
   assert.ok(!/Book\s+now/i.test(html), 'portfolio still Book now');
   const cta = preset.config && preset.config.hero && preset.config.hero.ctaLabel;
-  assert.ok(cta && /program/i.test(String(cta)), `salon CTA not programare-family: ${cta}`);
+  assert.ok(
+    cta && /book|appointment|schedul|reserv/i.test(String(cta)),
+    `salon CTA not booking-family: ${cta}`
+  );
   assert.ok(html.includes(String(cta)), 'salon CTA missing from preview');
 });
 

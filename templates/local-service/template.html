@@ -81,12 +81,12 @@
                 <div class="ls-meters">
                     <div class="ls-meter">
                         <span class="ls-meter__n">{{business.yearsExp}}+</span>
-                        <span class="ls-meter__l">ani experiență</span>
+                        <span class="ls-meter__l">years experience</span>
                     </div>
                     <!-- @if business.projectsDone -->
                     <div class="ls-meter">
                         <span class="ls-meter__n">{{business.projectsDone}}+</span>
-                        <span class="ls-meter__l">proiecte</span>
+                        <span class="ls-meter__l">projects</span>
                     </div>
                     <!-- @endif -->
                 </div>
@@ -115,7 +115,7 @@
                     <h2 class="ls-h" id="about-heading">{{labels.about}}</h2>
                     <p class="ls-text">{{business.about}}</p>
                     <!-- @if business.yearsExp -->
-                    <div class="ls-badge"><strong>{{business.yearsExp}}+</strong><span>ani pe teren</span></div>
+                    <div class="ls-badge"><strong>{{business.yearsExp}}+</strong><span>years on the job</span></div>
                     <!-- @endif -->
                     <!-- @if business.zone -->
                     <p class="ls-zone">{{business.zone}}</p>
@@ -159,7 +159,7 @@
         <!-- @if services -->
         <section class="ls-block ls-block--dark fade-in-section" aria-labelledby="services-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow ls-eyebrow--hi">Specificații</p>
+                <p class="ls-eyebrow ls-eyebrow--hi">Specifications</p>
                 <h2 class="ls-h ls-h--light" id="services-heading">{{servicesTitle}}</h2>
                 <ol class="ls-punch">
                     <!-- @each services -->
@@ -176,8 +176,8 @@
         <!-- @if steps -->
         <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow">Flux</p>
-                <h2 class="ls-h" id="steps-heading">Cum lucrăm</h2>
+                <p class="ls-eyebrow">Process</p>
+                <h2 class="ls-h" id="steps-heading">How we work</h2>
                 <ol class="ls-flow">
                     <!-- @each steps -->
                     <li class="ls-flow__card">
@@ -193,23 +193,23 @@
         <!-- @if !steps -->
         <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow">Flux</p>
-                <h2 class="ls-h" id="steps-heading">Cum lucrăm</h2>
+                <p class="ls-eyebrow">Process</p>
+                <h2 class="ls-h" id="steps-heading">How we work</h2>
                 <ol class="ls-flow">
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">01</span>
-                        <h3 class="ls-flow__t">Evaluare gratuită</h3>
-                        <p class="ls-text">Contact în 24h, vizită pe teren, deviz clar — fără costuri ascunse.</p>
+                        <h3 class="ls-flow__t">Free evaluation</h3>
+                        <p class="ls-text">Contact within 24 hours, an on-site visit, and a clear estimate — no hidden costs.</p>
                     </li>
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">02</span>
-                        <h3 class="ls-flow__t">Execuție controlată</h3>
-                        <p class="ls-text">Echipa pe șantier, termene scrise, materiale verificate.</p>
+                        <h3 class="ls-flow__t">Controlled execution</h3>
+                        <p class="ls-text">Crew on site, written deadlines, checked materials.</p>
                     </li>
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">03</span>
-                        <h3 class="ls-flow__t">Recepție + garanție</h3>
-                        <p class="ls-text">Predare împreună cu tine și garanție pe lucrare.</p>
+                        <h3 class="ls-flow__t">Handover + warranty</h3>
+                        <p class="ls-text">Handover together with you, backed by a warranty.</p>
                     </li>
                 </ol>
             </div>
@@ -219,8 +219,8 @@
         <!-- @if trust -->
         <section class="ls-trust fade-in-section" aria-labelledby="trust-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow ls-eyebrow--hi">Angajament</p>
-                <h2 class="ls-h ls-h--light" id="trust-heading">De ce să ne alegi</h2>
+                <p class="ls-eyebrow ls-eyebrow--hi">Commitment</p>
+                <h2 class="ls-h ls-h--light" id="trust-heading">Why choose us</h2>
                 <div class="ls-trust__grid">
                     <!-- @each trust -->
                     <div class="ls-trust__card">
@@ -237,7 +237,7 @@
         <section class="ls-block fade-in-section" aria-labelledby="gallery-heading">
             <div class="ls-wrap">
                 <!-- @if galleryTitle -->
-                <p class="ls-eyebrow">Lucrări</p>
+                <p class="ls-eyebrow">Work</p>
                 <h2 class="ls-h" id="gallery-heading">{{galleryTitle}}</h2>
                 <!-- @endif -->
                 <!-- @each categories -->
@@ -286,7 +286,7 @@
                 <div class="ls-iggrid">
                     <!-- @each instagram.gallery -->
                     <a href="{{instagram.url}}" target="_blank" rel="noopener" class="ls-igcell">
-                        <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
+                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
                     </a>
                     <!-- @end -->
                 </div>
@@ -295,11 +295,11 @@
         </section>
         <!-- @endif -->
 
-        <section class="ls-band fade-in-section" aria-label="Contacteaza-ne">
+        <section class="ls-band fade-in-section" aria-label="Contact us">
             <div class="ls-wrap ls-band__inner">
                 <div>
-                    <h2 class="ls-h ls-h--light">Gata să începem?</h2>
-                    <p class="ls-text">Cere o evaluare — răspundem în aceeași zi.</p>
+                    <h2 class="ls-h ls-h--light">Ready to get started?</h2>
+                    <p class="ls-text">Request an estimate — we reply the same day.</p>
                 </div>
                 <div class="ls-band__acts">
                     <!-- @if contact.whatsapp -->
@@ -315,8 +315,8 @@
 
     <!-- Sticky phone dock — industrial CTA architecture -->
     <!-- @if contact.phone -->
-    <div class="ls-dock" role="region" aria-label="Apel rapid">
-        <a href="tel:{{contact.phone}}" class="ls-dock__call">SUNĂ {{contact.phoneDisplay}}</a>
+    <div class="ls-dock" role="region" aria-label="Quick call">
+        <a href="tel:{{contact.phone}}" class="ls-dock__call">CALL {{contact.phoneDisplay}}</a>
         <!-- @if contact.whatsapp -->
         <a href="{{contact.waHref}}" class="ls-dock__wa" target="_blank" rel="noopener">WA</a>
         <!-- @endif -->
@@ -350,7 +350,7 @@
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Inchide">&times;</button>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
             <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
@@ -359,11 +359,11 @@
     <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
     <!-- @endif -->
 
-    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Previzualizare fotografie">
-        <button class="lightbox__close" id="lightbox-close" aria-label="Inchide">&times;</button>
-        <button class="lightbox__nav lightbox__prev" id="lightbox-prev" aria-label="Anterioara">‹</button>
+    <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="Photo preview">
+        <button class="lightbox__close" id="lightbox-close" aria-label="Close">&times;</button>
+        <button class="lightbox__nav lightbox__prev" id="lightbox-prev" aria-label="Previous">‹</button>
         <img class="lightbox__img" id="lightbox-img" src="" alt="">
-        <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="Urmatoarea">›</button>
+        <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="Next">›</button>
     </div>
 
     <script src="script.js"></script>

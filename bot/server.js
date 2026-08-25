@@ -104,13 +104,13 @@ async function parseJson(req, limit = MAX_BODY_BYTES) {
     try {
         raw = await readRawBody(req, limit);
     } catch (e) {
-        if (e.code === 'BODY_TOO_LARGE') throw Object.assign(new Error('Corpul cererii este prea mare.'), { status: 413 });
+        if (e.code === 'BODY_TOO_LARGE') throw Object.assign(new Error('The request body is too large.'), { status: 413 });
         throw e;
     }
     try {
         return JSON.parse(raw.toString('utf8'));
     } catch {
-        throw Object.assign(new Error('JSON invalid.'), { status: 400 });
+        throw Object.assign(new Error('Invalid JSON.'), { status: 400 });
     }
 }
 
@@ -141,16 +141,16 @@ function wantsHtmlDocument(req) {
 }
 
 /**
- * Short Romanian product 404 for normal browser navigations.
+ * Short product 404 for normal browser navigations.
  * API clients still get JSON via sendNotFound when Accept is not HTML-first.
  */
 function sendHtmlNotFound(res) {
     const html = `<!DOCTYPE html>
-<html lang="ro">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pagină negăsită — Hidook Site Builder</title>
+<title>Page not found — Hidook Site Builder</title>
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e8eef8}
   main{max-width:28rem;padding:2rem;text-align:center}
@@ -162,9 +162,9 @@ function sendHtmlNotFound(res) {
 </head>
 <body>
 <main>
-  <h1>Pagina nu a fost găsită</h1>
-  <p>Linkul pe care l-ai deschis nu există sau a fost mutat.</p>
-  <p><a href="/app/">Deschide Hidook Site Builder</a></p>
+  <h1>Page not found</h1>
+  <p>The link you opened doesn't exist or has moved.</p>
+  <p><a href="/app/">Open Hidook Site Builder</a></p>
 </main>
 </body>
 </html>`;
@@ -194,7 +194,7 @@ function requireAuth(req, res) {
         userId = null;
     }
     if (!userId) {
-        sendJson(res, 401, { error: 'Autentificare necesară.' });
+        sendJson(res, 401, { error: 'Sign-in required.' });
         return null;
     }
     return userId;
@@ -258,7 +258,7 @@ function serveStatic(req, res, urlPath) {
     let relative = urlPath.replace(/^\/app\/?/, '') || 'index.html';
     const normalised = path.normalize(relative);
     if (normalised.startsWith('..') || path.isAbsolute(normalised)) {
-        sendJson(res, 403, { error: 'Acces interzis.' });
+        sendJson(res, 403, { error: 'Access denied.' });
         return;
     }
 
@@ -266,7 +266,7 @@ function serveStatic(req, res, urlPath) {
     const realBuilder = path.resolve(BUILDER_DIR);
     const realFile    = path.resolve(filePath);
     if (!realFile.startsWith(realBuilder + path.sep) && realFile !== realBuilder) {
-        sendJson(res, 403, { error: 'Acces interzis.' });
+        sendJson(res, 403, { error: 'Access denied.' });
         return;
     }
 
@@ -292,7 +292,7 @@ function serveStatic(req, res, urlPath) {
             res.writeHead(200, headers);
             res.end(content);
         } catch {
-            sendJson(res, 404, { error: 'Fișier negăsit.' });
+            sendJson(res, 404, { error: 'File not found.' });
         }
         return;
     }
@@ -320,14 +320,14 @@ function serveLive(req, res, urlPath) {
     const raw = urlPath.replace(/^\/live\/?/, '');
     const parts = raw.split('/').filter(Boolean);
     if (parts.length === 0) {
-        // Browser nav → Romanian HTML 404; API Accept → JSON
+        // Browser nav → HTML 404; API Accept → JSON
         return sendNotFound(req, res, 'not found');
     }
 
     const slug = parts[0];
     // Slug must be a single safe path segment (no traversal)
     if (!/^[a-z0-9-]{3,40}$/i.test(slug) || slug.includes('..')) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
@@ -335,7 +335,7 @@ function serveLive(req, res, urlPath) {
     const siteRoot = path.resolve(path.join(publishedRoot, slug.toLowerCase()));
 
     if (!siteRoot.startsWith(publishedRoot + path.sep) && siteRoot !== publishedRoot) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     let rel = parts.slice(1).join('/') || 'index.html';
@@ -347,7 +347,7 @@ function serveLive(req, res, urlPath) {
     }
     const normalised = path.normalize(rel);
     if (normalised.startsWith('..') || path.isAbsolute(normalised) || normalised.includes('..' + path.sep)) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     let filePath = path.join(siteRoot, normalised);
@@ -355,10 +355,10 @@ function serveLive(req, res, urlPath) {
     try {
         realFile = path.resolve(filePath);
     } catch {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
     if (!realFile.startsWith(siteRoot + path.sep) && realFile !== siteRoot) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     let stat;
@@ -414,7 +414,7 @@ async function handleSlugCheck(req, res, query) {
     const raw  = (query.get('slug') || '').trim();
     const slug = normalizeSlug(raw);
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 200, { available: false, slug, error: 'Slug invalid (3-40 caractere, a-z 0-9 -).' });
+        return sendJson(res, 200, { available: false, slug, error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
     }
     const available = isSlugAvailable(slug);
     sendJson(res, 200, { available, slug });
@@ -429,7 +429,7 @@ async function handleAuthEmail(req, res) {
     const body = await parseJson(req);
     const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return sendJson(res, 400, { error: 'Adresa de email nu este validă.' });
+        return sendJson(res, 400, { error: 'Enter a valid email address.' });
     }
 
     const reg = getRegistry();
@@ -438,7 +438,7 @@ async function handleAuthEmail(req, res) {
         ({ token } = await reg.createLoginToken({ email, purpose: 'login' }));
     } catch (e) {
         log('server.auth.email.token_error', { err: e.message }, 'error');
-        return sendJson(res, 503, { error: 'Serviciu temporar indisponibil.' });
+        return sendJson(res, 503, { error: 'Service temporarily unavailable.' });
     }
 
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
@@ -461,12 +461,12 @@ async function handleAuthEmail(req, res) {
 
 async function handleAuthVerify(req, res, query) {
     const token = query.get('token') || '';
-    if (!token) return sendRedirect(res, '/app/#login-expirat');
+    if (!token) return sendRedirect(res, '/app/#login-expired');
 
     const reg = getRegistry();
     let payload;
     try { payload = await reg.consumeLoginToken(token); } catch { payload = null; }
-    if (!payload) return sendRedirect(res, '/app/#login-expirat');
+    if (!payload) return sendRedirect(res, '/app/#login-expired');
 
     let user;
     try {
@@ -482,17 +482,17 @@ async function handleAuthVerify(req, res, query) {
     } catch {
         user = null;
     }
-    if (!user) return sendRedirect(res, '/app/#login-expirat');
+    if (!user) return sendRedirect(res, '/app/#login-expired');
 
     let auth;
-    try { auth = getAuth(); } catch { return sendRedirect(res, '/app/#login-expirat'); }
+    try { auth = getAuth(); } catch { return sendRedirect(res, '/app/#login-expired'); }
 
     let cookieValue;
     try {
         cookieValue = auth.signSession(user.id);
     } catch {
         // Missing secret outside isolated/dev: fail closed, no env names in body.
-        return sendRedirect(res, '/app/#login-expirat');
+        return sendRedirect(res, '/app/#login-expired');
     }
     const cookie = auth.buildSessionCookie(cookieValue);
     // Draft from Telegram lands on dashboard (same registry site; pay/publish in /app/).
@@ -503,13 +503,13 @@ async function handleAuthVerify(req, res, query) {
 async function handleAuthTelegram(req, res) {
     const body = await parseJson(req);
     const initData = body && body.initData;
-    if (!initData) return sendJson(res, 400, { error: 'initData lipsă.' });
+    if (!initData) return sendJson(res, 400, { error: 'Missing initData.' });
 
     let auth;
-    try { auth = getAuth(); } catch (e) { return sendJson(res, 503, { error: 'Serviciu indisponibil.' }); }
+    try { auth = getAuth(); } catch (e) { return sendJson(res, 503, { error: 'Service unavailable.' }); }
 
     const tgData = auth.verifyTelegramInitData(initData);
-    if (!tgData) return sendJson(res, 401, { error: 'Date Telegram invalide sau expirate.' });
+    if (!tgData) return sendJson(res, 401, { error: 'Invalid or expired Telegram data.' });
 
     const reg = getRegistry();
     const user = await reg.getOrCreateUserByTelegram(tgData.tgId, { username: tgData.username, firstName: tgData.firstName });
@@ -525,7 +525,7 @@ async function handleGetMe(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const user = await getRegistry().getUser(userId);
-    if (!user) return sendJson(res, 401, { error: 'Utilizator negăsit.' });
+    if (!user) return sendJson(res, 401, { error: 'User not found.' });
     sendJson(res, 200, { user });
 }
 
@@ -540,8 +540,8 @@ async function handleGetSite(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const site = await getRegistry().getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
+    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
     const versions = await getRegistry().listVersions(siteId);
     let config = null;
     if (versions.length > 0) {
@@ -554,8 +554,8 @@ async function handleGetVersions(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const site = await getRegistry().getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
+    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
     const versions = await getRegistry().listVersions(siteId);
     sendJson(res, 200, { versions });
 }
@@ -565,16 +565,16 @@ async function handleRollback(req, res, siteId) {
     if (!userId) return;
     const body = await parseJson(req);
     const { versionId } = body || {};
-    if (!versionId) return sendJson(res, 400, { error: 'versionId lipsă.' });
+    if (!versionId) return sendJson(res, 400, { error: 'Missing versionId.' });
 
     const reg  = getRegistry();
     const site = await reg.getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
-    if (!site.paid) return sendJson(res, 402, { error: 'Site-ul nu a fost plătit.' });
+    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site.paid) return sendJson(res, 402, { error: 'Site has not been paid for.' });
 
     const config = await reg.getVersionConfig(siteId, versionId);
-    if (!config) return sendJson(res, 404, { error: 'Versiunea nu a fost găsită.' });
+    if (!config) return sendJson(res, 404, { error: 'Version not found.' });
 
     const webpublish = require('./webpublish.js');
     try {
@@ -582,7 +582,7 @@ async function handleRollback(req, res, siteId) {
         sendJson(res, 200, { ok: true, url: result.url });
     } catch (e) {
         log('server.rollback.error', { siteId, err: e.message }, 'error');
-        sendJson(res, 500, { error: 'Republicarea a eșuat: ' + e.message });
+        sendJson(res, 500, { error: 'Republish failed: ' + e.message });
     }
 }
 
@@ -640,15 +640,15 @@ async function handleCreateAppointment(req, res) {
     try {
         body = await parseJson(req, 64 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
     }
 
     const slug = String((body && body.slug) || '').toLowerCase().trim();
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 400, { error: 'Site invalid.' });
+        return sendJson(res, 400, { error: 'Invalid site.' });
     }
     if (!liveSiteExists(slug)) {
-        return sendJson(res, 404, { error: 'Site-ul nu este publicat.' });
+        return sendJson(res, 404, { error: 'This site is not published.' });
     }
 
     const visitorName = String((body && body.visitorName) || '').trim().slice(0, 80);
@@ -663,21 +663,21 @@ async function handleCreateAppointment(req, res) {
     const mode = String((body && body.mode) || '').trim().slice(0, 40);
 
     if (!visitorName || !visitorEmail) {
-        return sendJson(res, 400, { error: 'Numele și emailul sunt obligatorii.' });
+        return sendJson(res, 400, { error: 'Name and email are required.' });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail)) {
-        return sendJson(res, 400, { error: 'Email invalid.' });
+        return sendJson(res, 400, { error: 'Invalid email address.' });
     }
     const startMs = Date.parse(requestedStartISO);
     if (!Number.isFinite(startMs)) {
-        return sendJson(res, 400, { error: 'Interval invalid.' });
+        return sendJson(res, 400, { error: 'Invalid time slot.' });
     }
     // Soft lead: reject far-past starts (allow 5 min clock skew)
     if (startMs < Date.now() - 5 * 60 * 1000) {
-        return sendJson(res, 400, { error: 'Intervalul ales nu mai este disponibil.' });
+        return sendJson(res, 400, { error: 'That time slot is no longer available.' });
     }
     if (!appointmentTypeId) {
-        return sendJson(res, 400, { error: 'Tipul de discuție lipsește.' });
+        return sendJson(res, 400, { error: 'Missing appointment type.' });
     }
 
     const id = crypto.randomBytes(12).toString('hex');
@@ -728,7 +728,7 @@ async function handleCreateAppointment(req, res) {
         saveAppointmentRequests(slug, trimmed);
     } catch (e) {
         log('appointments.save_error', { slug, err: e.message }, 'error');
-        return sendJson(res, 500, { error: 'Nu am putut salva cererea.' });
+        return sendJson(res, 500, { error: "We couldn't save your request." });
     }
 
     log('appointments.requested', { slug, id, type: appointmentTypeId });
@@ -752,10 +752,10 @@ async function handleListAppointments(req, res, query) {
 
     const slug = String((query && typeof query.get === 'function' ? query.get('slug') : '') || '').toLowerCase().trim();
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 400, { error: 'Site invalid.' });
+        return sendJson(res, 400, { error: 'Invalid site.' });
     }
     if (!liveSiteExists(slug)) {
-        return sendJson(res, 404, { error: 'Site-ul nu este publicat.' });
+        return sendJson(res, 404, { error: 'This site is not published.' });
     }
 
     const reg = getRegistry();
@@ -766,7 +766,7 @@ async function handleListAppointments(req, res, query) {
         )
     );
     if (!owned) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     const requests = loadAppointmentRequests(slug).map((r) => ({
@@ -795,7 +795,7 @@ async function handleListAppointments(req, res, query) {
 async function handleTestPayComplete(req, res) {
     const testPay = process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production';
     if (!testPay) {
-        return sendJson(res, 403, { error: 'Plata de test nu este disponibilă.' });
+        return sendJson(res, 403, { error: 'Test payment is not available.' });
     }
 
     const userId = requireAuth(req, res);
@@ -805,11 +805,11 @@ async function handleTestPayComplete(req, res) {
     try {
         body = await parseJson(req);
     } catch {
-        return sendJson(res, 400, { error: 'Cerere invalidă.' });
+        return sendJson(res, 400, { error: 'Invalid request.' });
     }
     const sessionId = body && typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     if (!sessionId || !/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
-        return sendJson(res, 400, { error: 'Sesiune de plată invalidă.' });
+        return sendJson(res, 400, { error: 'Invalid payment session.' });
     }
 
     const reg = getRegistry();
@@ -817,15 +817,15 @@ async function handleTestPayComplete(req, res) {
         ? await reg.getOrderBySession(sessionId)
         : null;
     if (!order) {
-        return sendJson(res, 404, { error: 'Comanda nu a fost găsită.' });
+        return sendJson(res, 404, { error: 'Order not found.' });
     }
     if (order.userId && order.userId !== userId) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     const sitePre = order.siteId ? await reg.getSite(order.siteId) : null;
     if (sitePre && sitePre.userId !== userId) {
-        return sendJson(res, 403, { error: 'Acces interzis.' });
+        return sendJson(res, 403, { error: 'Access denied.' });
     }
 
     const kind = order.kind || 'publish';
@@ -852,7 +852,7 @@ async function handleTestPayComplete(req, res) {
         await webpublish.handleStripePaid(event, { notifyAdmin: () => {} });
     } catch (e) {
         log('server.test_pay.complete.error', { sessionId, err: e.message }, 'error');
-        return sendJson(res, 500, { error: 'Confirmarea plății a eșuat.' });
+        return sendJson(res, 500, { error: 'Payment confirmation failed.' });
     }
 
     const site = order.siteId ? await reg.getSite(order.siteId) : null;
@@ -879,11 +879,11 @@ async function handleSiteCheckout(req, res, siteId) {
 
     const reg  = getRegistry();
     const site = await reg.getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
+    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
 
     if (!payments.isConfigured()) {
-        return sendJson(res, 503, { error: 'Plata nu este configurată.' });
+        return sendJson(res, 503, { error: 'Payments are not configured.' });
     }
 
     const p         = pricing.getPricingFromRequest(req);
@@ -894,7 +894,7 @@ async function handleSiteCheckout(req, res, siteId) {
     const isRenewal  = !!site.paid;
     const amountCents = isRenewal ? p.renewalCents : p.amountCents;
     const kind        = isRenewal ? 'renewal' : 'publish';
-    const productName = isRenewal ? 'Reînnoire hosting Hidook Site Builder (12 luni)' : 'Activare site Hidook Site Builder';
+    const productName = isRenewal ? 'Hidook Site Builder hosting renewal (12 months)' : 'Hidook Site Builder site activation';
 
     // Reuse pending same-site same-kind order (no second unpaid 100/29 row)
     let order = typeof reg.findPendingOrder === 'function'
@@ -917,14 +917,14 @@ async function handleSiteCheckout(req, res, siteId) {
             amountCents,
             currency,
             productName,
-            successUrl:  publicUrl + '/app/#platit',
-            cancelUrl:   publicUrl + '/app/#anulat',
+            successUrl:  publicUrl + '/app/#paid',
+            cancelUrl:   publicUrl + '/app/#cancelled',
             metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind },
             clientReferenceId: (isRenewal ? 'renew-' : 'web-') + site.id,
         });
     } catch (e) {
         log('server.checkout.error', { siteId, err: e.message, kind }, 'error');
-        return sendJson(res, 503, { error: 'Nu am putut iniția plata: ' + e.message });
+        return sendJson(res, 503, { error: "We couldn't start checkout: " + e.message });
     }
 
     // Attach real Stripe session id to the same pending order (no second row)
@@ -988,22 +988,22 @@ async function requireOwnedSiteWithEmail(req, res, siteId) {
     const reg = getRegistry();
     const site = await reg.getSite(siteId);
     if (!site) {
-        sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
+        sendJson(res, 404, { error: 'Site not found.' });
         return null;
     }
     if (site.userId !== userId) {
-        sendJson(res, 403, { error: 'Acces interzis.' });
+        sendJson(res, 403, { error: 'Access denied.' });
         return null;
     }
     const user = await reg.getUser(userId);
     const email = user && typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        sendJson(res, 400, { error: 'Intră cu email ca să conectezi Instagram. Nu folosim un alt cont.' });
+        sendJson(res, 400, { error: "Sign in with email to connect Instagram. We don't create a separate account for this." });
         return null;
     }
     const partner = getPartner();
     if (!partner.isConfigured() && !isIsolatedTestSocial()) {
-        sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+        sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
         return null;
     }
     return { reg, site, email, partnerConfigured: partner.isConfigured() };
@@ -1017,10 +1017,10 @@ async function requireOwnedSiteWithEmail(req, res, siteId) {
 async function handleSocialFeedGrant(req, res, siteId) {
     let body;
     try { body = await parseJson(req); } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Body invalid.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request body.' });
     }
     if (!body || body.acceptedTerms !== true) {
-        return sendJson(res, 400, { error: 'Bifează Termenii și Confidențialitatea Instafidget.' });
+        return sendJson(res, 400, { error: 'Please accept the Instafidget Terms and Privacy Policy.' });
     }
     const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
     if (!ctx) return;
@@ -1042,20 +1042,20 @@ async function handleSocialFeedGrant(req, res, siteId) {
         partnerRes = await getPartner().grantYear1(ctx.email);
     } catch (e) {
         if (e && e.code === 'SECRET_MISSING') {
-            return sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+            return sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
         }
         log('server.social_feed.grant.error', { siteId, err: e.message }, 'error');
-        return sendJson(res, 502, { error: 'Nu am putut vorbi cu Instafidget. Încearcă din nou.' });
+        return sendJson(res, 502, { error: "We couldn't reach Instafidget. Please try again." });
     }
 
     if (partnerRes.status === 401) {
-        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurația serverului.' });
+        return sendJson(res, 502, { error: 'Instafidget refused the connection. Check the server configuration.' });
     }
     if (partnerRes.status === 400) {
-        return sendJson(res, 400, { error: 'Instafidget a refuzat cererea. Verifică acordul Terms + Privacy.' });
+        return sendJson(res, 400, { error: 'Instafidget refused the request. Check the Terms and Privacy agreement.' });
     }
     if (partnerRes.status < 200 || partnerRes.status >= 300) {
-        return sendJson(res, 502, { error: 'Instafidget nu a putut crea bonusul Instagram.' });
+        return sendJson(res, 502, { error: 'Instafidget could not create the Instagram bonus.' });
     }
 
     persistEmbedUrl(ctx.reg, siteId, partnerRes.json.embedUrl);
@@ -1082,30 +1082,30 @@ async function handleSocialFeedEditor(req, res, siteId) {
         partnerRes = await getPartner().editorSession(ctx.email);
     } catch (e) {
         if (e && e.code === 'SECRET_MISSING') {
-            return sendJson(res, 503, { error: 'Conectarea Instagram nu e configurată pe server.' });
+            return sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
         }
         log('server.social_feed.editor.error', { siteId, err: e.message }, 'error');
-        return sendJson(res, 502, { error: 'Nu am putut deschide editorul Instagram. Încearcă din nou.' });
+        return sendJson(res, 502, { error: "We couldn't open the Instagram editor. Please try again." });
     }
 
     if (partnerRes.status === 401) {
-        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurația serverului.' });
+        return sendJson(res, 502, { error: 'Instafidget refused the connection. Check the server configuration.' });
     }
     if (partnerRes.status === 404) {
-        return sendJson(res, 404, { error: 'Conectează Instagram întâi (acord + Adaugă Instagram).' });
+        return sendJson(res, 404, { error: 'Connect Instagram first (accept the terms, then add Instagram).' });
     }
     if (partnerRes.status === 400) {
-        return sendJson(res, 400, { error: 'Nu am putut deschide editorul Instagram.' });
+        return sendJson(res, 400, { error: "We couldn't open the Instagram editor." });
     }
     if (partnerRes.status < 200 || partnerRes.status >= 300) {
-        return sendJson(res, 502, { error: 'Instafidget nu a putut deschide editorul.' });
+        return sendJson(res, 502, { error: 'Instafidget could not open the editor.' });
     }
 
     const editorUrl = partnerRes.json && typeof partnerRes.json.editorUrl === 'string'
         ? partnerRes.json.editorUrl
         : null;
     if (!editorUrl) {
-        return sendJson(res, 502, { error: 'Instafidget nu a trimis linkul de editor.' });
+        return sendJson(res, 502, { error: 'Instafidget did not return an editor link.' });
     }
     sendJson(res, 200, { editorUrl });
 }
@@ -1132,7 +1132,7 @@ async function handlePublish(req, res) {
     // Validate templateId
     const templates = loadTemplates();
     const tpl = templates.find(t => t.id === templateId);
-    if (!tpl) return sendJson(res, 422, { error: 'Șablon necunoscut: ' + templateId });
+    if (!tpl) return sendJson(res, 422, { error: 'Unknown template: ' + templateId });
 
     // Validate images
     const MAX_IMAGES   = 12;
@@ -1140,16 +1140,16 @@ async function handlePublish(req, res) {
     const ALLOWED_MIME = /^image\/(jpeg|png|webp)$/;
     const imgList = Array.isArray(images) ? images : [];
     if (imgList.length > MAX_IMAGES) {
-        return sendJson(res, 422, { error: `Maxim ${MAX_IMAGES} imagini permise.` });
+        return sendJson(res, 422, { error: `A maximum of ${MAX_IMAGES} images is allowed.` });
     }
     for (const img of imgList) {
         if (!img || !img.dataUrl) continue;
         if (img.dataUrl.length > MAX_DATA_URL * 1.4) {
-            return sendJson(res, 422, { error: `Imaginea "${img.name}" depășește 2.5 MB.` });
+            return sendJson(res, 422, { error: `Image "${img.name}" exceeds 2.5 MB.` });
         }
         const mimeMatch = /^data:([^;]+);/.exec(img.dataUrl);
         if (!mimeMatch || !ALLOWED_MIME.test(mimeMatch[1])) {
-            return sendJson(res, 422, { error: `Tipul imaginii "${img.name}" nu este acceptat (jpeg/png/webp).` });
+            return sendJson(res, 422, { error: `Image type for "${img.name}" is not supported (jpeg/png/webp).` });
         }
     }
 
@@ -1160,15 +1160,15 @@ async function handlePublish(req, res) {
     let site;
     if (siteId) {
         site = await reg.getSite(siteId);
-        if (!site) return sendJson(res, 404, { error: 'Site-ul nu a fost găsit.' });
-        if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces interzis.' });
+        if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+        if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
     } else {
         // Max 1 unpaid site per user (prevents abuse)
         const existing = await reg.listSites(userId);
         const unpaid   = existing.filter(s => !s.paid && s.status !== 'deleted');
         if (unpaid.length > 0) {
             return sendJson(res, 409, {
-                error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte de a crea altul.',
+                error: 'You already have an unpaid site. Pay for it or delete it before creating another.',
                 siteId: unpaid[0].id,
             });
         }
@@ -1178,10 +1178,10 @@ async function handlePublish(req, res) {
         if (slugHint) {
             slug = normalizeSlug(slugHint);
             if (!SLUG_RE.test(slug)) {
-                return sendJson(res, 422, { error: 'Slug invalid (3-40 caractere, a-z 0-9 -).' });
+                return sendJson(res, 422, { error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
             }
             if (!isSlugAvailable(slug)) {
-                return sendJson(res, 409, { error: 'Slug-ul este deja folosit.' });
+                return sendJson(res, 409, { error: 'That slug is already taken.' });
             }
         } else {
             const bizName = (config && config.business && config.business.name) || 'site';
@@ -1206,10 +1206,10 @@ async function handlePublish(req, res) {
             const updated = await reg.getSite(site.id);
             return sendJson(res, 200, { site: { ...updated, url: result.url }, paymentUrl: null });
         } catch (e) {
-            if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile au fost blocate de moderare.' });
+            if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Your images were blocked by moderation.' });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
             const updated = await reg.getSite(site.id);
-            return sendJson(res, 500, { error: 'Publicarea a eșuat: ' + e.message, site: updated });
+            return sendJson(res, 500, { error: 'Publish failed: ' + e.message, site: updated });
         }
     }
 
@@ -1235,9 +1235,9 @@ async function handlePublish(req, res) {
                 const checkout = await payments.createCheckout({
                     amountCents: price.amountCents,
                     currency: price.currency,
-                    productName: 'Activare site Hidook Site Builder',
-                    successUrl:  publicUrl + '/app/#platit',
-                    cancelUrl:   publicUrl + '/app/#anulat',
+                    productName: 'Hidook Site Builder site activation',
+                    successUrl:  publicUrl + '/app/#paid',
+                    cancelUrl:   publicUrl + '/app/#cancelled',
                     metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind: 'publish' },
                     clientReferenceId: 'web-' + site.id,
                 });
@@ -1269,7 +1269,7 @@ async function handlePublish(req, res) {
     } catch (e) {
         log('server.publish.draft.error', { siteId: site.id, err: e.message }, 'error');
         const updated = await reg.getSite(site.id);
-        return sendJson(res, 500, { error: 'Salvarea ciornei a eșuat: ' + e.message, site: updated });
+        return sendJson(res, 500, { error: 'Saving your draft failed: ' + e.message, site: updated });
     }
 }
 
@@ -1455,11 +1455,11 @@ function createHandler({ onStripeEvent } = {}) {
         } catch (e) {
             log('server.error', { err: e.message, url }, 'error');
             // Never forward env var names / stack traces to the browser (factory leak).
-            const raw = (e && e.message) || 'Eroare internă.';
+            const raw = (e && e.message) || 'Internal error.';
             const leaksEnv =
                 /SERVER_SECRET|STRIPE_SECRET|STRIPE_WEBHOOK|TELEGRAM_BOT_TOKEN|process\.env|HIDOOK_[A-Z0-9_]+/i.test(raw) ||
                 /\bat\s+\S+\s+\([^)]+:\d+:\d+\)/.test(raw);
-            const safe = leaksEnv ? 'Eroare internă.' : raw;
+            const safe = leaksEnv ? 'Internal error.' : raw;
             try { sendJson(res, e.status || 500, { error: safe }); } catch (_) {}
         }
     };

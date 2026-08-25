@@ -34,11 +34,11 @@ function check(name, fn) {
 async function run() {
     await check('email.js source has no DESSERD in subject or HTML brand copy', () => {
         assert.ok(
-            !/Link de autentificare\s+DESSERD/i.test(emailSrc),
+            !/subject\s*=\s*'Sign in to\s+DESSERD/i.test(emailSrc),
             'subject must not say DESSERD'
         );
         assert.ok(
-            !/Autentific[aă]-te\s+[îi]n\s+DESSERD/i.test(emailSrc),
+            !/<h2[^>]*>\s*Sign in to\s+DESSERD/i.test(emailSrc),
             'HTML heading must not say DESSERD'
         );
         assert.ok(
@@ -49,11 +49,11 @@ async function run() {
 
     await check('email.js subject and HTML name Hidook', () => {
         assert.ok(
-            /Link de autentificare\s+Hidook/.test(emailSrc),
+            /subject\s*=\s*'Sign in to\s+Hidook/.test(emailSrc),
             'subject must name Hidook'
         );
         assert.ok(
-            /Autentific[aă]-te\s+[îi]n\s+Hidook/.test(emailSrc),
+            /<h2[^>]*>\s*Sign in to\s+Hidook/.test(emailSrc),
             'HTML heading must name Hidook'
         );
     });

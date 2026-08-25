@@ -73,7 +73,7 @@
 
       var prevBtn = document.createElement('button');
       prevBtn.className = 'dc-nav';
-      prevBtn.setAttribute('aria-label', 'Anterior');
+      prevBtn.setAttribute('aria-label', 'Previous');
       prevBtn.innerHTML = '&#8249;';
 
       var dotsWrap = document.createElement('div');
@@ -81,7 +81,7 @@
 
       var nextBtn = document.createElement('button');
       nextBtn.className = 'dc-nav';
-      nextBtn.setAttribute('aria-label', 'Următor');
+      nextBtn.setAttribute('aria-label', 'Next');
       nextBtn.innerHTML = '&#8250;';
 
       controls.appendChild(prevBtn);

@@ -48,17 +48,17 @@ const MESERIASI_LEFTOVERS = [
 ];
 
 const MESERIASI_FINISHED = [
-  'Evaluare gratuită',
-  'Contact în 24h, vizită pe teren, deviz clar — fără costuri ascunse.',
-  'Execuție controlată',
-  'Echipa pe șantier, termene scrise, materiale verificate.',
-  'Recepție + garanție',
-  'Predare împreună cu tine și garanție pe lucrare.',
-  'Lucrări',
-  'Asigurare completă',
-  'Bucătării și spații open-space',
-  'Amenajăm spații de living moderne: demolare pereți, rigips, electricitate, gresie porțelanată și vopsitorie pentru un rezultat impecabil.',
-  'Extinderi și lucrări structurale',
+  'Free evaluation',
+  'Contact within 24 hours, an on-site visit, and a clear estimate — no hidden costs.',
+  'Controlled execution',
+  'Crew on site, written deadlines, checked materials.',
+  'Handover + warranty',
+  'Handover together with you, backed by a warranty.',
+  'Work',
+  'Fully insured',
+  'Kitchens & open-plan living',
+  'We build modern living spaces: wall removal, framing, wiring, porcelain tile, and painting for a flawless result.',
+  'Additions & structural work',
 ];
 
 let failed = 0;
@@ -176,7 +176,7 @@ check('HEAD: Meseriași first-preset + template have no undiacritic leftovers', 
   }
 });
 
-check('HEAD: Meseriași first-preset + template contain finished Romanian', () => {
+check('HEAD: Meseriași first-preset + template contain finished English', () => {
   const joined = firstPresetSource(read(LS_PRESETS)) + '\n' + read(LS_TEMPLATE);
   for (const s of MESERIASI_FINISHED) {
     assert.ok(joined.includes(s), 'has finished: ' + s);
@@ -188,18 +188,18 @@ check('HEAD: professionals schema has no Link Instagram la contact / Link Instag
   assert.ok(!schema.includes('Link Instagram la contact'), 'no Link Instagram la contact');
   assert.ok(!/Link Instagram/.test(schema), 'no Link Instagram');
   assert.ok(
-    schema.includes('Instagram (secțiunea contact)'),
-    'has Instagram (secțiunea contact)'
+    schema.includes('Instagram (contact section)'),
+    'has Instagram (contact section)'
   );
 });
 
-check('HEAD: four schemas language label is Limba site-ului without (ro sau en)', () => {
+check('HEAD: four schemas language label is Site language without (ro sau en)', () => {
   for (const rel of SCHEMA_LANG) {
     const s = read(rel);
     assert.ok(!/\(ro sau en\)/.test(s), rel + ' no (ro sau en)');
     assert.ok(
-      /"label"\s*:\s*"Limba site-ului"/.test(s),
-      rel + ' has Limba site-ului label'
+      /"label"\s*:\s*"Site language"/.test(s),
+      rel + ' has Site language label'
     );
   }
 });

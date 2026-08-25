@@ -47,12 +47,12 @@ check('document <title> contains exact phrase Hidook Site Builder', () => {
 });
 
 check('header logo visible span is Hidook Site Builder', () => {
-    // Logo link: <a ... class="logo" ...> ... <span>...</span>
+    // Logo link: <a ... class="logo" ...> ... <span class="logo-word">Hidook<span class="logo-word-full"> Site Builder</span></span>
     const logoMatch = src.match(
-        /class="logo"[^>]*>[\s\S]*?<span>([^<]*)<\/span>/i
+        /<span class="logo-word">([^<]*)<span class="logo-word-full">([^<]*)<\/span><\/span>/i
     );
-    assert.ok(logoMatch, 'builder/index.html must have logo <span> text');
-    const label = logoMatch[1].trim();
+    assert.ok(logoMatch, 'builder/index.html must have logo-word span text');
+    const label = (logoMatch[1] + logoMatch[2]).trim();
     assert.strictEqual(
         label,
         'Hidook Site Builder',

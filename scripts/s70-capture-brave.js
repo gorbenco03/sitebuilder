@@ -81,7 +81,7 @@ function shot(url, destName, w, h) {
         hasAppt: /data-pr-appt|pr-appt-form/.test(html),
         hasBusiness: html.includes(cfg.business.name),
         noCalendly: !/calendly/i.test(html),
-        requestLanguage: /Cerere trimisă|confirmării/i.test(html),
+        requestLanguage: /Request sent|awaiting confirmation/i.test(html),
       },
     };
     fs.writeFileSync(path.join(OUT, 'metrics.json'), JSON.stringify(metrics, null, 2));

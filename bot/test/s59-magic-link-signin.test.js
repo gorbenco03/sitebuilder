@@ -233,22 +233,22 @@ check('parent auth.js live: no SERVER_SECRET + isolated → throw names SERVER_S
         assert.ok(json.user && json.user.id);
     });
 
-    await check('missing token → redirect #login-expirat, no leak', async () => {
+    await check('missing token → redirect #login-expired, no leak', async () => {
         const res = await fetch(`${base}/auth/verify`, { redirect: 'manual' });
         const body = await res.text();
         const loc = res.headers.get('location') || '';
         assert.strictEqual(res.status, 302);
-        assert.ok(loc.includes('login-expirat'), loc);
+        assert.ok(loc.includes('login-expired'), loc);
         assertNoLeak('missing-token body', body);
         assertNoLeak('missing-token loc', loc);
     });
 
-    await check('invalid token → redirect #login-expirat, no leak', async () => {
+    await check('invalid token → redirect #login-expired, no leak', async () => {
         const res = await fetch(`${base}/auth/verify?token=not-a-real-token`, { redirect: 'manual' });
         const body = await res.text();
         const loc = res.headers.get('location') || '';
         assert.strictEqual(res.status, 302);
-        assert.ok(loc.includes('login-expirat'), loc);
+        assert.ok(loc.includes('login-expired'), loc);
         assertNoLeak('bad-token body', body);
         assertNoLeak('bad-token loc', loc);
     });

@@ -1,12 +1,12 @@
 'use strict';
 /**
- * bot/auth.js — Sesiuni web + verificare Telegram Mini Apps.
+ * bot/auth.js — web sessions + Telegram Mini Apps verification.
  *
- * Exporturi:
+ * Exports:
  *   signSession, verifySession, buildSessionCookie,
  *   getSessionUserId, verifyTelegramInitData
  *
- * Zero dependențe npm. Node 18+ CommonJS.
+ * Zero npm dependencies. Node 18+ CommonJS.
  */
 
 const crypto = require('crypto');
@@ -88,8 +88,8 @@ function _hasSecret() {
  */
 function signSession(userId, { days = 30 } = {}) {
     const secret = _resolveSecret();
-    // Human Romanian only — never name env vars (browser/JSON must not see them).
-    if (!secret) throw new Error('Sesiunile nu pot fi semnate. Reîncearcă mai târziu.');
+    // Human-readable message only — never name env vars (browser/JSON must not see them).
+    if (!secret) throw new Error("Sessions can't be signed right now. Please try again shortly.");
     const exp     = Math.floor(Date.now() / 1000) + days * 86400;
     const payload = b64url(Buffer.from(JSON.stringify({ uid: userId, exp })));
     const sig     = b64url(

@@ -282,11 +282,11 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
             || block.match(/01<\/div>[\s\S]*?<\/article>/i);
         assert.ok(step01, 'step 01 article');
         const text = step01[0];
-        assert.ok(!/Restaurant,\s*salon sau meseriași/i.test(text), 'no leftover three-design sentence');
+        assert.ok(!/Restaurant,\s*salon sau meseriași/i.test(text), 'no leftover Romanian three-design sentence');
         assert.ok(/restaurant/i.test(text), 'names restaurant');
-        assert.ok(/meseriaș/i.test(text), 'names meseriași');
+        assert.ok(/trades/i.test(text), 'names trades');
         assert.ok(/salon/i.test(text), 'names salon');
-        assert.ok(/profesion/i.test(text), 'names servicii profesionale');
+        assert.ok(/profession/i.test(text), 'names professional services');
     });
 
     await check('HEAD: Detalii labels commercial Romanian only (all four schemas)', () => {
@@ -314,16 +314,16 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
             'must not rely solely on sandboxed form submit'
         );
         // Must still show the same confirmation UI language
-        assert.ok(/Cerere trimisă/i.test(proTpl), 'confirmation title present');
+        assert.ok(/Request sent/i.test(proTpl), 'confirmation title present');
         assert.ok(
             /submitBtn\.addEventListener\s*\(\s*['"]click['"]/.test(proScript)
             || /pr-appt-submit[\s\S]{0,400}addEventListener\s*\(\s*['"]click['"]/.test(proScript)
             || /type=["']button["'][^>]*id=["']pr-appt-submit["']|id=["']pr-appt-submit["'][^>]*type=["']button["']/.test(proTpl),
-            'click or type=button path for Trimite cererea'
+            'click or type=button path for the submit button'
         );
         // Empty submit still guides the visitor
         assert.ok(
-            /Completează numele,\s*emailul și intervalul/i.test(proScript),
+            /Please fill in your name,\s*email,\s*and a time slot/i.test(proScript),
             'empty-submit guidance preserved'
         );
         // Preview local path without live slug

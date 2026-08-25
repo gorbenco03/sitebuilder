@@ -75,7 +75,7 @@ function secretIn(obj) {
 
     await check('builder never mentions partner secret', () => {
         assert.ok(!/SITEBUILDER_PARTNER_SECRET|x-sitebuilder-partner-secret/i.test(appSrc + htmlSrc));
-        assert.ok(/Adaugă Instagram/.test(htmlSrc + appSrc));
+        assert.ok(/Add Instagram/.test(htmlSrc + appSrc));
         assert.ok(/instafidget.hidook.agency\/terms/.test(htmlSrc + appSrc));
         assert.ok(/acceptedTerms/.test(appSrc));
     });

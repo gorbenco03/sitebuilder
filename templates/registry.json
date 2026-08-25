@@ -4,28 +4,28 @@
       "id": "product-menu",
       "name": "Restaurant",
       "vertical": "product-menu",
-      "description": "Restaurante, cafenele, baruri — meniu, rezervări și Instagram din bucătărie. Alege acest design pentru localuri cu listă de mâncare.",
+      "description": "Restaurants, cafés, and bars — menu, reservations, and Instagram straight from the kitchen. Choose this design if you serve food.",
       "version": 1
     },
     {
       "id": "local-service",
-      "name": "Meseriași",
+      "name": "Trades",
       "vertical": "local-service",
-      "description": "Construcții, renovări, reparații și alte servicii locale — telefon vizibil, meseriași la lucru, cereri de ofertă",
+      "description": "Construction, renovation, repairs, and other local trades — visible phone number, work photos, and quote requests.",
       "version": 1
     },
     {
       "id": "portfolio",
       "name": "Salon",
       "vertical": "portfolio",
-      "description": "Saloane de frumusețe, cosmetică, coafor, nail — rezervări și portofoliu de lucrări",
+      "description": "Beauty, hair, and nail salons — bookings and a portfolio of your work.",
       "version": 1
     },
     {
       "id": "professionals",
-      "name": "Servicii profesionale",
+      "name": "Professional services",
       "vertical": "professionals",
-      "description": "Avocați, consultanți, contabili, notari, brokeri, coach — expertiză, încredere și programări pe cerere, fără calendar extern.",
+      "description": "Lawyers, consultants, accountants, notaries, brokers, coaches — expertise, trust, and appointment requests, no external calendar.",
       "version": 1
     }
   ]

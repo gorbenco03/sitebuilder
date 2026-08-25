@@ -370,7 +370,7 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
             'openPublishModal would skip slug modal');
     });
 
-    await check('HEAD: Detalii labels commercial Romanian only (no embed/html lang/Schema.org/bot/+447)', () => {
+    await check('HEAD: Detalii labels commercial English only (no embed/html lang/Schema.org/bot/+447)', () => {
         for (const rel of SCHEMA_PATHS) {
             const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
             const schema = JSON.parse(src);
@@ -385,7 +385,7 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
             assert.ok(!/\+447|447911|\+44\s*7911/i.test(joined), rel + ' no UK +447 examples');
             // Must still have commercial Instagram / contact surface
             if (rel.includes('local-service')) {
-                assert.ok(labels.some(l => /\+40/.test(l)), 'local-service has RO +40 example');
+                assert.ok(labels.some(l => /\+1\b/.test(l)), 'local-service has US +1 example');
             }
         }
     });

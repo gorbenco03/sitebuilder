@@ -167,7 +167,7 @@ check('causal RED: parent restaurant Detalii still exposes jsonLd field + /embed
 });
 
 // ── GREEN on HEAD ──────────────────────────────────────────────────────────
-check('HEAD: catalog chips name Restaurant + Salon + Meseriași + Servicii profesionale', () => {
+check('HEAD: catalog chips name Restaurant + Salon + Trades + Professional services', () => {
   const src = read('builder/index.html');
   const chips = chipsBlock(src);
   assert.ok(chips, 'catalog-chips present');
@@ -175,8 +175,8 @@ check('HEAD: catalog chips name Restaurant + Salon + Meseriași + Servicii profe
   assert.ok(!/Servicii locale/.test(chips), 'no Servicii locale chip');
   assert.ok(/Restaurant/.test(chips), 'chip Restaurant');
   assert.ok(/Salon/.test(chips), 'chip Salon');
-  assert.ok(/Meseriaș/.test(chips), 'chip Meseriași');
-  assert.ok(/Servicii profesionale/.test(chips), 'chip Servicii profesionale');
+  assert.ok(/Trades/.test(chips), 'chip Trades');
+  assert.ok(/Professional services/.test(chips), 'chip Professional services');
   // data-filter ids must stay
   assert.ok(/data-filter=["']product-menu["']/.test(chips), 'filter product-menu');
   assert.ok(/data-filter=["']portfolio["']/.test(chips), 'filter portfolio');
@@ -191,28 +191,28 @@ check('HEAD: landing step 03 has 100€, step 04 has 29€, footer no AI agents'
   const step03 = how.match(/how-step-num\">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
   assert.ok(step03, 'step 03');
   assert.ok(/100\s*€|100€/.test(step03[0]), 'step 03 has 100€');
-  assert.ok(/29\s*€\/an|29€\/an/.test(how), 'step 04 has 29€/an');
+  assert.ok(/29\s*€\/year|29€\/year/i.test(how), 'step 04 has 29€/year');
   assert.ok(!/AI agents/i.test(src), 'no English AI agents in landing');
-  // footer still denies unpaid live trial in customer Romanian
-  assert.ok(/Fără roboț|Fără robot|neplătit/i.test(src), 'footer customer Romanian denial');
+  // footer still denies unpaid live trial in customer English
+  assert.ok(/No bots/i.test(src), 'footer customer English denial');
 });
 
-check('HEAD: Meseriași template/presets/schema finished Romanian (diacritics)', () => {
+check('HEAD: Trades template/presets/schema finished English (no Romanian/mojibake leftovers)', () => {
   const tpl = read(LS_TEMPLATE);
   const presets = read(LS_PRESETS);
   const schema = read(LS_SCHEMA);
-  assert.ok(!/ani experienta/.test(tpl), 'no ani experienta hardcoded');
-  assert.ok(/ani experienț[aă]/i.test(tpl) || /ani experiență/.test(tpl), 'template has ani experiență');
-  assert.ok(!/\bDeruleaza\b/.test(presets), 'no Deruleaza without diacritic');
-  assert.ok(/Derulează|derulează/.test(presets), 'scroll label has Derulează');
-  assert.ok(!/Informatii firma/i.test(schema), 'no Informatii firma section');
-  assert.ok(/Informații firm/i.test(schema), 'section Informații firmă');
-  // uppercase-safe: missing-diacritic leftovers that CSS uppercases into EXPERIENTA / DERULEAZA
-  assert.ok(!/EXPERIENTA|DERULEAZA|INFORMATII FIRMA/.test(tpl + presets + schema));
-  assert.ok(!/\bexperienta\b/.test(tpl), 'template no bare experienta');
+  assert.ok(!/ani experienta/i.test(tpl), 'no leftover Romanian "ani experienta"');
+  assert.ok(/years experience/i.test(tpl), 'template has "years experience"');
+  assert.ok(!/\bDeruleaza\b/i.test(presets), 'no leftover Romanian Deruleaza');
+  assert.ok(/"scroll"\s*:\s*"Scroll"/.test(presets), 'scroll label is "Scroll"');
+  assert.ok(!/Informatii firma/i.test(schema), 'no leftover Romanian Informatii firma');
+  assert.ok(/Company info/.test(schema), 'section title "Company info"');
+  // finished-English-copy check: no leftover Romanian diacritics or mojibake anywhere
+  assert.ok(!/[ăâîșțĂÂÎȘȚ]/.test(tpl + presets + schema), 'no leftover Romanian diacritics');
+  assert.ok(!/Ã.|â€/.test(tpl + presets + schema), 'no mojibake leftovers');
 });
 
-check('HEAD: no Detalii label has JSON-LD, canonical, English optional, or <br>', () => {
+check('HEAD: no Detalii label has JSON-LD, canonical, leftover Romanian "opțional", or <br>', () => {
   for (const rel of SCHEMA_RELS) {
     const schema = JSON.parse(read(rel));
     const labels = collectLabels(schema);
@@ -220,9 +220,9 @@ check('HEAD: no Detalii label has JSON-LD, canonical, English optional, or <br>'
     assert.ok(!/JSON-LD/i.test(joined), rel + ' no JSON-LD label');
     assert.ok(!/\bcanonical\b/i.test(joined), rel + ' no canonical in labels: ' +
       (joined.match(/[^\n]*canonical[^\n]*/i) || []).join(' | '));
-    // English "optional" only — Romanian opțional is fine
-    assert.ok(!/\boptional\b/i.test(joined), rel + ' English optional leftover: ' +
-      (joined.match(/[^\n]*optional[^\n]*/i) || []).join(' | '));
+    // Romanian "opțional" leftover only — English "optional" is the finished copy now
+    assert.ok(!/opțional/i.test(joined), rel + ' leftover Romanian "opțional": ' +
+      (joined.match(/[^\n]*opțional[^\n]*/i) || []).join(' | '));
     assert.ok(!/<br\s*\/?>/i.test(joined), rel + ' no <br> teaching in labels');
     assert.ok(!/Label Instagram/i.test(joined), rel + ' no Label Instagram');
     assert.ok(!/URL canonical/i.test(joined), rel + ' no URL canonical');
@@ -339,9 +339,9 @@ check('HEAD: all systems waHref presets are clean (no percent-encoding)', () => 
 check('HEAD non-regress: Cum e step 01 still names four systems', () => {
   const how = howSection(read('builder/index.html'));
   assert.ok(/restaurant/i.test(how), 'restaurant');
-  assert.ok(/meseriaș/i.test(how), 'meseriași');
+  assert.ok(/trades/i.test(how), 'trades');
   assert.ok(/salon/i.test(how), 'salon');
-  assert.ok(/profesion/i.test(how), 'profesionale');
+  assert.ok(/profession/i.test(how), 'professional');
 });
 
 check('HEAD non-regress: no $100 / SERVER_SECRET / bakery / Calendly in landing', () => {

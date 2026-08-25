@@ -152,7 +152,7 @@ function renderPreview(files, config, opts) {
     // minimal hover/outline styles for [data-hb-edit] elements.
     if (opts && opts.editMode) {
         // Minimal CSS affordances: outline editable text nodes on hover, show
-        // a "Schimbă poza" button over images (the full overlay JS handles the rest).
+        // a "Replace photo" button over images (the full overlay JS handles the rest).
         const editStyles =
             '[data-hb-edit]{outline:2px dashed rgba(99,102,241,.55);outline-offset:2px;cursor:text;border-radius:2px;}' +
             '[data-hb-edit]:hover,[data-hb-edit]:focus{outline-color:rgba(99,102,241,1);background:rgba(99,102,241,.07);}' +

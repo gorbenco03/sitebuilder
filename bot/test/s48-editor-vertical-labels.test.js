@@ -97,7 +97,7 @@ check('registry keeps system ids and names restaurant / salon / trade', () => {
 
   assert.ok(/restaurant/i.test(pm), `product-menu name should read restaurant, got ${JSON.stringify(pm)}`);
   assert.ok(/salon/i.test(pf), `portfolio name should read salon, got ${JSON.stringify(pf)}`);
-  assert.ok(/meseria|construc/i.test(ls), `local-service name should read trade/construction, got ${JSON.stringify(ls)}`);
+  assert.ok(/trade/i.test(ls), `local-service name should read trade/construction, got ${JSON.stringify(ls)}`);
 
   for (const t of Object.values(byId)) {
     for (const bad of FORBIDDEN_DISPLAY) {
@@ -117,7 +117,7 @@ check('schema.json display names match verticals (not Meniu & magazin / Portofol
 
   assert.ok(/restaurant/i.test(pm), `product-menu schema name needs restaurant, got ${JSON.stringify(pm)}`);
   assert.ok(/salon/i.test(pf), `portfolio schema name needs salon, got ${JSON.stringify(pf)}`);
-  assert.ok(/meseria|construc/i.test(ls), `local-service schema name needs trade/construction, got ${JSON.stringify(ls)}`);
+  assert.ok(/trade/i.test(ls), `local-service schema name needs trade/construction, got ${JSON.stringify(ls)}`);
 });
 
 check('product-menu schema editor copy is not bakery/patisserie/cofetărie', () => {

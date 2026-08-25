@@ -137,9 +137,9 @@ function initAppointment() {
     const interval = Math.max(15, parseInt(root.getAttribute('data-interval') || '60', 10) || 60);
     const defaultDur = Math.max(15, parseInt(root.getAttribute('data-duration') || '45', 10) || 45);
     const lead = Math.max(0, parseInt(root.getAttribute('data-lead') || '120', 10) || 120);
-    const confirmText = root.getAttribute('data-confirm') || 'Cererea ta a fost înregistrată.';
-    const emptyText = root.getAttribute('data-empty') || 'Nu există intervale disponibile în această perioadă.';
-    const submitLabel = root.getAttribute('data-submit') || 'Trimite cererea';
+    const confirmText = root.getAttribute('data-confirm') || 'Your request has been logged.';
+    const emptyText = root.getAttribute('data-empty') || 'No time slots are available right now.';
+    const submitLabel = root.getAttribute('data-submit') || 'Send request';
 
     const dateSel = document.getElementById('pr-appt-date');
     const slotSel = document.getElementById('pr-appt-slot');
@@ -163,7 +163,7 @@ function initAppointment() {
             };
         }
         const first = typeInputs()[0];
-        if (!first) return { id: 'default', label: 'Discuție', durationMin: defaultDur, mode: '' };
+        if (!first) return { id: 'default', label: 'Consultation', durationMin: defaultDur, mode: '' };
         first.checked = true;
         return {
             id: first.value,
@@ -251,7 +251,7 @@ function initAppointment() {
             const opt = document.createElement('option');
             opt.value = day.ymd;
             try {
-                const label = new Intl.DateTimeFormat('ro-RO', {
+                const label = new Intl.DateTimeFormat('en-US', {
                     timeZone: tz,
                     weekday: 'short',
                     day: 'numeric',
@@ -316,7 +316,7 @@ function initAppointment() {
         if (!name.trim() || !email.trim() || !startISO) {
             if (hint) {
                 hint.hidden = false;
-                hint.textContent = 'Completează numele, emailul și intervalul.';
+                hint.textContent = 'Please fill in your name, email, and a time slot.';
             }
             return;
         }
@@ -324,8 +324,8 @@ function initAppointment() {
         if (submitBtn) {
             submitBtn.disabled = true;
             const span = submitBtn.querySelector('span');
-            if (span) span.textContent = 'Se trimite…';
-            else submitBtn.textContent = 'Se trimite…';
+            if (span) span.textContent = 'Sending…';
+            else submitBtn.textContent = 'Sending…';
         }
 
         const payload = {
@@ -356,12 +356,12 @@ function initAppointment() {
                 if (res.ok && body && body.ok) {
                     result = body;
                 } else {
-                    throw new Error((body && body.error) || 'Cererea nu a putut fi înregistrată.');
+                    throw new Error((body && body.error) || 'We couldn\'t log your request.');
                 }
             } catch (err) {
                 if (hint) {
                     hint.hidden = false;
-                    hint.textContent = err.message || 'Eroare la trimitere. Încearcă din nou sau folosește emailul de contact.';
+                    hint.textContent = err.message || 'Something went wrong sending your request. Try again or use the contact email.';
                 }
                 if (submitBtn) {
                     submitBtn.disabled = false;
@@ -395,7 +395,7 @@ function initAppointment() {
             done.hidden = false;
             let when = startISO;
             try {
-                when = new Intl.DateTimeFormat('ro-RO', {
+                when = new Intl.DateTimeFormat('en-US', {
                     timeZone: tz,
                     weekday: 'long',
                     day: 'numeric',
@@ -409,7 +409,7 @@ function initAppointment() {
             if (doneBody) {
                 doneBody.textContent =
                     `${type.label} · ${when}` +
-                    (localOnly ? ' · stare locală de previzualizare' : '');
+                    (localOnly ? ' · local preview status' : '');
             }
             if (doneConfirm) {
                 doneConfirm.textContent = confirmText;
@@ -444,7 +444,7 @@ function initWhatsAppQR() {
             `</svg>`
         );
         img.src = 'data:image/svg+xml,' + svg;
-        img.alt = 'Deschide linkul WhatsApp de mai jos';
+        img.alt = 'Open the WhatsApp link below';
         if (openBtn) openBtn.href = waUrl;
         modal.hidden = false;
         document.body.style.overflow = 'hidden';

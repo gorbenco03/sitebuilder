@@ -370,7 +370,7 @@
 
   /**
    * When preview has inlined images/* as data URLs but imgMap only has file paths,
-   * pick the best *.background config path so «Schimbă poza» still opens the chooser.
+   * pick the best *.background config path so «Replace photo» still opens the chooser.
    */
   function resolveBackgroundPathFallback() {
     var keys = Object.keys(imgMap);
@@ -392,12 +392,12 @@
     return bgPaths[0] || null;
   }
 
-  /** Create a "Schimbă poza" button and attach it to a wrapper element. */
+  /** Create a "Replace photo" button and attach it to a wrapper element. */
   function makeChangeBtn(path) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'hb-img-btn';
-    btn.textContent = 'Schimbă poza';
+    btn.textContent = 'Replace photo';
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       e.preventDefault();
@@ -431,7 +431,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hb-img-btn';
-      btn.textContent = 'Schimbă poza';
+      btn.textContent = 'Replace photo';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -507,7 +507,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hb-bg-btn';
-      btn.textContent = 'Schimbă poza';
+      btn.textContent = 'Replace photo';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -557,7 +557,7 @@
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'hb-remove-btn';
-        removeBtn.setAttribute('aria-label', 'Șterge elementul ' + (idx + 1));
+        removeBtn.setAttribute('aria-label', 'Delete item ' + (idx + 1));
         removeBtn.textContent = '×'; // ×
         removeBtn.addEventListener('click', function (e) {
           e.stopPropagation();
@@ -586,13 +586,13 @@
       var addBtn = document.createElement('button');
       addBtn.type = 'button';
       addBtn.className = 'hb-add-btn';
-      // Romanian labels for restaurant menu structure
+      // Restaurant menu structure gets its own wording
       if (/^menu\.(en|ro)$/.test(root)) {
-        addBtn.textContent = '+ Adaugă secțiune';
+        addBtn.textContent = '+ Add section';
       } else if (/^menu\.(en|ro)\.\d+\.items$/.test(root)) {
-        addBtn.textContent = '+ Adaugă articol';
+        addBtn.textContent = '+ Add item';
       } else {
-        addBtn.textContent = '+ Adaugă';
+        addBtn.textContent = '+ Add';
       }
       addBtn.addEventListener('click', function () {
         toParent({ hb: 'list-add', listPath: root });

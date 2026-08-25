@@ -105,7 +105,7 @@ function setBtnLoading(btn, loading, originalText) {
   if (loading) {
     btn.disabled = true;
     btn._origText = btn.innerHTML;
-    btn.innerHTML = '<span class="btn-loading-text"><span class="spinner spinner--xs"></span>' + (originalText || 'Se procesează...') + '</span>';
+    btn.innerHTML = '<span class="btn-loading-text"><span class="spinner spinner--xs"></span>' + (originalText || 'Processing…') + '</span>';
   } else {
     btn.disabled = false;
     if (btn._origText !== undefined) {
@@ -279,7 +279,7 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; }
   catch (e) {
     if (e.name === 'QuotaExceededError' || (e.code && e.code === 22)) {
-      showToast('Proiectul conține imagini mari — nu a putut fi salvat ca draft. Publică înainte de a închide pagina.', 'error', 7000);
+      showToast('This project has large images — it could not be saved as a draft. Publish before closing the page.', 'error', 7000);
     }
     return false;
   }
@@ -303,12 +303,12 @@ function toSlug(str) {
 }
 
 function fmtTimeRemaining(ms) {
-  if (ms <= 0) return 'expirat';
+  if (ms <= 0) return 'expired';
   const d = Math.floor(ms / 86400000);
   const h = Math.floor((ms % 86400000) / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
   const parts = [];
-  if (d > 0) parts.push(d + 'z');
+  if (d > 0) parts.push(d + 'd');
   if (h > 0) parts.push(h + 'h');
   if (d === 0) parts.push(m + 'm');
   return parts.join(' ');
@@ -376,9 +376,9 @@ function getTemplateById(id) {
 /** Human catalog badge — never show raw API ids (product-menu / local-service / portfolio). */
 const DESIGN_BADGE_BY_ID = {
   'product-menu': 'Restaurant',
-  'local-service': 'Meseriași',
+  'local-service': 'Trades',
   'portfolio': 'Salon',
-  'professionals': 'Servicii profesionale',
+  'professionals': 'Professional services',
 };
 
 function designBadgeLabel(tpl) {
@@ -512,7 +512,7 @@ var EDIT_OVERLAY_SCRIPT = [
   'function makeImageClickable(el,path){',
   '  if(el.dataset.hbInit)return;el.dataset.hbInit="1";',
   '  el.style.cursor="pointer";',
-  '  el.title="Apasa pentru a schimba imaginea";',
+  '  el.title="Click to replace the image";',
   '  var par=el.parentElement;',
   '  if(par&&window.getComputedStyle(par).position==="static")par.style.position="relative";',
   '  var ov=document.createElement("div");',
@@ -524,7 +524,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '  ov.style.cursor="pointer";ov.style.borderRadius="inherit";',
   '  ov.style.pointerEvents="auto";ov.style.zIndex="5";',
   '  var sp=document.createElement("span");',
-  '  sp.textContent="Schimba poza";',
+  '  sp.textContent="Replace photo";',
   '  sp.style.background="rgba(0,0,0,.5)";sp.style.padding="4px 10px";sp.style.borderRadius="6px";',
   '  ov.appendChild(sp);',
   '  par&&par.appendChild(ov);',
@@ -540,7 +540,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '    if(el.dataset.hbListInit)return;el.dataset.hbListInit="1";',
   '    var lp=el.dataset.hbList;',
   '    var btn=document.createElement("button");',
-  '    btn.type="button";btn.textContent="+ Adauga element";',
+  '    btn.type="button";btn.textContent="+ Add item";',
   '    btn.style.marginTop="8px";btn.style.padding="5px 10px";btn.style.fontSize="12px";',
   '    btn.style.fontFamily="system-ui";btn.style.background="#14120F";btn.style.color="#FFFcf7";',
   '    btn.style.border="none";btn.style.borderRadius="8px";btn.style.cursor="pointer";btn.style.display="block";',
@@ -655,7 +655,7 @@ function buildSrcdoc() {
     return html;
   } catch (e) {
     console.warn('buildSrcdoc error:', e);
-    return '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Eroare randare: ' + escHtml(e.message) + '</body>';
+    return '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Render error: ' + escHtml(e.message) + '</body>';
   }
 }
 
@@ -913,13 +913,13 @@ function onListAdd(listPath) {
   // Restaurant menu: menu.en / menu.ro are section lists; *.items are string dishes
   if (/^menu\.(en|ro)$/.test(listPath)) {
     if (!draft.config.menu || typeof draft.config.menu !== 'object') {
-      draft.config.menu = { title: 'Meniu', en: [], ro: [] };
+      draft.config.menu = { title: 'Menu', en: [], ro: [] };
     }
     if (!Array.isArray(draft.config.menu.en)) draft.config.menu.en = [];
     if (!Array.isArray(draft.config.menu.ro)) draft.config.menu.ro = [];
-    newItem = { category: 'Secțiune nouă', items: ['Articol nou'] };
+    newItem = { category: 'New section', items: ['New item'] };
   } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
-    newItem = 'Articol nou';
+    newItem = 'New item';
   } else if (typeof itemShape === 'string') {
     newItem = itemShape === 'photos' ? [] : '';
   } else if (typeof itemShape === 'object' && itemShape !== null) {
@@ -1008,7 +1008,7 @@ function initImageFileInput() {
       saveDraft();
       fullRerender();
     } catch (e) {
-      showToast('Eroare la procesarea imaginii: ' + e.message, 'error');
+      showToast('Error processing the image: ' + e.message, 'error');
       showPreviewSpinner(false);
     }
     fileInput.value = '';
@@ -1035,7 +1035,7 @@ function resizeImageToDataUrl(file, maxPx, quality) {
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Eroare la citirea imaginii')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error reading the image')); };
     img.src = url;
   });
 }
@@ -1048,9 +1048,9 @@ const COLOR_PRESETS = [
   { label: 'Indigo',   hex: '#5B5BD6' },
   { label: 'Teal',     hex: '#0D9488' },
   { label: 'Violet',   hex: '#7C3AED' },
-  { label: 'Portocaliu', hex: '#EA580C' },
-  { label: 'Roz',      hex: '#DB2777' },
-  { label: 'Verde',    hex: '#16A34A' },
+  { label: 'Orange',   hex: '#EA580C' },
+  { label: 'Pink',     hex: '#DB2777' },
+  { label: 'Green',    hex: '#16A34A' },
 ];
 
 function initColorPicker() {
@@ -1202,7 +1202,7 @@ function buildDrawer() {
   body.innerHTML = '';
 
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) {
-    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Alege un design mai întâi.</p>';
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Choose a design first.</p>';
     return;
   }
 
@@ -1245,14 +1245,14 @@ function buildDrawer() {
     section.className = 'drawer-section';
     const title = document.createElement('div');
     title.className = 'drawer-section-title';
-    title.textContent = 'Galerie foto';
+    title.textContent = 'Photo gallery';
     section.appendChild(title);
 
     const galleryBtn = document.createElement('button');
     galleryBtn.type = 'button';
     galleryBtn.className = 'btn-ghost btn-sm';
     galleryBtn.style.marginTop = '.35rem';
-    galleryBtn.textContent = 'Administrează pozele';
+    galleryBtn.textContent = 'Manage photos';
     galleryBtn.addEventListener('click', () => openGalleryModal());
     section.appendChild(galleryBtn);
     body.appendChild(section);
@@ -1407,7 +1407,7 @@ function buildGalleryModal() {
 
   const photoPaths = findPhotoPaths();
   if (photoPaths.length === 0) {
-    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">Nu există fotografii în config.</p>';
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">No photos yet.</p>';
     return;
   }
 
@@ -1434,11 +1434,11 @@ function buildGalleryModal() {
         div.className = 'photo-thumb';
 
         const img = document.createElement('img');
-        img.src = src; img.alt = 'Fotografie ' + (idx+1); img.loading = 'lazy';
+        img.src = src; img.alt = 'Photo ' + (idx+1); img.loading = 'lazy';
 
         const del = document.createElement('button');
         del.type = 'button'; del.className = 'photo-thumb-del';
-        del.setAttribute('aria-label', 'Șterge fotografia ' + (idx+1));
+        del.setAttribute('aria-label', 'Delete photo ' + (idx+1));
         del.innerHTML = '&times;';
         del.addEventListener('click', () => {
           const arr = getPath(draft.config, path) || [];
@@ -1459,7 +1459,7 @@ function buildGalleryModal() {
     addBtn.style.marginTop = '.5rem';
     const fileInput = document.createElement('input');
     fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = 'image/jpeg,image/png,image/webp';
-    addBtn.innerHTML = '<div class="photos-dropzone-icon" aria-hidden="true">+</div><div>Adaugă fotografii</div>';
+    addBtn.innerHTML = '<div class="photos-dropzone-icon" aria-hidden="true">+</div><div>Add photos</div>';
     addBtn.appendChild(fileInput);
     fileInput.addEventListener('change', async () => {
       const files = Array.from(fileInput.files);
@@ -1486,7 +1486,7 @@ function buildGalleryModal() {
 function saveDraft() {
   if (!draft.templateId || !draft.config) return;
   const payload = { templateId: draft.templateId, config: draft.config };
-  // Persist paid-site bind so fresh #edit (no dashboard «Editează») can republish
+  // Persist paid-site bind so fresh #edit (no dashboard «Edit») can republish
   if (currentSiteId) {
     payload.siteId = currentSiteId;
     payload.paid = !!currentSitePaid;
@@ -1498,7 +1498,7 @@ function loadDraft() { return lsGet(DRAFT_KEY); }
 
 /**
  * After pay, a fresh /app/#edit (or resume without loadSiteForEdit) must bind the
- * signed-in paid site so «Publică» republishes the same slug — never the new-address modal.
+ * signed-in paid site so «Publish site» republishes the same slug — never the new-address modal.
  *
  * Never attach a paid site whose templateId differs from the current draft — a second
  * design must not silently overwrite another live URL (S78/S80).
@@ -1557,7 +1557,7 @@ async function bindSignedInPaidSiteForEdit() {
           return;
         }
       }
-      // Stale or cross-template draft.siteId — scrub so Publică cannot reuse it
+      // Stale or cross-template draft.siteId — scrub so Publish cannot reuse it
       saveDraft();
     }
 
@@ -1634,7 +1634,7 @@ function syncInstagramModalPanels() {
 /**
  * Ensure an unpaid draft site exists so Instagram APIs have a siteId.
  * Does not open the publish success UI or require payment.
- * Sets currentSiteSlug so first «Publică site-ul» reuses the reserved address.
+ * Sets currentSiteSlug so first «Publish site» reuses the reserved address.
  */
 async function ensureDraftSiteForInstagram() {
   let siteId = siteIdForInstagram();
@@ -1646,12 +1646,12 @@ async function ensureDraftSiteForInstagram() {
     return siteId;
   }
   if (!currentUser || !currentUser.email) {
-    throw new Error('Intră în cont ca să salvezi ciorna.');
+    throw new Error('Sign in to save your draft.');
   }
   if (!draft.config || !draft.templateId) {
-    throw new Error('Alege mai întâi un design.');
+    throw new Error('Choose a design first.');
   }
-  setIgStatus('Salvez ciorna ca să pot conecta Instagram…');
+  setIgStatus('Saving your draft so Instagram can connect…');
   const { cleanConfig, images } = extractImages(draft.config);
   const baseSlug = toSlug(
     (draft.config.business && draft.config.business.name) ||
@@ -1666,7 +1666,7 @@ async function ensureDraftSiteForInstagram() {
   if (currentSiteId) payload.siteId = currentSiteId;
   const data = await apiPost('/api/publish', payload);
   if (!data.site || !data.site.id) {
-    throw new Error('Nu am putut salva ciorna.');
+    throw new Error('Could not save the draft. Try again.');
   }
   currentSiteId = data.site.id;
   publishedSiteId = data.site.id;
@@ -1694,11 +1694,11 @@ function wireIgAuthForm() {
     const emailInput = $('input-ig-email');
     const email = emailInput ? emailInput.value.trim() : '';
     if (!email) {
-      if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
+      if (errorDiv) { errorDiv.textContent = 'Enter your email address.'; show(errorDiv); }
       return;
     }
     const submitBtn = $('btn-ig-send-magic');
-    setBtnLoading(submitBtn, true, 'Se trimite...');
+    setBtnLoading(submitBtn, true, 'Sending…');
     if (errorDiv) hide(errorDiv);
     try {
       const res = await apiPost('/api/auth/email', { email });
@@ -1706,7 +1706,7 @@ function wireIgAuthForm() {
       if (sentDiv) show(sentDiv);
       if (res.devLink && devLink) {
         devLink.href = res.devLink;
-        devLink.textContent = 'Deschide linkul de autentificare';
+        devLink.textContent = 'Open the sign-in link';
         show(devLink);
         // One-shot handler: verify in-place, stay in editor, continue IG flow
         const onDev = async (ev) => {
@@ -1718,12 +1718,12 @@ function wireIgAuthForm() {
             if (user) {
               updateUserUI(user);
               syncInstagramModalPanels();
-              setIgStatus('Cont activ. Pregătesc conectarea…');
+              setIgStatus('Account active. Preparing the connection…');
               try {
                 await ensureDraftSiteForInstagram();
-                setIgStatus('Poți conecta Instagram. Bifează termenii, apoi apasă Conectează.');
+                setIgStatus('You can connect Instagram. Check the terms box, then click Connect.');
               } catch (err) {
-                setIgStatus(err.message || 'Nu am putut salva ciorna.', true);
+                setIgStatus(err.message || 'Could not save the draft.', true);
               }
             } else {
               window.location.href = href;
@@ -1736,7 +1736,7 @@ function wireIgAuthForm() {
       }
     } catch (err) {
       if (errorDiv) {
-        errorDiv.textContent = err.message || 'Nu am putut trimite linkul.';
+        errorDiv.textContent = err.message || 'Could not send the link. Try again.';
         show(errorDiv);
       }
     } finally {
@@ -1767,7 +1767,7 @@ function openInstagramModal() {
       await ensureDraftSiteForInstagram();
       setIgStatus('');
     } catch (e) {
-      setIgStatus(e.message || 'Nu am putut pregăti Instagram.', true);
+      setIgStatus(e.message || 'Could not prepare Instagram. Try again.', true);
     }
   })();
 }
@@ -1776,21 +1776,21 @@ async function connectInstagram() {
   const check = $('ig-terms-check');
   const btn = $('btn-ig-connect');
   if (!currentUser || !currentUser.email) {
-    setIgStatus('Intră în cont ca să conectezi Instagram.', true);
+    setIgStatus('Sign in to connect Instagram.', true);
     syncInstagramModalPanels();
     wireIgAuthForm();
     return;
   }
   if (!check || !check.checked) {
-    setIgStatus('Bifează Termenii și Confidențialitatea pentru feed-ul Instagram.', true);
+    setIgStatus('Check the Terms and Privacy box for the Instagram feed.', true);
     return;
   }
   setBtnLoading(btn, true);
-  setIgStatus('Conectez Instagram…');
+  setIgStatus('Connecting Instagram…');
   try {
     const siteId = await ensureDraftSiteForInstagram();
     if (!siteId) {
-      setIgStatus('Salvează mai întâi ciorna.', true);
+      setIgStatus('Save your draft first.', true);
       return;
     }
     const grant1 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
@@ -1800,15 +1800,15 @@ async function connectInstagram() {
     if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
     // Isolated/test finish: grant already stored embed; no partner editor UI required
     if (grant1.embedUrl && !(session && session.editorUrl)) {
-      setIgStatus('Instagram e pe site.');
-      showToast('Instagram e conectat.', 'success', 3500);
+      setIgStatus('Instagram is live on your site.');
+      showToast('Instagram connected.', 'success', 3500);
       closeModal('modal-instagram');
       return;
     }
     if (session.editorUrl) {
       window.open(session.editorUrl, 'instagram-feed-editor', 'noopener,width=920,height=720');
     }
-    setIgStatus('După ce termini conectarea, revenim și actualizăm feed-ul pe site.');
+    setIgStatus("Once you finish connecting, we'll come back and update the feed on your site.");
     const onFocus = async () => {
       window.removeEventListener('focus', onFocus);
       try {
@@ -1821,15 +1821,15 @@ async function connectInstagram() {
           showToast('Instagram e conectat.', 'success', 3500);
           closeModal('modal-instagram');
         } else {
-          setIgStatus('Feed-ul încă nu e gata. Deschide din nou Instagram după ce salvezi conexiunea.');
+          setIgStatus('The feed is not ready yet. Reopen Instagram after saving the connection.');
         }
       } catch (e) {
-        setIgStatus(e.message || 'Nu am putut reîncărca feed-ul Instagram.', true);
+        setIgStatus(e.message || 'Could not reload the Instagram feed.', true);
       }
     };
     window.addEventListener('focus', onFocus);
   } catch (e) {
-    setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);
+    setIgStatus(e.message || 'Could not connect Instagram.', true);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -1912,7 +1912,7 @@ function formatHostingUntilDate(iso) {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return '';
   try {
-    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
   } catch (_) {
     const day = d.getUTCDate();
     const month = d.getUTCMonth() + 1;
@@ -2092,7 +2092,7 @@ async function openPublishModal() {
     if (missing.length > 0) {
       const firstMissing = missing[0];
       const msgParts = missing.map(f => f.label || f.key);
-      showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
+      showToast('Complete these first: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
       // Highlight in iframe
       sendHighlightToIframe(firstMissing.key);
       // Open drawer if field is a drawer field
@@ -2169,7 +2169,7 @@ async function checkSlug(rawSlug) {
 
   if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(rawSlug) && rawSlug.length < 3) {
     updateSlugPreview(rawSlug, 'invalid');
-    if (errorEl) { errorEl.textContent = 'Adresa trebuie să aibă minim 3 caractere (litere mici, cifre, liniuță).'; show(errorEl); }
+    if (errorEl) { errorEl.textContent = 'Address must be at least 3 characters (lowercase letters, numbers, hyphens).'; show(errorEl); }
     slugValid = false;
     return;
   }
@@ -2195,7 +2195,7 @@ async function checkSlug(rawSlug) {
       if (slugInput) slugInput.value = slugNormalized;
     } else {
       updateSlugPreview(slugNormalized, 'taken');
-      if (errorEl) { errorEl.textContent = 'Această adresă e deja folosită. Încearcă alta.'; show(errorEl); }
+      if (errorEl) { errorEl.textContent = 'That address is already taken. Try another one.'; show(errorEl); }
       slugValid = false;
     }
   } catch (_) {
@@ -2217,11 +2217,11 @@ async function doActualPublish(chosenSlug) {
   }
 
   const continueBtn = $('btn-publish-continue');
-  setBtnLoading(continueBtn, true, 'Se publică...');
+  setBtnLoading(continueBtn, true, 'Publishing…');
   try {
     await execPublish(chosenSlug);
   } catch (e) {
-    showToast(e.message || 'Eroare la publicare.', 'error', 5000);
+    showToast(e.message || 'Publish failed. Try again.', 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }
@@ -2238,7 +2238,7 @@ async function execPublish(slug) {
   if (currentSiteId) payload.siteId = currentSiteId;
 
   const data = await apiPost('/api/publish', payload);
-  if (!data.site) { showToast('Răspuns neașteptat de la server.', 'error'); return; }
+  if (!data.site) { showToast('Unexpected response from the server.', 'error'); return; }
 
   closeModal('modal-publish');
 
@@ -2289,11 +2289,11 @@ function wireAuthForm(onAuthSuccess) {
       const emailInput = $('input-email');
       const email = emailInput ? emailInput.value.trim() : '';
       if (!email) {
-        if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = 'Enter your email address.'; show(errorDiv); }
         return;
       }
       const submitBtn = $('btn-send-magic');
-      setBtnLoading(submitBtn, true, 'Se trimite...');
+      setBtnLoading(submitBtn, true, 'Sending…');
       if (errorDiv) hide(errorDiv);
       try {
         const res = await apiPost('/api/auth/email', { email });
@@ -2301,7 +2301,7 @@ function wireAuthForm(onAuthSuccess) {
         if (sentDiv) show(sentDiv);
         if (res.devLink && devLink) {
           devLink.href = res.devLink;
-          devLink.textContent = 'Deschide site-ul';
+          devLink.textContent = 'Open the site';
           show(devLink);
           devLink.addEventListener('click', async (ev) => {
             // Keep SPA: verify via fetch so draft/publish resume works (S62)
@@ -2314,7 +2314,7 @@ function wireAuthForm(onAuthSuccess) {
                 updateUserUI(user);
                 closeModal('modal-publish');
                 if (onAuthSuccess) {
-                  setLoading(true, 'Se publică...');
+                  setLoading(true, 'Publishing…');
                   try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
                 } else if (resumeLocalDraft()) {
                   window.location.hash = '#edit';
@@ -2330,7 +2330,7 @@ function wireAuthForm(onAuthSuccess) {
           });
         }
       } catch (err) {
-        if (errorDiv) { errorDiv.textContent = err.message || 'Eroare. Încearcă din nou.'; show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = err.message || 'Something went wrong. Try again.'; show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
@@ -2347,7 +2347,7 @@ function showSuccessScreen(url, paymentUrl) {
   const isLive = !!(url && String(url).indexOf('http') === 0);
 
   if (isLive) {
-    if (titleEl) titleEl.textContent = 'Site-ul tău e live — hosting 12 luni';
+    if (titleEl) titleEl.textContent = 'Your site is live — 12 months hosting included';
     if (draftNote) hide(draftNote);
     if (urlText) {
       // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
@@ -2368,7 +2368,7 @@ function showSuccessScreen(url, paymentUrl) {
     if (urlLink) { urlLink.href = url; show(urlLink); }
     if (copyBtn) show(copyBtn);
   } else {
-    if (titleEl) titleEl.textContent = 'Ciorna e salvată';
+    if (titleEl) titleEl.textContent = 'Draft saved';
     if (draftNote) show(draftNote);
     if (urlLink) hide(urlLink);
     if (copyBtn) hide(copyBtn);
@@ -2393,8 +2393,8 @@ function showSuccessScreen(url, paymentUrl) {
   if (waBtn) {
     if (isLive) {
       show(waBtn);
-      const businessName = getPath(draft.config, 'business.name') || 'Site-ul nostru';
-      const waText = encodeURIComponent('Bună! Am creat site-ul pentru ' + businessName + ': ' + url);
+      const businessName = getPath(draft.config, 'business.name') || 'Our site';
+      const waText = encodeURIComponent('Hi! I just created the site for ' + businessName + ': ' + url);
       waBtn.onclick = () => { window.open('https://wa.me/?text=' + waText, '_blank', 'noopener'); };
     } else {
       hide(waBtn);
@@ -2411,10 +2411,10 @@ function showSuccessScreen(url, paymentUrl) {
 async function completeTestCheckout(sessionId) {
   const id = String(sessionId || '').trim();
   if (!/^cs_test_[A-Za-z0-9]+$/.test(id)) {
-    showToast('Sesiune de plată invalidă.', 'error');
+    showToast('Invalid payment session.', 'error');
     return;
   }
-  setLoading(true, 'Confirmăm plata...');
+  setLoading(true, 'Confirming payment…');
   try {
     const data = await apiPost('/api/test-pay/complete', { sessionId: id });
     const site = data && data.site;
@@ -2432,7 +2432,7 @@ async function completeTestCheckout(sessionId) {
     if (site && site.url && String(site.url).indexOf('http') === 0) {
       sitePaymentUrl = null;
       showSuccessScreen(site.url, null);
-      showToast('Plata a fost confirmată. Site-ul tău e live.', 'success', 6000);
+      showToast('Payment confirmed. Your site is live.', 'success', 6000);
     } else if (site && site.paid) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
@@ -2441,16 +2441,16 @@ async function completeTestCheckout(sessionId) {
           publishedSiteUrl = s.url;
           showSuccessScreen(s.url, null);
         } else {
-          showToast('Plata a fost confirmată. Publicarea finalizează în câteva momente.', 'success', 6000);
+          showToast('Payment confirmed. Publishing will finish in a few moments.', 'success', 6000);
         }
       } catch (_) {
-        showToast('Plata a fost confirmată. Publicarea finalizează în câteva momente.', 'success', 6000);
+        showToast('Payment confirmed. Publishing will finish in a few moments.', 'success', 6000);
       }
     } else {
-      showToast('Plata a fost procesată.', 'success', 5000);
+      showToast('Payment processed.', 'success', 5000);
     }
   } catch (e) {
-    showToast('Eroare la confirmarea plății: ' + (e.message || 'reîncearcă'), 'error', 6000);
+    showToast('Error confirming payment: ' + (e.message || 'try again'), 'error', 6000);
   } finally {
     setLoading(false);
   }
@@ -2612,10 +2612,10 @@ function renderTemplatesGrid() {
       <div class="template-card-title">${escHtml(tpl.name)}</div>
       <div class="template-card-desc">${escHtml(tpl.description || '')}</div>
       <div class="template-card-actions">
-        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Începe cu designul ${escHtml(tpl.name)}">Începe</button>
-        <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Vezi exemplu pentru ${escHtml(tpl.name)}">
+        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Start with the ${escHtml(tpl.name)} design">Start</button>
+        <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Preview ${escHtml(tpl.name)}">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><ellipse cx="8" cy="8" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
-          Exemplu
+          Preview
         </button>
       </div>`;
 
@@ -2701,7 +2701,7 @@ function loadCardPreview(templateId, wrap, shimmer) {
 
     const iframe = document.createElement('iframe');
     iframe.className = 'template-card-preview-frame';
-    iframe.title = 'Previzualizare design';
+    iframe.title = 'Design preview';
     iframe.setAttribute('sandbox', 'allow-scripts');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
@@ -2718,7 +2718,7 @@ function startWithTemplate(templateId) {
   const meta = registry.find(t => t.id === templateId);
 
   if (!tplData || !meta) {
-    showToast('Designul nu a putut fi încărcat.', 'error');
+    showToast('Could not load the design. Try again.', 'error');
     return;
   }
 
@@ -2757,12 +2757,12 @@ function openPreviewModal(templateId) {
   const meta = (registry || []).find(t => t.id === templateId) || {};
 
   const title = $('modal-preview-title');
-  if (title) title.textContent = 'Previzualizare: ' + (meta.name || templateId);
+  if (title) title.textContent = 'Preview: ' + (meta.name || templateId);
 
   const iframe = $('preview-modal-iframe');
 
   if (!tplData || typeof window.HidookEngine === 'undefined') {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Previzualizare indisponibilă</body>';
+    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Preview unavailable</body>';
     openModal('modal-preview');
     return;
   }
@@ -2772,7 +2772,7 @@ function openPreviewModal(templateId) {
     const html = window.HidookEngine.renderPreview(tplData.files, config);
     if (iframe) iframe.srcdoc = html;
   } catch (e) {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Eroare: ' + escHtml(e.message) + '</body>';
+    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Error: ' + escHtml(e.message) + '</body>';
   }
 
   const body = $('modal-preview-body');
@@ -2792,7 +2792,7 @@ function openPreviewModal(templateId) {
 async function loadDashboard() {
   const list = $('sites-list');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Se încarcă proiectele...</p>';
+  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Loading your projects…</p>';
 
   try {
     const data = await apiGet('/api/sites');
@@ -2805,7 +2805,7 @@ async function loadDashboard() {
         window.location.hash = '#edit';
         return;
       }
-      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>Nu ai site-uri create încă.</p><a href="#templates" class="btn-primary">Creează primul tău site</a></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>You haven't created any sites yet.</p><a href="#templates" class="btn-primary">Create your first site</a></div>`;
       return;
     }
 
@@ -2813,10 +2813,10 @@ async function loadDashboard() {
     sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Intră</button></div>';
+      list.innerHTML = '<div class="empty-state"><p>Sign in to see your projects.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Sign in</button></div>';
       wireDashboardAuthButton();
     } else {
-      list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
+      list.innerHTML = '<div class="empty-state"><p>Error loading: ' + escHtml(e.message) + '</p></div>';
     }
   }
 }
@@ -2835,28 +2835,28 @@ function buildSiteCard(site) {
       const iframe = document.createElement('iframe');
       iframe.setAttribute('sandbox','allow-scripts');
       iframe.setAttribute('aria-hidden','true');
-      iframe.title = 'Previzualizare ' + (site.projectName || site.slug || 'site');
+      iframe.title = 'Preview of ' + (site.projectName || site.slug || 'site');
       iframe.srcdoc = html;
       thumbWrap.appendChild(iframe);
     } catch (_) {}
   }
 
   const hostingExpired = isHostingExpired(site);
-  let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
+  let badgeClass = 'status-draft', badgeLabel = 'Draft';
 
   if (site.paid && hostingExpired) {
-    badgeClass = 'status-expired'; badgeLabel = 'Expirat';
+    badgeClass = 'status-expired'; badgeLabel = 'Expired';
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
-    badgeClass = 'status-live'; badgeLabel = 'Activ';
+    badgeClass = 'status-live'; badgeLabel = 'Active';
   } else if (site.status === 'live' && !site.paid) {
     // Legacy unpaid live (pre pay-before-publish)
-    badgeClass = 'status-unpaid'; badgeLabel = 'Neplătit';
+    badgeClass = 'status-unpaid'; badgeLabel = 'Unpaid';
   } else if (site.status === 'expired') {
-    badgeClass = 'status-expired'; badgeLabel = 'Expirat';
+    badgeClass = 'status-expired'; badgeLabel = 'Expired';
   } else if (site.status === 'needs-retry') {
-    badgeClass = 'status-draft'; badgeLabel = 'Reîncearcă';
+    badgeClass = 'status-draft'; badgeLabel = 'Retry';
   } else if (!site.paid) {
-    badgeClass = 'status-draft'; badgeLabel = 'Neplătit';
+    badgeClass = 'status-draft'; badgeLabel = 'Unpaid';
   }
 
   const info = document.createElement('div');
@@ -2894,7 +2894,7 @@ function buildSiteCard(site) {
     if (untilStr) {
       const hostLine = document.createElement('div');
       hostLine.className = 'site-hosting-until';
-      hostLine.textContent = 'Hosting până la ' + untilStr;
+      hostLine.textContent = 'Hosting until ' + untilStr;
       info.appendChild(hostLine);
     }
   }
@@ -2904,8 +2904,8 @@ function buildSiteCard(site) {
 
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-ghost btn-sm';
-  editBtn.textContent = 'Editează';
-  editBtn.setAttribute('aria-label', 'Editează site-ul ' + (site.projectName || site.slug || ''));
+  editBtn.textContent = 'Edit';
+  editBtn.setAttribute('aria-label', 'Edit the ' + (site.projectName || site.slug || '') + ' site');
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
@@ -2913,21 +2913,23 @@ function buildSiteCard(site) {
   if (!site.paid || hostingExpired) {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
-    let payLabel;
+    let payLabel, payAriaLabel;
     if (site.paid && hostingExpired) {
-      payLabel = 'Reînnoiește hosting — ' + formatRenewalLabel(appConfig);
+      payLabel = 'Renew hosting — ' + formatRenewalLabel(appConfig);
+      payAriaLabel = 'Renew hosting for this site';
     } else {
-      payLabel = 'Plătește și publică';
+      payLabel = 'Pay and publish';
+      payAriaLabel = 'Pay and publish this site';
     }
     keepBtn.textContent = payLabel;
-    keepBtn.setAttribute('aria-label', payLabel + ' site-ul');
+    keepBtn.setAttribute('aria-label', payAriaLabel);
     keepBtn.addEventListener('click', async () => {
       try {
-        setBtnLoading(keepBtn, true, 'Se procesează...');
+        setBtnLoading(keepBtn, true, 'Processing…');
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast('Eroare: ' + e.message, 'error');
+        showToast('Error: ' + e.message, 'error');
       } finally {
         setBtnLoading(keepBtn, false);
       }
@@ -2937,8 +2939,8 @@ function buildSiteCard(site) {
 
   const versBtn = document.createElement('button');
   versBtn.className = 'btn-ghost btn-sm';
-  versBtn.textContent = 'Istoric';
-  versBtn.setAttribute('aria-label', 'Istoricul versiunilor pentru ' + (site.projectName || site.slug || ''));
+  versBtn.textContent = 'History';
+  versBtn.setAttribute('aria-label', 'Version history for ' + (site.projectName || site.slug || ''));
   versBtn.addEventListener('click', () => loadVersions(site.id));
   actions.appendChild(versBtn);
 
@@ -2950,11 +2952,11 @@ function buildSiteCard(site) {
 
 async function loadSiteForEdit(siteId) {
   try {
-    setLoading(true, 'Se încarcă site-ul...');
+    setLoading(true, 'Loading your site…');
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId));
     const site = data.site;
     const config = data.config;
-    if (!site || !config) throw new Error('Date incomplete de la server.');
+    if (!site || !config) throw new Error('Incomplete data from the server.');
 
     currentSiteId = site.id;
     currentSitePaid = !!site.paid;
@@ -2976,7 +2978,7 @@ async function loadSiteForEdit(siteId) {
 
     window.location.hash = '#edit';
   } catch (e) {
-    showToast('Eroare la încărcarea site-ului: ' + e.message, 'error');
+    showToast('Error loading the site: ' + e.message, 'error');
   } finally {
     setLoading(false);
   }
@@ -2984,7 +2986,7 @@ async function loadSiteForEdit(siteId) {
 
 async function loadVersions(siteId) {
   const list = $('versions-list');
-  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă...</p>';
+  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Loading…</p>';
   openModal('modal-versions');
 
   try {
@@ -2993,7 +2995,7 @@ async function loadVersions(siteId) {
     if (!list) return;
 
     if (versions.length === 0) {
-      list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">Nu există versiuni salvate.</p>';
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">No saved versions yet.</p>';
       return;
     }
 
@@ -3006,22 +3008,22 @@ async function loadVersions(siteId) {
       const item = document.createElement('div');
       item.className = 'version-item';
       const d = new Date(v.publishedAt);
-      const dateStr = d.toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+      const dateStr = d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
       const verNum = versionsSorted.length - idx;
-      const label = 'Versiunea ' + verNum;
+      const label = 'Version ' + verNum;
       item.innerHTML = `
         <span class="version-date">${escHtml(dateStr)}</span>
         <span style="font-size:.76rem;color:var(--text-light);flex:1;padding:0 .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>
-        <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restaurează</button>`;
+        <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restore</button>`;
       item.querySelector('.btn-rollback').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-        setBtnLoading(btn, true, 'Se restaurează...');
+        setBtnLoading(btn, true, 'Restoring…');
         try {
           await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/rollback', { versionId: v.versionId });
-          showToast('Versiune restaurată cu succes!', 'success');
+          showToast('Version restored successfully!', 'success');
           closeModal('modal-versions');
         } catch (err) {
-          showToast('Eroare la restaurare: ' + err.message, 'error');
+          showToast('Error restoring: ' + err.message, 'error');
           setBtnLoading(btn, false);
         }
       });
@@ -3116,18 +3118,18 @@ async function handleRoute(hash) {
     else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Trebuie să te autentifici pentru a vedea proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Intră</button></div>';
+        list.innerHTML = '<div class="empty-state"><p>Sign in to see your projects.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Sign in</button></div>';
         wireDashboardAuthButton();
       }
     }
-  } else if (route === 'platit') {
-    showToast('Plata a fost procesată! Site-ul tău va fi publicat în câteva momente.', 'success', 6000);
+  } else if (route === 'paid') {
+    showToast('Payment processed! Your site will be published in a few moments.', 'success', 6000);
     window.location.hash = '#dashboard';
-  } else if (route === 'anulat') {
-    showToast('Plata a fost anulată.', '', 4000);
+  } else if (route === 'cancelled') {
+    showToast('Payment cancelled.', '', 4000);
     window.location.hash = '#edit';
-  } else if (route === 'login-expirat') {
-    showToast('Linkul de autentificare a expirat. Încearcă din nou.', 'error', 5000);
+  } else if (route === 'login-expired') {
+    showToast('Your sign-in link has expired. Try again.', 'error', 5000);
     window.location.hash = '#templates';
   } else {
     showScreen('templates');
@@ -3203,7 +3205,7 @@ function wireStaticButtons() {
       const rawSlug = slugInput ? toSlug(slugInput.value) : '';
       if (!rawSlug || rawSlug.length < 3) {
         const err = $('slug-error');
-        if (err) { err.textContent = 'Introdu o adresă validă (minim 3 caractere).'; show(err); }
+        if (err) { err.textContent = 'Enter a valid address (at least 3 characters).'; show(err); }
         if (slugInput) slugInput.focus();
         return;
       }
@@ -3225,13 +3227,13 @@ function wireStaticButtons() {
       try {
         await navigator.clipboard.writeText(url);
         copyBtn.classList.add('copied');
-        copyBtn.textContent = 'Copiat!';
+        copyBtn.textContent = 'Copied!';
         setTimeout(() => {
           copyBtn.classList.remove('copied');
-          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copiază';
+          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy';
         }, 2000);
       } catch (_) {
-        showToast('Nu s-a putut copia. Selectează manual.', 'error');
+        showToast("Couldn't copy. Select the text manually.", 'error');
       }
     });
   }
@@ -3242,7 +3244,7 @@ function wireStaticButtons() {
     logoutBtn.addEventListener('click', async () => {
       try { await fetch('/api/auth/logout', { method:'POST', credentials:'include' }); } catch (_) {}
       updateUserUI(null);
-      showToast('Ai ieșit din cont.', '', 3000);
+      showToast('Signed out.', '', 3000);
       window.location.hash = '#templates';
     });
   }
@@ -3322,7 +3324,7 @@ function wireStaticButtons() {
 // ---------------------------------------------------------------------------
 
 async function boot() {
-  setLoading(true, 'Se încarcă...');
+  setLoading(true, 'Loading…');
   try {
     initPostMessageListener();
     wireStaticButtons();
@@ -3338,7 +3340,7 @@ async function boot() {
     await handleRoute(window.location.hash);
   } catch (e) {
     console.error('Boot error:', e);
-    showToast('Eroare la inițializare. Reîncarcă pagina.', 'error', 8000);
+    showToast('Initialization failed. Reload the page.', 'error', 8000);
   } finally {
     setLoading(false);
   }

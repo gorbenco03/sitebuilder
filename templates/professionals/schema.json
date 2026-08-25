@@ -1,77 +1,77 @@
 {
   "templateId": "professionals",
   "version": 1,
-  "name": "Servicii profesionale",
-  "language": "ro",
+  "name": "Professional services",
+  "language": "en",
   "wizardHints": {
     "vertical": "professionals",
-    "aiStyle": "editorial calm, premium, de încredere — serif pe titluri mari, hârtie caldă și cerneală, fără saloane/restaurante/meseriași; ton de cabinet juridic, consultanță, notariat, contabilitate, coach"
+    "aiStyle": "calm editorial, premium, trustworthy — serif for large headings, warm paper and ink, no salons/restaurants/trades; the tone of a law office, consultancy, notary, accounting practice, or coach"
   },
   "sections": [
     {
       "id": "business",
-      "title": "Despre cabinet / practică",
+      "title": "About the firm / practice",
       "fields": [
         {
           "key": "business.name",
           "type": "text",
-          "label": "Numele cabinetului / practicii / brandului profesional",
+          "label": "Name of your firm, practice, or professional brand",
           "required": true,
           "maxLen": 80
         },
         {
           "key": "business.tagline",
           "type": "text",
-          "label": "Promisiune scurtă (ex: Claritate pentru deciziile care contează)",
+          "label": "Short promise (e.g., Clarity for the decisions that matter)",
           "required": true,
           "maxLen": 120
         },
         {
           "key": "business.title",
           "type": "text",
-          "label": "Titlul paginii pentru browser și Google",
+          "label": "Page title for the browser and Google",
           "required": true,
           "maxLen": 90
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere SEO (1–2 propoziții, fără ranking-uri inventate)",
+          "label": "SEO description (1–2 sentences, no made-up rankings)",
           "required": true,
           "maxLen": 160
         },
         {
           "key": "business.about",
           "type": "textarea",
-          "label": "Despre profesionist / echipă — abordare, nu cifre neverificabile",
+          "label": "About you or your team — your approach, not unverifiable numbers",
           "required": true,
           "maxLen": 700
         },
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Limba site-ului",
+          "label": "Site language",
           "required": true,
           "maxLen": 5
         },
         {
           "key": "business.profession",
           "type": "text",
-          "label": "Profesie / autorizare (ex: Avocat, Consultant financiar) — opțional",
+          "label": "Profession or credential (e.g., Attorney, Financial consultant) — optional",
           "required": false,
           "maxLen": 80
         },
         {
           "key": "business.languages",
           "type": "text",
-          "label": "Limbi de lucru (ex: Română, Engleză) — opțional",
+          "label": "Languages you work in (e.g., English, Spanish) — optional",
           "required": false,
           "maxLen": 80
         },
         {
           "key": "business.modes",
           "type": "text",
-          "label": "Mod de lucru (ex: Online și la birou) — opțional",
+          "label": "How you work (e.g., Online and in-office) — optional",
           "required": false,
           "maxLen": 80
         }
@@ -79,124 +79,124 @@
     },
     {
       "id": "labels",
-      "title": "Etichete interfață",
+      "title": "Interface labels",
       "fields": [
         {
           "key": "labels.navServices",
           "type": "text",
-          "label": "Link navigare servicii",
+          "label": "Services nav link",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navAbout",
           "type": "text",
-          "label": "Link navigare despre",
+          "label": "About nav link",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navFaq",
           "type": "text",
-          "label": "Link navigare întrebări",
+          "label": "FAQ nav link",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navContact",
           "type": "text",
-          "label": "Link navigare contact",
+          "label": "Contact nav link",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navBook",
           "type": "text",
-          "label": "Link navigare programare",
+          "label": "Booking nav link",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.servicesEyebrow",
           "type": "text",
-          "label": "Text mic deasupra serviciilor",
+          "label": "Small label above the services section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.processEyebrow",
           "type": "text",
-          "label": "Text mic deasupra procesului",
+          "label": "Small label above the process section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.aboutEyebrow",
           "type": "text",
-          "label": "Text mic deasupra secțiunii despre",
+          "label": "Small label above the about section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.faqEyebrow",
           "type": "text",
-          "label": "Text mic deasupra FAQ",
+          "label": "Small label above the FAQ section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.bookEyebrow",
           "type": "text",
-          "label": "Text mic deasupra programării",
+          "label": "Small label above the booking section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.contactEyebrow",
           "type": "text",
-          "label": "Text mic deasupra contactului",
+          "label": "Small label above the contact section",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.secondaryCta",
           "type": "text",
-          "label": "CTA secundar din hero (ex: Vezi serviciile)",
+          "label": "Secondary hero button (e.g., See our services)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Indicator scroll pe hero",
+          "label": "Scroll indicator on the hero",
           "required": true,
           "maxLen": 20
         },
         {
           "key": "labels.instaTitle",
           "type": "text",
-          "label": "Titlu secțiune Instagram (dacă e activ)",
+          "label": "Instagram section title (if enabled)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "labels.instaFollow",
           "type": "text",
-          "label": "Buton follow Instagram",
+          "label": "Instagram follow button",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "labels.waQr",
           "type": "text",
-          "label": "Titlu modal QR WhatsApp",
+          "label": "WhatsApp QR modal title",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "labels.waOpen",
           "type": "text",
-          "label": "Link deschide WhatsApp Web",
+          "label": "\"Open WhatsApp Web\" link text",
           "required": false,
           "maxLen": 60
         }
@@ -204,30 +204,30 @@
     },
     {
       "id": "theme",
-      "title": "Culori & temă vizuală",
+      "title": "Colors & visual theme",
       "fields": [
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Accent principal (alamă / terracotta calm)",
+          "label": "Primary accent (muted brass / terracotta)",
           "required": true
         },
         {
           "key": "theme.primaryLight",
           "type": "color",
-          "label": "Accent deschis",
+          "label": "Light accent",
           "required": true
         },
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Cerneală / text principal",
+          "label": "Ink / primary text color",
           "required": true
         },
         {
           "key": "theme.cream",
           "type": "color",
-          "label": "Hârtie / fundal cald",
+          "label": "Paper / warm background",
           "required": true
         }
       ]
@@ -239,21 +239,21 @@
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Buton principal (ex: Programează o discuție)",
+          "label": "Primary button (e.g., Book a consultation)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "hero.qualifier",
           "type": "text",
-          "label": "Calificator scurt sub slogan",
+          "label": "Short qualifier below the tagline",
           "required": false,
           "maxLen": 140
         },
         {
           "key": "hero.background",
           "type": "text",
-          "label": "Fundal hero CSS (gradient sau url('images/...')) — opțional",
+          "label": "Hero background CSS (gradient or url('images/...')) — optional",
           "required": false,
           "maxLen": 400
         }
@@ -261,19 +261,19 @@
     },
     {
       "id": "services",
-      "title": "Servicii / expertiză",
+      "title": "Services / expertise",
       "fields": [
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Titlul secțiunii servicii",
+          "label": "Services section title",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "services",
           "type": "list",
-          "label": "Servicii (denumire + descriere scurtă)",
+          "label": "Services (name + short description)",
           "required": true,
           "min": 1,
           "max": 8,
@@ -286,19 +286,19 @@
     },
     {
       "id": "process",
-      "title": "Cum lucrați",
+      "title": "How you work",
       "fields": [
         {
           "key": "process.title",
           "type": "text",
-          "label": "Titlul secțiunii proces",
+          "label": "Process section title",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "process.steps",
           "type": "list",
-          "label": "Pași (titlu + text) — cereți, nu confirmați automat",
+          "label": "Steps (title + text) — you request, you don't auto-confirm",
           "required": false,
           "min": 0,
           "max": 5,
@@ -311,26 +311,26 @@
     },
     {
       "id": "credentials",
-      "title": "Credențiale (fără pretenții neverificabile)",
+      "title": "Credentials (no unverifiable claims)",
       "fields": [
         {
           "key": "credentials.title",
           "type": "text",
-          "label": "Titlul secțiunii credențiale",
+          "label": "Credentials section title",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "credentials.lead",
           "type": "textarea",
-          "label": "Introducere (ex: Experiență, rigoare și comunicare directă)",
+          "label": "Intro line (e.g., Experience, rigor, and straight talk)",
           "required": false,
           "maxLen": 300
         },
         {
           "key": "credentials.items",
           "type": "list",
-          "label": "Puncte (calificări, domenii) — doar ce e real",
+          "label": "Bullet points (qualifications, focus areas) — only what's real",
           "required": false,
           "min": 0,
           "max": 8,
@@ -342,19 +342,19 @@
     },
     {
       "id": "faq",
-      "title": "Întrebări frecvente",
+      "title": "Frequently asked questions",
       "fields": [
         {
           "key": "faq.title",
           "type": "text",
-          "label": "Titlul secțiunii FAQ",
+          "label": "FAQ section title",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "faq.items",
           "type": "list",
-          "label": "Întrebare + răspuns",
+          "label": "Question + answer",
           "required": false,
           "min": 0,
           "max": 10,
@@ -367,68 +367,68 @@
     },
     {
       "id": "appointment",
-      "title": "Programări (cerere locală, fără calendar extern)",
+      "title": "Appointments (local request, no external calendar)",
       "fields": [
         {
           "key": "appointment.enabled",
           "type": "text",
-          "label": "Activează secțiunea de programare (da / nu)",
+          "label": "Enable the appointment section (yes / no)",
           "required": true,
           "maxLen": 8
         },
         {
           "key": "appointment.title",
           "type": "text",
-          "label": "Titlul secțiunii (ex: Solicită o programare)",
+          "label": "Section title (e.g., Request an appointment)",
           "required": true,
           "maxLen": 80
         },
         {
           "key": "appointment.intro",
           "type": "textarea",
-          "label": "Text introductiv — menționează că e cerere, nu confirmare automată",
+          "label": "Intro text — make clear it's a request, not an automatic confirmation",
           "required": true,
           "maxLen": 400
         },
         {
           "key": "appointment.timezone",
           "type": "text",
-          "label": "Fus orar afișat (ex: Europe/Bucharest)",
+          "label": "Displayed time zone (e.g., America/New_York)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "appointment.slotIntervalMinutes",
           "type": "text",
-          "label": "Interval sloturi în minute (ex: 60)",
+          "label": "Slot interval in minutes (e.g., 60)",
           "required": true,
           "maxLen": 4
         },
         {
           "key": "appointment.durationMin",
           "type": "text",
-          "label": "Durată implicită discuție (minute)",
+          "label": "Default consultation length (minutes)",
           "required": true,
           "maxLen": 4
         },
         {
           "key": "appointment.minLeadMinutes",
           "type": "text",
-          "label": "Timp minim înainte de primul slot (minute)",
+          "label": "Minimum notice before the first slot (minutes)",
           "required": true,
           "maxLen": 6
         },
         {
           "key": "appointment.modeLabel",
           "type": "text",
-          "label": "Mod implicit (ex: Online sau la birou)",
+          "label": "Default format (e.g., Online or in-office)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "appointment.types",
           "type": "list",
-          "label": "Tipuri de discuție",
+          "label": "Consultation types",
           "required": true,
           "min": 1,
           "max": 6,
@@ -442,7 +442,7 @@
         {
           "key": "appointment.weekly",
           "type": "list",
-          "label": "Disponibilitate săptămânală (weekday 1=Luni…7=Duminică, start, end HH:MM)",
+          "label": "Weekly availability (weekday 1=Mon…7=Sun, start, end HH:MM)",
           "required": true,
           "min": 1,
           "max": 14,
@@ -455,35 +455,35 @@
         {
           "key": "appointment.confirmationText",
           "type": "textarea",
-          "label": "Mesaj după trimiterea cererii",
+          "label": "Message shown after the request is sent",
           "required": true,
           "maxLen": 280
         },
         {
           "key": "appointment.privacyNotice",
           "type": "textarea",
-          "label": "Notă confidențialitate / date personale",
+          "label": "Privacy note / personal data",
           "required": false,
           "maxLen": 280
         },
         {
           "key": "appointment.confidentialityWarning",
           "type": "textarea",
-          "label": "Avertisment (juridic/contabil): nu trimite documente confidențiale aici",
+          "label": "Warning (legal/accounting): don't send confidential documents here",
           "required": false,
           "maxLen": 280
         },
         {
           "key": "appointment.emptySlotsText",
           "type": "textarea",
-          "label": "Mesaj când nu există intervale",
+          "label": "Message shown when no slots are available",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "appointment.submitLabel",
           "type": "text",
-          "label": "Text buton trimitere",
+          "label": "Submit button text",
           "required": true,
           "maxLen": 40
         }
@@ -491,103 +491,103 @@
     },
     {
       "id": "contact",
-      "title": "Contact & locație",
+      "title": "Contact & location",
       "fields": [
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Titlul secțiunii contact",
+          "label": "Contact section title",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "contact.intro",
           "type": "textarea",
-          "label": "Intro contact (inclusiv consultație online, dacă e cazul)",
+          "label": "Contact intro (mention online consultations if offered)",
           "required": true,
           "maxLen": 400
         },
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Telefon (format internațional)",
+          "label": "Phone (international format)",
           "required": false,
           "maxLen": 20
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Telefon afișat",
+          "label": "Displayed phone number",
           "required": false,
           "maxLen": 30
         },
         {
           "key": "contact.email",
           "type": "email",
-          "label": "Email de contact",
+          "label": "Contact email",
           "required": false,
           "maxLen": 80
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "WhatsApp (cifre internaționale)",
+          "label": "WhatsApp (international digits)",
           "required": false,
           "maxLen": 20
         },
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "Link WhatsApp",
+          "label": "WhatsApp link",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresă birou",
+          "label": "Office address",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.addressHref",
           "type": "url",
-          "label": "Link hărți (opțional)",
+          "label": "Map link (optional)",
           "required": false,
           "maxLen": 300
         },
         {
           "key": "contact.hoursNote",
           "type": "text",
-          "label": "Notă program birou (text liber)",
+          "label": "Office hours note (free text)",
           "required": false,
           "maxLen": 120
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Instagram (secțiunea contact)",
+          "label": "Instagram (contact section)",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Etichetă Instagram",
+          "label": "Instagram label",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "Link Facebook",
+          "label": "Facebook link",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Etichetă Facebook",
+          "label": "Facebook label",
           "required": false,
           "maxLen": 40
         }
@@ -595,33 +595,33 @@
     },
     {
       "id": "instagram",
-      "title": "Instagram (opțional)",
+      "title": "Instagram (optional)",
       "fields": [
         {
           "key": "instagram.handle",
           "type": "text",
-          "label": "Handle Instagram (fără @)",
+          "label": "Instagram handle (without @)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Profil Instagram",
+          "label": "Instagram profile",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Feed Instagram (opțional)",
+          "label": "Instagram feed link (optional)",
           "required": false,
           "maxLen": 400
         },
         {
           "key": "instagram.gallery",
           "type": "list",
-          "label": "Poze galerie Instagram (URL-uri sau images/...)",
+          "label": "Instagram gallery photos (URLs or images/...)",
           "required": false,
           "min": 0,
           "max": 12,
@@ -633,12 +633,12 @@
     },
     {
       "id": "seo",
-      "title": "Detalii pentru căutare",
+      "title": "Search details",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "text",
-          "label": "Imagine partajare (images/... sau URL)",
+          "label": "Share image (images/... or URL)",
           "required": false,
           "maxLen": 300
         }
@@ -646,26 +646,26 @@
     },
     {
       "id": "footer",
-      "title": "Subsol",
+      "title": "Footer",
       "fields": [
         {
           "key": "footer.address",
           "type": "text",
-          "label": "Adresă scurtă în footer",
+          "label": "Short address in the footer",
           "required": false,
           "maxLen": 120
         },
         {
           "key": "footer.year",
           "type": "text",
-          "label": "An copyright",
+          "label": "Copyright year",
           "required": true,
           "maxLen": 6
         },
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Notă scurtă footer",
+          "label": "Short footer note",
           "required": false,
           "maxLen": 120
         }

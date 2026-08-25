@@ -119,10 +119,10 @@ check('salon (portfolio) presets have no Book now', () => {
     const cta = p.config && p.config.hero && p.config.hero.ctaLabel;
     assert.ok(cta, `${p.id}: missing hero.ctaLabel`);
     assert.ok(!/book\s*now/i.test(String(cta)), `${p.id}: cta still Book now`);
-    // Romanian booking CTA (Programare family)
+    // Must still be a booking CTA — just never the generic factory "Book now".
     assert.ok(
-      /program/i.test(String(cta)),
-      `${p.id}: salon CTA should be Romanian programare-family, got ${JSON.stringify(cta)}`
+      /\bbook\b|\bappointment\b|\breserve\b/i.test(String(cta)),
+      `${p.id}: salon CTA should be a booking CTA, got ${JSON.stringify(cta)}`
     );
   }
 });
@@ -167,7 +167,7 @@ check('system ids stay product-menu / portfolio / local-service with ≥2 preset
   for (const id of SYSTEMS) {
     assert.ok(ids.includes(id), `registry missing ${id}`);
   }
-  assert.strictEqual(ids.length, 3, 'registry must stay three systems');
+  assert.strictEqual(ids.length, 4, 'registry must stay four systems');
 });
 
 check('instagram embed + gallery fallback still present on presets', () => {

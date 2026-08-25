@@ -2,55 +2,55 @@
   "templateId": "product-menu",
   "version": 1,
   "name": "Restaurant",
-  "language": "ro",
+  "language": "en",
   "wizardHints": {
     "vertical": "product-menu",
-    "aiStyle": "cald, apetisant, editorial de meniu — tipografie serif pe titluri, fond crem, accente coral; ton de restaurant de cartier sau bistro, zero clișee corporate"
+    "aiStyle": "warm, appetizing, menu-editorial — serif titles, warm cream background, coral accents; the tone of a neighborhood restaurant or bistro, zero corporate clichés"
   },
   "sections": [
     {
       "id": "business",
-      "title": "Despre afacere",
+      "title": "About your business",
       "fields": [
         {
           "key": "business.name",
           "type": "text",
-          "label": "Numele afacerii (restaurant, cafenea, magazin)",
+          "label": "Business name (restaurant, café, shop)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "business.tagline",
           "type": "text",
-          "label": "Slogan scurt (ex: Cină de sezon, vinuri de pivniță)",
+          "label": "Short tagline (e.g., Seasonal dinners, cellar wines)",
           "required": true,
           "maxLen": 100
         },
         {
           "key": "business.title",
           "type": "text",
-          "label": "Titlul paginii pentru browser și Google (include orașul)",
+          "label": "Page title for the browser and Google (include your city)",
           "required": true,
           "maxLen": 80
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere SEO scurtă (ce oferiți și unde sunteți — 1–2 propoziții)",
+          "label": "Short SEO description (what you offer and where you are — 1–2 sentences)",
           "required": true,
           "maxLen": 160
         },
         {
           "key": "business.about",
           "type": "textarea",
-          "label": "Povestea restaurantului (secțiunea «Despre noi») — scurt, personal",
+          "label": "Your restaurant's story (the \"About us\" section) — short and personal",
           "required": true,
           "maxLen": 700
         },
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Limba site-ului",
+          "label": "Site language",
           "required": true,
           "maxLen": 5
         }
@@ -58,47 +58,47 @@
     },
     {
       "id": "labels",
-      "title": "Etichete interfață",
+      "title": "Interface labels",
       "fields": [
         {
           "key": "labels.about",
           "type": "text",
-          "label": "Titlul secțiunii «Despre noi» (ex: Povestea noastră)",
+          "label": "\"About us\" section title (e.g., Our story)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.instaTitle",
           "type": "text",
-          "label": "Titlul secțiunii Instagram (ex: Instagram din bucătărie)",
+          "label": "Instagram section title (e.g., From the kitchen)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.instaFollow",
           "type": "text",
-          "label": "Textul butonului de follow Instagram",
+          "label": "Instagram follow button text",
           "required": true,
           "maxLen": 20
         },
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Textul indicatorului de scroll pe hero (ex: Descoperă)",
+          "label": "Scroll indicator text on the hero (e.g., Explore)",
           "required": true,
           "maxLen": 20
         },
         {
           "key": "labels.waQr",
           "type": "text",
-          "label": "Titlul modalului QR WhatsApp (ex: Deschide WhatsApp pe telefon)",
+          "label": "WhatsApp QR modal title (e.g., Open WhatsApp on your phone)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.waOpen",
           "type": "text",
-          "label": "Textul linkului «Deschide WhatsApp Web» din modal",
+          "label": "\"Open WhatsApp Web\" link text in the modal",
           "required": true,
           "maxLen": 60
         }
@@ -106,62 +106,62 @@
     },
     {
       "id": "theme",
-      "title": "Culori & aspect",
+      "title": "Colors & look",
       "fields": [
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Culoarea de accent a brandului (ex: #B85C5C coral de restaurant)",
+          "label": "Brand accent color (e.g., #B85C5C restaurant coral)",
           "required": true
         },
         {
           "key": "theme.primaryLight",
           "type": "color",
-          "label": "Varianta deschisă a culorii de accent",
+          "label": "Lighter variant of the accent color",
           "required": true
         },
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Culoarea de contrast (antracit cald, ex: #4A2C2A)",
+          "label": "Contrast color (warm charcoal, e.g., #4A2C2A)",
           "required": true
         },
         {
           "key": "theme.cream",
           "type": "color",
-          "label": "Culoarea de fond a paginii (crem cald, ex: #FAF6F1)",
+          "label": "Page background color (warm cream, e.g., #FAF6F1)",
           "required": true
         }
       ]
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima vedere)",
+      "title": "Hero section (first impression)",
       "fields": [
         {
           "key": "logo",
           "type": "text",
-          "label": "Calea imaginii logo (ex: images/logo.png) — lasă gol dacă nu ai logo",
+          "label": "Logo image path (e.g., images/logo.png) — leave blank if you don't have one",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "showWordmark",
           "type": "text",
-          "label": "Afișează numele ca text elegant pe hero când nu există logo? (true / false)",
+          "label": "Show your name as elegant text on the hero when there's no logo? (true / false)",
           "required": false
         },
         {
           "key": "hero.background",
           "type": "text",
-          "label": "Fundalul heroului — url('images/hero.jpg') sau gradient CSS cu imagine: linear-gradient(...), url('...')",
+          "label": "Hero background — url('images/hero.jpg') or a CSS gradient with image: linear-gradient(...), url('...')",
           "required": true,
           "maxLen": 300
         },
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Textul butonului principal (ex: Rezervă o masă)",
+          "label": "Primary button text (e.g., Book a table)",
           "required": true,
           "maxLen": 40
         }
@@ -169,19 +169,19 @@
     },
     {
       "id": "services",
-      "title": "Specialități / Produse",
+      "title": "Specialties / Products",
       "fields": [
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Titlul listei de specialități (ex: Meniu de sezon)",
+          "label": "Specialties list title (e.g., Seasonal menu)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "services",
           "type": "list",
-          "label": "Lista de produse / specialități (câmp icon opțional, câmp label obligatoriu)",
+          "label": "List of products / specialties (icon field optional, label field required)",
           "required": false,
           "min": 0,
           "max": 12,
@@ -194,19 +194,19 @@
     },
     {
       "id": "menu",
-      "title": "Meniu restaurant",
+      "title": "Restaurant menu",
       "fields": [
         {
           "key": "menu.title",
           "type": "text",
-          "label": "Titlul blocului de meniu (ex: Meniu)",
+          "label": "Menu block title (e.g., Menu)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "menu.en",
           "type": "list",
-          "label": "Secțiuni meniu (EN) — fiecare cu categorie + articole",
+          "label": "Menu sections (EN) — each with a category + items",
           "required": false,
           "min": 0,
           "max": 20,
@@ -218,7 +218,7 @@
         {
           "key": "menu.ro",
           "type": "list",
-          "label": "Secțiuni meniu (RO) — fiecare cu categorie + articole",
+          "label": "Menu sections (secondary language) — each with a category + items",
           "required": false,
           "min": 0,
           "max": 20,
@@ -231,19 +231,19 @@
     },
     {
       "id": "gallery",
-      "title": "Galerie foto",
+      "title": "Photo gallery",
       "fields": [
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Titlul secțiunii galerie (ex: Din farfurie) — lasă gol pentru a omite",
+          "label": "Gallery section title (e.g., On the plate) — leave blank to omit",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "categories",
           "type": "list",
-          "label": "Categorii de poze (titlu + descriere scurtă + set de imagini)",
+          "label": "Photo categories (title + short description + set of images)",
           "required": true,
           "min": 1,
           "max": 6,
@@ -262,122 +262,122 @@
         {
           "key": "instagram.handle",
           "type": "text",
-          "label": "Username Instagram (fără @)",
+          "label": "Instagram username (without @)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Adresa Instagram (https://www.instagram.com/...)",
+          "label": "Instagram URL (https://www.instagram.com/...)",
           "required": false
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Feed Instagram (opțional)",
+          "label": "Instagram feed link (optional)",
           "required": false
         },
         {
           "key": "instagram.gallery",
           "type": "photos",
-          "label": "Poze grilă Instagram (fallback / companion)",
+          "label": "Instagram grid photos (fallback / companion)",
           "required": false
         }
       ]
     },
     {
       "id": "contact",
-      "title": "Contact & rezervări",
+      "title": "Contact & reservations",
       "fields": [
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Titlul cardului de contact (ex: Rezervă masa)",
+          "label": "Contact card title (e.g., Book a table)",
           "required": true,
           "maxLen": 50
         },
         {
           "key": "contact.intro",
           "type": "textarea",
-          "label": "Textul introductiv al cardului de contact (maxim 200 caractere)",
+          "label": "Contact card intro text (200 characters max)",
           "required": true,
           "maxLen": 200
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "Număr WhatsApp internațional fără + (ex: 40722000000)",
+          "label": "International WhatsApp number without + (e.g., 12125550100)",
           "required": false
         },
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "Link WhatsApp complet cu mesaj precompletat (https://wa.me/...)",
+          "label": "Full WhatsApp link with a pre-filled message (https://wa.me/...)",
           "required": false
         },
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Număr de telefon cu prefix țară (ex: +40722000000)",
+          "label": "Phone number with country code (e.g., +12125550100)",
           "required": false
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Numărul afișat pe site (ex: +40 722 000 000)",
+          "label": "Number as displayed on the site (e.g., +1 212 555 0100)",
           "required": false,
           "maxLen": 30
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Instagram (secțiunea contact)",
+          "label": "Instagram (contact section)",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Text Instagram (ex: @restaurantul_tau)",
+          "label": "Instagram label (e.g., @your_restaurant)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "Link Facebook (opțional)",
+          "label": "Facebook link (optional)",
           "required": false
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Textul linkului Facebook (ex: Restaurantul Nostru)",
+          "label": "Facebook link text (e.g., Our Restaurant)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresa fizică afișată (câte un rând pe linie)",
+          "label": "Physical address as displayed (one line per row)",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.addressHref",
           "type": "url",
-          "label": "Link Google Maps pentru adresă",
+          "label": "Google Maps link for the address",
           "required": false
         }
       ]
     },
     {
       "id": "seo",
-      "title": "SEO & partajare socială",
+      "title": "SEO & social sharing",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "url",
-          "label": "Imagine la partajare pe rețele (recomandat 1200×630px)",
+          "label": "Image for social sharing (1200×630px recommended)",
           "required": false
         }
       ]
@@ -389,21 +389,21 @@
         {
           "key": "footer.address",
           "type": "text",
-          "label": "Adresa scurtă în footer (o singură linie)",
+          "label": "Short address in the footer (single line)",
           "required": true,
           "maxLen": 120
         },
         {
           "key": "footer.year",
           "type": "text",
-          "label": "Anul pentru copyright (ex: 2026)",
+          "label": "Copyright year (e.g., 2026)",
           "required": true,
           "maxLen": 4
         },
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Notița caldă din footer (ex: Poftă bună la masa noastră.)",
+          "label": "Warm footer note (e.g., Enjoy your meal.)",
           "required": false,
           "maxLen": 100
         }

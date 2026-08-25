@@ -76,11 +76,11 @@ check('S35 chrome: document <title> still names Hidook Site Builder', () => {
 
 check('S35 chrome: logo span still exactly Hidook Site Builder', () => {
     const logoMatch = src.match(
-        /class=\"logo\"[^>]*>[\s\S]*?<span>([^<]*)<\/span>/i
+        /<span class=\"logo-word\">([^<]*)<span class=\"logo-word-full\">([^<]*)<\/span><\/span>/i
     );
-    assert.ok(logoMatch, 'builder/index.html must have logo <span> text');
+    assert.ok(logoMatch, 'builder/index.html must have logo-word span text');
     assert.strictEqual(
-        logoMatch[1].trim(),
+        (logoMatch[1] + logoMatch[2]).trim(),
         'Hidook Site Builder',
         'logo <span> must remain exactly \"Hidook Site Builder\"'
     );

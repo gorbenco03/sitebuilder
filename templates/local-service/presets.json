@@ -2,28 +2,28 @@
   "presets": [
     {
       "id": "renovari-interioare-londra",
-      "name": "ProRenov Construct — București",
+      "name": "Ridgeline Renovations — Austin, TX",
       "config": {
         "business": {
-          "name": "ProRenov Construct",
-          "tagline": "Renovări interioare & finisaje premium",
-          "title": "ProRenov Construct | Renovări Interioare București | Finisaje de Calitate",
-          "metaDescription": "Renovări interioare complete în București și Ilfov. Gresie, faianță, rigips, vopsitorie, instalații. Echipă de profesioniști cu 12 ani experiență. Cere ofertă gratuită!",
-          "about": "ProRenov Construct este o firmă de construcții și renovări din București. Oferim servicii complete de renovare interioară: de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la toate lucrările.",
-          "lang": "ro",
+          "name": "Ridgeline Renovations",
+          "tagline": "Interior renovations & premium finishing",
+          "title": "Ridgeline Renovations | Interior Renovations Austin TX | Quality Finishing",
+          "metaDescription": "Full interior renovations in Austin and the surrounding area. Tile, drywall, painting, plumbing. A crew with 12 years of experience. Get a free quote today.",
+          "about": "Ridgeline Renovations is a construction and renovation company based in Austin, Texas. We handle complete interior renovations — from demolition and framing through to luxury finishing. We work clean, hit our deadlines, and back every job with a written warranty.",
+          "lang": "en",
           "yearsExp": "12",
           "projectsDone": "240",
-          "zone": "București și Ilfov (Sector 1–6, Voluntari, Otopeni, Pipera)"
+          "zone": "Austin and the Hill Country (Round Rock, Cedar Park, Pflugerville)"
         },
         "labels": {
-          "about": "Despre noi",
-          "instaTitle": "De pe șantier",
-          "instaFollow": "Urmărește",
-          "scroll": "Derulează",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web",
-          "callCta": "Sună",
-          "estimateCta": "Cere ofertă"
+          "about": "About us",
+          "instaTitle": "From the job site",
+          "instaFollow": "Follow",
+          "scroll": "Scroll",
+          "waQr": "Open WhatsApp on your phone",
+          "waOpen": "Or open WhatsApp Web",
+          "callCta": "Call",
+          "estimateCta": "Get a quote"
         },
         "theme": {
           "primary": "#0b3d91",
@@ -35,136 +35,136 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('images/pr-hero.jpg') center/cover no-repeat",
-          "ctaLabel": "Cere ofertă",
-          "callLabel": "Sună acum"
+          "ctaLabel": "Get a quote",
+          "callLabel": "Call now"
         },
-        "servicesTitle": "Serviciile noastre",
+        "servicesTitle": "Our services",
         "services": [
           {
             "icon": "",
-            "label": "Zidărie și structură"
+            "label": "Framing & structural work"
           },
           {
             "icon": "",
-            "label": "Rigips și tavane false"
+            "label": "Drywall & suspended ceilings"
           },
           {
             "icon": "",
-            "label": "Vopsitorie și tencuială"
+            "label": "Painting & plastering"
           },
           {
             "icon": "",
-            "label": "Gresie și faianță"
+            "label": "Tile & flooring"
           },
           {
             "icon": "",
-            "label": "Instalații sanitare"
+            "label": "Plumbing"
           },
           {
             "icon": "",
-            "label": "Instalații electrice"
+            "label": "Electrical work"
           },
           {
             "icon": "",
-            "label": "Parchet și laminat"
+            "label": "Hardwood & laminate flooring"
           },
           {
             "icon": "",
-            "label": "Renovare completă casă"
+            "label": "Whole-house renovations"
           }
         ],
-        "galleryTitle": "Lucrări realizate",
+        "galleryTitle": "Completed work",
         "trust": [
           {
             "icon": "",
-            "title": "12 ani experiență",
-            "text": "Peste un deceniu de lucrări în București și Ilfov. Cunoaștem normativele locale și livrăm la standarde ridicate."
+            "title": "12 years of experience",
+            "text": "Over a decade of work across Austin and the Hill Country. We know local codes and deliver to a high standard."
           },
           {
             "icon": "",
-            "title": "Garanție scrisă 2 ani",
-            "text": "Oferim garanție de 2 ani la toate lucrările de construcții și finisaje. Calitatea noastră vorbește de la sine."
+            "title": "2-year written warranty",
+            "text": "Every construction and finishing job comes with a 2-year written warranty. Our work speaks for itself."
           },
           {
             "icon": "",
-            "title": "Ofertă transparentă",
-            "text": "Deviz detaliat înainte de începerea lucrărilor. Fără costuri ascunse, fără surprize neplăcute pe parcurs."
+            "title": "Transparent quotes",
+            "text": "A detailed estimate before work starts. No hidden costs, no unpleasant surprises along the way."
           },
           {
             "icon": "",
-            "title": "Asigurare completă",
-            "text": "Firmă asigurată pentru lucrări la domiciliu. Șantier ordonat și comunicare clară pe tot parcursul proiectului."
+            "title": "Fully insured",
+            "text": "Licensed and insured for residential work. A tidy job site and clear communication from start to finish."
           }
         ],
         "certifications": [
-          "Autorizație construcții",
-          "ANRE instalatori",
-          "ISCIR verificări",
-          "Garanție scrisă 2 ani"
+          "Licensed general contractor",
+          "OSHA safety certified",
+          "Insured & bonded",
+          "2-year written warranty"
         ],
         "categories": [
           {
-            "title": "Renovări baie completă",
-            "blurb": "Transformăm baia dumneavoastră de la zero: demolare, impermeabilizare, gresie, faianță, instalații sanitare și accesorii de calitate.",
+            "title": "Complete bathroom renovations",
+            "blurb": "We transform your bathroom from the studs out: demolition, waterproofing, tile, plumbing fixtures, and quality hardware.",
             "photos": [
               {
                 "src": "images/pr-baie1.jpg",
-                "alt": "Baie modernă renovată complet · București",
-                "caption": "Renovări baie completă · București"
+                "alt": "Fully renovated modern bathroom · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
               },
               {
                 "src": "images/pr-baie2.jpg",
-                "alt": "Gresie și faianță baie premium · București",
-                "caption": "Renovări baie completă · București"
+                "alt": "Premium tile bathroom finish · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
               },
               {
                 "src": "images/pr-baie3.jpg",
-                "alt": "Duș walk-in cu faianță · București",
-                "caption": "Renovări baie completă · București"
+                "alt": "Walk-in tiled shower · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
               }
             ]
           },
           {
-            "title": "Bucătării și spații open-space",
-            "blurb": "Amenajăm spații de living moderne: demolare pereți, rigips, electricitate, gresie porțelanată și vopsitorie pentru un rezultat impecabil.",
+            "title": "Kitchens & open-plan living",
+            "blurb": "We build modern living spaces: wall removal, framing, wiring, porcelain tile, and painting for a flawless result.",
             "photos": [
               {
                 "src": "images/pr-buc1.jpg",
-                "alt": "Bucătărie open-space renovată · București",
-                "caption": "Bucătării și spații open-space · București"
+                "alt": "Renovated open-plan kitchen · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
               },
               {
                 "src": "images/pr-buc2.jpg",
-                "alt": "Living cu parchet · București",
-                "caption": "Bucătării și spații open-space · București"
+                "alt": "Living room with hardwood flooring · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
               },
               {
                 "src": "images/pr-buc3.jpg",
-                "alt": "Tavan fals LED în bucătărie · București",
-                "caption": "Bucătării și spații open-space · București"
+                "alt": "LED suspended ceiling in kitchen · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
               }
             ]
           },
           {
-            "title": "Extinderi și lucrări structurale",
-            "blurb": "Extinderi casă, mansardări, demolare pereți portanți cu autorizație, construcții noi anexe în curte.",
+            "title": "Additions & structural work",
+            "blurb": "Home additions, attic conversions, permitted load-bearing wall removal, and new backyard structures.",
             "photos": [
               {
                 "src": "images/pr-ext1.jpg",
-                "alt": "Extensie casă cu structură oțel · București",
-                "caption": "Extinderi și lucrări structurale · București"
+                "alt": "Steel-frame home addition · Austin, TX",
+                "caption": "Additions & structural work · Austin, TX"
               },
               {
                 "src": "images/pr-ext2.jpg",
-                "alt": "Annex finalizat în grădină · București",
-                "caption": "Extinderi și lucrări structurale · București"
+                "alt": "Finished backyard structure · Austin, TX",
+                "caption": "Additions & structural work · Austin, TX"
               }
             ]
           }
         ],
         "instagram": {
-          "handle": "prorenov.bucuresti",
-          "url": "https://www.instagram.com/prorenov.bucuresti",
+          "handle": "ridgeline.renovations",
+          "url": "https://www.instagram.com/ridgeline.renovations",
           "gallery": [
             "images/pr-ig1.jpg",
             "images/pr-ig2.jpg",
@@ -176,32 +176,32 @@
           "embedUrl": ""
         },
         "contact": {
-          "title": "Cere ofertă gratuită",
-          "intro": "Sunați-ne sau scrieți pe WhatsApp pentru o evaluare gratuită la domiciliu. Răspundem în aceeași zi.",
+          "title": "Get a free quote",
+          "intro": "Call us or message on WhatsApp for a free on-site estimate. We reply the same day.",
           "instagram": {
-            "url": "https://www.instagram.com/prorenov.bucuresti",
-            "label": "@prorenov.bucuresti"
+            "url": "https://www.instagram.com/ridgeline.renovations",
+            "label": "@ridgeline.renovations"
           },
           "facebook": {
-            "url": "https://www.facebook.com/prorenov.bucuresti",
-            "label": "ProRenov Construct"
+            "url": "https://www.facebook.com/ridgelinerenovations",
+            "label": "Ridgeline Renovations"
           },
-          "whatsapp": "40721000112",
-          "phone": "+407****0112",
-          "phoneDisplay": "+40 721 000 112",
-          "waHref": "https://wa.me/40721000112",
-          "address": "București, Sector 2 — Lucrăm în tot Ilfovul",
-          "addressHref": "https://maps.google.com/?q=Bucuresti"
+          "whatsapp": "15125550148",
+          "phone": "+1512****0148",
+          "phoneDisplay": "+1 512-555-0148",
+          "waHref": "https://wa.me/15125550148",
+          "address": "Austin, TX — serving the greater Austin area",
+          "addressHref": "https://maps.google.com/?q=Austin+TX"
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
-          "canonical": "https://prorenov-construct.ro",
-          "jsonLd": "{\"@context\":\"https://***@type\":\"HomeAndConstructionBusiness\",\"name\":\"ProRenov Construct\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+407****0112\",\"areaServed\":\"București\",\"url\":\"https://prorenov-construct.ro\"}"
+          "canonical": "https://ridgelinerenovations.com",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Ridgeline Renovations\",\"description\":\"Full interior renovations in Austin, TX\",\"telephone\":\"+1512****0148\",\"areaServed\":\"Austin\",\"url\":\"https://ridgelinerenovations.com\"}"
         },
         "footer": {
-          "address": "București și Ilfov",
+          "address": "Austin and the Hill Country",
           "year": "2026",
-          "note": "Calitate garantată. Lucrări curate, termene respectate."
+          "note": "Guaranteed quality. Clean work, deadlines kept."
         }
       }
     },
@@ -211,24 +211,24 @@
       "config": {
         "business": {
           "name": "ConstTop Roofing",
-          "tagline": "Acoperisuri, fatade si izolatie termica",
-          "title": "ConstTop Roofing | Acoperisuri si Fatade Manchester | Reparatii & Montaj",
-          "metaDescription": "Montaj si reparatii acoperisuri, fatade ventilate, izolatie termica in Manchester si imprejurimi. Mesteri romani cu 15 ani experiență. Urgente 24/7. Oferta gratuita!",
-          "about": "ConstTop Roofing este specializata in lucrari de acoperisuri si fatade in Manchester si nord-vestul Angliei. Montam tigla ceramica si metalica, membrane bituminoase, fatade ventilate si izolatie termica la standarde ridicate. Intervenim si in urgente — scurgeri, stricaciuni dupa furtuna — in cel mai scurt timp posibil.",
-          "lang": "ro",
+          "tagline": "Roofing, facades and thermal insulation",
+          "title": "ConstTop Roofing | Roofing & Facades Manchester | Repairs & Installation",
+          "metaDescription": "Roof installation and repairs, ventilated facades, and thermal insulation in Manchester and the surrounding area. 15 years of experience. 24/7 emergency callouts. Get a free quote.",
+          "about": "ConstTop Roofing specializes in roofing and facade work across Manchester and the North West of England. We fit ceramic and metal tile, bituminous membranes, ventilated facades, and high-standard thermal insulation. We also handle emergencies — leaks, storm damage — as fast as possible.",
+          "lang": "en",
           "yearsExp": "15",
           "projectsDone": "380",
           "zone": "Manchester, Salford, Stockport, Bolton"
         },
         "labels": {
-          "about": "Despre noi",
-          "instaTitle": "De pe șantier",
-          "instaFollow": "Urmărește",
-          "scroll": "Derulează",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web",
-          "callCta": "Sună",
-          "estimateCta": "Cere ofertă"
+          "about": "About us",
+          "instaTitle": "From the job site",
+          "instaFollow": "Follow",
+          "scroll": "Scroll",
+          "waQr": "Open WhatsApp on your phone",
+          "waOpen": "Or open WhatsApp Web",
+          "callCta": "Call",
+          "estimateCta": "Get a quote"
         },
         "theme": {
           "primary": "#ff4d00",
@@ -240,65 +240,65 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(10,12,15,0.72) 50%, rgba(10,12,15,0.72) 100%), url('images/ct-hero.jpg') center/cover no-repeat",
-          "ctaLabel": "Cere ofertă",
-          "callLabel": "Sună acum"
+          "ctaLabel": "Get a quote",
+          "callLabel": "Call now"
         },
-        "servicesTitle": "Ce facem",
+        "servicesTitle": "What we do",
         "services": [
           {
             "icon": "",
-            "label": "Montaj tigla ceramica"
+            "label": "Ceramic tile roofing installation"
           },
           {
             "icon": "",
-            "label": "Tigla metalica si tabla faltuita"
+            "label": "Metal tile & standing-seam roofing"
           },
           {
             "icon": "",
-            "label": "Membrane bituminoase EPDM"
+            "label": "EPDM bituminous membranes"
           },
           {
             "icon": "",
-            "label": "Fatade ventilate composite"
+            "label": "Composite ventilated facades"
           },
           {
             "icon": "",
-            "label": "Izolatie termica EPS / vata"
+            "label": "EPS / mineral wool insulation"
           },
           {
             "icon": "",
-            "label": "Urgente scurgeri 24/7"
+            "label": "24/7 emergency leak callouts"
           },
           {
             "icon": "",
-            "label": "Luminatoare Velux"
+            "label": "Velux roof windows"
           },
           {
             "icon": "",
-            "label": "Jgheaburi si burlane"
+            "label": "Guttering & downpipes"
           }
         ],
-        "galleryTitle": "Proiecte finalizate",
+        "galleryTitle": "Completed projects",
         "trust": [
           {
             "icon": "",
-            "title": "Urgente 24/7",
-            "text": "Scurgeri dupa furtuna sau deteriorari bruste — suntem disponibili non-stop pentru interventii rapide in zona Manchester."
+            "title": "24/7 emergencies",
+            "text": "Storm damage or sudden leaks — we're available around the clock for fast callouts across Greater Manchester."
           },
           {
             "icon": "",
-            "title": "Autorizati si asigurati",
-            "text": "Firma inregistrata la Companies House, asigurata complet si inscrisa in sistemele de garantie ale constructorilor britanici."
+            "title": "Licensed & insured",
+            "text": "Registered with Companies House, fully insured, and enrolled in UK builder warranty schemes."
           },
           {
             "icon": "",
-            "title": "Pret fix agreat",
-            "text": "Oferta detaliata si onesta inainte de inceperea lucrarilor. Pretul agreat ramane neschimbat pe parcursul executiei."
+            "title": "Fixed, agreed price",
+            "text": "A detailed, honest quote before work starts. The agreed price stays the same throughout the job."
           },
           {
             "icon": "",
-            "title": "Garantie 10 ani",
-            "text": "Acoperisuri noi cu garantie de 10 ani. Lucram cu materiale certificate si echipamente profesionale de ultima generatie."
+            "title": "10-year warranty",
+            "text": "New roofs come with a 10-year warranty. We use certified materials and up-to-date professional equipment."
           }
         ],
         "certifications": [
@@ -309,60 +309,60 @@
         ],
         "categories": [
           {
-            "title": "Acoperisuri rezidentiale",
-            "blurb": "Montam si inlocuim complet acoperisuri de case: tigla ceramica, beton, metalica, tabla faltuita, membrane EPDM si bituminoase de calitate superioara.",
+            "title": "Residential roofing",
+            "blurb": "We install and fully replace house roofs: ceramic tile, concrete, metal, standing-seam, and premium EPDM and bituminous membranes.",
             "photos": [
               {
                 "src": "images/ct-ac1.jpg",
-                "alt": "Acoperiș rezidențial nou cu țiglă ceramică · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "New residential roof with ceramic tile · Manchester",
+                "caption": "Residential roofing · Manchester"
               },
               {
                 "src": "images/ct-ac2.jpg",
-                "alt": "Acoperiș tablă fălțuită modernă · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "Modern standing-seam metal roof · Manchester",
+                "caption": "Residential roofing · Manchester"
               },
               {
                 "src": "images/ct-ac3.jpg",
-                "alt": "Mansardă amenajată cu luminatoare · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "Converted attic with roof windows · Manchester",
+                "caption": "Residential roofing · Manchester"
               }
             ]
           },
           {
-            "title": "Fatade ventilate si termoizolatie",
-            "blurb": "Sisteme de fatade ventilate cu vata minerala si panouri composite — reduceti facturile la energie pana la 40% in primul an.",
+            "title": "Ventilated facades & insulation",
+            "blurb": "Ventilated facade systems with mineral wool and composite panels — cut your energy bills by up to 40% in the first year.",
             "photos": [
               {
                 "src": "images/ct-fat1.jpg",
-                "alt": "Fațadă ventilată modernă · Manchester",
-                "caption": "Fațade ventilate și termoizolație · Manchester"
+                "alt": "Modern ventilated facade · Manchester",
+                "caption": "Ventilated facades & insulation · Manchester"
               },
               {
                 "src": "images/ct-fat2.jpg",
-                "alt": "Termoizolație exterioară aplicată · Manchester",
-                "caption": "Fațade ventilate și termoizolație · Manchester"
+                "alt": "Exterior thermal insulation installed · Manchester",
+                "caption": "Ventilated facades & insulation · Manchester"
               }
             ]
           },
           {
-            "title": "Reparatii si interventii urgente",
-            "blurb": "Intervenim rapid la scurgeri, tigle deplasate de vant, stricaciuni dupa furtuna si orice urgenta de acoperis, 7 zile din 7.",
+            "title": "Repairs & emergency callouts",
+            "blurb": "Fast response for leaks, wind-shifted tiles, storm damage, and any roofing emergency, 7 days a week.",
             "photos": [
               {
                 "src": "images/ct-rep1.jpg",
-                "alt": "Reparație urgentă acoperiș după furtună · Manchester",
-                "caption": "Reparații și intervenții urgente · Manchester"
+                "alt": "Emergency roof repair after a storm · Manchester",
+                "caption": "Repairs & emergency callouts · Manchester"
               },
               {
                 "src": "images/ct-rep2.jpg",
-                "alt": "Montaj jgheaburi și burlane · Manchester",
-                "caption": "Reparații și intervenții urgente · Manchester"
+                "alt": "Guttering and downpipe installation · Manchester",
+                "caption": "Repairs & emergency callouts · Manchester"
               },
               {
                 "src": "images/ct-rep3.jpg",
-                "alt": "Refacere coș de fum · Manchester",
-                "caption": "Reparații și intervenții urgente · Manchester"
+                "alt": "Chimney stack rebuild · Manchester",
+                "caption": "Repairs & emergency callouts · Manchester"
               }
             ]
           }
@@ -381,8 +381,8 @@
           "embedUrl": ""
         },
         "contact": {
-          "title": "Cere ofertă gratuită",
-          "intro": "Disponibili 7 zile din 7. Sunati sau scrieti pe WhatsApp — evaluare gratuita la domiciliu, fara obligatii.",
+          "title": "Get a free quote",
+          "intro": "Available 7 days a week. Call or message us on WhatsApp — a free on-site assessment, no obligation.",
           "instagram": {
             "url": "https://www.instagram.com/consttop.roofing",
             "label": "@consttop.roofing"
@@ -401,12 +401,12 @@
         "seo": {
           "ogImage": "images/ct-og.jpg",
           "canonical": "https://consttop-roofing.co.uk",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Acoperisuri si fatade in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"https://consttop-roofing.co.uk\"}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Roofing and facades in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"https://consttop-roofing.co.uk\"}"
         },
         "footer": {
           "address": "Manchester, Greater Manchester",
           "year": "2026",
-          "note": "Acoperisuri durabile. Garantie 10 ani."
+          "note": "Durable roofs. 10-year warranty."
         }
       }
     }

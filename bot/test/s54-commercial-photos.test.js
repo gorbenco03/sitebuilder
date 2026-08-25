@@ -188,7 +188,7 @@ check('system ids stay product-menu / portfolio / local-service', () => {
   for (const id of SYSTEMS) {
     assert.ok(ids.includes(id), `registry missing ${id}`);
   }
-  assert.strictEqual(ids.length, 3, 'registry must stay three systems');
+  assert.strictEqual(ids.length, 4, 'registry must stay four systems');
 });
 
 if (failed) {

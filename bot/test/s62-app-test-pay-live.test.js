@@ -4,10 +4,10 @@
  *
  * Causal lock-in after S61 QA FAIL:
  *   - builder must handle #test-checkout= (not dead hash after pay CTA)
- *   - unpaid /live/<slug>/ with Accept: text/html → Romanian HTML 404 (not raw JSON)
+ *   - unpaid /live/<slug>/ with Accept: text/html → English HTML 404 (not raw JSON)
  *   - simulate opened test-pay return → site paid + /live HTML 200 with distinctive name
  *   - second publish replaces live HTML (v1 gone, v2 present)
- *   - magic-link Deschide site-ul / verify resume path in builder source
+ *   - magic-link Open the site / verify resume path in builder source
  *
  * Env (same adapters as S50/S6): HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1;
  * HIDOOK_FAKE_DEPLOY deleted. No *.test.local client address.
@@ -225,7 +225,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         assertHasTestCheckoutHandler(appSrc);
     });
 
-    await check('HEAD builder magic-link resume: Deschide site-ul does not only hard-navigate away', () => {
+    await check('HEAD builder magic-link resume: Open the site does not only hard-navigate away', () => {
         const wireSrc = extractFunction(appSrc, 'wireAuthForm') || '';
         assert.ok(wireSrc.length > 40, 'wireAuthForm must exist');
         // Magic-link anchor click must preventDefault + fetch verify (keep SPA) or set resume flag
@@ -233,7 +233,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         assert.ok(devClick.length > 20, 'devLink click listener must exist');
         assert.ok(
             /preventDefault\s*\(/.test(devClick),
-            'Deschide site-ul click must preventDefault so SPA can finish publish after verify'
+            'Open the site click must preventDefault so SPA can finish publish after verify'
         );
         // Empty dashboard + local draft → resume editor (not stuck on «Nu ai site-uri…»)
         const loadDash = extractFunction(appSrc, 'loadDashboard') || '';
@@ -243,7 +243,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
             'dashboard/route must call loadDraft to resume in-progress site'
         );
         assert.ok(
-            /Nu ai site-uri create încă/.test(loadDash) &&
+            /You haven't created any sites yet/.test(loadDash) &&
                 (/location\.hash\s*=\s*['"]#edit['"]/.test(loadDash + handleRoute) ||
                     /startWithTemplate|resumeLocalDraft|restoreDraft/.test(appSrc)),
             'empty dashboard must route draft back to #edit'
@@ -300,7 +300,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         return c;
     }
 
-    await check('unpaid publish → /live HTML Accept is Romanian 404 page (not JSON body)', async () => {
+    await check('unpaid publish → /live HTML Accept is English 404 page (not JSON body)', async () => {
         const { config: baseCfg } = loadPresetConfig('product-menu');
         const nameV1 = `S62-HTML404-${crypto.randomUUID().slice(0, 8)}`;
         const email = `s62-html404-${crypto.randomUUID().slice(0, 6)}@example.com`;
@@ -333,8 +333,8 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         const body = await live.text();
         assert.ok(!/^\s*\{/.test(body), 'must not be raw JSON body');
         assert.ok(
-            /negăsit|nu a fost găsit|Pagină/i.test(body),
-            'Romanian HTML 404 copy expected'
+            /Page not found/i.test(body),
+            'English HTML 404 copy expected'
         );
         assert.ok(!body.includes('"error":"not found"'), 'must not dump JSON error string');
     });

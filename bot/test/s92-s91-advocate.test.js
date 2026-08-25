@@ -34,7 +34,7 @@ const EXTINDERI_LEFTOVERS = [
 ];
 
 const EXTINDERI_FINISHED =
-  'Extinderi casă, mansardări, demolare pereți portanți cu autorizație, construcții noi anexe în curte.';
+  'Home additions, attic conversions, permitted load-bearing wall removal, and new backyard structures.';
 
 let failed = 0;
 async function check(name, fn) {
@@ -283,7 +283,7 @@ function simulateEditAfterDashPay(appSrc, { sites, siteDetail, savedDraft }) {
     assert.ok(src.includes(EXTINDERI_FINISHED), 'has finished Extinderi blurb');
   });
 
-  await check('HEAD: local-service Instagram contact labels are commercial Romanian', () => {
+  await check('HEAD: local-service Instagram contact labels are commercial English', () => {
     const schema = read(LS_SCHEMA);
     const urlLabel = schemaFieldLabel(schema, 'contact.instagram.url');
     const textLabel = schemaFieldLabel(schema, 'contact.instagram.label');
@@ -291,18 +291,18 @@ function simulateEditAfterDashPay(appSrc, { sites, siteDetail, savedDraft }) {
     assert.notStrictEqual(urlLabel, 'Link Instagram');
     assert.ok(!/\bLink\b/.test(urlLabel), 'url label has no English Link: ' + urlLabel);
     assert.ok(
-      urlLabel.includes('Instagram') && /secțiunea contact|secțiunea contact/i.test(urlLabel),
-      'url label is Instagram (secțiunea contact)-style: ' + urlLabel
+      urlLabel.includes('Instagram') && /\(contact section\)/i.test(urlLabel),
+      'url label is Instagram (contact section)-style: ' + urlLabel
     );
     assert.ok(textLabel, 'text label exists');
-    assert.ok(!/Text link Instagram/i.test(textLabel), 'no Text link Instagram');
+    assert.ok(!/Text link Instagram|Link text Instagram/i.test(textLabel), 'no Text link Instagram');
     assert.ok(
-      /Text Instagram/i.test(textLabel) || /Etichetă Instagram/i.test(textLabel),
+      /Instagram text/i.test(textLabel) || /Instagram label/i.test(textLabel),
       'text label commercial: ' + textLabel
     );
     // Professionals stay as after S89
     const pro = read(PRO_SCHEMA);
-    assert.ok(pro.includes('Instagram (secțiunea contact)'), 'professionals unchanged');
+    assert.ok(pro.includes('Instagram (contact section)'), 'professionals unchanged');
     assert.ok(!/Link Instagram/.test(pro), 'professionals no Link Instagram');
   });
 

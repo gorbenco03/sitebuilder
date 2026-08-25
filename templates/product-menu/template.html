@@ -54,7 +54,7 @@
                 <!-- @if showWordmark --><!-- @if !logo --><h1 class="pm-mast__word">{{business.name}}</h1><!-- @endif --><!-- @endif -->
                 <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
             </div>
-            <nav class="pm-mast__nav" aria-label="Navigare">
+            <nav class="pm-mast__nav" aria-label="Navigation">
                 <a href="#pm-menu-rail">{{servicesTitle}}</a>
                 <!-- @if menu -->
                 <a href="#pm-menu-block">{{menu.title}}</a>
@@ -117,7 +117,7 @@
                     <div class="pm-menublock" id="pm-menu-block">
                         <div class="pm-menublock__head">
                             <h3 class="pm-menublock__h">{{menu.title}}</h3>
-                            <div class="menu-langs pm-langs" role="group" aria-label="Limbă meniu">
+                            <div class="menu-langs pm-langs" role="group" aria-label="Menu language">
                                 <button type="button" class="menu-lang-btn is-active" data-menu-lang="en" aria-pressed="true">EN</button>
                                 <button type="button" class="menu-lang-btn" data-menu-lang="ro" aria-pressed="false">RO</button>
                             </div>
@@ -231,7 +231,7 @@
             <div class="pm-ig-grid">
                 <!-- @each instagram.gallery -->
                 <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pm-ig-cell">
-                    <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
+                    <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
                 </a>
                 <!-- @end -->
             </div>
@@ -264,7 +264,7 @@
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
             <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>

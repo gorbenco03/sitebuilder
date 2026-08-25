@@ -501,8 +501,8 @@ function parentBgMatch(style) {
         // is impractical once modules cached env — assert source still has 503 path.
         const serverSrc = fs.readFileSync(path.join(ROOT, 'bot', 'server.js'), 'utf8');
         assert.ok(
-            /Conectarea Instagram nu e configurată pe server/.test(serverSrc),
-            '503 Romanian copy retained for non-isolated'
+            /Instagram connection is not configured on this server/.test(serverSrc),
+            '503 copy retained for non-isolated'
         );
         assert.ok(
             /!partner\.isConfigured\(\)\s*&&\s*!isIsolatedTestSocial\(\)/.test(serverSrc) ||

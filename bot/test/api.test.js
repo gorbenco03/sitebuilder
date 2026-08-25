@@ -8,7 +8,7 @@
  *   - GET /api/templates returns templates with schema+presets
  *   - GET /api/me without cookie → 401
  *   - Full email magic-link flow (no RESEND → devLink in response)
- *   - Token reuse → redirect to login-expirat
+ *   - Token reuse → redirect to login-expired
  *   - POST /api/publish without auth → 401
  *   - POST /api/publish unpaid → draft (not live); no deploy
  *   - Second unpaid site → 409
@@ -362,8 +362,8 @@ const MINIMAL_CONFIG = {
         assert.ok(body.user);
     });
 
-    // ── 6. Token reuse → login-expirat ────────────────────────────────────
-    await check('Reusing same token → redirect /app/#login-expirat', async () => {
+    // ── 6. Token reuse → login-expired ────────────────────────────────────
+    await check('Reusing same token → redirect /app/#login-expired', async () => {
         let tokenParam;
         try {
             tokenParam = new URL(verifyUrl).searchParams.get('token');
@@ -374,7 +374,7 @@ const MINIMAL_CONFIG = {
         const res = await fetch(`${base}/auth/verify?token=${tokenParam}`, { redirect: 'manual' });
         assert.strictEqual(res.status, 302);
         const loc = res.headers.get('location');
-        assert.ok(loc && loc.includes('login-expirat'));
+        assert.ok(loc && loc.includes('login-expired'));
     });
 
     // ── 7. POST /api/publish without auth → 401 ───────────────────────────

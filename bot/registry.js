@@ -2,10 +2,10 @@
 /**
  * bot/registry.js — Central data registry for the web platform.
  *
- * Stocare JSON atomică pe DATA_DIR, fișier .registry.json.
- * Scriere atomică (tmp+rename) sincronă la fiecare mutație.
+ * Atomic JSON storage under DATA_DIR, in .registry.json.
+ * Every mutation writes synchronously and atomically (tmp + rename).
  *
- * Zero dependențe npm. Node 18+ CommonJS.
+ * Zero npm dependencies. Node 18+ CommonJS.
  */
 
 const fs     = require('fs');
@@ -46,7 +46,7 @@ function _save(db) {
  * @returns {{ id: string, email: string, createdAt: string }}
  */
 function getOrCreateUserByEmail(email) {
-    if (!email || typeof email !== 'string') throw new Error('email este obligatoriu');
+    if (!email || typeof email !== 'string') throw new Error('email is required');
     const db = _load();
     db.users = db.users || {};
     // Look for existing user with that email
@@ -66,7 +66,7 @@ function getOrCreateUserByEmail(email) {
  * @returns {{ id: string, tgId: string, username?: string, firstName?: string, createdAt: string }}
  */
 function getOrCreateUserByTelegram(tgId, { username, firstName } = {}) {
-    if (tgId == null) throw new Error('tgId este obligatoriu');
+    if (tgId == null) throw new Error('tgId is required');
     const tgStr = String(tgId);
     const db = _load();
     db.users = db.users || {};
@@ -246,7 +246,7 @@ function updateSite(siteId, patch) {
     const db = _load();
     db.sites = db.sites || {};
     const site = db.sites[siteId];
-    if (!site) throw new Error(`Site negăsit: ${siteId}`);
+    if (!site) throw new Error(`Site not found: ${siteId}`);
     Object.assign(site, patch);
     db.sites[siteId] = site;
     _save(db);

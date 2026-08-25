@@ -91,19 +91,19 @@ check('pay/publish vocabulary is wired (renamed hooks present)', () => {
     );
 });
 
-check('visible Romanian pay-before-publish copy preserved', () => {
-    assert.ok(/Neplătit/.test(app) || /Neplătit/.test(html), 'unpaid badge label Neplătit required');
+check('visible pay-before-publish copy preserved', () => {
+    assert.ok(/Unpaid/.test(app) || /Unpaid/.test(html), 'unpaid badge label Unpaid required');
     assert.ok(
-        /12 luni hosting|primul publish/.test(html),
+        /12 months hosting|first publish/.test(html),
         'publish plan must keep 100 + 12 months hosting copy'
     );
     assert.ok(
-        /reînnoire|\/an/.test(html),
-        'renewal /an copy must remain on publish plan'
+        /renewal|\/year/i.test(html),
+        'renewal /year copy must remain on publish plan'
     );
     assert.ok(
-        /Plătește și publică/.test(html) || /Plătește și publică/.test(app),
-        'pay CTA must say Plătește și publică'
+        /Pay and publish/.test(html) || /Pay and publish/.test(app),
+        'pay CTA must say Pay and publish'
     );
 });
 

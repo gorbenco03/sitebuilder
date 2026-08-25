@@ -50,7 +50,7 @@
             <!-- @endif -->
             <!-- @if showWordmark --><!-- @if !logo --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
             <!-- @if !logo --><!-- @if !showWordmark --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
-            <nav class="pf-chrome__nav" aria-label="Navigare">
+            <nav class="pf-chrome__nav" aria-label="Navigation">
                 <a href="#gallery-heading">{{labels.navGallery}}</a>
                 <a href="#services-heading">{{labels.navServices}}</a>
                 <a href="#booking">{{labels.navBooking}}</a>
@@ -213,7 +213,7 @@
                 <div class="pf-ig__grid">
                     <!-- @each instagram.gallery -->
                     <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pf-ig__cell">
-                        <img src="{{.}}" alt="{{business.name}} pe Instagram" loading="lazy">
+                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
                     </a>
                     <!-- @end -->
                 </div>
@@ -287,7 +287,7 @@
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
             <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>

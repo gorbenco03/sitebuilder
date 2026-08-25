@@ -65,8 +65,8 @@ check('unpaid dashboard checkout CTA is not labeled Păstrează', () => {
     );
     // Pay-to-publish verb required for unpaid (non-expired) path
     assert.ok(
-        /Plătește și publică/.test(buildSiteCardSrc),
-        'buildSiteCard unpaid CTA must use pay-to-publish verb (Plătește și publică)'
+        /Pay and publish/.test(buildSiteCardSrc),
+        'buildSiteCard unpaid CTA must use pay-to-publish verb (Pay and publish)'
     );
 });
 
@@ -126,11 +126,11 @@ check('builder copy: no free trial / GRATUIT publish / permanent hosting promise
     );
 });
 
-check('success modal pay CTA uses Plătește și publică (not Păstrează)', () => {
+check('success modal pay CTA uses Pay and publish (not Păstrează)', () => {
     // index.html btn-keep-site label or app.js wiring
     const payLabelOk =
-        /Plătește și publică/.test(html) || /Plătește și publică/.test(app);
-    assert.ok(payLabelOk, 'success/pay CTA must say Plătește și publică');
+        /Pay and publish/.test(html) || /Pay and publish/.test(app);
+    assert.ok(payLabelOk, 'success/pay CTA must say Pay and publish');
     assert.ok(!/>\s*Păstrează\s*</.test(html), 'index.html must not label pay button Păstrează');
 });
 

@@ -49,7 +49,7 @@
             <!-- @endif -->
             <!-- @if showWordmark --><!-- @if !logo --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
             <!-- @if !logo --><!-- @if !showWordmark --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
-            <nav class="pr-nav__links" aria-label="Navigare">
+            <nav class="pr-nav__links" aria-label="Navigation">
                 <a href="#services">{{labels.navServices}}</a>
                 <a href="#about">{{labels.navAbout}}</a>
                 <a href="#faq">{{labels.navFaq}}</a>
@@ -85,7 +85,7 @@
 
     <main>
         <!-- @if business.profession -->
-        <section class="pr-strip pr-reveal" aria-label="Credibilitate">
+        <section class="pr-strip pr-reveal" aria-label="Credibility">
             <div class="pr-shell pr-strip__row">
                 <span class="pr-strip__item">{{business.profession}}</span>
                 <!-- @if business.languages -->
@@ -183,8 +183,8 @@
 
                 <form class="pr-appt" id="pr-appt-form" novalidate>
                     <fieldset class="pr-appt__fieldset">
-                        <legend class="pr-appt__legend">Tip discuție</legend>
-                        <div class="pr-appt__types" role="radiogroup" aria-label="Tip discuție">
+                        <legend class="pr-appt__legend">Type of consultation</legend>
+                        <div class="pr-appt__types" role="radiogroup" aria-label="Type of consultation">
                             <!-- @each appointment.types -->
                             <label class="pr-type">
                                 <input type="radio" name="appt-type" value="{{id}}"
@@ -202,11 +202,11 @@
 
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-appt-date">Data</label>
+                            <label class="pr-label" for="pr-appt-date">Date</label>
                             <select class="pr-input" id="pr-appt-date" name="date" required></select>
                         </div>
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-appt-slot">Interval</label>
+                            <label class="pr-label" for="pr-appt-slot">Time</label>
                             <select class="pr-input" id="pr-appt-slot" name="slot" required></select>
                         </div>
                     </div>
@@ -215,7 +215,7 @@
 
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-name">Nume</label>
+                            <label class="pr-label" for="pr-name">Name</label>
                             <input class="pr-input" id="pr-name" name="name" type="text" autocomplete="name" required maxlength="80">
                         </div>
                         <div class="pr-field">
@@ -225,11 +225,11 @@
                     </div>
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-phone">Telefon <span class="pr-opt">(opțional)</span></label>
+                            <label class="pr-label" for="pr-phone">Phone <span class="pr-opt">(optional)</span></label>
                             <input class="pr-input" id="pr-phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
                         </div>
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-note">Notă <span class="pr-opt">(opțional, fără date confidențiale)</span></label>
+                            <label class="pr-label" for="pr-note">Note <span class="pr-opt">(optional, no confidential details)</span></label>
                             <input class="pr-input" id="pr-note" name="note" type="text" maxlength="200">
                         </div>
                     </div>
@@ -242,7 +242,7 @@
                         <span>{{appointment.submitLabel}}</span>
                     </button>
                     <p class="pr-appt__fallback">
-                        Preferi alt canal?
+                        Prefer a different channel?
                         <!-- @if contact.email -->
                         <a href="mailto:{{contact.email}}">{{contact.email}}</a>
                         <!-- @endif -->
@@ -253,7 +253,7 @@
                 </form>
 
                 <div class="pr-appt-done" id="pr-appt-done" hidden>
-                    <h3 class="pr-appt-done__title">Cerere trimisă — în așteptarea confirmării</h3>
+                    <h3 class="pr-appt-done__title">Request sent — awaiting confirmation</h3>
                     <p class="pr-copy" id="pr-appt-done-body"></p>
                     <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
                 </div>
@@ -365,7 +365,7 @@
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
             <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>

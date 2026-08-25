@@ -63,10 +63,10 @@ function allowBuild(chatId) {
     const id  = String(chatId);
     const arr = _pruneChat(id, now);
     if (arr.length >= PER_CHAT_HOUR) {
-        return { ok: false, scope: 'chat', reason: `Ai atins limita de ${PER_CHAT_HOUR} site-uri pe oră. Te rog încearcă din nou mai târziu.` };
+        return { ok: false, scope: 'chat', reason: `You've reached the limit of ${PER_CHAT_HOUR} sites per hour. Please try again later.` };
     }
     if (_rollGlobal().count >= GLOBAL_DAY) {
-        return { ok: false, scope: 'global', reason: 'Sistemul e foarte solicitat momentan. Te rog încearcă peste puțin timp.' };
+        return { ok: false, scope: 'global', reason: 'The system is under heavy load right now. Please try again shortly.' };
     }
     return { ok: true };
 }

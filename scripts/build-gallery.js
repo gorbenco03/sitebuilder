@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * build-gallery.js — generează dist-gallery/ cu demo-uri per template × preset
+ * build-gallery.js — generates dist-gallery/ with demos per template × preset
  *
- * Zero dependențe externe (Node CommonJS).
- * Rulează: node scripts/build-gallery.js
+ * Zero external dependencies (Node CommonJS).
+ * Run: node scripts/build-gallery.js
  *
- * Logică:
- *  1. Citește templates/registry.json
- *  2. Pentru fiecare templateId × presetId:
- *     - Creează dist-gallery/<templateId>-<presetId>/
- *     - Copiază template.html, styles.css, script.js (și orice alt .js din folder)
- *     - Scrie config.json din datele presetului
- *     - Rulează build.js pe acel folder → generează index.html
- *  3. Generează dist-gallery/index.html (vitrină)
+ * Logic:
+ *  1. Reads templates/registry.json
+ *  2. For each templateId × presetId:
+ *     - Creates dist-gallery/<templateId>-<presetId>/
+ *     - Copies template.html, styles.css, script.js (and any other .js in the folder)
+ *     - Writes config.json from the preset data
+ *     - Runs build.js on that folder → generates index.html
+ *  3. Generates dist-gallery/index.html (showcase)
  */
 
 'use strict';
@@ -25,7 +25,7 @@ const TEMPLATES_DIR = path.join(ROOT, 'templates');
 const DIST_DIR      = path.join(ROOT, 'dist-gallery');
 const REGISTRY_PATH = path.join(TEMPLATES_DIR, 'registry.json');
 
-// Fișierele care NU se copiază în demo (sursă / meta)
+// Files that are NOT copied into the demo (source / meta)
 const SKIP_FILES = new Set(['schema.json', 'presets.json', 'README.md', 'collage.js']);
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -39,8 +39,8 @@ function copyFile(src, dest) {
 }
 
 /**
- * Copiază fișierele relevante din srcDir în destDir.
- * Sare peste fișierele din SKIP_FILES și subdirectoare.
+ * Copies the relevant files from srcDir to destDir.
+ * Skips files in SKIP_FILES and subdirectories.
  */
 function copyTemplateFiles(srcDir, destDir) {
     const entries = fs.readdirSync(srcDir, { withFileTypes: true });
@@ -54,16 +54,16 @@ function copyTemplateFiles(srcDir, destDir) {
 // ─── main ────────────────────────────────────────────────────────────────────
 
 function main() {
-    // 1. Citește registry
+    // 1. Read registry
     if (!fs.existsSync(REGISTRY_PATH)) {
-        console.error('EROARE: registry.json nu există la', REGISTRY_PATH);
+        console.error('ERROR: registry.json not found at', REGISTRY_PATH);
         process.exit(1);
     }
     const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
 
     mkdirp(DIST_DIR);
 
-    // 1b. Calculează setul de directoare care vor fi generate în acest run
+    // 1b. Compute the set of directories that will be generated in this run
     const expectedDirs = new Set(['index.html']);
     for (const tpl of registry.templates) {
         const tplDir = path.join(TEMPLATES_DIR, tpl.id);
@@ -78,7 +78,7 @@ function main() {
         }
     }
 
-    // Șterge directoarele stale (nu sunt în setul curent)
+    // Delete stale directories (not in the current set)
     if (fs.existsSync(DIST_DIR)) {
         const existing = fs.readdirSync(DIST_DIR);
         for (const entry of existing) {
@@ -87,35 +87,35 @@ function main() {
                 const stat = fs.statSync(stalePath);
                 if (stat.isDirectory()) {
                     fs.rmSync(stalePath, { recursive: true, force: true });
-                    console.log(`  🗑  Șters director stale: ${entry}`);
+                    console.log(`  🗑  Removed stale directory: ${entry}`);
                 }
             }
         }
     }
 
-    // Structură pentru index.html: { vertical, templateName, templateDesc, demos: [] }
+    // Structure for index.html: { vertical, templateName, templateDesc, demos: [] }
     const verticals = {};   // vertical → { name, description, demos[] }
 
-    // Încarcă build.js o singură dată
+    // Load build.js once
     const { build } = require(path.join(ROOT, 'build.js'));
 
     let totalBuilt = 0;
     let totalSkipped = 0;
 
-    // 2. Iterează template × preset
+    // 2. Iterate template × preset
     for (const tpl of registry.templates) {
         const tplDir = path.join(TEMPLATES_DIR, tpl.id);
 
-        // Verifică existența pe disc
+        // Check it exists on disk
         if (!fs.existsSync(tplDir)) {
-            console.warn(`WARNING: șablonul "${tpl.id}" nu există pe disc (${tplDir}) — sărit.`);
+            console.warn(`WARNING: template "${tpl.id}" not found on disk (${tplDir}) — skipped.`);
             totalSkipped++;
             continue;
         }
 
         const presetsPath = path.join(tplDir, 'presets.json');
         if (!fs.existsSync(presetsPath)) {
-            console.warn(`WARNING: presets.json lipsește pentru "${tpl.id}" — sărit.`);
+            console.warn(`WARNING: presets.json missing for "${tpl.id}" — skipped.`);
             totalSkipped++;
             continue;
         }
@@ -123,12 +123,12 @@ function main() {
         const presetsData = JSON.parse(fs.readFileSync(presetsPath, 'utf8'));
 
         if (!Array.isArray(presetsData.presets) || presetsData.presets.length === 0) {
-            console.warn(`WARNING: niciun preset valid în "${tpl.id}/presets.json" — sărit.`);
+            console.warn(`WARNING: no valid preset in "${tpl.id}/presets.json" — skipped.`);
             totalSkipped++;
             continue;
         }
 
-        // Grupare pe verticală pentru index.html
+        // Group by vertical for index.html
         const vertical = tpl.vertical || tpl.id;
         if (!verticals[vertical]) {
             verticals[vertical] = {
@@ -142,39 +142,39 @@ function main() {
             const demoId  = `${tpl.id}-${preset.id}`;
             const demoDir = path.join(DIST_DIR, demoId);
 
-            console.log(`  → construiesc ${demoId} …`);
-            // Curăță dir-ul demo înainte de copiere ca să nu rămână fișiere stale
+            console.log(`  → building ${demoId} …`);
+            // Clean the demo dir before copying so no stale files remain
             if (fs.existsSync(demoDir)) {
                 fs.rmSync(demoDir, { recursive: true, force: true });
             }
             mkdirp(demoDir);
 
-            // Copiază fișierele șablonului (fără schema/presets/md/template.html)
+            // Copy the template files (excluding schema/presets/md/template.html)
             copyTemplateFiles(tplDir, demoDir);
 
-            // Scrie config.json din preset
+            // Write config.json from the preset
             fs.writeFileSync(
                 path.join(demoDir, 'config.json'),
                 JSON.stringify(preset.config, null, 2),
                 'utf8'
             );
 
-            // Rulează build.js → index.html
+            // Run build.js → index.html
             try {
                 const result = build(demoDir);
                 console.log(`     ✓ ${path.relative(ROOT, result.outputPath)} (${result.bytes} bytes)`);
                 totalBuilt++;
             } catch (err) {
-                console.error(`     ✗ Eroare la build pentru ${demoId}:`, err.message);
+                console.error(`     ✗ Build error for ${demoId}:`, err.message);
                 totalSkipped++;
                 continue;
             }
 
-            // Șterge template.html din output — nu e necesar la runtime și conține {{ nerezolvate
+            // Remove template.html from the output — not needed at runtime and contains unresolved {{
             const tplCopy = path.join(demoDir, 'template.html');
             if (fs.existsSync(tplCopy)) fs.unlinkSync(tplCopy);
 
-            // Adaugă la lista de demo-uri pentru vitrina
+            // Add to the demo list for the showcase
             const businessName = (preset.config.business && preset.config.business.name)
                 ? preset.config.business.name
                 : preset.name;
@@ -189,19 +189,19 @@ function main() {
         }
     }
 
-    // 3. Generează index.html — vitrină
+    // 3. Generate index.html — showcase
     generateGalleryIndex(verticals);
 
-    console.log(`\nGata! Construit: ${totalBuilt} demo-uri | Sărite: ${totalSkipped}`);
-    console.log(`Galerie: ${path.join(DIST_DIR, 'index.html')}`);
+    console.log(`\nDone! Built: ${totalBuilt} demos | Skipped: ${totalSkipped}`);
+    console.log(`Gallery: ${path.join(DIST_DIR, 'index.html')}`);
 }
 
-// ─── generare index.html ─────────────────────────────────────────────────────
+// ─── generate index.html ─────────────────────────────────────────────────────
 
 function generateGalleryIndex(verticals) {
     const verticalKeys = Object.keys(verticals);
 
-    // Construiește secțiunile de carduri, grupate pe verticală
+    // Build the card sections, grouped by vertical
     let sections = '';
     for (const vKey of verticalKeys) {
         const v = verticals[vKey];
@@ -230,7 +230,7 @@ function generateGalleryIndex(verticals) {
               href="./${demo.demoId}/index.html"
               target="_blank"
               rel="noopener"
-            >Vezi demo &rarr;</a>
+            >View demo &rarr;</a>
           </div>
         </article>`;
         }
@@ -246,11 +246,11 @@ function generateGalleryIndex(verticals) {
     }
 
     const html = `<!DOCTYPE html>
-<html lang="ro">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Alege modelul site-ului tău</title>
+  <title>Choose your site template</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -449,11 +449,11 @@ function generateGalleryIndex(verticals) {
 <body>
 
 <header class="site-header">
-  <h1>Alege modelul site-ului tău</h1>
-  <p>Demo-uri reale pentru fiecare tip de afacere &mdash; alege, personalizează și lansează în câteva minute.</p>
+  <h1>Choose your site template</h1>
+  <p>Real demos for every kind of business &mdash; pick one, personalize it, and launch in minutes.</p>
 </header>
 
-<nav class="tab-nav" aria-label="Verticale">
+<nav class="tab-nav" aria-label="Categories">
   ${verticalKeys.map(vk => `<a href="#vertical-${escapeAttr(vk)}">${escapeHtml(verticals[vk].name)}</a>`).join('\n  ')}
 </nav>
 
@@ -462,7 +462,7 @@ function generateGalleryIndex(verticals) {
 </main>
 
 <footer class="site-footer">
-  &copy; ${new Date().getFullYear()} &mdash; Galerie șabloane generată automat.
+  &copy; ${new Date().getFullYear()} &mdash; Auto-generated template gallery.
 </footer>
 
 </body>
@@ -470,7 +470,7 @@ function generateGalleryIndex(verticals) {
 
     const indexPath = path.join(DIST_DIR, 'index.html');
     fs.writeFileSync(indexPath, html, 'utf8');
-    console.log(`  ✓ Vitrina: ${path.relative(ROOT, indexPath)}`);
+    console.log(`  ✓ Gallery: ${path.relative(ROOT, indexPath)}`);
 }
 
 // ─── escape helpers ───────────────────────────────────────────────────────────
@@ -493,5 +493,5 @@ function escapeAttr(str) {
 
 // ─── run ─────────────────────────────────────────────────────────────────────
 
-console.log('🏗  build-gallery.js — pornit\n');
+console.log('🏗  build-gallery.js — started\n');
 main();

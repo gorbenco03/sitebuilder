@@ -29,10 +29,11 @@ const INDEX_HTML = 'builder/index.html';
 
 const BAD_EMBED = 'Link feed Instagram (opțional)';
 const BAD_PROFIL = 'Link profil Instagram';
-const GOOD_EMBED = 'Feed Instagram (opțional)';
-const GOOD_PROFIL = 'Profil Instagram';
-const GOOD_CONTACT_IG = 'Instagram (secțiunea contact)';
-const GOOD_IG_URL_RS = 'Adresa Instagram (https://www.instagram.com/...)';
+const GOOD_EMBED = 'Instagram feed link (optional)';
+const GOOD_PROFIL = 'Instagram profile';
+const GOOD_CONTACT_IG = 'Instagram (contact section)';
+const GOOD_IG_URL_PM = 'Instagram URL (https://www.instagram.com/...)';
+const GOOD_IG_URL_PORT = 'Instagram URL (https://www.instagram.com/...)';
 
 let failed = 0;
 function check(name, fn) {
@@ -276,18 +277,18 @@ check('HEAD: professionals instagram.url is Profil Instagram, no Link', () => {
   assert.ok(!/\bLink\b/.test(label));
 });
 
-check('HEAD: restaurant/salon contact.instagram.url stays Instagram (secțiunea contact)', () => {
+check('HEAD: restaurant/salon contact.instagram.url stays Instagram (contact section)', () => {
   const pm = schemaFieldLabel(read(PM_SCHEMA), 'contact.instagram.url');
   const port = schemaFieldLabel(read(PORT_SCHEMA), 'contact.instagram.url');
   assert.strictEqual(pm, GOOD_CONTACT_IG);
   assert.strictEqual(port, GOOD_CONTACT_IG);
 });
 
-check('HEAD: restaurant/salon instagram.url stays Adresa Instagram (...)', () => {
+check('HEAD: restaurant/salon instagram.url stays Instagram URL (...) / Instagram address (...)', () => {
   const pm = schemaFieldLabel(read(PM_SCHEMA), 'instagram.url');
   const port = schemaFieldLabel(read(PORT_SCHEMA), 'instagram.url');
-  assert.strictEqual(pm, GOOD_IG_URL_RS);
-  assert.strictEqual(port, GOOD_IG_URL_RS);
+  assert.strictEqual(pm, GOOD_IG_URL_PM);
+  assert.strictEqual(port, GOOD_IG_URL_PORT);
   assert.ok(!/\bLink\b/.test(pm) && !/\bLink\b/.test(port));
 });
 

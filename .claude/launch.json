@@ -10,7 +10,7 @@
     {
       "name": "builder",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "process.env.SERVER_SECRET='dev-preview-secret'; process.env.HIDOOK_FAKE_DEPLOY='1'; process.env.PUBLIC_URL='http://localhost:8791'; process.env.DATA_DIR='/tmp/hb-preview-data'; process.env.PORT='8791'; require('fs').mkdirSync('/tmp/hb-preview-data',{recursive:true}); require('/Users/kirill/Downloads/desserdirina/bot/server.js').startServer({}); setInterval(()=>{},1<<30)"],
+      "runtimeArgs": ["-e", "process.env.SERVER_SECRET='dev-preview-secret'; process.env.HIDOOK_FAKE_DEPLOY='1'; process.env.PUBLIC_URL='http://localhost:8791'; process.env.DATA_DIR='/tmp/hb-preview-data'; process.env.PORT='8791'; require('fs').mkdirSync('/tmp/hb-preview-data',{recursive:true}); require(require('path').resolve('bot/server.js')).startServer({}); setInterval(()=>{},1<<30)"],
       "port": 8791
     }
   ]

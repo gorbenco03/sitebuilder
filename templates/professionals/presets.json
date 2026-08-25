@@ -5,34 +5,34 @@
       "name": "Cabinet Marin",
       "config": {
         "business": {
-          "name": "Cabinet Marin",
-          "tagline": "Claritate pentru deciziile care contează.",
-          "title": "Cabinet Marin | Consultanță juridică | București",
-          "metaDescription": "Consultanță juridică pentru contracte, societăți și negocieri. Discuții pe programare, online sau la birou în București.",
-          "about": "Lucrăm cu antreprenori și profesioniști care vor explicații clare înainte de a semna. Fiecare discuție începe cu contextul tău, nu cu un pachet standard. Nu promitem rezultate — promitem rigoare și comunicare directă.",
-          "lang": "ro",
-          "profession": "Avocat — consultanță civilă și comercială",
-          "languages": "Română, Engleză",
-          "modes": "Online și la birou"
+          "name": "Whitfield Law",
+          "tagline": "Clarity for the decisions that matter.",
+          "title": "Whitfield Law | Legal Counsel | New York, NY",
+          "metaDescription": "Legal counsel for contracts, corporate structuring, and negotiations. Consultations by appointment — online or in our New York office.",
+          "about": "We work with entrepreneurs and professionals who want plain answers before they sign anything. Every conversation starts with your situation, not a standard package. We don't promise outcomes — we promise rigor and straight talk.",
+          "lang": "en",
+          "profession": "Attorney — civil & commercial law",
+          "languages": "English, Spanish",
+          "modes": "Online and in-office"
         },
         "labels": {
-          "navServices": "Servicii",
-          "navAbout": "Despre",
-          "navFaq": "Întrebări",
+          "navServices": "Services",
+          "navAbout": "About",
+          "navFaq": "FAQ",
           "navContact": "Contact",
-          "navBook": "Programare",
-          "servicesEyebrow": "Expertiză",
-          "processEyebrow": "Cum lucrăm",
-          "aboutEyebrow": "Despre cabinet",
-          "faqEyebrow": "Întrebări frecvente",
-          "bookEyebrow": "Programare",
+          "navBook": "Book",
+          "servicesEyebrow": "Expertise",
+          "processEyebrow": "How we work",
+          "aboutEyebrow": "About the firm",
+          "faqEyebrow": "Frequently asked questions",
+          "bookEyebrow": "Booking",
           "contactEyebrow": "Contact",
-          "secondaryCta": "Vezi serviciile",
-          "scroll": "Mai departe",
-          "instaTitle": "Actualizări",
-          "instaFollow": "Urmărește",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web"
+          "secondaryCta": "See our services",
+          "scroll": "Scroll",
+          "instaTitle": "Updates",
+          "instaFollow": "Follow",
+          "waQr": "Open WhatsApp on your phone",
+          "waOpen": "Or open WhatsApp Web"
         },
         "theme": {
           "primary": "#9A4030",
@@ -44,94 +44,94 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(145deg, #F3EFE8 0%, #E8E2D6 48%, #D9D2C4 100%)",
-          "ctaLabel": "Programează o discuție",
-          "qualifier": "Consultații online și la birou, pe bază de programare."
+          "ctaLabel": "Book a consultation",
+          "qualifier": "Consultations by appointment — online or in-office."
         },
-        "servicesTitle": "Servicii",
+        "servicesTitle": "Services",
         "services": [
           {
-            "label": "Contracte și negocieri",
-            "blurb": "Citire atentă, riscuri pe înțelesul tău, propuneri de reformulare."
+            "label": "Contracts & negotiations",
+            "blurb": "Careful review, risks explained in plain language, redlines you can actually use."
           },
           {
-            "label": "Societăți și guvernanță",
-            "blurb": "Structuri simple, acte constitutive, relații între asociați."
+            "label": "Corporate structuring & governance",
+            "blurb": "Simple structures, formation documents, and clear partner agreements."
           },
           {
-            "label": "Consultanță civilă",
-            "blurb": "Orientare înainte de litigiu — opțiuni, termene, pași concreți."
+            "label": "Civil law guidance",
+            "blurb": "Direction before things escalate — options, deadlines, concrete next steps."
           },
           {
-            "label": "Due diligence ușor",
-            "blurb": "Checklist-uri pentru tranzacții mici și medii, fără jargon inutil."
+            "label": "Light due diligence",
+            "blurb": "Checklists built for small and mid-size deals, no unnecessary jargon."
           }
         ],
         "process": {
-          "title": "De la cerere la discuție",
+          "title": "From request to conversation",
           "steps": [
             {
-              "title": "Trimiți cererea",
-              "text": "Alegi tipul de discuție și un interval potrivit. Este o cerere, nu o rezervare confirmată."
+              "title": "Send your request",
+              "text": "Choose the type of conversation and a time that suits you. Nothing is locked in until we reply."
             },
             {
-              "title": "Confirmăm intervalul",
-              "text": "Îți scriem pe email sau telefon ca să stabilim împreună ora finală."
+              "title": "We confirm the time",
+              "text": "We'll email or call to lock in the final time together."
             },
             {
-              "title": "Discutăm opțiunile",
-              "text": "Online sau la birou — cu agenda pe care o pregătești tu."
+              "title": "We talk through your options",
+              "text": "Online or in-office — with the agenda you bring."
             }
           ]
         },
         "credentials": {
-          "title": "Credențiale",
-          "lead": "Experiență, rigoare și comunicare directă.",
+          "title": "Credentials",
+          "lead": "Experience, rigor, and straight talk.",
           "items": [
-            { "label": "Consultanță civilă și comercială" },
-            { "label": "Limbi: română, engleză" },
-            { "label": "Discuții pe programare — online sau la birou" }
+            { "label": "Civil & commercial law" },
+            { "label": "Languages: English, Spanish" },
+            { "label": "Consultations by appointment — online or in-office" }
           ]
         },
         "faq": {
-          "title": "Întrebări frecvente",
+          "title": "Frequently asked questions",
           "items": [
             {
-              "q": "Cum mă pregătesc pentru discuție?",
-              "a": "Trimite pe scurt contextul și documentele publice pe care vrei să le discutăm. Nu trimite secrete pe formularul de programare."
+              "q": "How should I prepare for our conversation?",
+              "a": "Send a brief summary of your situation and any public documents you'd like to discuss. Please don't submit anything confidential through the booking form."
             },
             {
-              "q": "Pot discuta online?",
-              "a": "Da. Alegi modul la cerere; îți trimitem legătura după confirmare."
+              "q": "Can we meet online?",
+              "a": "Yes. Choose your preferred format when you book; we'll send the link after confirming."
             },
             {
-              "q": "Cât durează o primă discuție?",
-              "a": "De obicei 45–60 de minute, în funcție de tipul ales."
+              "q": "How long is a first conversation?",
+              "a": "Usually 45–60 minutes, depending on the type you choose."
             },
             {
-              "q": "Trimiterea cererii înseamnă programare confirmată?",
-              "a": "Nu. Cererea este înregistrată; confirmăm disponibilitatea înainte ca întâlnirea să fie stabilită."
+              "q": "Does sending a request confirm the appointment?",
+              "a": "No. Your request is logged; we confirm availability before the meeting is finalized."
             }
           ]
         },
         "appointment": {
-          "enabled": "da",
-          "title": "Solicită o programare",
-          "intro": "Alege un interval potrivit. Îți confirmăm cererea prin datele de contact oferite — nu este o rezervare automată.",
-          "timezone": "Europe/Bucharest",
+          "enabled": "yes",
+          "title": "Request an appointment",
+          "intro": "Choose a time that works. We'll confirm your request using the contact details you provide — this isn't an automatic booking.",
+          "timezone": "America/New_York",
           "slotIntervalMinutes": "60",
           "durationMin": "45",
           "minLeadMinutes": "120",
-          "modeLabel": "Online sau la birou",
+          "modeLabel": "Online or in-office",
           "types": [
             {
               "id": "consult-init",
-              "label": "Prima discuție",
+              "label": "Initial consultation",
               "durationMin": "45",
               "mode": "online"
             },
             {
               "id": "contract-review",
-              "label": "Revizuire contract",
+              "label": "Contract review",
               "durationMin": "60",
               "mode": "office"
             },
@@ -149,23 +149,23 @@
             { "weekday": "4", "start": "09:00", "end": "17:00" },
             { "weekday": "5", "start": "09:00", "end": "15:00" }
           ],
-          "confirmationText": "Cererea ta a fost înregistrată. Îți vom confirma disponibilitatea înainte ca întâlnirea să fie stabilită.",
-          "privacyNotice": "Folosim datele doar pentru a răspunde la cererea ta de programare.",
-          "confidentialityWarning": "Nu trimite documente sau informații confidențiale prin acest formular.",
-          "emptySlotsText": "Nu există intervale disponibile în această perioadă. Lasă-ne datele tale și revenim cu o propunere.",
-          "submitLabel": "Trimite cererea"
+          "confirmationText": "Your request has been logged. We'll confirm availability before the meeting is finalized.",
+          "privacyNotice": "We only use your information to respond to your appointment request.",
+          "confidentialityWarning": "Please don't send confidential documents or information through this form.",
+          "emptySlotsText": "No time slots are available right now. Leave your details and we'll follow up with options.",
+          "submitLabel": "Send request"
         },
         "contact": {
           "title": "Contact",
-          "intro": "Preferi email sau telefon? Scrie-ne — răspundem în zilele lucrătoare.",
-          "phone": "+40211234567",
-          "phoneDisplay": "+40 21 123 4567",
-          "email": "contact@cabinet-marin.example",
-          "whatsapp": "40722123456",
-          "waHref": "https://wa.me/40722123456",
-          "address": "Str. Exemplu 12<br>București",
+          "intro": "Prefer email or phone? Reach out — we respond on business days.",
+          "phone": "+12125550148",
+          "phoneDisplay": "+1 212 555 0148",
+          "email": "contact@whitfieldlaw.example",
+          "whatsapp": "12125550148",
+          "waHref": "https://wa.me/12125550148",
+          "address": "123 Main Street, Suite 400<br>New York, NY 10001",
           "addressHref": "",
-          "hoursNote": "Luni–Vineri, pe programare",
+          "hoursNote": "Monday–Friday, by appointment",
           "instagram": { "url": "", "label": "Instagram" },
           "facebook": { "url": "", "label": "Facebook" }
         },
@@ -181,44 +181,44 @@
           "jsonLd": ""
         },
         "footer": {
-          "address": "București · pe programare",
+          "address": "New York, NY · by appointment",
           "year": "2026",
-          "note": "Cerere de programare — confirmare separată."
+          "note": "Appointment requests confirmed separately."
         }
       }
     },
     {
       "id": "atelier-nord",
-      "name": "Atelier Nord Consult",
+      "name": "Northline Consulting",
       "config": {
         "business": {
-          "name": "Atelier Nord Consult",
-          "tagline": "Sprijin profesionist, explicat pe înțelesul tău.",
-          "title": "Atelier Nord Consult | Strategie & organizare | Cluj",
-          "metaDescription": "Consultanță de strategie și organizare pentru echipe mici. Discuții pe programare, online sau la birou în Cluj.",
-          "about": "Ajutăm fondatori și manageri să clarifice prioritățile, procesele și comunicarea internă. Lucrăm pe sesiuni scurte, cu teme clare și pași următori scriși. Fără promisiuni de creștere garantată — doar structură și întrebări bune.",
-          "lang": "ro",
-          "profession": "Consultant strategie & organizare",
-          "languages": "Română, Engleză",
-          "modes": "Online · birou Cluj"
+          "name": "Northline Consulting",
+          "tagline": "Professional guidance, explained in plain terms.",
+          "title": "Northline Consulting | Strategy & Operations | Austin, TX",
+          "metaDescription": "Strategy and operations consulting for small teams. Consultations by appointment — online or in our Austin office.",
+          "about": "We help founders and managers get clear on priorities, processes, and internal communication. We work in short sessions with clear takeaways and next steps in writing. No promises of guaranteed growth — just structure and good questions.",
+          "lang": "en",
+          "profession": "Strategy & operations consultant",
+          "languages": "English",
+          "modes": "Online · Austin office"
         },
         "labels": {
-          "navServices": "Servicii",
-          "navAbout": "Despre",
-          "navFaq": "Întrebări",
+          "navServices": "Services",
+          "navAbout": "About",
+          "navFaq": "FAQ",
           "navContact": "Contact",
-          "navBook": "Programare",
-          "servicesEyebrow": "Cum te putem ajuta",
-          "processEyebrow": "Proces",
-          "aboutEyebrow": "Despre noi",
-          "faqEyebrow": "Întrebări",
-          "bookEyebrow": "Programare",
+          "navBook": "Book",
+          "servicesEyebrow": "How we can help",
+          "processEyebrow": "Process",
+          "aboutEyebrow": "About us",
+          "faqEyebrow": "FAQ",
+          "bookEyebrow": "Booking",
           "contactEyebrow": "Contact",
-          "secondaryCta": "Explorează serviciile",
-          "scroll": "Derulează",
-          "instaTitle": "Note scurte",
-          "instaFollow": "Urmărește",
-          "waQr": "WhatsApp pe telefon",
+          "secondaryCta": "Explore our services",
+          "scroll": "Scroll",
+          "instaTitle": "Quick notes",
+          "instaFollow": "Follow",
+          "waQr": "WhatsApp on your phone",
           "waOpen": "WhatsApp Web"
         },
         "theme": {
@@ -231,90 +231,90 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, #F7F4EE 0%, #EEE8DC 55%, #E0D8C8 100%)",
-          "ctaLabel": "Programează o discuție",
-          "qualifier": "Sesiuni pe programare — online sau la birou."
+          "ctaLabel": "Book a consultation",
+          "qualifier": "Sessions by appointment — online or in-office."
         },
-        "servicesTitle": "Servicii",
+        "servicesTitle": "Services",
         "services": [
           {
-            "label": "Strategie și prioritizare",
-            "blurb": "Ce merită atenție acum — și ce poate aștepta."
+            "label": "Strategy & prioritization",
+            "blurb": "What deserves attention now — and what can wait."
           },
           {
-            "label": "Organizare de echipă",
-            "blurb": "Roluri, ritm de întâlniri, decizii care nu se blochează."
+            "label": "Team organization",
+            "blurb": "Roles, meeting rhythm, and decisions that don't stall."
           },
           {
-            "label": "Planificare financiară operațională",
-            "blurb": "Cash, bugete simple, semnale de alarmă pe care le poți citi singur."
+            "label": "Operational financial planning",
+            "blurb": "Cash flow, simple budgets, and warning signs you can read yourself."
           },
           {
-            "label": "Coaching de leadership",
-            "blurb": "Sesiuni 1:1 pentru decizii grele, fără jargon de dezvoltare personală."
+            "label": "Leadership coaching",
+            "blurb": "One-on-one sessions for hard calls, no personal-development jargon."
           }
         ],
         "process": {
-          "title": "Cum începe colaborarea",
+          "title": "How we start working together",
           "steps": [
             {
-              "title": "Trimiți cererea",
-              "text": "Alegi tema și un interval. Rămâne o cerere până confirmăm."
+              "title": "Send your request",
+              "text": "Choose a topic and a time. It stays a request until we confirm."
             },
             {
-              "title": "Confirmăm",
-              "text": "Îți propunem ora finală și modul (online / birou)."
+              "title": "We confirm",
+              "text": "We'll propose a final time and format (online / in-office)."
             },
             {
-              "title": "Lucrăm pe agendă",
-              "text": "Ieși cu note și următorii pași scriși."
+              "title": "We work the agenda",
+              "text": "You leave with notes and next steps in writing."
             }
           ]
         },
         "credentials": {
-          "title": "Despre practică",
-          "lead": "Structură, întrebări bune, zero hype.",
+          "title": "About the practice",
+          "lead": "Structure, good questions, zero hype.",
           "items": [
-            { "label": "Strategie pentru echipe mici" },
-            { "label": "Sesiuni pe programare" },
-            { "label": "Cluj și online" }
+            { "label": "Strategy for small teams" },
+            { "label": "Sessions by appointment" },
+            { "label": "Austin and online" }
           ]
         },
         "faq": {
-          "title": "Întrebări",
+          "title": "FAQ",
           "items": [
             {
-              "q": "Lucrați cu companii mari?",
-              "a": "Ne concentrăm pe echipe mici și medii. Dacă ai nevoie de alt tip de suport, îți spunem din prima discuție."
+              "q": "Do you work with large companies?",
+              "a": "We focus on small and mid-size teams. If you need something else, we'll tell you in the first conversation."
             },
             {
-              "q": "Cât costă?",
-              "a": "Tarifele se stabilesc după prima discuție, în funcție de temă și frecvență. Nu publicăm pachete generice."
+              "q": "What does it cost?",
+              "a": "Rates are set after the first conversation, based on topic and frequency. We don't publish generic packages."
             },
             {
-              "q": "Pot anula?",
-              "a": "Da — scrie-ne pe email sau telefon înainte de intervalul confirmat."
+              "q": "Can I cancel?",
+              "a": "Yes — email or call us before the confirmed time."
             }
           ]
         },
         "appointment": {
-          "enabled": "da",
-          "title": "Solicită o programare",
-          "intro": "Alege un interval. Îți confirmăm cererea pe email — nu este o rezervare automată în calendar.",
-          "timezone": "Europe/Bucharest",
+          "enabled": "yes",
+          "title": "Request an appointment",
+          "intro": "Choose a time. We'll confirm your request by email — it isn't an automatic calendar booking.",
+          "timezone": "America/Chicago",
           "slotIntervalMinutes": "60",
           "durationMin": "50",
           "minLeadMinutes": "180",
-          "modeLabel": "Online sau birou Cluj",
+          "modeLabel": "Online or Austin office",
           "types": [
             {
               "id": "discovery",
-              "label": "Discuție de orientare",
+              "label": "Discovery call",
               "durationMin": "40",
               "mode": "online"
             },
             {
               "id": "strategy-session",
-              "label": "Sesiune strategie",
+              "label": "Strategy session",
               "durationMin": "60",
               "mode": "office"
             }
@@ -325,23 +325,23 @@
             { "weekday": "3", "start": "10:00", "end": "18:00" },
             { "weekday": "4", "start": "10:00", "end": "18:00" }
           ],
-          "confirmationText": "Cererea ta a fost înregistrată. Îți vom confirma disponibilitatea înainte ca întâlnirea să fie stabilită.",
-          "privacyNotice": "Datele tale rămân pentru răspunsul la această cerere.",
+          "confirmationText": "Your request has been logged. We'll confirm availability before the meeting is finalized.",
+          "privacyNotice": "We only use your details to respond to this request.",
           "confidentialityWarning": "",
-          "emptySlotsText": "Nu există intervale disponibile acum. Lasă datele de contact și revenim cu o propunere.",
-          "submitLabel": "Trimite cererea"
+          "emptySlotsText": "No openings available right now. Leave your contact details and we'll follow up with a time.",
+          "submitLabel": "Send request"
         },
         "contact": {
           "title": "Contact",
-          "intro": "Scrie-ne pe email sau cere o programare din formular.",
-          "phone": "+40730111222",
-          "phoneDisplay": "+40 730 111 222",
-          "email": "hello@atelier-nord.example",
+          "intro": "Email us or request an appointment using the form.",
+          "phone": "+15125550142",
+          "phoneDisplay": "+1 512 555 0142",
+          "email": "hello@northlineconsulting.example",
           "whatsapp": "",
           "waHref": "",
-          "address": "Cluj-Napoca<br>pe programare",
+          "address": "Austin, TX<br>by appointment",
           "addressHref": "",
-          "hoursNote": "Marți–Vineri, pe programare",
+          "hoursNote": "Tuesday–Friday, by appointment",
           "instagram": { "url": "", "label": "Instagram" },
           "facebook": { "url": "", "label": "Facebook" }
         },
@@ -357,9 +357,9 @@
           "jsonLd": ""
         },
         "footer": {
-          "address": "Cluj-Napoca",
+          "address": "Austin, TX",
           "year": "2026",
-          "note": "Programare pe cerere."
+          "note": "Appointments by request."
         }
       }
     }

@@ -422,7 +422,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
                 // transient failure — don't block publication
             }
             if (verdict && verdict.blocked) {
-                const err = new Error(verdict.reason || 'Imaginile nu au trecut moderarea.');
+                const err = new Error(verdict.reason || 'Your images did not pass moderation.');
                 err.code = 'MODERATION';
                 throw err;
             }
@@ -454,7 +454,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
 
     if (!url) {
         registry.updateSite(site.id, { status: 'needs-retry' });
-        throw new Error('Furnizorul de deploy nu a returnat un URL.');
+        throw new Error('The hosting provider did not return a URL.');
     }
 
     // 6. Mark live
@@ -548,7 +548,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 
     // Owner notification
     if (typeof notifyAdmin === 'function') {
-        notifyAdmin(`💰 Plată confirmată! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
+        notifyAdmin(`💰 Payment confirmed! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
     }
 
     // ── Renewal: extend hosting year; do not re-run first-publish fee path ──
@@ -653,20 +653,20 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 
 /**
  * Notify the site owner on their channel (Telegram or just admin) after payment.
- * Sends the "domeniu propriu" concierge message.
+ * Sends the "your own domain" concierge message.
  */
 function _notifyOwnerChannel(site, url, messenger, notifyAdmin) {
     const contactUrl = (process.env.CONTACT_URL || '').trim();
     const domainMsg  = contactUrl
-        ? `Vrei domeniul tău propriu (ex: firma-ta.ro)? ${contactUrl}`
-        : 'Vrei domeniul tău propriu (ex: firma-ta.ro)? Scrie-ne și îl setăm noi pentru tine.';
-    const msg = `✅ Site-ul tău e LIVE: ${url}\n\n${domainMsg}`;
+        ? `Want your own domain (e.g. yourbusiness.com)? ${contactUrl}`
+        : "Want your own domain (e.g. yourbusiness.com)? Contact us and we'll set it up for you.";
+    const msg = `✅ Your site is LIVE: ${url}\n\n${domainMsg}`;
 
     if (site.platform === 'telegram' && site.ownerChatId && typeof messenger === 'function') {
         Promise.resolve().then(() => messenger(String(site.ownerChatId), msg)).catch(() => {});
     }
     if (typeof notifyAdmin === 'function') {
-        notifyAdmin(`💰 Site plătit + live: ${url} (${site.platform || 'web'})`);
+        notifyAdmin(`💰 Site paid + live: ${url} (${site.platform || 'web'})`);
     }
 }
 

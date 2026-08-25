@@ -1,77 +1,77 @@
 {
   "templateId": "local-service",
   "version": 1,
-  "name": "Meseriași",
-  "language": "ro",
+  "name": "Trades",
+  "language": "en",
   "wizardHints": {
     "vertical": "local-service",
-    "aiStyle": "direct, de încredere, industrial-curat — sans condensat pe titluri, contrast mare antracit/chihlimbar, CTA telefon vizibil; ton de firmă locală serioasă"
+    "aiStyle": "direct, trustworthy, industrial-clean — condensed sans on headings, high anthracite/amber contrast, visible phone CTA; tone of a serious local company"
   },
   "sections": [
     {
       "id": "business",
-      "title": "Informații firmă",
+      "title": "Company info",
       "fields": [
         {
           "key": "business.name",
           "type": "text",
-          "label": "Numele firmei / serviciului local",
+          "label": "Business or trade name",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "business.tagline",
           "type": "text",
-          "label": "Slogan scurt (ex: Renovari interioare de calitate)",
+          "label": "Short tagline (e.g. Quality interior renovations)",
           "required": true,
           "maxLen": 80
         },
         {
           "key": "business.title",
           "type": "text",
-          "label": "Titlu pagina SEO (apare in tab browser)",
+          "label": "SEO page title (shown in the browser tab)",
           "required": true,
           "maxLen": 70
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere scurta pentru Google (max 160 caractere)",
+          "label": "Short description for Google (160 characters max)",
           "required": true,
           "maxLen": 160
         },
         {
           "key": "business.about",
           "type": "textarea",
-          "label": "Descriere firma (2-4 fraze despre ce faceti)",
+          "label": "About your business (2–4 sentences on what you do)",
           "required": true,
           "maxLen": 500
         },
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Limba site-ului",
+          "label": "Site language",
           "required": true,
           "maxLen": 10
         },
         {
           "key": "business.yearsExp",
           "type": "text",
-          "label": "Ani de experiență (ex: 12)",
+          "label": "Years of experience (e.g. 12)",
           "required": false,
           "maxLen": 4
         },
         {
           "key": "business.projectsDone",
           "type": "text",
-          "label": "Număr proiecte finalizate (ex: 240) — afișat în hero și statistici",
+          "label": "Projects completed (e.g. 240) — shown in the hero and stats",
           "required": false,
           "maxLen": 10
         },
         {
           "key": "business.zone",
           "type": "text",
-          "label": "Zona de activitate (ex: Londra și împrejurimi)",
+          "label": "Service area (e.g. Austin and the surrounding area)",
           "required": false,
           "maxLen": 100
         }
@@ -79,47 +79,47 @@
     },
     {
       "id": "labels",
-      "title": "Etichete interfata (texte butoane/sectiuni)",
+      "title": "Interface labels (button/section text)",
       "fields": [
         {
           "key": "labels.about",
           "type": "text",
-          "label": "Titlu sectiune Despre noi (ex: Despre noi)",
+          "label": "About section title (e.g. About us)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.instaTitle",
           "type": "text",
-          "label": "Titlu sectiune Instagram (ex: Urmariti-ne pe Instagram)",
+          "label": "Instagram section title (e.g. Follow us on Instagram)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.instaFollow",
           "type": "text",
-          "label": "Textul butonului urmarire Instagram (ex: Urmareste)",
+          "label": "Instagram follow button text (e.g. Follow)",
           "required": true,
           "maxLen": 30
         },
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Text indicator scroll (ex: Derulează)",
+          "label": "Scroll indicator text (e.g. Scroll)",
           "required": true,
           "maxLen": 30
         },
         {
           "key": "labels.waQr",
           "type": "text",
-          "label": "Titlu modal QR WhatsApp (ex: Deschide WhatsApp pe telefon)",
+          "label": "WhatsApp QR modal title (e.g. Open WhatsApp on your phone)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.waOpen",
           "type": "text",
-          "label": "Buton secundar WhatsApp Web (ex: Sau deschide WhatsApp Web)",
+          "label": "Secondary WhatsApp Web button (e.g. Or open WhatsApp Web)",
           "required": true,
           "maxLen": 60
         }
@@ -127,60 +127,60 @@
     },
     {
       "id": "visual",
-      "title": "Aspect vizual",
+      "title": "Appearance",
       "fields": [
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Culoare accent principala (galben-santier recomandat: #F5A623)",
+          "label": "Primary accent color (site-yellow recommended: #F5A623)",
           "required": true
         },
         {
           "key": "theme.primaryLight",
           "type": "color",
-          "label": "Varianta mai deschisa a accentului",
+          "label": "Lighter accent shade",
           "required": true
         },
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Varianta mai inchisa a accentului",
+          "label": "Darker accent shade",
           "required": true
         },
         {
           "key": "theme.cream",
           "type": "color",
-          "label": "Culoare fundal pagina (gri-deschis recomandat: #F4F5F7)",
+          "label": "Page background color (light gray recommended: #F4F5F7)",
           "required": true
         },
         {
           "key": "logo",
           "type": "text",
-          "label": "Cale logo (ex: images/logo.png) — lasati gol daca nu aveti",
+          "label": "Logo path (e.g. images/logo.png) — leave blank if you don't have one",
           "required": false
         },
         {
           "key": "showWordmark",
           "type": "text",
-          "label": "Aratati numele ca titlu text? (true/false, daca nu aveti logo)",
+          "label": "Show the business name as text? (true/false, if you don't have a logo)",
           "required": false
         }
       ]
     },
     {
       "id": "hero",
-      "title": "Sectiunea Hero (banner principal)",
+      "title": "Hero section (main banner)",
       "fields": [
         {
           "key": "hero.background",
           "type": "text",
-          "label": "Fundal hero: cale imagine (ex: url('images/hero.jpg')) sau gradient CSS",
+          "label": "Hero background: image path (e.g. url('images/hero.jpg')) or CSS gradient",
           "required": true
         },
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Textul butonului principal (ex: Cere oferta gratuita)",
+          "label": "Main button text (e.g. Get a free quote)",
           "required": true,
           "maxLen": 40
         }
@@ -188,19 +188,19 @@
     },
     {
       "id": "services",
-      "title": "Servicii oferite",
+      "title": "Services offered",
       "fields": [
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Titlu sectiune servicii (ex: Serviciile noastre)",
+          "label": "Services section title (e.g. Our services)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "services",
           "type": "list",
-          "label": "Lista servicii (icon emoji + denumire)",
+          "label": "Services list (emoji icon + name)",
           "required": false,
           "min": 0,
           "max": 12,
@@ -213,12 +213,12 @@
     },
     {
       "id": "trust",
-      "title": "De ce noi (argumente de încredere)",
+      "title": "Why us (trust points)",
       "fields": [
         {
           "key": "trust",
           "type": "list",
-          "label": "Argumente «De ce noi» (3–4 carduri cu icon, titlu și text scurt)",
+          "label": "\"Why us\" points (3–4 cards with icon, title, and short text)",
           "required": false,
           "min": 0,
           "max": 6,
@@ -232,19 +232,19 @@
     },
     {
       "id": "portfolio",
-      "title": "Portofoliu lucrari",
+      "title": "Work portfolio",
       "fields": [
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Titlu sectiune portofoliu (ex: Lucrari realizate)",
+          "label": "Portfolio section title (e.g. Completed work)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "categories",
           "type": "list",
-          "label": "Categorii de lucrari (fiecare cu titlu, descriere si poze)",
+          "label": "Work categories (each with title, description, and photos)",
           "required": false,
           "min": 0,
           "max": 8,
@@ -258,12 +258,12 @@
     },
     {
       "id": "certifications",
-      "title": "Certificari si autorizatii",
+      "title": "Certifications & licenses",
       "fields": [
         {
           "key": "certifications",
           "type": "list",
-          "label": "Certificări / autorizații (ex: Autorizație construcții, ISO 9001)",
+          "label": "Certifications / licenses (e.g. Construction license, ISO 9001)",
           "required": false,
           "min": 0,
           "max": 8,
@@ -273,83 +273,83 @@
     },
     {
       "id": "contact",
-      "title": "Date de contact",
+      "title": "Contact details",
       "fields": [
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Titlu sectiune contact (ex: Cere oferta)",
+          "label": "Contact section title (e.g. Get a quote)",
           "required": true,
           "maxLen": 50
         },
         {
           "key": "contact.intro",
           "type": "textarea",
-          "label": "Text intro contact (1-2 fraze)",
+          "label": "Contact intro text (1–2 sentences)",
           "required": true,
           "maxLen": 200
         },
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Telefon (format internațional, ex: +40 721 123 456)",
+          "label": "Phone number (international format, e.g. +1 415 555 0112)",
           "required": false
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Telefon afișat (ex: +40 721 123 456)",
+          "label": "Displayed phone number (e.g. +1 415 555 0112)",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "Număr WhatsApp (fără +, ex: 40721123456)",
+          "label": "WhatsApp number (no +, e.g. 14155550112)",
           "required": false
         },
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "Link WhatsApp (https://wa.me/...)",
+          "label": "WhatsApp link (https://wa.me/...)",
           "required": false
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Instagram (secțiunea contact)",
+          "label": "Instagram (contact section)",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Text Instagram (ex: @firmamea)",
+          "label": "Instagram text (e.g. @yourbusiness)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "Link Facebook",
+          "label": "Facebook link",
           "required": false
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Text link Facebook (ex: Firma Mea)",
+          "label": "Facebook link text (e.g. Your Business)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Adresa fizică (câte un rând pe linie)",
+          "label": "Physical address (one line per row)",
           "required": false
         },
         {
           "key": "contact.addressHref",
           "type": "url",
-          "label": "Link Google Maps",
+          "label": "Google Maps link",
           "required": false
         }
       ]
@@ -361,38 +361,38 @@
         {
           "key": "instagram.handle",
           "type": "text",
-          "label": "Username Instagram fără @ (ex: firmamea)",
+          "label": "Instagram username without @ (e.g. yourbusiness)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Profil Instagram",
+          "label": "Instagram profile",
           "required": false
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Feed Instagram (opțional)",
+          "label": "Instagram feed link (optional)",
           "required": false
         },
         {
           "key": "instagram.gallery",
           "type": "photos",
-          "label": "Poze pentru grila Instagram (max 6)",
+          "label": "Photos for the Instagram grid (6 max)",
           "required": false
         }
       ]
     },
     {
       "id": "seo",
-      "title": "Partajare pe rețele",
+      "title": "Social sharing",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "url",
-          "label": "Imagine la partajare pe rețele (1200×630px)",
+          "label": "Social sharing image (1200×630px)",
           "required": false
         }
       ]
@@ -404,21 +404,21 @@
         {
           "key": "footer.address",
           "type": "text",
-          "label": "Adresa scurta pentru footer",
+          "label": "Short address for the footer",
           "required": true,
           "maxLen": 120
         },
         {
           "key": "footer.year",
           "type": "text",
-          "label": "Anul pentru copyright (ex: 2026)",
+          "label": "Copyright year (e.g. 2026)",
           "required": true,
           "maxLen": 4
         },
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Nota footer (ex: Calitate garantata.)",
+          "label": "Footer note (e.g. Quality guaranteed.)",
           "required": false,
           "maxLen": 80
         }

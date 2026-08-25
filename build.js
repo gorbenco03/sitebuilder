@@ -62,6 +62,41 @@ function sanitizeUrl(value) {
     return '#';
 }
 
+/**
+ * Raster image data URLs the builder itself produces when a customer replaces a
+ * photo. SVG is deliberately excluded — an SVG document can carry <script>.
+ */
+const SAFE_CSS_DATA_IMAGE =
+    /^data:image\/(?:jpeg|jpg|png|webp|gif|avif);base64,[A-Za-z0-9+/=]+$/i;
+
+/**
+ * Sanitize the url() values inside a CSS style-attribute sink.
+ *
+ * Kept:    scheme-less paths (images/hero.jpg), protocol-relative, https?:, and
+ *          base64 raster data: URLs. The builder stores a replaced photo as a
+ *          data: URL, so blanket-blocking that scheme silently erased every
+ *          image the customer uploaded in the editor preview.
+ * Dropped: javascript:, vbscript:, data:text/html, data:image/svg+xml and any
+ *          other scheme — replaced with url(about:blank).
+ */
+function sanitizeCssUrls(value) {
+    // Quoted forms must allow ')' inside the payload — otherwise a value such as
+    // url('javascript:alert(1)') slips through the scheme check unmatched.
+    return String(value).replace(
+        /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"]*))\s*\)/gi,
+        (match, dq, sq, bare) => {
+            const inner = dq !== undefined ? dq : (sq !== undefined ? sq : bare);
+            const url = String(inner || '').trim();
+            // No scheme at all → relative/protocol-relative path, nothing to police.
+            if (!/^[a-z][a-z0-9+.-]*:/i.test(url)) return match;
+            if (/^https?:/i.test(url)) return match;
+            if (SAFE_CSS_DATA_IMAGE.test(url.replace(/\s+/g, ''))) return match;
+            console.warn(`  ⚠️  unsafe CSS url() scheme stripped: "${url.slice(0, 40)}"`);
+            return 'url(about:blank)';
+        }
+    );
+}
+
 /** URL token paths that appear in href attributes and must be sanitized. */
 const URL_TOKENS = new Set([
     'contact.waHref',
@@ -216,14 +251,12 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
             // parser uses literal (unencoded) characters to find attribute boundaries,
             // so &quot; / &#39; do NOT close the attribute, and the encoded characters
             // decode correctly inside the CSS value (e.g. url(&#39;...&#39;) works).
-            // Additionally strip dangerous CSS url() schemes (javascript:, data:, etc.)
-            // so they cannot be embedded as background values.
+            // Additionally strip dangerous CSS url() schemes (javascript:, vbscript:,
+            // data:text/html, data:image/svg+xml) so they cannot be embedded as
+            // background values. Base64 raster data: URLs are kept — that is how the
+            // builder stores a photo the customer replaced in the editor.
             if (token === 'hero.background') {
-                const safeBg = String(value).replace(
-                    /url\(\s*(['"]?)\s*(?:javascript|data|vbscript):[^)]*\1\s*\)/gi,
-                    'url(about:blank)'
-                );
-                return escapeHtml(safeBg);
+                return escapeHtml(sanitizeCssUrls(value));
             }
             // Inline SVG icons inside @each services blocks — builder/bot-generated,
             // never raw user input. Strip dangerous constructs before emitting so

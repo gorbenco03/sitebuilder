@@ -89,8 +89,8 @@ async function main() {
         const ids = reg.templates.map((t) => t.id);
         assert.deepStrictEqual(ids, ['product-menu', 'local-service', 'portfolio', 'professionals']);
         const pr = reg.templates.find((t) => t.id === 'professionals');
-        assert.ok(/profesion/i.test(pr.name), 'catalog name must be Romanian professionals');
-        assert.ok(/program/i.test(pr.description) || /consulta/i.test(pr.description), 'description should mention appointments/consult');
+        assert.ok(/professional/i.test(pr.name), 'catalog name must be Professional services');
+        assert.ok(/appointment/i.test(pr.description) || /consult/i.test(pr.description), 'description should mention appointments/consult');
     });
 
     await check('professionals folder assets + ≥2 presets render cleanly', () => {
@@ -123,7 +123,7 @@ async function main() {
         assert.ok(/pr-page|pr-nav|pr-appt/.test(html), 'unique professionals class prefix');
         assert.ok(!/pf-chrome|pf-page|ls-page/.test(html), 'must not reuse salon/trade page classes');
         const schema = fs.readFileSync(path.join(ROOT, 'templates', 'professionals', 'schema.json'), 'utf8');
-        assert.ok(/Servicii profesionale/i.test(schema));
+        assert.ok(/Professional services/i.test(schema));
         assert.ok(/appointment\.types|appointment\.weekly/.test(schema));
         assert.ok(!/cofetărie|patiserie|meniu de sezon/i.test(schema));
     });
@@ -132,8 +132,8 @@ async function main() {
         const index = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
         const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
         assert.ok(/data-filter="professionals"/.test(index), 'catalog chip missing');
-        assert.ok(/Servicii profesionale/.test(index));
-        assert.ok(/'professionals':\s*'Servicii profesionale'/.test(app), 'DESIGN_BADGE missing');
+        assert.ok(/Professional services/.test(index));
+        assert.ok(/'professionals':\s*'Professional services'/.test(app), 'DESIGN_BADGE missing');
     });
 
     await check('script appointment model is request-not-booking', () => {

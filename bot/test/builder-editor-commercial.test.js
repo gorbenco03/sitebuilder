@@ -58,13 +58,13 @@ check('four design systems remain in registry with stable ids', () => {
   const byId = Object.fromEntries(reg.templates.map((t) => [t.id, t]));
   assert.ok(/restaurant/i.test(byId['product-menu'].name), 'product-menu name restaurant');
   assert.ok(/salon/i.test(byId['portfolio'].name), 'portfolio name salon');
-  assert.ok(/meseria|construc/i.test(byId['local-service'].name), 'local-service trade name');
-  assert.ok(/profesion/i.test(byId['professionals'].name), 'professionals name');
+  assert.ok(/trade/i.test(byId['local-service'].name), 'local-service trade name');
+  assert.ok(/profession/i.test(byId['professionals'].name), 'professionals name');
   // Telegram-friendly substrings stay somewhere in registry copy (S48 contract)
   const blob = JSON.stringify(reg);
-  assert.ok(/Meniu|meniu/i.test(blob), 'registry keeps Meniu/meniu for picker tests');
-  assert.ok(/portofoliu/i.test(blob), 'registry keeps portofoliu substring');
-  assert.ok(/Servicii|servicii/i.test(blob), 'registry keeps servicii substring');
+  assert.ok(/menu/i.test(blob), 'registry keeps menu substring for picker tests');
+  assert.ok(/portfolio/i.test(blob), 'registry keeps portfolio substring');
+  assert.ok(/service/i.test(blob), 'registry keeps service(s) substring');
 });
 
 check('catalog badge markup never uses raw vertical/id as visible badge text', () => {
@@ -91,13 +91,13 @@ check('catalog badge markup never uses raw vertical/id as visible badge text', (
   assert.ok(hasHumanBadge, 'badge must use human label helper or tpl.name, not raw id');
 });
 
-check('builder chrome prefers Designuri / Alege un design over factory Șabloane nav', () => {
+check('builder chrome prefers Designs / Choose a design over factory Șabloane nav', () => {
   const html = read(BUILDER_HTML);
   const js = read(BUILDER_JS);
   // Nav / hero catalog language
   assert.ok(
-    /Designuri|Alege un design/i.test(html),
-    'index.html should offer Designuri or Alege un design'
+    /Designs|Choose a design/i.test(html),
+    'index.html should offer Designs or Choose a design'
   );
   // Factory admin chrome should not dominate
   assert.ok(
@@ -185,10 +185,10 @@ check('replace copy + image updates preview (renderHtml + app apply path)', () =
 check('Hidook Site Builder chrome, pay-before-publish, Instagram slot preserved', () => {
   const html = read(BUILDER_HTML);
   assert.ok(html.includes('Hidook Site Builder'), 'product name');
-  assert.ok(/id="btn-publish"|Publică site-ul/.test(html), 'publish CTA');
-  assert.ok(/id="btn-pay-publish"|Plătește și publică/.test(html), 'pay-before-publish');
-  assert.ok(/id="btn-add-instagram"|Adaugă Instagram/.test(html), 'Instagram partner slot');
-  assert.ok(/lang="ro"/.test(html), 'Romanian UI');
+  assert.ok(/id="btn-publish"|Publish site/.test(html), 'publish CTA');
+  assert.ok(/id="btn-pay-publish"|Pay and publish/.test(html), 'pay-before-publish');
+  assert.ok(/id="btn-add-instagram"|Add Instagram/.test(html), 'Instagram partner slot');
+  assert.ok(/lang="en"/.test(html), 'English UI');
 });
 
 if (failed) {

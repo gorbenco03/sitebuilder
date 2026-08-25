@@ -173,51 +173,51 @@ check('causal RED: parent professionals Detalii still teaches tel: / URL Instagr
 check('HEAD: cascadeBusinessNameIdentity updates restaurant title/about/facebook', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  assert.strictEqual(cfg.business.name, 'Casa Nord');
+  assert.strictEqual(cfg.business.name, 'North House');
   const newName = 'QaLive S81';
-  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
+  const next = runCascade(appSrc, cfg, 'North House', newName);
   assert.strictEqual(next.business.name, newName);
   assert.ok(next.business.title.includes(newName), 'title contains new name: ' + next.business.title);
-  assert.ok(!/Casa Nord/.test(next.business.title), 'title no longer Casa Nord');
+  assert.ok(!/North House/.test(next.business.title), 'title no longer North House');
   assert.ok(next.business.about.startsWith(newName), 'about starts with new name');
-  assert.ok(!next.business.about.startsWith('Casa Nord'), 'about no longer starts Casa Nord');
+  assert.ok(!next.business.about.startsWith('North House'), 'about no longer starts North House');
   assert.strictEqual(next.contact.facebook.label, newName);
 });
 
-check('HEAD: after name cascade, restaurant renderHtml <title>/og drop Casa Nord', () => {
+check('HEAD: after name cascade, restaurant renderHtml <title>/og drop North House', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
   const newName = 'QaLive S81';
-  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
+  const next = runCascade(appSrc, cfg, 'North House', newName);
   const html = renderHtml(read(PM_TPL), next);
   const titleM = html.match(/<title>([^<]*)<\/title>/i);
   assert.ok(titleM, 'has title');
   assert.ok(titleM[1].includes(newName), 'title has new name: ' + titleM[1]);
-  assert.ok(!/Casa Nord/.test(titleM[1]), 'title free of Casa Nord');
+  assert.ok(!/North House/.test(titleM[1]), 'title free of North House');
   const ogM = html.match(/property=["']og:title["']\s+content=["']([^"']*)["']/i)
     || html.match(/content=["']([^"']*)["']\s+property=["']og:title["']/i);
   assert.ok(ogM, 'og:title present');
   assert.ok(ogM[1].includes(newName), 'og:title has new name');
-  assert.ok(!/Casa Nord/.test(ogM[1]), 'og:title free of Casa Nord');
+  assert.ok(!/North House/.test(ogM[1]), 'og:title free of North House');
   // Facebook chip label in body
   assert.ok(html.includes(newName), 'body mentions new name');
   // About must not still lead with factory name
-  assert.ok(!/Casa Nord e o sal/i.test(html), 'about no longer factory lead-in');
+  assert.ok(!/North House is a small dining room/i.test(html), 'about no longer factory lead-in');
 });
 
-check('HEAD: cascadeBusinessNameIdentity updates professionals title for Cabinet Marin', () => {
+check('HEAD: cascadeBusinessNameIdentity updates professionals title for Whitfield Law', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PRO_PRESETS);
-  assert.ok(/Cabinet Marin/.test(cfg.business.name + cfg.business.title), 'factory Cabinet Marin');
+  assert.ok(/Whitfield Law/.test(cfg.business.name + cfg.business.title), 'factory Whitfield Law');
   const newName = 'Cabinet S81';
-  const next = runCascade(appSrc, cfg, 'Cabinet Marin', newName);
+  const next = runCascade(appSrc, cfg, 'Whitfield Law', newName);
   assert.ok(next.business.title.includes(newName), 'title has new name: ' + next.business.title);
-  assert.ok(!/Cabinet Marin/.test(next.business.title), 'title free of Cabinet Marin');
+  assert.ok(!/Whitfield Law/.test(next.business.title), 'title free of Whitfield Law');
   const html = renderHtml(read(PRO_TPL), next);
   const titleM = html.match(/<title>([^<]*)<\/title>/i);
   assert.ok(titleM, 'has title');
   assert.ok(titleM[1].includes(newName), 'live title has new name');
-  assert.ok(!/Cabinet Marin/.test(titleM[1]), 'live title free of Cabinet Marin');
+  assert.ok(!/Whitfield Law/.test(titleM[1]), 'live title free of Whitfield Law');
 });
 
 check('HEAD: Meseriași first opened preset/template has no ASCII below-fold leftovers', () => {
@@ -232,15 +232,15 @@ check('HEAD: Meseriași first opened preset/template has no ASCII below-fold lef
     }
     assert.ok(!joined.includes(s), 'no leftover: ' + s);
   }
-  // Positive: finished Romanian forms present somewhere in opened Meseriași source
-  assert.ok(/Cere ofertă gratuită|ofertă gratuită/.test(joined), 'diacritic ofertă');
-  assert.ok(/Zidărie|structură/.test(joined), 'diacritic Zidărie/structură');
-  assert.ok(/De ce să ne alegi/.test(joined), 'diacritic De ce să ne alegi');
-  assert.ok(/Garanție scrisă/.test(joined), 'diacritic Garanție scrisă');
-  assert.ok(/Lucrări realizate/.test(joined), 'diacritic Lucrări realizate');
-  assert.ok(/Renovări baie/.test(joined), 'diacritic Renovări baie');
-  assert.ok(/Cum lucrăm/.test(joined), 'diacritic Cum lucrăm');
-  assert.ok(/Urmărește|URMĂREȘTE/.test(joined), 'diacritic Urmărește');
+  // Positive: finished English forms present somewhere in opened Trades source
+  assert.ok(/Get a free quote/.test(joined), 'finished "Get a free quote"');
+  assert.ok(/structural work/i.test(joined), 'finished "structural work"');
+  assert.ok(/Why choose us/.test(joined), 'finished "Why choose us"');
+  assert.ok(/written warranty/i.test(joined), 'finished "written warranty"');
+  assert.ok(/Completed work/.test(joined), 'finished "Completed work"');
+  assert.ok(/bathroom renovation/i.test(joined), 'finished "bathroom renovations"');
+  assert.ok(/How we work/.test(joined), 'finished "How we work"');
+  assert.ok(/\bFollow\b/.test(joined), 'finished "Follow"');
 });
 
 check('HEAD: professionals Detalii labels have no tel: and no URL Instagram contact', () => {
@@ -283,16 +283,16 @@ check('HEAD non-regress: catalog chips still name four systems', () => {
   const html = read('builder/index.html');
   const chips = (html.match(/id=["']catalog-chips["'][\s\S]*?<\/div>/i) || [''])[0];
   assert.ok(/Restaurant/.test(chips), 'Restaurant chip');
-  assert.ok(/Meseriaș/.test(chips), 'Meseriași chip');
+  assert.ok(/Trades/.test(chips), 'Trades chip');
   assert.ok(/Salon/.test(chips), 'Salon chip');
-  assert.ok(/Servicii profesionale/.test(chips), 'Servicii profesionale chip');
+  assert.ok(/Professional services/.test(chips), 'Professional services chip');
 });
 
-check('HEAD non-regress: landing still shows 100€ / 29€ and Fără roboți', () => {
+check('HEAD non-regress: landing still shows 100€ / 29€ and No bots', () => {
   const html = read('builder/index.html');
   assert.ok(/100\s*€|100€/.test(html), '100€');
   assert.ok(/29\s*€|29€/.test(html), '29€');
-  assert.ok(/Fără roboț/i.test(html), 'Fără roboți');
+  assert.ok(/No bots/i.test(html), 'No bots');
 });
 
 if (failed) {

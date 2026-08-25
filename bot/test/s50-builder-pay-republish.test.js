@@ -165,18 +165,18 @@ function withBusinessName(config, name) {
         assert.ok(!bareFallback.test(appSrc), 'builder/app.js must not default brandDomain to hidook.ro');
     });
 
-    await check('unpaid success chrome: Ciorna + Plătește și publică', () => {
+    await check('unpaid success chrome: Draft saved + Pay and publish', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
         assert.ok(
-            /Ciorna e salvată|ciornă/i.test(showSuccessSrc) || /success-draft-note/.test(showSuccessSrc),
-            'unpaid success must stay draft/ciornă'
+            /Draft saved/i.test(showSuccessSrc) || /success-draft-note/.test(showSuccessSrc),
+            'unpaid success must stay draft'
         );
         assert.ok(
-            /Plătește și publică/.test(htmlSrc) || /Plătește și publică/.test(appSrc),
-            'pay CTA must be Plătește și publică'
+            /Pay and publish/i.test(htmlSrc) || /Pay and publish/i.test(appSrc),
+            'pay CTA must be Pay and publish'
         );
         assert.ok(
-            /Finalizează plata|după plată|public pe HTTPS/i.test(htmlSrc + showSuccessSrc),
+            /Complete your payment|Pay and publish/i.test(htmlSrc + showSuccessSrc),
             'success chrome must mention pay-before-live'
         );
     });

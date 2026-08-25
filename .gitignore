@@ -23,3 +23,5 @@ dist/
 dist-gallery/
 # Builder generated assets (produced by npm run build:app)
 builder/generated/
+# Local git worktrees used by the sprint workflow
+.worktrees/

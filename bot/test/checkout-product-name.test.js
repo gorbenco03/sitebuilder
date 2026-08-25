@@ -102,22 +102,22 @@ check('server.js checkout productNames must not introduce DESSERD / desserdina /
 
 check('renewal productName still indicates 12-month hosting renewal', () => {
     const names = extractCheckoutProductNames(serverSrc);
-    const renewal = names.find((n) => /re[iî]nnoire/i.test(n) || /12\s*luni/i.test(n));
+    const renewal = names.find((n) => /renewal/i.test(n) || /12\s*months/i.test(n));
     assert.ok(renewal, 'must still have a renewal productName');
     assert.ok(
         /Hidook Site Builder/.test(renewal),
         'renewal productName must name Hidook Site Builder, got: ' + renewal
     );
     assert.ok(
-        /12\s*luni/i.test(renewal),
-        'renewal productName must still mention 12 luni, got: ' + renewal
+        /12\s*months/i.test(renewal),
+        'renewal productName must still mention 12 months, got: ' + renewal
     );
 });
 
 check('publish/activation productName still indicates site activation', () => {
     const names = extractCheckoutProductNames(serverSrc);
-    const publish = names.filter((n) => /activare/i.test(n));
-    assert.ok(publish.length >= 1, 'must still have Activare productName(s)');
+    const publish = names.filter((n) => /activation/i.test(n));
+    assert.ok(publish.length >= 1, 'must still have activation productName(s)');
     for (const name of publish) {
         assert.ok(
             /Hidook Site Builder/.test(name),

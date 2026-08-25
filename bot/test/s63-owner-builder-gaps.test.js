@@ -195,10 +195,10 @@ function simulateMenuListAdd(config, listPath) {
     const arr = Array.isArray(getPath(c, listPath)) ? getPath(c, listPath).slice() : [];
     let newItem;
     if (/^menu\.(en|ro)$/.test(listPath)) {
-        if (!c.menu || typeof c.menu !== 'object') c.menu = { title: 'Meniu', en: [], ro: [] };
-        newItem = { category: 'Secțiune nouă', items: ['Articol nou'] };
+        if (!c.menu || typeof c.menu !== 'object') c.menu = { title: 'Menu', en: [], ro: [] };
+        newItem = { category: 'New section', items: ['New item'] };
     } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
-        newItem = 'Articol nou';
+        newItem = 'New item';
     } else {
         newItem = '';
     }
@@ -322,8 +322,7 @@ async function loginClient(base, email) {
         assert.ok(/ensureDraftSiteForInstagram/.test(appSrc), 'can save unpaid draft for siteId');
         assert.ok(/form-ig-auth-email/.test(htmlSrc), 'IG auth form in HTML');
         assert.ok(/ig-connect-panel/.test(htmlSrc), 'connect panel present');
-        assert.ok(/înainte de plată|inainte de plata/i.test(htmlSrc + openFn) ||
-            /înainte de plată/i.test(htmlSrc), 'copy says before payment');
+        assert.ok(/before you pay/i.test(htmlSrc + openFn), 'copy says before payment');
         // Must not early-return with only toast before openModal
         const toastBeforeOpen = openFn.indexOf("showToast('Intră în cont");
         const openIdx = openFn.indexOf("openModal('modal-instagram')");
@@ -378,27 +377,27 @@ async function loginClient(base, email) {
                 /\\d\+\\.items\$/.test(overlaySrc),
             'nested menu items safe'
         );
-        assert.ok(/Adaugă secțiune/.test(overlaySrc), 'add section label RO');
-        assert.ok(/Adaugă articol/.test(overlaySrc), 'add item label RO');
+        assert.ok(/\+ Add section/.test(overlaySrc), 'add section label EN');
+        assert.ok(/\+ Add item/.test(overlaySrc), 'add item label EN');
     });
 
     await check('HEAD: onListAdd creates menu section + dish; extractImages keeps hero', () => {
-        assert.ok(/Secțiune nouă/.test(appSrc), 'section default RO');
-        assert.ok(/Articol nou/.test(appSrc), 'item default RO');
+        assert.ok(/New section/.test(appSrc), 'section default EN');
+        assert.ok(/New item/.test(appSrc), 'item default EN');
         const { config } = loadPresetConfig('product-menu');
         const beforeSections = (config.menu && config.menu.en && config.menu.en.length) || 0;
         const afterSec = simulateMenuListAdd(config, 'menu.en');
         assert.ok(afterSec.menu.en.length === beforeSections + 1, 'section added to menu.en');
         const last = afterSec.menu.en[afterSec.menu.en.length - 1];
-        assert.strictEqual(last.category, 'Secțiune nouă');
-        assert.ok(Array.isArray(last.items) && last.items[0] === 'Articol nou');
+        assert.strictEqual(last.category, 'New section');
+        assert.ok(Array.isArray(last.items) && last.items[0] === 'New item');
         assert.ok(
             afterSec.menu.ro && afterSec.menu.ro.length === afterSec.menu.en.length,
             'section mirrored to menu.ro'
         );
         const afterItem = simulateMenuListAdd(afterSec, 'menu.en.0.items');
         const items0 = afterItem.menu.en[0].items;
-        assert.ok(items0[items0.length - 1] === 'Articol nou', 'dish appended');
+        assert.ok(items0[items0.length - 1] === 'New item', 'dish appended');
 
         // applyImageDataUrl-equivalent: hero CSS with replaced data URL still extracts
         const du = dataUrlPng(PNG_A);
