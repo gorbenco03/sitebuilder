@@ -1292,10 +1292,20 @@ function buildDrawerField(field) {
   } else if (type === 'color') {
     // Skip — handled by color picker popover
     return null;
+  } else if (type === 'url') {
+    // Wrap-capable control so long Instagram/FB URLs are fully readable in Detalii
+    // (native single-line <input type=url> mid-clips the handle).
+    input = document.createElement('textarea');
+    input.className = 'field-textarea field-input--url field-textarea--url';
+    input.rows = 2;
+    input.setAttribute('inputmode', 'url');
+    input.setAttribute('autocomplete', 'url');
+    input.setAttribute('spellcheck', 'false');
+    if (field.maxLen) input.maxLength = field.maxLen;
   } else {
     input = document.createElement('input');
     input.className = 'field-input';
-    input.type = type === 'phone' ? 'tel' : (type === 'url' ? 'url' : (type === 'email' ? 'email' : 'text'));
+    input.type = type === 'phone' ? 'tel' : (type === 'email' ? 'email' : 'text');
     if (field.maxLen) input.maxLength = field.maxLen;
   }
 

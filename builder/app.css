@@ -1307,13 +1307,25 @@ input, textarea, select {
   border: 1px solid var(--accent-muted);
   border-radius: var(--radius-sm);
   padding: 0.5rem 0.65rem 0.5rem 0.85rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .success-url-link {
   flex: 1;
+  min-width: 0;
   font-size: 0.85rem; font-weight: 600;
   color: var(--accent); text-decoration: none;
-  overflow: visible; white-space: normal; word-break: break-all; overflow-wrap: anywhere;
+  /* Keep /live/<slug>/ intact: normal breaks only; block scrolls if needed. */
+  overflow: visible;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
   display: flex; align-items: flex-start; gap: 0.3rem;
+}
+.success-url-link #success-url-text {
+  /* Prefer unbroken slug token; parent block may scroll horizontally. */
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .success-url-link:hover { text-decoration: underline; }
 
@@ -1426,6 +1438,20 @@ input, textarea, select {
   -webkit-appearance: none;
   appearance: none;
   line-height: 1.4;
+}
+/* Detalii URL fields: full handle readable (wrap), never mid-clip ellipsis. */
+.field-input--url,
+.field-textarea--url {
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+  text-overflow: clip;
+  min-height: 2.6rem;
+  resize: vertical;
+  line-height: 1.45;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.82rem;
 }
 .field-input:focus,
 .field-textarea:focus {

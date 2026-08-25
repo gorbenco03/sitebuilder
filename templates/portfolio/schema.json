@@ -367,7 +367,7 @@
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Link complet Instagram (https://www.instagram.com/...)",
+          "label": "Adresa Instagram (https://www.instagram.com/...)",
           "required": false
         },
         {
@@ -430,13 +430,13 @@
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Link Instagram pentru secțiunea contact",
+          "label": "Instagram (secțiunea contact)",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Textul linkului Instagram în contact (ex: @salonul_tau)",
+          "label": "Text Instagram (ex: @salonul_tau)",
           "required": false,
           "maxLen": 60
         },
