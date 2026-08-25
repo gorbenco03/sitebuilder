@@ -2983,12 +2983,16 @@ async function loadVersions(siteId) {
     }
 
     list.innerHTML = '';
-    versions.forEach((v, idx) => {
+    // API listVersions is oldest-first; show newest-on-top with Versiunea N = newest.
+    const versionsSorted = versions.slice().sort((a, b) => {
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+    });
+    versionsSorted.forEach((v, idx) => {
       const item = document.createElement('div');
       item.className = 'version-item';
       const d = new Date(v.publishedAt);
       const dateStr = d.toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
-      const verNum = versions.length - idx;
+      const verNum = versionsSorted.length - idx;
       const label = 'Versiunea ' + verNum;
       item.innerHTML = `
         <span class="version-date">${escHtml(dateStr)}</span>

@@ -1323,9 +1323,10 @@ input, textarea, select {
   display: flex; align-items: flex-start; gap: 0.3rem;
 }
 .success-url-link #success-url-text {
-  /* Prefer unbroken slug token; parent block may scroll horizontally. */
+  /* Keep /live/<slug>/ as one token; parent .success-url-block scrolls if needed. */
+  white-space: nowrap;
   overflow-wrap: normal;
-  word-break: normal;
+  word-break: keep-all;
 }
 .success-url-link:hover { text-decoration: underline; }
 
