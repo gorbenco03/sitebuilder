@@ -32,18 +32,29 @@ const webpublish = require('./webpublish.js');
 function getFlow() { return require('./flow.js'); }
 
 /**
- * Web dispatcher: Stripe → webpublish.handleStripePaid (trial + paid).
+ * Web dispatcher: Stripe → webpublish.
+ * - checkout.session.completed → handleStripePaid (trial + paid)
+ * - customer.subscription.deleted / updated(canceled) → unpublish
  * Exported so focused tests can exercise the Docker/`web.js` path directly.
  *
- * @param {object} event Stripe event (checkout.session.completed, …)
+ * @param {object} event Stripe event
  */
 async function onStripeEvent(event) {
     try {
+        const type = event && event.type;
+        if (
+            type === 'customer.subscription.deleted' ||
+            type === 'customer.subscription.updated'
+        ) {
+            await webpublish.handleStripeSubscriptionEvent(event);
+            log('webhook.stripe.handled', { type });
+            return;
+        }
         await webpublish.handleStripePaid(event, {
             // web-only entry: no Telegram messenger / admin chat
             notifyAdmin: undefined,
         });
-        log('webhook.stripe.handled', { type: event && event.type });
+        log('webhook.stripe.handled', { type });
     } catch (e) {
         log('webhook.stripe.handler_error', {
             err: e.message,

@@ -22,6 +22,7 @@
  *   GET  /api/sites/:id/versions    → version list
  *   POST /api/sites/:id/rollback    → republish a past version (paid only)
  *   POST /api/sites/:id/checkout    → {paymentUrl} for dashboard / reactivation
+ *   POST /api/sites/:id/billing-portal → {portalUrl} Stripe Customer Portal (cancel)
  *   POST /api/sites/:id/social-feed/grant          → Instafidget Year-1 grant; stores instagram.embedUrl
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
@@ -1008,6 +1009,88 @@ async function handleSiteCheckout(req, res, siteId) {
     });
 }
 
+/**
+ * POST /api/sites/:id/billing-portal
+ * Opens a Stripe Customer Portal session for the site owner (cancel / manage billing).
+ * HIDOOK_TEST_PAY=1: offline portal URL (no network, no charge).
+ * Requires the site to have a stripeCustomerId from a prior checkout.
+ */
+async function handleSiteBillingPortal(req, res, siteId) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const reg  = getRegistry();
+    const site = await reg.getSite(siteId);
+    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+
+    if (!payments.isConfigured()) {
+        return sendJson(res, 503, { error: 'Payments are not configured.' });
+    }
+
+    let customerId = site.stripeCustomerId || null;
+    // Offline test-pay: synthesize a stable customer id so Cancel works without a live Stripe customer.
+    if (!customerId && process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+        customerId = 'cus_test_site_' + String(site.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+        try {
+            await reg.updateSite(site.id, { stripeCustomerId: customerId });
+        } catch (_) {}
+    }
+    if (!customerId) {
+        return sendJson(res, 400, {
+            error: 'No billing customer on this site yet. Start a trial first, then cancel from the portal.',
+        });
+    }
+
+    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    const returnUrl = publicUrl ? publicUrl + '/app/#sites' : 'http://127.0.0.1/app/#sites';
+
+    let session;
+    try {
+        session = await payments.createBillingPortalSession({
+            customerId,
+            returnUrl,
+        });
+    } catch (e) {
+        log('server.billing_portal.error', { siteId, err: e.message }, 'error');
+        return sendJson(res, 503, { error: "We couldn't open billing: " + e.message });
+    }
+
+    // HIDOOK_TEST_PAY offline: finishing cancel without network — apply unpublish now
+    // so the same Cancel control completes the contract (portal would cancel → webhook).
+    if (
+        session && session.offline &&
+        process.env.HIDOOK_TEST_PAY === '1' &&
+        process.env.NODE_ENV !== 'production'
+    ) {
+        try {
+            const webpublish = require('./webpublish.js');
+            const subId = site.stripeSubscriptionId || ('sub_test_portal_' + site.id.slice(0, 8));
+            await webpublish.handleStripeSubscriptionEvent({
+                id: 'evt_test_portal_cancel_' + crypto.randomBytes(6).toString('hex'),
+                type: 'customer.subscription.deleted',
+                data: {
+                    object: {
+                        id: subId,
+                        customer: customerId,
+                        status: 'canceled',
+                        metadata: { siteId: site.id },
+                    },
+                },
+            });
+        } catch (e) {
+            log('server.billing_portal.test_cancel.error', { siteId, err: e.message }, 'warn');
+        }
+    }
+
+    return sendJson(res, 200, {
+        portalUrl: session.url,
+        url: session.url,
+        id: session.id,
+        offline: !!session.offline,
+    });
+}
+
 function latestSiteConfig(reg, siteId) {
     const versions = reg.listVersions(siteId) || [];
     if (!versions.length) return {};
@@ -1482,6 +1565,12 @@ function createHandler({ onStripeEvent } = {}) {
             const checkoutMatch = url.match(/^\/api\/sites\/([^/]+)\/checkout$/);
             if (req.method === 'POST' && checkoutMatch) {
                 return await handleSiteCheckout(req, res, checkoutMatch[1]);
+            }
+
+            // /api/sites/:id/billing-portal — Cancel → Stripe Customer Portal
+            const portalMatch = url.match(/^\/api\/sites\/([^/]+)\/billing-portal$/);
+            if (req.method === 'POST' && portalMatch) {
+                return await handleSiteBillingPortal(req, res, portalMatch[1]);
             }
 
             const grantMatch = url.match(/^\/api\/sites\/([^/]+)\/social-feed\/grant$/);

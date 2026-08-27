@@ -3189,7 +3189,7 @@ function buildSiteCard(site) {
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
-  // Unpaid → first publish 100; paid+expired → renew 29; paid+active → no pay CTA
+  // Unpaid → first publish; paid+expired → renew; paid+active → Cancel (portal)
   if (!site.paid || hostingExpired) {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
@@ -3215,6 +3215,29 @@ function buildSiteCard(site) {
       }
     });
     actions.appendChild(keepBtn);
+  } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract)
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-ghost btn-sm';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.setAttribute('aria-label', 'Cancel subscription for ' + (site.projectName || site.slug || 'this site'));
+    cancelBtn.addEventListener('click', async () => {
+      try {
+        setBtnLoading(cancelBtn, true, 'Opening…');
+        const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
+        const portalUrl = data.portalUrl || data.url;
+        if (portalUrl) {
+          window.location.href = portalUrl;
+        } else {
+          showToast('Billing portal is not available right now.', 'error');
+        }
+      } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+      } finally {
+        setBtnLoading(cancelBtn, false);
+      }
+    });
+    actions.appendChild(cancelBtn);
   }
 
   const versBtn = document.createElement('button');

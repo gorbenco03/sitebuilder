@@ -8,6 +8,10 @@
  *   - handleStripePaid: generalized across platforms; if site was expired →
  *     republish last version; if pending draft → first public publish after pay;
  *     notify owner on owner's channel + concierge domain msg.
+ *     Also stores stripeCustomerId + stripeSubscriptionId for cancel → unpublish.
+ *   - handleStripeSubscriptionEvent: customer.subscription.deleted or
+ *     customer.subscription.updated with status=canceled → unpublishSite (idempotent).
+ *   - unpublishSite: stop serving isolated $DATA_DIR/published/<slug>/; registry not live.
  *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
  *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
  *
@@ -41,6 +45,138 @@ const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
 const SITES_DIR     = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 
 const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
+
+/**
+ * Remove isolated published files for a slug (stop serving /live/<slug>/).
+ * Idempotent: missing dir is fine.
+ * @param {string} slug
+ */
+function _removeIsolatedPublished(slug) {
+    const safe = String(slug || '').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+    if (!safe) return;
+    const dataDir = process.env.DATA_DIR || PROJECT_ROOT;
+    const dest = path.join(dataDir, 'published', safe);
+    try {
+        fs.rmSync(dest, { recursive: true, force: true });
+    } catch (_) {}
+}
+
+/**
+ * Find a registry site by Stripe subscription id (stored on paid transition).
+ * @param {string} subscriptionId
+ * @returns {object|null}
+ */
+function findSiteBySubscriptionId(subscriptionId) {
+    if (!subscriptionId) return null;
+    const want = String(subscriptionId);
+    const all = registry.listAllSites() || [];
+    return all.find((s) => s && (s.stripeSubscriptionId === want || s.subscriptionId === want)) || null;
+}
+
+/**
+ * Unpublish a site after subscription cancel: registry status not live, clear
+ * public url, remove isolated published files. Idempotent.
+ *
+ * @param {object|string} siteOrId  site object or site id
+ * @param {object} [meta]
+ * @returns {object|null} updated site or null
+ */
+function unpublishSite(siteOrId, meta = {}) {
+    const site = typeof siteOrId === 'string' ? registry.getSite(siteOrId) : siteOrId;
+    if (!site || !site.id) {
+        log('webpublish.unpublish.no_site', { meta });
+        return null;
+    }
+    if (site.slug) _removeIsolatedPublished(site.slug);
+
+    const alreadyDown = site.status !== 'live' && site.status !== 'active';
+    try {
+        registry.updateSite(site.id, {
+            status: 'unpublished',
+            url: null,
+            // Keep paid/paidUntil history; cancel does not invent a charge.
+            canceledAt: site.canceledAt || new Date().toISOString(),
+            stripeSubscriptionStatus: 'canceled',
+        });
+    } catch (e) {
+        log('webpublish.unpublish.update_failed', { siteId: site.id, err: e.message }, 'error');
+        return null;
+    }
+    try {
+        ledger.append({
+            event: 'unpublished',
+            siteId: site.id,
+            reason: meta.reason || 'subscription_canceled',
+            subscriptionId: meta.subscriptionId || site.stripeSubscriptionId || null,
+            alreadyDown: !!alreadyDown,
+        });
+    } catch (_) {}
+    log('webpublish.unpublish.done', {
+        siteId: site.id,
+        slug: site.slug,
+        alreadyDown: !!alreadyDown,
+        subscriptionId: meta.subscriptionId || null,
+    });
+    return registry.getSite(site.id);
+}
+
+/**
+ * Handle Stripe subscription lifecycle for cancel → unpublish.
+ * - customer.subscription.deleted → always unpublish
+ * - customer.subscription.updated with status=canceled → unpublish
+ * - other statuses → no-op
+ * Idempotent via unpublishSite.
+ *
+ * @param {object} event Stripe event
+ * @returns {Promise<object|null>}
+ */
+async function handleStripeSubscriptionEvent(event) {
+    if (!event || !event.type) return null;
+    const type = event.type;
+    const sub = event.data && event.data.object;
+    if (!sub || !sub.id) return null;
+
+    const status = String(sub.status || '').toLowerCase();
+    const isDeleted = type === 'customer.subscription.deleted';
+    const isCanceledUpdate =
+        type === 'customer.subscription.updated' &&
+        (status === 'canceled' || status === 'cancelled');
+
+    if (!isDeleted && !isCanceledUpdate) {
+        log('webpublish.subscription.ignored', { type, status, subscriptionId: sub.id });
+        return null;
+    }
+
+    // Resolve site: metadata.siteId → stripeSubscriptionId lookup
+    let site = null;
+    const metaSiteId = sub.metadata && sub.metadata.siteId;
+    if (metaSiteId) site = registry.getSite(metaSiteId);
+    if (!site) site = findSiteBySubscriptionId(sub.id);
+
+    if (!site) {
+        log('webpublish.subscription.no_site', {
+            type,
+            subscriptionId: sub.id,
+            customer: sub.customer || null,
+        }, 'warn');
+        return null;
+    }
+
+    // Event-level claim (duplicate webhooks)
+    const eventId = event.id;
+    if (eventId && typeof registry.claimStripeEvent === 'function') {
+        const first = registry.claimStripeEvent(eventId);
+        if (!first) {
+            log('webpublish.subscription.already_handled', { eventId, siteId: site.id });
+            // Still ensure unpublished (idempotent) in case prior run partially applied
+        }
+    }
+
+    return unpublishSite(site, {
+        reason: isDeleted ? 'subscription_deleted' : 'subscription_canceled',
+        subscriptionId: sub.id,
+    });
+}
 
 // ---------------------------------------------------------------------------
 // Fake-deploy stub (tests only) + isolated local publish
@@ -574,6 +710,9 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
         return;
     }
 
+    // Persist Stripe customer + subscription so cancel webhooks can unpublish.
+    _storeStripeBillingIds(siteId, cs);
+
     // Owner notification
     if (typeof notifyAdmin === 'function') {
         notifyAdmin(`💰 Payment confirmed! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
@@ -680,6 +819,40 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 }
 
 /**
+ * Persist Stripe customer + subscription ids on the site after checkout completes.
+ * Offline HIDOOK_TEST_PAY may still pass synthetic ids on the session object.
+ * @param {string} siteId
+ * @param {object} cs checkout.session
+ */
+function _storeStripeBillingIds(siteId, cs) {
+    if (!siteId || !cs) return;
+    const customerId = typeof cs.customer === 'string'
+        ? cs.customer
+        : (cs.customer && cs.customer.id);
+    const subscriptionId = typeof cs.subscription === 'string'
+        ? cs.subscription
+        : (cs.subscription && cs.subscription.id);
+    // Offline trial path: synthesize stable ids when missing so cancel tests can wire up.
+    let subId = subscriptionId;
+    let custId = customerId;
+    if (!subId && process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+        subId = 'sub_test_' + String(cs.id || siteId).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40);
+    }
+    if (!custId && process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+        custId = 'cus_test_' + String(cs.id || siteId).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40);
+    }
+    if (!subId && !custId) return;
+    const patch = {};
+    if (custId) patch.stripeCustomerId = custId;
+    if (subId) patch.stripeSubscriptionId = subId;
+    try {
+        registry.updateSite(siteId, patch);
+    } catch (e) {
+        log('webpublish.stripe_paid.store_billing_ids_failed', { siteId, err: e.message }, 'warn');
+    }
+}
+
+/**
  * When checkout completed a first_then_renewal subscription, attach the
  * 99-then-29 Subscription Schedule (phase 0 = first year, phase 1 = renewal).
  * No-ops for pure renewal, offline test pay without a subscription id, or
@@ -778,6 +951,9 @@ function _notifyOwnerChannel(site, url, messenger, notifyAdmin) {
 module.exports = {
     publishSite,
     handleStripePaid,
+    handleStripeSubscriptionEvent,
+    unpublishSite,
+    findSiteBySubscriptionId,
     deployPlaceholder,
     savePendingDraft,
     loadPendingDraft,

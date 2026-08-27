@@ -20,7 +20,10 @@
  * Card is collected at signup ($0 now); first charge is automatic on day 7 at
  * first-period amount (99); subsequent years are renewal amount (29) via a
  * Stripe Subscription Schedule phase — never forever-99, never one-time+trial.
- * Cancel/refund: Stripe Customer Portal / Dashboard (not custom teardown in this module).
+ * Cancel: builder opens a Customer Portal session (createBillingPortalSession).
+ * When Stripe sends customer.subscription.deleted (or updated status=canceled),
+ * the app unpublishes the public site. Refunds stay Dashboard / Portal — no
+ * custom refund API in this module.
  *
  * Caller tip:
  *   amountCents   = first-period charge in minor units (from pricing.js PRICE_CENTS)
@@ -529,6 +532,48 @@ async function createCheckout({
 }
 
 /**
+ * Create a Stripe Customer Portal session so the customer can cancel (and manage
+ * billing). Used by the builder Cancel control.
+ *
+ * HIDOOK_TEST_PAY=1 (non-production): offline session — no network, no charge.
+ * Real path: POST /v1/billing_portal/sessions with customer + return_url.
+ *
+ * @param {object} opts
+ * @param {string} opts.customerId  Stripe customer id (cus_…).
+ * @param {string} opts.returnUrl   Where Stripe sends the customer after the portal.
+ * @returns {Promise<{id: string, url: string, offline?: boolean}>}
+ */
+async function createBillingPortalSession({ customerId, returnUrl } = {}) {
+    if (!customerId) throw new Error('customerId is required for billing portal.');
+    if (!returnUrl) throw new Error('returnUrl is required for billing portal.');
+
+    if (process.env.HIDOOK_TEST_PAY === '1') {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('HIDOOK_TEST_PAY=1 is refused in production');
+        }
+        const id = 'bps_test_' + crypto.randomBytes(12).toString('hex');
+        const base = String(returnUrl).replace(/#.*$/, '');
+        return {
+            id,
+            url: `${base}#test-billing-portal=${id}`,
+            offline: true,
+            customerId: String(customerId),
+        };
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('STRIPE_SECRET_KEY is not set. Cannot create billing portal session.');
+    }
+
+    const body = encodeStripeBody({
+        customer: String(customerId),
+        return_url: String(returnUrl),
+    });
+    const session = await stripeRequest('POST', '/billing_portal/sessions', body);
+    return { id: session.id, url: session.url };
+}
+
+/**
  * Retrieve the status of an existing Checkout Session.
  * Poll this periodically (see pollUntilPaid) — no webhook / public URL needed.
  *
@@ -660,6 +705,7 @@ function constructWebhookEvent(rawBody, sigHeader, secret, opts) {
 module.exports = {
     isConfigured,
     createCheckout,
+    createBillingPortalSession,
     getCheckoutStatus,
     pollUntilPaid,
     refund,
