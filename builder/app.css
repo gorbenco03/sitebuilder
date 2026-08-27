@@ -734,6 +734,14 @@ input, textarea, select {
 .landing-footer strong { color: var(--text); font-weight: 600; }
 .landing-footer a { color: var(--text-muted); }
 .landing-footer a:hover { color: var(--accent); }
+.landing-footer-legal {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: center;
+  margin: 0;
+}
 
 /* Templates grid */
 .templates-grid {
