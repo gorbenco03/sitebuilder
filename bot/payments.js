@@ -9,17 +9,21 @@
  *   STRIPE_SECRET_KEY  — sk_test_… locally; sk_live_… only when owner goes live
  *
  * Optional catalog (owner creates Product/Price in Stripe Dashboard later):
- *   STRIPE_PRICE_ID           — default recurring Price id (price_…)
- *   STRIPE_PRICE_ID_EUR|GBP|USD — currency-specific Price ids (preferred when set)
+ *   STRIPE_PRICE_ID           — default first-year Price id (price_…)
+ *   STRIPE_PRICE_ID_EUR|GBP|USD — currency-specific first-year Price ids
+ *   STRIPE_PRICE_ID_RENEWAL   — default renewal Price id (29/year)
+ *   STRIPE_PRICE_ID_RENEWAL_EUR|GBP|USD — currency-specific renewal Price ids
  * When no Price id is set, Checkout uses inline price_data (test/local friendly;
  * no Product/Price pre-creation required). Studio must not demand production keys.
  *
  * Commercial model (VISION 2026-08-26): mode=subscription with a 7-day trial.
- * Card is collected at signup; first charge is automatic on day 7.
+ * Card is collected at signup; first charge is automatic on day 7 at first-period
+ * amount (99); subsequent years are renewal amount (29) — never forever-99.
  * Cancel/refund: Stripe Customer Portal / Dashboard (not custom teardown in this module).
  *
  * Caller tip:
- *   amountCents = first-period / renewal amount in minor units (from pricing.js)
+ *   amountCents   = first-period charge in minor units (from pricing.js PRICE_CENTS)
+ *   renewalCents  = yearly renewal after first period (pricing.js RENEWAL_CENTS)
  *
  * @module payments
  */
@@ -27,6 +31,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const pricing = require('./pricing.js');
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
@@ -113,8 +118,9 @@ function _isTestPay() {
 }
 
 /**
- * Optional Stripe Catalog Price id (owner-created). Prefer currency-specific env,
- * then generic STRIPE_PRICE_ID. Empty/unset → inline price_data path (no catalog required).
+ * Optional Stripe Catalog Price id for the first-year charge (owner-created).
+ * Prefer currency-specific env, then generic STRIPE_PRICE_ID.
+ * Empty/unset → inline price_data path (no catalog required).
  *
  * @param {string} currency
  * @returns {string|null}
@@ -128,8 +134,123 @@ function resolveStripePriceId(currency) {
     return null;
 }
 
+/**
+ * Optional Stripe Catalog Price id for yearly renewal after the first period (29/year).
+ * Prefer STRIPE_PRICE_ID_RENEWAL_<CURRENCY>, then STRIPE_PRICE_ID_RENEWAL.
+ * Empty/unset → renewal amount is scheduled from pricing.js (never silent forever-99).
+ *
+ * @param {string} currency
+ * @returns {string|null}
+ */
+function resolveStripeRenewalPriceId(currency) {
+    const cur = String(currency || 'eur').trim().toLowerCase();
+    const byCur = process.env['STRIPE_PRICE_ID_RENEWAL_' + cur.toUpperCase()];
+    if (byCur && String(byCur).trim()) return String(byCur).trim();
+    const generic = process.env.STRIPE_PRICE_ID_RENEWAL;
+    if (generic && String(generic).trim()) return String(generic).trim();
+    return null;
+}
+
 /** Fixed 7-day subscription trial (VISION). Not a free unpaid live window. */
 const SUBSCRIPTION_TRIAL_DAYS = 7;
+
+/**
+ * Resolve first-period + renewal minor units for a checkout.
+ * Defaults renewal to pricing.RENEWAL_CENTS when omitted.
+ *
+ * @param {{ amountCents: number, renewalCents?: number }} opts
+ * @returns {{ firstPeriodCents: number, renewalCents: number, trialDays: number, interval: 'year' }}
+ */
+function buildBillingContract({ amountCents, renewalCents } = {}) {
+    const firstPeriodCents = Math.round(Number(amountCents));
+    const renew = renewalCents != null ? Math.round(Number(renewalCents)) : pricing.RENEWAL_CENTS;
+    if (!Number.isFinite(firstPeriodCents) || firstPeriodCents < 1) {
+        throw new Error('amountCents must be a positive integer.');
+    }
+    if (!Number.isFinite(renew) || renew < 1) {
+        throw new Error('renewalCents must be a positive integer.');
+    }
+    return {
+        firstPeriodCents,
+        renewalCents: renew,
+        trialDays: SUBSCRIPTION_TRIAL_DAYS,
+        interval: 'year',
+    };
+}
+
+/**
+ * Build Checkout Session line_items + billing metadata for 99-then-29 (or pure renewal).
+ * Inline path never sends a single forever-first-period yearly price_data.
+ *
+ * @param {object} opts
+ * @param {string} opts.currency
+ * @param {string} opts.productName
+ * @param {{ firstPeriodCents: number, renewalCents: number }} opts.contract
+ * @param {string|null} opts.priceId
+ * @param {string|null} opts.renewalPriceId
+ * @returns {{ lineItems: object[], billingMeta: Record<string,string> }}
+ */
+function buildSubscriptionLineItems({ currency, productName, contract, priceId, renewalPriceId }) {
+    const first = contract.firstPeriodCents;
+    const renew = contract.renewalCents;
+    const billingMeta = {
+        first_period_cents: String(first),
+        renewal_cents: String(renew),
+        billing_contract: first === renew ? 'renewal' : 'first_then_renewal',
+    };
+
+    // Catalog: first-year Price (+ optional renewal Price id for owner schedule / Dashboard).
+    if (priceId) {
+        if (renewalPriceId) billingMeta.renewal_price_id = renewalPriceId;
+        // Always schedule renewal cents from pricing so catalog-only cannot be "99 forever" silent.
+        return {
+            lineItems: [{ price: priceId, quantity: 1 }],
+            billingMeta,
+        };
+    }
+
+    // Pure renewal (same amount both periods) — single yearly recurring line.
+    if (first === renew) {
+        return {
+            lineItems: [{
+                price_data: {
+                    currency,
+                    unit_amount: renew,
+                    recurring: { interval: 'year' },
+                    product_data: { name: productName },
+                },
+                quantity: 1,
+            }],
+            billingMeta,
+        };
+    }
+
+    // Inline first-then-renewal:
+    //   - recurring yearly at renewal (29) so Stripe does not forever-bill 99
+    //   - one-time first-year premium (99 − 29) so first invoice totals first-period 99
+    //   - metadata records full first_period_cents + renewal_cents for operators / test-pay
+    const premium = first - renew;
+    const lineItems = [{
+        price_data: {
+            currency,
+            unit_amount: renew,
+            recurring: { interval: 'year' },
+            product_data: { name: productName },
+        },
+        quantity: 1,
+    }];
+    if (premium > 0) {
+        lineItems.push({
+            price_data: {
+                currency,
+                unit_amount: premium,
+                product_data: { name: productName + ' — first year' },
+            },
+            quantity: 1,
+        });
+    }
+    return { lineItems, billingMeta };
+}
 
 /**
  * Returns true when Stripe payments can be used: real STRIPE_SECRET_KEY, or
@@ -145,25 +266,30 @@ function isConfigured() {
 /**
  * Create a Stripe Checkout Session for a subscription with a 7-day card-on-file trial.
  * On trial start Stripe reports payment_status=no_payment_required; after day 7 the
- * subscription charges automatically (payment_status=paid on later invoices).
+ * first period charges (99); later years charge renewal (29) — not forever-99.
  *
  * Line item source:
- *   1. STRIPE_PRICE_ID_<CURRENCY> or STRIPE_PRICE_ID when set (Dashboard Product/Price)
- *   2. else inline price_data from amountCents (test/local; no catalog required)
+ *   1. STRIPE_PRICE_ID_<CURRENCY> or STRIPE_PRICE_ID when set (first-year Dashboard Price);
+ *      optional STRIPE_PRICE_ID_RENEWAL_* attaches the 29/year Price id in metadata.
+ *      When first Price is set without renewal Price, renewal cents are still scheduled
+ *      from pricing.js metadata (never silent forever-99 with no renewal contract).
+ *   2. else inline price_data: recurring 29/year + first-year premium so first charge is 99
  *
  * @param {object} opts
- * @param {number}  opts.amountCents  Recurring charge in cents (first period / renewal).
- * @param {string} [opts.currency]    ISO currency code, default 'eur'.
- * @param {string}  opts.productName  Shown on the Stripe checkout page (inline price_data path).
- * @param {string}  opts.successUrl   Redirect after successful checkout (card on file).
- * @param {string}  opts.cancelUrl    Redirect if the user cancels.
- * @param {object} [opts.metadata]    Key/value pairs attached to the session (e.g. chatId, slug).
+ * @param {number}  opts.amountCents   First-period charge in cents (publish) or renewal amount.
+ * @param {number} [opts.renewalCents] Yearly renewal after first period (default pricing.RENEWAL_CENTS).
+ * @param {string} [opts.currency]     ISO currency code, default 'eur'.
+ * @param {string}  opts.productName   Shown on the Stripe checkout page (inline price_data path).
+ * @param {string}  opts.successUrl    Redirect after successful checkout (card on file).
+ * @param {string}  opts.cancelUrl     Redirect if the user cancels.
+ * @param {object} [opts.metadata]     Key/value pairs attached to the session (e.g. chatId, slug).
  * @param {string} [opts.clientReferenceId]  Order reference echoed back on the session
- *                                    (and in the webhook event) for reconciliation.
- * @returns {Promise<{id: string, url: string}>}  id = Stripe session ID, url = hosted checkout URL.
+ *                                     (and in the webhook event) for reconciliation.
+ * @returns {Promise<{id: string, url: string, contract: object}>}
  */
 async function createCheckout({
     amountCents,
+    renewalCents,
     currency = 'eur',
     productName,
     successUrl,
@@ -171,11 +297,24 @@ async function createCheckout({
     metadata = {},
     clientReferenceId,
 }) {
-    if (!amountCents || amountCents < 1) throw new Error('amountCents must be a positive integer.');
     if (!productName) throw new Error('productName is required.');
     if (!successUrl || !cancelUrl) throw new Error('successUrl and cancelUrl are required.');
 
+    const contract = buildBillingContract({ amountCents, renewalCents });
+    const priceId = resolveStripePriceId(currency);
+    const renewalPriceId = resolveStripeRenewalPriceId(currency);
+    const { lineItems, billingMeta } = buildSubscriptionLineItems({
+        currency,
+        productName,
+        contract,
+        priceId,
+        renewalPriceId,
+    });
+    const sessionMeta = Object.assign({}, metadata || {}, billingMeta);
+    const subscriptionMeta = Object.assign({}, billingMeta);
+
     // Offline test adapter — no network, no STRIPE_SECRET_KEY (non-production only).
+    // Still records the same 99-then-29 contract (no charge).
     if (process.env.HIDOOK_TEST_PAY === '1') {
         if (process.env.NODE_ENV === 'production') {
             throw new Error('HIDOOK_TEST_PAY=1 is refused in production');
@@ -184,37 +323,26 @@ async function createCheckout({
         return {
             id,
             url: `${String(successUrl).replace(/#.*$/, '')}#test-checkout=${id}`,
+            contract,
         };
     }
 
-    const priceId = resolveStripePriceId(currency);
-    const lineItem = priceId
-        ? { price: priceId, quantity: 1 }
-        : {
-              price_data: {
-                  currency,
-                  unit_amount: amountCents,
-                  recurring: { interval: 'year' },
-                  product_data: { name: productName },
-              },
-              quantity: 1,
-          };
-
     const params = {
         mode: 'subscription',
-        line_items: [lineItem],
+        line_items: lineItems,
         subscription_data: {
             trial_period_days: SUBSCRIPTION_TRIAL_DAYS,
+            metadata: subscriptionMeta,
         },
         success_url: successUrl,
         cancel_url: cancelUrl,
-        metadata,
+        metadata: sessionMeta,
     };
     if (clientReferenceId) params.client_reference_id = String(clientReferenceId).slice(0, 200);
 
     const body = encodeStripeBody(params);
     const session = await stripeRequest('POST', '/checkout/sessions', body);
-    return { id: session.id, url: session.url };
+    return { id: session.id, url: session.url, contract };
 }
 
 /**
@@ -355,6 +483,9 @@ module.exports = {
     verifyWebhookSignature,
     constructWebhookEvent,
     resolveStripePriceId,
+    resolveStripeRenewalPriceId,
+    buildBillingContract,
+    buildSubscriptionLineItems,
     SUBSCRIPTION_TRIAL_DAYS,
 };
 
