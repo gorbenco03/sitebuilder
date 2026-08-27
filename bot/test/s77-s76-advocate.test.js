@@ -197,19 +197,43 @@ check('HEAD: landing step 03 has 100€, step 04 has 29€, footer no AI agents'
   assert.ok(/No bots/i.test(src), 'footer customer English denial');
 });
 
-check('HEAD: Trades template/presets/schema finished English (no Romanian/mojibake leftovers)', () => {
+check('HEAD: Trades template finished English chrome; EN presets clean; RO preset uses real diacritics', () => {
   const tpl = read(LS_TEMPLATE);
-  const presets = read(LS_PRESETS);
+  const presetsRaw = read(LS_PRESETS);
   const schema = read(LS_SCHEMA);
+  const presets = JSON.parse(presetsRaw);
   assert.ok(!/ani experienta/i.test(tpl), 'no leftover Romanian "ani experienta"');
   assert.ok(/years experience/i.test(tpl), 'template has "years experience"');
-  assert.ok(!/\bDeruleaza\b/i.test(presets), 'no leftover Romanian Deruleaza');
-  assert.ok(/"scroll"\s*:\s*"Scroll"/.test(presets), 'scroll label is "Scroll"');
   assert.ok(!/Informatii firma/i.test(schema), 'no leftover Romanian Informatii firma');
   assert.ok(/Company info/.test(schema), 'section title "Company info"');
-  // finished-English-copy check: no leftover Romanian diacritics or mojibake anywhere
-  assert.ok(!/[ăâîșțĂÂÎȘȚ]/.test(tpl + presets + schema), 'no leftover Romanian diacritics');
-  assert.ok(!/Ã.|â€/.test(tpl + presets + schema), 'no mojibake leftovers');
+  assert.ok(!/Ã.|â€/.test(tpl + presetsRaw + schema), 'no mojibake leftovers');
+
+  const en = (presets.presets || []).filter((p) => (p.config.business || {}).lang !== 'ro');
+  const ro = (presets.presets || []).filter((p) => (p.config.business || {}).lang === 'ro');
+  assert.ok(en.length >= 1, 'at least one EN trades preset');
+  assert.ok(ro.length >= 1, 'Wave2: at least one RO trades preset');
+
+  for (const p of en) {
+    const blob = JSON.stringify(p.config);
+    assert.ok(!/\bDeruleaza\b/i.test(blob), p.id + ' EN must not use undiacritic Deruleaza');
+    assert.ok(!/ani experienta/i.test(blob), p.id + ' EN no ani experienta');
+    // EN chrome labels stay Latin without forced RO diacritics requirement
+    if (p.config.labels && p.config.labels.scroll) {
+      assert.ok(p.config.labels.scroll === 'Scroll' || !/[ăâîșțĂÂÎȘȚ]/.test(p.config.labels.scroll),
+        p.id + ' EN scroll label');
+    }
+  }
+  for (const p of ro) {
+    const blob = JSON.stringify(p.config);
+    assert.ok(/[ăâîșțĂÂÎȘȚ]/.test(blob), p.id + ' RO must use real diacritics (ș/ț/ă/î/â)');
+    assert.ok(!/\bDeruleaza\b/.test(blob), p.id + ' RO must not use undiacritic Deruleaza');
+    if (p.config.labels && p.config.labels.scroll) {
+      assert.ok(/[ăâîșțĂÂÎȘȚ]/.test(p.config.labels.scroll) || p.config.labels.scroll === 'Derulează',
+        p.id + ' RO scroll should use diacritics when Romanian');
+    }
+  }
+  // Schema (builder chrome) stays English this slice — no Romanian "opțional" in field labels
+  assert.ok(!/opțional/i.test(schema), 'schema labels stay English this slice');
 });
 
 check('HEAD: no Detalii label has JSON-LD, canonical, leftover Romanian "opțional", or <br>', () => {

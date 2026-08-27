@@ -569,13 +569,18 @@ a.pr-contact__row:hover { border-color: var(--accent); }
     width: 48px; height: 48px;
     border-radius: 50%;
     display: grid; place-items: center;
-    background: #1f3d2b;
-    color: #e8f0ea;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    box-shadow: 0 8px 24px rgba(20, 18, 15, 0.18);
+    background: #25D366;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.35);
 }
+.whatsapp-float .wa-icon { display: block; }
+.hb-built-by {
+    margin: 0.55rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--mute, #6b6b6b);
+}
+.hb-built-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .wa-qr {
     position: fixed; inset: 0; z-index: 50;
     display: grid; place-items: center;

@@ -233,9 +233,11 @@ ul, ol { list-style: none; }
     font-size: 13px; letter-spacing: 0.06em;
 }
 .ls-dock__wa {
-    padding: 14px 18px; background: var(--void); color: #fff;
+    padding: 12px 16px; background: #25D366; color: #fff;
     font-weight: 800; font-size: 13px; border-left: 1px solid rgba(255,255,255,0.12);
+    display: grid; place-items: center;
 }
+.ls-dock__wa .wa-icon { display: block; }
 @media (min-width: 900px) {
     .ls-dock { left: auto; right: 18px; bottom: 18px; width: auto; border-radius: var(--r); overflow: hidden; border-top: 0; border: 1px solid rgba(255,255,255,0.1); }
     .ls-dock__call { padding: 12px 18px; }
@@ -254,9 +256,17 @@ ul, ol { list-style: none; }
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 78px; width: 48px; height: 48px; border-radius: 50%;
-    background: var(--cta); color: #fff; display: grid; place-items: center;
-    font-size: 12px; font-weight: 700; z-index: 30;
+    background: #25D366; color: #fff; display: grid; place-items: center;
+    z-index: 30; box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35);
 }
+.whatsapp-float .wa-icon { display: block; }
+.hb-built-by {
+    margin: 0.55rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--mute, #6b6b6b);
+}
+.hb-built-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 @media (min-width: 900px) { .whatsapp-float { bottom: 18px; } }
 
 .wa-qr[hidden] { display: none; }

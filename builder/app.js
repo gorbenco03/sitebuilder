@@ -441,13 +441,32 @@ function designBadgeLabel(tpl) {
 
 // Field types that go in the drawer (not editable inline on the canvas)
 const DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background']);
-const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waHref', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
+const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
-const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical'];
+const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical', 'contact.waHref'];
+
+/** Default prefilled WhatsApp inquiry (browser builder; mirrors bot/flow intent, do not edit flow.js). */
+const WA_DEFAULT_MSG = 'Hello! I would like more information about your services.';
+
+/** Derive contact.waHref from digits + plain waMessage. Empty when no number. */
+function deriveWaHref(config) {
+  if (!config || typeof config !== 'object') return;
+  if (!config.contact || typeof config.contact !== 'object') config.contact = {};
+  const raw = config.contact.whatsapp;
+  const digits = raw == null ? '' : String(raw).replace(/\D/g, '');
+  if (!digits) {
+    config.contact.waHref = '';
+    return;
+  }
+  const msgRaw = config.contact.waMessage;
+  const msg = (msgRaw != null && String(msgRaw).trim() !== '') ? String(msgRaw) : WA_DEFAULT_MSG;
+  config.contact.waHref = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+}
 
 function isHiddenDrawerField(field) {
   const k = field && field.key ? String(field.key) : '';
   if (HIDDEN_DRAWER_KEYS.includes(k)) return true;
+  if (k === 'waHref' || k.endsWith('.waHref')) return true;
   if (k === 'jsonLd' || k.endsWith('.jsonLd')) return true;
   if (k === 'canonical' || k.endsWith('.canonical')) return true;
   return false;
@@ -691,6 +710,7 @@ function escHtmlForAttr(str) {
 
 function buildSrcdoc() {
   if (!draft.config || !draft.templateId) return '';
+  deriveWaHref(draft.config);
   let tpl = null;
   if (currentTemplate && currentTemplate.data && currentTemplate.meta &&
       currentTemplate.meta.id === draft.templateId) {
@@ -1442,6 +1462,10 @@ function buildDrawerField(field) {
       prevName = getPath(draft.config, key);
     }
     setPath(draft.config, key, input.value);
+    if (key === 'contact.whatsapp' || key === 'contact.waMessage') {
+      deriveWaHref(draft.config);
+      scheduleRerender(true);
+    }
     if (key === 'business.name' && prevName != null) {
       cascadeBusinessNameIdentity(draft.config, prevName, input.value);
       // Immediate iframe refresh so about + chips match cascaded identity
@@ -1672,6 +1696,7 @@ function buildGalleryModal() {
 
 function saveDraft() {
   if (!draft.templateId || !draft.config) return;
+  deriveWaHref(draft.config);
   const payload = { templateId: draft.templateId, config: draft.config };
   // Persist paid-site bind so fresh #edit (no dashboard «Edit») can republish
   if (currentSiteId) {
@@ -1839,6 +1864,7 @@ async function ensureDraftSiteForInstagram() {
     throw new Error('Choose a design first.');
   }
   setIgStatus('Saving your draft so Instagram can connect…');
+  deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
   const baseSlug = toSlug(
     (draft.config.business && draft.config.business.name) ||
@@ -2415,6 +2441,7 @@ async function doActualPublish(chosenSlug) {
 }
 
 async function execPublish(slug) {
+  deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
   const payload = {
     templateId: draft.templateId,

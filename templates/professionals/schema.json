@@ -199,6 +199,83 @@
           "label": "\"Open WhatsApp Web\" link text",
           "required": false,
           "maxLen": 60
+        },
+        {
+          "key": "labels.whatsapp",
+          "type": "text",
+          "label": "WhatsApp link label (contact section)",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.close",
+          "type": "text",
+          "label": "Close button label (accessibility)",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.apptTypeLegend",
+          "type": "text",
+          "label": "Appointment form: type of consultation legend",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.apptDate",
+          "type": "text",
+          "label": "Appointment form: date label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.apptTime",
+          "type": "text",
+          "label": "Appointment form: time label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.apptName",
+          "type": "text",
+          "label": "Appointment form: name label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.apptEmail",
+          "type": "text",
+          "label": "Appointment form: email label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.apptPhone",
+          "type": "text",
+          "label": "Appointment form: phone label (include optional hint)",
+          "required": false,
+          "maxLen": 48
+        },
+        {
+          "key": "labels.apptNote",
+          "type": "text",
+          "label": "Appointment form: note label (include optional hint)",
+          "required": false,
+          "maxLen": 80
+        },
+        {
+          "key": "labels.apptDoneTitle",
+          "type": "text",
+          "label": "Appointment form: success title after submit",
+          "required": false,
+          "maxLen": 80
+        },
+        {
+          "key": "labels.apptAltChannel",
+          "type": "text",
+          "label": "Appointment form: alternate channel prompt",
+          "required": false,
+          "maxLen": 60
         }
       ]
     },
@@ -537,11 +614,18 @@
           "maxLen": 20
         },
         {
+          "key": "contact.waMessage",
+          "type": "textarea",
+          "label": "WhatsApp prefilled message (plain text; diacritics OK)",
+          "required": false,
+          "maxLen": 300
+        },
+        {
           "key": "contact.waHref",
           "type": "url",
-          "label": "WhatsApp link",
+          "label": "WhatsApp link (derived — do not edit)",
           "required": false,
-          "maxLen": 200
+          "maxLen": 500
         },
         {
           "key": "contact.address",

@@ -16,6 +16,17 @@
           "modes": "Online and in-office"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
+          "apptTypeLegend": "Type of consultation",
+          "apptDate": "Date",
+          "apptTime": "Time",
+          "apptName": "Name",
+          "apptEmail": "Email",
+          "apptPhone": "Phone (optional)",
+          "apptNote": "Note (optional, no confidential details)",
+          "apptDoneTitle": "Request sent — awaiting confirmation",
+          "apptAltChannel": "Prefer a different channel?",
           "navServices": "Services",
           "navAbout": "About",
           "navFaq": "FAQ",
@@ -87,9 +98,15 @@
           "title": "Credentials",
           "lead": "Experience, rigor, and straight talk.",
           "items": [
-            { "label": "Civil & commercial law" },
-            { "label": "Languages: English, Spanish" },
-            { "label": "Consultations by appointment — online or in-office" }
+            {
+              "label": "Civil & commercial law"
+            },
+            {
+              "label": "Languages: English, Spanish"
+            },
+            {
+              "label": "Consultations by appointment — online or in-office"
+            }
           ]
         },
         "faq": {
@@ -143,11 +160,31 @@
             }
           ],
           "weekly": [
-            { "weekday": "1", "start": "09:00", "end": "17:00" },
-            { "weekday": "2", "start": "09:00", "end": "17:00" },
-            { "weekday": "3", "start": "09:00", "end": "17:00" },
-            { "weekday": "4", "start": "09:00", "end": "17:00" },
-            { "weekday": "5", "start": "09:00", "end": "15:00" }
+            {
+              "weekday": "1",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "2",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "3",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "4",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "5",
+              "start": "09:00",
+              "end": "15:00"
+            }
           ],
           "confirmationText": "Your request has been logged. We'll confirm availability before the meeting is finalized.",
           "privacyNotice": "We only use your information to respond to your appointment request.",
@@ -166,8 +203,15 @@
           "address": "123 Main Street, Suite 400<br>New York, NY 10001",
           "addressHref": "",
           "hoursNote": "Monday–Friday, by appointment",
-          "instagram": { "url": "", "label": "Instagram" },
-          "facebook": { "url": "", "label": "Facebook" }
+          "instagram": {
+            "url": "",
+            "label": "Instagram"
+          },
+          "facebook": {
+            "url": "",
+            "label": "Facebook"
+          },
+          "waMessage": "Hello! I would like more information about your services."
         },
         "instagram": {
           "handle": "",
@@ -203,6 +247,17 @@
           "modes": "Online · Austin office"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
+          "apptTypeLegend": "Type of consultation",
+          "apptDate": "Date",
+          "apptTime": "Time",
+          "apptName": "Name",
+          "apptEmail": "Email",
+          "apptPhone": "Phone (optional)",
+          "apptNote": "Note (optional, no confidential details)",
+          "apptDoneTitle": "Request sent — awaiting confirmation",
+          "apptAltChannel": "Prefer a different channel?",
           "navServices": "Services",
           "navAbout": "About",
           "navFaq": "FAQ",
@@ -274,9 +329,15 @@
           "title": "About the practice",
           "lead": "Structure, good questions, zero hype.",
           "items": [
-            { "label": "Strategy for small teams" },
-            { "label": "Sessions by appointment" },
-            { "label": "Austin and online" }
+            {
+              "label": "Strategy for small teams"
+            },
+            {
+              "label": "Sessions by appointment"
+            },
+            {
+              "label": "Austin and online"
+            }
           ]
         },
         "faq": {
@@ -320,10 +381,26 @@
             }
           ],
           "weekly": [
-            { "weekday": "1", "start": "10:00", "end": "18:00" },
-            { "weekday": "2", "start": "10:00", "end": "18:00" },
-            { "weekday": "3", "start": "10:00", "end": "18:00" },
-            { "weekday": "4", "start": "10:00", "end": "18:00" }
+            {
+              "weekday": "1",
+              "start": "10:00",
+              "end": "18:00"
+            },
+            {
+              "weekday": "2",
+              "start": "10:00",
+              "end": "18:00"
+            },
+            {
+              "weekday": "3",
+              "start": "10:00",
+              "end": "18:00"
+            },
+            {
+              "weekday": "4",
+              "start": "10:00",
+              "end": "18:00"
+            }
           ],
           "confirmationText": "Your request has been logged. We'll confirm availability before the meeting is finalized.",
           "privacyNotice": "We only use your details to respond to this request.",
@@ -342,8 +419,15 @@
           "address": "Austin, TX<br>by appointment",
           "addressHref": "",
           "hoursNote": "Tuesday–Friday, by appointment",
-          "instagram": { "url": "", "label": "Instagram" },
-          "facebook": { "url": "", "label": "Facebook" }
+          "instagram": {
+            "url": "",
+            "label": "Instagram"
+          },
+          "facebook": {
+            "url": "",
+            "label": "Facebook"
+          },
+          "waMessage": "Hello! I would like more information about your services."
         },
         "instagram": {
           "handle": "",
@@ -360,6 +444,237 @@
           "address": "Austin, TX",
           "year": "2026",
           "note": "Appointments by request."
+        }
+      }
+    },
+    {
+      "id": "cabinet-marin-ro",
+      "name": "Cabinet Marin — București",
+      "config": {
+        "business": {
+          "name": "Cabinet Marin",
+          "tagline": "Claritate pentru deciziile care contează.",
+          "title": "Cabinet Marin | Consultanță juridică | București",
+          "metaDescription": "Consultanță juridică pentru contracte, structurare corporativă și negocieri. Consultații pe programare — online sau la birou în București.",
+          "about": "Lucrăm cu antreprenori și profesioniști care vor răspunsuri clare înainte să semneze. Fiecare conversație pornește de la situația ta, nu de la un pachet standard. Nu promitem rezultate — promitem rigoare și vorbire directă.",
+          "lang": "ro",
+          "profession": "Avocat — drept civil și comercial",
+          "languages": "Română, Engleză",
+          "modes": "Online și la birou"
+        },
+        "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Închide",
+          "apptTypeLegend": "Tip de consultație",
+          "apptDate": "Dată",
+          "apptTime": "Oră",
+          "apptName": "Nume",
+          "apptEmail": "Email",
+          "apptPhone": "Telefon (opțional)",
+          "apptNote": "Notă (opțională, fără detalii confidențiale)",
+          "apptDoneTitle": "Cerere trimisă — așteaptă confirmare",
+          "apptAltChannel": "Preferi un alt canal?",
+          "navServices": "Servicii",
+          "navAbout": "Despre",
+          "navFaq": "Întrebări",
+          "navContact": "Contact",
+          "navBook": "Programare",
+          "servicesEyebrow": "Expertiză",
+          "processEyebrow": "Cum lucrăm",
+          "aboutEyebrow": "Despre cabinet",
+          "faqEyebrow": "Întrebări frecvente",
+          "bookEyebrow": "Programare",
+          "contactEyebrow": "Contact",
+          "secondaryCta": "Vezi serviciile",
+          "scroll": "Derulează",
+          "instaTitle": "Actualizări",
+          "instaFollow": "Urmărește",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#9A4030",
+          "primaryLight": "#C4A574",
+          "primaryDark": "#14120F",
+          "cream": "#F3EFE8"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(145deg, #F3EFE8 0%, #E8E2D6 48%, #D9D2C4 100%)",
+          "ctaLabel": "Programează o consultație",
+          "qualifier": "Consultații pe programare — online sau la birou."
+        },
+        "servicesTitle": "Services",
+        "services": [
+          {
+            "label": "Contracts & negotiations",
+            "blurb": "Careful review, risks explained in plain language, redlines you can actually use."
+          },
+          {
+            "label": "Corporate structuring & governance",
+            "blurb": "Simple structures, formation documents, and clear partner agreements."
+          },
+          {
+            "label": "Civil law guidance",
+            "blurb": "Direction before things escalate — options, deadlines, concrete next steps."
+          },
+          {
+            "label": "Light due diligence",
+            "blurb": "Checklists built for small and mid-size deals, no unnecessary jargon."
+          }
+        ],
+        "process": {
+          "title": "From request to conversation",
+          "steps": [
+            {
+              "title": "Send your request",
+              "text": "Choose the type of conversation and a time that suits you. Nothing is locked in until we reply."
+            },
+            {
+              "title": "We confirm the time",
+              "text": "We'll email or call to lock in the final time together."
+            },
+            {
+              "title": "We talk through your options",
+              "text": "Online or in-office — with the agenda you bring."
+            }
+          ]
+        },
+        "credentials": {
+          "title": "Credentials",
+          "lead": "Experience, rigor, and straight talk.",
+          "items": [
+            {
+              "label": "Civil & commercial law"
+            },
+            {
+              "label": "Languages: English, Spanish"
+            },
+            {
+              "label": "Consultations by appointment — online or in-office"
+            }
+          ]
+        },
+        "faq": {
+          "title": "Întrebări frecvente",
+          "items": [
+            {
+              "q": "How should I prepare for our conversation?",
+              "a": "Send a brief summary of your situation and any public documents you'd like to discuss. Please don't submit anything confidential through the booking form."
+            },
+            {
+              "q": "Can we meet online?",
+              "a": "Yes. Choose your preferred format when you book; we'll send the link after confirming."
+            },
+            {
+              "q": "How long is a first conversation?",
+              "a": "Usually 45–60 minutes, depending on the type you choose."
+            },
+            {
+              "q": "Does sending a request confirm the appointment?",
+              "a": "No. Your request is logged; we confirm availability before the meeting is finalized."
+            }
+          ]
+        },
+        "appointment": {
+          "enabled": "yes",
+          "title": "Request an appointment",
+          "intro": "Choose a time that works. We'll confirm your request using the contact details you provide — this isn't an automatic booking.",
+          "timezone": "America/New_York",
+          "slotIntervalMinutes": "60",
+          "durationMin": "45",
+          "minLeadMinutes": "120",
+          "modeLabel": "Online or in-office",
+          "types": [
+            {
+              "id": "consult-init",
+              "label": "Initial consultation",
+              "durationMin": "45",
+              "mode": "online"
+            },
+            {
+              "id": "contract-review",
+              "label": "Contract review",
+              "durationMin": "60",
+              "mode": "office"
+            },
+            {
+              "id": "follow-up",
+              "label": "Follow-up",
+              "durationMin": "30",
+              "mode": "phone"
+            }
+          ],
+          "weekly": [
+            {
+              "weekday": "1",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "2",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "3",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "4",
+              "start": "09:00",
+              "end": "17:00"
+            },
+            {
+              "weekday": "5",
+              "start": "09:00",
+              "end": "15:00"
+            }
+          ],
+          "confirmationText": "Cererea ta a fost înregistrată. Confirmăm disponibilitatea înainte ca întâlnirea să fie finalizată.",
+          "privacyNotice": "Folosim datele tale doar pentru a răspunde la cererea de programare.",
+          "confidentialityWarning": "Te rugăm să nu trimiți documente sau informații confidențiale prin acest formular.",
+          "emptySlotsText": "Nu există intervale disponibile acum. Lasă datele tale și te contactăm cu opțiuni.",
+          "submitLabel": "Trimite cererea"
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "Preferi email sau telefon? Scrie-ne — răspundem în zilele lucrătoare.",
+          "phone": "+407****4567",
+          "phoneDisplay": "+40 721 234 567",
+          "email": "contact@whitfieldlaw.example",
+          "whatsapp": "40721234567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "123 Main Street, Suite 400<br>New York, NY 10001",
+          "addressHref": "",
+          "hoursNote": "Luni–Vineri, pe programare",
+          "instagram": {
+            "url": "",
+            "label": "Instagram"
+          },
+          "facebook": {
+            "url": "",
+            "label": "Facebook"
+          },
+          "waMessage": "Bună ziua, aș dori o programare."
+        },
+        "instagram": {
+          "handle": "",
+          "url": "",
+          "embedUrl": "",
+          "gallery": []
+        },
+        "seo": {
+          "ogImage": "",
+          "canonical": "",
+          "jsonLd": ""
+        },
+        "footer": {
+          "address": "București · pe programare",
+          "year": "2026",
+          "note": "Cererile de programare se confirmă separat."
         }
       }
     }

@@ -13,6 +13,8 @@
           "lang": "en"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "Our story",
           "instaTitle": "Real results on Instagram",
           "instaFollow": "Follow",
@@ -233,7 +235,8 @@
           "phoneDisplay": "+1 917-555-0142",
           "waHref": "https://wa.me/19175550142",
           "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
-          "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY"
+          "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
@@ -259,6 +262,8 @@
           "lang": "en"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "About the studio",
           "instaTitle": "From the chair, on Instagram",
           "instaFollow": "Follow",
@@ -471,7 +476,8 @@
           "phoneDisplay": "+44 7700 900456",
           "waHref": "https://wa.me/447700900456",
           "address": "24 Redchurch Street<br>London, E2 7DJ",
-          "addressHref": "https://maps.google.com/?q=24+Redchurch+Street+London"
+          "addressHref": "https://maps.google.com/?q=24+Redchurch+Street+London",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/sf-og.jpg",
@@ -481,6 +487,255 @@
           "address": "24 Redchurch Street, London, E2 7DJ",
           "year": 2026,
           "note": "Shape before trend."
+        }
+      }
+    },
+    {
+      "id": "atelier-ivoire-ro",
+      "name": "Atelier Ivoire — București",
+      "config": {
+        "business": {
+          "name": "Atelier Ivoire",
+          "tagline": "Păr, piele și unghii — calm, precis, pe programare",
+          "title": "Atelier Ivoire | Salon & Studio | București",
+          "metaDescription": "Salon boutique în București — coafură, manichiură, tratamente de piele. Programează pe WhatsApp.",
+          "about": "Atelier Ivoire este un studio mic din București. Lucrăm pe programare: culoare, tuns, unghii și îngrijirea pielii. Produse certificate, consultație la fiecare vizită și rezultate care țin.",
+          "lang": "ro"
+        },
+        "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Închide",
+          "about": "Povestea noastră",
+          "instaTitle": "Rezultate reale pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Explorează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "servicesEyebrow": "Meniu servicii",
+          "scheduleEyebrow": "Program",
+          "galleryEyebrow": "Lucrările noastre",
+          "teamEyebrow": "Echipa",
+          "bookingEyebrow": "Programări",
+          "waBookBtn": "Programează pe WhatsApp",
+          "navGallery": "Galerie",
+          "navServices": "Servicii",
+          "navBooking": "Programări",
+          "aboutCap": "Salon"
+        },
+        "theme": {
+          "primary": "#6b7f5a",
+          "primaryLight": "#8fa37a",
+          "primaryDark": "#2a3340",
+          "cream": "#e8eef2"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "url('images/iv-hero.jpg')",
+          "ctaLabel": "Programează vizita"
+        },
+        "servicesTitle": "Services",
+        "services": [
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
+            "label": "Cut & styling",
+            "price": "from $60"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
+            "label": "Gel manicure",
+            "price": "from $45"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
+            "label": "Spa pedicure",
+            "price": "from $55"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
+            "label": "Event makeup",
+            "price": "from $85"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
+            "label": "Skincare treatment",
+            "price": "from $75"
+          },
+          {
+            "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
+            "label": "Hair treatment",
+            "price": "from $65"
+          }
+        ],
+        "pricing": [
+          {
+            "name": "Cut + blow-dry",
+            "price": "$55–75"
+          },
+          {
+            "name": "Root touch-up color",
+            "price": "$95–130"
+          },
+          {
+            "name": "Full balayage",
+            "price": "$180–260"
+          },
+          {
+            "name": "Classic manicure",
+            "price": "$40"
+          },
+          {
+            "name": "Gel color manicure",
+            "price": "$55"
+          },
+          {
+            "name": "Nail art (per nail)",
+            "price": "$5–10"
+          },
+          {
+            "name": "Classic pedicure",
+            "price": "$45"
+          },
+          {
+            "name": "Spa pedicure + gel",
+            "price": "$85"
+          },
+          {
+            "name": "Day makeup",
+            "price": "$85"
+          },
+          {
+            "name": "Bridal makeup",
+            "price": "$180"
+          }
+        ],
+        "schedule": {
+          "title": "Hours",
+          "rows": [
+            {
+              "day": "Monday – Friday",
+              "hours": "9:00 AM – 8:00 PM"
+            },
+            {
+              "day": "Saturday",
+              "hours": "9:00 AM – 6:00 PM"
+            },
+            {
+              "day": "Sunday",
+              "hours": "10:00 AM – 3:00 PM"
+            }
+          ]
+        },
+        "team": {
+          "title": "The Atelier Ivoire team",
+          "members": [
+            {
+              "name": "Chloe Bennett",
+              "role": "Senior stylist & colorist",
+              "bio": "15 years of experience in hair and color, specializing in balayage and cold color techniques.",
+              "photo": "images/iv-team-c.jpg"
+            },
+            {
+              "name": "Dana Park",
+              "role": "Nail specialist & nail artist",
+              "bio": "Internationally certified in gel and acrylic techniques, passionate about minimalist and floral nail art.",
+              "photo": "images/iv-team-d.jpg"
+            },
+            {
+              "name": "Lauren Marsh",
+              "role": "Makeup artist & esthetician",
+              "bio": "Trained at beauty schools in New York and Milan — makeup for everyday, evening, and special occasions.",
+              "photo": "images/iv-team-l.jpg"
+            }
+          ]
+        },
+        "galleryTitle": "From the chair",
+        "categories": [
+          {
+            "title": "Hair & color",
+            "blurb": "From subtle balayage to bold color — every cut is a signature.",
+            "photos": [
+              {
+                "src": "images/iv-par1.jpg",
+                "alt": "Elegant honey-toned balayage"
+              },
+              {
+                "src": "images/iv-par2.jpg",
+                "alt": "Voluminous, glossy waves"
+              },
+              {
+                "src": "images/iv-par3.jpg",
+                "alt": "Modern textured cut"
+              },
+              {
+                "src": "images/iv-par4.jpg",
+                "alt": "Subtle highlights on brunette hair"
+              }
+            ]
+          },
+          {
+            "title": "Manicures & nail art",
+            "blurb": "Gel, acrylic, BIAB, or simple — well-groomed nails that speak for themselves.",
+            "photos": [
+              {
+                "src": "images/iv-mani1.jpg",
+                "alt": "Nude gel manicure with a gold line"
+              },
+              {
+                "src": "images/iv-mani2.jpg",
+                "alt": "Spring floral nail art"
+              },
+              {
+                "src": "images/iv-mani3.jpg",
+                "alt": "Pink-to-white ombré on short nails"
+              },
+              {
+                "src": "images/iv-mani4.jpg",
+                "alt": "Classic bright red manicure"
+              }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "atelier.ivoire",
+          "url": "https://www.instagram.com/atelier.ivoire",
+          "gallery": [
+            "images/iv-ig1.jpg",
+            "images/iv-ig2.jpg",
+            "images/iv-ig3.jpg",
+            "images/iv-ig4.jpg",
+            "images/iv-ig5.jpg",
+            "images/iv-ig6.jpg"
+          ],
+          "embedUrl": ""
+        },
+        "contact": {
+          "title": "Programări",
+          "intro": "Scrie-ne pe WhatsApp pentru o oră. Răspundem în aceeași zi.",
+          "instagram": {
+            "url": "https://www.instagram.com/atelier.ivoire",
+            "label": "@atelier.ivoire"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/atelierivoire",
+            "label": "Atelier Ivoire"
+          },
+          "whatsapp": "40721234567",
+          "phone": "+407****4567",
+          "phoneDisplay": "+40 721 234 567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
+          "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
+          "waMessage": "Bună ziua, aș dori o programare."
+        },
+        "seo": {
+          "ogImage": "images/iv-og.jpg",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.com\",\"telephone\":\"+19175550142\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"62 Bedford Ave\",\"addressLocality\":\"Brooklyn\",\"addressRegion\":\"NY\",\"postalCode\":\"11249\",\"addressCountry\":\"US\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+        },
+        "footer": {
+          "address": "62 Bedford Ave, Brooklyn, NY 11249",
+          "year": 2026,
+          "note": "Programări confirmate separat."
         }
       }
     }

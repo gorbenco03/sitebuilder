@@ -16,6 +16,8 @@
           "zone": "Austin and the Hill Country (Round Rock, Cedar Park, Pflugerville)"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "About us",
           "instaTitle": "From the job site",
           "instaFollow": "Follow",
@@ -191,7 +193,8 @@
           "phoneDisplay": "+1 512-555-0148",
           "waHref": "https://wa.me/15125550148",
           "address": "Austin, TX — serving the greater Austin area",
-          "addressHref": "https://maps.google.com/?q=Austin+TX"
+          "addressHref": "https://maps.google.com/?q=Austin+TX",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
@@ -221,6 +224,8 @@
           "zone": "Manchester, Salford, Stockport, Bolton"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "About us",
           "instaTitle": "From the job site",
           "instaFollow": "Follow",
@@ -396,7 +401,8 @@
           "phoneDisplay": "+44 7755 443 322",
           "waHref": "https://wa.me/447755443322",
           "address": "Manchester, Greater Manchester M1",
-          "addressHref": "https://maps.google.com/?q=Manchester"
+          "addressHref": "https://maps.google.com/?q=Manchester",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/ct-og.jpg",
@@ -407,6 +413,214 @@
           "address": "Manchester, Greater Manchester",
           "year": "2026",
           "note": "Durable roofs. 10-year warranty."
+        }
+      }
+    },
+    {
+      "id": "renovari-bucuresti",
+      "name": "Renovări Ridgeline — București",
+      "config": {
+        "business": {
+          "name": "Renovări Ridgeline",
+          "tagline": "Renovări interioare și finisaje premium",
+          "title": "Renovări Ridgeline | Renovări interioare București",
+          "metaDescription": "Renovări complete de interior în București și împrejurimi. Gresie, gips-carton, vopsitorie, instalații. Echipă cu 12 ani de experiență. Cere o ofertă gratuită.",
+          "about": "Renovări Ridgeline este o firmă de construcții și renovări din București. Ne ocupăm de renovări complete de interior — de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la fiecare lucrare.",
+          "lang": "ro",
+          "yearsExp": "12",
+          "projectsDone": "240",
+          "zone": "București și Ilfov (Voluntari, Otopeni, Popești-Leordeni)"
+        },
+        "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Închide",
+          "about": "Despre noi",
+          "instaTitle": "De pe șantier",
+          "instaFollow": "Urmărește",
+          "scroll": "Derulează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "callCta": "Sună",
+          "estimateCta": "Cere ofertă"
+        },
+        "theme": {
+          "primary": "#0b3d91",
+          "primaryLight": "#1a5bbf",
+          "primaryDark": "#0f1720",
+          "cream": "#eef1f4"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('images/pr-hero.jpg') center/cover no-repeat",
+          "ctaLabel": "Cere ofertă",
+          "callLabel": "Sună acum"
+        },
+        "servicesTitle": "Our services",
+        "services": [
+          {
+            "icon": "",
+            "label": "Framing & structural work"
+          },
+          {
+            "icon": "",
+            "label": "Drywall & suspended ceilings"
+          },
+          {
+            "icon": "",
+            "label": "Painting & plastering"
+          },
+          {
+            "icon": "",
+            "label": "Tile & flooring"
+          },
+          {
+            "icon": "",
+            "label": "Plumbing"
+          },
+          {
+            "icon": "",
+            "label": "Electrical work"
+          },
+          {
+            "icon": "",
+            "label": "Hardwood & laminate flooring"
+          },
+          {
+            "icon": "",
+            "label": "Whole-house renovations"
+          }
+        ],
+        "galleryTitle": "Completed work",
+        "trust": [
+          {
+            "icon": "",
+            "title": "12 years of experience",
+            "text": "Over a decade of work across Austin and the Hill Country. We know local codes and deliver to a high standard."
+          },
+          {
+            "icon": "",
+            "title": "2-year written warranty",
+            "text": "Every construction and finishing job comes with a 2-year written warranty. Our work speaks for itself."
+          },
+          {
+            "icon": "",
+            "title": "Transparent quotes",
+            "text": "A detailed estimate before work starts. No hidden costs, no unpleasant surprises along the way."
+          },
+          {
+            "icon": "",
+            "title": "Fully insured",
+            "text": "Licensed and insured for residential work. A tidy job site and clear communication from start to finish."
+          }
+        ],
+        "certifications": [
+          "Licensed general contractor",
+          "OSHA safety certified",
+          "Insured & bonded",
+          "2-year written warranty"
+        ],
+        "categories": [
+          {
+            "title": "Complete bathroom renovations",
+            "blurb": "We transform your bathroom from the studs out: demolition, waterproofing, tile, plumbing fixtures, and quality hardware.",
+            "photos": [
+              {
+                "src": "images/pr-baie1.jpg",
+                "alt": "Fully renovated modern bathroom · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
+              },
+              {
+                "src": "images/pr-baie2.jpg",
+                "alt": "Premium tile bathroom finish · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
+              },
+              {
+                "src": "images/pr-baie3.jpg",
+                "alt": "Walk-in tiled shower · Austin, TX",
+                "caption": "Complete bathroom renovations · Austin, TX"
+              }
+            ]
+          },
+          {
+            "title": "Kitchens & open-plan living",
+            "blurb": "We build modern living spaces: wall removal, framing, wiring, porcelain tile, and painting for a flawless result.",
+            "photos": [
+              {
+                "src": "images/pr-buc1.jpg",
+                "alt": "Renovated open-plan kitchen · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
+              },
+              {
+                "src": "images/pr-buc2.jpg",
+                "alt": "Living room with hardwood flooring · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
+              },
+              {
+                "src": "images/pr-buc3.jpg",
+                "alt": "LED suspended ceiling in kitchen · Austin, TX",
+                "caption": "Kitchens & open-plan living · Austin, TX"
+              }
+            ]
+          },
+          {
+            "title": "Additions & structural work",
+            "blurb": "Home additions, attic conversions, permitted load-bearing wall removal, and new backyard structures.",
+            "photos": [
+              {
+                "src": "images/pr-ext1.jpg",
+                "alt": "Steel-frame home addition · Austin, TX",
+                "caption": "Additions & structural work · Austin, TX"
+              },
+              {
+                "src": "images/pr-ext2.jpg",
+                "alt": "Finished backyard structure · Austin, TX",
+                "caption": "Additions & structural work · Austin, TX"
+              }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "ridgeline.renovations",
+          "url": "https://www.instagram.com/ridgeline.renovations",
+          "gallery": [
+            "images/pr-ig1.jpg",
+            "images/pr-ig2.jpg",
+            "images/pr-ig3.jpg",
+            "images/pr-ig4.jpg",
+            "images/pr-ig5.jpg",
+            "images/pr-ig6.jpg"
+          ],
+          "embedUrl": ""
+        },
+        "contact": {
+          "title": "Contact",
+          "intro": "Sună sau scrie pe WhatsApp pentru o evaluare gratuită.",
+          "instagram": {
+            "url": "https://www.instagram.com/ridgeline.renovations",
+            "label": "@ridgeline.renovations"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/ridgelinerenovations",
+            "label": "Ridgeline Renovations"
+          },
+          "whatsapp": "40721234567",
+          "phone": "+407****4567",
+          "phoneDisplay": "+40 721 234 567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "Austin, TX — serving the greater Austin area",
+          "addressHref": "https://maps.google.com/?q=Austin+TX",
+          "waMessage": "Bună ziua, aș dori o programare."
+        },
+        "seo": {
+          "ogImage": "images/pr-og.jpg",
+          "canonical": "https://ridgelinerenovations.com",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Ridgeline Renovations\",\"description\":\"Full interior renovations in Austin, TX\",\"telephone\":\"+1512****0148\",\"areaServed\":\"Austin\",\"url\":\"https://ridgelinerenovations.com\"}"
+        },
+        "footer": {
+          "address": "Austin and the Hill Country",
+          "year": "2026",
+          "note": "Garanție scrisă la fiecare lucrare."
         }
       }
     }

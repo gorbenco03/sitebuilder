@@ -122,6 +122,20 @@
           "label": "Secondary WhatsApp Web button (e.g. Or open WhatsApp Web)",
           "required": true,
           "maxLen": 60
+        },
+        {
+          "key": "labels.whatsapp",
+          "type": "text",
+          "label": "WhatsApp link label (contact section)",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.close",
+          "type": "text",
+          "label": "Close button label (accessibility)",
+          "required": false,
+          "maxLen": 24
         }
       ]
     },
@@ -310,10 +324,18 @@
           "required": false
         },
         {
+          "key": "contact.waMessage",
+          "type": "textarea",
+          "label": "WhatsApp prefilled message (plain text; diacritics OK)",
+          "required": false,
+          "maxLen": 300
+        },
+        {
           "key": "contact.waHref",
           "type": "url",
-          "label": "WhatsApp link (https://wa.me/...)",
-          "required": false
+          "label": "WhatsApp link (derived — do not edit)",
+          "required": false,
+          "maxLen": 500
         },
         {
           "key": "contact.instagram.url",

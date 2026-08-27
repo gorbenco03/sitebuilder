@@ -266,10 +266,19 @@ ul { list-style: none; }
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 18px; z-index: 30;
     width: 48px; height: 48px; border-radius: 50%;
-    background: var(--ink); color: var(--snow);
+    background: #25D366; color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600;
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35);
 }
+.whatsapp-float .wa-icon { display: block; }
+.hb-built-by {
+    margin: 0.55rem 0 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    color: var(--mute, #6b6b6b);
+    pointer-events: auto;
+}
+.hb-built-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .wa-qr[hidden] { display: none; }
 .wa-qr__backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.48); z-index: 50; }
 .wa-qr__card {

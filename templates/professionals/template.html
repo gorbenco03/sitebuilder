@@ -183,8 +183,8 @@
 
                 <form class="pr-appt" id="pr-appt-form" novalidate>
                     <fieldset class="pr-appt__fieldset">
-                        <legend class="pr-appt__legend">Type of consultation</legend>
-                        <div class="pr-appt__types" role="radiogroup" aria-label="Type of consultation">
+                        <legend class="pr-appt__legend">{{labels.apptTypeLegend}}</legend>
+                        <div class="pr-appt__types" role="radiogroup" aria-label="{{labels.apptTypeLegend}}">
                             <!-- @each appointment.types -->
                             <label class="pr-type">
                                 <input type="radio" name="appt-type" value="{{id}}"
@@ -202,11 +202,11 @@
 
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-appt-date">Date</label>
+                            <label class="pr-label" for="pr-appt-date">{{labels.apptDate}}</label>
                             <select class="pr-input" id="pr-appt-date" name="date" required></select>
                         </div>
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-appt-slot">Time</label>
+                            <label class="pr-label" for="pr-appt-slot">{{labels.apptTime}}</label>
                             <select class="pr-input" id="pr-appt-slot" name="slot" required></select>
                         </div>
                     </div>
@@ -215,21 +215,21 @@
 
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-name">Name</label>
+                            <label class="pr-label" for="pr-name">{{labels.apptName}}</label>
                             <input class="pr-input" id="pr-name" name="name" type="text" autocomplete="name" required maxlength="80">
                         </div>
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-email">Email</label>
+                            <label class="pr-label" for="pr-email">{{labels.apptEmail}}</label>
                             <input class="pr-input" id="pr-email" name="email" type="email" autocomplete="email" required maxlength="120">
                         </div>
                     </div>
                     <div class="pr-appt__grid">
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-phone">Phone <span class="pr-opt">(optional)</span></label>
+                            <label class="pr-label" for="pr-phone">{{labels.apptPhone}}</label>
                             <input class="pr-input" id="pr-phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
                         </div>
                         <div class="pr-field">
-                            <label class="pr-label" for="pr-note">Note <span class="pr-opt">(optional, no confidential details)</span></label>
+                            <label class="pr-label" for="pr-note">{{labels.apptNote}}</label>
                             <input class="pr-input" id="pr-note" name="note" type="text" maxlength="200">
                         </div>
                     </div>
@@ -242,7 +242,7 @@
                         <span>{{appointment.submitLabel}}</span>
                     </button>
                     <p class="pr-appt__fallback">
-                        Prefer a different channel?
+                        {{labels.apptAltChannel}}
                         <!-- @if contact.email -->
                         <a href="mailto:{{contact.email}}">{{contact.email}}</a>
                         <!-- @endif -->
@@ -253,7 +253,7 @@
                 </form>
 
                 <div class="pr-appt-done" id="pr-appt-done" hidden>
-                    <h3 class="pr-appt-done__title">Request sent — awaiting confirmation</h3>
+                    <h3 class="pr-appt-done__title">{{labels.apptDoneTitle}}</h3>
                     <p class="pr-copy" id="pr-appt-done-body"></p>
                     <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
                 </div>
@@ -274,7 +274,7 @@
                 <h2 class="pr-display pr-display--sec" id="faq-heading">{{faq.title}}</h2>
                 <div class="pr-faq">
                     <!-- @each faq.items -->
-                    <details class="pr-faq__item">
+                    <details class="pr-faq__item" open>
                         <summary class="pr-faq__q">{{q}}</summary>
                         <p class="pr-copy">{{a}}</p>
                     </details>
@@ -332,7 +332,7 @@
                     <li><a class="pr-contact__row" href="mailto:{{contact.email}}">{{contact.email}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.waHref -->
-                    <li><a class="pr-contact__row" href="{{contact.waHref}}" target="_blank" rel="noopener">WhatsApp</a></li>
+                    <li><a class="pr-contact__row" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.whatsapp}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.addressHref -->
                     <li><a class="pr-contact__row" href="{{contact.addressHref}}" target="_blank" rel="noopener">{{& contact.address}}</a></li>
@@ -358,6 +358,7 @@
                 <!-- @if footer.address --><p class="pr-copy pr-copy--sm">{{footer.address}}</p><!-- @endif -->
             </div>
             <p class="pr-copy pr-copy--sm">&copy; {{footer.year}} {{business.name}}. <!-- @if footer.note -->{{footer.note}}<!-- @endif --></p>
+            <p class="hb-built-by">Built by <a href="https://hidook.tech" target="_blank" rel="noopener noreferrer">hidook.tech</a> · powered by <a href="https://hidook.agency" target="_blank" rel="noopener noreferrer">hidook.agency</a></p>
         </div>
     </footer>
 
@@ -365,13 +366,13 @@
     <div class="wa-qr" id="wa-qr" hidden>
         <div class="wa-qr__backdrop" data-wa-close></div>
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
-            <button class="wa-qr__close" type="button" data-wa-close aria-label="Close">&times;</button>
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="{{labels.close}}">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
-            <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
+            <div class="wa-qr__code"><img id="wa-qr-img" alt="{{labels.whatsapp}} QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
         </div>
     </div>
-    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">WA</a>
+    <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="{{labels.whatsapp}}"><svg class="wa-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
     <!-- @endif -->
 
     <script src="script.js"></script>

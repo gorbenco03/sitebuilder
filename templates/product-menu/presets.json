@@ -13,6 +13,8 @@
           "lang": "en"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "Our story",
           "heroEyebrow": "Restaurant · Chicago",
           "instaTitle": "From the kitchen, on Instagram",
@@ -181,7 +183,8 @@
           "phoneDisplay": "+1 312 555 0187",
           "waHref": "https://wa.me/13125550187",
           "address": "2144 N Halsted St<br>Chicago, IL 60614",
-          "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL"
+          "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/cn-og.jpg",
@@ -207,6 +210,8 @@
           "lang": "en"
         },
         "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Close",
           "about": "About us",
           "heroEyebrow": "Bistro · Portland, OR",
           "instaTitle": "From the plate, on Instagram",
@@ -377,7 +382,8 @@
           "phoneDisplay": "+1 503 555 0113",
           "waHref": "https://wa.me/15035550113",
           "address": "1842 SE Alder St<br>Portland, OR 97214",
-          "addressHref": "https://maps.google.com/?q=1842+SE+Alder+St+Portland+OR"
+          "addressHref": "https://maps.google.com/?q=1842+SE+Alder+St+Portland+OR",
+          "waMessage": "Hello! I would like more information about your services."
         },
         "seo": {
           "ogImage": "images/tv-og.jpg",
@@ -387,6 +393,203 @@
           "address": "1842 SE Alder St, Portland, OR",
           "year": 2026,
           "note": "Seasonal menu, always."
+        }
+      }
+    },
+    {
+      "id": "casa-ro-bucuresti",
+      "name": "Casa Nord — București",
+      "config": {
+        "business": {
+          "name": "Casa Nord",
+          "tagline": "Cine de seară, vinuri de pivniță, mese lungi",
+          "title": "Casa Nord | Restaurant | București",
+          "metaDescription": "Restaurant de seară în București. Meniu de sezon, pivniță de vinuri, rezervări pe WhatsApp.",
+          "about": "Casa Nord este o sală mică de mese lângă Parcul Herăstrău. Gătim seara — legume de la producători locali, pește de Dunăre, deserturi simple. Meniul se schimbă o dată pe lună. Vinuri românești la pahar și la sticlă.",
+          "lang": "ro"
+        },
+        "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Închide",
+          "about": "Povestea noastră",
+          "heroEyebrow": "Restaurant · București",
+          "instaTitle": "Din bucătărie, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Explorează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web"
+        },
+        "theme": {
+          "primary": "#c4a574",
+          "primaryLight": "#dcc49a",
+          "primaryDark": "#0a0a0a",
+          "cream": "#f3eee8"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('images/cn-hero.jpg')",
+          "ctaLabel": "Rezervă o masă"
+        },
+        "servicesTitle": "At the table",
+        "services": [
+          {
+            "icon": "",
+            "label": "Seasonal dinners"
+          },
+          {
+            "icon": "",
+            "label": "Tasting menu"
+          },
+          {
+            "icon": "",
+            "label": "Michigan wines"
+          },
+          {
+            "icon": "",
+            "label": "Private dining"
+          },
+          {
+            "icon": "",
+            "label": "Cocktail bar"
+          },
+          {
+            "icon": "",
+            "label": "Weekend brunch"
+          }
+        ],
+        "menu": {
+          "title": "Menu",
+          "en": [
+            {
+              "category": "Small plates",
+              "items": [
+                "Sourdough, cultured butter",
+                "Beet tartare, horseradish cream",
+                "Market oysters, mignonette"
+              ]
+            },
+            {
+              "category": "From the hearth",
+              "items": [
+                "Dry-aged ribeye, bone marrow jus",
+                "Lake Michigan whitefish, brown butter",
+                "Roasted celery root, hazelnuts, sage"
+              ]
+            },
+            {
+              "category": "Dessert",
+              "items": [
+                "Dark chocolate, sea salt, olive oil",
+                "Seasonal fruit, crème fraîche"
+              ]
+            }
+          ],
+          "ro": [
+            {
+              "category": "Small plates",
+              "items": [
+                "Sourdough, cultured butter",
+                "Beet tartare, horseradish cream",
+                "Market oysters, mignonette"
+              ]
+            },
+            {
+              "category": "From the hearth",
+              "items": [
+                "Dry-aged ribeye, bone marrow jus",
+                "Lake Michigan whitefish, brown butter",
+                "Roasted celery root, hazelnuts, sage"
+              ]
+            },
+            {
+              "category": "Dessert",
+              "items": [
+                "Dark chocolate, sea salt, olive oil",
+                "Seasonal fruit, crème fraîche"
+              ]
+            }
+          ]
+        },
+        "galleryTitle": "On the plate",
+        "categories": [
+          {
+            "title": "Evening plates",
+            "blurb": "Honest portions, house-made sauces, roasted vegetables.",
+            "photos": [
+              {
+                "src": "images/cn-d1.jpg",
+                "alt": "Plate of fish with seasonal vegetables"
+              },
+              {
+                "src": "images/cn-d2.jpg",
+                "alt": "Ribeye steak on a ceramic plate"
+              },
+              {
+                "src": "images/cn-d3.jpg",
+                "alt": "Chocolate dessert"
+              }
+            ]
+          },
+          {
+            "title": "Dining room & cellar",
+            "blurb": "Low light, wood tables, wine racks.",
+            "photos": [
+              {
+                "src": "images/cn-r1.jpg",
+                "alt": "Restaurant interior in the evening"
+              },
+              {
+                "src": "images/cn-r2.jpg",
+                "alt": "Table set for dinner"
+              },
+              {
+                "src": "images/cn-r3.jpg",
+                "alt": "Wine glasses at the bar"
+              }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "north.house.chicago",
+          "url": "https://www.instagram.com/north.house.chicago",
+          "embedUrl": "",
+          "gallery": [
+            "images/cn-ig1.jpg",
+            "images/cn-ig2.jpg",
+            "images/cn-ig3.jpg",
+            "images/cn-ig4.jpg",
+            "images/cn-ig5.jpg",
+            "images/cn-ig6.jpg"
+          ]
+        },
+        "contact": {
+          "title": "Rezervări",
+          "intro": "Scrie-ne pe WhatsApp sau sună pentru o masă. Marți–Sâmbătă, 17–23. Brunch duminica 11–15.",
+          "instagram": {
+            "url": "https://www.instagram.com/north.house.chicago",
+            "label": "@north.house.chicago"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/northhousechicago",
+            "label": "North House"
+          },
+          "whatsapp": "40721234567",
+          "phone": "+407****4567",
+          "phoneDisplay": "+40 721 234 567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "2144 N Halsted St<br>Chicago, IL 60614",
+          "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL",
+          "waMessage": "Bună ziua, aș dori o programare."
+        },
+        "seo": {
+          "ogImage": "images/cn-og.jpg",
+          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"North House\",\"telephone\":\"+13125550187\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"2144 N Halsted St\",\"addressLocality\":\"Chicago\",\"addressCountry\":\"US\"}}"
+        },
+        "footer": {
+          "address": "2144 N Halsted St, Chicago, IL",
+          "year": 2026,
+          "note": "Cine de seară, mereu de sezon."
         }
       }
     }
