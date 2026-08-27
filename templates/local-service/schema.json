@@ -136,6 +136,139 @@
           "label": "Close button label (accessibility)",
           "required": false,
           "maxLen": 24
+        },
+        {
+          "key": "labels.callCta",
+          "type": "text",
+          "label": "Call button / sticky dock CTA (e.g. Call / Sună)",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.yearsExperience",
+          "type": "text",
+          "label": "Hero meter label under years (e.g. years experience)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.projects",
+          "type": "text",
+          "label": "Hero meter label under project count (e.g. projects)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.yearsOnJob",
+          "type": "text",
+          "label": "About badge suffix (e.g. years on the job)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.servicesEyebrow",
+          "type": "text",
+          "label": "Services section eyebrow (e.g. Specifications)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.processEyebrow",
+          "type": "text",
+          "label": "Process section eyebrow (e.g. Process)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.processTitle",
+          "type": "text",
+          "label": "Process section title (e.g. How we work)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.defaultStep1Title",
+          "type": "text",
+          "label": "Default process step 1 title (when no custom steps)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.defaultStep1Text",
+          "type": "text",
+          "label": "Default process step 1 body",
+          "required": false,
+          "maxLen": 200
+        },
+        {
+          "key": "labels.defaultStep2Title",
+          "type": "text",
+          "label": "Default process step 2 title",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.defaultStep2Text",
+          "type": "text",
+          "label": "Default process step 2 body",
+          "required": false,
+          "maxLen": 200
+        },
+        {
+          "key": "labels.defaultStep3Title",
+          "type": "text",
+          "label": "Default process step 3 title",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.defaultStep3Text",
+          "type": "text",
+          "label": "Default process step 3 body",
+          "required": false,
+          "maxLen": 200
+        },
+        {
+          "key": "labels.trustEyebrow",
+          "type": "text",
+          "label": "Trust section eyebrow (e.g. Commitment)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.trustTitle",
+          "type": "text",
+          "label": "Trust section title (e.g. Why choose us)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.contactBandTitle",
+          "type": "text",
+          "label": "Bottom contact band title (e.g. Ready to get started?)",
+          "required": false,
+          "maxLen": 80
+        },
+        {
+          "key": "labels.contactBandText",
+          "type": "text",
+          "label": "Bottom contact band body text",
+          "required": false,
+          "maxLen": 160
+        },
+        {
+          "key": "labels.contactBandAria",
+          "type": "text",
+          "label": "Contact band aria-label",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.dockAria",
+          "type": "text",
+          "label": "Sticky phone dock region aria-label",
+          "required": false,
+          "maxLen": 40
         }
       ]
     },

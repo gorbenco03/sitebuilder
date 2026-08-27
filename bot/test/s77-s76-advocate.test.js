@@ -203,7 +203,12 @@ check('HEAD: Trades template finished English chrome; EN presets clean; RO prese
   const schema = read(LS_SCHEMA);
   const presets = JSON.parse(presetsRaw);
   assert.ok(!/ani experienta/i.test(tpl), 'no leftover Romanian "ani experienta"');
-  assert.ok(/years experience/i.test(tpl), 'template has "years experience"');
+  // Wave2-R1: chrome lives in labels.*, not hardcoded template English
+  assert.ok(
+    /\{\{labels\.yearsExperience\}\}/.test(tpl) || /years experience/i.test(tpl),
+    'years experience chrome via labels token or finished EN copy'
+  );
+  assert.ok(/years experience/i.test(presetsRaw), 'EN presets keep years experience label value');
   assert.ok(!/Informatii firma/i.test(schema), 'no leftover Romanian Informatii firma');
   assert.ok(/Company info/.test(schema), 'section title "Company info"');
   assert.ok(!/Ã.|â€/.test(tpl + presetsRaw + schema), 'no mojibake leftovers');

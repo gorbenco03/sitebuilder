@@ -81,12 +81,12 @@
                 <div class="ls-meters">
                     <div class="ls-meter">
                         <span class="ls-meter__n">{{business.yearsExp}}+</span>
-                        <span class="ls-meter__l">years experience</span>
+                        <span class="ls-meter__l">{{labels.yearsExperience}}</span>
                     </div>
                     <!-- @if business.projectsDone -->
                     <div class="ls-meter">
                         <span class="ls-meter__n">{{business.projectsDone}}+</span>
-                        <span class="ls-meter__l">projects</span>
+                        <span class="ls-meter__l">{{labels.projects}}</span>
                     </div>
                     <!-- @endif -->
                 </div>
@@ -115,7 +115,7 @@
                     <h2 class="ls-h" id="about-heading">{{labels.about}}</h2>
                     <p class="ls-text">{{business.about}}</p>
                     <!-- @if business.yearsExp -->
-                    <div class="ls-badge"><strong>{{business.yearsExp}}+</strong><span>years on the job</span></div>
+                    <div class="ls-badge"><strong>{{business.yearsExp}}+</strong><span>{{labels.yearsOnJob}}</span></div>
                     <!-- @endif -->
                     <!-- @if business.zone -->
                     <p class="ls-zone">{{business.zone}}</p>
@@ -159,7 +159,7 @@
         <!-- @if services -->
         <section class="ls-block ls-block--dark fade-in-section" aria-labelledby="services-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow ls-eyebrow--hi">Specifications</p>
+                <p class="ls-eyebrow ls-eyebrow--hi">{{labels.servicesEyebrow}}</p>
                 <h2 class="ls-h ls-h--light" id="services-heading">{{servicesTitle}}</h2>
                 <ol class="ls-punch">
                     <!-- @each services -->
@@ -176,8 +176,8 @@
         <!-- @if steps -->
         <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow">Process</p>
-                <h2 class="ls-h" id="steps-heading">How we work</h2>
+                <p class="ls-eyebrow">{{labels.processEyebrow}}</p>
+                <h2 class="ls-h" id="steps-heading">{{labels.processTitle}}</h2>
                 <ol class="ls-flow">
                     <!-- @each steps -->
                     <li class="ls-flow__card">
@@ -193,23 +193,23 @@
         <!-- @if !steps -->
         <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow">Process</p>
-                <h2 class="ls-h" id="steps-heading">How we work</h2>
+                <p class="ls-eyebrow">{{labels.processEyebrow}}</p>
+                <h2 class="ls-h" id="steps-heading">{{labels.processTitle}}</h2>
                 <ol class="ls-flow">
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">01</span>
-                        <h3 class="ls-flow__t">Free evaluation</h3>
-                        <p class="ls-text">Contact within 24 hours, an on-site visit, and a clear estimate — no hidden costs.</p>
+                        <h3 class="ls-flow__t">{{labels.defaultStep1Title}}</h3>
+                        <p class="ls-text">{{labels.defaultStep1Text}}</p>
                     </li>
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">02</span>
-                        <h3 class="ls-flow__t">Controlled execution</h3>
-                        <p class="ls-text">Crew on site, written deadlines, checked materials.</p>
+                        <h3 class="ls-flow__t">{{labels.defaultStep2Title}}</h3>
+                        <p class="ls-text">{{labels.defaultStep2Text}}</p>
                     </li>
                     <li class="ls-flow__card">
                         <span class="ls-flow__n">03</span>
-                        <h3 class="ls-flow__t">Handover + warranty</h3>
-                        <p class="ls-text">Handover together with you, backed by a warranty.</p>
+                        <h3 class="ls-flow__t">{{labels.defaultStep3Title}}</h3>
+                        <p class="ls-text">{{labels.defaultStep3Text}}</p>
                     </li>
                 </ol>
             </div>
@@ -219,8 +219,8 @@
         <!-- @if trust -->
         <section class="ls-trust fade-in-section" aria-labelledby="trust-heading">
             <div class="ls-wrap">
-                <p class="ls-eyebrow ls-eyebrow--hi">Commitment</p>
-                <h2 class="ls-h ls-h--light" id="trust-heading">Why choose us</h2>
+                <p class="ls-eyebrow ls-eyebrow--hi">{{labels.trustEyebrow}}</p>
+                <h2 class="ls-h ls-h--light" id="trust-heading">{{labels.trustTitle}}</h2>
                 <div class="ls-trust__grid">
                     <!-- @each trust -->
                     <div class="ls-trust__card">
@@ -295,11 +295,11 @@
         </section>
         <!-- @endif -->
 
-        <section class="ls-band fade-in-section" aria-label="Contact us">
+        <section class="ls-band fade-in-section" aria-label="{{labels.contactBandAria}}">
             <div class="ls-wrap ls-band__inner">
                 <div>
-                    <h2 class="ls-h ls-h--light">Ready to get started?</h2>
-                    <p class="ls-text">Request an estimate — we reply the same day.</p>
+                    <h2 class="ls-h ls-h--light">{{labels.contactBandTitle}}</h2>
+                    <p class="ls-text">{{labels.contactBandText}}</p>
                 </div>
                 <div class="ls-band__acts">
                     <!-- @if contact.whatsapp -->
@@ -315,8 +315,8 @@
 
     <!-- Sticky phone dock — industrial CTA architecture -->
     <!-- @if contact.phone -->
-    <div class="ls-dock" role="region" aria-label="Quick call">
-        <a href="tel:{{contact.phone}}" class="ls-dock__call">CALL {{contact.phoneDisplay}}</a>
+    <div class="ls-dock" role="region" aria-label="{{labels.dockAria}}">
+        <a href="tel:{{contact.phone}}" class="ls-dock__call"><!-- @if labels.callCta -->{{labels.callCta}} <!-- @endif -->{{contact.phoneDisplay}}</a>
         <!-- @if contact.whatsapp -->
         <a href="{{contact.waHref}}" class="ls-dock__wa" target="_blank" rel="noopener" aria-label="{{labels.whatsapp}}"><svg class="wa-icon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
         <!-- @endif -->

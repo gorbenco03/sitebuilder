@@ -204,6 +204,82 @@ check('engine render: RO professionals preset → lang=ro + badge + open FAQ + n
   assert.ok(!/data-hb-edit="[^"]*"[^>]*>Built by/.test(edit), 'Built by not data-hb-edit path-wrapped');
 });
 
+check('item2-R1: local-service RO live HTML has no leftover English chrome', () => {
+  const { renderHtml } = require(path.join(ROOT, 'build.js'));
+  const tplHtml = read('templates/local-service/template.html');
+  // Template must wire chrome through labels.* (not hardcoded EN)
+  assert.ok(/\{\{labels\.callCta\}\}/.test(tplHtml), 'callCta token');
+  assert.ok(/\{\{labels\.yearsExperience\}\}/.test(tplHtml), 'yearsExperience token');
+  assert.ok(/\{\{labels\.processTitle\}\}/.test(tplHtml), 'processTitle token');
+  assert.ok(/\{\{labels\.servicesEyebrow\}\}/.test(tplHtml), 'servicesEyebrow token');
+  assert.ok(/\{\{labels\.contactBandTitle\}\}/.test(tplHtml), 'contactBandTitle token');
+  assert.ok(!/>CALL\s/.test(tplHtml) && !/CALL \{\{/.test(tplHtml), 'no hardcoded CALL dock');
+  assert.ok(!/>How we work</.test(tplHtml), 'no hardcoded How we work');
+  assert.ok(!/>years experience</.test(tplHtml), 'no hardcoded years experience');
+  assert.ok(!/>Ready to get started\?</.test(tplHtml), 'no hardcoded Ready to get started');
+  assert.ok(!/>Specifications</.test(tplHtml), 'no hardcoded Specifications');
+
+  const schema = readJson('templates/local-service/schema.json');
+  const keys = [];
+  for (const s of schema.sections || []) {
+    for (const f of s.fields || []) keys.push(f.key);
+  }
+  for (const k of [
+    'labels.callCta',
+    'labels.yearsExperience',
+    'labels.projects',
+    'labels.yearsOnJob',
+    'labels.servicesEyebrow',
+    'labels.processEyebrow',
+    'labels.processTitle',
+    'labels.contactBandTitle',
+    'labels.contactBandText',
+    'labels.dockAria',
+  ]) {
+    assert.ok(keys.includes(k), 'schema missing ' + k);
+  }
+
+  const presets = readJson('templates/local-service/presets.json');
+  const ro = presets.presets.find((p) => p.config.business && p.config.business.lang === 'ro');
+  assert.ok(ro, 'local-service RO preset');
+  const L = ro.config.labels || {};
+  assert.strictEqual(L.callCta, 'Sună');
+  assert.ok(/[șțăîâȘȚĂÎÂ]/.test(L.yearsExperience || ''), 'RO yearsExperience diacritics');
+  assert.ok(/[șțăîâȘȚĂÎÂ]/.test(L.processTitle || ''), 'RO processTitle diacritics');
+  assert.ok(/[șțăîâȘȚĂÎÂ]/.test(L.contactBandTitle || ''), 'RO contactBandTitle diacritics');
+  for (const p of presets.presets) {
+    assert.ok(p.config.labels && p.config.labels.callCta, p.id + ' missing callCta');
+    assert.ok(p.config.labels.processTitle, p.id + ' missing processTitle');
+    assert.ok(p.config.labels.yearsExperience, p.id + ' missing yearsExperience');
+  }
+
+  const cfg = JSON.parse(JSON.stringify(ro.config));
+  const digits = String((cfg.contact && cfg.contact.whatsapp) || '').replace(/\D/g, '');
+  cfg.contact.waHref =
+    'https://wa.me/' + digits + '?text=' + encodeURIComponent((cfg.contact && cfg.contact.waMessage) || '');
+  const out = renderHtml(tplHtml, cfg, { editMode: false });
+  assert.ok(/lang="ro"/.test(out), 'html lang=ro');
+  // Critic evidence tokens must not remain in live RO HTML
+  const forbidden = [
+    'CALL',
+    'How we work',
+    'Specifications',
+    'years experience',
+    'Ready to get started',
+    'years on the job',
+    'Free evaluation',
+    'Request an estimate',
+  ];
+  for (const t of forbidden) {
+    assert.ok(!out.includes(t), 'RO live HTML still contains English chrome: ' + t);
+  }
+  // Sticky dock must reuse call CTA (Sună), not a second English word
+  assert.ok(/ls-dock__call[^>]*>[\s\S]{0,40}Sună/.test(out), 'dock must use Sună callCta');
+  assert.ok(/Cum lucrăm/.test(out), 'RO process title rendered');
+  assert.ok(/ani experiență/.test(out), 'RO years experience rendered');
+  assert.ok(/Gata de început/.test(out), 'RO contact band title rendered');
+});
+
 check('no Telegram bot files touched by this slice (static presence only)', () => {
   // Sanity: flow still has buildWaHref (we did not delete it); we simply did not edit the file in this task.
   const flow = read('bot/flow.js');
