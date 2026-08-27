@@ -52,8 +52,8 @@ Studio will not ask for these until you decide. Steps:
    - `STRIPE_PRICE_ID_GBP`
    - `STRIPE_PRICE_ID_USD`
    - optional fallback: `STRIPE_PRICE_ID`
-4. Set `STRIPE_SECRET_KEY=sk_live_…` and `STRIPE_WEBHOOK_SECRET=whsec_…` for endpoint  
-   `https://<public-host>/webhooks/stripe`  
+4. Set `STRIPE_SECRET_KEY=sk_live_…` and `STRIPE_WEBHOOK_SECRET=whsec_…` for endpoint
+   `https://<public-host>/webhooks/stripe`.
    Event: **`checkout.session.completed`** (keep listening; trial completions send `payment_status=no_payment_required`).
 5. Enable **Customer Portal** for cancel/refund self-serve (Dashboard → Settings → Billing → Customer portal).
 6. Confirm `NODE_ENV=production` and that `HIDOOK_TEST_PAY`, `HIDOOK_FAKE_DEPLOY`, `HIDOOK_ISOLATED_DEPLOY`, `ALLOW_FREE_PUBLISH` are **unset**.
