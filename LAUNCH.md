@@ -2,7 +2,7 @@
 
 Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, **pay before first public publish**, then go live on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
 
-**Price:** **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** same currency / year. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
+**Price:** **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** same currency / year. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
 
 ---
 
@@ -28,7 +28,7 @@ Do **not** promise permanent hosting from one payment. No public unpaid trial.
 Happy path a stranger can complete (team verifies end-to-end; client does not QA slices):
 
 1. Open builder → design → copy/images → preview
-2. Sign in → **pay 100** → live HTTPS on agency subdomain
+2. Sign in → **pay 99** → live HTTPS on agency subdomain
 3. Return later → edit → republish; renew at 29 / year
 
 ## 3. In-scope for the team (local / staging)

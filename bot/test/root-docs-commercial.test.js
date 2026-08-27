@@ -174,7 +174,7 @@ async function run() {
         );
     });
 
-    await check('root docs state pay-before-publish and commercial price 100 / renewal 29', () => {
+    await check('root docs state pay-before-publish and commercial price 99 / renewal 29', () => {
         assert.ok(
             /pay\s+before\s+(public\s+)?publish|payment\s+before\s+(first\s+)?(public\s+)?publish|pay-before-publish/i.test(
                 both
@@ -182,10 +182,10 @@ async function run() {
             'docs must state pay before public publish'
         );
         assert.ok(
-            /100\s*(EUR|€)/i.test(both) ||
-                /100\s*EUR\s*\/\s*100\s*GBP\s*\/\s*100\s*USD/i.test(both) ||
-                (/100/.test(both) && /EUR/.test(both) && /GBP/.test(both) && /USD/.test(both)),
-            'docs must state 100 EUR / GBP / USD commercial price'
+            /99\s*(EUR|€)/i.test(both) ||
+                /99\s*EUR\s*\/\s*99\s*GBP\s*\/\s*99\s*USD/i.test(both) ||
+                (/99/.test(both) && /EUR/.test(both) && /GBP/.test(both) && /USD/.test(both)),
+            'docs must state 99 EUR / GBP / USD commercial price'
         );
         assert.ok(
             /renewal/i.test(both) && /\b29\b/.test(both),

@@ -19,7 +19,7 @@ Webhook success for first live publish:
 - `checkout.session.completed` with `payment_status=paid` **or** `no_payment_required` (trial / card-on-file) → order paid + **immediate** public deploy.
 - `unpaid` / open → **no** publish.
 
-Amounts stay in `bot/pricing.js` (`PRICE_CENTS=10000` this slice; 99 is a later card). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code.
+Amounts stay in `bot/pricing.js` (`PRICE_CENTS=9900`). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code.
 
 ---
 
@@ -46,7 +46,7 @@ Use Stripe **test cards** only. Do not set live keys until you intentionally go 
 Studio will not ask for these until you decide. Steps:
 
 1. Stripe Dashboard (live) → **Product** “Hidook Site Builder” (or equivalent).
-2. Create **recurring Prices** (yearly) for EUR / GBP / USD matching commercial amounts when you lock 99 vs 100.
+2. Create **recurring Prices** (yearly) for EUR / GBP / USD matching commercial amounts (99 first-publish / 29 renewal).
 3. Copy each Price id (`price_…`) into host env:
    - `STRIPE_PRICE_ID_EUR`
    - `STRIPE_PRICE_ID_GBP`
@@ -65,5 +65,5 @@ Until steps 1–4 are done, leave Price env **unset** and use test keys or `HIDO
 ## Out of this how-to
 
 - Cancel-day-7 site teardown policy (separate product decision).
-- Admin dashboard, legal pages, Telegram checkout, price 100→99 display.
+- Admin dashboard, legal pages, Telegram checkout (price display already 99).
 - Real charges without your explicit go-live of live keys.

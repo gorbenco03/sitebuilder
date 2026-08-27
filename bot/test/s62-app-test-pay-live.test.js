@@ -259,8 +259,8 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         assert.ok(payments.isConfigured(), 'test-pay configured');
     });
 
-    await check('pricing still 10000 / 2900 only', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('pricing still 9900 / 2900 only', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 

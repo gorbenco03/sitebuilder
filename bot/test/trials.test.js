@@ -107,7 +107,7 @@ function createLiveSite(userId) {
         const order = registry.createOrder({
             siteId:          site.id,
             userId:          user.id,
-            amountCents:     10000,
+            amountCents: 9900,
             currency:        'eur',
             stripeSessionId: 'cs_test_' + crypto.randomUUID().slice(0, 8),
         });

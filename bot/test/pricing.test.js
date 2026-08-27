@@ -3,7 +3,7 @@
  * bot/test/pricing.test.js — Pay-before-publish + single pricing source (S2).
  *
  * Contract:
- *   - bot/pricing.js is the only amount source (10000 cents; renewal 2900)
+ *   - bot/pricing.js is the only amount source (9900 cents; renewal 2900)
  *   - EU → EUR, GB/UK → GBP, else USD
  *   - Country from CF-IPCountry, else explicit country/region, else USD
  *   - GET /api/config exposes amount + currency + renewal (not a 3-day free trial)
@@ -57,18 +57,18 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         const pricing = require(pricingPath);
         assert.strictEqual(typeof pricing.getPricing, 'function');
         assert.strictEqual(typeof pricing.resolveCountryCode, 'function');
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 
-    await check('EU country → EUR 10000 / renewal 2900', async () => {
+    await check('EU country → EUR 9900 / renewal 2900', async () => {
         const pricing = require(pricingPath);
         for (const cc of ['RO', 'DE', 'FR', 'IT', 'ES', 'NL']) {
             const p = pricing.getPricing({ country: cc });
             assert.strictEqual(p.currency, 'eur', cc);
-            assert.strictEqual(p.amountCents, 10000);
+            assert.strictEqual(p.amountCents, 9900);
             assert.strictEqual(p.renewalCents, 2900);
-            assert.strictEqual(p.amount, 100);
+            assert.strictEqual(p.amount, 99);
             assert.strictEqual(p.renewal, 29);
         }
     });
@@ -77,7 +77,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         const pricing = require(pricingPath);
         assert.strictEqual(pricing.getPricing({ country: 'GB' }).currency, 'gbp');
         assert.strictEqual(pricing.getPricing({ country: 'UK' }).currency, 'gbp');
-        assert.strictEqual(pricing.getPricing({ country: 'gb' }).amountCents, 10000);
+        assert.strictEqual(pricing.getPricing({ country: 'gb' }).amountCents, 9900);
     });
 
     await check('non-EU / non-UK → USD', async () => {
@@ -111,7 +111,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         assert.strictEqual(typeof pricing.getPricingFromRequest, 'function');
         const p = pricing.getPricingFromRequest({ headers: { 'cf-ipcountry': 'GB' } });
         assert.strictEqual(p.currency, 'gbp');
-        assert.strictEqual(p.amountCents, 10000);
+        assert.strictEqual(p.amountCents, 9900);
     });
 
     // ── Integration: server config + unpaid publish gate ────────────────────
@@ -139,12 +139,12 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         return res;
     }
 
-    await check('GET /api/config default → amount 100, currency usd, renewal 29 (no free trialDays=3)', async () => {
+    await check('GET /api/config default → amount 99, currency usd, renewal 29 (no free trialDays=3)', async () => {
         const res = await fetch(`${base}/api/config`);
         assert.strictEqual(res.status, 200);
         const body = await res.json();
-        assert.strictEqual(body.amount, 100, 'amount must be 100');
-        assert.strictEqual(body.amountCents, 10000);
+        assert.strictEqual(body.amount, 99, 'amount must be 99');
+        assert.strictEqual(body.amountCents, 9900);
         assert.strictEqual(String(body.currency).toLowerCase(), 'usd');
         assert.strictEqual(body.renewal, 29);
         assert.strictEqual(body.renewalCents, 2900);
@@ -162,7 +162,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         assert.strictEqual(res.status, 200);
         const body = await res.json();
         assert.strictEqual(String(body.currency).toLowerCase(), 'eur');
-        assert.strictEqual(body.amount, 100);
+        assert.strictEqual(body.amount, 99);
         assert.strictEqual(body.renewal, 29);
     });
 
@@ -171,7 +171,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         assert.strictEqual(res.status, 200);
         const body = await res.json();
         assert.strictEqual(String(body.currency).toLowerCase(), 'gbp');
-        assert.strictEqual(body.amountCents, 10000);
+        assert.strictEqual(body.amountCents, 9900);
     });
 
     // Auth for publish tests

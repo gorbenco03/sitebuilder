@@ -119,8 +119,8 @@ function seedPendingOrder(paymentStatusLabel) {
 }
 
 (async () => {
-    await check('PRICE_CENTS remains 10000', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('PRICE_CENTS is 9900', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
     });
 
     await check('web.js onStripeEvent accepts no_payment_required (trial start → publish)', async () => {

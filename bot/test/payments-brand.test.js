@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Test: payments.js self-test/example copy is Hidook + current 100-unit price,
+ * Test: payments.js self-test/example copy is Hidook + current 99-unit price,
  * never DESSERD or stale 2999 example amounts.
  * Run:  node bot/test/payments-brand.test.js
  * Exits non-zero on failed assertion.
@@ -74,14 +74,14 @@ async function run() {
         );
     });
 
-    await check('payments.js self-test example uses current 100-unit amount (10000 cents)', () => {
+    await check('payments.js self-test example uses current 99-unit amount (9900 cents)', () => {
         assert.ok(
-            /\b10000\b/.test(selfTest),
-            'self-test example must use amountCents 10000 (100 major units)'
+            /\b9900\b/.test(selfTest),
+            'self-test example must use amountCents 9900 (99 major units)'
         );
         assert.ok(
-            /amountCents:\s*10000/.test(selfTest),
-            'self-test createCheckout example must pass amountCents: 10000'
+            /amountCents:\s*9900/.test(selfTest),
+            'self-test createCheckout example must pass amountCents: 9900'
         );
     });
 

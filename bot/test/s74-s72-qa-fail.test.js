@@ -336,7 +336,7 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
         assert.strictEqual(process.env.HIDOOK_ISOLATED_DEPLOY, '1');
         assert.strictEqual(process.env.HIDOOK_TEST_PAY, '1');
         assert.ok(payments.isConfigured(), 'test-pay configured');
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 

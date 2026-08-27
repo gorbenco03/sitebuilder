@@ -2,7 +2,7 @@
 
 Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers **pay before first public publish** in the builder — there is no unpaid live trial and no second Telegram checkout/deploy happy path.
 
-Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** in the same currency / year. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price.
+Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** in the same currency / year. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price.
 
 ## Surfaces
 
@@ -97,7 +97,7 @@ Commercial amounts come from `bot/pricing.js`. Do not set `BUILD_FEE_EUR=49` to 
 | `PAYMENT_PROVIDER` | e.g. `stripe` |
 | `BOT_USERNAME` | Optional; legacy Telegram success/cancel URL helper |
 
-**Price:** use `bot/pricing.js` (100 EUR / 100 GBP / 100 USD; renewal 29 / year). Do not document or rely on `BUILD_FEE_EUR` default 49 as the product price.
+**Price:** use `bot/pricing.js` (99 EUR / 99 GBP / 99 USD; renewal 29 / year). Do not document or rely on `BUILD_FEE_EUR` default 49 as the product price.
 
 ### Deploy providers (paid publish only)
 
@@ -130,7 +130,7 @@ bot/
   bot.js             — Telegram Bot wiring
   flow.js            — Telegram intake / draft finish
   server.js          — HTTP: health, webhooks, builder API
-  pricing.js         — Single commercial pricing source (100 / renewal 29)
+  pricing.js         — Single commercial pricing source (99 / renewal 29)
   ai.js              — AI adapter (Hidook identity)
   payments.js        — Checkout helpers
   webpublish.js      — Builder pay + publish path

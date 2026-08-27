@@ -13,7 +13,7 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 ## Commercial
 
 - One simple brochure/lead-gen site.
-- Price **100 in the customer’s currency bucket:** EUR (EU), GBP (UK), USD (rest of world).
+- Price **99 in the customer’s currency bucket:** EUR (EU), GBP (UK), USD (rest of world).
 - Includes builder + first public publish + 12 months managed hosting on the agency subdomain + self-service edits + basic SEO/contact + version history.
 - Renewal: 29 in the same currency / year. Domain extra at cost.
 - Do **not** promise permanent hosting from one payment.
@@ -46,4 +46,4 @@ Local/staging with test Stripe and fake-or-isolated deploy is in scope.
 
 ## Done (before the client sees it)
 
-A stranger can: open builder → pick a design → replace copy/images → preview → sign in → pay 100 → live HTTPS site → come back, edit, republish. Team tests this end-to-end. Client does not.
+A stranger can: open builder → pick a design → replace copy/images → preview → sign in → pay 99 → live HTTPS site → come back, edit, republish. Team tests this end-to-end. Client does not.

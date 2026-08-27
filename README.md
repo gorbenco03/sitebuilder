@@ -2,7 +2,7 @@
 
 Public name: **Hidook Site Builder**. Commercial product is the **browser builder** (account, editor, pay, publish, edit, renew). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor — not a second checkout or deploy state machine.
 
-**Pay before first public publish.** Price **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** in the same currency / year. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`.
+**Pay before first public publish.** Price **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** in the same currency / year. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`.
 
 Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_USD` packaging as the product.
 
@@ -23,7 +23,7 @@ Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_
 | `AGENTS.md` | Standing rules for workers |
 | `builder/` | Browser builder UI (engine generated via `npm run build:app`) |
 | `bot/` | HTTP server, Telegram intake, payments, deploy, registry |
-| `bot/pricing.js` | Single commercial pricing source (100 / renewal 29) |
+| `bot/pricing.js` | Single commercial pricing source (99 / renewal 29) |
 | `templates/` | Design-system templates |
 | `build.js` | Generates `index.html` from `template.html` + `config.json` |
 | `config.json` | Sample customer site data (not Hidook operator branding) |

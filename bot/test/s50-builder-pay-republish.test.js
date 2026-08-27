@@ -361,8 +361,8 @@ function withBusinessName(config, name) {
         await journeyVertical('portfolio', 'SALON');
     });
 
-    await check('pricing still 10000 / 2900 only', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('pricing still 9900 / 2900 only', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 

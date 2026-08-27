@@ -104,8 +104,8 @@ function parseStripeForm(body) {
 }
 
 (async () => {
-    await check('PRICE_CENTS remains 10000 in this card', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('PRICE_CENTS is 9900 in this card', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
     });
 
     // ── (a) createCheckout Stripe params: subscription + 7-day trial ────────

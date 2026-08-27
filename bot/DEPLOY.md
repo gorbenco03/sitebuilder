@@ -7,7 +7,7 @@ One process serves:
 
 Telegram long-polling needs no public URL for polling itself; the HTTP server still needs a public URL for webhooks, magic links, and the builder. Railway runs the `Dockerfile` at the repo root.
 
-**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **100 EUR / 100 GBP / 100 USD** by country bucket; **renewal 29** same currency / year. Payment **before** first public production publish. No unpaid live trial.
+**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** same currency / year. Payment **before** first public production publish. No unpaid live trial.
 
 ## 1. Push the repo to GitHub
 

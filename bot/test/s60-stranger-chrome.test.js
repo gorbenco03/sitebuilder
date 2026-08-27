@@ -3,7 +3,7 @@
  * S60: stranger /app/ leftover chrome after S59 (not photos).
  *
  * Exact leftovers remade this slice:
- *   1. Isolated/dev + no CF country → USD $100 (must be EUR 100€ for RO stranger)
+ *   1. Isolated/dev + no CF country → USD $99 (must be EUR 99€ for RO stranger)
  *   2. Builder chrome "Deschide linkul de testare" / English "publish" label
  *   3. First local-service preset Londra +44
  *   4. Unknown browser route → raw JSON `{ error: 'not found' }`
@@ -178,7 +178,7 @@ function httpGet(port, urlPath, headers = {}) {
   });
 
   // ── HEAD GREEN ──────────────────────────────────────────────────────────
-  await check('HEAD isolated/dev no CF → EUR 100€ (not $100)', () => {
+  await check('HEAD isolated/dev no CF → EUR 99€ (not $99)', () => {
     // Ensure isolated env active for in-process pricing module
     process.env.HIDOOK_ISOLATED_DEPLOY = '1';
     process.env.HIDOOK_TEST_PAY = '1';
@@ -188,7 +188,7 @@ function httpGet(port, urlPath, headers = {}) {
     const bare = pricing.getPricing({ headers: {} });
     assert.strictEqual(bare.currency, 'eur', 'isolated bare headers → eur');
     assert.strictEqual(bare.countryCode, 'RO');
-    assert.strictEqual(pricing.formatMoney(bare.amount, bare.currency), '100€');
+    assert.strictEqual(pricing.formatMoney(bare.amount, bare.currency), '99€');
     assert.strictEqual(pricing.formatMoney(bare.renewal, bare.currency), '29€');
 
     const ro = pricing.getPricing({ headers: { 'accept-language': 'ro-RO,ro;q=0.9' } });
@@ -198,7 +198,7 @@ function httpGet(port, urlPath, headers = {}) {
     // CF still wins (production buckets)
     const us = pricing.getPricing({ headers: { 'cf-ipcountry': 'US' } });
     assert.strictEqual(us.currency, 'usd');
-    assert.strictEqual(pricing.formatMoney(us.amount, us.currency), '$100');
+    assert.strictEqual(pricing.formatMoney(us.amount, us.currency), '$99');
 
     const de = pricing.getPricing({ headers: { 'cf-ipcountry': 'DE' } });
     assert.strictEqual(de.currency, 'eur');
@@ -261,14 +261,14 @@ function httpGet(port, urlPath, headers = {}) {
   await new Promise((r) => srv.once('listening', r));
   const { port } = srv.address();
 
-  await check('HEAD GET /api/config isolated bare → eur 100 / renewal 29', async () => {
+  await check('HEAD GET /api/config isolated bare → eur 99 / renewal 29', async () => {
     const res = await httpGet(port, '/api/config', {
       Accept: 'application/json',
     });
     assert.strictEqual(res.status, 200);
     const json = JSON.parse(res.body);
     assert.strictEqual(json.currency, 'eur');
-    assert.strictEqual(json.amount, 100);
+    assert.strictEqual(json.amount, 99);
     assert.strictEqual(json.renewal, 29);
   });
 

@@ -368,7 +368,7 @@ if (require.main === module) {
     if (!isConfigured()) {
         console.log('  STRIPE_SECRET_KEY not set — all API calls would throw a clear Error. ✓');
         console.log('  Example:');
-        console.log('    createCheckout({ amountCents: 10000, productName: "Hidook site", successUrl: "...", cancelUrl: "..." })');
+        console.log('    createCheckout({ amountCents: 9900, productName: "Hidook site", successUrl: "...", cancelUrl: "..." })');
         console.log('    → throws: "STRIPE_SECRET_KEY is not set. Cannot call Stripe API."');
     } else {
         console.log('  STRIPE_SECRET_KEY is present — Stripe API calls are enabled.');

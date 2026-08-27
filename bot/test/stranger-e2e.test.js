@@ -177,7 +177,7 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 8000, inte
             let threw = false;
             try {
                 await payments.createCheckout({
-                    amountCents: 10000,
+                    amountCents: 9900,
                     currency: 'eur',
                     productName: 'x',
                     successUrl: 'http://x/ok',
@@ -432,8 +432,8 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 8000, inte
         assert.ok(!html.includes(DISTINCTIVE_V1), 'v1 copy should be replaced on republish');
     });
 
-    await check('amounts still only from pricing.js (10000 / 2900)', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('amounts still only from pricing.js (9900 / 2900)', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 

@@ -248,7 +248,7 @@ function readOrdersForSite(siteId) {
         assert.strictEqual(process.env.HIDOOK_ISOLATED_DEPLOY, '1');
         assert.strictEqual(process.env.HIDOOK_TEST_PAY, '1');
         assert.ok(payments.isConfigured(), 'test-pay configured');
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 
@@ -315,7 +315,7 @@ function readOrdersForSite(siteId) {
         const siteId = pubBody.site.id;
         const slug = pubBody.site.slug;
 
-        // First-publish order 10000
+        // First-publish order 9900
         let orders = readOrdersForSite(siteId);
         const publishPending = orders.find((o) => o.status === 'pending' && (o.kind === 'publish' || !o.kind));
         assert.ok(publishPending, 'pending publish order');
@@ -463,7 +463,7 @@ function readOrdersForSite(siteId) {
         const html = await live.text();
         assert.ok(html.includes(name), 'live HTML still has business name after renewal');
 
-        // Amount on paid renewal order is 2900 not 10000
+        // Amount on paid renewal order is 2900 not 9900
         const paidRen = registry.getOrder(renPending2[0].id);
         assert.strictEqual(paidRen.status, 'paid');
         assert.strictEqual(paidRen.amountCents, pricing.RENEWAL_CENTS);
@@ -534,8 +534,8 @@ function readOrdersForSite(siteId) {
         assert.notStrictEqual(ren.amountCents, pricing.PRICE_CENTS);
     });
 
-    await check('pricing still 10000 / 2900 only', () => {
-        assert.strictEqual(pricing.PRICE_CENTS, 10000);
+    await check('pricing still 9900 / 2900 only', () => {
+        assert.strictEqual(pricing.PRICE_CENTS, 9900);
         assert.strictEqual(pricing.RENEWAL_CENTS, 2900);
     });
 

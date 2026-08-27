@@ -3,7 +3,7 @@
  * bot/pricing.js — single commercial pricing source for Hidook Site Builder.
  *
  * Amounts (minor units / cents):
- *   - First public publish: 10000 (100 major units)
+ *   - First public publish: 9900 (99 major units)
  *   - Yearly renewal:       2900  (29 major units), same currency
  *
  * Currency buckets:
@@ -18,14 +18,14 @@
  *      or query.country / query.region)
  *   3. Isolated local boot (HIDOOK_ISOLATED_DEPLOY=1 + HIDOOK_TEST_PAY=1,
  *      non-production): Accept-Language ro/ro-* → RO; else default RO → EUR
- *      (Romanian stranger QA without CF country header must not see $100)
+ *      (Romanian stranger QA without CF country header must not see $99)
  *   4. Default US → USD bucket (production / non-isolated)
  *
  * Callers must not hardcode BUILD_FEE / RETAINER defaults of 49.
  */
 
-/** First-publish price in cents (100.00). */
-const PRICE_CENTS = 10000;
+/** First-publish price in cents (99.00). */
+const PRICE_CENTS = 9900;
 
 /** Yearly renewal in cents (29.00), same currency as first publish. */
 const RENEWAL_CENTS = 2900;
@@ -175,7 +175,7 @@ function getPricingFromRequest(req, extra = {}) {
 }
 
 /**
- * Human-facing money label for the builder UI (e.g. "100€", "£100", "$100").
+ * Human-facing money label for the builder UI (e.g. "99€", "£99", "$99").
  * @param {number} amount
  * @param {string} currency
  * @returns {string}

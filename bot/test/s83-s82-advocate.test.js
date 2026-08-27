@@ -288,9 +288,9 @@ check('HEAD non-regress: catalog chips still name four systems', () => {
   assert.ok(/Professional services/.test(chips), 'Professional services chip');
 });
 
-check('HEAD non-regress: landing still shows 100€ / 29€ and No bots', () => {
+check('HEAD non-regress: landing still shows 99€ / 29€ and No bots', () => {
   const html = read('builder/index.html');
-  assert.ok(/100\s*€|100€/.test(html), '100€');
+  assert.ok(/99\s*€|99€/.test(html), '99€');
   assert.ok(/29\s*€|29€/.test(html), '29€');
   assert.ok(/No bots/i.test(html), 'No bots');
 });

@@ -549,9 +549,9 @@ function runBuildImgMap(appSrc, config, imageMap) {
             assert.ok(liveHtml.length > 200, 'live HTML body');
         });
 
-        await check('isolated: pricing still 10000/2900 units', () => {
+        await check('isolated: pricing still 9900/2900 units', () => {
             const p = pricing.getPricing({ country: 'RO' });
-            assert.strictEqual(p.amountCents, 10000);
+            assert.strictEqual(p.amountCents, 9900);
             assert.strictEqual(p.renewalCents, 2900);
         });
     } finally {

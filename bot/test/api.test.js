@@ -268,12 +268,12 @@ const MINIMAL_CONFIG = {
     const client = makeClient(base);
 
     // ── 1. GET /api/config ─────────────────────────────────────────────────
-    await check('GET /api/config → {amount:100, currency, renewal:29, brandDomain:null, contactUrl:null}', async () => {
+    await check('GET /api/config → {amount:99, currency, renewal:29, brandDomain:null, contactUrl:null}', async () => {
         const res  = await fetch(`${base}/api/config`);
         assert.strictEqual(res.status, 200);
         const body = await res.json();
-        assert.strictEqual(body.amount, 100, 'amount must be 100');
-        assert.strictEqual(body.amountCents, 10000);
+        assert.strictEqual(body.amount, 99, 'amount must be 99');
+        assert.strictEqual(body.amountCents, 9900);
         assert.ok(typeof body.currency === 'string', 'currency must be string');
         assert.strictEqual(body.renewal, 29);
         assert.strictEqual(body.renewalCents, 2900);
