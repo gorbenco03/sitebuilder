@@ -500,10 +500,13 @@ async function deployPlaceholder(_site) {
 // ---------------------------------------------------------------------------
 
 /**
- * Idempotent: called after Stripe confirms payment for any order (web or telegram).
+ * Idempotent: called after Stripe confirms card-on-file / payment for any order (web or telegram).
+ * - Accepts checkout.session.completed when payment_status is `paid` OR `no_payment_required`
+ *   (subscription trial start — card collected, charge deferred to day 7).
+ * - Unpaid / open / missing payment_status must not publish.
  * - Marks order paid once (markOrderPaid returns null if already paid).
  * - Same Stripe event id is claimed once (claimStripeEvent).
- * - First publish payment: site.paid + paidUntil ≈ now+12 months; deploy newest draft/version.
+ * - First publish: site.paid + paidUntil ≈ now+12 months; deploy newest draft/version immediately.
  * - Renewal: extends paidUntil by 12 months; does not require a second 100 fee or new site.
  * - Notifies owner on owner's channel + concierge domain msg when a deploy happens.
  *
@@ -515,6 +518,17 @@ async function deployPlaceholder(_site) {
 async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     const cs = event.data && event.data.object;
     if (!cs) return;
+
+    // Card-on-file success: immediate charge OR subscription trial (no charge yet).
+    const paymentStatus = cs.payment_status;
+    if (paymentStatus !== 'paid' && paymentStatus !== 'no_payment_required') {
+        log('webpublish.stripe_paid.not_card_on_file', {
+            sessionId: cs.id,
+            paymentStatus: paymentStatus || null,
+            eventId: event && event.id,
+        });
+        return;
+    }
 
     const sessionId = cs.id;
     const eventId   = event && event.id;

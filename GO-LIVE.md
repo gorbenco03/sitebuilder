@@ -55,11 +55,14 @@ prerequisite, not a technical one, but it blocks going live just as hard.
 |---|---|---|
 | `PAYMENT_PROVIDER` | `stripe` | |
 | `STRIPE_SECRET_KEY` | `sk_live_…` | `sk_test_…` while testing. |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_…` | From the webhook endpoint you create in §4. The webhook is the **source of truth** for "paid". |
+| `STRIPE_WEBHOOK_SECRET` | `whsec_…` | From the webhook endpoint you create in §4. The webhook is the **source of truth** for card-on-file / paid. |
+| `STRIPE_PRICE_ID_EUR` / `_GBP` / `_USD` (optional) | `price_…` | Dashboard recurring Prices. Omit to use inline `price_data` from `bot/pricing.js`. See [`OWNER-STRIPE-TRIAL.md`](OWNER-STRIPE-TRIAL.md). |
+| `STRIPE_PRICE_ID` (optional) | `price_…` | Fallback Price id when currency-specific env is unset. |
 
-Prices are **not** env-configurable and should not be. They come from
+Commercial **amounts** are **not** free-form env prices. Cents come from
 [`bot/pricing.js`](bot/pricing.js): 100 first publish, 29/year renewal, bucketed
 EUR (EU) / GBP (UK) / USD (rest). Leave any legacy `BUILD_FEE_*` override unset.
+Checkout is a **subscription with a 7-day trial** (card required; live during trial).
 
 ### 2.3 Required for customers to be able to sign in
 
@@ -154,11 +157,23 @@ publishes.
 2. **Developers → Webhooks → Add endpoint**
    - URL: `https://<your-public-url>/webhooks/stripe`
    - Event: **`checkout.session.completed`**
+   - Trial starts complete with `payment_status=no_payment_required` (card on file);
+     the app treats that the same as `paid` for first public publish.
 3. Copy the endpoint's **Signing secret** (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
 4. Set `PAYMENT_PROVIDER=stripe`.
-5. Activate your Stripe account (business details, bank account, tax) before live keys.
+5. **Subscription trial (default in code):** Checkout uses `mode=subscription` and a
+   **7-day** trial. Optional catalog Price ids (create Product/Price in Dashboard when
+   you are ready — not required for test/local inline `price_data`):
+   - `STRIPE_PRICE_ID_EUR` / `STRIPE_PRICE_ID_GBP` / `STRIPE_PRICE_ID_USD`
+   - or fallback `STRIPE_PRICE_ID`
+6. Activate your Stripe account (business details, bank account, tax) before live keys.
+7. Enable **Customer portal** for cancel/refund self-serve (owner ops; see
+   [`OWNER-STRIPE-TRIAL.md`](OWNER-STRIPE-TRIAL.md)).
 
 The webhook dispatches on `metadata.platform`; `web` is the browser-builder paid path.
+
+Commercial **amounts** still come only from [`bot/pricing.js`](bot/pricing.js). Price env
+vars select Stripe catalog IDs; they do not override cents in code.
 
 ---
 

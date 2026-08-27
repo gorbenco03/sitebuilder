@@ -1,16 +1,25 @@
 /**
- * payments.js — Stripe one-time payment via REST API (no npm stripe package).
+ * payments.js — Stripe Checkout via REST API (no npm stripe package).
  *
  * SaaS flow position:
- *   client describes business → AI builds site → [THIS MODULE: collect payment]
- *   → buy domain (domains.js) → deploy site (deploy-vercel.js) → return live URL
+ *   client describes business → AI builds site → [THIS MODULE: collect card]
+ *   → subscription trial starts → deploy site (deploy-vercel.js) → return live URL
  *
- * Required env var:
- *   STRIPE_SECRET_KEY  — Stripe secret key (sk_live_... or sk_test_...)
+ * Required env var (real Stripe path):
+ *   STRIPE_SECRET_KEY  — sk_test_… locally; sk_live_… only when owner goes live
+ *
+ * Optional catalog (owner creates Product/Price in Stripe Dashboard later):
+ *   STRIPE_PRICE_ID           — default recurring Price id (price_…)
+ *   STRIPE_PRICE_ID_EUR|GBP|USD — currency-specific Price ids (preferred when set)
+ * When no Price id is set, Checkout uses inline price_data (test/local friendly;
+ * no Product/Price pre-creation required). Studio must not demand production keys.
+ *
+ * Commercial model (VISION 2026-08-26): mode=subscription with a 7-day trial.
+ * Card is collected at signup; first charge is automatic on day 7.
+ * Cancel/refund: Stripe Customer Portal / Dashboard (not custom teardown in this module).
  *
  * Caller tip:
- *   amountCents = buildFeeCents + domainPriceCents
- *   (combine the platform build fee and the domain cost into a single charge)
+ *   amountCents = first-period / renewal amount in minor units (from pricing.js)
  *
  * @module payments
  */
@@ -104,6 +113,25 @@ function _isTestPay() {
 }
 
 /**
+ * Optional Stripe Catalog Price id (owner-created). Prefer currency-specific env,
+ * then generic STRIPE_PRICE_ID. Empty/unset → inline price_data path (no catalog required).
+ *
+ * @param {string} currency
+ * @returns {string|null}
+ */
+function resolveStripePriceId(currency) {
+    const cur = String(currency || 'eur').trim().toLowerCase();
+    const byCur = process.env['STRIPE_PRICE_ID_' + cur.toUpperCase()];
+    if (byCur && String(byCur).trim()) return String(byCur).trim();
+    const generic = process.env.STRIPE_PRICE_ID;
+    if (generic && String(generic).trim()) return String(generic).trim();
+    return null;
+}
+
+/** Fixed 7-day subscription trial (VISION). Not a free unpaid live window. */
+const SUBSCRIPTION_TRIAL_DAYS = 7;
+
+/**
  * Returns true when Stripe payments can be used: real STRIPE_SECRET_KEY, or
  * non-production HIDOOK_TEST_PAY=1 (no network).
  *
@@ -115,13 +143,19 @@ function isConfigured() {
 }
 
 /**
- * Create a Stripe Checkout Session for a single one-time payment.
+ * Create a Stripe Checkout Session for a subscription with a 7-day card-on-file trial.
+ * On trial start Stripe reports payment_status=no_payment_required; after day 7 the
+ * subscription charges automatically (payment_status=paid on later invoices).
+ *
+ * Line item source:
+ *   1. STRIPE_PRICE_ID_<CURRENCY> or STRIPE_PRICE_ID when set (Dashboard Product/Price)
+ *   2. else inline price_data from amountCents (test/local; no catalog required)
  *
  * @param {object} opts
- * @param {number}  opts.amountCents  Total charge in cents (buildFee + domainPrice).
+ * @param {number}  opts.amountCents  Recurring charge in cents (first period / renewal).
  * @param {string} [opts.currency]    ISO currency code, default 'eur'.
- * @param {string}  opts.productName  Shown on the Stripe checkout page.
- * @param {string}  opts.successUrl   Redirect after successful payment.
+ * @param {string}  opts.productName  Shown on the Stripe checkout page (inline price_data path).
+ * @param {string}  opts.successUrl   Redirect after successful checkout (card on file).
  * @param {string}  opts.cancelUrl    Redirect if the user cancels.
  * @param {object} [opts.metadata]    Key/value pairs attached to the session (e.g. chatId, slug).
  * @param {string} [opts.clientReferenceId]  Order reference echoed back on the session
@@ -153,18 +187,25 @@ async function createCheckout({
         };
     }
 
+    const priceId = resolveStripePriceId(currency);
+    const lineItem = priceId
+        ? { price: priceId, quantity: 1 }
+        : {
+              price_data: {
+                  currency,
+                  unit_amount: amountCents,
+                  recurring: { interval: 'year' },
+                  product_data: { name: productName },
+              },
+              quantity: 1,
+          };
+
     const params = {
-        mode: 'payment',
-        line_items: [
-            {
-                price_data: {
-                    currency,
-                    unit_amount: amountCents,
-                    product_data: { name: productName },
-                },
-                quantity: 1,
-            },
-        ],
+        mode: 'subscription',
+        line_items: [lineItem],
+        subscription_data: {
+            trial_period_days: SUBSCRIPTION_TRIAL_DAYS,
+        },
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata,
@@ -204,7 +245,8 @@ async function pollUntilPaid(sessionId, { intervalMs = 4000, timeoutMs = 900000 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         const { paymentStatus } = await getCheckoutStatus(sessionId);
-        if (paymentStatus === 'paid') return true;
+        // paid = charged; no_payment_required = subscription trial card-on-file success
+        if (paymentStatus === 'paid' || paymentStatus === 'no_payment_required') return true;
         // Stop early if session expired/completed without payment
         const { status } = await getCheckoutStatus(sessionId);
         if (status === 'expired') return false;
@@ -312,6 +354,8 @@ module.exports = {
     refund,
     verifyWebhookSignature,
     constructWebhookEvent,
+    resolveStripePriceId,
+    SUBSCRIPTION_TRIAL_DAYS,
 };
 
 // ---------------------------------------------------------------------------
