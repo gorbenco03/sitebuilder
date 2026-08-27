@@ -94,8 +94,14 @@ If you set a first-year Price env without a renewal Price env, the app still att
 
 ---
 
+## Ops /admin (operator site list)
+
+Set a long random `HIDOOK_ADMIN_TOKEN` in the **host environment only** (never commit a real value). Open `https://<public-host>/admin` with header `Authorization: Bearer <token>`, or for a browser tab `https://<public-host>/admin?token=<token>`. Done looks like: title **Sites**, product name **Hidook Site Builder**, every registry row with slug, **Live** or **Unpublished**, public URL when live, and billing (trial / paid / canceled) when already on the site record. Missing or wrong token returns a plain **404** (surface is not advertised). Read-only — no unpublish or refund buttons; refunds stay Stripe Dashboard / Customer Portal.
+
+---
+
 ## Out of this how-to
 
-- Admin dashboard, HTML export, fifth design system, Telegram checkout.
+- HTML export, fifth design system, Telegram checkout.
 - Real charges without your explicit go-live of live keys.
 - Legal counsel text beyond the product placeholders already shipped.

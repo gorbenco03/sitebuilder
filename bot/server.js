@@ -5,6 +5,7 @@
  * Routes:
  *   GET  /                   → 302 /app/
  *   GET  /health             → { ok, service, uptimeSec }
+ *   GET  /admin              → operator site list (HIDOOK_ADMIN_TOKEN; else 404)
  *   POST /webhooks/stripe    → Stripe webhook (ACK then process async)
  *
  *   GET  /app/*              → static files from <repo>/builder/
@@ -268,6 +269,180 @@ function sendHtmlNotFound(res) {
 function sendNotFound(req, res, jsonError = 'not found') {
     if (wantsHtmlDocument(req)) return sendHtmlNotFound(res);
     return sendJson(res, 404, { error: jsonError });
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
+ * Operator admin token from Authorization: Bearer or ?token= (HTML page only).
+ * Constant-time when lengths match. Never log the token.
+ * @returns {string|null}
+ */
+function extractAdminToken(req, query) {
+    const auth = String((req.headers && (req.headers.authorization || req.headers.Authorization)) || '');
+    const m = /^Bearer\s+(\S+)/i.exec(auth);
+    if (m) return m[1];
+    if (query && typeof query.get === 'function') {
+        const q = query.get('token');
+        if (q) return String(q);
+    }
+    return null;
+}
+
+function adminTokenOk(provided) {
+    const expected = process.env.HIDOOK_ADMIN_TOKEN;
+    if (!expected || !provided) return false;
+    const a = Buffer.from(String(provided), 'utf8');
+    const b = Buffer.from(String(expected), 'utf8');
+    if (a.length !== b.length) return false;
+    try {
+        return crypto.timingSafeEqual(a, b);
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
+ * Derive plain-English publish status for the ops table.
+ * @param {object} site
+ * @returns {'Live'|'Unpublished'}
+ */
+function adminPublishLabel(site) {
+    const st = String((site && site.status) || '').toLowerCase();
+    if (st === 'live' || st === 'active') return 'Live';
+    return 'Unpublished';
+}
+
+/**
+ * Billing label only when already present on the site/order record.
+ * Omit rather than invent.
+ * @param {object} site
+ * @param {object|null} order
+ * @returns {string|null} trial | paid | canceled | null
+ */
+function adminBillingLabel(site, order) {
+    const subSt = String(
+        (site && (site.stripeSubscriptionStatus || site.subscriptionStatus)) || ''
+    ).toLowerCase();
+    if (subSt === 'canceled' || subSt === 'cancelled' || site && site.canceledAt) {
+        return 'canceled';
+    }
+    if (order && order.status === 'canceled') return 'canceled';
+    // Trial start stores paid=true with no charge yet (payment_status no_payment_required).
+    if (site && (site.status === 'live' || site.status === 'active') && site.paid && site.stripeSubscriptionId) {
+        // Prefer explicit trial marker if present; otherwise live+paid+sub without charge → trial/paid
+        if (site.billingState === 'trial' || site.subscriptionStatus === 'trialing') return 'trial';
+        if (site.billingState === 'paid' || order && (order.chargedAt || order.chargeId || order.status === 'charged')) {
+            return 'paid';
+        }
+        // Live after card trial with no charge marker → trial
+        return 'trial';
+    }
+    if (site && site.paid === true) return 'paid';
+    if (order && (order.status === 'paid' || order.paidAt)) return 'paid';
+    return null;
+}
+
+/**
+ * Token-gated operator dashboard: list every registry site (read-only).
+ * Missing/wrong token → same 404 as unknown routes (do not advertise).
+ */
+function handleAdmin(req, res, query) {
+    if (!adminTokenOk(extractAdminToken(req, query))) {
+        return sendNotFound(req, res, 'not found');
+    }
+    const reg = getRegistry();
+    const sites = (reg.listAllSites ? reg.listAllSites() : []).slice().sort((a, b) => {
+        const ta = String(a.createdAt || '');
+        const tb = String(b.createdAt || '');
+        return tb.localeCompare(ta);
+    });
+
+    const rows = sites.map((site) => {
+        const slug = escapeHtml(site.slug || site.id || '');
+        const pub = adminPublishLabel(site);
+        const isLive = pub === 'Live';
+        let publicUrl = '';
+        if (isLive) {
+            if (site.url) publicUrl = String(site.url);
+            else if (site.slug) publicUrl = '/live/' + String(site.slug).toLowerCase() + '/';
+        }
+        let order = null;
+        try {
+            if (typeof reg.listOrdersBySite === 'function') {
+                const ordList = reg.listOrdersBySite(site.id) || [];
+                order = ordList[0] || null;
+            } else if (typeof reg.getOrdersForSite === 'function') {
+                const ordList = reg.getOrdersForSite(site.id) || [];
+                order = ordList[0] || null;
+            }
+        } catch (_) {}
+        const billing = adminBillingLabel(site, order);
+        const urlCell = publicUrl
+            ? `<a href="${escapeHtml(publicUrl)}">${escapeHtml(publicUrl)}</a>`
+            : '—';
+        const billCell = billing ? escapeHtml(billing) : '—';
+        return `<tr>
+  <td><code>${slug}</code></td>
+  <td><span class="st ${isLive ? 'live' : 'down'}">${escapeHtml(pub)}</span></td>
+  <td>${urlCell}</td>
+  <td>${billCell}</td>
+</tr>`;
+    }).join('\n');
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sites — Hidook Site Builder</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#0b1220;color:#e8eef8}
+  main{max-width:56rem;margin:0 auto;padding:1.5rem 1.25rem 3rem}
+  h1{font-size:1.35rem;margin:0 0 .35rem;font-weight:650}
+  p.lead{margin:0 0 1.25rem;color:#b7c2d6;line-height:1.45}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid #1e2a3d;vertical-align:top}
+  th{color:#9fb0c9;font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+  code{font-size:.85em}
+  a{color:#7dd3fc;text-decoration:none} a:hover{text-decoration:underline}
+  .st{font-weight:600}
+  .st.live{color:#6ee7b7}
+  .st.down{color:#fcd34d}
+  .empty{color:#9fb0c9;padding:1rem 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>Sites</h1>
+  <p class="lead">Hidook Site Builder — operator view (read-only).</p>
+  ${sites.length === 0
+        ? '<p class="empty">No sites in the registry yet.</p>'
+        : `<table>
+  <thead><tr><th>Slug</th><th>Status</th><th>Public URL</th><th>Billing</th></tr></thead>
+  <tbody>
+${rows}
+  </tbody>
+</table>`}
+</main>
+</body>
+</html>`;
+    const buf = Buffer.from(html, 'utf8');
+    res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Length': buf.length,
+        'Cache-Control': 'no-store',
+        'X-Robots-Tag': 'noindex, nofollow',
+    });
+    res.end(buf);
 }
 
 // ---------------------------------------------------------------------------
@@ -1450,6 +1625,16 @@ function createHandler({ onStripeEvent } = {}) {
                     return res.end();
                 }
                 return sendJson(res, 200, { ok: true, service: 'hidook-bot', uptimeSec: Math.round(process.uptime()) });
+            }
+
+            // ── Operator admin (token-gated; missing/wrong → plain 404) ──
+            if ((req.method === 'GET' || req.method === 'HEAD') && (url === '/admin' || url === '/admin/')) {
+                if (req.method === 'HEAD') {
+                    if (!adminTokenOk(extractAdminToken(req, query))) return sendNotFound(req, res, 'not found');
+                    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+                    return res.end();
+                }
+                return handleAdmin(req, res, query);
             }
 
             // ── Stripe webhook ─────────────────────────────────────────────
