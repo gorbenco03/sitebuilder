@@ -33,6 +33,8 @@ const ledger            = require('./ledger.js');
 const ai                = require('./ai.js');
 const { log }           = require('./logger.js');
 const cfDeploy          = require('./deploy-cloudflare.js');
+const payments          = require('./payments.js');
+const pricing           = require('./pricing.js');
 
 const PROJECT_ROOT  = path.join(__dirname, '..');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
@@ -545,6 +547,18 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
         registry.claimStripeEvent(eventId);
     }
 
+    // First-then-renewal: attach Subscription Schedule so year-2+ bills RENEWAL_CENTS.
+    // Checkout only has the first-period Price; metadata alone does not change invoices.
+    try {
+        await maybeAttachRenewalSchedule(cs);
+    } catch (e) {
+        log('webpublish.stripe_paid.schedule_attach_failed', {
+            sessionId,
+            err: e && e.message,
+            subscription: cs.subscription || null,
+        }, 'error');
+    }
+
     const siteId  = (cs.metadata && cs.metadata.siteId) || order.siteId;
     const orderId = order.id;
     const kind    = (cs.metadata && cs.metadata.kind) || order.kind || 'publish';
@@ -663,6 +677,79 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 
     log('webpublish.stripe_paid.no_draft_no_version', { orderId, siteId }, 'error');
     registry.updateSite(siteId, { status: 'needs-retry' });
+}
+
+/**
+ * When checkout completed a first_then_renewal subscription, attach the
+ * 99-then-29 Subscription Schedule (phase 0 = first year, phase 1 = renewal).
+ * No-ops for pure renewal, offline test pay without a subscription id, or
+ * sessions that already lack billing_contract=first_then_renewal.
+ *
+ * @param {object} cs  checkout.session object from the Stripe event
+ * @returns {Promise<object|null>}
+ */
+async function maybeAttachRenewalSchedule(cs) {
+    if (!cs) return null;
+    const meta = cs.metadata || {};
+    const contractKind = meta.billing_contract || meta.billingContract || '';
+    const kind = meta.kind || '';
+    // Skip pure hosting renewals and anything not marked first_then_renewal.
+    if (kind === 'renewal' || contractKind === 'renewal') return null;
+    if (contractKind && contractKind !== 'first_then_renewal') return null;
+
+    const subscriptionId = typeof cs.subscription === 'string'
+        ? cs.subscription
+        : (cs.subscription && cs.subscription.id);
+    // Offline HIDOOK_TEST_PAY sessions have no real subscription — skip quietly
+    // unless test-pay is on and we still want an offline schedule record.
+    if (!subscriptionId) {
+        if (process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+            return payments.attachFirstThenRenewalSchedule({
+                subscriptionId: 'sub_test_' + String(cs.id || 'offline'),
+                currency: (cs.currency || meta.currency || 'eur'),
+                productName: 'Hidook Site Builder',
+                contract: {
+                    firstPeriodCents: Number(meta.first_period_cents) || pricing.PRICE_CENTS,
+                    renewalCents: Number(meta.renewal_cents) || pricing.RENEWAL_CENTS,
+                    trialDays: payments.SUBSCRIPTION_TRIAL_DAYS,
+                    interval: 'year',
+                },
+                renewalPriceId: meta.renewal_price_id || null,
+            });
+        }
+        // Without a subscription id and without first_then_renewal marker, nothing to do.
+        // If metadata says first_then_renewal but sub missing, still try only when marked.
+        if (contractKind !== 'first_then_renewal') return null;
+        return null;
+    }
+
+    // Default to attaching when we have a subscription on a publish checkout
+    // (missing billing_contract still gets schedule when first publish — safe).
+    if (contractKind !== 'first_then_renewal' && kind === 'renewal') return null;
+
+    const firstCents = Number(meta.first_period_cents) || pricing.PRICE_CENTS;
+    const renewCents = Number(meta.renewal_cents) || pricing.RENEWAL_CENTS;
+    if (firstCents === renewCents) return null;
+
+    const result = await payments.attachFirstThenRenewalSchedule({
+        subscriptionId,
+        currency: (cs.currency || meta.currency || 'eur'),
+        productName: 'Hidook Site Builder',
+        contract: {
+            firstPeriodCents: firstCents,
+            renewalCents: renewCents,
+            trialDays: payments.SUBSCRIPTION_TRIAL_DAYS,
+            interval: 'year',
+        },
+        renewalPriceId: meta.renewal_price_id || payments.resolveStripeRenewalPriceId(cs.currency || 'eur'),
+    });
+    log('webpublish.stripe_paid.schedule_attached', {
+        sessionId: cs.id,
+        subscriptionId,
+        scheduleId: result && result.id,
+        offline: !!(result && result.offline),
+    });
+    return result;
 }
 
 /**

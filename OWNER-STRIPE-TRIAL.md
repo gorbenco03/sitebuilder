@@ -2,9 +2,9 @@
 
 **Audience:** product owner only. Studio does **not** need production Stripe keys or live Product/Price IDs to ship the builder path.
 
-**Product rule (VISION 2026-08-26):** stranger enters a valid card → **7-day trial starts** → site goes **live immediately** → Stripe **auto-charges** after the trial if not cancelled → cancel/refund via **Stripe Customer Portal / Dashboard** (not a custom in-app teardown in this slice).
+**Product rule (VISION 2026-08-26):** stranger enters a valid card → **7-day trial starts** ($0 now) → site goes **live immediately** → Stripe **auto-charges 99** after the trial if not cancelled → **29/year** after the first paid year via a **Subscription Schedule** phase → cancel/refund via **Stripe Customer Portal / Dashboard** (not a custom in-app teardown in this slice).
 
-**Commercial amounts (Hidook Site Builder):** first period **99** (after the 7-day card trial), then **29**/year renewal in the same currency. Never a forever-99 yearly Price.
+**Commercial amounts (Hidook Site Builder):** first period **99** (after the 7-day card trial), then **29**/year renewal in the same currency. Never a forever-99 yearly Price. Never a one-time Checkout line next to the trial (that would charge immediately).
 
 ---
 
@@ -13,16 +13,16 @@
 | Path | When | Behaviour |
 |------|------|-----------|
 | `HIDOOK_TEST_PAY=1` (non-production) | Local / E2E | Offline `cs_test_*` checkout + `#test-checkout=` return. **No network, no charge.** Returns the same **99-then-29** billing contract in the response. |
-| `STRIPE_SECRET_KEY=sk_test_…` without Price env | Stripe **test** mode | Checkout `mode=subscription`, `subscription_data.trial_period_days=7`, inline `price_data`: recurring **29**/year + first-year premium so the first charge totals **99**. |
-| `STRIPE_SECRET_KEY` + first-year `STRIPE_PRICE_ID_*` | Test or live | Same subscription + 7-day trial on your first-year Dashboard **Price**. Renewal cents are always scheduled from `bot/pricing.js` (29). |
-| + optional `STRIPE_PRICE_ID_RENEWAL_*` | Test or live | Same as above, and the **29**/year Catalog Price id is attached on the session (for Dashboard / later schedule). |
+| `STRIPE_SECRET_KEY=sk_test_…` without Price env | Stripe **test** mode | Checkout `mode=subscription`, `subscription_data.trial_period_days=7`, **single** inline recurring `price_data` at **99**/year. On `checkout.session.completed`, app attaches a **Subscription Schedule**: phase 0 = 99 through trial + first paid year; phase 1 = **29**/year thereafter (creates a renewal Price from `pricing.js` when no catalog renewal id). |
+| `STRIPE_SECRET_KEY` + first-year `STRIPE_PRICE_ID_*` | Test or live | Same subscription + 7-day trial on your first-year Dashboard **Price**. Schedule phase 1 uses `STRIPE_PRICE_ID_RENEWAL_*` when set, else creates a **29**/year Price from `bot/pricing.js`. |
+| + optional `STRIPE_PRICE_ID_RENEWAL_*` | Test or live | Schedule phase 1 uses your **29**/year Catalog Price id (preferred for live). |
 
 Webhook success for first live publish:
 
-- `checkout.session.completed` with `payment_status=paid` **or** `no_payment_required` (trial / card-on-file) → order paid + **immediate** public deploy.
+- `checkout.session.completed` with `payment_status=paid` **or** `no_payment_required` (trial / card-on-file) → order paid + **immediate** public deploy + **subscription schedule attach** (99 then 29).
 - `unpaid` / open → **no** publish.
 
-Amounts stay in `bot/pricing.js` (`PRICE_CENTS=9900` first period, `RENEWAL_CENTS=2900` yearly after). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code.
+Amounts stay in `bot/pricing.js` (`PRICE_CENTS=9900` first period, `RENEWAL_CENTS=2900` yearly after). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code. Session metadata alone does **not** change Stripe invoices; the schedule does.
 
 ---
 
@@ -51,8 +51,8 @@ Studio will not ask for these until you decide. Steps:
 
 1. Stripe Dashboard (live) → **Product** “Hidook Site Builder” (or equivalent).
 2. Create **two** recurring yearly **Prices** per currency you sell (EUR / GBP / USD):
-   - **First year:** amount **99** (first period after the 7-day trial).
-   - **Renewal:** amount **29** (every later year, same currency).
+   - **First year:** amount **99** (first period after the 7-day trial). Used on Checkout.
+   - **Renewal:** amount **29** (every later year, same currency). Used on **Subscription Schedule** phase 1.
 3. Copy each Price id (`price_…`) into host env:
    - First-year: `STRIPE_PRICE_ID_EUR` / `STRIPE_PRICE_ID_GBP` / `STRIPE_PRICE_ID_USD`
      - optional fallback: `STRIPE_PRICE_ID`
@@ -60,13 +60,13 @@ Studio will not ask for these until you decide. Steps:
      - optional fallback: `STRIPE_PRICE_ID_RENEWAL`
 4. Set `STRIPE_SECRET_KEY=sk_live_…` and `STRIPE_WEBHOOK_SECRET=whsec_…` for endpoint
    `https://<public-host>/webhooks/stripe`.
-   Event: **`checkout.session.completed`** (keep listening; trial completions send `payment_status=no_payment_required`).
+   Event: **`checkout.session.completed`** (keep listening; trial completions send `payment_status=no_payment_required`). The paid handler creates/updates a **subscription schedule** on the new subscription.
 5. Enable **Customer Portal** for cancel/refund self-serve (Dashboard → Settings → Billing → Customer portal).
 6. Confirm `NODE_ENV=production` and that `HIDOOK_TEST_PAY`, `HIDOOK_FAKE_DEPLOY`, `HIDOOK_ISOLATED_DEPLOY`, `ALLOW_FREE_PUBLISH` are **unset**.
 
-Until steps 1–4 are done, leave Price env **unset** and use test keys or `HIDOOK_TEST_PAY` only (inline path already does **99 then 29** from `bot/pricing.js`).
+Until steps 1–4 are done, leave Price env **unset** and use test keys or `HIDOOK_TEST_PAY` only (inline path already does **99 then 29** from `bot/pricing.js` via Checkout + schedule).
 
-If you set a first-year Price env without a renewal Price env, the app still records renewal **29** from `pricing.js` on the session so billing is never an undocumented forever-99 catalog.
+If you set a first-year Price env without a renewal Price env, the app still attaches a schedule phase at renewal **29** (creates a Price from `pricing.js`) so billing is never an undocumented forever-99 catalog.
 
 ---
 

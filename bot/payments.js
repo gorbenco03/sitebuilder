@@ -17,13 +17,16 @@
  * no Product/Price pre-creation required). Studio must not demand production keys.
  *
  * Commercial model (VISION 2026-08-26): mode=subscription with a 7-day trial.
- * Card is collected at signup; first charge is automatic on day 7 at first-period
- * amount (99); subsequent years are renewal amount (29) — never forever-99.
+ * Card is collected at signup ($0 now); first charge is automatic on day 7 at
+ * first-period amount (99); subsequent years are renewal amount (29) via a
+ * Stripe Subscription Schedule phase — never forever-99, never one-time+trial.
  * Cancel/refund: Stripe Customer Portal / Dashboard (not custom teardown in this module).
  *
  * Caller tip:
  *   amountCents   = first-period charge in minor units (from pricing.js PRICE_CENTS)
  *   renewalCents  = yearly renewal after first period (pricing.js RENEWAL_CENTS)
+ * After checkout.session.completed, call attachFirstThenRenewalSchedule(subscriptionId)
+ * so year-2+ invoices use the renewal Price / RENEWAL_CENTS.
  *
  * @module payments
  */
@@ -180,7 +183,11 @@ function buildBillingContract({ amountCents, renewalCents } = {}) {
 
 /**
  * Build Checkout Session line_items + billing metadata for 99-then-29 (or pure renewal).
- * Inline path never sends a single forever-first-period yearly price_data.
+ *
+ * First-then-renewal Checkout is a **single recurring** line at first-period cents
+ * (9900) with trial_period_days=7. No one-time companion (Stripe would charge it now).
+ * Year-2+ step-down to renewal (2900) is a Subscription Schedule phase attached after
+ * the subscription exists — not metadata alone.
  *
  * @param {object} opts
  * @param {string} opts.currency
@@ -198,11 +205,13 @@ function buildSubscriptionLineItems({ currency, productName, contract, priceId, 
         renewal_cents: String(renew),
         billing_contract: first === renew ? 'renewal' : 'first_then_renewal',
     };
-
-    // Catalog: first-year Price (+ optional renewal Price id for owner schedule / Dashboard).
-    if (priceId) {
+    if (first !== renew) {
+        billingMeta.billing_schedule = 'subscription_schedule';
         if (renewalPriceId) billingMeta.renewal_price_id = renewalPriceId;
-        // Always schedule renewal cents from pricing so catalog-only cannot be "99 forever" silent.
+    }
+
+    // Catalog: first-year (or pure-renewal) Price only on Checkout; renewal phase later.
+    if (priceId) {
         return {
             lineItems: [{ price: priceId, quantity: 1 }],
             billingMeta,
@@ -225,31 +234,195 @@ function buildSubscriptionLineItems({ currency, productName, contract, priceId, 
         };
     }
 
-    // Inline first-then-renewal:
-    //   - recurring yearly at renewal (29) so Stripe does not forever-bill 99
-    //   - one-time first-year premium (99 − 29) so first invoice totals first-period 99
-    //   - metadata records full first_period_cents + renewal_cents for operators / test-pay
-    const premium = first - renew;
-    const lineItems = [{
-        price_data: {
-            currency,
-            unit_amount: renew,
-            recurring: { interval: 'year' },
-            product_data: { name: productName },
-        },
-        quantity: 1,
-    }];
-    if (premium > 0) {
-        lineItems.push({
+    // Inline first-then-renewal: single recurring first-period (9900) yearly.
+    // Do NOT add a one-time premium with trial — Stripe charges one-time up front.
+    // Renewal (2900) is applied via attachFirstThenRenewalSchedule after subscribe.
+    return {
+        lineItems: [{
             price_data: {
                 currency,
-                unit_amount: premium,
-                product_data: { name: productName + ' — first year' },
+                unit_amount: first,
+                recurring: { interval: 'year' },
+                product_data: { name: productName },
             },
             quantity: 1,
-        });
+        }],
+        billingMeta,
+    };
+}
+
+/** One year in seconds (phase length for first paid year after trial). */
+const ONE_YEAR_SEC = 365 * 24 * 60 * 60;
+
+/**
+ * Ensure a yearly renewal Price id exists (catalog env or create via Stripe API).
+ * @param {object} opts
+ * @param {string} opts.currency
+ * @param {string} opts.productName
+ * @param {number} opts.renewalCents
+ * @param {string|null} [opts.renewalPriceId]
+ * @param {string|null} [opts.productId]  Reuse product from the first-year Price when known.
+ * @returns {Promise<string>} price_…
+ */
+async function ensureRenewalPriceId({
+    currency,
+    productName,
+    renewalCents,
+    renewalPriceId,
+    productId,
+}) {
+    if (renewalPriceId && String(renewalPriceId).trim()) {
+        return String(renewalPriceId).trim();
     }
-    return { lineItems, billingMeta };
+    const fromEnv = resolveStripeRenewalPriceId(currency);
+    if (fromEnv) return fromEnv;
+
+    const params = {
+        currency: String(currency || 'eur').toLowerCase(),
+        unit_amount: Math.round(Number(renewalCents)),
+        recurring: { interval: 'year' },
+    };
+    if (productId) {
+        params.product = productId;
+    } else {
+        params.product_data = {
+            name: String(productName || 'Hidook Site Builder') + ' — yearly renewal',
+        };
+    }
+    const price = await stripeRequest('POST', '/prices', encodeStripeBody(params));
+    if (!price || !price.id) {
+        throw new Error('Could not create Stripe renewal Price for schedule phase.');
+    }
+    return price.id;
+}
+
+/**
+ * Attach a Subscription Schedule so billing is 99 for trial+first paid year, then 29/year.
+ *
+ * Stripe flow:
+ *   1. POST /v1/subscription_schedules  from_subscription=<sub>
+ *   2. POST /v1/subscription_schedules/:id with phases[0]=first price through first paid year,
+ *      phases[1]=renewal Price (catalog or created at RENEWAL_CENTS)
+ *
+ * Metadata alone never changes Stripe invoices — this must run when the subscription exists
+ * (typically checkout.session.completed → handleStripePaid).
+ *
+ * @param {object} opts
+ * @param {string} opts.subscriptionId
+ * @param {string} [opts.currency='eur']
+ * @param {string} [opts.productName]
+ * @param {{ firstPeriodCents: number, renewalCents: number, trialDays?: number }} [opts.contract]
+ * @param {string|null} [opts.renewalPriceId]
+ * @param {string|null} [opts.priceId] unused; first price comes from the live subscription
+ * @returns {Promise<object>} schedule object (or offline stub when HIDOOK_TEST_PAY=1)
+ */
+async function attachFirstThenRenewalSchedule({
+    subscriptionId,
+    currency = 'eur',
+    productName = 'Hidook Site Builder',
+    contract,
+    renewalPriceId = null,
+} = {}) {
+    if (!subscriptionId) throw new Error('subscriptionId is required for schedule attach.');
+
+    const c = contract && contract.firstPeriodCents != null
+        ? contract
+        : buildBillingContract({
+            amountCents: (contract && contract.firstPeriodCents) || pricing.PRICE_CENTS,
+            renewalCents: (contract && contract.renewalCents) || pricing.RENEWAL_CENTS,
+        });
+
+    // Pure renewal subscriptions need no step-down schedule.
+    if (c.firstPeriodCents === c.renewalCents) {
+        return { id: null, skipped: true, reason: 'renewal_only', contract: c };
+    }
+
+    // Offline test adapter — same commercial contract, no network.
+    if (process.env.HIDOOK_TEST_PAY === '1') {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('HIDOOK_TEST_PAY=1 is refused in production');
+        }
+        return {
+            id: 'sub_sched_test_' + crypto.randomBytes(8).toString('hex'),
+            offline: true,
+            object: 'subscription_schedule',
+            contract: c,
+            phases: [
+                { unit_amount: c.firstPeriodCents, interval: 'year' },
+                { unit_amount: c.renewalCents, interval: 'year' },
+            ],
+        };
+    }
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('STRIPE_SECRET_KEY is not set. Cannot attach subscription schedule.');
+    }
+
+    // 1) Create schedule from the live subscription (copies current phase + trial).
+    const created = await stripeRequest(
+        'POST',
+        '/subscription_schedules',
+        encodeStripeBody({ from_subscription: subscriptionId })
+    );
+    const phase0 = (created.phases && created.phases[0]) || {};
+    const item0 = (phase0.items && phase0.items[0]) || {};
+    const firstPriceId = typeof item0.price === 'string'
+        ? item0.price
+        : (item0.price && item0.price.id);
+    if (!firstPriceId) {
+        throw new Error('subscription schedule phase[0] has no price to keep for first year.');
+    }
+
+    const startDate = phase0.start_date;
+    const trialEnd = phase0.trial_end || null;
+    // First phase covers trial (if any) + first paid year at 99, then switch to 29.
+    const baseEnd = trialEnd || phase0.end_date || startDate;
+    const phase0End = Number(baseEnd) + ONE_YEAR_SEC;
+
+    // Optional: product id from first price for renewal Price create.
+    let productId = null;
+    try {
+        const firstPrice = await stripeRequest(
+            'GET',
+            '/prices/' + encodeURIComponent(firstPriceId)
+        );
+        if (firstPrice && firstPrice.product) {
+            productId = typeof firstPrice.product === 'string'
+                ? firstPrice.product
+                : firstPrice.product.id;
+        }
+    } catch (_) { /* create renewal with product_data instead */ }
+
+    const renPriceId = await ensureRenewalPriceId({
+        currency,
+        productName,
+        renewalCents: c.renewalCents,
+        renewalPriceId: renewalPriceId || resolveStripeRenewalPriceId(currency),
+        productId,
+    });
+
+    const phase0Update = {
+        items: [{ price: firstPriceId, quantity: item0.quantity || 1 }],
+        start_date: startDate,
+        end_date: phase0End,
+        proration_behavior: 'none',
+    };
+    if (trialEnd) phase0Update.trial_end = trialEnd;
+
+    const phase1Update = {
+        items: [{ price: renPriceId, quantity: 1 }],
+        proration_behavior: 'none',
+    };
+
+    const updated = await stripeRequest(
+        'POST',
+        '/subscription_schedules/' + encodeURIComponent(created.id),
+        encodeStripeBody({
+            end_behavior: 'release',
+            phases: [phase0Update, phase1Update],
+        })
+    );
+    return updated;
 }
 
 /**
@@ -265,15 +438,16 @@ function isConfigured() {
 
 /**
  * Create a Stripe Checkout Session for a subscription with a 7-day card-on-file trial.
- * On trial start Stripe reports payment_status=no_payment_required; after day 7 the
- * first period charges (99); later years charge renewal (29) — not forever-99.
+ * On trial start Stripe reports payment_status=no_payment_required ($0 now); after day 7
+ * the first period charges PRICE_CENTS (99). Year-2+ charges RENEWAL_CENTS (29) only after
+ * attachFirstThenRenewalSchedule runs on the subscription (webhook / paid handler).
  *
- * Line item source:
- *   1. STRIPE_PRICE_ID_<CURRENCY> or STRIPE_PRICE_ID when set (first-year Dashboard Price);
- *      optional STRIPE_PRICE_ID_RENEWAL_* attaches the 29/year Price id in metadata.
- *      When first Price is set without renewal Price, renewal cents are still scheduled
- *      from pricing.js metadata (never silent forever-99 with no renewal contract).
- *   2. else inline price_data: recurring 29/year + first-year premium so first charge is 99
+ * Line item source (Checkout — single recurring first period only):
+ *   1. STRIPE_PRICE_ID_<CURRENCY> or STRIPE_PRICE_ID when set (first-year Dashboard Price)
+ *   2. else inline price_data: recurring unit_amount = first-period cents (9900), interval year
+ * Never pairs a one-time line item with trial_period_days (Stripe would charge it immediately).
+ * Optional STRIPE_PRICE_ID_RENEWAL_* is used when attaching the schedule phase (not as a
+ * second Checkout line item).
  *
  * @param {object} opts
  * @param {number}  opts.amountCents   First-period charge in cents (publish) or renewal amount.
@@ -327,17 +501,26 @@ async function createCheckout({
         };
     }
 
+    // First-period publish uses a 7-day trial; pure renewal checkouts charge immediately.
+    const trialDays = contract.firstPeriodCents === contract.renewalCents
+        ? 0
+        : SUBSCRIPTION_TRIAL_DAYS;
+
     const params = {
         mode: 'subscription',
         line_items: lineItems,
-        subscription_data: {
-            trial_period_days: SUBSCRIPTION_TRIAL_DAYS,
-            metadata: subscriptionMeta,
-        },
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: sessionMeta,
     };
+    if (trialDays > 0) {
+        params.subscription_data = {
+            trial_period_days: trialDays,
+            metadata: subscriptionMeta,
+        };
+    } else if (Object.keys(subscriptionMeta).length) {
+        params.subscription_data = { metadata: subscriptionMeta };
+    }
     if (clientReferenceId) params.client_reference_id = String(clientReferenceId).slice(0, 200);
 
     const body = encodeStripeBody(params);
@@ -486,6 +669,8 @@ module.exports = {
     resolveStripeRenewalPriceId,
     buildBillingContract,
     buildSubscriptionLineItems,
+    attachFirstThenRenewalSchedule,
+    ensureRenewalPriceId,
     SUBSCRIPTION_TRIAL_DAYS,
 };
 

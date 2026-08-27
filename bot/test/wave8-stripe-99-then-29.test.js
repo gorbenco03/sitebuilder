@@ -1,10 +1,13 @@
 'use strict';
 /**
- * bot/test/wave8-stripe-99-then-29.test.js — Wave 8 commercial billing contract.
+ * bot/test/wave8-stripe-99-then-29.test.js — Wave 8-R2 commercial billing contract.
  *
- * VISION: after the 7-day card trial, first charge is 99 (PRICE_CENTS=9900);
- * subsequent yearly periods are 29 (RENEWAL_CENTS=2900). Checkout must NOT
- * start a forever-9900 yearly subscription.
+ * VISION: $0 now (7-day card trial) → first charge PRICE_CENTS (9900) on day 7 →
+ * later years RENEWAL_CENTS (2900) via a real Stripe Subscription Schedule phase.
+ *
+ * Rejected hybrids (must stay RED):
+ *   - recurring 2900 + one-time 7000 + trial_period_days=7 (Stripe bills 70 now)
+ *   - catalog first-year Price only with renewal in metadata (Stripe bills 99 forever)
  *
  * Run: node bot/test/wave8-stripe-99-then-29.test.js
  * Exits non-zero on failure.
@@ -83,51 +86,68 @@ function lineItemAudit(form) {
     return { unitAmounts, recurringAmounts, oneTimeAmounts, priceIds, indices: [...indices] };
 }
 
-/**
- * True when the captured Checkout body would bill 9900 every year forever
- * with no renewal step-down to RENEWAL_CENTS.
- */
-function isForeverFirstPriceYearly(form, firstCents, renewalCents) {
-    const audit = lineItemAudit(form);
-    // Single recurring line at first-period amount and nothing that schedules renewal.
-    const onlyRecurringFirst =
-        audit.recurringAmounts.length === 1 &&
-        audit.recurringAmounts[0] === firstCents &&
-        audit.oneTimeAmounts.length === 0 &&
-        audit.priceIds.length === 0;
-    const renewalInMeta =
-        form['metadata[renewal_cents]'] === String(renewalCents) ||
-        form['subscription_data[metadata][renewal_cents]'] === String(renewalCents) ||
-        form['metadata[hidook_renewal_cents]'] === String(renewalCents) ||
-        form['subscription_data[metadata][hidook_renewal_cents]'] === String(renewalCents);
-    const renewalPricePresent = Boolean(
-        form['line_items[1][price]'] ||
-        form['line_items[0][price]'] && form['metadata[renewal_price_id]'] ||
-        form['subscription_data[metadata][renewal_price_id]']
-    );
-    const recurringIncludesRenewal = audit.recurringAmounts.includes(renewalCents);
-    if (onlyRecurringFirst && !renewalInMeta && !renewalPricePresent && !recurringIncludesRenewal) {
-        return true;
-    }
-    // Catalog single price at first-year id with no renewal price id → forever first price.
-    if (
-        audit.priceIds.length === 1 &&
-        audit.recurringAmounts.length === 0 &&
-        !form['metadata[renewal_price_id]'] &&
-        !form['subscription_data[metadata][renewal_price_id]'] &&
-        !form['metadata[renewal_cents]'] &&
-        !form['subscription_data[metadata][renewal_cents]']
-    ) {
-        return true;
-    }
-    return false;
+/** True when any one-time (non-recurring) Checkout line item is present. */
+function hasOneTimeLineItem(form) {
+    return lineItemAudit(form).oneTimeAmounts.length > 0;
 }
 
 /**
- * Assert subscription checkout encodes 99-then-29 (first charge PRICE_CENTS,
- * later years RENEWAL_CENTS), not forever-PRICE_CENTS.
+ * Collect keys that look like subscription schedule phase fields on a form body.
+ * @param {Record<string,string>} form
  */
-function assertNinetyNineThenTwentyNine(form, contract) {
+function schedulePhaseAudit(form) {
+    const phaseKeys = Object.keys(form).filter((k) =>
+        /^phases\[\d+\]/.test(k) ||
+        /^subscription_schedule/.test(k) ||
+        /schedule.*phase/i.test(k)
+    );
+    const phaseAmounts = [];
+    const phasePrices = [];
+    for (const k of Object.keys(form)) {
+        const mAmt = /^phases\[(\d+)\](?:\[items\]\[(\d+)\])?\[(?:price_data\]\[)?unit_amount\]?/.exec(k) ||
+            /^phases\[(\d+)\]\[items\]\[(\d+)\]\[price_data\]\[unit_amount\]/.exec(k);
+        if (mAmt && form[k] != null) phaseAmounts.push(Number(form[k]));
+        const mPrice = /^phases\[(\d+)\]\[items\]\[(\d+)\]\[price\]$/.exec(k);
+        if (mPrice) phasePrices.push(form[k]);
+        const mPd = /^phases\[(\d+)\]\[items\]\[(\d+)\]\[price_data\]\[unit_amount\]$/.exec(k);
+        if (mPd) phaseAmounts.push(Number(form[k]));
+    }
+    // Also accept nested encode: phases[1][items][0][price_data][unit_amount]
+    for (const k of Object.keys(form)) {
+        if (/^phases\[\d+\]\[items\]\[\d+\]\[price_data\]\[unit_amount\]$/.test(k)) {
+            const n = Number(form[k]);
+            if (!phaseAmounts.includes(n)) phaseAmounts.push(n);
+        }
+        if (/^phases\[\d+\]\[items\]\[\d+\]\[price\]$/.test(k)) {
+            if (!phasePrices.includes(form[k])) phasePrices.push(form[k]);
+        }
+    }
+    return { phaseKeys, phaseAmounts, phasePrices };
+}
+
+/**
+ * Metadata-only renewal is NOT a Stripe billing schedule.
+ * @param {Record<string,string>} form
+ */
+function renewalOnlyInMetadata(form) {
+    const metaRenewal =
+        form['metadata[renewal_cents]'] === String(pricing.RENEWAL_CENTS) ||
+        form['subscription_data[metadata][renewal_cents]'] === String(pricing.RENEWAL_CENTS) ||
+        form['metadata[renewal_price_id]'] ||
+        form['subscription_data[metadata][renewal_price_id]'];
+    const audit = lineItemAudit(form);
+    const schedule = schedulePhaseAudit(form);
+    const recurringHasRenewal = audit.recurringAmounts.includes(pricing.RENEWAL_CENTS);
+    const scheduleHasRenewal =
+        schedule.phaseAmounts.includes(pricing.RENEWAL_CENTS) ||
+        schedule.phasePrices.some((p) => /renewal|29/i.test(p));
+    return Boolean(metaRenewal) && !recurringHasRenewal && !scheduleHasRenewal && audit.oneTimeAmounts.length === 0;
+}
+
+/**
+ * Assert Checkout Session body: trial 7, single first-period recurring 9900, no one-time companion.
+ */
+function assertCheckoutFirstPeriodOnly(form) {
     assert.strictEqual(form.mode, 'subscription', 'mode must be subscription');
     assert.strictEqual(
         form['subscription_data[trial_period_days]'],
@@ -135,74 +155,129 @@ function assertNinetyNineThenTwentyNine(form, contract) {
         'trial_period_days must stay 7'
     );
     assert.ok(
-        !isForeverFirstPriceYearly(form, pricing.PRICE_CENTS, pricing.RENEWAL_CENTS),
-        'must not start a forever-' + pricing.PRICE_CENTS + ' yearly subscription'
+        !hasOneTimeLineItem(form),
+        'Checkout must not send a one-time line item together with trial_period_days=7 ' +
+            '(Stripe charges one-time up front; wanted $0 now then 99 on day 7)'
     );
-
-    const first = contract && contract.firstPeriodCents != null
-        ? contract.firstPeriodCents
-        : pricing.PRICE_CENTS;
-    const renew = contract && contract.renewalCents != null
-        ? contract.renewalCents
-        : pricing.RENEWAL_CENTS;
-
-    assert.strictEqual(first, pricing.PRICE_CENTS, 'first period must be PRICE_CENTS (9900)');
-    assert.strictEqual(renew, pricing.RENEWAL_CENTS, 'renewal must be RENEWAL_CENTS (2900)');
-
     const audit = lineItemAudit(form);
-
-    // Renewal must appear as recurring unit_amount and/or renewal catalog price / metadata.
-    const renewalCentsInForm =
-        form['metadata[renewal_cents]'] === String(renew) ||
-        form['subscription_data[metadata][renewal_cents]'] === String(renew) ||
-        form['metadata[hidook_renewal_cents]'] === String(renew) ||
-        form['subscription_data[metadata][hidook_renewal_cents]'] === String(renew);
-    const renewalAmountRecurring = audit.recurringAmounts.includes(renew);
-    const renewalPrice =
-        form['line_items[1][price]'] ||
-        form['metadata[renewal_price_id]'] ||
-        form['subscription_data[metadata][renewal_price_id]'];
-
-    assert.ok(
-        renewalAmountRecurring || renewalCentsInForm || renewalPrice,
-        'renewal ' + renew + ' must be present as recurring amount, metadata, or renewal price id'
-    );
-
-    // First-period 9900 must be present (unit_amount, metadata, or first-year catalog price).
-    const firstInMeta =
-        form['metadata[first_period_cents]'] === String(first) ||
-        form['subscription_data[metadata][first_period_cents]'] === String(first) ||
-        form['metadata[hidook_first_period_cents]'] === String(first) ||
-        form['subscription_data[metadata][hidook_first_period_cents]'] === String(first);
-    const firstAmountPresent =
-        audit.unitAmounts.includes(first) ||
-        audit.oneTimeAmounts.includes(first) ||
-        // first-year premium = first - renew on a one-time line next to recurring renew
-        audit.oneTimeAmounts.includes(first - renew) ||
-        firstInMeta ||
-        audit.priceIds.length >= 1;
-
-    assert.ok(
-        firstAmountPresent,
-        'first-period ' + first + ' must appear in line_items or metadata'
-    );
-
-    // Recurring yearly amount must not be solely forever-first without renewal step-down.
-    if (audit.recurringAmounts.length === 1 && audit.recurringAmounts[0] === first) {
+    if (audit.priceIds.length === 0) {
+        // Inline price_data path: single recurring at PRICE_CENTS (9900), not RENEWAL_CENTS.
         assert.ok(
-            renewalCentsInForm || renewalPrice || audit.oneTimeAmounts.length > 0,
-            'single recurring at first-period amount requires an explicit renewal step-down'
+            audit.recurringAmounts.includes(pricing.PRICE_CENTS),
+            'recurring Checkout amount for first paid period must be PRICE_CENTS (9900), got ' +
+                JSON.stringify(audit.recurringAmounts)
         );
+        assert.ok(
+            !audit.recurringAmounts.includes(pricing.RENEWAL_CENTS) ||
+                audit.recurringAmounts.includes(pricing.PRICE_CENTS),
+            'first paid period must not be sole recurring RENEWAL_CENTS (2900)'
+        );
+        assert.strictEqual(
+            audit.recurringAmounts.filter((a) => a === pricing.PRICE_CENTS).length >= 1,
+            true
+        );
+        // Reject the hybrid: recurring 2900 as the subscription price.
+        assert.ok(
+            !(audit.recurringAmounts.length === 1 && audit.recurringAmounts[0] === pricing.RENEWAL_CENTS),
+            'must not use recurring RENEWAL_CENTS (2900) as the Checkout subscription price ' +
+                'when first period is 9900 (that bills 29 after trial, not 99)'
+        );
+        assert.ok(
+            audit.recurringAmounts.length === 1 && audit.recurringAmounts[0] === pricing.PRICE_CENTS,
+            'inline Checkout must be a single recurring line at PRICE_CENTS (9900)'
+        );
+    } else {
+        // Catalog: first-year Price only on Checkout line_items (renewal via schedule later).
+        assert.ok(audit.priceIds.length >= 1, 'catalog path needs a Price id');
+        assert.strictEqual(audit.oneTimeAmounts.length, 0, 'catalog path: no one-time lines');
+    }
+}
+
+/**
+ * Assert captured Stripe HTTP traffic includes a real subscription schedule that
+ * steps down to RENEWAL_CENTS (not metadata alone).
+ * @param {{ url: string, body: string }[]} posts
+ */
+function assertScheduleRenewalPhase(posts) {
+    const schedulePosts = posts.filter((p) => /\/subscription_schedules/.test(p.url));
+    assert.ok(
+        schedulePosts.length >= 1,
+        'must POST subscription_schedules (or update a schedule) so year-2+ bills RENEWAL_CENTS — ' +
+            'session/subscription metadata alone is not Stripe billing'
+    );
+
+    let sawRenewal = false;
+    let sawFromSub = false;
+    let sawPhase1 = false;
+
+    for (const p of schedulePosts) {
+        const form = parseStripeForm(p.body);
+        if (form.from_subscription) sawFromSub = true;
+        const phases = schedulePhaseAudit(form);
+        if (phases.phaseKeys.some((k) => /^phases\[1\]/.test(k)) || form['phases[1][items][0][price]'] ||
+            form['phases[1][items][0][price_data][unit_amount]']) {
+            sawPhase1 = true;
+        }
+        if (
+            phases.phaseAmounts.includes(pricing.RENEWAL_CENTS) ||
+            form['phases[1][items][0][price_data][unit_amount]'] === String(pricing.RENEWAL_CENTS) ||
+            (form['phases[1][items][0][price]'] && form['phases[1][items][0][price]'].length > 0) ||
+            Object.keys(form).some((k) =>
+                /^phases\[1\]/.test(k) && /unit_amount/.test(k) && form[k] === String(pricing.RENEWAL_CENTS)
+            )
+        ) {
+            sawRenewal = true;
+        }
+        // Catalog renewal price id on phase 1 counts.
+        if (form['phases[1][items][0][price]']) sawRenewal = true;
     }
 
-    // If recurring is only the first-period amount with no renewal signal → fail.
+    // Also accept a single create with two phases (no from_subscription).
+    if (!sawRenewal) {
+        for (const p of posts) {
+            const form = parseStripeForm(p.body);
+            if (form['phases[1][items][0][price_data][unit_amount]'] === String(pricing.RENEWAL_CENTS)) {
+                sawRenewal = true;
+            }
+            if (form['phases[1][items][0][price]']) sawRenewal = true;
+            if (Object.keys(form).some((k) => /^phases\[1\]/.test(k))) sawPhase1 = true;
+        }
+    }
+
     assert.ok(
-        !(audit.recurringAmounts.length === 1 &&
-            audit.recurringAmounts[0] === first &&
-            !renewalCentsInForm &&
-            !renewalPrice),
-        'refusing forever-' + first + ' yearly with no renewal contract'
+        sawPhase1 || sawFromSub,
+        'schedule must include a later phase (phases[1]) or from_subscription + update'
     );
+    assert.ok(
+        sawRenewal,
+        'schedule phase must bill RENEWAL_CENTS (2900) or attach renewal Price id — not metadata only'
+    );
+}
+
+/**
+ * Mock fetch that records every Stripe POST (url + body).
+ * @param {(url: string, body: string) => object} responder
+ */
+function installFetchRecorder(responder) {
+    const posts = [];
+    const origFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+        const u = String(url);
+        const body = (opts && opts.body) || '';
+        if (opts && String(opts.method || 'GET').toUpperCase() === 'POST') {
+            posts.push({ url: u, body: String(body) });
+        }
+        const json = responder(u, String(body), posts);
+        return {
+            ok: true,
+            status: 200,
+            json: async () => json,
+        };
+    };
+    return {
+        posts,
+        restore() { global.fetch = origFetch; },
+    };
 }
 
 (async () => {
@@ -212,30 +287,62 @@ function assertNinetyNineThenTwentyNine(form, contract) {
         assert.notStrictEqual(pricing.PRICE_CENTS, pricing.RENEWAL_CENTS);
     });
 
-    // ── Inline price_data: not forever-9900 ─────────────────────────────────
-    await check('inline createCheckout: after trial first 99 then yearly 29 (not forever 9900)', async () => {
+    // ── Inline: single recurring 9900 + trial 7; NO one-time; schedule → 29 ──
+    await check('inline: $0 trial, first paid 9900 recurring, no one-time, schedule phase 2900', async () => {
         const prevTestPay = process.env.HIDOOK_TEST_PAY;
         const prevKey = process.env.STRIPE_SECRET_KEY;
         process.env.HIDOOK_TEST_PAY = '0';
-        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_inline_not_a_real_key';
+        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_r2_inline';
         delete process.env.STRIPE_PRICE_ID;
         delete process.env.STRIPE_PRICE_ID_EUR;
         delete process.env.STRIPE_PRICE_ID_RENEWAL;
         delete process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
 
-        const origFetch = global.fetch;
-        let capturedBody = null;
-        global.fetch = async (_url, opts) => {
-            capturedBody = opts && opts.body;
-            return {
-                ok: true,
-                status: 200,
-                json: async () => ({
+        const rec = installFetchRecorder((url) => {
+            if (/\/checkout\/sessions/.test(url)) {
+                return {
                     id: 'cs_test_wave8_inline',
                     url: 'https://checkout.stripe.com/c/pay/cs_test_wave8_inline',
-                }),
-            };
-        };
+                    subscription: 'sub_test_wave8_inline',
+                };
+            }
+            if (/\/subscription_schedules\/sub_sched_/.test(url)) {
+                return {
+                    id: 'sub_sched_test_wave8',
+                    object: 'subscription_schedule',
+                    phases: [
+                        { items: [{ price: 'price_first_99' }], start_date: 1700000000 },
+                        { items: [{ price: 'price_renewal_29' }] },
+                    ],
+                };
+            }
+            if (/\/subscription_schedules/.test(url)) {
+                return {
+                    id: 'sub_sched_test_wave8',
+                    object: 'subscription_schedule',
+                    phases: [{
+                        items: [{ price: 'price_first_99', quantity: 1 }],
+                        start_date: 1700000000,
+                        end_date: 1700000000 + 7 * 86400,
+                        trial_end: 1700000000 + 7 * 86400,
+                    }],
+                    subscription: 'sub_test_wave8_inline',
+                };
+            }
+            if (/\/prices/.test(url)) {
+                return { id: 'price_renewal_29_inline', unit_amount: pricing.RENEWAL_CENTS };
+            }
+            if (/\/subscriptions\//.test(url)) {
+                return {
+                    id: 'sub_test_wave8_inline',
+                    status: 'trialing',
+                    trial_end: 1700000000 + 7 * 86400,
+                    items: { data: [{ price: { id: 'price_first_99', unit_amount: pricing.PRICE_CENTS } }] },
+                };
+            }
+            return { id: 'obj_test', ok: true };
+        });
+
         try {
             const co = await payments.createCheckout({
                 amountCents: pricing.PRICE_CENTS,
@@ -247,26 +354,44 @@ function assertNinetyNineThenTwentyNine(form, contract) {
                 metadata: { platform: 'web', kind: 'publish' },
             });
             assert.strictEqual(co.id, 'cs_test_wave8_inline');
-            const form = parseStripeForm(capturedBody);
-            assertNinetyNineThenTwentyNine(form, co.contract || {
-                firstPeriodCents: pricing.PRICE_CENTS,
-                renewalCents: pricing.RENEWAL_CENTS,
-            });
-            // Explicit: recurring yearly must include 2900, not only 9900 forever.
-            const audit = lineItemAudit(form);
-            const foreverOnly =
-                audit.recurringAmounts.length === 1 &&
-                audit.recurringAmounts[0] === pricing.PRICE_CENTS &&
-                audit.oneTimeAmounts.length === 0;
-            assert.ok(!foreverOnly, 'line_items must not be a single forever-9900 yearly price_data');
+
+            const checkoutPosts = rec.posts.filter((p) => /\/checkout\/sessions/.test(p.url));
+            assert.strictEqual(checkoutPosts.length, 1, 'exactly one Checkout Session create');
+            const form = parseStripeForm(checkoutPosts[0].body);
+            assertCheckoutFirstPeriodOnly(form);
             assert.ok(
-                audit.recurringAmounts.includes(pricing.RENEWAL_CENTS) ||
-                    form['metadata[renewal_cents]'] === String(pricing.RENEWAL_CENTS) ||
-                    form['subscription_data[metadata][renewal_cents]'] === String(pricing.RENEWAL_CENTS),
-                'renewal 2900 must be on the Stripe body'
+                !renewalOnlyInMetadata(form) || typeof payments.attachFirstThenRenewalSchedule === 'function',
+                'renewal must not live only in metadata without a schedule attach API'
+            );
+
+            // Schedule must run when the subscription exists (follow-up), not metadata alone.
+            assert.strictEqual(
+                typeof payments.attachFirstThenRenewalSchedule,
+                'function',
+                'payments must export attachFirstThenRenewalSchedule for post-checkout schedule'
+            );
+            await payments.attachFirstThenRenewalSchedule({
+                subscriptionId: 'sub_test_wave8_inline',
+                currency: 'eur',
+                productName: 'Hidook Site Builder site activation',
+                contract: co.contract || {
+                    firstPeriodCents: pricing.PRICE_CENTS,
+                    renewalCents: pricing.RENEWAL_CENTS,
+                    trialDays: 7,
+                    interval: 'year',
+                },
+            });
+            assertScheduleRenewalPhase(rec.posts);
+
+            // Explicit reject of the old hybrid on the checkout body.
+            const audit = lineItemAudit(form);
+            assert.ok(
+                !(audit.recurringAmounts.includes(pricing.RENEWAL_CENTS) &&
+                    audit.oneTimeAmounts.includes(pricing.PRICE_CENTS - pricing.RENEWAL_CENTS)),
+                'rejected hybrid: recurring 2900 + one-time 7000'
             );
         } finally {
-            global.fetch = origFetch;
+            rec.restore();
             if (prevTestPay === undefined) delete process.env.HIDOOK_TEST_PAY;
             else process.env.HIDOOK_TEST_PAY = prevTestPay;
             if (prevKey === undefined) delete process.env.STRIPE_SECRET_KEY;
@@ -274,34 +399,50 @@ function assertNinetyNineThenTwentyNine(form, contract) {
         }
     });
 
-    // ── Catalog first price without renewal must not silently bill 99 forever ─
-    await check('catalog STRIPE_PRICE_ID without renewal: fail closed or attach 29 from pricing', async () => {
+    // ── Catalog first-only: fail closed OR real schedule phase at 2900 ─────
+    await check('catalog STRIPE_PRICE_ID without renewal: fail closed or schedule phase 2900', async () => {
         const prevTestPay = process.env.HIDOOK_TEST_PAY;
         const prevKey = process.env.STRIPE_SECRET_KEY;
-        const prevEur = process.env.STRIPE_PRICE_ID_EUR;
-        const prevRen = process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
-        const prevRenG = process.env.STRIPE_PRICE_ID_RENEWAL;
         process.env.HIDOOK_TEST_PAY = '0';
-        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_catalog_not_real';
+        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_r2_catalog';
         process.env.STRIPE_PRICE_ID_EUR = 'price_test_first_99_eur';
         delete process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
         delete process.env.STRIPE_PRICE_ID_RENEWAL;
 
-        const origFetch = global.fetch;
-        let capturedBody = null;
-        let fetchCalled = false;
-        global.fetch = async (_url, opts) => {
-            fetchCalled = true;
-            capturedBody = opts && opts.body;
-            return {
-                ok: true,
-                status: 200,
-                json: async () => ({
+        const rec = installFetchRecorder((url) => {
+            if (/\/checkout\/sessions/.test(url)) {
+                return {
                     id: 'cs_test_wave8_catalog',
                     url: 'https://checkout.stripe.com/c/pay/cs_test_wave8_catalog',
-                }),
-            };
-        };
+                    subscription: 'sub_test_catalog',
+                };
+            }
+            if (/\/subscription_schedules\/sub_sched_/.test(url)) {
+                return {
+                    id: 'sub_sched_catalog',
+                    phases: [
+                        { items: [{ price: 'price_test_first_99_eur' }], start_date: 1700000000 },
+                        { items: [{ price: 'price_ren_created' }] },
+                    ],
+                };
+            }
+            if (/\/subscription_schedules/.test(url)) {
+                return {
+                    id: 'sub_sched_catalog',
+                    phases: [{
+                        items: [{ price: 'price_test_first_99_eur', quantity: 1 }],
+                        start_date: 1700000000,
+                        trial_end: 1700000000 + 7 * 86400,
+                    }],
+                    subscription: 'sub_test_catalog',
+                };
+            }
+            if (/\/prices/.test(url)) {
+                return { id: 'price_ren_created', unit_amount: pricing.RENEWAL_CENTS };
+            }
+            return { id: 'obj_test' };
+        });
+
         try {
             let threw = null;
             let co = null;
@@ -318,84 +459,122 @@ function assertNinetyNineThenTwentyNine(form, contract) {
             }
             if (threw) {
                 assert.ok(
-                    /renewal|RENEWAL|29|forever|9900/i.test(threw.message),
-                    'fail-closed error must mention renewal contract: ' + threw.message
+                    /renewal|RENEWAL|29|forever|9900|schedule/i.test(threw.message),
+                    'fail-closed error must mention renewal/schedule: ' + threw.message
                 );
-                assert.ok(!fetchCalled, 'fail-closed must not call Stripe');
+                const checkoutPosts = rec.posts.filter((p) => /\/checkout\/sessions/.test(p.url));
+                assert.strictEqual(checkoutPosts.length, 0, 'fail-closed must not POST checkout');
             } else {
-                assert.ok(fetchCalled, 'success path must POST checkout session');
-                const form = parseStripeForm(capturedBody);
-                assert.ok(
-                    !isForeverFirstPriceYearly(form, pricing.PRICE_CENTS, pricing.RENEWAL_CENTS),
-                    'catalog without renewal env must not bill 99 forever'
-                );
-                assertNinetyNineThenTwentyNine(form, co && co.contract);
+                const checkoutPosts = rec.posts.filter((p) => /\/checkout\/sessions/.test(p.url));
+                assert.ok(checkoutPosts.length >= 1, 'success path POSTs checkout');
+                const form = parseStripeForm(checkoutPosts[0].body);
+                assertCheckoutFirstPeriodOnly(form);
+                assert.strictEqual(form['line_items[0][price]'], 'price_test_first_99_eur');
+                // Metadata alone is insufficient — must attach a real schedule phase.
+                assert.strictEqual(typeof payments.attachFirstThenRenewalSchedule, 'function');
+                await payments.attachFirstThenRenewalSchedule({
+                    subscriptionId: 'sub_test_catalog',
+                    currency: 'eur',
+                    productName: 'Hidook Site Builder site activation',
+                    contract: co.contract || {
+                        firstPeriodCents: pricing.PRICE_CENTS,
+                        renewalCents: pricing.RENEWAL_CENTS,
+                    },
+                    // no renewalPriceId — must create from pricing.js or fail
+                });
+                assertScheduleRenewalPhase(rec.posts);
+                // Prove we did not treat metadata as the schedule.
+                const onlyMeta =
+                    form['metadata[renewal_cents]'] === String(pricing.RENEWAL_CENTS) &&
+                    rec.posts.every((p) => !/\/subscription_schedules/.test(p.url));
+                assert.ok(!onlyMeta, 'catalog-only must not silently bill 99 forever via metadata');
             }
         } finally {
-            global.fetch = origFetch;
+            rec.restore();
             if (prevTestPay === undefined) delete process.env.HIDOOK_TEST_PAY;
             else process.env.HIDOOK_TEST_PAY = prevTestPay;
             if (prevKey === undefined) delete process.env.STRIPE_SECRET_KEY;
             else process.env.STRIPE_SECRET_KEY = prevKey;
-            if (prevEur === undefined) delete process.env.STRIPE_PRICE_ID_EUR;
-            else process.env.STRIPE_PRICE_ID_EUR = prevEur;
-            if (prevRen === undefined) delete process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
-            else process.env.STRIPE_PRICE_ID_RENEWAL_EUR = prevRen;
-            if (prevRenG === undefined) delete process.env.STRIPE_PRICE_ID_RENEWAL;
-            else process.env.STRIPE_PRICE_ID_RENEWAL = prevRenG;
+            delete process.env.STRIPE_PRICE_ID_EUR;
+            delete process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
+            delete process.env.STRIPE_PRICE_ID_RENEWAL;
         }
     });
 
-    // ── Both catalog prices: first + renewal ────────────────────────────────
-    await check('catalog first + STRIPE_PRICE_ID_RENEWAL_* attaches 29/year renewal price', async () => {
+    // ── Catalog first + renewal Price: schedule phase uses renewal Price ───
+    await check('catalog first + STRIPE_PRICE_ID_RENEWAL_*: schedule phase uses renewal Price', async () => {
         const prevTestPay = process.env.HIDOOK_TEST_PAY;
         const prevKey = process.env.STRIPE_SECRET_KEY;
         process.env.HIDOOK_TEST_PAY = '0';
-        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_both_catalog';
+        process.env.STRIPE_SECRET_KEY = 'sk_test_wave8_r2_both';
         process.env.STRIPE_PRICE_ID_EUR = 'price_test_first_99_eur';
         process.env.STRIPE_PRICE_ID_RENEWAL_EUR = 'price_test_renewal_29_eur';
 
-        const origFetch = global.fetch;
-        let capturedBody = null;
-        global.fetch = async (_url, opts) => {
-            capturedBody = opts && opts.body;
-            return {
-                ok: true,
-                status: 200,
-                json: async () => ({
+        const rec = installFetchRecorder((url) => {
+            if (/\/checkout\/sessions/.test(url)) {
+                return {
                     id: 'cs_test_wave8_both',
                     url: 'https://checkout.stripe.com/c/pay/cs_test_wave8_both',
-                }),
-            };
-        };
+                    subscription: 'sub_test_both',
+                };
+            }
+            if (/\/subscription_schedules\/sub_sched_/.test(url)) {
+                return {
+                    id: 'sub_sched_both',
+                    phases: [
+                        { items: [{ price: 'price_test_first_99_eur' }], start_date: 1700000000 },
+                        { items: [{ price: 'price_test_renewal_29_eur' }] },
+                    ],
+                };
+            }
+            if (/\/subscription_schedules/.test(url)) {
+                return {
+                    id: 'sub_sched_both',
+                    phases: [{
+                        items: [{ price: 'price_test_first_99_eur', quantity: 1 }],
+                        start_date: 1700000000,
+                        trial_end: 1700000000 + 7 * 86400,
+                    }],
+                    subscription: 'sub_test_both',
+                };
+            }
+            return { id: 'obj_test' };
+        });
+
         try {
-            await payments.createCheckout({
+            const co = await payments.createCheckout({
                 amountCents: pricing.PRICE_CENTS,
                 currency: 'eur',
                 productName: 'Hidook Site Builder site activation',
                 successUrl: 'http://127.0.0.1/ok',
                 cancelUrl: 'http://127.0.0.1/cancel',
             });
-            const form = parseStripeForm(capturedBody);
+            const checkoutPosts = rec.posts.filter((p) => /\/checkout\/sessions/.test(p.url));
+            const form = parseStripeForm(checkoutPosts[0].body);
             assert.strictEqual(form.mode, 'subscription');
             assert.strictEqual(form['subscription_data[trial_period_days]'], '7');
-            const prices = lineItemAudit(form).priceIds;
-            const renewalMeta =
-                form['metadata[renewal_price_id]'] ||
-                form['subscription_data[metadata][renewal_price_id]'];
+            assert.strictEqual(form['line_items[0][price]'], 'price_test_first_99_eur');
+            assert.ok(!hasOneTimeLineItem(form), 'no one-time with trial');
+            // Renewal must NOT be only metadata — schedule attach required.
+            await payments.attachFirstThenRenewalSchedule({
+                subscriptionId: 'sub_test_both',
+                currency: 'eur',
+                productName: 'Hidook Site Builder site activation',
+                contract: co.contract,
+                renewalPriceId: 'price_test_renewal_29_eur',
+            });
+            assertScheduleRenewalPhase(rec.posts);
+            const schedBodies = rec.posts
+                .filter((p) => /\/subscription_schedules/.test(p.url))
+                .map((p) => p.body)
+                .join('&');
             assert.ok(
-                prices.includes('price_test_renewal_29_eur') ||
-                    renewalMeta === 'price_test_renewal_29_eur' ||
-                    prices.includes('price_test_first_99_eur') && renewalMeta === 'price_test_renewal_29_eur',
-                'renewal catalog price must be attached (line item or metadata), got prices=' +
-                    JSON.stringify(prices) + ' renewalMeta=' + renewalMeta
-            );
-            assert.ok(
-                !isForeverFirstPriceYearly(form, pricing.PRICE_CENTS, pricing.RENEWAL_CENTS),
-                'must not be forever-first-price when renewal price env is set'
+                schedBodies.includes('price_test_renewal_29_eur') ||
+                    schedBodies.includes(String(pricing.RENEWAL_CENTS)),
+                'schedule must reference renewal catalog Price or 2900 unit_amount'
             );
         } finally {
-            global.fetch = origFetch;
+            rec.restore();
             if (prevTestPay === undefined) delete process.env.HIDOOK_TEST_PAY;
             else process.env.HIDOOK_TEST_PAY = prevTestPay;
             if (prevKey === undefined) delete process.env.STRIPE_SECRET_KEY;
@@ -405,8 +584,8 @@ function assertNinetyNineThenTwentyNine(form, contract) {
         }
     });
 
-    // ── HIDOOK_TEST_PAY offline records same 99-then-29 contract ───────────
-    await check('HIDOOK_TEST_PAY offline createCheckout records 99-then-29 contract', async () => {
+    // ── HIDOOK_TEST_PAY offline records same 99-then-29 / 7-day contract ───
+    await check('HIDOOK_TEST_PAY offline createCheckout records 99-then-29 / 7-day trial contract', async () => {
         process.env.HIDOOK_TEST_PAY = '1';
         delete process.env.STRIPE_SECRET_KEY;
         assert.ok(payments.isConfigured());
@@ -430,10 +609,24 @@ function assertNinetyNineThenTwentyNine(form, contract) {
             co.contract.renewalCents,
             'must not record forever-same amount'
         );
+        // Offline schedule attach is a no-network record of the same contract.
+        if (typeof payments.attachFirstThenRenewalSchedule === 'function') {
+            const sched = await payments.attachFirstThenRenewalSchedule({
+                subscriptionId: 'sub_test_offline',
+                currency: 'eur',
+                productName: 'Hidook Site Builder site activation',
+                contract: co.contract,
+            });
+            assert.ok(sched && (sched.offline || sched.id), 'offline schedule returns a record');
+            if (sched.contract) {
+                assert.strictEqual(sched.contract.renewalCents, pricing.RENEWAL_CENTS);
+                assert.strictEqual(sched.contract.firstPeriodCents, pricing.PRICE_CENTS);
+            }
+        }
     });
 
-    // ── OWNER how-to lists two catalog Prices ─────────────────────────────
-    await check('OWNER-STRIPE-TRIAL.md lists first-year 99 and renewal 29 catalog Prices', () => {
+    // ── OWNER how-to: two catalog Prices + subscription schedule ───────────
+    await check('OWNER-STRIPE-TRIAL.md lists two Prices and subscription schedule', () => {
         const fs = require('fs');
         const doc = fs.readFileSync(path.join(__dirname, '..', '..', 'OWNER-STRIPE-TRIAL.md'), 'utf8');
         assert.ok(/Hidook Site Builder/i.test(doc), 'owner doc names Hidook Site Builder');
@@ -450,13 +643,17 @@ function assertNinetyNineThenTwentyNine(form, contract) {
             /first/i.test(doc) && /renew/i.test(doc),
             'owner doc must distinguish first-year vs renewal Prices'
         );
+        assert.ok(
+            /subscription schedule|subscription_schedules|schedule phase/i.test(doc),
+            'owner doc must document Subscription Schedule (99 then 29), not metadata-only'
+        );
         assert.ok(!/\bDESSERD\b/i.test(doc), 'no DESSERD');
         assert.ok(!/\bKanban\b/i.test(doc), 'no Kanban jargon');
         assert.ok(!/sk_live_[A-Za-z0-9]+/.test(doc), 'no live secret material');
         assert.ok(!/sk_test_[A-Za-z0-9]{8,}/.test(doc), 'no real test secret material');
     });
 
-    // ── resolveStripeRenewalPriceId helper (when exported) ────────────────
+    // ── resolveStripeRenewalPriceId helper ────────────────────────────────
     await check('resolveStripeRenewalPriceId prefers currency then generic', () => {
         assert.strictEqual(typeof payments.resolveStripeRenewalPriceId, 'function',
             'payments must export resolveStripeRenewalPriceId');
@@ -469,6 +666,31 @@ function assertNinetyNineThenTwentyNine(form, contract) {
         assert.strictEqual(payments.resolveStripeRenewalPriceId('eur'), 'price_ren_eur');
         delete process.env.STRIPE_PRICE_ID_RENEWAL_EUR;
         delete process.env.STRIPE_PRICE_ID_RENEWAL;
+    });
+
+    // ── buildSubscriptionLineItems: no one-time+trial hybrid ──────────────
+    await check('buildSubscriptionLineItems first-then-renewal: single recurring 9900, no one-time', () => {
+        assert.strictEqual(typeof payments.buildSubscriptionLineItems, 'function');
+        const contract = payments.buildBillingContract({
+            amountCents: pricing.PRICE_CENTS,
+            renewalCents: pricing.RENEWAL_CENTS,
+        });
+        const { lineItems } = payments.buildSubscriptionLineItems({
+            currency: 'eur',
+            productName: 'Hidook Site Builder site activation',
+            contract,
+            priceId: null,
+            renewalPriceId: null,
+        });
+        assert.strictEqual(lineItems.length, 1, 'exactly one line item');
+        const li = lineItems[0];
+        assert.ok(li.price_data, 'inline price_data');
+        assert.strictEqual(li.price_data.unit_amount, pricing.PRICE_CENTS);
+        assert.strictEqual(li.price_data.recurring && li.price_data.recurring.interval, 'year');
+        assert.ok(
+            !lineItems.some((x) => x.price_data && !x.price_data.recurring),
+            'no one-time companion line'
+        );
     });
 
     if (failed) {
