@@ -30,7 +30,9 @@
           "navGallery": "Gallery",
           "navServices": "Services",
           "navBooking": "Booking",
-          "aboutCap": "Salon"
+          "aboutCap": "Salon",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#6b7f5a",
@@ -279,7 +281,9 @@
           "navGallery": "Gallery",
           "navServices": "Services",
           "navBooking": "Booking",
-          "aboutCap": "Studio"
+          "aboutCap": "Studio",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#1c1c1c",
@@ -520,7 +524,9 @@
           "navGallery": "Galerie",
           "navServices": "Servicii",
           "navBooking": "Programări",
-          "aboutCap": "Salon"
+          "aboutCap": "Salon",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#6b7f5a",

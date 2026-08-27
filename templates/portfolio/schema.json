@@ -185,6 +185,20 @@
           "label": "Close button label (accessibility)",
           "required": false,
           "maxLen": 24
+        },
+        {
+          "key": "labels.lightboxPrev",
+          "type": "text",
+          "label": "Lightbox previous button aria-label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.lightboxNext",
+          "type": "text",
+          "label": "Lightbox next button aria-label",
+          "required": false,
+          "maxLen": 24
         }
       ]
     },

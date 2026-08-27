@@ -43,7 +43,11 @@
           "contactBandTitle": "Ready to get started?",
           "contactBandText": "Request an estimate — we reply the same day.",
           "contactBandAria": "Contact us",
-          "dockAria": "Quick call"
+          "dockAria": "Quick call",
+          "galleryEyebrow": "Work",
+          "lightboxPreview": "Photo preview",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#0b3d91",
@@ -269,7 +273,11 @@
           "contactBandTitle": "Ready to get started?",
           "contactBandText": "Request an estimate — we reply the same day.",
           "contactBandAria": "Contact us",
-          "dockAria": "Quick call"
+          "dockAria": "Quick call",
+          "galleryEyebrow": "Work",
+          "lightboxPreview": "Photo preview",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#ff4d00",
@@ -495,7 +503,11 @@
           "contactBandTitle": "Gata de început?",
           "contactBandText": "Cere o ofertă — răspundem în aceeași zi.",
           "contactBandAria": "Contactează-ne",
-          "dockAria": "Apel rapid"
+          "dockAria": "Apel rapid",
+          "galleryEyebrow": "Lucrări",
+          "lightboxPreview": "Afișare foto",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#0b3d91",
@@ -510,7 +522,7 @@
           "ctaLabel": "Cere ofertă",
           "callLabel": "Sună acum"
         },
-        "servicesTitle": "Our services",
+        "servicesTitle": "Serviciile noastre",
         "services": [
           {
             "icon": "",

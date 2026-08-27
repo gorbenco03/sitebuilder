@@ -269,6 +269,34 @@
           "label": "Sticky phone dock region aria-label",
           "required": false,
           "maxLen": 40
+        },
+        {
+          "key": "labels.galleryEyebrow",
+          "type": "text",
+          "label": "Gallery section eyebrow (e.g. Work)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.lightboxPreview",
+          "type": "text",
+          "label": "Lightbox dialog aria-label (e.g. Photo preview)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.lightboxPrev",
+          "type": "text",
+          "label": "Lightbox previous button aria-label",
+          "required": false,
+          "maxLen": 24
+        },
+        {
+          "key": "labels.lightboxNext",
+          "type": "text",
+          "label": "Lightbox next button aria-label",
+          "required": false,
+          "maxLen": 24
         }
       ]
     },

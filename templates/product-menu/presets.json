@@ -21,7 +21,9 @@
           "instaFollow": "Follow",
           "scroll": "Explore",
           "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web"
+          "waOpen": "Or open WhatsApp Web",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#c4a574",
@@ -218,7 +220,9 @@
           "instaFollow": "Follow",
           "scroll": "Menu",
           "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web"
+          "waOpen": "Or open WhatsApp Web",
+          "lightboxPrev": "Previous",
+          "lightboxNext": "Next"
         },
         "theme": {
           "primary": "#2f5d50",
@@ -417,7 +421,9 @@
           "instaFollow": "Urmărește",
           "scroll": "Explorează",
           "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web"
+          "waOpen": "Sau deschide WhatsApp Web",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#c4a574",
