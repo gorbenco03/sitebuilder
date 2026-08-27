@@ -153,10 +153,11 @@
         },
         {
           "key": "hero.background",
-          "type": "text",
-          "label": "Hero background — url('images/hero.jpg') or a CSS gradient with image: linear-gradient(...), url('...')",
+          "type": "background",
+          "label": "Hero background",
+          "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": true,
-          "maxLen": 300
+          "maxLen": 2000
         },
         {
           "key": "hero.ctaLabel",

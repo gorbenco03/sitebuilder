@@ -356,8 +356,11 @@ function deriveColors(primaryHex) {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Template data access
+// 5. Template data access (light registry + on-demand heavy payload)
 // ---------------------------------------------------------------------------
+
+/** In-flight heavy fetches: id → Promise<data> */
+const _heavyLoads = Object.create(null);
 
 function getTemplateList() {
   const d = window.HIDOOK_TEMPLATES;
@@ -371,6 +374,48 @@ function getTemplateById(id) {
   const d = window.HIDOOK_TEMPLATES;
   if (!d || !d.templates) return null;
   return d.templates[id] || null;
+}
+
+/**
+ * Ensure heavy payload (schema/presets/files) is loaded for template id.
+ * Light boot registry has empty templates{}; Start/Preview/editor fetch here.
+ */
+function ensureTemplateLoaded(id) {
+  if (!id) return Promise.resolve(null);
+  const existing = getTemplateById(id);
+  if (existing && existing.files && existing.schema) return Promise.resolve(existing);
+
+  if (_heavyLoads[id]) return _heavyLoads[id];
+
+  const d = window.HIDOOK_TEMPLATES || {};
+  const prefix = d.heavyPathPrefix || '/app/generated/templates/';
+  const url = prefix + encodeURIComponent(id) + '.js';
+
+  _heavyLoads[id] = fetch(url, { credentials: 'same-origin' })
+    .then((res) => {
+      if (!res.ok) throw new Error('Heavy template ' + id + ' HTTP ' + res.status);
+      return res.text();
+    })
+    .then((src) => {
+      // Evaluate payload: assigns window.HIDOOK_TEMPLATE_HEAVY[id]
+      const runner = new Function(src);
+      runner();
+      const heavy = (window.HIDOOK_TEMPLATE_HEAVY && window.HIDOOK_TEMPLATE_HEAVY[id]) || null;
+      if (!heavy || !heavy.files) throw new Error('Heavy template ' + id + ' missing payload');
+      d.templates = d.templates || {};
+      d.templates[id] = {
+        schema: heavy.schema,
+        presets: heavy.presets,
+        files: heavy.files,
+      };
+      return d.templates[id];
+    })
+    .catch((err) => {
+      delete _heavyLoads[id];
+      throw err;
+    });
+
+  return _heavyLoads[id];
 }
 
 /** Human catalog badge — never show raw API ids (product-menu / local-service / portfolio). */
@@ -395,7 +440,7 @@ function designBadgeLabel(tpl) {
 // ---------------------------------------------------------------------------
 
 // Field types that go in the drawer (not editable inline on the canvas)
-const DRAWER_TYPES = new Set(['phone', 'url', 'color']);
+const DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background']);
 const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waHref', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
 const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical'];
@@ -646,8 +691,13 @@ function escHtmlForAttr(str) {
 
 function buildSrcdoc() {
   if (!draft.config || !draft.templateId) return '';
-  const tpl = getTemplateById(draft.templateId);
-  if (!tpl || typeof window.HidookEngine === 'undefined') return '';
+  let tpl = null;
+  if (currentTemplate && currentTemplate.data && currentTemplate.meta &&
+      currentTemplate.meta.id === draft.templateId) {
+    tpl = currentTemplate.data;
+  }
+  if (!tpl) tpl = getTemplateById(draft.templateId);
+  if (!tpl || !tpl.files || typeof window.HidookEngine === 'undefined') return '';
   try {
     // Pass editMode:true so renderHtml emits data-hb-edit attributes and
     // renderPreview injects the modern edit-overlay.js (bundled in engine.js).
@@ -1283,6 +1333,76 @@ function buildDrawerField(field) {
     wrap.appendChild(hint);
   }
 
+  // Structured hero background: color + optional image (writes CSS string to config).
+  if (type === 'background' || key === 'hero.background') {
+    const curRaw = getPath(draft.config, key);
+    const parsed = parseHeroBackground(curRaw);
+
+    const row = document.createElement('div');
+    row.className = 'field-background-row';
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;';
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.id = safeId;
+    colorInput.className = 'field-input field-input--color';
+    colorInput.value = /^#[0-9a-fA-F]{6}$/.test(parsed.color) ? parsed.color : '#1a1a1a';
+    colorInput.setAttribute('aria-label', 'Background color');
+
+    const imgInput = document.createElement('input');
+    imgInput.type = 'text';
+    imgInput.className = 'field-input';
+    imgInput.id = safeId + '_img';
+    imgInput.placeholder = "Photo path, e.g. images/hero.jpg";
+    imgInput.value = parsed.image || '';
+    imgInput.style.flex = '1 1 160px';
+    imgInput.setAttribute('aria-label', 'Background image path');
+
+    const pickBtn = document.createElement('button');
+    pickBtn.type = 'button';
+    pickBtn.className = 'btn-ghost';
+    pickBtn.textContent = 'Choose photo';
+    pickBtn.addEventListener('click', () => {
+      openImagePickerForPath(key, (dataUrlOrPath) => {
+        // Prefer keeping a relative path when the picker returns one; otherwise store data URL.
+        const nextImg = dataUrlOrPath || '';
+        imgInput.value = nextImg.startsWith('data:') ? nextImg.slice(0, 48) + '…' : nextImg;
+        const composed = composeHeroBackground({
+          color: colorInput.value,
+          image: nextImg,
+        });
+        setPath(draft.config, key, composed);
+        saveDraft();
+        updateChecklist();
+        scheduleRerender(true);
+      });
+    });
+
+    function commitBg() {
+      // If image field shows truncated data URL, keep prior image from config.
+      let image = imgInput.value;
+      if (image && image.includes('…')) {
+        const prev = parseHeroBackground(getPath(draft.config, key));
+        image = prev.image || '';
+      }
+      const value = composeHeroBackground({ color: colorInput.value, image: image });
+      setPath(draft.config, key, value);
+      saveDraft();
+      updateChecklist();
+      scheduleRerender(true);
+    }
+
+    colorInput.addEventListener('input', commitBg);
+    imgInput.addEventListener('change', commitBg);
+
+    row.appendChild(colorInput);
+    row.appendChild(imgInput);
+    row.appendChild(pickBtn);
+    wrap.appendChild(row);
+    wrap.dataset.fieldKey = key;
+    return wrap;
+  }
+
   let input;
   if (type === 'textarea') {
     input = document.createElement('textarea');
@@ -1354,6 +1474,73 @@ function buildDrawerField(field) {
   wrap.appendChild(input);
   wrap.dataset.fieldKey = key;
   return wrap;
+}
+
+/** Parse CSS background string → { color, image } for structured UI. */
+function parseHeroBackground(css) {
+  const s = String(css == null ? '' : css);
+  const urlMatch = s.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
+  let color = '#1a1a1a';
+  const hex = s.match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/);
+  if (hex) {
+    let h = hex[0];
+    if (h.length === 4) {
+      h = '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+    }
+    color = h.slice(0, 7);
+  } else {
+    const rgb = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (rgb) {
+      const toHex = (n) => ('0' + Math.max(0, Math.min(255, parseInt(n, 10))).toString(16)).slice(-2);
+      color = '#' + toHex(rgb[1]) + toHex(rgb[2]) + toHex(rgb[3]);
+    }
+  }
+  return { color: color, image: urlMatch ? urlMatch[1] : '' };
+}
+
+/** Compose hero.background CSS from structured color + optional image path/data URL. */
+function composeHeroBackground(opts) {
+  const color = (opts && opts.color) || '#1a1a1a';
+  const image = (opts && opts.image) || '';
+  if (image && color) {
+    return (
+      'linear-gradient(160deg, ' + color + 'cc 0%, ' + color + '66 55%, ' + color + '99 100%), ' +
+      "url('" + image + "') center/cover no-repeat"
+    );
+  }
+  if (image) return "url('" + image + "') center/cover no-repeat";
+  return color;
+}
+
+/**
+ * Open the shared image file input and deliver the chosen data URL (or path) to cb.
+ * Reuses #img-file-input when present.
+ */
+function openImagePickerForPath(configPath, cb) {
+  const input = $('img-file-input');
+  if (!input) {
+    if (typeof cb === 'function') cb('');
+    return;
+  }
+  const onChange = () => {
+    input.removeEventListener('change', onChange);
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) {
+      if (typeof cb === 'function') cb('');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof cb === 'function') cb(String(reader.result || ''));
+    };
+    reader.onerror = () => {
+      if (typeof cb === 'function') cb('');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.addEventListener('change', onChange);
+  input.click();
 }
 
 // Sync a drawer field value when it changes via inline editing
@@ -2316,7 +2503,7 @@ function wireAuthForm(onAuthSuccess) {
                 if (onAuthSuccess) {
                   setLoading(true, 'Publishing…');
                   try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
-                } else if (resumeLocalDraft()) {
+                } else if (await resumeLocalDraft()) {
                   window.location.hash = '#edit';
                 } else {
                   window.location.hash = '#dashboard';
@@ -2516,7 +2703,12 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
 
-    const tplData = getTemplateById(site.templateId);
+    let tplData = null;
+    try {
+      tplData = await ensureTemplateLoaded(site.templateId);
+    } catch (_) {
+      tplData = getTemplateById(site.templateId);
+    }
     const registry = getTemplateList();
     const meta = (registry || []).find((t) => t.id === site.templateId) || {
       id: site.templateId,
@@ -2541,10 +2733,15 @@ async function loadPaidSiteForEmptyEdit() {
 }
 
 /** Restore local draft into editor state (after magic-link / empty dashboard). */
-function resumeLocalDraft() {
+async function resumeLocalDraft() {
   const saved = loadDraft();
   if (!saved || !saved.templateId || !saved.config) return false;
-  const tplData = getTemplateById(saved.templateId);
+  let tplData = null;
+  try {
+    tplData = await ensureTemplateLoaded(saved.templateId);
+  } catch (_) {
+    tplData = getTemplateById(saved.templateId);
+  }
   const registryList = getTemplateList();
   const meta = (registryList || []).find(t => t.id === saved.templateId);
   if (!tplData || !meta) return false;
@@ -2670,52 +2867,89 @@ function populateHeroStage(registry) {
   slots.forEach((slot, i) => {
     const tpl = ordered[i];
     if (!tpl) return;
-    const tplData = getTemplateById(tpl.id);
-    if (!tplData || typeof window.HidookEngine === 'undefined') return;
-    try {
-      const presets = tplData.presets || [];
-      const config = presets.length > 0 ? presets[0].config : {};
-      const html = window.HidookEngine.renderPreview(tplData.files, config);
-      const iframe = document.createElement('iframe');
-      iframe.title = '';
-      iframe.setAttribute('sandbox', 'allow-scripts');
-      iframe.setAttribute('tabindex', '-1');
-      iframe.srcdoc = html;
+    // Prefer light thumbnail so hero stage paints without waiting on heavy payloads.
+    if (tpl.thumbnail) {
+      const img = document.createElement('img');
+      img.src = tpl.thumbnail;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
       slot.innerHTML = '';
-      slot.appendChild(iframe);
-    } catch (_) { /* keep empty paper card */ }
+      slot.appendChild(img);
+      return;
+    }
+    ensureTemplateLoaded(tpl.id).then((tplData) => {
+      if (!tplData || typeof window.HidookEngine === 'undefined') return;
+      try {
+        const presets = tplData.presets || [];
+        const config = presets.length > 0 ? presets[0].config : {};
+        const html = window.HidookEngine.renderPreview(tplData.files, config);
+        const iframe = document.createElement('iframe');
+        iframe.title = '';
+        iframe.setAttribute('sandbox', 'allow-scripts');
+        iframe.setAttribute('tabindex', '-1');
+        iframe.srcdoc = html;
+        slot.innerHTML = '';
+        slot.appendChild(iframe);
+      } catch (_) { /* keep empty paper card */ }
+    }).catch(() => {});
   });
   heroStagePopulated = true;
 }
 
 function loadCardPreview(templateId, wrap, shimmer) {
-  const tplData = getTemplateById(templateId);
-  if (!tplData || typeof window.HidookEngine === 'undefined') {
-    shimmer.classList.add('loaded');
+  const registry = getTemplateList();
+  const meta = (registry || []).find((t) => t.id === templateId);
+  // Fast path: static thumbnail from light registry (no heavy JS, no base64).
+  if (meta && meta.thumbnail) {
+    const img = document.createElement('img');
+    img.className = 'template-card-preview-frame template-card-preview-thumb';
+    img.alt = (meta.name || 'Design') + ' preview';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.src = meta.thumbnail;
+    img.addEventListener('load', () => shimmer.classList.add('loaded'));
+    img.addEventListener('error', () => shimmer.classList.add('loaded'));
+    wrap.appendChild(img);
     return;
   }
-  try {
-    const presets = tplData.presets || [];
-    const config = presets.length > 0 ? presets[0].config : {};
-    const html = window.HidookEngine.renderPreview(tplData.files, config);
 
-    const iframe = document.createElement('iframe');
-    iframe.className = 'template-card-preview-frame';
-    iframe.title = 'Design preview';
-    iframe.setAttribute('sandbox', 'allow-scripts');
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
-    iframe.srcdoc = html;
-    wrap.appendChild(iframe);
-  } catch (_) {
-    shimmer.classList.add('loaded');
-  }
+  ensureTemplateLoaded(templateId).then((tplData) => {
+    if (!tplData || typeof window.HidookEngine === 'undefined') {
+      shimmer.classList.add('loaded');
+      return;
+    }
+    try {
+      const presets = tplData.presets || [];
+      const config = presets.length > 0 ? presets[0].config : {};
+      const html = window.HidookEngine.renderPreview(tplData.files, config);
+
+      const iframe = document.createElement('iframe');
+      iframe.className = 'template-card-preview-frame';
+      iframe.title = 'Design preview';
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
+      iframe.srcdoc = html;
+      wrap.appendChild(iframe);
+    } catch (_) {
+      shimmer.classList.add('loaded');
+    }
+  }).catch(() => shimmer.classList.add('loaded'));
 }
 
-function startWithTemplate(templateId) {
-  const tplData = getTemplateById(templateId);
+async function startWithTemplate(templateId) {
   const registry = getTemplateList();
   const meta = registry.find(t => t.id === templateId);
+
+  let tplData;
+  try {
+    tplData = await ensureTemplateLoaded(templateId);
+  } catch (e) {
+    showToast('Could not load the design. Try again.', 'error');
+    return;
+  }
 
   if (!tplData || !meta) {
     showToast('Could not load the design. Try again.', 'error');
@@ -2751,8 +2985,7 @@ function startWithTemplate(templateId) {
   window.location.hash = '#edit';
 }
 
-function openPreviewModal(templateId) {
-  const tplData = getTemplateById(templateId);
+async function openPreviewModal(templateId) {
   const registry = getTemplateList();
   const meta = (registry || []).find(t => t.id === templateId) || {};
 
@@ -2760,6 +2993,13 @@ function openPreviewModal(templateId) {
   if (title) title.textContent = 'Preview: ' + (meta.name || templateId);
 
   const iframe = $('preview-modal-iframe');
+
+  let tplData = null;
+  try {
+    tplData = await ensureTemplateLoaded(templateId);
+  } catch (_) {
+    tplData = null;
+  }
 
   if (!tplData || typeof window.HidookEngine === 'undefined') {
     if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Preview unavailable</body>';
@@ -2801,7 +3041,7 @@ async function loadDashboard() {
     if (sites.length === 0) {
       // Magic-link / verify landed on empty dashboard — resume in-progress local draft
       const saved = loadDraft();
-      if (saved && saved.templateId && saved.config && resumeLocalDraft()) {
+      if (saved && saved.templateId && saved.config && (await resumeLocalDraft())) {
         window.location.hash = '#edit';
         return;
       }
@@ -2827,18 +3067,31 @@ function buildSiteCard(site) {
 
   const thumbWrap = document.createElement('div');
   thumbWrap.className = 'site-card-preview-thumb';
-  const tplData = site.templateId ? getTemplateById(site.templateId) : null;
-  if (tplData && typeof window.HidookEngine !== 'undefined') {
-    try {
-      const config = site.config || (tplData.presets && tplData.presets[0] && tplData.presets[0].config) || {};
-      const html = window.HidookEngine.renderPreview(tplData.files, config);
-      const iframe = document.createElement('iframe');
-      iframe.setAttribute('sandbox','allow-scripts');
-      iframe.setAttribute('aria-hidden','true');
-      iframe.title = 'Preview of ' + (site.projectName || site.slug || 'site');
-      iframe.srcdoc = html;
-      thumbWrap.appendChild(iframe);
-    } catch (_) {}
+  const regMeta = site.templateId
+    ? (getTemplateList() || []).find((t) => t.id === site.templateId)
+    : null;
+  if (regMeta && regMeta.thumbnail) {
+    const img = document.createElement('img');
+    img.src = regMeta.thumbnail;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
+    thumbWrap.appendChild(img);
+  } else if (site.templateId) {
+    ensureTemplateLoaded(site.templateId).then((tplData) => {
+      if (!tplData || typeof window.HidookEngine === 'undefined') return;
+      try {
+        const config = site.config || (tplData.presets && tplData.presets[0] && tplData.presets[0].config) || {};
+        const html = window.HidookEngine.renderPreview(tplData.files, config);
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('sandbox','allow-scripts');
+        iframe.setAttribute('aria-hidden','true');
+        iframe.title = 'Preview of ' + (site.projectName || site.slug || 'site');
+        iframe.srcdoc = html;
+        thumbWrap.appendChild(iframe);
+      } catch (_) {}
+    }).catch(() => {});
   }
 
   const hostingExpired = isHostingExpired(site);
@@ -2965,7 +3218,12 @@ async function loadSiteForEdit(siteId) {
     draft.config = deepClone(config);
     saveDraft();
 
-    const tplData = getTemplateById(site.templateId);
+    let tplData = null;
+    try {
+      tplData = await ensureTemplateLoaded(site.templateId);
+    } catch (_) {
+      tplData = getTemplateById(site.templateId);
+    }
     const registry = getTemplateList();
     const meta = registry.find(t => t.id === site.templateId) || { id: site.templateId, name: site.templateId, description: '' };
     currentTemplate = { meta, data: tplData };
@@ -3096,7 +3354,7 @@ async function handleRoute(hash) {
     }
   } else if (route === 'edit') {
     if (!draft.templateId) {
-      if (resumeLocalDraft()) {
+      if (await resumeLocalDraft()) {
         /* restored from localStorage */
       } else if (await loadPaidSiteForEmptyEdit()) {
         /* dashboard pay / empty draft: bind matching paid site (S92) */

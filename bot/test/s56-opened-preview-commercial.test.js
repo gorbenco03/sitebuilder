@@ -69,7 +69,28 @@ function loadBaked() {
   vm.runInContext(engineSrc, sandbox);
   vm.runInContext(tplSrc, sandbox);
   assert.ok(sandbox.window.HidookEngine && typeof sandbox.window.HidookEngine.renderPreview === 'function');
-  assert.ok(sandbox.window.HIDOOK_TEMPLATES && sandbox.window.HIDOOK_TEMPLATES.templates);
+  assert.ok(sandbox.window.HIDOOK_TEMPLATES);
+  const heavyDir = path.join(ROOT, 'builder/generated/templates');
+  const ids = fs.readdirSync(heavyDir)
+    .filter((n) => n.endsWith('.js'))
+    .map((n) => n.replace(/\.js$/, ''));
+  sandbox.window.HIDOOK_TEMPLATE_HEAVY = sandbox.window.HIDOOK_TEMPLATE_HEAVY || {};
+  sandbox.window.HIDOOK_TEMPLATES.templates = sandbox.window.HIDOOK_TEMPLATES.templates || {};
+  for (const id of ids) {
+    const heavySrc = fs.readFileSync(path.join(heavyDir, id + '.js'), 'utf8');
+    vm.runInContext(heavySrc, sandbox);
+    const heavy = sandbox.window.HIDOOK_TEMPLATE_HEAVY[id];
+    assert.ok(heavy && heavy.files, 'heavy payload missing for ' + id);
+    sandbox.window.HIDOOK_TEMPLATES.templates[id] = {
+      schema: heavy.schema,
+      presets: heavy.presets,
+      files: heavy.files,
+    };
+  }
+  assert.ok(
+    Object.keys(sandbox.window.HIDOOK_TEMPLATES.templates).length > 0,
+    'expected heavy templates after load'
+  );
   return {
     renderPreview: sandbox.window.HidookEngine.renderPreview,
     templates: sandbox.window.HIDOOK_TEMPLATES.templates,

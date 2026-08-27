@@ -173,8 +173,9 @@
       "fields": [
         {
           "key": "hero.background",
-          "type": "text",
-          "label": "Hero background: image path (e.g. url('images/hero.jpg')) or CSS gradient",
+          "type": "background",
+          "label": "Hero background",
+          "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": true
         },
         {

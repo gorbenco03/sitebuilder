@@ -3,16 +3,16 @@
 /**
  * scripts/build-builder.js — zero-dep bundler for the browser-side builder.
  *
- * Generates two files in builder/generated/:
+ * Generates in builder/generated/:
  *
- *   engine.js        — window.HidookEngine = { renderHtml, escapeHtml, renderPreview }
- *                      The pure render pipeline from build.js wrapped in an IIFE with
- *                      lightweight shims so it runs in the browser without Node.js.
- *
- *   templates-data.js — window.HIDOOK_TEMPLATES = { registry, templates: { <id>: {
- *                        schema, presets, files: { templateHtml, stylesCss, scriptJs,
- *                        collageJs? } } } }
- *                      All template source files read from templates/ at build time.
+ *   engine.js           — window.HidookEngine = { renderHtml, escapeHtml, renderPreview }
+ *   templates-data.js   — LIGHT registry only (id/name/description/thumbnail). No heavy
+ *                         schema/presets/files and NO base64 images — boots the catalog
+ *                         grid immediately on throttled networks.
+ *   templates/<id>.js   — heavy payload per template (schema, presets, files). Fetched
+ *                         on demand at Start / Preview / editor restore.
+ *   template-assets/<id>/images/* — real cacheable static image files (not base64-in-JS).
+ *   thumbs/<id>.*       — catalog card thumbnails.
  *
  * Run:  node scripts/build-builder.js
  *       npm run build:app
@@ -205,12 +205,53 @@ window.HidookEngine = { renderHtml: renderHtml, escapeHtml: escapeHtml, renderPr
 fs.writeFileSync(path.join(GEN_DIR, 'engine.js'), engineIife, 'utf8');
 console.log('  engine.js written (' + engineIife.length + ' bytes)');
 
-// ─── 2.  templates-data.js ───────────────────────────────────────────────────
+// ─── 2.  Light registry + per-template heavy payloads + static assets ────────
 
-const registryRaw  = fs.readFileSync(path.join(TEMPLATES, 'registry.json'), 'utf8');
-const registry     = JSON.parse(registryRaw);
+const registryRaw = fs.readFileSync(path.join(TEMPLATES, 'registry.json'), 'utf8');
+const registry    = JSON.parse(registryRaw);
 
-const templatesData = {};
+const HEAVY_DIR   = path.join(GEN_DIR, 'templates');
+const ASSETS_DIR  = path.join(GEN_DIR, 'template-assets');
+const THUMBS_DIR  = path.join(GEN_DIR, 'thumbs');
+fs.mkdirSync(HEAVY_DIR, { recursive: true });
+fs.mkdirSync(ASSETS_DIR, { recursive: true });
+fs.mkdirSync(THUMBS_DIR, { recursive: true });
+
+const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
+
+function pickThumbnailSource(dir, id) {
+    const preferred = [
+        'images/cn-hero.jpg', 'images/pr-hero.jpg', 'images/ct-hero.jpg',
+        'images/iv-hero.jpg', 'images/sf-hero.jpg', 'images/hero.jpg',
+    ];
+    for (const rel of preferred) {
+        const abs = path.join(dir, rel);
+        if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return abs;
+    }
+    const imgDir = path.join(dir, 'images');
+    if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
+        const names = fs.readdirSync(imgDir).filter((n) => IMAGE_EXTS.has(path.extname(n).toLowerCase()));
+        names.sort();
+        if (names.length) return path.join(imgDir, names[0]);
+    }
+    return null;
+}
+
+function writeFallbackThumb(id) {
+    // Simple SVG placeholder when a template has no local photos (e.g. professionals).
+    const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">' +
+        '<rect width="640" height="400" fill="#F3EFE8"/>' +
+        '<rect x="48" y="48" width="544" height="304" fill="none" stroke="#9A4030" stroke-width="3"/>' +
+        '<text x="320" y="210" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#14120F">' +
+        String(id).replace(/[<>&]/g, '') +
+        '</text></svg>';
+    const dest = path.join(THUMBS_DIR, id + '.svg');
+    fs.writeFileSync(dest, svg, 'utf8');
+    return '/app/generated/thumbs/' + id + '.svg';
+}
+
+const lightEntries = [];
 
 for (const entry of registry.templates) {
     const id  = entry.id;
@@ -230,35 +271,64 @@ for (const entry of registry.templates) {
         files.collageJs = fs.readFileSync(collageFile, 'utf8');
     }
 
-    // Bake templates/<id>/images/* as data URLs for srcdoc preview (presets stay relative on disk).
+    // Copy images to cacheable static files; map relative paths → /app/generated/… URLs
+    // (srcdoc previews resolve absolute same-origin URLs; no base64 bloat in JS).
     const imgDir = path.join(dir, 'images');
+    const assetOut = path.join(ASSETS_DIR, id, 'images');
     if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
+        fs.mkdirSync(assetOut, { recursive: true });
         const imageMap = {};
         for (const name of fs.readdirSync(imgDir)) {
             const abs = path.join(imgDir, name);
             if (!fs.statSync(abs).isFile()) continue;
             const ext = path.extname(name).toLowerCase();
-            let mime = 'application/octet-stream';
-            if (ext === '.jpg' || ext === '.jpeg') mime = 'image/jpeg';
-            else if (ext === '.png') mime = 'image/png';
-            else if (ext === '.webp') mime = 'image/webp';
-            else if (ext === '.gif') mime = 'image/gif';
-            else if (ext === '.svg') mime = 'image/svg+xml';
-            else continue;
-            imageMap['images/' + name] = 'data:' + mime + ';base64,' + fs.readFileSync(abs).toString('base64');
+            if (!IMAGE_EXTS.has(ext)) continue;
+            const dest = path.join(assetOut, name);
+            fs.copyFileSync(abs, dest);
+            imageMap['images/' + name] = '/app/generated/template-assets/' + id + '/images/' + name;
         }
         if (Object.keys(imageMap).length) files.imageMap = imageMap;
     }
 
-    templatesData[id] = { schema, presets, files };
+    const heavy = { id, schema, presets, files };
+    const heavyJs =
+        'window.HIDOOK_TEMPLATE_HEAVY = window.HIDOOK_TEMPLATE_HEAVY || {};\n' +
+        'window.HIDOOK_TEMPLATE_HEAVY[' + JSON.stringify(id) + '] = ' +
+        JSON.stringify(heavy) + ';\n';
+    fs.writeFileSync(path.join(HEAVY_DIR, id + '.js'), heavyJs, 'utf8');
+    console.log('  templates/' + id + '.js written (' + heavyJs.length + ' bytes)');
+
+    // Thumbnail for catalog cards (grid paints immediately without heavy payload).
+    let thumbnail;
+    const thumbSrc = pickThumbnailSource(dir, id);
+    if (thumbSrc) {
+        const ext = path.extname(thumbSrc).toLowerCase() || '.jpg';
+        const thumbName = id + ext;
+        fs.copyFileSync(thumbSrc, path.join(THUMBS_DIR, thumbName));
+        thumbnail = '/app/generated/thumbs/' + thumbName;
+    } else {
+        thumbnail = writeFallbackThumb(id);
+    }
+
+    lightEntries.push({
+        id: entry.id,
+        name: entry.name,
+        vertical: entry.vertical || entry.id,
+        description: entry.description || '',
+        version: entry.version || 1,
+        thumbnail: thumbnail,
+    });
 }
 
-const tplDataJs = 'window.HIDOOK_TEMPLATES = ' + JSON.stringify({
-    registry,
-    templates: templatesData,
-}, null, 2) + ';\n';
+const lightRegistry = {
+    registry: { templates: lightEntries },
+    // templates stays empty in the boot bundle — filled on demand via ensureTemplateLoaded.
+    templates: {},
+    heavyPathPrefix: '/app/generated/templates/',
+};
 
+const tplDataJs = 'window.HIDOOK_TEMPLATES = ' + JSON.stringify(lightRegistry, null, 2) + ';\n';
 fs.writeFileSync(path.join(GEN_DIR, 'templates-data.js'), tplDataJs, 'utf8');
-console.log('  templates-data.js written (' + tplDataJs.length + ' bytes)');
+console.log('  templates-data.js written (' + tplDataJs.length + ' bytes) [light registry]');
 
 console.log('build:app done — builder/generated/ ready.');

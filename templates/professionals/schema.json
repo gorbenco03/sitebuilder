@@ -252,10 +252,11 @@
         },
         {
           "key": "hero.background",
-          "type": "text",
-          "label": "Hero background CSS (gradient or url('images/...')) — optional",
+          "type": "background",
+          "label": "Hero background",
+          "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": false,
-          "maxLen": 400
+          "maxLen": 2000
         }
       ]
     },
