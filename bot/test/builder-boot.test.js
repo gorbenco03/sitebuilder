@@ -181,8 +181,8 @@ function pathExcludedByDockerignore(relPath, patterns) {
         );
     });
 
-    // ── (b) bundler produces the two gitignored assets ──────────────────────
-    await check('(b) node scripts/build-builder.js writes engine.js + templates-data.js', () => {
+    // ── (b) bundler produces light registry + heavy per-template + engine ───
+    await check('(b) node scripts/build-builder.js writes engine.js + light templates-data.js + heavies', () => {
         execFileSync(process.execPath, [path.join(ROOT, 'scripts', 'build-builder.js')], {
             cwd: ROOT,
             stdio: 'pipe',
@@ -194,7 +194,29 @@ function pathExcludedByDockerignore(relPath, patterns) {
         assert.ok(eng.includes('HidookEngine'), 'engine.js must define HidookEngine');
         assert.ok(tpl.includes('HIDOOK_TEMPLATES'), 'templates-data.js must define HIDOOK_TEMPLATES');
         assert.ok(eng.length > 500, 'engine.js suspiciously small');
-        assert.ok(tpl.length > 500, 'templates-data.js suspiciously small');
+        assert.ok(tpl.length > 200, 'templates-data.js suspiciously small');
+        // ITEM 9: light boot bundle must not embed multi-MB base64 image maps.
+        assert.ok(
+            tpl.length < 512 * 1024,
+            'templates-data.js must stay light (<512KB); got ' + tpl.length + ' bytes'
+        );
+        assert.ok(!/data:image\/[^;]+;base64,/.test(tpl), 'light registry must not embed base64 images');
+        const heavyDir = path.join(GEN_DIR, 'templates');
+        assert.ok(fs.existsSync(heavyDir), 'builder/generated/templates/ missing after build');
+        const heavies = fs.readdirSync(heavyDir).filter((n) => n.endsWith('.js'));
+        assert.ok(heavies.length >= 4, 'expected per-template heavy .js files, got ' + heavies.length);
+        // No base64 in heavies either — images are static files under template-assets/.
+        for (const name of heavies) {
+            const body = fs.readFileSync(path.join(heavyDir, name), 'utf8');
+            assert.ok(
+                !/data:image\/[^;]+;base64,/.test(body),
+                name + ' must not embed base64 images'
+            );
+            assert.ok(body.includes('HIDOOK_TEMPLATE_HEAVY'), name + ' must define HIDOOK_TEMPLATE_HEAVY');
+        }
+        const thumbsDir = path.join(GEN_DIR, 'thumbs');
+        assert.ok(fs.existsSync(thumbsDir), 'builder/generated/thumbs/ missing');
+        assert.ok(fs.readdirSync(thumbsDir).length >= 1, 'expected catalog thumbnails');
     });
 
     // ── (c) HTTP static: /app/ + generated JS (production server path) ──────
@@ -251,6 +273,25 @@ function pathExcludedByDockerignore(relPath, patterns) {
             const body = await res.text();
             assert.ok(!body.trimStart().startsWith('<!'), 'templates-data.js must not be HTML fallback');
             assert.ok(body.includes('HIDOOK_TEMPLATES'), 'templates-data.js body missing HIDOOK_TEMPLATES');
+            // Cache headers + ETag for 304 revalidation (ITEM 9c)
+            const etag = res.headers.get('etag');
+            assert.ok(etag, 'templates-data.js must send ETag');
+            assert.ok(res.headers.get('cache-control'), 'templates-data.js must send Cache-Control');
+            assert.ok(res.headers.get('last-modified'), 'templates-data.js must send Last-Modified');
+            const res2 = await fetch(`${base}/app/generated/templates-data.js`, {
+                headers: { 'If-None-Match': etag },
+            });
+            assert.strictEqual(res2.status, 304, 'repeat GET with If-None-Match must 304');
+        });
+
+        await check('(c) GET heavy template + static asset are JS/image not SPA HTML', async () => {
+            const heavy = await fetch(`${base}/app/generated/templates/product-menu.js`);
+            assert.strictEqual(heavy.status, 200, 'product-menu.js status');
+            const hct = heavy.headers.get('content-type') || '';
+            assert.ok(hct.includes('javascript') || hct.includes('ecmascript'), 'heavy must be JS, got ' + hct);
+            const hbody = await heavy.text();
+            assert.ok(hbody.includes('HIDOOK_TEMPLATE_HEAVY'), 'heavy body missing payload');
+            assert.ok(!hbody.trimStart().startsWith('<!'), 'heavy must not be HTML fallback');
         });
     } finally {
         await new Promise((r) => srv.close(r));

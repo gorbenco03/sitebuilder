@@ -66,6 +66,8 @@ const MIME_TYPES = {
     '.png':  'image/png',
     '.jpg':  'image/jpeg',
     '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp',
+    '.gif':  'image/gif',
     '.svg':  'image/svg+xml',
     '.ico':  'image/x-icon',
     '.woff': 'font/woff',
@@ -73,6 +75,91 @@ const MIME_TYPES = {
     '.ttf':  'font/ttf',
     '.txt':  'text/plain; charset=utf-8',
 };
+
+// In-memory static file cache: path → { buf, mtimeMs, size, etag, lastModified }
+const staticFileCache = new Map();
+
+function getCachedStatic(filePath, stat) {
+    const prev = staticFileCache.get(filePath);
+    if (prev && prev.mtimeMs === stat.mtimeMs && prev.size === stat.size) {
+        return prev;
+    }
+    const buf = fs.readFileSync(filePath);
+    // Strong ETag from size + mtime (stable across process restarts for unchanged files).
+    const etag = '"' + stat.size.toString(16) + '-' + Math.floor(stat.mtimeMs).toString(16) + '"';
+    const entry = {
+        buf,
+        mtimeMs: stat.mtimeMs,
+        size: stat.size,
+        etag,
+        lastModified: stat.mtime.toUTCString(),
+    };
+    staticFileCache.set(filePath, entry);
+    return entry;
+}
+
+function cacheControlForPath(targetPath) {
+    const ext = path.extname(targetPath).toLowerCase();
+    // Generated assets + images: cacheable, revalidate so 304 works on reload.
+    if (
+        targetPath.includes(path.sep + 'generated' + path.sep) ||
+        ['.js', '.css', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.woff', '.woff2'].includes(ext)
+    ) {
+        return 'public, max-age=0, must-revalidate';
+    }
+    // HTML: always revalidate.
+    return 'no-cache';
+}
+
+function sendCachedFile(req, res, targetPath, stat) {
+    const ext = path.extname(targetPath).toLowerCase();
+    const mime = MIME_TYPES[ext] || 'application/octet-stream';
+    const cached = getCachedStatic(targetPath, stat);
+    const headers = {
+        'Content-Type': mime,
+        'Content-Length': cached.buf.length,
+        'ETag': cached.etag,
+        'Last-Modified': cached.lastModified,
+        'Cache-Control': cacheControlForPath(targetPath),
+    };
+
+    const inm = req.headers['if-none-match'];
+    if (inm) {
+        // Allow weak/strong and comma-separated lists.
+        const tags = String(inm).split(',').map((s) => s.trim());
+        if (tags.includes(cached.etag) || tags.includes('W/' + cached.etag)) {
+            res.writeHead(304, {
+                'ETag': cached.etag,
+                'Last-Modified': cached.lastModified,
+                'Cache-Control': headers['Cache-Control'],
+            });
+            res.end();
+            return;
+        }
+    }
+    const ims = req.headers['if-modified-since'];
+    if (ims && !inm) {
+        const since = Date.parse(ims);
+        if (!Number.isNaN(since) && stat.mtimeMs <= since + 999) {
+            res.writeHead(304, {
+                'ETag': cached.etag,
+                'Last-Modified': cached.lastModified,
+                'Cache-Control': headers['Cache-Control'],
+            });
+            res.end();
+            return;
+        }
+    }
+
+    if (req.method === 'HEAD') {
+        res.writeHead(200, headers);
+        res.end();
+        return;
+    }
+    res.writeHead(200, headers);
+    res.end(cached.buf);
+}
+
 
 // ---------------------------------------------------------------------------
 // Body reading
@@ -282,32 +369,15 @@ function serveStatic(req, res, urlPath) {
     if (!stat || !stat.isFile()) {
         const indexPath = path.join(BUILDER_DIR, 'index.html');
         try {
-            const content = fs.readFileSync(indexPath);
-            const headers = { 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': content.length };
-            if (req.method === 'HEAD') {
-                res.writeHead(200, headers);
-                res.end();
-                return;
-            }
-            res.writeHead(200, headers);
-            res.end(content);
+            const indexStat = fs.statSync(indexPath);
+            sendCachedFile(req, res, indexPath, indexStat);
         } catch {
             sendJson(res, 404, { error: 'File not found.' });
         }
         return;
     }
 
-    const ext  = path.extname(targetPath).toLowerCase();
-    const mime = MIME_TYPES[ext] || 'application/octet-stream';
-    const content = fs.readFileSync(targetPath);
-    const headers = { 'Content-Type': mime, 'Content-Length': content.length };
-    if (req.method === 'HEAD') {
-        res.writeHead(200, headers);
-        res.end();
-        return;
-    }
-    res.writeHead(200, headers);
-    res.end(content);
+    sendCachedFile(req, res, targetPath, stat);
 }
 
 // ---------------------------------------------------------------------------

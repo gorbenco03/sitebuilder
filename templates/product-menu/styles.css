@@ -14,10 +14,11 @@
     --ink:        #1a1410;
     --ink-soft:   rgba(26, 20, 16, 0.78);
     --ink-mute:   rgba(26, 20, 16, 0.5);
-    --paper:      #f3eee8;
+    --paper:      var(--color-cream, #f3eee8);
     --void:       #0a0a0a;
     --snow:       #faf8f5;
-    --cta:        var(--color-primary);
+    --cta:        var(--color-primary, #c4a574);
+    --accent:     var(--color-primary, #c4a574);
     --link:       #6b4f2a;
     --glass:      rgba(10, 10, 10, 0.82);
 

@@ -14,10 +14,11 @@
     --ink: #0f1720;
     --soft: rgba(15, 23, 32, 0.78);
     --mute: rgba(15, 23, 32, 0.5);
-    --paper: #eef1f4;
+    --paper: var(--color-cream, #eef1f4);
     --snow: #ffffff;
     --navy: #0b3d91;
-    --cta: var(--color-primary);
+    --cta: var(--color-primary, #ff4d00);
+    --accent: var(--color-primary, #ff4d00);
     --link: #0b3d91;
     --void: #0f1720;
     --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;

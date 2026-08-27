@@ -11,9 +11,9 @@
     --color-cream:         #F3EFE8;
 
     --ink: #14120F;
-    --paper: #F3EFE8;
+    --paper: var(--color-cream, #F3EFE8);
     --brass: #C4A574;
-    --accent: #9A4030;
+    --accent: var(--color-primary, #9A4030);
     --soft: rgba(20, 18, 15, 0.72);
     --mute: rgba(20, 18, 15, 0.48);
     --line: rgba(20, 18, 15, 0.12);
