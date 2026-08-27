@@ -78,14 +78,16 @@ check('builder/index.html must not introduce DESSERD / desserdina', () => {
     );
 });
 
-check('builder/index.html must not introduce trial / keep-site copy', () => {
-    assert.ok(
-        !/\btrial\b/i.test(src),
-        'builder chrome must not introduce trial copy'
-    );
+check('builder/index.html states card 7-day trial (not pay-once / keep-site)', () => {
+    assert.ok(/7[\s-]*day\s+trial/i.test(src), 'builder chrome must state 7-day trial');
+    assert.ok(!/pay\s+once/i.test(src), 'builder chrome must not say pay once');
     assert.ok(
         !/keep-site|keep site/i.test(src),
         'builder chrome must not introduce keep-site copy'
+    );
+    assert.ok(
+        !/\bid\s*=\s*["']trial-countdown["']/.test(src),
+        'builder must not reintroduce unpaid trial-countdown chrome'
     );
 });
 
