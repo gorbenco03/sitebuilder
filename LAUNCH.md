@@ -1,8 +1,8 @@
 # Hidook Site Builder — team launch notes
 
-Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, **pay before first public publish**, then go live on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
+Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, start a **Stripe subscription with a 7-day trial** (**card required**; **payment before first public publish** = card-on-file trial, not a one-shot prepay), then go **live immediately after a valid card** on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
 
-**Price:** **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** same currency / year. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
+**Price:** after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
 
 ---
 
@@ -10,26 +10,27 @@ Commercial product: **Hidook Site Builder** — the **browser builder**. Custome
 
 | Offer | Price | Includes |
 |---|---|---|
-| **Brochure / lead-gen site** | **100** EUR or GBP or USD (bucket) | Builder + first public publish + 12 months managed hosting on agency subdomain + self-service edits + basic SEO/contact + version history |
-| **Renewal** | **29** / year (same currency) | Continued hosting + edit/republish |
-| **Custom domain** | At cost (+ optional concierge) | After payment; not required for the launch happy path |
+| **Brochure / lead-gen site** | **99** EUR or GBP or USD (bucket) after 7-day card trial | Builder + live site during trial + first-year managed hosting on agency subdomain after charge + self-service edits + basic SEO/contact + version history |
+| **Renewal** | **29** / year (same currency, subscription schedule) | Continued hosting + edit/republish |
+| **Custom domain** | At cost (+ optional concierge) | After card/trial; not required for the launch happy path |
 | **Bespoke work** | Quote separately | Manual design/features outside the product SKU |
 
-Do **not** promise permanent hosting from one payment. No public unpaid trial.
+Do **not** promise permanent hosting from one payment. No public unpaid trial (card required; free `TRIAL_DAYS` live window is not the model).
 
 ## 2. Surfaces (one product)
 
 | Surface | Role |
 |---|---|
-| Browser builder | Account, editor, pay, publish, edit, renew — commercial happy path |
+| Browser builder | Account, editor, card/trial, publish, edit, renew — commercial happy path |
 | Telegram | Acquisition / guided intake → same draft + magic-link or open-in-builder URL |
-| Static renderer | `build.js` pipeline behind paid publish |
+| Static renderer | `build.js` pipeline behind trial/paid publish |
 
 Happy path a stranger can complete (team verifies end-to-end; client does not QA slices):
 
 1. Open builder → design → copy/images → preview
-2. Sign in → **pay 99** → live HTTPS on agency subdomain
-3. Return later → edit → republish; renew at 29 / year
+2. Sign in → **card on file (7-day trial)** → **live HTTPS immediately after valid card**
+3. Return later → edit → republish; after day 7 auto-charge **99**; renew at **29** / year via schedule
+4. Cancel during trial → site unpublished, no charge
 
 ## 3. In-scope for the team (local / staging)
 
@@ -45,6 +46,7 @@ See `bot/DEPLOY.md` for env tables. Commercial amounts always come from `bot/pri
 These stay with the owner. Do **not** treat the following as a team checklist to execute live from this document:
 
 - Production Stripe (or other live payment) keys and live mode
+- Live Stripe Product/Prices, Customer Portal, and refund policy
 - Production Cloudflare / DNS for `hidook.agency` / `builder.hidook.agency` / `*.sites.hidook.agency`
 - Production email sender and legal entity / VAT copy
 - Live Railway (or other host) production cutover with real charges
@@ -53,17 +55,18 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 
 ## 5. Go-to-market (positioning only)
 
-- Lead with the **browser builder** and a paid live example on the agency domain — not a Telegram-only “site in minutes” pitch.
+- Lead with the **browser builder** and a live example on the agency domain — not a Telegram-only “site in minutes” pitch.
 - Small local businesses without a site remain the ICP (cafés, salons, trades, events, portfolios).
-- Message shape: professional brochure site, edit yourself after pay, 100 once then 29 / year hosting — open the builder link (Telegram optional as intake).
-- Collect testimonials after real paid publishes; referral and short demo video of the **builder** pay → publish path.
+- Message shape: professional brochure site, edit yourself after card/trial, **99** after 7 days then **29** / year hosting — open the builder link (Telegram optional as intake).
+- Collect testimonials after real publishes; referral and short demo video of the **builder** card → live path.
 
 ## 6. Operating model
 
-- Payments and first public publish live in the **builder** after pay-before-publish.
-- Telegram notifies / steers users into the same draft; it does not own deploy after pay.
+- Card/trial and first public publish live in the **builder** (payment before first public publish = subscription trial).
+- Telegram notifies / steers users into the same draft; it does not own deploy after checkout.
 - Admin/ops monitoring: see env and webhooks in `bot/README.md` / `bot/DEPLOY.md`.
-- Bespoke requests: handle manually outside the 100 SKU.
+- Bespoke requests: handle manually outside the product SKU (99 + 29/year subscription).
+- Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 ## 7. Product backlog (when you have traction)
 
@@ -73,4 +76,4 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 
 ---
 
-**TL;DR:** Sell **Hidook Site Builder** (browser builder). Telegram = same-draft intake. **Pay before public publish** at **100** EUR/GBP/USD; renewal **29** / year (`bot/pricing.js`, `PRODUCT.md`). Team works local/test Stripe and isolated deploy; **owner-only** for live keys, live DNS, and production cutover.
+**TL;DR:** Sell **Hidook Site Builder** (browser builder). Telegram = same-draft intake. **Stripe subscription**, **7-day card trial**, site **live immediately after valid card**; **auto-charge 99** EUR/GBP/USD after day 7; renewal **29** / year via subscription schedule (`bot/pricing.js`, `PRODUCT.md`). Cancel during trial unpublishes. Team works local/test Stripe and isolated deploy; **owner-only** for live keys, live DNS, Customer Portal, and production cutover.

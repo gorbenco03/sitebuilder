@@ -1,14 +1,14 @@
 # Hidook Site Builder — bot & server ops
 
-Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers **pay before first public publish** in the builder — there is no unpaid live trial and no second Telegram checkout/deploy happy path.
+Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers complete **payment before first public publish** in the builder as a **Stripe subscription with a 7-day trial** (**card required**) — site is **live immediately after a valid card**. There is no unpaid free live window and no second Telegram checkout/deploy happy path.
 
-Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** in the same currency / year. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price.
+Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** in the same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 ## Surfaces
 
 | Surface | Role |
 |---|---|
-| Browser builder (`GET /app/*`, API under `/api/*`) | Account, editor, pay, publish, edit, renew — commercial happy path |
+| Browser builder (`GET /app/*`, API under `/api/*`) | Account, editor, card/trial, publish, edit, renew — commercial happy path |
 | Telegram bot | Draft intake only: conversation / wizard → same registry draft + magic-link or open-in-builder URL |
 | HTTP server (`bot/server.js`) | Health, webhooks, builder static + API on `PORT` |
 
@@ -16,8 +16,8 @@ Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — **
 
 1. `/start` — Welcome; AI chat (when configured) or wizard gathers business copy and photos.
 2. When enough content exists, finish registers an **unpaid draft** in the shared site registry (status `draft`).
-3. Bot returns a link into the **same browser editor** so the customer can refine, sign in, **pay**, then publish.
-4. Telegram must **not** run Stripe checkout → domain buy → live deploy as the operator happy path. Pay-before-publish lives in the builder.
+3. Bot returns a link into the **same browser editor** so the customer can refine, sign in, start **card/trial**, then publish.
+4. Telegram must **not** run Stripe checkout → domain buy → live deploy as the operator happy path. Card/trial and first public publish live in the builder.
 
 ### Wizard fallback (`/wizard` or `AI_PROVIDER=none`)
 
@@ -36,8 +36,10 @@ Step-by-step: business name, slogan, about, products/services, optional socials/
 
 1. Open builder → pick design → replace copy/images → preview.
 2. Sign in (magic link when email is configured).
-3. **Pay** 100 in the resolved currency bucket (`pricing.js`).
-4. First **public** production publish only after paid status; then edit + republish; renew at 29 / year.
+3. Start **Stripe subscription checkout** — **7-day trial**, **card required** (`pricing.js` amounts).
+4. Site goes **live immediately after a valid card**; first **public** production publish is allowed on trial/card-on-file status.
+5. After day 7, Stripe **auto-charges 99** unless cancelled; edit + republish; renew at **29** / year via subscription schedule.
+6. Cancel during trial → live site **unpublished** (no charge).
 
 Local/staging may use test Stripe and `HIDOOK_FAKE_DEPLOY=1` (refused when `NODE_ENV=production`). Fake deploy is not the client journey.
 
@@ -88,18 +90,19 @@ Commercial amounts come from `bot/pricing.js`. Do not set `BUILD_FEE_EUR=49` to 
 | `OPENAI_API_KEY` | When `AI_PROVIDER=openai` |
 | `AI_MODEL` | Optional model override |
 
-### Payments (builder pay-before-publish)
+### Payments (builder subscription trial)
 
 | Variable | Description |
 |---|---|
 | `STRIPE_SECRET_KEY` | Stripe secret (`sk_live_...` / `sk_test_...`) |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret for `POST /webhooks/stripe` |
 | `PAYMENT_PROVIDER` | e.g. `stripe` |
+| `STRIPE_PRICE_ID_*` / `STRIPE_PRICE_ID_RENEWAL_*` | Optional Dashboard Price ids (first year 99 / renewal 29) |
 | `BOT_USERNAME` | Optional; legacy Telegram success/cancel URL helper |
 
-**Price:** use `bot/pricing.js` (99 EUR / 99 GBP / 99 USD; renewal 29 / year). Do not document or rely on `BUILD_FEE_EUR` default 49 as the product price.
+**Price:** use `bot/pricing.js` (99 EUR / 99 GBP / 99 USD after trial; renewal 29 / year via subscription schedule). Do not document or rely on `BUILD_FEE_EUR` default 49 as the product price.
 
-### Deploy providers (paid publish only)
+### Deploy providers (trial/paid publish)
 
 | Variable | Description |
 |---|---|
@@ -118,8 +121,9 @@ Commercial amounts come from `bot/pricing.js`. Do not set `BUILD_FEE_EUR=49` to 
 
 ## Technical notes
 
-- **Unpaid drafts** stay non-public. Payment before first production publish is enforced in the builder/API — not via a free live trial window.
-- **Stripe webhooks** on `POST /webhooks/stripe` are the source of truth for paid; pollers may exist as fallback.
+- **Drafts without a card** stay non-public. **Payment before first production publish** is enforced in the builder/API as card-on-file **subscription trial** — not via a free live `TRIAL_DAYS` window.
+- **Stripe webhooks** on `POST /webhooks/stripe` are the source of truth for trial start / paid; pollers may exist as fallback.
+- **Cancel during trial** unpublishes the live site in product; owner-owned Customer Portal/Dashboard handles refunds after charge.
 - **Sessions** may be in-memory or under `DATA_DIR`; use a persistent volume in production.
 - **Schema** — configs use `categories` (not a flat `gallery`). See repo root docs for template details.
 
@@ -132,9 +136,9 @@ bot/
   server.js          — HTTP: health, webhooks, builder API
   pricing.js         — Single commercial pricing source (99 / renewal 29)
   ai.js              — AI adapter (Hidook identity)
-  payments.js        — Checkout helpers
-  webpublish.js      — Builder pay + publish path
-  deploy-*.js        — Paid deploy adapters
+  payments.js        — Checkout helpers (subscription + schedule)
+  webpublish.js      — Builder trial/pay + publish path
+  deploy-*.js        — Deploy adapters
   email.js           — Magic-link mail (Hidook brand)
 ```
 

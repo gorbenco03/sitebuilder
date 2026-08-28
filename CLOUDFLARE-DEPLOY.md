@@ -1,6 +1,6 @@
 # Cloudflare and customer-site hosting (Hidook Site Builder)
 
-**Product:** **Hidook Site Builder**. The commercial product is the **browser builder** (account, editor, pay, publish, edit, renew). Customer live sites are conceptually `https://{slug}.sites.hidook.agency` after **pay before first public publish**.
+**Product:** **Hidook Site Builder**. The commercial product is the **browser builder** (account, editor, card/trial, publish, edit, renew). Customer live sites are conceptually `https://{slug}.sites.hidook.agency` after **payment before first public publish** — Stripe **subscription** with a **7-day card trial**; site **live immediately after a valid card**.
 
 This note is for the engineering team. It is **not** a checklist to cut over live DNS or create production Cloudflare resources for `hidook.agency` in this slice. Those remain **owner-only launch gates** (`PRODUCT.md`).
 
@@ -10,8 +10,8 @@ Do **not** treat legacy names (`desserdina`, DESSERD), the root bakery `config.j
 
 | Piece | Role |
 |---|---|
-| Browser builder + bot (`bot/`, Railway image) | Commercial surface; pay-before-publish; paid publish pipeline |
-| Customer site hosting | After payment, published sites may land on Cloudflare Pages (or another configured provider) under the agency subdomain model |
+| Browser builder + bot (`bot/`, Railway image) | Commercial surface; subscription trial (card required); publish pipeline after valid card |
+| Customer site hosting | After card/trial, published sites may land on Cloudflare Pages (or another configured provider) under the agency subdomain model |
 | Root sample static files | Example brochure data for the zero-dep renderer — **not** the Hidook product name |
 
 Telegram only creates or opens the **same** unpaid draft in the browser builder. It is not a second Cloudflare deploy console.
@@ -19,7 +19,7 @@ Telegram only creates or opens the **same** unpaid draft in the browser builder.
 ## In scope for the team (local / test / isolated)
 
 - Local bot + builder with **test** Stripe and **fake-or-isolated** deploy (`HIDOOK_FAKE_DEPLOY=1`, refused when `NODE_ENV=production`). Fake deploy is **not** the client journey.
-- Reading how paid publish chooses a deploy provider (`DEPLOY_PROVIDER=cloudflare` and related env — see `bot/DEPLOY.md`).
+- Reading how trial/paid publish chooses a deploy provider (`DEPLOY_PROVIDER=cloudflare` and related env — see `bot/DEPLOY.md`).
 - Static render of a sample or registry site for inspection:
 
   ```bash
@@ -36,9 +36,10 @@ Per `PRODUCT.md`, **do not implement** as team work in this slice:
 
 - Production Cloudflare account wiring and live Pages project creation for Hidook (owner-only)
 - Live DNS for `hidook.agency` / `sites.hidook.agency` (owner-only; not this slice)
-- Custom-domain cutover for paying customers (concierge after payment; not required for the launch happy path; owner-only)
+- Custom-domain cutover for paying customers (concierge after card/trial; not required for the launch happy path; owner-only)
+- Live Stripe Product/Prices, Customer Portal, and refunds (owner-only)
 
-When the owner enables production Cloudflare, ops env and Railway notes live in `bot/DEPLOY.md` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, optional `BRAND_DOMAIN`). That is configuration of the **bot’s paid-publish path**, not a manual “deploy the bakery sample” workflow.
+When the owner enables production Cloudflare, ops env and Railway notes live in `bot/DEPLOY.md` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, optional `BRAND_DOMAIN`). That is configuration of the **bot’s trial/paid-publish path**, not a manual “deploy the bakery sample” workflow.
 
 ## What the sample static tree is (and is not)
 
@@ -51,7 +52,7 @@ When the owner enables production Cloudflare, ops env and Railway notes live in 
 ## Related docs
 
 - `PRODUCT.md` — product contract and owner-only launch gates
-- `bot/DEPLOY.md` — Railway bot + builder 24/7, env vars including Cloudflare for **paid** client sites
+- `bot/DEPLOY.md` — Railway bot + builder 24/7, env vars including Cloudflare for trial/paid client sites
 - `bot/README.md` — operator overview of bot + builder
 - `LAUNCH.md` — team-oriented launch notes (local/test unless owner gates)
 - `README.md` — repo map and commercial path

@@ -2,12 +2,12 @@
 
 One process serves:
 
-- **Browser builder** (commercial product): static UI under `/app/*`, account/API, **pay before public publish**
+- **Browser builder** (commercial product): static UI under `/app/*`, account/API, **payment before public publish** via Stripe **subscription + 7-day card trial**
 - **Telegram bot**: long-polling intake that opens the **same** unpaid draft in the builder (not a second checkout/deploy state machine)
 
 Telegram long-polling needs no public URL for polling itself; the HTTP server still needs a public URL for webhooks, magic links, and the builder. Railway runs the `Dockerfile` at the repo root.
 
-**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** same currency / year. Payment **before** first public production publish. No unpaid live trial.
+**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket after the trial (auto-charged on day 7 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. **Card required**; site **live immediately after a valid card**. Cancel during trial **unpublishes**. No unpaid free live window. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 ## 1. Push the repo to GitHub
 
@@ -35,13 +35,15 @@ Railway deploys from a Git repo. Ensure the repo (with `Dockerfile`) is on GitHu
 
 - `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` (+ optional `AI_MODEL=...`) — Telegram guided intake
 - `RESEND_API_KEY` + optional `EMAIL_FROM` — magic-link email for builder sign-in
-- **Deploy (paid publish only):**
+- **Deploy (trial/paid publish):**
   - `DEPLOY_PROVIDER=cloudflare` + `CLOUDFLARE_API_TOKEN` (Pages:Edit) + `CLOUDFLARE_ACCOUNT_ID`
     — client sites to Cloudflare Pages. Image includes `wrangler`.
   - and/or `VERCEL_TOKEN` (+ optional `VERCEL_TEAM_ID`) — Vercel deploy + domains path
-- **Payments (Stripe):** `PAYMENT_PROVIDER=stripe` + `STRIPE_SECRET_KEY` +
+- **Payments (Stripe subscription trial):** `PAYMENT_PROVIDER=stripe` + `STRIPE_SECRET_KEY` +
   `STRIPE_WEBHOOK_SECRET` (Dashboard webhook → `https://<railway-public-domain>/webhooks/stripe`,
-  event `checkout.session.completed`). Webhook is source of truth for “paid”; poller/sweeper may remain as fallback.
+  event `checkout.session.completed`). Webhook is source of truth for trial start / card-on-file / paid;
+  poller/sweeper may remain as fallback. Optional `STRIPE_PRICE_ID_*` / `STRIPE_PRICE_ID_RENEWAL_*`
+  for Dashboard catalog Prices (first year 99 / renewal 29 schedule).
   Railway injects `PORT` — `bot/server.js` binds it and serves `GET /health`.
 - Optional alternate payments: `REVOLUT_SECRET_KEY` + `REVOLUT_ENV` (`sandbox` or `production`)
 - `ADMIN_CHAT_ID` — Telegram numeric id for ops DMs on notable events
@@ -53,13 +55,13 @@ Railway deploys from a Git repo. Ensure the repo (with `Dockerfile`) is on GitHu
 
 Commercial amounts are **not** `BUILD_FEE_EUR` default 49. Operators should leave fee overrides unset and rely on **`bot/pricing.js`**:
 
-| | First publish | Renewal |
+| | After 7-day card trial | Renewal (subscription schedule) |
 |---|---|---|
-| EU → EUR | **100** | **29** / year |
-| UK → GBP | **100** | **29** / year |
-| Rest → USD | **100** | **29** / year |
+| EU → EUR | **99** | **29** / year |
+| UK → GBP | **99** | **29** / year |
+| Rest → USD | **99** | **29** / year |
 
-Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “sites are published immediately for free” model. Unpaid sites stay drafts until pay-before-publish in the builder.
+Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “sites are published immediately for free” model. Drafts without a card stay non-public; **payment before first public publish** is the **7-day card-required subscription trial** (live immediately after a valid card). Cancel during trial unpublishes.
 
 ### Test-only (never production)
 
@@ -78,7 +80,7 @@ Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “s
 
 Static builder UI is served from `<repo>/builder/` at `GET /app/*` (image bake runs the builder build so `/app/` is not empty).
 
-Stripe webhook dispatches by `metadata.platform`: `web` → builder paid publish path; Telegram metadata must not reintroduce a separate Telegram live-deploy commerce path as the happy path. Ensure Dashboard sends `checkout.session.completed` to `https://<domain>/webhooks/stripe`.
+Stripe webhook dispatches by `metadata.platform`: `web` → builder subscription-trial publish path; Telegram metadata must not reintroduce a separate Telegram live-deploy commerce path as the happy path. Ensure Dashboard sends `checkout.session.completed` to `https://<domain>/webhooks/stripe`.
 
 ## 6. Deploy
 

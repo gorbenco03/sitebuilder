@@ -1,8 +1,8 @@
 # Hidook Site Builder
 
-Public name: **Hidook Site Builder**. Commercial product is the **browser builder** (account, editor, pay, publish, edit, renew). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor — not a second checkout or deploy state machine.
+Public name: **Hidook Site Builder**. Commercial product is the **browser builder** (account, editor, card/trial, publish, edit, renew). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor — not a second checkout or deploy state machine.
 
-**Pay before first public publish.** Price **99 EUR / 99 GBP / 99 USD** by country bucket; **renewal 29** in the same currency / year. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`.
+**Payment before first public publish** = Stripe **subscription** with a **7-day trial**, **card required**. Site is **live immediately after a valid card**. If the customer does not cancel, Stripe **auto-charges 99 EUR / 99 GBP / 99 USD** (country bucket) after day 7; **renewal 29** same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_USD` packaging as the product.
 
@@ -10,7 +10,7 @@ Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_
 
 | Surface | Role |
 |---|---|
-| Browser builder (`builder/`, served at `/app/`) | Commercial happy path: design, copy, pay, publish |
+| Browser builder (`builder/`, served at `/app/`) | Commercial happy path: design, copy, card/trial, publish |
 | Telegram bot (`bot/`) | Draft intake only → same registry draft + open-in-builder link |
 | Static renderer (`build.js` + `template.html` + `config.json`) | Zero-dep HTML generation used by publish pipelines |
 | Sample site files (`config.json`, `index.html`, …) | Example customer brochure data — not operator product copy |
@@ -23,7 +23,7 @@ Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_
 | `AGENTS.md` | Standing rules for workers |
 | `builder/` | Browser builder UI (engine generated via `npm run build:app`) |
 | `bot/` | HTTP server, Telegram intake, payments, deploy, registry |
-| `bot/pricing.js` | Single commercial pricing source (99 / renewal 29) |
+| `bot/pricing.js` | Single commercial pricing source (99 after trial / renewal 29) |
 | `templates/` | Design-system templates |
 | `build.js` | Generates `index.html` from `template.html` + `config.json` |
 | `config.json` | Sample customer site data (not Hidook operator branding) |
@@ -33,10 +33,12 @@ Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_
 
 1. Open the browser builder → pick a design → replace copy/images → preview.
 2. Sign in (magic link when email is configured).
-3. **Pay** 100 in the resolved currency bucket.
-4. First **public** production publish only after paid status; then edit + republish; renew at 29 / year.
+3. Start **subscription checkout** (card required, **7-day trial**).
+4. Site goes **live immediately after a valid card**; first public publish is allowed on trial/card-on-file status.
+5. After day 7, Stripe **auto-charges 99** unless cancelled; then edit + republish; renew at **29** / year via subscription schedule.
+6. Cancel during trial → live site is **unpublished** (no charge).
 
-Telegram never replaces steps 3–4. Ops detail: `bot/README.md`.
+Telegram never replaces steps 3–6. Ops detail: `bot/README.md`.
 
 ## Static site render (sample / pipeline)
 
