@@ -1,21 +1,25 @@
 'use strict';
 /**
- * bot/test/flow4-isolated-live-url.test.js — Flow 4 remake R1 oracle.
+ * bot/test/flow4-isolated-live-url.test.js — Flow 4 remake R2 oracle (chrome leaks).
  *
- * Bug: _isolatedDeploy copied into published/<slug>/ then threw
- * "PUBLIC_URL is required for isolated deploy" when PUBLIC_URL was empty.
- * Isolated /app (HIDOOK_TEST_PAY=1 HIDOOK_ISOLATED_DEPLOY=1, no PUBLIC_URL)
- * therefore never reached live status → cabinet Retry (not Activ/Anulează),
- * /live/<slug>/ not a successful live URL, republish toasted the factory error.
+ * Parent e32ea2a already ships isolated /live without PUBLIC_URL, but the opened
+ * product still lies after a valid test card:
+ *   - showSuccessScreen treats only http… as live → relative /live/<slug>/ shows
+ *     «Adaugă un card ca să fii live» while cabinet is Activ
+ *   - billing-portal returnUrl falls back to http://127.0.0.1/app/ (no port)
+ *   - builder legal HTML still ships English «studio shipping placeholder»
  *
- * Contracts:
- *   1. Isolated deploy without PUBLIC_URL returns fetchable /live/<slug>/ (no throw-after-copy).
- *   2. Valid test-card trial → status live/active (cabinet Activ + Anulează gates).
- *   3. Cancel during trial unpublishes; /live not public site; no first-charge invention.
- *   4. Republish without PUBLIC_URL must not surface PUBLIC_URL factory error.
- *   5. No HIDOOK_FAKE_DEPLOY. Pricing unchanged 99/29. Production refusal intact.
+ * Contracts (R1 held + R2 chrome):
+ *   1. Isolated deploy without PUBLIC_URL returns fetchable /live/<slug>/
+ *   2. Valid test-card trial → status live/active (cabinet Activ + Anulează)
+ *   3. Cancel during trial unpublishes; /live not public; no first-charge invention
+ *   4. Republish without PUBLIC_URL must not surface PUBLIC_URL factory error
+ *   5. Live chrome accepts relative /live/<slug>/ as live (no pay-again CTA)
+ *   6. Billing-portal return/portal URL on isolated loopback includes listening port
+ *   7. Legal HTML has no «studio shipping placeholder»
+ *   8. No HIDOOK_FAKE_DEPLOY. Pricing unchanged 99/29. Production refusal intact.
  *
- * Causal RED on base daca5e95… ; GREEN on HEAD after fix.
+ * Causal RED on base e32ea2a… ; GREEN on HEAD after fix.
  * Run: node bot/test/flow4-isolated-live-url.test.js
  */
 
@@ -27,7 +31,7 @@ const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const BASE_SHA = 'daca5e95de6783aa1c414b33819993d5246451b7';
+const BASE_SHA = 'e32ea2a52af4fe43363c09538de82a6243bea2ad';
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'flow4-isolated-live-url-'));
 process.env.DATA_DIR = tmpDir;
@@ -52,7 +56,7 @@ const webpublish = require('../webpublish.js');
 const registry = require('../registry.js');
 const auth = require('../auth.js');
 const { onStripeEvent } = require('../web.js');
-const { startServer } = require('../server.js');
+const { startServer, requestPublicOrigin } = require('../server.js');
 
 let failed = 0;
 async function check(name, fn) {
@@ -142,18 +146,124 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
 }
 
 (async () => {
-    // ── Causal RED on required base ─────────────────────────────────────────
-    await check('causal RED: base ' + BASE_SHA.slice(0, 7) + ' throws PUBLIC_URL after isolated copy', () => {
-        const src = baseBlob('bot/webpublish.js') || '';
-        assert.ok(src.length > 100, 'base webpublish readable');
+    // ── Causal RED on required parent (chrome leaks after isolated live URL) ─
+    await check('causal RED: parent ' + BASE_SHA.slice(0, 7) + ' success chrome only accepts http live URL', () => {
+        const app = baseBlob('builder/app.js') || '';
+        assert.ok(app.length > 100, 'base app.js readable');
+        // Parent showSuccessScreen: isLive = url.indexOf('http') === 0
         assert.ok(
-            /PUBLIC_URL is required for isolated deploy/.test(src),
-            'base must still throw PUBLIC_URL is required for isolated deploy'
+            /indexOf\(['\"]http['\"]\)\s*===\s*0/.test(app) ||
+                /String\(url\)\.indexOf\(['\"]http['\"]\)\s*===\s*0/.test(app),
+            'parent must still gate live chrome on indexOf(http)===0'
         );
-        // Throw sits after copy — the copy-then-throw pattern
-        const copyIdx = src.indexOf('fs.cpSync(siteDir, dest');
-        const throwIdx = src.indexOf("PUBLIC_URL is required for isolated deploy");
-        assert.ok(copyIdx >= 0 && throwIdx > copyIdx, 'base throw must follow copy (copy-then-throw)');
+        assert.ok(
+            !/function\s+isLiveSiteUrl\s*\(/.test(app),
+            'parent must not yet have isLiveSiteUrl helper'
+        );
+    });
+
+    await check('causal RED: parent billing portal falls back to host-only 127.0.0.1 without port', () => {
+        const src = baseBlob('bot/server.js') || '';
+        assert.ok(src.length > 100, 'base server.js readable');
+        assert.ok(
+            /http:\/\/127\.0\.0\.1\/app\/#sites/.test(src),
+            'parent must hardcode http://127.0.0.1/app/#sites fallback'
+        );
+        assert.ok(
+            !/function\s+requestPublicOrigin\s*\(/.test(src),
+            'parent must not yet have requestPublicOrigin'
+        );
+    });
+
+    await check('causal RED: parent legal HTML still has studio shipping placeholder', () => {
+        const terms = baseBlob('builder/terms.html') || '';
+        const privacy = baseBlob('builder/privacy.html') || '';
+        const cookies = baseBlob('builder/cookies.html') || '';
+        const blob = terms + '\n' + privacy + '\n' + cookies;
+        assert.ok(
+            /studio shipping placeholder/i.test(blob),
+            'parent legal pages must still contain studio shipping placeholder'
+        );
+        assert.ok(
+            /not legal advice/i.test(blob),
+            'parent legal pages must still contain not legal advice'
+        );
+    });
+
+    await check('HEAD: live chrome accepts relative /live/<slug>/ as live', () => {
+        const app = headRead('builder/app.js');
+        assert.ok(/function\s+isLiveSiteUrl\s*\(/.test(app), 'isLiveSiteUrl helper present');
+        assert.ok(
+            /isLiveSiteUrl\s*\(\s*url\s*\)/.test(app) || /const isLive = isLiveSiteUrl\(url\)/.test(app),
+            'showSuccessScreen uses isLiveSiteUrl'
+        );
+        // Must treat /live/… as live
+        assert.ok(
+            /\/live\//.test(app) && /isLiveSiteUrl/.test(app),
+            'isLiveSiteUrl must recognize /live/'
+        );
+        // Must not keep the old http-only gate as the sole live check in showSuccessScreen
+        const showSrc = (app.match(/function\s+showSuccessScreen\s*\([\s\S]*?\n\}/) || [''])[0];
+        assert.ok(showSrc.length > 50, 'showSuccessScreen extractable');
+        assert.ok(
+            !/indexOf\(['\"]http['\"]\)\s*===\s*0/.test(showSrc),
+            'showSuccessScreen must not rely only on indexOf(http)===0'
+        );
+        assert.ok(
+            /Site-ul tău e live — trial de 7 zile început/.test(showSrc),
+            'live title line present'
+        );
+        assert.ok(/function\s+absoluteSiteUrl\s*\(/.test(app), 'absoluteSiteUrl for cabinet/success href');
+        assert.ok(
+            /toLocaleDateString\(['\"]ro-RO['\"]/.test(app),
+            'Romanian date locale ro-RO in cabinet chrome'
+        );
+    });
+
+    await check('HEAD: billing-portal return/portal URL includes request Host port', () => {
+        const src = headRead('bot/server.js');
+        assert.ok(/function\s+requestPublicOrigin\s*\(/.test(src), 'requestPublicOrigin present');
+        assert.ok(
+            /requestPublicOrigin\s*\(\s*req\s*\)/.test(src),
+            'handleSiteBillingPortal uses requestPublicOrigin(req)'
+        );
+        // Host header must drive origin when PUBLIC_URL empty
+        assert.ok(
+            /headers\[.host.\]|headers\.host|x-forwarded-host/.test(src),
+            'origin built from request Host'
+        );
+        // Unit: empty PUBLIC_URL + Host with port
+        delete process.env.PUBLIC_URL;
+        const origin = requestPublicOrigin({
+            headers: { host: '127.0.0.1:56350' },
+        });
+        assert.strictEqual(
+            origin,
+            'http://127.0.0.1:56350',
+            'requestPublicOrigin must preserve port, got ' + origin
+        );
+        const originXf = requestPublicOrigin({
+            headers: {
+                host: 'internal:1',
+                'x-forwarded-host': '127.0.0.1:9999',
+                'x-forwarded-proto': 'http',
+            },
+        });
+        assert.strictEqual(originXf, 'http://127.0.0.1:9999', 'x-forwarded-host wins with port');
+    });
+
+    await check('HEAD: legal HTML has no studio shipping placeholder', () => {
+        const terms = headRead('builder/terms.html');
+        const privacy = headRead('builder/privacy.html');
+        const cookies = headRead('builder/cookies.html');
+        const blob = terms + '\n' + privacy + '\n' + cookies;
+        assert.ok(!/studio shipping placeholder/i.test(blob), 'no studio shipping placeholder');
+        assert.ok(!/not legal advice/i.test(blob), 'no English not legal advice');
+        assert.ok(/lang=["']ro["']/.test(terms), 'terms lang=ro');
+        assert.ok(/Termeni/.test(terms), 'terms Romanian title');
+        assert.ok(/Confidențialitate|Confiden/.test(privacy), 'privacy Romanian');
+        assert.ok(/Cookie-uri/.test(cookies), 'cookies Romanian');
+        assert.ok(/placeholder de produs/i.test(blob), 'RO product placeholder framing');
     });
 
     await check('HEAD: no PUBLIC_URL throw in _isolatedDeploy; relative /live fallback', () => {
@@ -435,7 +545,7 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
         assert.ok(html2.includes(cfg2.business.name), 'republish must show v2 name without PUBLIC_URL');
     });
 
-    await check('E2E no-PUBLIC_URL: cancel trial unpublishes; no first-charge line while unpublished', async () => {
+    await check('E2E no-PUBLIC_URL: cancel trial portalUrl includes isolated port; unpublishes', async () => {
         const { siteId, slug } = global.__iso4;
         let site = registry.getSite(siteId);
         if (!site.stripeSubscriptionId) {
@@ -456,11 +566,20 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
         });
         assert.strictEqual(portal.status, 200, await portal.clone().text());
         const portalBody = await portal.json();
-        assert.ok(portalBody.portalUrl || portalBody.url, 'portal url');
+        const portalUrl = String(portalBody.portalUrl || portalBody.url || '');
+        assert.ok(portalUrl, 'portal url');
         assert.ok(
-            portalBody.offline === true ||
-                /test-billing-portal|bps_test_/i.test(String(portalBody.portalUrl || portalBody.url)),
+            portalBody.offline === true || /test-billing-portal|bps_test_/i.test(portalUrl),
             'offline test portal without live Stripe'
+        );
+        // Critical R2: portal return must keep listening port (not http://127.0.0.1/app/ bare)
+        assert.ok(
+            portalUrl.includes('127.0.0.1:' + addr.port) || portalUrl.includes('localhost:' + addr.port),
+            'portalUrl must include isolated listening port ' + addr.port + ', got ' + portalUrl
+        );
+        assert.ok(
+            !/^https?:\/\/127\.0\.0\.1\/app\//.test(portalUrl.replace(/#.*$/, '')),
+            'portalUrl must not be host-only 127.0.0.1 without port'
         );
 
         site = registry.getSite(siteId);

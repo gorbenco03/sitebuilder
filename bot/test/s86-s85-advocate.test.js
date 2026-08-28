@@ -221,38 +221,38 @@ check('causal RED: parent appointment confirmation still prints Europe/Bucharest
 });
 
 // ── GREEN on HEAD ──────────────────────────────────────────────────────────
-check('HEAD: restaurant name cascade clears North House / north.house / northhouse identity', () => {
+check('HEAD: restaurant name cascade clears Casa Nord / casa.nord / casanord identity', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  assert.strictEqual(cfg.business.name, 'North House');
+  assert.strictEqual(cfg.business.name, 'Casa Nord');
   const newName = 'Advocate S85';
-  const next = runCascade(appSrc, cfg, 'North House', newName);
+  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
   assert.strictEqual(next.business.name, newName);
-  assert.ok(next.business.about && !/North House/.test(next.business.about), 'about free of North House');
-  assert.ok(next.business.about.startsWith(newName) || !/North House/.test(next.business.about), 'about updated');
-  assert.ok(!/North House/.test(next.contact.facebook.label || ''), 'fb label free');
-  assert.ok(!/northhouse|north\.house|north-house/i.test(next.contact.facebook.url || ''), 'fb url free of old slug');
-  assert.ok(!/north\.house|northhouse|north-house/i.test(next.instagram.handle || ''), 'ig handle free');
-  assert.ok(!/north\.house|northhouse|north-house/i.test(next.instagram.url || ''), 'ig url free');
-  assert.ok(!/north\.house|northhouse|north-house/i.test((next.contact.instagram && next.contact.instagram.url) || ''), 'contact ig url free');
-  assert.ok(!/north\.house|northhouse|North House/i.test((next.contact.instagram && next.contact.instagram.label) || ''), 'contact ig label free');
+  assert.ok(next.business.about && !/Casa Nord/.test(next.business.about), 'about free of Casa Nord');
+  assert.ok(next.business.about.startsWith(newName) || !/Casa Nord/.test(next.business.about), 'about updated');
+  assert.ok(!/Casa Nord/.test(next.contact.facebook.label || ''), 'fb label free');
+  assert.ok(!/casanord|casa\.nord|casa-nord/i.test(next.contact.facebook.url || ''), 'fb url free of old slug');
+  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.handle || ''), 'ig handle free');
+  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.url || ''), 'ig url free');
+  assert.ok(!/casa\.nord|casanord|casa-nord/i.test((next.contact.instagram && next.contact.instagram.url) || ''), 'contact ig url free');
+  assert.ok(!/casa\.nord|casanord|Casa Nord/i.test((next.contact.instagram && next.contact.instagram.label) || ''), 'contact ig label free');
   const blob = JSON.stringify({
     about: next.business.about,
     fb: next.contact.facebook,
     ig: next.instagram,
     cig: next.contact.instagram,
   });
-  assert.ok(!/North House|north\.house|northhouse/i.test(blob), 'identity blob free of factory: ' + blob.slice(0, 200));
+  assert.ok(!/Casa Nord|casa\.nord|casanord/i.test(blob), 'identity blob free of factory: ' + blob.slice(0, 200));
 });
 
 check('HEAD: after restaurant cascade, renderHtml has no factory IG/FB slug', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  const next = runCascade(appSrc, cfg, 'North House', 'Advocate S85');
+  const next = runCascade(appSrc, cfg, 'Casa Nord', 'Advocate S85');
   const html = renderHtml(read(PM_TPL), next);
-  assert.ok(!/North House/.test(html), 'html free of North House');
-  assert.ok(!/north\.house\.chicago/i.test(html), 'html free of @north.house.chicago');
-  assert.ok(!/northhousechicago/i.test(html), 'html free of facebook northhouse slug');
+  assert.ok(!/Casa Nord/.test(html), 'html free of Casa Nord');
+  assert.ok(!/casa\.nord\.bucuresti/i.test(html), 'html free of @casa.nord.bucuresti');
+  assert.ok(!/casanordbucuresti/i.test(html), 'html free of facebook casanord slug');
   assert.ok(/Advocate S85/.test(html), 'html shows new name');
 });
 

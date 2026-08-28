@@ -165,8 +165,9 @@ check('HEAD product-menu default preset (presets[0]) is Romanian marketing copy'
     assert.ok(blob.includes(s), 'preset missing RO: ' + s);
   }
   assert.strictEqual(cfg.business.lang, 'ro');
-  // Brand name may stay North House for cascade identity tests
+  // Default demo brand is Romanian commercial Casa Nord (not EN North House / Chicago)
   assert.ok(cfg.business.name, 'has business.name');
+  assert.ok(!/North House|Chicago|Lincoln Park/i.test(JSON.stringify(cfg)), 'no EN factory geo identity');
   assert.strictEqual(cfg.hero.ctaLabel, 'Rezervă o masă');
   assert.strictEqual(cfg.servicesTitle, 'La masă');
   assert.strictEqual(cfg.menu.title, 'Meniu');

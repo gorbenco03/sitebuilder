@@ -63,6 +63,35 @@ const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
+/**
+ * Origin for redirects/portal return when PUBLIC_URL is unset.
+ * Prefer PUBLIC_URL; else build from the request Host (preserve port) so
+ * isolated loopback (http://127.0.0.1:PORT/app/) does not drop the port.
+ */
+function requestPublicOrigin(req) {
+    const envUrl = String(process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    if (envUrl) return envUrl;
+    if (!req || !req.headers) return '';
+    const rawHost =
+        req.headers['x-forwarded-host'] ||
+        req.headers.host ||
+        '';
+    const host = String(Array.isArray(rawHost) ? rawHost[0] : rawHost)
+        .split(',')[0]
+        .trim();
+    if (!host) return '';
+    const rawProto = req.headers['x-forwarded-proto'] || '';
+    let proto = String(Array.isArray(rawProto) ? rawProto[0] : rawProto)
+        .split(',')[0]
+        .trim()
+        .toLowerCase();
+    if (proto !== 'http' && proto !== 'https') {
+        // Local / isolated servers are plain HTTP; do not invent https.
+        proto = 'http';
+    }
+    return proto + '://' + host;
+}
+
 const MIME_TYPES = {
     '.html': 'text/html; charset=utf-8',
     '.js':   'application/javascript; charset=utf-8',
@@ -1285,8 +1314,12 @@ async function handleSiteBillingPortal(req, res, siteId) {
         });
     }
 
-    const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-    const returnUrl = publicUrl ? publicUrl + '/app/#sites' : 'http://127.0.0.1/app/#sites';
+    const publicUrl = requestPublicOrigin(req);
+    // Must include listening port on isolated loopback (Host: 127.0.0.1:PORT).
+    // Never fall back to host-only http://127.0.0.1/app/ — ERR_CONNECTION_REFUSED.
+    const returnUrl = publicUrl
+        ? publicUrl + '/app/#sites'
+        : 'http://127.0.0.1/app/#sites';
 
     let session;
     try {
@@ -2067,7 +2100,7 @@ function startServer(opts = {}) {
     return server;
 }
 
-module.exports = { startServer, createHandler, readRawBody };
+module.exports = { startServer, createHandler, readRawBody, requestPublicOrigin };
 
 // ---------------------------------------------------------------------------
 // Self-test

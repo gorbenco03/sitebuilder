@@ -173,36 +173,36 @@ check('causal RED: parent professionals Detalii still teaches tel: / URL Instagr
 check('HEAD: cascadeBusinessNameIdentity updates restaurant title/about/facebook', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
-  assert.strictEqual(cfg.business.name, 'North House');
+  assert.strictEqual(cfg.business.name, 'Casa Nord');
   const newName = 'QaLive S81';
-  const next = runCascade(appSrc, cfg, 'North House', newName);
+  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
   assert.strictEqual(next.business.name, newName);
   assert.ok(next.business.title.includes(newName), 'title contains new name: ' + next.business.title);
-  assert.ok(!/North House/.test(next.business.title), 'title no longer North House');
+  assert.ok(!/Casa Nord/.test(next.business.title), 'title no longer Casa Nord');
   assert.ok(next.business.about.startsWith(newName), 'about starts with new name');
-  assert.ok(!next.business.about.startsWith('North House'), 'about no longer starts North House');
+  assert.ok(!next.business.about.startsWith('Casa Nord'), 'about no longer starts Casa Nord');
   assert.strictEqual(next.contact.facebook.label, newName);
 });
 
-check('HEAD: after name cascade, restaurant renderHtml <title>/og drop North House', () => {
+check('HEAD: after name cascade, restaurant renderHtml <title>/og drop Casa Nord', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PM_PRESETS);
   const newName = 'QaLive S81';
-  const next = runCascade(appSrc, cfg, 'North House', newName);
+  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
   const html = renderHtml(read(PM_TPL), next);
   const titleM = html.match(/<title>([^<]*)<\/title>/i);
   assert.ok(titleM, 'has title');
   assert.ok(titleM[1].includes(newName), 'title has new name: ' + titleM[1]);
-  assert.ok(!/North House/.test(titleM[1]), 'title free of North House');
+  assert.ok(!/Casa Nord/.test(titleM[1]), 'title free of Casa Nord');
   const ogM = html.match(/property=["']og:title["']\s+content=["']([^"']*)["']/i)
     || html.match(/content=["']([^"']*)["']\s+property=["']og:title["']/i);
   assert.ok(ogM, 'og:title present');
   assert.ok(ogM[1].includes(newName), 'og:title has new name');
-  assert.ok(!/North House/.test(ogM[1]), 'og:title free of North House');
+  assert.ok(!/Casa Nord/.test(ogM[1]), 'og:title free of Casa Nord');
   // Facebook chip label in body
   assert.ok(html.includes(newName), 'body mentions new name');
   // About must not still lead with factory name
-  assert.ok(!/North House is a small dining room/i.test(html), 'about no longer factory lead-in');
+  assert.ok(!/Casa Nord este o sală mică/i.test(html), 'about no longer factory lead-in');
 });
 
 check('HEAD: cascadeBusinessNameIdentity updates professionals title for Whitfield Law', () => {

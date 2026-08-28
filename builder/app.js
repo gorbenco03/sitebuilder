@@ -269,6 +269,9 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     'instagram.url',
     'instagram.embedUrl',
     'contact.email',
+    'business.metaDescription',
+    'business.tagline',
+    'seo.jsonLd',
   ].forEach(cascadeStringPath);
 }
 
@@ -2328,19 +2331,47 @@ function formatRenewalLabel(cfg) {
   return '$' + amount;
 }
 
-/** Human calendar date for hosting-until (not ISO dump, not trial countdown). */
+/** Human calendar date for hosting-until (not ISO dump, not trial countdown). Romanian chrome. */
 function formatHostingUntilDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return '';
   try {
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
   } catch (_) {
     const day = d.getUTCDate();
     const month = d.getUTCMonth() + 1;
     const year = d.getUTCFullYear();
     return day + '.' + month + '.' + year;
   }
+}
+
+/**
+ * Live trial/site URL: absolute http(s) OR same-origin isolated /live/<slug>/.
+ * Relative /live/… must count as live so success chrome is not the unpaid pay CTA.
+ */
+function isLiveSiteUrl(url) {
+  const u = String(url || '').trim();
+  if (!u) return false;
+  if (/^https?:\/\//i.test(u)) return true;
+  // Isolated deploy without PUBLIC_URL returns /live/<slug>/
+  if (/^\/live\//i.test(u)) return true;
+  return false;
+}
+
+/** Clickable same-origin href: scheme+host+port + path when url is relative /live/…. */
+function absoluteSiteUrl(url) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  if (u.charAt(0) === '/') {
+    try {
+      if (typeof window !== 'undefined' && window.location && window.location.origin) {
+        return window.location.origin + u;
+      }
+    } catch (_) {}
+  }
+  return u;
 }
 
 /**
@@ -2854,7 +2885,8 @@ function showSuccessScreen(url, paymentUrl) {
   const urlText = $('success-url-text');
   const urlLink = $('success-url-link');
   const copyBtn = $('btn-copy-url');
-  const isLive = !!(url && String(url).indexOf('http') === 0);
+  const isLive = isLiveSiteUrl(url);
+  const href = isLive ? absoluteSiteUrl(url) : '';
 
   if (isLive) {
     if (titleEl) titleEl.textContent = 'Site-ul tău e live — trial de 7 zile început';
@@ -2863,9 +2895,10 @@ function showSuccessScreen(url, paymentUrl) {
       // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
       // without splitting the slug token at hyphens (S99/S107).
       // Static tests (s99/s103) require split('/') + literal '/<wbr>' in source.
-      fillUrlWithSlashWbr(urlText, url);
+      // Prefer absolute same-origin display so stranger can copy a working URL.
+      fillUrlWithSlashWbr(urlText, href || url);
     }
-    if (urlLink) { urlLink.href = url; show(urlLink); }
+    if (urlLink) { urlLink.href = href || url; show(urlLink); }
     if (copyBtn) show(copyBtn);
   } else {
     if (titleEl) titleEl.textContent = 'Adaugă un card ca să fii live';
@@ -2893,8 +2926,9 @@ function showSuccessScreen(url, paymentUrl) {
   if (waBtn) {
     if (isLive) {
       show(waBtn);
-      const businessName = getPath(draft.config, 'business.name') || 'Our site';
-      const waText = encodeURIComponent('Hi! I just created the site for ' + businessName + ': ' + url);
+      const businessName = getPath(draft.config, 'business.name') || 'Site-ul nostru';
+      const shareUrl = href || url;
+      const waText = encodeURIComponent('Salut! Am creat site-ul pentru ' + businessName + ': ' + shareUrl);
       waBtn.onclick = () => { window.open('https://wa.me/?text=' + waText, '_blank', 'noopener'); };
     } else {
       hide(waBtn);
@@ -2929,7 +2963,7 @@ async function completeTestCheckout(sessionId) {
       await ensureDraftBoundToPaidSite(site.id);
       saveDraft();
     }
-    if (site && site.url && String(site.url).indexOf('http') === 0) {
+    if (site && isLiveSiteUrl(site.url)) {
       sitePaymentUrl = null;
       showSuccessScreen(site.url, null);
       showToast('Trial început. Site-ul tău e live.', 'success', 6000);
@@ -2937,7 +2971,11 @@ async function completeTestCheckout(sessionId) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
         const s = fresh && fresh.site;
-        if (s && s.url) {
+        if (s && isLiveSiteUrl(s.url)) {
+          publishedSiteUrl = s.url;
+          showSuccessScreen(s.url, null);
+          showToast('Trial început. Site-ul tău e live.', 'success', 6000);
+        } else if (s && s.url) {
           publishedSiteUrl = s.url;
           showSuccessScreen(s.url, null);
           showToast('Trial început. Site-ul tău e live.', 'success', 6000);
@@ -2948,7 +2986,7 @@ async function completeTestCheckout(sessionId) {
         showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
       }
     } else {
-      showToast('Payment processed.', 'success', 5000);
+      showToast('Plata a fost procesată.', 'success', 5000);
     }
   } catch (e) {
     showToast('Error confirming payment: ' + (e.message || 'try again'), 'error', 6000);
@@ -3446,11 +3484,13 @@ function buildSiteCard(site) {
   if (site.url) {
     const link = document.createElement('a');
     link.className = 'site-live-link';
-    link.href = site.url;
+    const liveHref = absoluteSiteUrl(site.url);
+    link.href = liveHref || site.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     // Soft-wrap only at `/` — same as success URL (W13 390 slug shred).
-    fillUrlWithSlashWbr(link, site.url);
+    // Show absolute same-origin so the stranger can open/copy a real URL.
+    fillUrlWithSlashWbr(link, liveHref || site.url);
     link.addEventListener('click', e => e.stopPropagation());
     meta.appendChild(link);
   }

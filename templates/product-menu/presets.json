@@ -2,407 +2,7 @@
   "presets": [
     {
       "id": "casa-nord",
-      "name": "North House",
-      "config": {
-        "business": {
-          "name": "North House",
-          "tagline": "Cine de seară, vinuri de pivniță, mese lungi",
-          "title": "North House | Restaurant | Chicago",
-          "metaDescription": "Restaurant de seară în Chicago. Meniu de sezon, pivniță de vinuri, rezervări pe WhatsApp.",
-          "about": "North House este o sală mică de mese lângă Lincoln Park. Gătim seara — legume de la producători din Midwest, pește alb din Lacul Michigan, deserturi simple. Meniul se schimbă o dată pe lună. Vinuri din Michigan la pahar și la sticlă.",
-          "lang": "ro"
-        },
-        "labels": {
-          "whatsapp": "WhatsApp",
-          "close": "Închide",
-          "about": "Povestea noastră",
-          "heroEyebrow": "Restaurant · Chicago",
-          "instaTitle": "Din bucătărie, pe Instagram",
-          "instaFollow": "Urmărește",
-          "scroll": "Explorează",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web",
-          "lightboxPrev": "Anterior",
-          "lightboxNext": "Următor"
-        },
-        "theme": {
-          "primary": "#c4a574",
-          "primaryLight": "#dcc49a",
-          "primaryDark": "#0a0a0a",
-          "cream": "#f3eee8"
-        },
-        "logo": "",
-        "showWordmark": true,
-        "hero": {
-          "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('images/cn-hero.jpg')",
-          "ctaLabel": "Rezervă o masă"
-        },
-        "servicesTitle": "La masă",
-        "services": [
-          {
-            "icon": "",
-            "label": "Cine de sezon"
-          },
-          {
-            "icon": "",
-            "label": "Meniu degustare"
-          },
-          {
-            "icon": "",
-            "label": "Vinuri din Michigan"
-          },
-          {
-            "icon": "",
-            "label": "Dining privat"
-          },
-          {
-            "icon": "",
-            "label": "Bar de cocktailuri"
-          },
-          {
-            "icon": "",
-            "label": "Brunch de weekend"
-          }
-        ],
-        "menu": {
-          "title": "Meniu",
-          "en": [
-            {
-              "category": "Aperitive",
-              "items": [
-                "Pâine maia, unt cultivat",
-                "Tartar de sfeclă, cremă de hrean",
-                "Stridii de piață, mignonette"
-              ]
-            },
-            {
-              "category": "De la vatră",
-              "items": [
-                "Antricot maturat, jus de măduvă",
-                "Pește alb din Michigan, unt prăjit",
-                "Țelină prăjită, alune, salvie"
-              ]
-            },
-            {
-              "category": "Desert",
-              "items": [
-                "Ciocolată neagră, sare de mare, ulei de măsline",
-                "Fructe de sezon, crème fraîche"
-              ]
-            }
-          ],
-          "ro": [
-            {
-              "category": "Aperitive",
-              "items": [
-                "Pâine maia, unt cultivat",
-                "Tartar de sfeclă, cremă de hrean",
-                "Stridii de piață, mignonette"
-              ]
-            },
-            {
-              "category": "De la vatră",
-              "items": [
-                "Antricot maturat, jus de măduvă",
-                "Pește alb din Michigan, unt prăjit",
-                "Țelină prăjită, alune, salvie"
-              ]
-            },
-            {
-              "category": "Desert",
-              "items": [
-                "Ciocolată neagră, sare de mare, ulei de măsline",
-                "Fructe de sezon, crème fraîche"
-              ]
-            }
-          ]
-        },
-        "galleryTitle": "În farfurie",
-        "categories": [
-          {
-            "title": "Farfurii de seară",
-            "blurb": "Porții sincere, sosuri de casă, legume prăjite.",
-            "photos": [
-              {
-                "src": "images/cn-d1.jpg",
-                "alt": "Farfurie cu pește și legume de sezon"
-              },
-              {
-                "src": "images/cn-d2.jpg",
-                "alt": "Antricot pe farfurie ceramică"
-              },
-              {
-                "src": "images/cn-d3.jpg",
-                "alt": "Desert de ciocolată"
-              }
-            ]
-          },
-          {
-            "title": "Sala de mese și pivnița",
-            "blurb": "Lumină joasă, mese din lemn, rafturi de vin.",
-            "photos": [
-              {
-                "src": "images/cn-r1.jpg",
-                "alt": "Interior restaurant seara"
-              },
-              {
-                "src": "images/cn-r2.jpg",
-                "alt": "Masă pregătită pentru cină"
-              },
-              {
-                "src": "images/cn-r3.jpg",
-                "alt": "Pahare de vin la bar"
-              }
-            ]
-          }
-        ],
-        "instagram": {
-          "handle": "north.house.chicago",
-          "url": "https://www.instagram.com/north.house.chicago",
-          "embedUrl": "",
-          "gallery": [
-            "images/cn-ig1.jpg",
-            "images/cn-ig2.jpg",
-            "images/cn-ig3.jpg",
-            "images/cn-ig4.jpg",
-            "images/cn-ig5.jpg",
-            "images/cn-ig6.jpg"
-          ]
-        },
-        "contact": {
-          "title": "Rezervări",
-          "intro": "Scrie-ne pe WhatsApp sau sună pentru o masă. Marți–Sâmbătă, 17–23. Brunch duminica 11–15.",
-          "instagram": {
-            "url": "https://www.instagram.com/north.house.chicago",
-            "label": "@north.house.chicago"
-          },
-          "facebook": {
-            "url": "https://www.facebook.com/northhousechicago",
-            "label": "North House"
-          },
-          "whatsapp": "13125550187",
-          "phone": "+13125550187",
-          "phoneDisplay": "+1 312 555 0187",
-          "waHref": "https://wa.me/13125550187",
-          "address": "2144 N Halsted St<br>Chicago, IL 60614",
-          "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL",
-          "waMessage": "Bună ziua, aș dori o rezervare."
-        },
-        "seo": {
-          "ogImage": "images/cn-og.jpg",
-          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"North House\",\"telephone\":\"+13125550187\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"2144 N Halsted St\",\"addressLocality\":\"Chicago\",\"addressCountry\":\"US\"}}"
-        },
-        "footer": {
-          "address": "2144 N Halsted St, Chicago, IL",
-          "year": 2026,
-          "note": "Cine de seară, mereu de sezon."
-        }
-      }
-    },
-    {
-      "id": "traista-verde",
-      "name": "The Green Larder",
-      "config": {
-        "business": {
-          "name": "The Green Larder",
-          "tagline": "Meniu de prânz, terasă umbrită, produse locale",
-          "title": "The Green Larder | Bistro de cartier | Portland, OR",
-          "metaDescription": "Bistro de cartier în Portland. Mic dejun, prânz în săptămână și cine lejere. Rezervări pe WhatsApp.",
-          "about": "The Green Larder este locul de pe Alder Street unde legumele de la piața de sâmbătă și pâinea de la brutarul de pe stradă se întâlnesc în farfurie. Diminețile aduc ouă și cafea; la prânz, farfurii sincere; seara, salate și vin la pahar.",
-          "lang": "ro"
-        },
-        "labels": {
-          "whatsapp": "WhatsApp",
-          "close": "Închide",
-          "about": "Despre noi",
-          "heroEyebrow": "Bistro · Portland, OR",
-          "instaTitle": "Din farfurie, pe Instagram",
-          "instaFollow": "Urmărește",
-          "scroll": "Meniu",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web",
-          "lightboxPrev": "Anterior",
-          "lightboxNext": "Următor"
-        },
-        "theme": {
-          "primary": "#2f5d50",
-          "primaryLight": "#4a7d6c",
-          "primaryDark": "#1a1410",
-          "cream": "#f7f2eb"
-        },
-        "logo": "",
-        "showWordmark": true,
-        "hero": {
-          "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('images/tv-hero.jpg')",
-          "ctaLabel": "Rezervă o masă"
-        },
-        "servicesTitle": "Ce oferim",
-        "services": [
-          {
-            "icon": "",
-            "label": "Mic dejun"
-          },
-          {
-            "icon": "",
-            "label": "Prânz în săptămână"
-          },
-          {
-            "icon": "",
-            "label": "Light dinner"
-          },
-          {
-            "icon": "",
-            "label": "Vin la pahar"
-          },
-          {
-            "icon": "",
-            "label": "Patio"
-          },
-          {
-            "icon": "",
-            "label": "Small catering"
-          }
-        ],
-        "menu": {
-          "title": "Meniu",
-          "en": [
-            {
-              "category": "Breakfast",
-              "items": [
-                "Eggs any style, house bread",
-                "Yogurt, honey, seasonal fruit",
-                "Avocado toast, soft herbs"
-              ]
-            },
-            {
-              "category": "Lunch",
-              "items": [
-                "Market salad, roasted seeds",
-                "Soup of the day",
-                "Grilled chicken, greens"
-              ]
-            },
-            {
-              "category": "Evening",
-              "items": [
-                "Cheese board, local honey",
-                "Pasta of the day",
-                "House cake"
-              ]
-            }
-          ],
-          "ro": [
-            {
-              "category": "Breakfast",
-              "items": [
-                "Eggs any style, house bread",
-                "Yogurt, honey, seasonal fruit",
-                "Avocado toast, soft herbs"
-              ]
-            },
-            {
-              "category": "Lunch",
-              "items": [
-                "Market salad, roasted seeds",
-                "Soup of the day",
-                "Grilled chicken, greens"
-              ]
-            },
-            {
-              "category": "Evening",
-              "items": [
-                "Cheese board, local honey",
-                "Pasta of the day",
-                "House cake"
-              ]
-            }
-          ]
-        },
-        "galleryTitle": "From the kitchen",
-        "categories": [
-          {
-            "title": "Plates",
-            "blurb": "Honest portions, seasonal vegetables, house-made sauces.",
-            "photos": [
-              {
-                "src": "images/tv-m1.jpg",
-                "alt": "Vegetable salad on a plate"
-              },
-              {
-                "src": "images/tv-m2.jpg",
-                "alt": "Fresh pasta with tomato sauce"
-              },
-              {
-                "src": "images/tv-m3.jpg",
-                "alt": "Breakfast on a wood table"
-              }
-            ]
-          },
-          {
-            "title": "Patio & atmosphere",
-            "blurb": "Leafy shade, warm light in the evening.",
-            "photos": [
-              {
-                "src": "images/tv-a1.jpg",
-                "alt": "Patio with wood tables"
-              },
-              {
-                "src": "images/tv-a2.jpg",
-                "alt": "Bright bistro interior"
-              },
-              {
-                "src": "images/tv-a3.jpg",
-                "alt": "Table set for lunch"
-              }
-            ]
-          }
-        ],
-        "instagram": {
-          "handle": "green.larder.pdx",
-          "url": "https://www.instagram.com/green.larder.pdx",
-          "embedUrl": "",
-          "gallery": [
-            "images/tv-ig1.jpg",
-            "images/tv-ig2.jpg",
-            "images/tv-ig3.jpg",
-            "images/tv-ig4.jpg",
-            "images/tv-ig5.jpg",
-            "images/tv-ig6.jpg"
-          ]
-        },
-        "contact": {
-          "title": "Rezervări",
-          "intro": "Call or message us on WhatsApp. Open Tuesday–Sunday, 9am–10pm.",
-          "instagram": {
-            "url": "https://www.instagram.com/green.larder.pdx",
-            "label": "@green.larder.pdx"
-          },
-          "facebook": {
-            "url": "",
-            "label": ""
-          },
-          "whatsapp": "15035550113",
-          "phone": "+15035550113",
-          "phoneDisplay": "+1 503 555 0113",
-          "waHref": "https://wa.me/15035550113",
-          "address": "1842 SE Alder St<br>Portland, OR 97214",
-          "addressHref": "https://maps.google.com/?q=1842+SE+Alder+St+Portland+OR",
-          "waMessage": "Bună ziua, aș dori o rezervare."
-        },
-        "seo": {
-          "ogImage": "images/tv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"The Green Larder\",\"telephone\":\"+15035550113\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"1842 SE Alder St\",\"addressLocality\":\"Portland\",\"addressCountry\":\"US\"}}"
-        },
-        "footer": {
-          "address": "1842 SE Alder St, Portland, OR",
-          "year": 2026,
-          "note": "Seasonal menu, always."
-        }
-      }
-    },
-    {
-      "id": "casa-ro-bucuresti",
-      "name": "Casa Nord — București",
+      "name": "Casa Nord",
       "config": {
         "business": {
           "name": "Casa Nord",
@@ -439,30 +39,12 @@
         },
         "servicesTitle": "La masă",
         "services": [
-          {
-            "icon": "",
-            "label": "Cine de sezon"
-          },
-          {
-            "icon": "",
-            "label": "Meniu degustare"
-          },
-          {
-            "icon": "",
-            "label": "Vinuri românești"
-          },
-          {
-            "icon": "",
-            "label": "Dining privat"
-          },
-          {
-            "icon": "",
-            "label": "Bar de cocktailuri"
-          },
-          {
-            "icon": "",
-            "label": "Brunch de weekend"
-          }
+          { "icon": "", "label": "Cine de sezon" },
+          { "icon": "", "label": "Meniu degustare" },
+          { "icon": "", "label": "Vinuri românești" },
+          { "icon": "", "label": "Sală privată" },
+          { "icon": "", "label": "Bar de cocktailuri" },
+          { "icon": "", "label": "Brunch de weekend" }
         ],
         "menu": {
           "title": "Meniu",
@@ -472,14 +54,14 @@
               "items": [
                 "Pâine maia, unt cultivat",
                 "Tartar de sfeclă, cremă de hrean",
-                "Stridii de piață, mignonette"
+                "Salată de legume de sezon"
               ]
             },
             {
               "category": "De la vatră",
               "items": [
                 "Antricot maturat, jus de măduvă",
-                "Pește alb din Michigan, unt prăjit",
+                "Pește de Dunăre, unt prăjit",
                 "Țelină prăjită, alune, salvie"
               ]
             },
@@ -497,14 +79,14 @@
               "items": [
                 "Pâine maia, unt cultivat",
                 "Tartar de sfeclă, cremă de hrean",
-                "Stridii de piață, mignonette"
+                "Salată de legume de sezon"
               ]
             },
             {
               "category": "De la vatră",
               "items": [
                 "Antricot maturat, jus de măduvă",
-                "Pește alb din Michigan, unt prăjit",
+                "Pește de Dunăre, unt prăjit",
                 "Țelină prăjită, alune, salvie"
               ]
             },
@@ -523,42 +105,24 @@
             "title": "Farfurii de seară",
             "blurb": "Porții sincere, sosuri de casă, legume prăjite.",
             "photos": [
-              {
-                "src": "images/cn-d1.jpg",
-                "alt": "Farfurie cu pește și legume de sezon"
-              },
-              {
-                "src": "images/cn-d2.jpg",
-                "alt": "Antricot pe farfurie ceramică"
-              },
-              {
-                "src": "images/cn-d3.jpg",
-                "alt": "Desert de ciocolată"
-              }
+              { "src": "images/cn-d1.jpg", "alt": "Farfurie cu pește și legume de sezon" },
+              { "src": "images/cn-d2.jpg", "alt": "Antricot pe farfurie ceramică" },
+              { "src": "images/cn-d3.jpg", "alt": "Desert de ciocolată" }
             ]
           },
           {
             "title": "Sala de mese și pivnița",
             "blurb": "Lumină joasă, mese din lemn, rafturi de vin.",
             "photos": [
-              {
-                "src": "images/cn-r1.jpg",
-                "alt": "Interior restaurant seara"
-              },
-              {
-                "src": "images/cn-r2.jpg",
-                "alt": "Masă pregătită pentru cină"
-              },
-              {
-                "src": "images/cn-r3.jpg",
-                "alt": "Pahare de vin la bar"
-              }
+              { "src": "images/cn-r1.jpg", "alt": "Interior restaurant seara" },
+              { "src": "images/cn-r2.jpg", "alt": "Masă pregătită pentru cină" },
+              { "src": "images/cn-r3.jpg", "alt": "Pahare de vin la bar" }
             ]
           }
         ],
         "instagram": {
-          "handle": "north.house.chicago",
-          "url": "https://www.instagram.com/north.house.chicago",
+          "handle": "casa.nord.bucuresti",
+          "url": "https://www.instagram.com/casa.nord.bucuresti",
           "embedUrl": "",
           "gallery": [
             "images/cn-ig1.jpg",
@@ -573,29 +137,194 @@
           "title": "Rezervări",
           "intro": "Scrie-ne pe WhatsApp sau sună pentru o masă. Marți–Sâmbătă, 17–23. Brunch duminica 11–15.",
           "instagram": {
-            "url": "https://www.instagram.com/north.house.chicago",
-            "label": "@north.house.chicago"
+            "url": "https://www.instagram.com/casa.nord.bucuresti",
+            "label": "@casa.nord.bucuresti"
           },
           "facebook": {
-            "url": "https://www.facebook.com/northhousechicago",
-            "label": "North House"
+            "url": "https://www.facebook.com/casanordbucuresti",
+            "label": "Casa Nord"
           },
           "whatsapp": "40721234567",
           "phone": "+407****4567",
           "phoneDisplay": "+40 721 234 567",
           "waHref": "https://wa.me/40721234567",
-          "address": "2144 N Halsted St<br>Chicago, IL 60614",
-          "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL",
-          "waMessage": "Bună ziua, aș dori o programare."
+          "address": "Str. Herăstrău 12<br>București",
+          "addressHref": "https://maps.google.com/?q=Str.+Herastrau+12+Bucuresti",
+          "waMessage": "Bună ziua, aș dori o rezervare."
         },
         "seo": {
           "ogImage": "images/cn-og.jpg",
-          "jsonLd": "{\"@context\":\"https://***@type\":\"Restaurant\",\"name\":\"North House\",\"telephone\":\"+13125550187\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"2144 N Halsted St\",\"addressLocality\":\"Chicago\",\"addressCountry\":\"US\"}}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Casa Nord\",\"telephone\":\"+407****4567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Herăstrău 12\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
-          "address": "2144 N Halsted St, Chicago, IL",
+          "address": "Str. Herăstrău 12, București",
           "year": 2026,
           "note": "Cine de seară, mereu de sezon."
+        }
+      }
+    },
+    {
+      "id": "traista-verde",
+      "name": "Traista Verde",
+      "config": {
+        "business": {
+          "name": "Traista Verde",
+          "tagline": "Meniu de prânz, terasă umbrită, produse locale",
+          "title": "Traista Verde | Bistro de cartier | Cluj-Napoca",
+          "metaDescription": "Bistro de cartier în Cluj-Napoca. Mic dejun, prânz în săptămână și cine lejere. Rezervări pe WhatsApp.",
+          "about": "Traista Verde este locul de pe strada Memorandumului unde legumele de la piața de sâmbătă și pâinea de la brutarul din cartier se întâlnesc în farfurie. Diminețile aduc ouă și cafea; la prânz, farfurii sincere; seara, salate și vin la pahar.",
+          "lang": "ro"
+        },
+        "labels": {
+          "whatsapp": "WhatsApp",
+          "close": "Închide",
+          "about": "Despre noi",
+          "heroEyebrow": "Bistro · Cluj-Napoca",
+          "instaTitle": "Din farfurie, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Meniu",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
+        },
+        "theme": {
+          "primary": "#2f5d50",
+          "primaryLight": "#4a7d6c",
+          "primaryDark": "#1a1410",
+          "cream": "#f7f2eb"
+        },
+        "logo": "",
+        "showWordmark": true,
+        "hero": {
+          "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('images/tv-hero.jpg')",
+          "ctaLabel": "Rezervă o masă"
+        },
+        "servicesTitle": "Ce oferim",
+        "services": [
+          { "icon": "", "label": "Mic dejun" },
+          { "icon": "", "label": "Prânz în săptămână" },
+          { "icon": "", "label": "Cină lejeră" },
+          { "icon": "", "label": "Vin la pahar" },
+          { "icon": "", "label": "Terasă" },
+          { "icon": "", "label": "Catering mic" }
+        ],
+        "menu": {
+          "title": "Meniu",
+          "en": [
+            {
+              "category": "Mic dejun",
+              "items": [
+                "Ouă la alegere, pâine de casă",
+                "Iaurt, miere, fructe de sezon",
+                "Toast cu avocado, ierburi"
+              ]
+            },
+            {
+              "category": "Prânz",
+              "items": [
+                "Salată de piață, semințe prăjite",
+                "Supa zilei",
+                "Pui la grătar, legume"
+              ]
+            },
+            {
+              "category": "Seară",
+              "items": [
+                "Platou de brânzeturi, miere locală",
+                "Pastele zilei",
+                "Prăjitură de casă"
+              ]
+            }
+          ],
+          "ro": [
+            {
+              "category": "Mic dejun",
+              "items": [
+                "Ouă la alegere, pâine de casă",
+                "Iaurt, miere, fructe de sezon",
+                "Toast cu avocado, ierburi"
+              ]
+            },
+            {
+              "category": "Prânz",
+              "items": [
+                "Salată de piață, semințe prăjite",
+                "Supa zilei",
+                "Pui la grătar, legume"
+              ]
+            },
+            {
+              "category": "Seară",
+              "items": [
+                "Platou de brânzeturi, miere locală",
+                "Pastele zilei",
+                "Prăjitură de casă"
+              ]
+            }
+          ]
+        },
+        "galleryTitle": "Din bucătărie",
+        "categories": [
+          {
+            "title": "Farfurii",
+            "blurb": "Porții sincere, legume de sezon, sosuri de casă.",
+            "photos": [
+              { "src": "images/tv-m1.jpg", "alt": "Salată de legume pe farfurie" },
+              { "src": "images/tv-m2.jpg", "alt": "Paste proaspete cu sos de roșii" },
+              { "src": "images/tv-m3.jpg", "alt": "Mic dejun pe masă de lemn" }
+            ]
+          },
+          {
+            "title": "Terasă și atmosferă",
+            "blurb": "Umbră de frunze, lumină caldă seara.",
+            "photos": [
+              { "src": "images/tv-a1.jpg", "alt": "Terasă cu mese de lemn" },
+              { "src": "images/tv-a2.jpg", "alt": "Interior luminos de bistro" },
+              { "src": "images/tv-a3.jpg", "alt": "Masă pregătită pentru prânz" }
+            ]
+          }
+        ],
+        "instagram": {
+          "handle": "traista.verde.cluj",
+          "url": "https://www.instagram.com/traista.verde.cluj",
+          "embedUrl": "",
+          "gallery": [
+            "images/tv-ig1.jpg",
+            "images/tv-ig2.jpg",
+            "images/tv-ig3.jpg",
+            "images/tv-ig4.jpg",
+            "images/tv-ig5.jpg",
+            "images/tv-ig6.jpg"
+          ]
+        },
+        "contact": {
+          "title": "Rezervări",
+          "intro": "Sună-ne sau scrie pe WhatsApp. Deschis marți–duminică, 9–22.",
+          "instagram": {
+            "url": "https://www.instagram.com/traista.verde.cluj",
+            "label": "@traista.verde.cluj"
+          },
+          "facebook": {
+            "url": "https://www.facebook.com/traistaverdecluj",
+            "label": "Traista Verde"
+          },
+          "whatsapp": "40745111222",
+          "phone": "+407****1222",
+          "phoneDisplay": "+40 745 111 222",
+          "waHref": "https://wa.me/40745111222",
+          "address": "Str. Memorandumului 18<br>Cluj-Napoca",
+          "addressHref": "https://maps.google.com/?q=Str.+Memorandumului+18+Cluj-Napoca",
+          "waMessage": "Bună ziua, aș dori o rezervare."
+        },
+        "seo": {
+          "ogImage": "images/tv-og.jpg",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Traista Verde\",\"telephone\":\"+407****1222\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 18\",\"addressLocality\":\"Cluj-Napoca\",\"addressCountry\":\"RO\"}}"
+        },
+        "footer": {
+          "address": "Str. Memorandumului 18, Cluj-Napoca",
+          "year": 2026,
+          "note": "Meniu de sezon, mereu."
         }
       }
     }
