@@ -46,6 +46,8 @@ let colorPopoverOpen = false;
 
 // Drawer state
 let drawerOpen = false;
+/** localStorage key for Details drawer open/closed preference (VISION Flow 2). */
+const DRAWER_PREF_KEY = 'hb-details-drawer-pref';
 let drawerSaveTimer = null;
 
 // Device mode
@@ -418,12 +420,13 @@ function ensureTemplateLoaded(id) {
   return _heavyLoads[id];
 }
 
-/** Human catalog badge — never show raw API ids (product-menu / local-service / portfolio). */
+/** Human catalog badge — Romanian product surface; never show raw API ids. */
 const DESIGN_BADGE_BY_ID = {
   'product-menu': 'Restaurant',
-  'local-service': 'Trades',
+  'local-service': 'Meserii',
   'portfolio': 'Salon',
-  'professionals': 'Professional services',
+  'professionals': 'Servicii profesionale',
+  'desserdirina': 'Cofetărie',
 };
 
 function designBadgeLabel(tpl) {
@@ -445,8 +448,8 @@ const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
 const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical', 'contact.waHref'];
 
-/** Default prefilled WhatsApp inquiry (browser builder; mirrors bot/flow intent, do not edit flow.js). */
-const WA_DEFAULT_MSG = 'Hello! I would like more information about your services.';
+/** Default prefilled WhatsApp inquiry (browser builder; RO product surface; do not edit flow.js). */
+const WA_DEFAULT_MSG = 'Bună ziua, aș dori mai multe informații despre serviciile dumneavoastră.';
 
 /** Derive contact.waHref from digits + plain waMessage. Empty when no number. */
 function deriveWaHref(config) {
@@ -1268,6 +1271,28 @@ function applyThemeBackground(hex) {
 // 13. Drawer — details panel
 // ---------------------------------------------------------------------------
 
+/** Prefer open on first editor entry; remember closed/open across reload. */
+function getDrawerPref() {
+  try {
+    return localStorage.getItem(DRAWER_PREF_KEY);
+  } catch (_) {
+    return null;
+  }
+}
+
+function setDrawerPref(value) {
+  try {
+    localStorage.setItem(DRAWER_PREF_KEY, value);
+  } catch (_) { /* ignore quota / private mode */ }
+}
+
+/** True when Details should auto-open (first visit or last preference was open). */
+function shouldAutoOpenDrawer() {
+  const pref = getDrawerPref();
+  if (pref === 'closed') return false;
+  return true; // null (first entry) or 'open'
+}
+
 function openDrawer() {
   const overlay = $('drawer-overlay');
   const drawer = $('details-drawer');
@@ -1276,6 +1301,7 @@ function openDrawer() {
   show(overlay);
   show(drawer);
   drawerOpen = true;
+  setDrawerPref('open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'true');
   // Focus first field
@@ -1289,6 +1315,7 @@ function closeDrawer() {
   hide($('drawer-overlay'));
   hide($('details-drawer'));
   drawerOpen = false;
+  setDrawerPref('closed');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'false');
   // Re-render if any drawer field was edited (deferred)
@@ -3027,10 +3054,10 @@ function renderTemplatesGrid() {
       <div class="template-card-title">${escHtml(tpl.name)}</div>
       <div class="template-card-desc">${escHtml(tpl.description || '')}</div>
       <div class="template-card-actions">
-        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Start with the ${escHtml(tpl.name)} design">Start</button>
-        <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Preview ${escHtml(tpl.name)}">
+        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Începe cu designul ${escHtml(tpl.name)}">Începe</button>
+        <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Previzualizează ${escHtml(tpl.name)}">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><ellipse cx="8" cy="8" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
-          Preview
+          Previzualizare
         </button>
       </div>`;
 
@@ -3572,11 +3599,24 @@ function showScreen(name) {
   if (name === 'edit') {
     if (topbar) show(topbar);
     if (header) hide(header);
+    // VISION 4.3: Details opens on first editor entry; preference survives reload.
+    if (shouldAutoOpenDrawer() && !drawerOpen) {
+      requestAnimationFrame(() => {
+        if (shouldAutoOpenDrawer() && !drawerOpen) openDrawer();
+      });
+    }
   } else {
     if (topbar) hide(topbar);
     if (header) show(header);
-    // Close drawer and color picker when leaving edit
-    if (drawerOpen) closeDrawer();
+    // Close drawer and color picker when leaving edit (do not write 'closed' pref —
+    // leaving the screen is not an intentional user close).
+    if (drawerOpen) {
+      hide($('drawer-overlay'));
+      hide($('details-drawer'));
+      drawerOpen = false;
+      const btn = $('btn-open-drawer');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
     if (colorPopoverOpen) closeColorPopover();
   }
 }

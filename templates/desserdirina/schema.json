@@ -1,0 +1,398 @@
+{
+  "templateId": "desserdirina",
+  "version": 1,
+  "name": "Desserdirina",
+  "language": "ro",
+  "wizardHints": {
+    "vertical": "desserdirina",
+    "aiStyle": "warm bakery / cake shop — serif titles, soft cream, pink accent; artisan pastry tone, zero corporate clichés"
+  },
+  "sections": [
+    {
+      "id": "business",
+      "title": "Despre afacere",
+      "fields": [
+        {
+          "key": "business.name",
+          "type": "text",
+          "label": "Numele afacerii (cofetărie, patiserie)",
+          "required": true,
+          "maxLen": 60
+        },
+        {
+          "key": "business.tagline",
+          "type": "text",
+          "label": "Slogan scurt (ex. Torturi artizanale, zilnic proaspete)",
+          "required": true,
+          "maxLen": 100
+        },
+        {
+          "key": "business.title",
+          "type": "text",
+          "label": "Titlu pagină pentru browser și Google (include orașul)",
+          "required": true,
+          "maxLen": 80
+        },
+        {
+          "key": "business.metaDescription",
+          "type": "textarea",
+          "label": "Descriere SEO scurtă (ce oferi și unde — 1–2 propoziții)",
+          "required": true,
+          "maxLen": 160
+        },
+        {
+          "key": "business.about",
+          "type": "textarea",
+          "label": "Povestea ta (secțiunea Despre noi) — scurt și personal",
+          "required": true,
+          "maxLen": 700
+        },
+        {
+          "key": "business.lang",
+          "type": "text",
+          "label": "Limba site-ului",
+          "required": true,
+          "maxLen": 5
+        }
+      ]
+    },
+    {
+      "id": "labels",
+      "title": "Texte butoane și secțiuni",
+      "fields": [
+        {
+          "key": "labels.about",
+          "type": "text",
+          "label": "Titlu secțiune Despre noi",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.instaTitle",
+          "type": "text",
+          "label": "Titlu secțiune Instagram",
+          "required": true,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.instaFollow",
+          "type": "text",
+          "label": "Text buton Follow Instagram",
+          "required": true,
+          "maxLen": 30
+        },
+        {
+          "key": "labels.scroll",
+          "type": "text",
+          "label": "Text indicator scroll",
+          "required": false,
+          "maxLen": 20
+        },
+        {
+          "key": "labels.waQr",
+          "type": "text",
+          "label": "Titlu QR WhatsApp (desktop)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.waOpen",
+          "type": "text",
+          "label": "Link deschide WhatsApp Web",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "labels.whatsapp",
+          "type": "text",
+          "label": "Etichetă WhatsApp",
+          "required": false,
+          "maxLen": 30
+        },
+        {
+          "key": "labels.close",
+          "type": "text",
+          "label": "Etichetă Închide",
+          "required": false,
+          "maxLen": 20
+        },
+        {
+          "key": "labels.menuLang",
+          "type": "text",
+          "label": "Aria meniu limbă",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.lightboxPrev",
+          "type": "text",
+          "label": "Lightbox anterior",
+          "required": false,
+          "maxLen": 20
+        },
+        {
+          "key": "labels.lightboxNext",
+          "type": "text",
+          "label": "Lightbox următor",
+          "required": false,
+          "maxLen": 20
+        }
+      ]
+    },
+    {
+      "id": "theme",
+      "title": "Culori",
+      "fields": [
+        {
+          "key": "theme.primary",
+          "type": "color",
+          "label": "Culoare principală",
+          "required": true
+        },
+        {
+          "key": "theme.primaryLight",
+          "type": "color",
+          "label": "Culoare principală deschisă",
+          "required": false
+        },
+        {
+          "key": "theme.primaryDark",
+          "type": "color",
+          "label": "Culoare principală închisă",
+          "required": false
+        },
+        {
+          "key": "theme.cream",
+          "type": "color",
+          "label": "Fundal crem / pagină",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "hero",
+      "title": "Hero",
+      "fields": [
+        {
+          "key": "logo",
+          "type": "image",
+          "label": "Logo",
+          "required": false
+        },
+        {
+          "key": "hero.background",
+          "type": "background",
+          "label": "Fundal hero (culoare sau foto)",
+          "required": false
+        },
+        {
+          "key": "hero.ctaLabel",
+          "type": "text",
+          "label": "Text buton CTA hero",
+          "required": true,
+          "maxLen": 40
+        }
+      ]
+    },
+    {
+      "id": "gallery",
+      "title": "Galerie",
+      "fields": [
+        {
+          "key": "galleryTitle",
+          "type": "text",
+          "label": "Titlu galerie (opțional)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "categories",
+          "type": "list",
+          "label": "Categorii foto",
+          "required": false,
+          "itemSchema": {
+            "title": "text",
+            "blurb": "text",
+            "photos": "photos"
+          }
+        }
+      ]
+    },
+    {
+      "id": "instagram",
+      "title": "Instagram",
+      "fields": [
+        {
+          "key": "instagram.handle",
+          "type": "text",
+          "label": "Utilizator Instagram (fără @)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "instagram.url",
+          "type": "url",
+          "label": "URL Instagram",
+          "required": false
+        },
+        {
+          "key": "instagram.embedUrl",
+          "type": "url",
+          "label": "Instafidget feed URL (optional)",
+          "required": false
+        },
+        {
+          "key": "instagram.gallery",
+          "type": "photos",
+          "label": "Poze grilă Instagram (fallback)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "title": "Contact și comenzi",
+      "fields": [
+        {
+          "key": "contact.title",
+          "type": "text",
+          "label": "Titlu card contact",
+          "required": true,
+          "maxLen": 50
+        },
+        {
+          "key": "contact.intro",
+          "type": "textarea",
+          "label": "Text intro contact",
+          "required": true,
+          "maxLen": 200
+        },
+        {
+          "key": "contact.whatsapp",
+          "type": "phone",
+          "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
+          "required": false
+        },
+        {
+          "key": "contact.waMessage",
+          "type": "textarea",
+          "label": "Mesaj precompletat WhatsApp (text liber; diacritice OK)",
+          "required": false,
+          "maxLen": 300
+        },
+        {
+          "key": "contact.waHref",
+          "type": "url",
+          "label": "Link WhatsApp (derivat — nu edita)",
+          "required": false,
+          "maxLen": 500
+        },
+        {
+          "key": "contact.phone",
+          "type": "phone",
+          "label": "Telefon cu prefix țară",
+          "required": false
+        },
+        {
+          "key": "contact.phoneDisplay",
+          "type": "text",
+          "label": "Telefon afișat pe site",
+          "required": false,
+          "maxLen": 30
+        },
+        {
+          "key": "contact.instagram.url",
+          "type": "url",
+          "label": "Instagram (secțiune contact)",
+          "required": false
+        },
+        {
+          "key": "contact.instagram.label",
+          "type": "text",
+          "label": "Etichetă Instagram (ex. @cofetarie)",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "contact.facebook.url",
+          "type": "url",
+          "label": "Facebook URL",
+          "required": false
+        },
+        {
+          "key": "contact.facebook.label",
+          "type": "text",
+          "label": "Etichetă Facebook",
+          "required": false,
+          "maxLen": 40
+        },
+        {
+          "key": "contact.address",
+          "type": "textarea",
+          "label": "Adresă (poate include <br>)",
+          "required": false,
+          "maxLen": 200
+        },
+        {
+          "key": "contact.addressHref",
+          "type": "url",
+          "label": "Link Google Maps",
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "footer",
+      "title": "Subsol",
+      "fields": [
+        {
+          "key": "footer.address",
+          "type": "text",
+          "label": "Adresă scurtă footer",
+          "required": false,
+          "maxLen": 120
+        },
+        {
+          "key": "footer.year",
+          "type": "text",
+          "label": "An copyright",
+          "required": false,
+          "maxLen": 4
+        },
+        {
+          "key": "footer.note",
+          "type": "text",
+          "label": "Notă footer (editabilă — nu include badge-ul Hidook)",
+          "required": false,
+          "maxLen": 120
+        }
+      ]
+    },
+    {
+      "id": "seo",
+      "title": "SEO",
+      "fields": [
+        {
+          "key": "seo.ogImage",
+          "type": "text",
+          "label": "Imagine pentru social sharing",
+          "required": false,
+          "maxLen": 200
+        },
+        {
+          "key": "seo.canonical",
+          "type": "url",
+          "label": "URL canonic",
+          "required": false
+        },
+        {
+          "key": "seo.jsonLd",
+          "type": "textarea",
+          "label": "JSON-LD (intern)",
+          "required": false,
+          "maxLen": 4000
+        }
+      ]
+    }
+  ]
+}

@@ -90,7 +90,8 @@ check('item5: attribution badge in every footer, not a config token, both links'
   for (const id of TPLS) {
     const html = read(`templates/${id}/template.html`);
     assert.ok(/class=\"hb-built-by\"/.test(html), id + ' missing hb-built-by');
-    assert.ok(/Built by/.test(html) && /hidook\.tech/.test(html) && /hidook\.agency/.test(html), id + ' badge text');
+    assert.ok(/Build by/.test(html) && /hidook\.tech/.test(html) && /hidook\.agency/.test(html), id + ' badge text');
+    assert.ok(!/Built by/.test(html), id + ' must use VISION "Build by" not "Built by"');
     assert.ok(/href=\"https:\/\/hidook\.tech\"/.test(html), id + ' hidook.tech link');
     assert.ok(/href=\"https:\/\/hidook\.agency\"/.test(html), id + ' hidook.agency link');
     assert.ok(!/data-hb-edit[^>]*hb-built-by|hb-built-by[^>]*data-hb-edit/.test(html), id + ' badge must not be data-hb-edit');
@@ -200,8 +201,8 @@ check('engine render: RO professionals preset → lang=ro + badge + open FAQ + n
   assert.ok(/Tip de consultație|Dată|Cerere trimisă/.test(out), 'RO appointment labels');
   const edit = renderHtml(tplHtml, cfg, { editMode: true });
   assert.ok(/hb-built-by/.test(edit), 'badge in edit preview');
-  // Static badge text is not a config path, so editMode must not wrap "Built by" as hb-edit of a field
-  assert.ok(!/data-hb-edit="[^"]*"[^>]*>Built by/.test(edit), 'Built by not data-hb-edit path-wrapped');
+  // Static badge text is not a config path, so editMode must not wrap "Build by" as hb-edit of a field
+  assert.ok(!/data-hb-edit="[^"]*"[^>]*>Build by/.test(edit), 'Build by not data-hb-edit path-wrapped');
 });
 
 check('item2-R1: local-service RO live HTML has no leftover English chrome', () => {

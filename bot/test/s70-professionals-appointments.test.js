@@ -84,13 +84,14 @@ function makeClient(base) {
 }
 
 async function main() {
-    await check('registry lists professionals as fourth system', () => {
+    await check('registry lists professionals among launch systems', () => {
         const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'registry.json'), 'utf8'));
         const ids = reg.templates.map((t) => t.id);
-        assert.deepStrictEqual(ids, ['product-menu', 'local-service', 'portfolio', 'professionals']);
+        assert.ok(ids.includes('professionals'), 'professionals id');
+        assert.ok(ids.includes('product-menu') && ids.includes('local-service') && ids.includes('portfolio'), 'core four');
         const pr = reg.templates.find((t) => t.id === 'professionals');
-        assert.ok(/professional/i.test(pr.name), 'catalog name must be Professional services');
-        assert.ok(/appointment/i.test(pr.description) || /consult/i.test(pr.description), 'description should mention appointments/consult');
+        assert.ok(/profesion/i.test(pr.name) || /professional/i.test(pr.name), 'catalog name professional services');
+        assert.ok(/programare|appointment|consult/i.test(pr.description), 'description should mention appointments/consult');
     });
 
     await check('professionals folder assets + ≥2 presets render cleanly', () => {
@@ -132,8 +133,8 @@ async function main() {
         const index = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
         const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
         assert.ok(/data-filter="professionals"/.test(index), 'catalog chip missing');
-        assert.ok(/Professional services/.test(index));
-        assert.ok(/'professionals':\s*'Professional services'/.test(app), 'DESIGN_BADGE missing');
+        assert.ok(/Servicii profesionale|Professional services/.test(index));
+        assert.ok(/'professionals':\s*'Servicii profesionale'/.test(app) || /'professionals':\s*'Professional services'/.test(app), 'DESIGN_BADGE missing');
     });
 
     await check('script appointment model is request-not-booking', () => {

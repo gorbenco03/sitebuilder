@@ -167,7 +167,7 @@ check('causal RED: parent restaurant Detalii still exposes jsonLd field + /embed
 });
 
 // ── GREEN on HEAD ──────────────────────────────────────────────────────────
-check('HEAD: catalog chips name Restaurant + Salon + Trades + Professional services', () => {
+check('HEAD: catalog chips name Restaurant + Salon + Meserii + Servicii profesionale + Cofetărie', () => {
   const src = read('builder/index.html');
   const chips = chipsBlock(src);
   assert.ok(chips, 'catalog-chips present');
@@ -175,13 +175,15 @@ check('HEAD: catalog chips name Restaurant + Salon + Trades + Professional servi
   assert.ok(!/Servicii locale/.test(chips), 'no Servicii locale chip');
   assert.ok(/Restaurant/.test(chips), 'chip Restaurant');
   assert.ok(/Salon/.test(chips), 'chip Salon');
-  assert.ok(/Trades/.test(chips), 'chip Trades');
-  assert.ok(/Professional services/.test(chips), 'chip Professional services');
+  assert.ok(/Meserii/.test(chips), 'chip Meserii');
+  assert.ok(/Servicii profesionale/.test(chips), 'chip Servicii profesionale');
+  assert.ok(/Cofetărie/.test(chips), 'chip Cofetărie');
   // data-filter ids must stay
   assert.ok(/data-filter=["']product-menu["']/.test(chips), 'filter product-menu');
   assert.ok(/data-filter=["']portfolio["']/.test(chips), 'filter portfolio');
   assert.ok(/data-filter=["']local-service["']/.test(chips), 'filter local-service');
   assert.ok(/data-filter=["']professionals["']/.test(chips), 'filter professionals');
+  assert.ok(/data-filter=["']desserdirina["']/.test(chips), 'filter desserdirina');
 });
 
 check('HEAD: landing step 03 has 99€, step 04 has 29€, footer no AI agents', () => {
@@ -365,19 +367,20 @@ check('HEAD: all systems waHref presets are clean (no percent-encoding)', () => 
 });
 
 // S72/S74 non-regression smoke (static)
-check('HEAD non-regress: Cum e step 01 still names four systems', () => {
+check('HEAD non-regress: Cum e step 01 still names commercial systems', () => {
   const how = howSection(read('builder/index.html'));
   assert.ok(/restaurant/i.test(how), 'restaurant');
-  assert.ok(/trades/i.test(how), 'trades');
+  assert.ok(/meserii|trades/i.test(how), 'meserii');
   assert.ok(/salon/i.test(how), 'salon');
-  assert.ok(/profession/i.test(how), 'professional');
+  assert.ok(/profesion|profession/i.test(how), 'professional');
 });
 
-check('HEAD non-regress: no $100 / SERVER_SECRET / bakery / Calendly in landing', () => {
+check('HEAD non-regress: no $100 / SERVER_SECRET / DESSERD brand / Calendly in landing', () => {
   const src = read('builder/index.html');
   assert.ok(!/\$100/.test(src), 'no $100');
   assert.ok(!/SERVER_SECRET/.test(src), 'no SERVER_SECRET');
-  assert.ok(!/DESSERD|cofetărie|Calendly/i.test(src), 'no bakery/Calendly');
+  // Ban legacy bakery brand DESSERD, not commercial vertical Desserdirina
+  assert.ok(!/\bDESSERD\b|Calendly/i.test(src), 'no DESSERD brand/Calendly');
 });
 
 if (failed) {

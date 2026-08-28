@@ -279,13 +279,14 @@ check('HEAD: drawer/inline name edits call cascade (wiring)', () => {
 });
 
 // Non-regression smoke (static) — do not weaken S80/S77/S74/S69 surfaces
-check('HEAD non-regress: catalog chips still name four systems', () => {
+check('HEAD non-regress: catalog chips still name five systems', () => {
   const html = read('builder/index.html');
   const chips = (html.match(/id=["']catalog-chips["'][\s\S]*?<\/div>/i) || [''])[0];
   assert.ok(/Restaurant/.test(chips), 'Restaurant chip');
-  assert.ok(/Trades/.test(chips), 'Trades chip');
+  assert.ok(/Meserii|Trades/.test(chips), 'Meserii chip');
   assert.ok(/Salon/.test(chips), 'Salon chip');
-  assert.ok(/Professional services/.test(chips), 'Professional services chip');
+  assert.ok(/Servicii profesionale|Professional services/.test(chips), 'Servicii profesionale chip');
+  assert.ok(/Cofetărie|Desserdirina/.test(chips), 'Cofetărie chip');
 });
 
 check('HEAD non-regress: landing still shows 99€ / 29€ and No bots', () => {

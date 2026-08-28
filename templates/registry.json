@@ -4,28 +4,35 @@
       "id": "product-menu",
       "name": "Restaurant",
       "vertical": "product-menu",
-      "description": "Restaurants, cafés, and bars — menu, reservations, and Instagram straight from the kitchen. Choose this design if you serve food.",
+      "description": "Restaurante, cafenele și baruri — meniu, rezervări și Instagram direct din bucătărie. Alege acest design dacă servești mâncare.",
       "version": 1
     },
     {
       "id": "local-service",
-      "name": "Trades",
+      "name": "Meserii",
       "vertical": "local-service",
-      "description": "Construction, renovation, repairs, and other local trades — visible phone number, work photos, and quote requests.",
+      "description": "Construcții, renovări, reparații și alte meserii locale — telefon vizibil, poze din șantier și cereri de ofertă.",
       "version": 1
     },
     {
       "id": "portfolio",
       "name": "Salon",
       "vertical": "portfolio",
-      "description": "Beauty, hair, and nail salons — bookings and a portfolio of your work.",
+      "description": "Saloane de frumusețe, coafor și unghii — programări și un portofoliu cu lucrările tale.",
       "version": 1
     },
     {
       "id": "professionals",
-      "name": "Professional services",
+      "name": "Servicii profesionale",
       "vertical": "professionals",
-      "description": "Lawyers, consultants, accountants, notaries, brokers, coaches — expertise, trust, and appointment requests, no external calendar.",
+      "description": "Avocați, consultanți, contabili, notari, brokeri, coach — expertiză, încredere și cereri de programare, fără calendar extern.",
+      "version": 1
+    },
+    {
+      "id": "desserdirina",
+      "name": "Desserdirina",
+      "vertical": "desserdirina",
+      "description": "Cofetărie și patiserie — torturi artizanale, meniu bilingv, comenzi pe WhatsApp. Remake comercial al sample-ului de brutărie.",
       "version": 1
     }
   ]

@@ -61,7 +61,7 @@ const ts = require('../template-steps.js');
     await check('(a) STEPS[0].prompt contains the registry option names', () => {
         const p = ts.STEPS[0].prompt;
         assert.ok(p.includes('Restaurant'), 'should include first template name');
-        assert.ok(p.includes('Trades'), 'should include second template name');
+        assert.ok(p.includes('Meserii') || p.includes('Trades'), 'should include second template name');
     });
 
     await check('(a) STEPS[0].prompt uses 1/10 counter (10 data+template steps)', () => {
