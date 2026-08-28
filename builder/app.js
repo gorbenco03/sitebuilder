@@ -1430,31 +1430,31 @@ function buildDrawerField(field) {
     colorInput.id = safeId;
     colorInput.className = 'field-input field-input--color';
     colorInput.value = /^#[0-9a-fA-F]{6}$/.test(parsed.color) ? parsed.color : '#1a1a1a';
-    colorInput.setAttribute('aria-label', 'Background color');
+    colorInput.setAttribute('aria-label', 'Culoare fundal');
 
     const imgInput = document.createElement('input');
     imgInput.type = 'text';
     imgInput.className = 'field-input';
     imgInput.id = safeId + '_img';
-    imgInput.placeholder = 'No photo yet';
+    imgInput.placeholder = 'Nicio poză încă';
     imgInput.readOnly = true;
     // Keep real asset URL internally; never show raw images/*.jpg in the control.
     let bgImagePath = parsed.image || '';
-    imgInput.value = bgImagePath ? 'Photo added' : '';
+    imgInput.value = bgImagePath ? 'Poză adăugată' : '';
     imgInput.style.flex = '1 1 160px';
-    imgInput.setAttribute('aria-label', 'Background photo');
+    imgInput.setAttribute('aria-label', 'Poză de fundal');
     imgInput.setAttribute('aria-readonly', 'true');
 
     const pickBtn = document.createElement('button');
     pickBtn.type = 'button';
     pickBtn.className = 'btn-ghost';
-    pickBtn.textContent = 'Choose photo';
+    pickBtn.textContent = 'Alege o poză';
     pickBtn.addEventListener('click', () => {
       openImagePickerForPath(key, (dataUrlOrPath) => {
         // Prefer keeping a relative path when the picker returns one; otherwise store data URL.
         const nextImg = dataUrlOrPath || '';
         bgImagePath = nextImg;
-        imgInput.value = nextImg ? 'Photo added' : '';
+        imgInput.value = nextImg ? 'Poză adăugată' : '';
         const composed = composeHeroBackground({
           color: colorInput.value,
           image: nextImg,
@@ -1988,11 +1988,11 @@ function wireIgAuthForm() {
     const emailInput = $('input-ig-email');
     const email = emailInput ? emailInput.value.trim() : '';
     if (!email) {
-      if (errorDiv) { errorDiv.textContent = 'Enter your email address.'; show(errorDiv); }
+      if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
       return;
     }
     const submitBtn = $('btn-ig-send-magic');
-    setBtnLoading(submitBtn, true, 'Sending…');
+    setBtnLoading(submitBtn, true, 'Se trimite…');
     if (errorDiv) hide(errorDiv);
     try {
       const res = await apiPost('/api/auth/email', { email });
@@ -2000,7 +2000,7 @@ function wireIgAuthForm() {
       if (sentDiv) show(sentDiv);
       if (res.devLink && devLink) {
         devLink.href = res.devLink;
-        devLink.textContent = 'Open the sign-in link';
+        devLink.textContent = 'Deschide linkul de autentificare';
         show(devLink);
         // One-shot handler: verify in-place, stay in editor, continue IG flow
         const onDev = async (ev) => {
@@ -2830,11 +2830,11 @@ function wireAuthForm(onAuthSuccess) {
       const emailInput = $('input-email');
       const email = emailInput ? emailInput.value.trim() : '';
       if (!email) {
-        if (errorDiv) { errorDiv.textContent = 'Enter your email address.'; show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
         return;
       }
       const submitBtn = $('btn-send-magic');
-      setBtnLoading(submitBtn, true, 'Sending…');
+      setBtnLoading(submitBtn, true, 'Se trimite…');
       if (errorDiv) hide(errorDiv);
       try {
         const res = await apiPost('/api/auth/email', { email });
@@ -2842,7 +2842,7 @@ function wireAuthForm(onAuthSuccess) {
         if (sentDiv) show(sentDiv);
         if (res.devLink && devLink) {
           devLink.href = res.devLink;
-          devLink.textContent = 'Open the site';
+          devLink.textContent = 'Deschide site-ul';
           show(devLink);
           devLink.addEventListener('click', async (ev) => {
             // Keep SPA: verify via fetch so draft/publish resume works (S62)
@@ -3256,7 +3256,7 @@ function loadCardPreview(templateId, wrap, shimmer) {
   // Fast path: static thumbnail from light registry (no heavy JS, no base64).
   if (meta && meta.thumbnail) {
     const img = document.createElement('img');
-    img.className = 'template-card-preview-frame template-card-preview-thumb';
+    img.className = 'template-card-preview-thumb';
     img.alt = (meta.name || 'Design') + ' preview';
     img.loading = 'lazy';
     img.decoding = 'async';
@@ -3397,7 +3397,7 @@ async function loadDashboard() {
         window.location.hash = '#edit';
         return;
       }
-      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>You haven't created any sites yet.</p><a href="#templates" class="btn-primary">Create your first site</a></div>`;
+      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>Nu ai creat încă niciun site.</p><a href="#templates" class="btn-primary">Creează primul site</a></div>`;
       return;
     }
 
@@ -3405,10 +3405,10 @@ async function loadDashboard() {
     sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = '<div class="empty-state"><p>Sign in to see your projects.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Sign in</button></div>';
+      list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
       wireDashboardAuthButton();
     } else {
-      list.innerHTML = '<div class="empty-state"><p>Error loading: ' + escHtml(e.message) + '</p></div>';
+      list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
     }
   }
 }
@@ -3749,6 +3749,30 @@ async function handleRoute(hash) {
     if (user) loadDashboard();
     return;
   }
+  // Offline Cancel return: #test-billing-portal=bps_test_* (unpublish already applied server-side)
+  // Also honour #sites return_url from billing-portal so stranger lands in Proiectele mele / Ciornă.
+  if (/^test-billing-portal=/.test(raw) || raw === 'sites') {
+    if (history && history.replaceState) {
+      try { history.replaceState(null, '', window.location.pathname + window.location.search + '#dashboard'); }
+      catch (_) { window.location.hash = '#dashboard'; }
+    } else {
+      window.location.hash = '#dashboard';
+    }
+    showScreen('dashboard');
+    const user = await fetchCurrentUser().catch(() => null);
+    updateUserUI(user);
+    if (user) {
+      loadDashboard();
+      showToast('Abonamentul a fost anulat. Site-ul e ciornă.', 'success', 5000);
+    } else {
+      const list = $('sites-list');
+      if (list) {
+        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+        wireDashboardAuthButton();
+      }
+    }
+    return;
+  }
   const route = raw;
 
   if (route === 'templates' || route === 'cum-e' || route === 'templates-grid') {
@@ -3784,7 +3808,7 @@ async function handleRoute(hash) {
     else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Sign in to see your projects.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Sign in</button></div>';
+        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
         wireDashboardAuthButton();
       }
     }

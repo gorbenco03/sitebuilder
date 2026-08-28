@@ -289,11 +289,12 @@ check('HEAD non-regress: catalog chips still name five systems', () => {
   assert.ok(/Cofetărie|Desserdirina/.test(chips), 'Cofetărie chip');
 });
 
-check('HEAD non-regress: landing still shows 99€ / 29€ and No bots', () => {
+check('HEAD non-regress: landing still shows 99€ / 29€ and Fără boți', () => {
   const html = read('builder/index.html');
   assert.ok(/99\s*€|99€/.test(html), '99€');
   assert.ok(/29\s*€|29€/.test(html), '29€');
-  assert.ok(/No bots/i.test(html), 'No bots');
+  assert.ok(/Fără boți|Fara boti/i.test(html), 'Fără boți RO denial');
+  assert.ok(!/No bots/i.test(html), 'no English No bots on landing');
 });
 
 if (failed) {

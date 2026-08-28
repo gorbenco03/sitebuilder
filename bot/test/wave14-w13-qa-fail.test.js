@@ -258,12 +258,15 @@ check('HEAD hero background control does not show raw images/*.jpg', () => {
     !/imgInput\.value\s*=\s*parsed\.image\b/.test(js),
     'must not put parsed.image into input.value'
   );
-  assert.ok(/Photo added/.test(js), 'human photo state Photo added');
+  assert.ok(
+    /Poză adăugată|Photo added/.test(js),
+    'human photo state label'
+  );
   // Visible control must not advertise images/cn-hero.jpg or images/*.jpg as values
   const bgIdx = js.indexOf("type === 'background'");
   assert.ok(bgIdx >= 0, 'background field branch');
   const bgBlock = js.slice(bgIdx, bgIdx + 2800);
-  assert.ok(/Photo added/.test(bgBlock), 'Photo added in background control');
+  assert.ok(/Poză adăugată|Photo added/.test(bgBlock), 'photo-added label in background control');
   assert.ok(
     !/images\/cn-hero\.jpg/.test(bgBlock),
     'no cn-hero.jpg in background control UI'
@@ -277,7 +280,7 @@ check('HEAD hero background control does not show raw images/*.jpg', () => {
     'placeholder must not show images/ path'
   );
   assert.ok(
-    /bgImagePath/.test(bgBlock) || /Photo added/.test(bgBlock),
+    /bgImagePath/.test(bgBlock) || /Poză adăugată|Photo added/.test(bgBlock),
     'internal path kept off the visible field'
   );
 });

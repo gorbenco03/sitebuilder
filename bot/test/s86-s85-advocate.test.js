@@ -319,27 +319,30 @@ check('HEAD: professionals Detalii labels have no Link Instagram contact and no 
   );
 });
 
-check('HEAD: unauth dashboard empty-state source includes visible Sign in control', () => {
+check('HEAD: unauth dashboard empty-state source includes visible auth control', () => {
   const src = read(APP_JS);
   assert.ok(
-    /Sign in to see your projects/.test(src),
-    'unauth message remains'
+    /Autentifică-te ca să vezi proiectele|Sign in to see your projects/.test(src),
+    'unauth message remains (RO preferred)'
   );
-  // Every unauth empty-state assignment includes a Sign in control
+  // Every unauth empty-state assignment includes an auth control
   const re =
     /(?:list\.innerHTML\s*=\s*)(['`])([\s\S]*?)\1/g;
   let m;
   let unauthBlocks = 0;
   while ((m = re.exec(src))) {
     const body = m[2];
-    if (!/Sign in to see your projects/.test(body)) continue;
+    if (!/Autentifică-te ca să vezi proiectele|Sign in to see your projects/.test(body)) continue;
     unauthBlocks++;
-    assert.ok(/Sign in/.test(body), 'unauth block has Sign in: ' + body.slice(0, 160));
+    assert.ok(
+      /Autentificare|Sign in/.test(body),
+      'unauth block has auth control label: ' + body.slice(0, 160)
+    );
     // Prefer a real control (button or anchor), not only the word in a sentence
     assert.ok(
-      /<(?:button|a)\b[^>]*>[\s\S]*?Sign in/i.test(body) ||
-        /Sign in[\s\S]{0,40}<\/(?:button|a)>/i.test(body),
-      'Sign in is a visible control'
+      /<(?:button|a)\b[^>]*>[\s\S]*?(?:Autentificare|Sign in)/i.test(body) ||
+        /(?:Autentificare|Sign in)[\s\S]{0,40}<\/(?:button|a)>/i.test(body),
+      'auth label is a visible control'
     );
   }
   assert.ok(unauthBlocks >= 1, 'at least one unauth empty-state block');
@@ -409,11 +412,12 @@ check('HEAD non-regress: catalog chips still name five systems', () => {
   assert.ok(/Cofetărie|Desserdirina/.test(chips), 'Cofetărie chip');
 });
 
-check('HEAD non-regress: landing still shows 99€ / 29€ and No bots', () => {
+check('HEAD non-regress: landing still shows 99€ / 29€ and Fără boți', () => {
   const html = read('builder/index.html');
   assert.ok(/99\s*€|99€/.test(html), '99€');
   assert.ok(/29\s*€|29€/.test(html), '29€');
-  assert.ok(/No bots/i.test(html), 'No bots');
+  assert.ok(/Fără boți|Fara boti/i.test(html), 'Fără boți RO denial');
+  assert.ok(!/No bots/i.test(html), 'no English No bots on landing');
 });
 
 if (failed) {

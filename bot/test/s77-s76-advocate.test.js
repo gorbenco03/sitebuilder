@@ -195,8 +195,9 @@ check('HEAD: landing step 03 has 99€, step 04 has 29€, footer no AI agents',
   assert.ok(/99\s*€|99€/.test(step03[0]), 'step 03 has 99€');
   assert.ok(/29\s*€\/year|29€\/year/i.test(how), 'step 04 has 29€/year');
   assert.ok(!/AI agents/i.test(src), 'no English AI agents in landing');
-  // footer still denies unpaid live trial in customer English
-  assert.ok(/No bots/i.test(src), 'footer customer English denial');
+  // footer denies unpaid bots in Romanian product chrome
+  assert.ok(/Fără boți|Fara boti/i.test(src), 'footer RO denial');
+  assert.ok(!/No bots/i.test(src), 'no English No bots in footer');
 });
 
 check('HEAD: Trades template finished English chrome; EN presets clean; RO preset uses real diacritics', () => {

@@ -243,7 +243,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
             'dashboard/route must call loadDraft to resume in-progress site'
         );
         assert.ok(
-            /You haven't created any sites yet/.test(loadDash) &&
+            /You haven't created any sites yet|Nu ai creat încă niciun site/.test(loadDash) &&
                 (/location\.hash\s*=\s*['"]#edit['"]/.test(loadDash + handleRoute) ||
                     /startWithTemplate|resumeLocalDraft|restoreDraft/.test(appSrc)),
             'empty dashboard must route draft back to #edit'

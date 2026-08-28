@@ -222,7 +222,9 @@ const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
 function pickThumbnailSource(dir, id) {
     const preferred = [
         'images/cn-hero.jpg', 'images/pr-hero.jpg', 'images/ct-hero.jpg',
-        'images/iv-hero.jpg', 'images/sf-hero.jpg', 'images/hero.jpg',
+        'images/iv-hero.jpg', 'images/sf-hero.jpg',
+        // Landscape bakery promo before portrait cake hero (avoids beige top crop).
+        'images/cover.jpg', 'images/hero.jpg',
     ];
     for (const rel of preferred) {
         const abs = path.join(dir, rel);
@@ -231,7 +233,14 @@ function pickThumbnailSource(dir, id) {
     const imgDir = path.join(dir, 'images');
     if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
         const names = fs.readdirSync(imgDir).filter((n) => IMAGE_EXTS.has(path.extname(n).toLowerCase()));
-        names.sort();
+        // Prefer larger files (real photos) over tiny chips when falling back alphabetically.
+        names.sort((a, b) => {
+            try {
+                return fs.statSync(path.join(imgDir, b)).size - fs.statSync(path.join(imgDir, a)).size;
+            } catch (_) {
+                return a.localeCompare(b);
+            }
+        });
         if (names.length) return path.join(imgDir, names[0]);
     }
     return null;
