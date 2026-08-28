@@ -63,10 +63,14 @@ check('unpaid dashboard checkout CTA is not labeled Păstrează', () => {
             !/['"]Păstrează['"]/.test(buildSiteCardSrc),
         'buildSiteCard must not label unpaid checkout as Păstrează'
     );
-    // Pay-to-publish verb required for unpaid (non-expired) path
+    // Trial card CTA (VISION 2026-08-26) — not pay-once Pay and publish
     assert.ok(
-        /Pay and publish/.test(buildSiteCardSrc),
-        'buildSiteCard unpaid CTA must use pay-to-publish verb (Pay and publish)'
+        /Add a card — start 7-day trial/.test(buildSiteCardSrc),
+        'buildSiteCard unpaid CTA must use trial card verb (Add a card — start 7-day trial)'
+    );
+    assert.ok(
+        !/Pay and publish/.test(buildSiteCardSrc),
+        'buildSiteCard must not keep pay-once Pay and publish'
     );
 });
 
@@ -126,12 +130,13 @@ check('builder copy: no free trial / GRATUIT publish / permanent hosting promise
     );
 });
 
-check('success modal pay CTA uses Pay and publish (not Păstrează)', () => {
-    // index.html btn-keep-site label or app.js wiring
+check('success modal pay CTA uses Add a card trial verb (not Păstrează / Pay and publish)', () => {
     const payLabelOk =
-        /Pay and publish/.test(html) || /Pay and publish/.test(app);
-    assert.ok(payLabelOk, 'success/pay CTA must say Pay and publish');
+        /Add a card — start 7-day trial/.test(html) ||
+        /Add a card — start 7-day trial/.test(app);
+    assert.ok(payLabelOk, 'success/pay CTA must say Add a card — start 7-day trial');
     assert.ok(!/>\s*Păstrează\s*</.test(html), 'index.html must not label pay button Păstrează');
+    assert.ok(!/Pay and publish/.test(html + app), 'no pay-once Pay and publish leftover');
 });
 
 process.exit(failed ? 1 : 0);

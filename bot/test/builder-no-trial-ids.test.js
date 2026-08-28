@@ -5,7 +5,7 @@
  * Invariant: commercial builder DOM/CSS/JS selectors use pay/publish vocabulary.
  * Forbidden: trial-bullet*, btn-keep-site, status-trial (id, class, or $('…')).
  * Allowed renames: publish-plan, publish-price, publish-renewal, btn-pay-publish, status-unpaid.
- * Visible Romanian copy stays pay-before-publish (Neplătit badge, price + 12 luni, /an).
+ * Visible copy: trial-card CTA (VISION 2026-08-26), not pay-once Pay and publish.
  *
  * Run: node bot/test/builder-no-trial-ids.test.js
  */
@@ -91,19 +91,24 @@ check('pay/publish vocabulary is wired (renamed hooks present)', () => {
     );
 });
 
-check('visible pay-before-publish copy preserved', () => {
+check('visible trial-card publish copy preserved', () => {
     assert.ok(/Unpaid/.test(app) || /Unpaid/.test(html), 'unpaid badge label Unpaid required');
     assert.ok(
-        /12 months hosting|first publish/.test(html),
-        'publish plan must keep 100 + 12 months hosting copy'
+        /12 months hosting|first publish|7-day trial/i.test(html),
+        'publish plan must keep hosting or trial copy'
     );
     assert.ok(
         /renewal|\/year/i.test(html),
         'renewal /year copy must remain on publish plan'
     );
     assert.ok(
-        /Pay and publish/.test(html) || /Pay and publish/.test(app),
-        'pay CTA must say Pay and publish'
+        /Add a card — start 7-day trial/.test(html) ||
+            /Add a card — start 7-day trial/.test(app),
+        'pay CTA must say Add a card — start 7-day trial'
+    );
+    assert.ok(
+        !/Pay and publish/.test(html) && !/Pay and publish/.test(app),
+        'must not keep pay-once Pay and publish'
     );
 });
 

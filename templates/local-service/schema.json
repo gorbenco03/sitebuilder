@@ -79,7 +79,7 @@
     },
     {
       "id": "labels",
-      "title": "Interface labels (button/section text)",
+      "title": "Button and section text",
       "fields": [
         {
           "key": "labels.about",
@@ -558,7 +558,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Instagram feed link (optional)",
+          "label": "Instafidget feed URL (optional)",
           "required": false
         },
         {

@@ -186,7 +186,7 @@ check('Hidook Site Builder chrome, pay-before-publish, Instagram slot preserved'
   const html = read(BUILDER_HTML);
   assert.ok(html.includes('Hidook Site Builder'), 'product name');
   assert.ok(/id="btn-publish"|Publish site/.test(html), 'publish CTA');
-  assert.ok(/id="btn-pay-publish"|Pay and publish/.test(html), 'pay-before-publish');
+  assert.ok(/id="btn-pay-publish"|Add a card — start 7-day trial/.test(html), 'trial-card CTA');
   assert.ok(/id="btn-add-instagram"|Add Instagram/.test(html), 'Instagram partner slot');
   assert.ok(/lang="en"/.test(html), 'English UI');
 });

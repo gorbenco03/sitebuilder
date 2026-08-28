@@ -1373,10 +1373,14 @@ function buildDrawerField(field) {
     imgInput.type = 'text';
     imgInput.className = 'field-input';
     imgInput.id = safeId + '_img';
-    imgInput.placeholder = "Photo path, e.g. images/hero.jpg";
-    imgInput.value = parsed.image || '';
+    imgInput.placeholder = 'No photo yet';
+    imgInput.readOnly = true;
+    // Keep real asset URL internally; never show raw images/*.jpg in the control.
+    let bgImagePath = parsed.image || '';
+    imgInput.value = bgImagePath ? 'Photo added' : '';
     imgInput.style.flex = '1 1 160px';
-    imgInput.setAttribute('aria-label', 'Background image path');
+    imgInput.setAttribute('aria-label', 'Background photo');
+    imgInput.setAttribute('aria-readonly', 'true');
 
     const pickBtn = document.createElement('button');
     pickBtn.type = 'button';
@@ -1386,7 +1390,8 @@ function buildDrawerField(field) {
       openImagePickerForPath(key, (dataUrlOrPath) => {
         // Prefer keeping a relative path when the picker returns one; otherwise store data URL.
         const nextImg = dataUrlOrPath || '';
-        imgInput.value = nextImg.startsWith('data:') ? nextImg.slice(0, 48) + '…' : nextImg;
+        bgImagePath = nextImg;
+        imgInput.value = nextImg ? 'Photo added' : '';
         const composed = composeHeroBackground({
           color: colorInput.value,
           image: nextImg,
@@ -1399,11 +1404,12 @@ function buildDrawerField(field) {
     });
 
     function commitBg() {
-      // If image field shows truncated data URL, keep prior image from config.
-      let image = imgInput.value;
-      if (image && image.includes('…')) {
+      // Image path lives in bgImagePath (not the human-facing status field).
+      let image = bgImagePath;
+      if (!image) {
         const prev = parseHeroBackground(getPath(draft.config, key));
         image = prev.image || '';
+        bgImagePath = image;
       }
       const value = composeHeroBackground({ color: colorInput.value, image: image });
       setPath(draft.config, key, value);
@@ -1413,7 +1419,7 @@ function buildDrawerField(field) {
     }
 
     colorInput.addEventListener('input', commitBg);
-    imgInput.addEventListener('change', commitBg);
+    // Status field is read-only; color changes commit the existing internal path.
 
     row.appendChild(colorInput);
     row.appendChild(imgInput);
@@ -2196,6 +2202,93 @@ function formatHostingUntilDate(iso) {
   }
 }
 
+/**
+ * Trial end ISO for dashboard chrome.
+ * Prefer site.trialEnd / Stripe trial fields; else checkout start + 7 days;
+ * else derive from paidUntil (first hosting year start + 7 days).
+ */
+function getTrialEndIso(site) {
+  if (!site) return null;
+  if (site.trialEnd) return site.trialEnd;
+  if (site.trial_end) return site.trial_end;
+  const start =
+    site.trialStart ||
+    site.paidAt ||
+    site.cardCollectedAt ||
+    site.checkoutAt ||
+    null;
+  if (start) {
+    const d = new Date(start);
+    if (Number.isFinite(d.getTime())) {
+      d.setUTCDate(d.getUTCDate() + 7);
+      return d.toISOString();
+    }
+  }
+  // paidUntil ≈ checkout + 12 months on first publish → trial end ≈ paidUntil − 1y + 7d
+  if (site.paidUntil) {
+    const until = new Date(site.paidUntil);
+    if (Number.isFinite(until.getTime())) {
+      const trialEnd = new Date(until);
+      trialEnd.setUTCFullYear(trialEnd.getUTCFullYear() - 1);
+      trialEnd.setUTCDate(trialEnd.getUTCDate() + 7);
+      return trialEnd.toISOString();
+    }
+  }
+  if (site.createdAt) {
+    const d = new Date(site.createdAt);
+    if (Number.isFinite(d.getTime())) {
+      d.setUTCDate(d.getUTCDate() + 7);
+      return d.toISOString();
+    }
+  }
+  return null;
+}
+
+/**
+ * Paid + live, not yet first invoice: show 7-day trial line instead of Hosting until.
+ * After first charge / non-trial paid year, Hosting until remains.
+ */
+function isSiteInTrial(site) {
+  if (!site || !site.paid) return false;
+  if (isHostingExpired(site)) return false;
+  if (site.billingState === 'paid' || site.chargedAt) return false;
+  if (site.trialing === true) return true;
+  if (site.billingState === 'trial') return true;
+  const sub = String(
+    site.subscriptionStatus || site.stripeSubscriptionStatus || ''
+  ).toLowerCase();
+  if (sub === 'trialing') return true;
+  // Renewed hosting year (paidUntil far past createdAt) is not trial.
+  if (site.createdAt && site.paidUntil) {
+    const created = Date.parse(site.createdAt);
+    const until = Date.parse(site.paidUntil);
+    if (Number.isFinite(created) && Number.isFinite(until)) {
+      const eighteenMonthsMs = 18 * 30 * 24 * 60 * 60 * 1000;
+      if (until - created > eighteenMonthsMs) return false;
+    }
+  }
+  const endIso = getTrialEndIso(site);
+  if (!endIso) return false;
+  const t = Date.parse(endIso);
+  return Number.isFinite(t) && t > Date.now();
+}
+
+/** Soft-wrap a URL only at `/` so slug tokens (incl. hyphens) stay intact. */
+function fillUrlWithSlashWbr(el, url) {
+  if (!el) return;
+  el.textContent = '';
+  const parts = String(url || '').split('/');
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0) {
+      el.insertAdjacentHTML('beforeend', '/<wbr>');
+    }
+    const seg = document.createElement('span');
+    seg.className = 'success-url-seg site-live-seg';
+    seg.textContent = parts[i];
+    el.appendChild(seg);
+  }
+}
+
 /** Hosting expired: status expired or paidUntil in the past. */
 function isHostingExpired(site) {
   if (!site) return false;
@@ -2623,28 +2716,18 @@ function showSuccessScreen(url, paymentUrl) {
   const isLive = !!(url && String(url).indexOf('http') === 0);
 
   if (isLive) {
-    if (titleEl) titleEl.textContent = 'Your site is live — 12 months hosting included';
+    if (titleEl) titleEl.textContent = 'Your site is live — 7-day trial started';
     if (draftNote) hide(draftNote);
     if (urlText) {
       // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
       // without splitting the slug token at hyphens (S99/S107).
       // Static tests (s99/s103) require split('/') + literal '/<wbr>' in source.
-      urlText.textContent = '';
-      const parts = String(url).split('/');
-      for (let i = 0; i < parts.length; i++) {
-        if (i > 0) {
-          urlText.insertAdjacentHTML('beforeend', '/<wbr>');
-        }
-        const seg = document.createElement('span');
-        seg.className = 'success-url-seg';
-        seg.textContent = parts[i];
-        urlText.appendChild(seg);
-      }
+      fillUrlWithSlashWbr(urlText, url);
     }
     if (urlLink) { urlLink.href = url; show(urlLink); }
     if (copyBtn) show(copyBtn);
   } else {
-    if (titleEl) titleEl.textContent = 'Draft saved';
+    if (titleEl) titleEl.textContent = 'Add a card to go live';
     if (draftNote) show(draftNote);
     if (urlLink) hide(urlLink);
     if (copyBtn) hide(copyBtn);
@@ -2708,7 +2791,7 @@ async function completeTestCheckout(sessionId) {
     if (site && site.url && String(site.url).indexOf('http') === 0) {
       sitePaymentUrl = null;
       showSuccessScreen(site.url, null);
-      showToast('Payment confirmed. Your site is live.', 'success', 6000);
+      showToast('Trial started. Your site is live.', 'success', 6000);
     } else if (site && site.paid) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
@@ -2716,11 +2799,12 @@ async function completeTestCheckout(sessionId) {
         if (s && s.url) {
           publishedSiteUrl = s.url;
           showSuccessScreen(s.url, null);
+          showToast('Trial started. Your site is live.', 'success', 6000);
         } else {
-          showToast('Payment confirmed. Publishing will finish in a few moments.', 'success', 6000);
+          showToast('Trial started. Publishing will finish in a few moments.', 'success', 6000);
         }
       } catch (_) {
-        showToast('Payment confirmed. Publishing will finish in a few moments.', 'success', 6000);
+        showToast('Trial started. Publishing will finish in a few moments.', 'success', 6000);
       }
     } else {
       showToast('Payment processed.', 'success', 5000);
@@ -3222,7 +3306,8 @@ function buildSiteCard(site) {
     link.href = site.url;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.textContent = site.url;
+    // Soft-wrap only at `/` — same as success URL (W13 390 slug shred).
+    fillUrlWithSlashWbr(link, site.url);
     link.addEventListener('click', e => e.stopPropagation());
     meta.appendChild(link);
   }
@@ -3230,14 +3315,27 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
-  // Paid + active: stranger-readable hosting-until (calendar date from paidUntil)
-  if (site.paid && !hostingExpired && site.paidUntil) {
-    const untilStr = formatHostingUntilDate(site.paidUntil);
-    if (untilStr) {
+  // During trial: 7-day trial · first charge 99 on <day-7 date>
+  // After first charge / non-trial paid year: Hosting until …
+  if (site.paid && !hostingExpired) {
+    if (isSiteInTrial(site)) {
+      const trialEndIso = getTrialEndIso(site);
+      const day7 = formatHostingUntilDate(trialEndIso);
+      const price = formatPriceLabel(appConfig);
       const hostLine = document.createElement('div');
-      hostLine.className = 'site-hosting-until';
-      hostLine.textContent = 'Hosting until ' + untilStr;
+      hostLine.className = 'site-hosting-until site-trial-line';
+      hostLine.textContent = day7
+        ? '7-day trial · first charge ' + price + ' on ' + day7
+        : '7-day trial · first charge ' + price;
       info.appendChild(hostLine);
+    } else if (site.paidUntil) {
+      const untilStr = formatHostingUntilDate(site.paidUntil);
+      if (untilStr) {
+        const hostLine = document.createElement('div');
+        hostLine.className = 'site-hosting-until';
+        hostLine.textContent = 'Hosting until ' + untilStr;
+        info.appendChild(hostLine);
+      }
     }
   }
 
@@ -3251,7 +3349,7 @@ function buildSiteCard(site) {
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
-  // Unpaid → first publish; paid+expired → renew; paid+active → Cancel (portal)
+  // Unpaid → add card / start trial; paid+expired → renew; paid+active → Cancel (portal)
   if (!site.paid || hostingExpired) {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
@@ -3260,8 +3358,8 @@ function buildSiteCard(site) {
       payLabel = 'Renew hosting — ' + formatRenewalLabel(appConfig);
       payAriaLabel = 'Renew hosting for this site';
     } else {
-      payLabel = 'Pay and publish';
-      payAriaLabel = 'Pay and publish this site';
+      payLabel = 'Add a card — start 7-day trial';
+      payAriaLabel = 'Add a card to start a 7-day trial';
     }
     keepBtn.textContent = payLabel;
     keepBtn.setAttribute('aria-label', payAriaLabel);

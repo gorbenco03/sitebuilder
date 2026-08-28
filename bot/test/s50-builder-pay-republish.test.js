@@ -165,19 +165,27 @@ function withBusinessName(config, name) {
         assert.ok(!bareFallback.test(appSrc), 'builder/app.js must not default brandDomain to hidook.ro');
     });
 
-    await check('unpaid success chrome: Draft saved + Pay and publish', () => {
+    await check('unpaid success chrome: Add a card trial (not Draft saved / Pay and publish)', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
         assert.ok(
-            /Draft saved/i.test(showSuccessSrc) || /success-draft-note/.test(showSuccessSrc),
-            'unpaid success must stay draft'
+            /Add a card to go live/i.test(showSuccessSrc) ||
+                /Add a card to go live/i.test(htmlSrc) ||
+                /success-draft-note/.test(showSuccessSrc),
+            'unpaid success must prompt add card to go live'
         );
         assert.ok(
-            /Pay and publish/i.test(htmlSrc) || /Pay and publish/i.test(appSrc),
-            'pay CTA must be Pay and publish'
+            /Add a card — start 7-day trial/i.test(htmlSrc) ||
+                /Add a card — start 7-day trial/i.test(appSrc),
+            'pay CTA must be Add a card — start 7-day trial'
         );
         assert.ok(
-            /Complete your payment|Pay and publish/i.test(htmlSrc + showSuccessSrc),
-            'success chrome must mention pay-before-live'
+            /7-day trial/i.test(htmlSrc + showSuccessSrc),
+            'success chrome must mention 7-day trial'
+        );
+        assert.ok(
+            !/Pay and publish/i.test(htmlSrc + appSrc) &&
+                !/Complete your payment to publish the site/i.test(htmlSrc + showSuccessSrc),
+            'must not keep pay-once Draft/Pay chrome'
         );
     });
 
