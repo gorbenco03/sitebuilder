@@ -11,7 +11,7 @@
  *   GET  /app/*              → static files from <repo>/builder/
  *   GET  /live/<slug>/*      → isolated local publish ($DATA_DIR/published/<slug>/)
  *
- *   GET  /api/config         → {amount, amountCents, currency, renewal, renewalCents, brandDomain|null, contactUrl|null} (public)
+ *   GET  /api/config         → {amount, amountCents, currency, renewal, renewalCents, trialDays, brandDomain|null, contactUrl|null, calendar} (public)
  *   GET  /api/slug-check?slug= → {available:bool, slug} (public)
  *   GET  /api/templates      → list templates with schema + presets
  *   POST /api/auth/email     → send magic link
@@ -43,6 +43,7 @@ const crypto = require('crypto');
 
 const payments = require('./payments.js');
 const pricing  = require('./pricing.js');
+const calendarBoundary = require('./calendar-boundary.js');
 const { log }  = require('./logger.js');
 
 // These are loaded lazily so we never crash at require-time in tests without stubs.
@@ -712,10 +713,14 @@ async function handleGetConfig(req, res, query) {
         currency:     p.currency,
         renewal:      p.renewal,
         renewalCents: p.renewalCents,
+        // Card subscription trial length (days) — commercial model, not free live TRIAL_DAYS.
+        trialDays:    payments.SUBSCRIPTION_TRIAL_DAYS,
         // Compat alias for older UI that read priceEur as the displayed major units.
         priceEur:     p.amount,
         brandDomain:  process.env.BRAND_DOMAIN || null,
         contactUrl:   process.env.CONTACT_URL  || null,
+        // Professional calendar honesty (option C groundwork; no fake cal.diy embed).
+        calendar:     calendarBoundary.getPublicCalendarConfig(),
     });
 }
 

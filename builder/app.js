@@ -2299,6 +2299,15 @@ async function fetchAppConfig() {
   const bulletRenewal = $('publish-renewal');
   if (bulletPrice) bulletPrice.textContent = priceLabel;
   if (bulletRenewal) bulletRenewal.textContent = renewalLabel;
+  // How-it-works + success modal: same commercial config (no hard-coded 99€/29€)
+  const howPrice = $('how-price');
+  const howRenewal = $('how-renewal');
+  const howRenewalStep = $('how-renewal-step');
+  if (howPrice) howPrice.textContent = priceLabel;
+  if (howRenewal) howRenewal.textContent = renewalLabel;
+  if (howRenewalStep) howRenewalStep.textContent = renewalLabel;
+  const successRenewal = $('success-renewal');
+  if (successRenewal) successRenewal.textContent = renewalLabel;
 }
 
 function formatPriceLabel(cfg) {
