@@ -3290,7 +3290,9 @@ function buildSiteCard(site) {
 
   const name = document.createElement('div');
   name.className = 'site-card-name';
-  name.textContent = site.projectName || site.slug || site.id;
+  // Keep hyphenated slugs (qalive-w15) one unit — U+2011 is not a soft-wrap point.
+  const rawName = String(site.projectName || site.slug || site.id || '');
+  name.textContent = rawName.replace(/-/g, '\u2011');
 
   const meta = document.createElement('div');
   meta.className = 'site-card-meta';
@@ -3315,18 +3317,20 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
-  // During trial: 7-day trial · first charge 99 on <day-7 date>
+  // During live/active trial only: 7-day trial · first charge 99 on <day-7 date>
+  // Cancelled / unpublished Draft must not promise a first charge (W15).
   // After first charge / non-trial paid year: Hosting until …
-  if (site.paid && !hostingExpired) {
+  const isLiveActive = site.status === 'live' || site.status === 'active';
+  if (site.paid && !hostingExpired && isLiveActive) {
     if (isSiteInTrial(site)) {
       const trialEndIso = getTrialEndIso(site);
       const day7 = formatHostingUntilDate(trialEndIso);
       const price = formatPriceLabel(appConfig);
       const hostLine = document.createElement('div');
       hostLine.className = 'site-hosting-until site-trial-line';
-      hostLine.textContent = day7
-        ? '7-day trial · first charge ' + price + ' on ' + day7
-        : '7-day trial · first charge ' + price;
+      // NB hyphen keeps "7-day" one token when the line wraps at spaces / ·.
+      const trialLabel = '7\u2011day trial · first charge ' + price;
+      hostLine.textContent = day7 ? trialLabel + ' on ' + day7 : trialLabel;
       info.appendChild(hostLine);
     } else if (site.paidUntil) {
       const untilStr = formatHostingUntilDate(site.paidUntil);
