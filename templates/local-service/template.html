@@ -331,6 +331,11 @@
             <div>
                 <p>{{footer.address}}</p>
                 <p>&copy; {{footer.year}} {{business.name}}. {{footer.note}}</p>
+                <nav class="hb-legal-links" aria-label="Pagini legale">
+                    <a href="privacy.html">Confidențialitate</a>
+                    <a href="terms.html">Termeni</a>
+                    <a href="cookies.html">Cookie-uri</a>
+                </nav>
                 <p class="hb-built-by">Build by <a href="https://hidook.tech" target="_blank" rel="noopener noreferrer">hidook.tech</a> powered by <a href="https://hidook.agency" target="_blank" rel="noopener noreferrer">hidook.agency</a></p>
             </div>
             <div class="ls-foot__soc">
@@ -367,6 +372,15 @@
         <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="{{labels.lightboxNext}}">›</button>
     </div>
 
+    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
+      <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
+      <div class="hb-cookie-actions">
+        <button type="button" id="hb-cookie-accept">Accept</button>
+        <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
+      </div>
+    </div>
+    <link rel="stylesheet" href="cookie-banner.css">
+    <script src="cookie-banner.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

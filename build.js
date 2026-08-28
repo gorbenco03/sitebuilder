@@ -571,7 +571,17 @@ function build(siteDir = ROOT) {
     const html = renderHtml(templateHtml, config);
 
     fs.writeFileSync(outputPath, html, 'utf8');
-    return { outputPath, bytes: html.length };
+
+    // Flow 3: Privacy / Terms / Cookies + cookie-banner assets beside index.html
+    let legalFiles = [];
+    try {
+        const { writeLegalSiteFiles } = require('./bot/site-legal.js');
+        legalFiles = writeLegalSiteFiles(dir, config).files || [];
+    } catch (e) {
+        console.warn('  ⚠️  legal pages skipped:', e && e.message ? e.message : e);
+    }
+
+    return { outputPath, bytes: html.length, legalFiles };
 }
 
 module.exports = {

@@ -211,7 +211,11 @@ function assertNoSecretLeak(body) {
             assert.ok(idx >= 0);
             const window = html.slice(Math.max(0, idx - 80), idx + 400);
             assert.ok(/Download HTML/.test(window), 'label Download HTML near button');
-            assert.ok(!/Download HTML[\s\S]{0,200}Kanban|DESSERD/i.test(html), 'no factory jargon');
+            // Word boundaries: avoid false positive on catalog chip "desserdirina"
+            assert.ok(
+                !/Download HTML[\s\S]{0,200}\bKanban\b|\bDESSERD\b/i.test(html),
+                'no factory jargon'
+            );
         });
 
         await check('builder/app.js wires Download HTML (fetch + blob / a[download], no publish)', () => {

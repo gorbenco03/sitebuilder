@@ -104,6 +104,10 @@ Set a long random `HIDOOK_ADMIN_TOKEN` in the **host environment only** (never c
 
 In the **Hidook Site Builder** editor topbar, **Download HTML** fetches `GET /api/export-html` (session cookie) and saves a complete `.html` file of the **current draft** from the registry — same `build.js` renderer as a live site, but **no** Stripe charge, deploy, or unpublish. Sign-in required; missing draft returns an error toast. Never print secrets.
 
+## Download ZIP / self-deploy (Flow 3)
+
+**Descarcă ZIP** fetches `GET /api/export-zip` (session cookie) and saves a `.zip` of the current draft: `index.html`, CSS/JS, images, Privacy/Terms/Cookies pages, cookie banner assets, and the Hidook attribution badge. Unzip and serve with any static host — **no** Hidook runtime and **no** required requests to Hidook domains. Same auth rules as Download HTML (sign-in, draft required). Not a live publish and not a charge.
+
 ---
 
 ## Instafidget (partner)

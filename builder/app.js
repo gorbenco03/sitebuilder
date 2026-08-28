@@ -2201,6 +2201,65 @@ async function downloadDraftHtml() {
   }
 }
 
+/**
+ * Download the current draft as a self-hostable static ZIP (Flow 3).
+ * GET /api/export-zip — HTML/CSS/JS/images/legal pages. Not a live publish.
+ */
+async function downloadDraftZip() {
+  const btn = $('btn-download-zip');
+  if (btn) btn.disabled = true;
+  try {
+    let url = '/api/export-zip';
+    if (currentSiteId) {
+      url += '?siteId=' + encodeURIComponent(currentSiteId);
+    }
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/zip' },
+    });
+    if (!res.ok) {
+      let msg = 'Nu am putut descărca ZIP-ul.';
+      try {
+        const json = await res.json();
+        if (json && json.error) msg = json.error;
+      } catch (_) { /* empty */ }
+      if (res.status === 401) msg = 'Autentifică-te ca să descarci ZIP-ul.';
+      showToast(msg, 'error', 5000);
+      return;
+    }
+    const blob = await res.blob();
+    let filename = 'site.zip';
+    const cd = res.headers.get('Content-Disposition') || res.headers.get('content-disposition') || '';
+    const mStar = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+    const mPlain = /filename="?([^";]+)"?/i.exec(cd);
+    if (mStar && mStar[1]) {
+      try { filename = decodeURIComponent(mStar[1].trim()); } catch (_) { filename = mStar[1].trim(); }
+    } else if (mPlain && mPlain[1]) {
+      filename = mPlain[1].trim();
+    }
+    if (!/\.zip$/i.test(filename)) filename = filename + '.zip';
+
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch (_) {}
+      try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+    }, 0);
+    showToast('ZIP descărcat.', 'success', 2500);
+  } catch (e) {
+    showToast((e && e.message) || 'Nu am putut descărca ZIP-ul.', 'error', 5000);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function apiPost(url, body) {
   const r = await fetch(url, {
     method: 'POST',
@@ -3726,6 +3785,8 @@ function wireStaticButtons() {
   // Download HTML of the current draft (server-rendered; not a live publish)
   const dlHtmlBtn = $('btn-download-html');
   if (dlHtmlBtn) dlHtmlBtn.addEventListener('click', downloadDraftHtml);
+  const dlZipBtn = $('btn-download-zip');
+  if (dlZipBtn) dlZipBtn.addEventListener('click', downloadDraftZip);
 
   const igBtn = $('btn-add-instagram');
   if (igBtn) igBtn.addEventListener('click', openInstagramModal);

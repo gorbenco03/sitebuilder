@@ -28,6 +28,7 @@
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *   GET  /api/export-html   → download current draft as complete static HTML (session; not a live publish)
+ *   GET  /api/export-zip    → download current draft as self-hostable static ZIP (session; not a live publish)
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
  *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
  *
@@ -1295,17 +1296,12 @@ function exportHtmlFilename(site, config) {
 }
 
 /**
- * GET /api/export-html — download the current draft as a complete static HTML
- * document (build.js renderer). Session required. Not a live publish / deploy.
- *
- * Query: optional siteId (must be owned). Without siteId, uses the user's most
- * recent site that has a saved version.
- *
- * 401 unauthenticated · 400 missing draft · 200 text/html attachment.
+ * Resolve the caller's draft site + latest config (shared by export-html / export-zip).
+ * Sends 401/400 itself on failure; returns null when response already written.
  */
-async function handleExportHtml(req, res, query) {
+async function resolveExportDraft(req, res, query) {
     const userId = requireAuth(req, res);
-    if (!userId) return;
+    if (!userId) return null;
 
     const reg = getRegistry();
     let site = null;
@@ -1314,11 +1310,11 @@ async function handleExportHtml(req, res, query) {
     if (siteIdHint) {
         site = await reg.getSite(siteIdHint);
         if (!site || site.userId !== userId) {
-            return sendJson(res, 400, { error: 'No draft to download.' });
+            sendJson(res, 400, { error: 'No draft to download.' });
+            return null;
         }
     } else {
         const sites = (await reg.listSites(userId)) || [];
-        // Prefer newest site that has at least one saved version (draft).
         for (let i = sites.length - 1; i >= 0; i--) {
             const s = sites[i];
             if (!s || s.status === 'deleted') continue;
@@ -1329,25 +1325,47 @@ async function handleExportHtml(req, res, query) {
             }
         }
         if (!site) {
-            return sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+            sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+            return null;
         }
     }
 
     const versions = reg.listVersions(site.id) || [];
     if (!versions.length) {
-        return sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+        sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+        return null;
     }
     const config = latestSiteConfig(reg, site.id);
     if (!config || typeof config !== 'object' || !Object.keys(config).length) {
-        return sendJson(res, 400, { error: 'No draft to download.' });
+        sendJson(res, 400, { error: 'No draft to download.' });
+        return null;
     }
 
     const templateId = site.templateId || 'product-menu';
     const templatePath = path.join(TEMPLATES_DIR, templateId, 'template.html');
     if (!fs.existsSync(templatePath)) {
-        return sendJson(res, 400, { error: 'No draft to download.' });
+        sendJson(res, 400, { error: 'No draft to download.' });
+        return null;
     }
 
+    return { userId, reg, site, config, templateId };
+}
+
+/**
+ * GET /api/export-html — download the current draft as a complete static HTML
+ * document (build.js renderer). Session required. Not a live publish / deploy.
+ *
+ * Query: optional siteId (must be owned). Without siteId, uses the user's most
+ * recent site that has a saved version.
+ *
+ * 401 unauthenticated · 400 missing draft · 200 text/html attachment.
+ */
+async function handleExportHtml(req, res, query) {
+    const draft = await resolveExportDraft(req, res, query);
+    if (!draft) return;
+    const { site, config, templateId } = draft;
+
+    const templatePath = path.join(TEMPLATES_DIR, templateId, 'template.html');
     let html;
     try {
         const { renderHtml } = require('../build.js');
@@ -1375,6 +1393,47 @@ async function handleExportHtml(req, res, query) {
         'X-Content-Type-Options': 'nosniff',
     });
     res.end(buf);
+}
+
+/**
+ * GET /api/export-zip — complete static site ZIP (HTML/CSS/JS/images/legal/badge).
+ * Session required. Same draft resolution as export-html. Not a live publish.
+ * No new commercial lock (VISION Flow 3): any signed-in draft may export.
+ */
+async function handleExportZip(req, res, query) {
+    const draft = await resolveExportDraft(req, res, query);
+    if (!draft) return;
+    const { site, config, templateId } = draft;
+
+    let result;
+    try {
+        const { exportSiteZip } = require('./site-export.js');
+        result = exportSiteZip({
+            templateId,
+            config,
+            images: [],
+            slug: site.slug || (config.business && config.business.name) || 'site',
+        });
+    } catch (e) {
+        log('server.export_zip.error', { siteId: site.id, err: e && e.message }, 'error');
+        return sendJson(res, 500, { error: 'Could not build the ZIP export.' });
+    }
+
+    if (!result || !result.zip || !Buffer.isBuffer(result.zip)) {
+        return sendJson(res, 500, { error: 'Could not build the ZIP export.' });
+    }
+
+    const filename = (result.filename || 'site.zip').replace(/"/g, '');
+    const disposition =
+        'attachment; filename="' + filename + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename);
+    res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': disposition,
+        'Content-Length': result.zip.length,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(result.zip);
 }
 
 function persistEmbedUrl(reg, siteId, embedUrl) {
@@ -1885,6 +1944,11 @@ function createHandler({ onStripeEvent } = {}) {
             // Download current draft as complete static HTML (not a live publish)
             if (req.method === 'GET' && url === '/api/export-html') {
                 return await handleExportHtml(req, res, query);
+            }
+
+            // Download current draft as self-hostable static ZIP (not a live publish)
+            if (req.method === 'GET' && url === '/api/export-zip') {
+                return await handleExportZip(req, res, query);
             }
 
             // Offline test-pay return from /app/#test-checkout=cs_test_* (non-production only)

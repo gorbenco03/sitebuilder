@@ -101,6 +101,14 @@
       </svg>
       <span class="btn-topbar-label">Download HTML</span>
     </button>
+    <button id="btn-download-zip" class="btn-topbar" type="button" aria-label="Descarcă ZIP" title="Descarcă ZIP pentru self-host">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <path d="M4 2.5h5.5L12 5v7.5H4V2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M9.5 2.5V5H12" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M7.5 7v3.5M6 9l1.5 1.5L9 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="btn-topbar-label">Descarcă ZIP</span>
+    </button>
     <button id="btn-publish" class="btn-primary btn-publish-top" type="button" aria-label="Publish site">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <path d="M7 2v7M4 5l3 3 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -500,6 +508,26 @@
 
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
+
+<!-- Flow 3: builder-origin cookie banner (dismissible) -->
+<div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Cookie consent" hidden>
+  <p>We use essential browser storage so you can stay signed in and keep draft progress. <a href="/app/cookies.html">Cookies</a></p>
+  <div class="hb-cookie-actions">
+    <button type="button" id="hb-cookie-accept">Accept</button>
+    <a class="hb-cookie-link" href="/app/cookies.html">Learn more</a>
+  </div>
+</div>
+<style>
+.hb-cookie-banner{position:fixed;z-index:99999;left:1rem;right:1rem;bottom:1rem;max-width:32rem;margin:0 auto;padding:1rem 1.1rem;border-radius:12px;background:#111;color:#f5f5f5;box-shadow:0 12px 40px rgba(0,0,0,.28);font-size:.92rem;line-height:1.45;display:flex;flex-direction:column;gap:.75rem}
+.hb-cookie-banner[hidden]{display:none!important}
+.hb-cookie-banner p{margin:0;opacity:.92}
+.hb-cookie-banner a{color:#c8e6c9;text-decoration:underline}
+.hb-cookie-actions{display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center}
+.hb-cookie-banner button{appearance:none;border:0;border-radius:8px;padding:.55rem 1rem;font:inherit;font-weight:600;cursor:pointer;background:#25d366;color:#06210f}
+</style>
+<script>
+(function(){var K='hb-cookie-consent';function ok(){try{return!!localStorage.getItem(K)}catch(e){return false}}function accept(){try{localStorage.setItem(K,'accepted')}catch(e){}var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
+</script>
 
 <!-- Hidden file input for image replacement -->
 <input type="file" id="img-file-input" accept="image/*" style="display:none" aria-hidden="true" />
