@@ -275,11 +275,31 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
 const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking essentials */
 (function () {
   var KEY = 'hb-cookie-consent';
+  function readCookie() {
+    try {
+      var parts = document.cookie.split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var s = parts[i].trim();
+        if (s.indexOf(KEY + '=') === 0) return decodeURIComponent(s.slice(KEY.length + 1));
+      }
+    } catch (e) { /* ignore */ }
+    return '';
+  }
   function accepted() {
-    try { return !!localStorage.getItem(KEY); } catch (e) { return false; }
+    try { if (localStorage.getItem(KEY)) return true; } catch (e) { /* private mode */ }
+    var c = readCookie();
+    if (c) {
+      try { localStorage.setItem(KEY, c); } catch (e) { /* private mode */ }
+      return true;
+    }
+    return false;
+  }
+  function persist() {
+    try { localStorage.setItem(KEY, 'accepted'); } catch (e) { /* private mode */ }
+    try { document.cookie = KEY + '=accepted; Path=/; Max-Age=31536000; SameSite=Lax'; } catch (e) { /* ignore */ }
   }
   function accept() {
-    try { localStorage.setItem(KEY, 'accepted'); } catch (e) { /* private mode */ }
+    persist();
     var el = document.getElementById('hb-cookie-banner');
     if (el) el.hidden = true;
   }

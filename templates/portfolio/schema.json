@@ -402,7 +402,7 @@
         {
           "key": "instagram.embedUrl",
           "type": "url",
-          "label": "Instafidget feed URL (optional)",
+          "label": "URL feed Instafidget (opțional)",
           "required": false
         },
         {

@@ -526,7 +526,7 @@
 .hb-cookie-banner button{appearance:none;border:0;border-radius:8px;padding:.55rem 1rem;font:inherit;font-weight:600;cursor:pointer;background:#25d366;color:#06210f}
 </style>
 <script>
-(function(){var K='hb-cookie-consent';function ok(){try{return!!localStorage.getItem(K)}catch(e){return false}}function accept(){try{localStorage.setItem(K,'accepted')}catch(e){}var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
+(function(){var K='hb-cookie-consent';function readCookie(){try{var p=document.cookie.split(';');for(var i=0;i<p.length;i++){var s=p[i].trim();if(s.indexOf(K+'=')===0)return decodeURIComponent(s.slice(K.length+1))}}catch(e){}return''}function ok(){try{if(localStorage.getItem(K))return true}catch(e){}var c=readCookie();if(c){try{localStorage.setItem(K,c)}catch(e){}return true}return false}function persist(){try{localStorage.setItem(K,'accepted')}catch(e){}try{document.cookie=K+'=accepted; Path=/; Max-Age=31536000; SameSite=Lax'}catch(e){}}function accept(){persist();var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
 </script>
 
 <!-- Hidden file input for image replacement -->

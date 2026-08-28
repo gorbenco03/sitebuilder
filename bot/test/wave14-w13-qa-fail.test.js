@@ -229,7 +229,7 @@ check('HEAD buildSiteCard live link wraps only at / with wbr or segments', () =>
   );
 });
 
-check('HEAD four schemas: Button and section text + Instafidget feed URL', () => {
+check('HEAD four schemas: Button and section text + Instafidget feed URL RO', () => {
   for (const rel of SCHEMAS) {
     const src = headRead(rel);
     assert.ok(
@@ -241,8 +241,12 @@ check('HEAD four schemas: Button and section text + Instafidget feed URL', () =>
       rel + ' must not keep Interface labels'
     );
     assert.ok(
-      /Instafidget feed URL \(optional\)/.test(src),
-      rel + ' Instafidget feed URL (optional)'
+      /URL feed Instafidget \(opțional\)/.test(src),
+      rel + ' URL feed Instafidget (opțional)'
+    );
+    assert.ok(
+      !/Instafidget feed URL \(optional\)/.test(src),
+      rel + ' must not keep English Instafidget feed URL (optional)'
     );
     assert.ok(
       !/Instagram feed link \(optional\)/.test(src),

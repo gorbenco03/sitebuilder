@@ -3143,15 +3143,22 @@ function renderTemplatesGrid() {
     shimmer.className = 'template-card-preview-shimmer';
     previewWrap.appendChild(shimmer);
 
-    let previewLoaded = false;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && !previewLoaded) {
-        previewLoaded = true;
-        observer.disconnect();
-        loadCardPreview(tpl.id, previewWrap, shimmer);
-      }
-    }, { rootMargin: '100px' });
-    observer.observe(previewWrap);
+    // Light-registry photo thumbs must paint on every card immediately.
+    // IntersectionObserver + small rootMargin left row-2 (professionals /
+    // desserdirina) as beige shimmer-only with no <img> until the stranger scrolls.
+    if (tpl.thumbnail) {
+      loadCardPreview(tpl.id, previewWrap, shimmer);
+    } else {
+      let previewLoaded = false;
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !previewLoaded) {
+          previewLoaded = true;
+          observer.disconnect();
+          loadCardPreview(tpl.id, previewWrap, shimmer);
+        }
+      }, { rootMargin: '400px' });
+      observer.observe(previewWrap);
+    }
 
     const body = document.createElement('div');
     body.className = 'template-card-body';

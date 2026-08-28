@@ -29,7 +29,7 @@ const INDEX_HTML = 'builder/index.html';
 
 const BAD_EMBED = 'Link feed Instagram (opțional)';
 const BAD_PROFIL = 'Link profil Instagram';
-const GOOD_EMBED = 'Instafidget feed URL (optional)';
+const GOOD_EMBED = 'URL feed Instafidget (opțional)';
 const GOOD_PROFIL = 'Instagram profile';
 const GOOD_CONTACT_IG = 'Instagram (contact section)';
 const GOOD_IG_URL_PM = 'Instagram URL (https://www.instagram.com/...)';
