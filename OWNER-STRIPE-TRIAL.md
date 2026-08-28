@@ -100,8 +100,14 @@ Set a long random `HIDOOK_ADMIN_TOKEN` in the **host environment only** (never c
 
 ---
 
+## Download HTML (current draft)
+
+In the **Hidook Site Builder** editor topbar, **Download HTML** fetches `GET /api/export-html` (session cookie) and saves a complete `.html` file of the **current draft** from the registry — same `build.js` renderer as a live site, but **no** Stripe charge, deploy, or unpublish. Sign-in required; missing draft returns an error toast. Never print secrets.
+
+---
+
 ## Out of this how-to
 
-- HTML export, fifth design system, Telegram checkout.
+- Fifth design system, Telegram checkout.
 - Real charges without your explicit go-live of live keys.
 - Legal counsel text beyond the product placeholders already shipped.

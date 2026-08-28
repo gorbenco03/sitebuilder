@@ -2061,6 +2061,68 @@ async function apiGet(url) {
   return r.json();
 }
 
+/**
+ * Download the current draft as a complete static HTML file.
+ * Fetches GET /api/export-html (session cookie) and saves via blob + a[download].
+ * Does not publish or open checkout.
+ */
+async function downloadDraftHtml() {
+  const btn = $('btn-download-html');
+  if (btn) btn.disabled = true;
+  try {
+    let url = '/api/export-html';
+    if (currentSiteId) {
+      url += '?siteId=' + encodeURIComponent(currentSiteId);
+    }
+    const res = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'text/html' },
+    });
+    if (!res.ok) {
+      let msg = 'Could not download HTML.';
+      try {
+        const json = await res.json();
+        if (json && json.error) msg = json.error;
+      } catch (_) {
+        /* body may be empty or plain text */
+      }
+      if (res.status === 401) msg = 'Sign in to download your draft as HTML.';
+      showToast(msg, 'error', 5000);
+      return;
+    }
+    const blob = await res.blob();
+    let filename = 'site.html';
+    const cd = res.headers.get('Content-Disposition') || res.headers.get('content-disposition') || '';
+    const mStar = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+    const mPlain = /filename="?([^";]+)"?/i.exec(cd);
+    if (mStar && mStar[1]) {
+      try { filename = decodeURIComponent(mStar[1].trim()); } catch (_) { filename = mStar[1].trim(); }
+    } else if (mPlain && mPlain[1]) {
+      filename = mPlain[1].trim();
+    }
+    if (!/\.html$/i.test(filename)) filename = filename + '.html';
+
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch (_) {}
+      try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+    }, 0);
+    showToast('HTML downloaded.', 'success', 2500);
+  } catch (e) {
+    showToast((e && e.message) || 'Could not download HTML.', 'error', 5000);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 async function apiPost(url, body) {
   const r = await fetch(url, {
     method: 'POST',
@@ -3473,6 +3535,10 @@ function wireStaticButtons() {
   // Publish button in topbar
   const pubBtn = $('btn-publish');
   if (pubBtn) pubBtn.addEventListener('click', openPublishModal);
+
+  // Download HTML of the current draft (server-rendered; not a live publish)
+  const dlHtmlBtn = $('btn-download-html');
+  if (dlHtmlBtn) dlHtmlBtn.addEventListener('click', downloadDraftHtml);
 
   const igBtn = $('btn-add-instagram');
   if (igBtn) igBtn.addEventListener('click', openInstagramModal);
