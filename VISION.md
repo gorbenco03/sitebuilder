@@ -166,12 +166,14 @@ Done înseamnă:
 
 ## 7. Instafidget
 
-Instafidget este alt produs/echipă. Site Builder are doar slot neutru `socialFeed` și fallback galerie statică.
+Instafidget este produs partener conectat din Site Builder ca bonus comercial: clientul primește conectare/widget Instafidget gratuit 12 luni cu site-ul, apoi trece pe Instafidget Free cu watermark dacă nu face upgrade în Instafidget.
 
 Reguli:
 
 - poziția slotului o alege studio/design după ce vede pagina;
-- schimbarea/adăugarea Instafidget se comunică drept **opțiune plătită separat**;
+- copy-ul spune clar: **Instafidget inclus gratuit 12 luni, apoi Instafidget Free cu watermark**;
+- clientul se conectează la Instafidget și își alege widget/feed acolo;
+- editorul Instafidget se deschide în **tab nou în același browser**, nu popup/fereastră separată;
 - dacă Instafidget nu e conectat, secțiunea publică se ascunde complet;
 - nu se arată iframe mort, feed gol sau promisiune falsă.
 
@@ -239,7 +241,7 @@ Acceptare:
 - badge Hidook prezent și non-editabil;
 - Details auto-open;
 - WhatsApp badge + mesaj custom;
-- Instafidget menționat ca paid separately;
+- Instafidget menționat ca inclus gratuit 12 luni, apoi Free cu watermark;
 - verificare în browser pe preview și live/test publish.
 
 ### Flow 3 — Legal + export

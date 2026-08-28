@@ -22,7 +22,7 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 - Template scope: four commercial systems + Desserdirina remake from the root bakery sample.
 - Product language: Romanian for visible customer/site surfaces.
 - Every generated site template must include `Build by hidook.tech powered by hidook.agency` in a non-editable attribution.
-- Instafidget is a separately paid product/add-on; Site Builder only exposes a neutral slot and hides disconnected feed.
+- Instafidget is included free for 12 months with Site Builder, then Instafidget Free with watermark. Open the Instafidget editor in a new tab in the same browser, not a popup/new window. Site Builder exposes a neutral slot and hides disconnected feed.
 
 ## Studio process
 

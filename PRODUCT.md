@@ -47,7 +47,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 - Preview is clear before card/trial.
 - Privacy, Cookies and Terms machinery exists; final legal content is owner-gated.
 - Export/self-deploy produces a complete static ZIP.
-- Instafidget is separate paid add-on/slot only; disconnected feed is hidden.
+- Instafidget is included free for 12 months with Site Builder, then Instafidget Free with watermark; the editor opens in a new tab in the same browser, and disconnected feed is hidden.
 - Professional calendar uses Hidook-hosted cal.diy only after owner approves hosting/DNS/spend.
 
 ## Launch gates — owner only
