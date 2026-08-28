@@ -270,13 +270,19 @@
 </main>
 
 <!-- ===== COLOR PICKER POPOVER ===== -->
-<div id="color-popover" class="color-popover" role="dialog" aria-label="Theme color" style="display:none">
+<div id="color-popover" class="color-popover" role="dialog" aria-label="Theme colors" style="display:none">
   <div class="color-popover-inner">
-    <div class="color-popover-title">Theme color</div>
+    <div class="color-popover-title">Accent color</div>
     <div class="color-presets" id="color-presets" role="group" aria-label="Preset colors"></div>
     <div class="color-custom-row">
-      <input type="color" id="color-custom-swatch" class="field-color-swatch" aria-label="Custom color" />
-      <input type="text" id="color-custom-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Hex color code" />
+      <input type="color" id="color-custom-swatch" class="field-color-swatch" aria-label="Custom accent color" />
+      <input type="text" id="color-custom-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Accent hex color" />
+    </div>
+    <div class="color-popover-divider" role="separator"></div>
+    <div class="color-popover-title">Page background</div>
+    <div class="color-custom-row">
+      <input type="color" id="color-bg-swatch" class="field-color-swatch" aria-label="Page background color" />
+      <input type="text" id="color-bg-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Background hex color" />
     </div>
   </div>
 </div>

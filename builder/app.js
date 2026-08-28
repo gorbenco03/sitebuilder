@@ -1167,6 +1167,25 @@ function initColorPicker() {
     });
   }
 
+  const bgSwatch = $('color-bg-swatch');
+  const bgText = $('color-bg-text');
+  if (bgSwatch) {
+    bgSwatch.addEventListener('input', () => {
+      const v = bgSwatch.value;
+      if (bgText) bgText.value = v;
+      applyThemeBackground(v);
+    });
+  }
+  if (bgText) {
+    bgText.addEventListener('input', () => {
+      const v = bgText.value;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        if (bgSwatch) bgSwatch.value = v;
+        applyThemeBackground(v);
+      }
+    });
+  }
+
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleColorPopover();
@@ -1189,12 +1208,17 @@ function openColorPopover() {
   const btn = $('btn-color-picker');
   if (!popover || !btn) return;
 
-  // Sync current color
+  // Sync current accent + page background (theme.cream)
   const curColor = (draft.config && getPath(draft.config, 'theme.primary')) || '#5B5BD6';
+  const curBg = (draft.config && getPath(draft.config, 'theme.cream')) || '#F3EFE8';
   const sw = $('color-custom-swatch');
   const ti = $('color-custom-text');
   if (sw) sw.value = curColor;
   if (ti) ti.value = curColor;
+  const bgSw = $('color-bg-swatch');
+  const bgTi = $('color-bg-text');
+  if (bgSw) bgSw.value = /^#[0-9a-fA-F]{6}$/.test(curBg) ? curBg : '#F3EFE8';
+  if (bgTi) bgTi.value = /^#[0-9a-fA-F]{6}$/.test(curBg) ? curBg : '#F3EFE8';
 
   // Mark active preset
   $('color-presets') && $('color-presets').querySelectorAll('.color-preset-dot').forEach(dot => {
@@ -1228,6 +1252,15 @@ function applyThemeColor(hex) {
   setPath(draft.config, 'theme.primaryDark', derived.primaryDark);
   saveDraft();
   // Re-render needed for color changes
+  fullRerender();
+}
+
+/** Page / paper background — theme.cream drives --color-cream → --paper in all templates. */
+function applyThemeBackground(hex) {
+  if (!draft.config) return;
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  setPath(draft.config, 'theme.cream', hex);
+  saveDraft();
   fullRerender();
 }
 
@@ -1436,8 +1469,20 @@ function buildDrawerField(field) {
     if (field.maxLen) input.maxLength = field.maxLen;
     input.rows = 3;
   } else if (type === 'color') {
-    // Skip — handled by color picker popover
-    return null;
+    // Accent triad is owned by the color popover (primary + derived light/dark).
+    // theme.cream (page background) is also in the popover — skip all four here.
+    if (
+      key === 'theme.primary' ||
+      key === 'theme.primaryLight' ||
+      key === 'theme.primaryDark' ||
+      key === 'theme.cream'
+    ) {
+      return null;
+    }
+    // Any other color field still needs a real control in Detalii.
+    input = document.createElement('input');
+    input.className = 'field-input field-input--color';
+    input.type = 'color';
   } else if (type === 'url') {
     // Wrap-capable control so long Instagram/FB URLs are fully readable in Detalii
     // (native single-line <input type=url> mid-clips the handle).
