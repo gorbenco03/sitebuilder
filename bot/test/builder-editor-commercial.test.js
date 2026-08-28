@@ -91,13 +91,13 @@ check('catalog badge markup never uses raw vertical/id as visible badge text', (
   assert.ok(hasHumanBadge, 'badge must use human label helper or tpl.name, not raw id');
 });
 
-check('builder chrome prefers Designs / Choose a design over factory Șabloane nav', () => {
+check('builder chrome prefers Designuri / Alege un design over factory Șabloane nav', () => {
   const html = read(BUILDER_HTML);
   const js = read(BUILDER_JS);
-  // Nav / hero catalog language
+  // Nav / hero catalog language (product RO)
   assert.ok(
-    /Designs|Choose a design/i.test(html),
-    'index.html should offer Designs or Choose a design'
+    /Designuri|Alege un design/i.test(html),
+    'index.html should offer Designuri or Alege un design'
   );
   // Factory admin chrome should not dominate
   assert.ok(
@@ -187,7 +187,7 @@ check('Hidook Site Builder chrome, pay-before-publish, Instagram slot preserved'
   assert.ok(html.includes('Hidook Site Builder'), 'product name');
   assert.ok(/id="btn-publish"|Publish site|Publică/i.test(html), 'publish CTA');
   assert.ok(/id="btn-pay-publish"|Adaugă un card — începe trialul de 7 zile/.test(html), 'trial-card CTA');
-  assert.ok(/id="btn-add-instagram"|Add Instagram/.test(html), 'Instagram partner slot');
+  assert.ok(/id="btn-add-instagram"|Adaugă Instagram|Add Instagram/.test(html), 'Instagram partner slot');
   assert.ok(/lang="ro"|lang="en"/.test(html), 'document lang set');
 });
 

@@ -1332,7 +1332,7 @@ function buildDrawer() {
   body.innerHTML = '';
 
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) {
-    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Choose a design first.</p>';
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:1rem 0">Alege mai întâi un design.</p>';
     return;
   }
 
@@ -1939,7 +1939,7 @@ async function ensureDraftSiteForInstagram() {
     throw new Error('Sign in to save your draft.');
   }
   if (!draft.config || !draft.templateId) {
-    throw new Error('Choose a design first.');
+    throw new Error('Alege mai întâi un design.');
   }
   setIgStatus('Saving your draft so Instagram can connect…');
   deriveWaHref(draft.config);
@@ -3401,7 +3401,7 @@ function buildSiteCard(site) {
         const iframe = document.createElement('iframe');
         iframe.setAttribute('sandbox','allow-scripts');
         iframe.setAttribute('aria-hidden','true');
-        iframe.title = 'Preview of ' + (site.projectName || site.slug || 'site');
+        iframe.title = 'Previzualizare ' + (site.projectName || site.slug || 'site');
         iframe.srcdoc = html;
         thumbWrap.appendChild(iframe);
       } catch (_) {}
@@ -3409,21 +3409,21 @@ function buildSiteCard(site) {
   }
 
   const hostingExpired = isHostingExpired(site);
-  let badgeClass = 'status-draft', badgeLabel = 'Draft';
+  let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
 
   if (site.paid && hostingExpired) {
-    badgeClass = 'status-expired'; badgeLabel = 'Expired';
+    badgeClass = 'status-expired'; badgeLabel = 'Expirat';
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
-    badgeClass = 'status-live'; badgeLabel = 'Active';
+    badgeClass = 'status-live'; badgeLabel = 'Activ';
   } else if (site.status === 'live' && !site.paid) {
     // Legacy unpaid live (pre pay-before-publish)
-    badgeClass = 'status-unpaid'; badgeLabel = 'Unpaid';
+    badgeClass = 'status-unpaid'; badgeLabel = 'Neplătit';
   } else if (site.status === 'expired') {
-    badgeClass = 'status-expired'; badgeLabel = 'Expired';
+    badgeClass = 'status-expired'; badgeLabel = 'Expirat';
   } else if (site.status === 'needs-retry') {
-    badgeClass = 'status-draft'; badgeLabel = 'Retry';
+    badgeClass = 'status-draft'; badgeLabel = 'Reîncearcă';
   } else if (!site.paid) {
-    badgeClass = 'status-draft'; badgeLabel = 'Unpaid';
+    badgeClass = 'status-draft'; badgeLabel = 'Neplătit';
   }
 
   const info = document.createElement('div');
@@ -3528,16 +3528,16 @@ function buildSiteCard(site) {
     cancelBtn.setAttribute('aria-label', 'Anulează abonamentul pentru ' + (site.projectName || site.slug || 'acest site'));
     cancelBtn.addEventListener('click', async () => {
       try {
-        setBtnLoading(cancelBtn, true, 'Opening…');
+        setBtnLoading(cancelBtn, true, 'Se deschide…');
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
         const portalUrl = data.portalUrl || data.url;
         if (portalUrl) {
           window.location.href = portalUrl;
         } else {
-          showToast('Billing portal is not available right now.', 'error');
+          showToast('Portalul de facturare nu este disponibil acum.', 'error');
         }
       } catch (e) {
-        showToast('Error: ' + e.message, 'error');
+        showToast('Eroare: ' + e.message, 'error');
       } finally {
         setBtnLoading(cancelBtn, false);
       }
@@ -3547,8 +3547,8 @@ function buildSiteCard(site) {
 
   const versBtn = document.createElement('button');
   versBtn.className = 'btn-ghost btn-sm';
-  versBtn.textContent = 'History';
-  versBtn.setAttribute('aria-label', 'Version history for ' + (site.projectName || site.slug || ''));
+  versBtn.textContent = 'Istoric';
+  versBtn.setAttribute('aria-label', 'Istoric versiuni pentru ' + (site.projectName || site.slug || ''));
   versBtn.addEventListener('click', () => loadVersions(site.id));
   actions.appendChild(versBtn);
 
@@ -3560,11 +3560,11 @@ function buildSiteCard(site) {
 
 async function loadSiteForEdit(siteId) {
   try {
-    setLoading(true, 'Loading your site…');
+    setLoading(true, 'Se încarcă site-ul…');
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId));
     const site = data.site;
     const config = data.config;
-    if (!site || !config) throw new Error('Incomplete data from the server.');
+    if (!site || !config) throw new Error('Date incomplete de la server.');
 
     currentSiteId = site.id;
     currentSitePaid = !!site.paid;

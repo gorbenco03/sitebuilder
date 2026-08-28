@@ -203,14 +203,14 @@ function assertNoSecretLeak(body) {
             assertNoSecretLeak(res.body);
         });
 
-        await check('builder/index.html has btn-download-html labeled Download HTML', () => {
+        await check('builder/index.html has btn-download-html labeled Descarcă HTML', () => {
             const html = fs.readFileSync(path.join(ROOT, 'builder/index.html'), 'utf8');
             assert.ok(/id=["']btn-download-html["']/.test(html), 'id=btn-download-html');
             // Label near the button
             const idx = html.indexOf('btn-download-html');
             assert.ok(idx >= 0);
             const window = html.slice(Math.max(0, idx - 80), idx + 400);
-            assert.ok(/Download HTML/.test(window), 'label Download HTML near button');
+            assert.ok(/Descarcă HTML|Download HTML/.test(window), 'label Descarcă HTML near button');
             // Word boundaries: avoid false positive on catalog chip "desserdirina"
             assert.ok(
                 !/Download HTML[\s\S]{0,200}\bKanban\b|\bDESSERD\b/i.test(html),

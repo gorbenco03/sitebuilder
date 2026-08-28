@@ -411,7 +411,7 @@ function runBuildImgMap(appSrc, config, imageMap) {
         assert.ok(/Instagram/i.test(indexSrc), 'still says Instagram');
         assert.ok(
             /id=["']ig-partner-note["']/.test(indexSrc) &&
-                /Instafidget,\s*a partner product/i.test(indexSrc),
+                /Instafidget,\s*(a partner product|un produs partener)/i.test(indexSrc),
             'Wave 12 partner note names Instafidget as partner product'
         );
     });

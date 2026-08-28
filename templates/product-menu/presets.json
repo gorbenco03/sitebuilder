@@ -6,24 +6,24 @@
       "config": {
         "business": {
           "name": "North House",
-          "tagline": "Evening dinners, cellar wines, long tables",
+          "tagline": "Cine de seară, vinuri de pivniță, mese lungi",
           "title": "North House | Restaurant | Chicago",
-          "metaDescription": "An evening restaurant in Chicago. Seasonal menu, a deep wine cellar, reservations by WhatsApp.",
-          "about": "North House is a small dining room just off Lincoln Park. We cook at night — vegetables from Midwest growers, whitefish from Lake Michigan, simple desserts. The menu changes once a month. Michigan wines by the glass and by the bottle.",
-          "lang": "en"
+          "metaDescription": "Restaurant de seară în Chicago. Meniu de sezon, pivniță de vinuri, rezervări pe WhatsApp.",
+          "about": "North House este o sală mică de mese lângă Lincoln Park. Gătim seara — legume de la producători din Midwest, pește alb din Lacul Michigan, deserturi simple. Meniul se schimbă o dată pe lună. Vinuri din Michigan la pahar și la sticlă.",
+          "lang": "ro"
         },
         "labels": {
           "whatsapp": "WhatsApp",
-          "close": "Close",
-          "about": "Our story",
+          "close": "Închide",
+          "about": "Povestea noastră",
           "heroEyebrow": "Restaurant · Chicago",
-          "instaTitle": "From the kitchen, on Instagram",
-          "instaFollow": "Follow",
-          "scroll": "Explore",
-          "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web",
-          "lightboxPrev": "Previous",
-          "lightboxNext": "Next"
+          "instaTitle": "Din bucătărie, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Explorează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#c4a574",
@@ -35,123 +35,123 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('images/cn-hero.jpg')",
-          "ctaLabel": "Book a table"
+          "ctaLabel": "Rezervă o masă"
         },
-        "servicesTitle": "At the table",
+        "servicesTitle": "La masă",
         "services": [
           {
             "icon": "",
-            "label": "Seasonal dinners"
+            "label": "Cine de sezon"
           },
           {
             "icon": "",
-            "label": "Tasting menu"
+            "label": "Meniu degustare"
           },
           {
             "icon": "",
-            "label": "Michigan wines"
+            "label": "Vinuri din Michigan"
           },
           {
             "icon": "",
-            "label": "Private dining"
+            "label": "Dining privat"
           },
           {
             "icon": "",
-            "label": "Cocktail bar"
+            "label": "Bar de cocktailuri"
           },
           {
             "icon": "",
-            "label": "Weekend brunch"
+            "label": "Brunch de weekend"
           }
         ],
         "menu": {
-          "title": "Menu",
+          "title": "Meniu",
           "en": [
             {
-              "category": "Small plates",
+              "category": "Aperitive",
               "items": [
-                "Sourdough, cultured butter",
-                "Beet tartare, horseradish cream",
-                "Market oysters, mignonette"
+                "Pâine maia, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de piață, mignonette"
               ]
             },
             {
-              "category": "From the hearth",
+              "category": "De la vatră",
               "items": [
-                "Dry-aged ribeye, bone marrow jus",
-                "Lake Michigan whitefish, brown butter",
-                "Roasted celery root, hazelnuts, sage"
+                "Antricot maturat, jus de măduvă",
+                "Pește alb din Michigan, unt prăjit",
+                "Țelină prăjită, alune, salvie"
               ]
             },
             {
-              "category": "Dessert",
+              "category": "Desert",
               "items": [
-                "Dark chocolate, sea salt, olive oil",
-                "Seasonal fruit, crème fraîche"
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
               ]
             }
           ],
           "ro": [
             {
-              "category": "Small plates",
+              "category": "Aperitive",
               "items": [
-                "Sourdough, cultured butter",
-                "Beet tartare, horseradish cream",
-                "Market oysters, mignonette"
+                "Pâine maia, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de piață, mignonette"
               ]
             },
             {
-              "category": "From the hearth",
+              "category": "De la vatră",
               "items": [
-                "Dry-aged ribeye, bone marrow jus",
-                "Lake Michigan whitefish, brown butter",
-                "Roasted celery root, hazelnuts, sage"
+                "Antricot maturat, jus de măduvă",
+                "Pește alb din Michigan, unt prăjit",
+                "Țelină prăjită, alune, salvie"
               ]
             },
             {
-              "category": "Dessert",
+              "category": "Desert",
               "items": [
-                "Dark chocolate, sea salt, olive oil",
-                "Seasonal fruit, crème fraîche"
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
               ]
             }
           ]
         },
-        "galleryTitle": "On the plate",
+        "galleryTitle": "În farfurie",
         "categories": [
           {
-            "title": "Evening plates",
-            "blurb": "Honest portions, house-made sauces, roasted vegetables.",
+            "title": "Farfurii de seară",
+            "blurb": "Porții sincere, sosuri de casă, legume prăjite.",
             "photos": [
               {
                 "src": "images/cn-d1.jpg",
-                "alt": "Plate of fish with seasonal vegetables"
+                "alt": "Farfurie cu pește și legume de sezon"
               },
               {
                 "src": "images/cn-d2.jpg",
-                "alt": "Ribeye steak on a ceramic plate"
+                "alt": "Antricot pe farfurie ceramică"
               },
               {
                 "src": "images/cn-d3.jpg",
-                "alt": "Chocolate dessert"
+                "alt": "Desert de ciocolată"
               }
             ]
           },
           {
-            "title": "Dining room & cellar",
-            "blurb": "Low light, wood tables, wine racks.",
+            "title": "Sala de mese și pivnița",
+            "blurb": "Lumină joasă, mese din lemn, rafturi de vin.",
             "photos": [
               {
                 "src": "images/cn-r1.jpg",
-                "alt": "Restaurant interior in the evening"
+                "alt": "Interior restaurant seara"
               },
               {
                 "src": "images/cn-r2.jpg",
-                "alt": "Table set for dinner"
+                "alt": "Masă pregătită pentru cină"
               },
               {
                 "src": "images/cn-r3.jpg",
-                "alt": "Wine glasses at the bar"
+                "alt": "Pahare de vin la bar"
               }
             ]
           }
@@ -170,8 +170,8 @@
           ]
         },
         "contact": {
-          "title": "Reservations",
-          "intro": "Message us on WhatsApp or call for a table. Tuesday–Saturday, 5–11pm. Sunday brunch 11am–3pm.",
+          "title": "Rezervări",
+          "intro": "Scrie-ne pe WhatsApp sau sună pentru o masă. Marți–Sâmbătă, 17–23. Brunch duminica 11–15.",
           "instagram": {
             "url": "https://www.instagram.com/north.house.chicago",
             "label": "@north.house.chicago"
@@ -186,7 +186,7 @@
           "waHref": "https://wa.me/13125550187",
           "address": "2144 N Halsted St<br>Chicago, IL 60614",
           "addressHref": "https://maps.google.com/?q=2144+N+Halsted+St+Chicago+IL",
-          "waMessage": "Hello! I would like more information about your services."
+          "waMessage": "Bună ziua, aș dori o rezervare."
         },
         "seo": {
           "ogImage": "images/cn-og.jpg",
@@ -195,7 +195,7 @@
         "footer": {
           "address": "2144 N Halsted St, Chicago, IL",
           "year": 2026,
-          "note": "Evening dinners, always in season."
+          "note": "Cine de seară, mereu de sezon."
         }
       }
     },
@@ -205,24 +205,24 @@
       "config": {
         "business": {
           "name": "The Green Larder",
-          "tagline": "Lunch menu, shaded patio, local produce",
-          "title": "The Green Larder | Neighborhood Bistro | Portland, OR",
-          "metaDescription": "A neighborhood bistro in Portland. Breakfast, weekday lunch, and easy dinners. Reservations by WhatsApp.",
-          "about": "The Green Larder is the spot on Alder Street where vegetables from the Saturday market and bread from the baker down the street meet on the plate. Mornings bring eggs and coffee; midday, honest plates; evenings, salads and wine by the glass.",
-          "lang": "en"
+          "tagline": "Meniu de prânz, terasă umbrită, produse locale",
+          "title": "The Green Larder | Bistro de cartier | Portland, OR",
+          "metaDescription": "Bistro de cartier în Portland. Mic dejun, prânz în săptămână și cine lejere. Rezervări pe WhatsApp.",
+          "about": "The Green Larder este locul de pe Alder Street unde legumele de la piața de sâmbătă și pâinea de la brutarul de pe stradă se întâlnesc în farfurie. Diminețile aduc ouă și cafea; la prânz, farfurii sincere; seara, salate și vin la pahar.",
+          "lang": "ro"
         },
         "labels": {
           "whatsapp": "WhatsApp",
-          "close": "Close",
-          "about": "About us",
+          "close": "Închide",
+          "about": "Despre noi",
           "heroEyebrow": "Bistro · Portland, OR",
-          "instaTitle": "From the plate, on Instagram",
-          "instaFollow": "Follow",
-          "scroll": "Menu",
-          "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web",
-          "lightboxPrev": "Previous",
-          "lightboxNext": "Next"
+          "instaTitle": "Din farfurie, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Meniu",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#2f5d50",
@@ -234,17 +234,17 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(155deg, rgba(47,93,80,0.45) 0%, rgba(26,20,16,0.2) 55%, rgba(247,242,235,0.08) 100%), url('images/tv-hero.jpg')",
-          "ctaLabel": "Book a table"
+          "ctaLabel": "Rezervă o masă"
         },
-        "servicesTitle": "What's on offer",
+        "servicesTitle": "Ce oferim",
         "services": [
           {
             "icon": "",
-            "label": "Breakfast"
+            "label": "Mic dejun"
           },
           {
             "icon": "",
-            "label": "Weekday lunch"
+            "label": "Prânz în săptămână"
           },
           {
             "icon": "",
@@ -252,7 +252,7 @@
           },
           {
             "icon": "",
-            "label": "Wine by the glass"
+            "label": "Vin la pahar"
           },
           {
             "icon": "",
@@ -371,7 +371,7 @@
           ]
         },
         "contact": {
-          "title": "Reservations",
+          "title": "Rezervări",
           "intro": "Call or message us on WhatsApp. Open Tuesday–Sunday, 9am–10pm.",
           "instagram": {
             "url": "https://www.instagram.com/green.larder.pdx",
@@ -387,7 +387,7 @@
           "waHref": "https://wa.me/15035550113",
           "address": "1842 SE Alder St<br>Portland, OR 97214",
           "addressHref": "https://maps.google.com/?q=1842+SE+Alder+St+Portland+OR",
-          "waMessage": "Hello! I would like more information about your services."
+          "waMessage": "Bună ziua, aș dori o rezervare."
         },
         "seo": {
           "ogImage": "images/tv-og.jpg",
@@ -437,121 +437,121 @@
           "background": "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%, rgba(10,10,10,0.5) 100%), url('images/cn-hero.jpg')",
           "ctaLabel": "Rezervă o masă"
         },
-        "servicesTitle": "At the table",
+        "servicesTitle": "La masă",
         "services": [
           {
             "icon": "",
-            "label": "Seasonal dinners"
+            "label": "Cine de sezon"
           },
           {
             "icon": "",
-            "label": "Tasting menu"
+            "label": "Meniu degustare"
           },
           {
             "icon": "",
-            "label": "Michigan wines"
+            "label": "Vinuri românești"
           },
           {
             "icon": "",
-            "label": "Private dining"
+            "label": "Dining privat"
           },
           {
             "icon": "",
-            "label": "Cocktail bar"
+            "label": "Bar de cocktailuri"
           },
           {
             "icon": "",
-            "label": "Weekend brunch"
+            "label": "Brunch de weekend"
           }
         ],
         "menu": {
-          "title": "Menu",
+          "title": "Meniu",
           "en": [
             {
-              "category": "Small plates",
+              "category": "Aperitive",
               "items": [
-                "Sourdough, cultured butter",
-                "Beet tartare, horseradish cream",
-                "Market oysters, mignonette"
+                "Pâine maia, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de piață, mignonette"
               ]
             },
             {
-              "category": "From the hearth",
+              "category": "De la vatră",
               "items": [
-                "Dry-aged ribeye, bone marrow jus",
-                "Lake Michigan whitefish, brown butter",
-                "Roasted celery root, hazelnuts, sage"
+                "Antricot maturat, jus de măduvă",
+                "Pește alb din Michigan, unt prăjit",
+                "Țelină prăjită, alune, salvie"
               ]
             },
             {
-              "category": "Dessert",
+              "category": "Desert",
               "items": [
-                "Dark chocolate, sea salt, olive oil",
-                "Seasonal fruit, crème fraîche"
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
               ]
             }
           ],
           "ro": [
             {
-              "category": "Small plates",
+              "category": "Aperitive",
               "items": [
-                "Sourdough, cultured butter",
-                "Beet tartare, horseradish cream",
-                "Market oysters, mignonette"
+                "Pâine maia, unt cultivat",
+                "Tartar de sfeclă, cremă de hrean",
+                "Stridii de piață, mignonette"
               ]
             },
             {
-              "category": "From the hearth",
+              "category": "De la vatră",
               "items": [
-                "Dry-aged ribeye, bone marrow jus",
-                "Lake Michigan whitefish, brown butter",
-                "Roasted celery root, hazelnuts, sage"
+                "Antricot maturat, jus de măduvă",
+                "Pește alb din Michigan, unt prăjit",
+                "Țelină prăjită, alune, salvie"
               ]
             },
             {
-              "category": "Dessert",
+              "category": "Desert",
               "items": [
-                "Dark chocolate, sea salt, olive oil",
-                "Seasonal fruit, crème fraîche"
+                "Ciocolată neagră, sare de mare, ulei de măsline",
+                "Fructe de sezon, crème fraîche"
               ]
             }
           ]
         },
-        "galleryTitle": "On the plate",
+        "galleryTitle": "În farfurie",
         "categories": [
           {
-            "title": "Evening plates",
-            "blurb": "Honest portions, house-made sauces, roasted vegetables.",
+            "title": "Farfurii de seară",
+            "blurb": "Porții sincere, sosuri de casă, legume prăjite.",
             "photos": [
               {
                 "src": "images/cn-d1.jpg",
-                "alt": "Plate of fish with seasonal vegetables"
+                "alt": "Farfurie cu pește și legume de sezon"
               },
               {
                 "src": "images/cn-d2.jpg",
-                "alt": "Ribeye steak on a ceramic plate"
+                "alt": "Antricot pe farfurie ceramică"
               },
               {
                 "src": "images/cn-d3.jpg",
-                "alt": "Chocolate dessert"
+                "alt": "Desert de ciocolată"
               }
             ]
           },
           {
-            "title": "Dining room & cellar",
-            "blurb": "Low light, wood tables, wine racks.",
+            "title": "Sala de mese și pivnița",
+            "blurb": "Lumină joasă, mese din lemn, rafturi de vin.",
             "photos": [
               {
                 "src": "images/cn-r1.jpg",
-                "alt": "Restaurant interior in the evening"
+                "alt": "Interior restaurant seara"
               },
               {
                 "src": "images/cn-r2.jpg",
-                "alt": "Table set for dinner"
+                "alt": "Masă pregătită pentru cină"
               },
               {
                 "src": "images/cn-r3.jpg",
-                "alt": "Wine glasses at the bar"
+                "alt": "Pahare de vin la bar"
               }
             ]
           }

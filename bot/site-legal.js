@@ -305,7 +305,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
 const COOKIE_BANNER_HTML = `    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
       <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
       <div class="hb-cookie-actions">
-        <button type="button" id="hb-cookie-accept">Accept</button>
+        <button type="button" id="hb-cookie-accept">Acceptă</button>
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
       </div>
     </div>

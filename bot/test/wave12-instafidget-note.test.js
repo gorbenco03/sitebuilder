@@ -32,10 +32,25 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '../..');
 const PARENT_SHA = '037f2f130b22280be76017ba441e5aeb0a88d5d3';
 
-const PHRASE_PARTNER =
+// Product UI is Romanian; OWNER docs may still use English phrasing.
+const PHRASE_PARTNER_RO =
+  'Feed-ul Instagram este oferit de Instafidget, un produs partener';
+const PHRASE_FREE_RO = 'Inclus gratuit 12 luni';
+const PHRASE_WATERMARK_RO = 'apoi Instafidget Free (watermark)';
+const PHRASE_PARTNER_EN =
   'Instagram feed is provided by Instafidget, a partner product';
-const PHRASE_FREE = 'Included free for 12 months';
-const PHRASE_WATERMARK = 'then Instafidget Free (watermark)';
+const PHRASE_FREE_EN = 'Included free for 12 months';
+const PHRASE_WATERMARK_EN = 'then Instafidget Free (watermark)';
+function hasPartnerFacts(text) {
+  const t = String(text || '');
+  const partner = t.includes(PHRASE_PARTNER_RO) || t.includes(PHRASE_PARTNER_EN) ||
+    /Instafidget,\s*(un\s+)?produs partener|Instafidget,\s*a partner product/i.test(t);
+  const free = t.includes(PHRASE_FREE_RO) || t.includes(PHRASE_FREE_EN) ||
+    /Inclus gratuit 12 luni|Included free for 12 months/i.test(t);
+  const mark = t.includes(PHRASE_WATERMARK_RO) || t.includes(PHRASE_WATERMARK_EN) ||
+    /Instafidget Free\s*\(watermark\)/i.test(t);
+  return partner && free && mark;
+}
 
 let failed = 0;
 function check(name, fn) {
@@ -81,16 +96,8 @@ function extractPartnerNote(html) {
 
 function assertPartnerFacts(text, label) {
   assert.ok(
-    text.includes(PHRASE_PARTNER),
-    `${label}: must include "${PHRASE_PARTNER}"`
-  );
-  assert.ok(
-    text.includes(PHRASE_FREE),
-    `${label}: must include "${PHRASE_FREE}"`
-  );
-  assert.ok(
-    text.includes(PHRASE_WATERMARK),
-    `${label}: must include "${PHRASE_WATERMARK}"`
+    hasPartnerFacts(text),
+    `${label}: must state Instafidget partner + 12 months free + Free watermark (RO or EN)`
   );
 }
 
@@ -120,7 +127,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} Add Instagram modal has no ig-partner-no
     'parent must not yet ship #ig-partner-note'
   );
   assert.ok(
-    !modal.includes(PHRASE_PARTNER),
+    !modal.includes(PHRASE_PARTNER_EN) && !modal.includes(PHRASE_PARTNER_RO),
     'parent modal must not yet state partner product phrase'
   );
 });
@@ -132,7 +139,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} OWNER-STRIPE-TRIAL.md has no Instafidget
     'parent OWNER doc must not yet have Instafidget (partner) heading'
   );
   assert.ok(
-    !md.includes(PHRASE_PARTNER) && !/Included free for 12 months/i.test(md),
+    !md.includes(PHRASE_PARTNER_EN) && !/Included free for 12 months/i.test(md),
     'parent OWNER doc must not yet state year-1 free + Free watermark facts'
   );
 });
@@ -159,7 +166,7 @@ check('HEAD Add Instagram modal keeps Connect flow and Instafidget Terms/Privacy
     'Instafidget Privacy link'
   );
   assert.ok(
-    /Connect Instagram/i.test(modal),
+    /Connect Instagram|Conectează Instagram/i.test(modal),
     'Connect Instagram label'
   );
 });

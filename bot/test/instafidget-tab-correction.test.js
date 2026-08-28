@@ -115,11 +115,11 @@ check('HEAD #ig-partner-note states free 12 months then Instafidget Free (waterm
   const html = headRead('builder/index.html');
   const note = extractPartnerNoteText(html);
   assert.ok(
-    /Instafidget,\s*a partner product/i.test(note),
+    /Instafidget,\s*a partner product|Instafidget,\s*un produs partener/i.test(note),
     'partner product framing'
   );
   assert.ok(
-    /Included free for 12 months/i.test(note),
+    /Included free for 12 months|Inclus gratuit 12 luni/i.test(note),
     'included free for 12 months'
   );
   assert.ok(

@@ -1,0 +1,9 @@
+RO copy sweep evidence
+BASE=http://127.0.0.1:62484
+DATA_DIR=/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/ro-copy-ev-DyGRwr
+HIDOOK_TEST_PAY=1 HIDOOK_ISOLATED_DEPLOY=1 no HIDOOK_FAKE_DEPLOY
+nav sample after visit: (see screenshots)
+preset0 CTA: Rezervă o masă
+preset0 servicesTitle: La masă
+preset0 tagline: Cine de seară, vinuri de pivniță, mese lungi
+Files: 01-builder-nav-cookie 02-cookie-banner 03-dashboard 04-editor-toolbar 05-instagram-modal 06-trial-success-modal 07-restaurant-demo-hero
