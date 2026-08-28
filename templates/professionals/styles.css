@@ -10,9 +10,9 @@
     --color-primary-dark:  #14120F;
     --color-cream:         #F3EFE8;
 
-    --ink: #14120F;
+    --ink: var(--color-primary-dark, #14120F);
     --paper: var(--color-cream, #F3EFE8);
-    --brass: #C4A574;
+    --brass: var(--color-primary-light, #C4A574);
     --accent: var(--color-primary, #9A4030);
     --soft: rgba(20, 18, 15, 0.72);
     --mute: rgba(20, 18, 15, 0.48);

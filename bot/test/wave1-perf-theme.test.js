@@ -72,6 +72,60 @@ function check(name, fn) {
         /--paper\s*:\s*var\(\s*--color-cream/.test(css),
         id + ' must alias --paper → --color-cream'
       );
+      // Must actually *use* the themable aliases (not only declare them).
+      // product-menu / local-service / portfolio paint via --cta; professionals via --accent.
+      const accentUses =
+        (css.match(/var\(\s*--accent/g) || []).length +
+        (css.match(/var\(\s*--cta/g) || []).length;
+      assert.ok(
+        accentUses >= 1,
+        id + ' must consume var(--accent) or var(--cta)'
+      );
+      assert.ok(
+        (css.match(/var\(\s*--paper/g) || []).length >= 1,
+        id + ' must consume var(--paper)'
+      );
+    }
+  });
+
+  await check('rendered HTML injects configured theme colors into CSS vars', () => {
+    const { renderHtml } = require(path.join(ROOT, 'build.js'));
+    const probePrimary = '#16A34A';
+    const probeCream = '#FF0000';
+    for (const id of TPLS) {
+      const dir = path.join(ROOT, 'templates', id);
+      const tpl = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
+      const css = fs.readFileSync(path.join(dir, 'styles.css'), 'utf8');
+      const presets = JSON.parse(fs.readFileSync(path.join(dir, 'presets.json'), 'utf8')).presets;
+      const base = JSON.parse(JSON.stringify((presets[0] && presets[0].config) || {}));
+      base.theme = Object.assign({}, base.theme || {}, {
+        primary: probePrimary,
+        primaryLight: '#4ADE80',
+        primaryDark: '#14532D',
+        cream: probeCream,
+      });
+      const html = renderHtml(tpl, base);
+      assert.ok(
+        html.includes('--color-primary') && html.includes(probePrimary),
+        id + ' HTML must declare --color-primary: ' + probePrimary
+      );
+      assert.ok(
+        html.includes('--color-cream') && html.includes(probeCream),
+        id + ' HTML must declare --color-cream: ' + probeCream
+      );
+      // styles.css still hardcodes defaults in :root, but aliases must remain var()-based
+      // so the later inline :root from template wins for consumers.
+      assert.ok(/--accent\s*:\s*var\(\s*--color-primary/.test(css), id + ' accent alias');
+      assert.ok(/--paper\s*:\s*var\(\s*--color-cream/.test(css), id + ' paper alias');
+      // Causal RED shape: dead theme would use bare hex for --accent/--paper without var().
+      assert.ok(
+        !/--accent\s*:\s*#[0-9a-fA-F]{3,8}\s*;/.test(css),
+        id + ' must not hardcode --accent hex (Opus dead-control RED)'
+      );
+      assert.ok(
+        !/--paper\s*:\s*#[0-9a-fA-F]{3,8}\s*;/.test(css),
+        id + ' must not hardcode --paper hex (Opus dead-control RED)'
+      );
     }
   });
 
@@ -93,6 +147,7 @@ function check(name, fn) {
 
   await check('builder app treats background as drawer field + lazy heavy load', () => {
     const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
+    const indexHtml = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
     assert.ok(app.includes("DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background'])") ||
       /DRAWER_TYPES[\s\S]*'background'/.test(app), 'background in DRAWER_TYPES');
     assert.ok(app.includes('ensureTemplateLoaded'), 'ensureTemplateLoaded present');
@@ -100,6 +155,28 @@ function check(name, fn) {
       'structured hero background helpers');
     assert.ok(app.includes('template-card-preview-thumb') || app.includes('meta.thumbnail'),
       'catalog uses thumbnails');
+    assert.ok(app.includes('applyThemeBackground'), 'applyThemeBackground for theme.cream');
+    assert.ok(
+      indexHtml.includes('color-bg-swatch') && indexHtml.includes('Page background'),
+      'color popover exposes page background control'
+    );
+  });
+
+  await check('light boot bundle stays tiny (no 32MB blocking payload)', () => {
+    const light = fs.readFileSync(path.join(GEN, 'templates-data.js'), 'utf8');
+    assert.ok(light.length < 32 * 1024, 'templates-data.js < 32KB (was ~32MB)');
+    assert.ok(!/data:image\/[^;]+;base64,/.test(light), 'no base64 images in boot');
+    // Heavies must not be referenced as classic blocking multi-MB scripts in index.
+    const indexHtml = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
+    const scriptSrcs = [...indexHtml.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]);
+    assert.ok(
+      scriptSrcs.some((s) => s.includes('templates-data.js')),
+      'index loads light templates-data.js'
+    );
+    assert.ok(
+      !scriptSrcs.some((s) => /generated\/templates\/[^/]+\.js/.test(s)),
+      'index must not block on heavy per-template scripts'
+    );
   });
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wave1-perf-'));

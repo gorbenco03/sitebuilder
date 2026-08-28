@@ -967,7 +967,7 @@ input, textarea, select {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: 1rem;
-  min-width: 220px;
+  min-width: 240px;
   animation: fadeIn .12s ease;
 }
 
@@ -1002,6 +1002,11 @@ input, textarea, select {
   flex: 1;
   font-size: 0.82rem;
   padding: 0.4rem 0.55rem;
+}
+.color-popover-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.15rem 0;
 }
 
 /* ============================================================
