@@ -1,6 +1,6 @@
 # Flow 1 — Foundation: first-load + theming (QA evidence)
 
-Mechanical oracle: `node bot/test/wave1-perf-theme.test.js`  
+Mechanical oracle: `node bot/test/wave1-perf-theme.test.js`
 Build: `npm run build:app` (must produce light `builder/generated/templates-data.js` ≪ 64 KB).
 
 ## Real-browser checklist (QA / advocate)
