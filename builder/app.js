@@ -2097,7 +2097,8 @@ async function connectInstagram() {
       return;
     }
     if (session.editorUrl) {
-      window.open(session.editorUrl, 'instagram-feed-editor', 'noopener,width=920,height=720');
+      // Same-browser new tab (not a sized/named popup window). noopener keeps opener isolation.
+      window.open(session.editorUrl, '_blank', 'noopener');
     }
     setIgStatus("Once you finish connecting, we'll come back and update the feed on your site.");
     const onFocus = async () => {

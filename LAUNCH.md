@@ -71,7 +71,7 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 ## 7. Product backlog (when you have traction)
 
 - Three design systems (product/menu, local service/lead-gen, portfolio/beauty/events) — current sample template look is not the approved commercial design.
-- Neutral `socialFeed` slot only (Instafidget is another team).
+- Neutral `socialFeed` slot: Instafidget included free for 12 months with Site Builder, then Instafidget Free with watermark (upgrade in Instafidget).
 - Clearer admin/history tooling for operators.
 
 ---
