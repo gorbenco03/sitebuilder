@@ -394,14 +394,26 @@ function runBuildImgMap(appSrc, config, imageMap) {
         assert.ok(/currentSiteSlug/.test(openFn), 'publish modal reuses currentSiteSlug');
         const checkFn = extractFunction(appSrc, 'checkSlug') || '';
         assert.ok(/currentSiteSlug/.test(checkFn), 'checkSlug treats own slug as available');
-        // Commercial IG copy (no Instafidget / Widgetul in customer-facing strings)
+        // Commercial IG copy: no Widgetul factory jargon; Instafidget only in partner
+        // position note (#ig-partner-note, Wave 12) or Terms/Privacy href hosts.
         assert.ok(!/Instafidget\./i.test(appSrc), 'app.js no Instafidget sentence');
         assert.ok(!/\bWidgetul\b/i.test(appSrc), 'app.js no Widgetul');
-        // index may keep partner host in href; body copy must not name Instafidget/Widgetul
         const indexNoHref = indexSrc.replace(/href="[^"]*"/gi, 'href=""');
-        assert.ok(!/Instafidget/i.test(indexNoHref), 'index visible copy no Instafidget');
+        const indexNoPartnerNote = indexNoHref.replace(
+            /id=["']ig-partner-note["'][^>]*>[\s\S]*?<\/p>/i,
+            ''
+        );
+        assert.ok(
+            !/Instafidget/i.test(indexNoPartnerNote),
+            'index visible copy no Instafidget outside #ig-partner-note'
+        );
         assert.ok(!/\bWidgetul\b/i.test(indexSrc), 'index.html no Widgetul');
         assert.ok(/Instagram/i.test(indexSrc), 'still says Instagram');
+        assert.ok(
+            /id=["']ig-partner-note["']/.test(indexSrc) &&
+                /Instafidget,\s*a partner product/i.test(indexSrc),
+            'Wave 12 partner note names Instafidget as partner product'
+        );
     });
 
     await check('HEAD: Detalii schemas have no partner feed / iframe jargon', () => {

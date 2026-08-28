@@ -106,6 +106,12 @@ In the **Hidook Site Builder** editor topbar, **Download HTML** fetches `GET /ap
 
 ---
 
+## Instafidget (partner)
+
+Instagram feed is provided by Instafidget, a partner product (not Hidook Site Builder). Included free for 12 months with a Site Builder site, then Instafidget Free (watermark). Public Instagram on the live site only appears when the partner embed is connected; otherwise the section is omitted. Hidook does not bill Instafidget and does not operate Instagram. Never print partner secrets.
+
+---
+
 ## Out of this how-to
 
 - Fifth design system, Telegram checkout.
