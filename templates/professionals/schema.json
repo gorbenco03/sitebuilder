@@ -706,7 +706,7 @@
         {
           "key": "instagram.gallery",
           "type": "list",
-          "label": "Instagram gallery photos (URLs or images/...)",
+          "label": "Instagram gallery photos",
           "required": false,
           "min": 0,
           "max": 12,
@@ -723,7 +723,7 @@
         {
           "key": "seo.ogImage",
           "type": "text",
-          "label": "Share image (images/... or URL)",
+          "label": "Image for social sharing (1200×630px recommended)",
           "required": false,
           "maxLen": 300
         }
