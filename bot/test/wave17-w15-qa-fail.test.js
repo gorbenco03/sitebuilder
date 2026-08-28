@@ -76,7 +76,7 @@ function trialLineRequiresLiveActive(cardSrc) {
   if (!cardSrc) return false;
   // Find the runtime trial label / textContent assignment (not the comment).
   const assignRe =
-    /(?:hostLine\.textContent|trialLabel)\s*=[\s\S]{0,120}?first charge/;
+    /(?:hostLine\.textContent|trialLabel)\s*=[\s\S]{0,120}?(?:first charge|prima taxare)/;
   const m = assignRe.exec(cardSrc);
   if (!m) return false;
   const idx = m.index;
@@ -238,7 +238,7 @@ check('HEAD trial first-charge line only while live/active (not Draft after canc
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || '';
   assert.ok(card.length > 40, 'buildSiteCard');
-  assert.ok(/7-day trial/.test(card) && /first charge/.test(card), 'trial line copy retained');
+  assert.ok((/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) && /first charge|prima taxare/i.test(card), 'trial line copy retained');
   assert.ok(
     trialLineRequiresLiveActive(card),
     'first charge line must require status live or active (same as Active badge)'
@@ -249,12 +249,12 @@ check('HEAD trial first-charge line only while live/active (not Draft after canc
   );
 });
 
-check('HEAD live-in-trial copy still 7-day trial · first charge 99 on <date>', () => {
+check('HEAD live-in-trial copy still trial 7 zile · prima taxare 99 pe <date>', () => {
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || js;
   assert.ok(
-    /7-day trial/.test(card) &&
-      /first charge/.test(card) &&
+    (/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) &&
+      /first charge|prima taxare/i.test(card) &&
       (/\\u00b7|·/.test(card) || /\u00b7/.test(card) || /·/.test(card)),
     'live trial line keeps middot form'
   );

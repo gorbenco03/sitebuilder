@@ -231,9 +231,9 @@ function httpGet(port, urlPath, headers = {}) {
     assert.ok(!/desserdina/i.test(surface));
     assert.ok(!/MENU\s*BOARD/i.test(surface));
     assert.ok(!/SERVER_SECRET/.test(surface));
-    // Commercial English verbs ok
-    assert.ok(/Publish site/i.test(html), 'English publish verb expected');
-    assert.ok(/Open the site/i.test(surface), 'live site label expected');
+    // Commercial verbs (RO product surface; EN publish may still appear in residual chrome)
+    assert.ok(/Publish site|Publică site|Publică/i.test(html), 'publish verb expected');
+    assert.ok(/Open the site|Deschide site|Deschide site-ul/i.test(surface), 'live site label expected');
   });
 
   await check('HEAD first local-service preset is commercial US market (not Londra +44)', () => {
@@ -282,7 +282,7 @@ function httpGet(port, urlPath, headers = {}) {
     assert.strictEqual(json.currency, 'eur');
   });
 
-  await check('HEAD browser unknown path → English HTML 404 (not raw JSON)', async () => {
+  await check('HEAD browser unknown path → Romanian HTML 404 (not raw JSON)', async () => {
     const res = await httpGet(port, '/this-route-does-not-exist-s60', {
       Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     });
@@ -291,8 +291,8 @@ function httpGet(port, urlPath, headers = {}) {
     assert.ok(/text\/html/i.test(ct), 'content-type must be text/html, got ' + ct);
     assert.ok(!/^\s*\{/.test(res.body.trim()), 'body must not be JSON object');
     assert.ok(
-      /Page not found/i.test(res.body),
-      'English not-found copy required'
+      /Pagină negăsită|Page not found|nu mai este public/i.test(res.body),
+      'Romanian not-found copy required'
     );
     assert.ok(/\/app\//.test(res.body), 'should link back to /app/');
     assert.ok(!/SERVER_SECRET/.test(res.body));

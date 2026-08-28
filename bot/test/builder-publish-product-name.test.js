@@ -94,7 +94,7 @@ check('builder/index.html must not introduce DESSERD / desserdina', () => {
 });
 
 check('builder/index.html states card 7-day trial (not pay-once / keep-site)', () => {
-    assert.ok(/7[\s-]*day\s+trial/i.test(src), 'builder must state 7-day trial');
+    assert.ok(/7[\s-]*day\s+trial|trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(src), 'builder must state trial 7 zile');
     assert.ok(!/pay\s+once/i.test(src), 'builder must not say pay once');
     assert.ok(
         !/keep-site|keep site/i.test(src),

@@ -94,7 +94,7 @@ check('pay/publish vocabulary is wired (renamed hooks present)', () => {
 check('visible trial-card publish copy preserved', () => {
     assert.ok(/Unpaid/.test(app) || /Unpaid/.test(html), 'unpaid badge label Unpaid required');
     assert.ok(
-        /12 months hosting|first publish|7-day trial/i.test(html),
+        /12 months hosting|first publish|7-day trial|trial de 7 zile|7 zile|primul an/i.test(html),
         'publish plan must keep hosting or trial copy'
     );
     assert.ok(
@@ -102,9 +102,9 @@ check('visible trial-card publish copy preserved', () => {
         'renewal /year copy must remain on publish plan'
     );
     assert.ok(
-        /Add a card — start 7-day trial/.test(html) ||
-            /Add a card — start 7-day trial/.test(app),
-        'pay CTA must say Add a card — start 7-day trial'
+        /Adaugă un card — începe trialul de 7 zile/.test(html) ||
+            /Adaugă un card — începe trialul de 7 zile/.test(app),
+        'pay CTA must say Adaugă un card — începe trialul de 7 zile'
     );
     assert.ok(
         !/Pay and publish/.test(html) && !/Pay and publish/.test(app),

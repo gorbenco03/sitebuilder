@@ -165,22 +165,22 @@ function withBusinessName(config, name) {
         assert.ok(!bareFallback.test(appSrc), 'builder/app.js must not default brandDomain to hidook.ro');
     });
 
-    await check('unpaid success chrome: Add a card trial (not Draft saved / Pay and publish)', () => {
+    await check('unpaid success chrome: Adaugă card trial (not Draft saved / Pay and publish)', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
         assert.ok(
-            /Add a card to go live/i.test(showSuccessSrc) ||
-                /Add a card to go live/i.test(htmlSrc) ||
+            /Adaugă un card ca să fii live/i.test(showSuccessSrc) ||
+                /Adaugă un card ca să fii live/i.test(htmlSrc) ||
                 /success-draft-note/.test(showSuccessSrc),
             'unpaid success must prompt add card to go live'
         );
         assert.ok(
-            /Add a card — start 7-day trial/i.test(htmlSrc) ||
-                /Add a card — start 7-day trial/i.test(appSrc),
-            'pay CTA must be Add a card — start 7-day trial'
+            /Adaugă un card — începe trialul de 7 zile/i.test(htmlSrc) ||
+                /Adaugă un card — începe trialul de 7 zile/i.test(appSrc),
+            'pay CTA must be RO trial card verb'
         );
         assert.ok(
-            /7-day trial/i.test(htmlSrc + showSuccessSrc),
-            'success chrome must mention 7-day trial'
+            /7-day trial|trial(?:ul)? de 7 zile|7 zile/i.test(htmlSrc + showSuccessSrc),
+            'success chrome must mention trial 7 zile'
         );
         assert.ok(
             !/Pay and publish/i.test(htmlSrc + appSrc) &&

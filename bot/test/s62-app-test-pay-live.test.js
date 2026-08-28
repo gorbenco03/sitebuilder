@@ -333,8 +333,8 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
         const body = await live.text();
         assert.ok(!/^\s*\{/.test(body), 'must not be raw JSON body');
         assert.ok(
-            /Page not found/i.test(body),
-            'English HTML 404 copy expected'
+            /Pagină negăsită|nu mai este public|Site-ul nu mai/i.test(body),
+            'Romanian HTML 404 / locked state copy expected'
         );
         assert.ok(!body.includes('"error":"not found"'), 'must not dump JSON error string');
     });

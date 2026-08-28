@@ -2847,7 +2847,7 @@ function showSuccessScreen(url, paymentUrl) {
   const isLive = !!(url && String(url).indexOf('http') === 0);
 
   if (isLive) {
-    if (titleEl) titleEl.textContent = 'Your site is live — 7-day trial started';
+    if (titleEl) titleEl.textContent = 'Site-ul tău e live — trial de 7 zile început';
     if (draftNote) hide(draftNote);
     if (urlText) {
       // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
@@ -2858,7 +2858,7 @@ function showSuccessScreen(url, paymentUrl) {
     if (urlLink) { urlLink.href = url; show(urlLink); }
     if (copyBtn) show(copyBtn);
   } else {
-    if (titleEl) titleEl.textContent = 'Add a card to go live';
+    if (titleEl) titleEl.textContent = 'Adaugă un card ca să fii live';
     if (draftNote) show(draftNote);
     if (urlLink) hide(urlLink);
     if (copyBtn) hide(copyBtn);
@@ -2922,7 +2922,7 @@ async function completeTestCheckout(sessionId) {
     if (site && site.url && String(site.url).indexOf('http') === 0) {
       sitePaymentUrl = null;
       showSuccessScreen(site.url, null);
-      showToast('Trial started. Your site is live.', 'success', 6000);
+      showToast('Trial început. Site-ul tău e live.', 'success', 6000);
     } else if (site && site.paid) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
@@ -2930,12 +2930,12 @@ async function completeTestCheckout(sessionId) {
         if (s && s.url) {
           publishedSiteUrl = s.url;
           showSuccessScreen(s.url, null);
-          showToast('Trial started. Your site is live.', 'success', 6000);
+          showToast('Trial început. Site-ul tău e live.', 'success', 6000);
         } else {
-          showToast('Trial started. Publishing will finish in a few moments.', 'success', 6000);
+          showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
         }
       } catch (_) {
-        showToast('Trial started. Publishing will finish in a few moments.', 'success', 6000);
+        showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
       }
     } else {
       showToast('Payment processed.', 'success', 5000);
@@ -3448,7 +3448,7 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
-  // During live/active trial only: 7-day trial · first charge 99 on <day-7 date>
+  // During live/active trial only: trial de 7 zile · prima taxare 99 pe <day-7 date>
   // Cancelled / unpublished Draft must not promise a first charge (W15).
   // After first charge / non-trial paid year: Hosting until …
   const isLiveActive = site.status === 'live' || site.status === 'active';
@@ -3459,16 +3459,16 @@ function buildSiteCard(site) {
       const price = formatPriceLabel(appConfig);
       const hostLine = document.createElement('div');
       hostLine.className = 'site-hosting-until site-trial-line';
-      // NB hyphen keeps "7-day" one token when the line wraps at spaces / ·.
-      const trialLabel = '7\u2011day trial · first charge ' + price;
-      hostLine.textContent = day7 ? trialLabel + ' on ' + day7 : trialLabel;
+      // NB hyphen keeps "7-zile" one token when the line wraps at spaces / ·.
+      const trialLabel = 'Trial de 7\u2011zile · prima taxare ' + price;
+      hostLine.textContent = day7 ? trialLabel + ' pe ' + day7 : trialLabel;
       info.appendChild(hostLine);
     } else if (site.paidUntil) {
       const untilStr = formatHostingUntilDate(site.paidUntil);
       if (untilStr) {
         const hostLine = document.createElement('div');
         hostLine.className = 'site-hosting-until';
-        hostLine.textContent = 'Hosting until ' + untilStr;
+        hostLine.textContent = 'Hosting până pe ' + untilStr;
         info.appendChild(hostLine);
       }
     }
@@ -3479,8 +3479,8 @@ function buildSiteCard(site) {
 
   const editBtn = document.createElement('button');
   editBtn.className = 'btn-ghost btn-sm';
-  editBtn.textContent = 'Edit';
-  editBtn.setAttribute('aria-label', 'Edit the ' + (site.projectName || site.slug || '') + ' site');
+  editBtn.textContent = 'Editează';
+  editBtn.setAttribute('aria-label', 'Editează site-ul ' + (site.projectName || site.slug || ''));
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
@@ -3490,21 +3490,21 @@ function buildSiteCard(site) {
     keepBtn.className = 'btn-primary btn-sm';
     let payLabel, payAriaLabel;
     if (site.paid && hostingExpired) {
-      payLabel = 'Renew hosting — ' + formatRenewalLabel(appConfig);
-      payAriaLabel = 'Renew hosting for this site';
+      payLabel = 'Reînnoiește hosting — ' + formatRenewalLabel(appConfig);
+      payAriaLabel = 'Reînnoiește hostingul pentru acest site';
     } else {
-      payLabel = 'Add a card — start 7-day trial';
-      payAriaLabel = 'Add a card to start a 7-day trial';
+      payLabel = 'Adaugă un card — începe trialul de 7 zile';
+      payAriaLabel = 'Adaugă un card ca să începi trialul de 7 zile';
     }
     keepBtn.textContent = payLabel;
     keepBtn.setAttribute('aria-label', payAriaLabel);
     keepBtn.addEventListener('click', async () => {
       try {
-        setBtnLoading(keepBtn, true, 'Processing…');
+        setBtnLoading(keepBtn, true, 'Se procesează…');
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast('Error: ' + e.message, 'error');
+        showToast('Eroare: ' + e.message, 'error');
       } finally {
         setBtnLoading(keepBtn, false);
       }
@@ -3514,8 +3514,8 @@ function buildSiteCard(site) {
     // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract)
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'btn-ghost btn-sm';
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.setAttribute('aria-label', 'Cancel subscription for ' + (site.projectName || site.slug || 'this site'));
+    cancelBtn.textContent = 'Anulează';
+    cancelBtn.setAttribute('aria-label', 'Anulează abonamentul pentru ' + (site.projectName || site.slug || 'acest site'));
     cancelBtn.addEventListener('click', async () => {
       try {
         setBtnLoading(cancelBtn, true, 'Opening…');

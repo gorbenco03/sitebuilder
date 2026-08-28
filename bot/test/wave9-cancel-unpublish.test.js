@@ -183,10 +183,13 @@ function chargeRecords() {
         })(app, 'buildSiteCard');
         assert.ok(card.length > 50, 'buildSiteCard must exist');
         assert.ok(
-            /textContent\s*=\s*['"]Cancel['"]/.test(card) ||
+            /textContent\s*=\s*['"]Anulează['"]/.test(card) ||
+                /textContent\s*=\s*['"]Cancel['"]/.test(card) ||
+                />Anulează</.test(card) ||
                 />Cancel</.test(card) ||
+                /['"]Anulează['"]/.test(card) ||
                 /['"]Cancel['"]/.test(card),
-            'buildSiteCard must expose a Cancel control label'
+            'buildSiteCard must expose a Cancel/Anulează control label'
         );
         assert.ok(
             /billing-portal|billing_portal|billingPortal|\/api\/sites\/.*portal|\/api\/sites\/.*cancel/i.test(card) ||

@@ -232,16 +232,35 @@ function wantsHtmlDocument(req) {
 }
 
 /**
- * Short product 404 for normal browser navigations.
+ * Short product 404 / unpublished lock for normal browser navigations.
+ * VISION: product language is Romanian on customer-visible surfaces.
+ * Cancel during trial must not silently serve stale live HTML — clear RO state.
  * API clients still get JSON via sendNotFound when Accept is not HTML-first.
+ *
+ * @param {import('http').ServerResponse} res
+ * @param {{ kind?: 'not_found'|'unpublished'|'unpaid' }} [opts]
  */
-function sendHtmlNotFound(res) {
+function sendHtmlNotFound(res, opts = {}) {
+    const kind = opts.kind || 'not_found';
+    const isUnpublished = kind === 'unpublished' || kind === 'unpaid';
+    const title = isUnpublished
+        ? 'Site-ul nu mai este public — Hidook Site Builder'
+        : 'Pagină negăsită — Hidook Site Builder';
+    const heading = isUnpublished
+        ? 'Site-ul nu mai este public'
+        : 'Pagină negăsită';
+    const body = isUnpublished
+        ? (kind === 'unpublished'
+            ? 'Abonamentul a fost anulat (inclusiv în trialul de 7 zile). Site-ul nu mai este disponibil public — nu se servește conținut live vechi.'
+            : 'Acest site nu este public încă. Adaugă un card pentru trialul de 7 zile ca să fie live imediat.')
+        : 'Linkul pe care l-ai deschis nu există sau a fost mutat.';
     const html = `<!DOCTYPE html>
-<html lang="en">
+<html lang="ro">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Page not found — Hidook Site Builder</title>
+<meta name="robots" content="noindex,nofollow">
+<title>${title}</title>
 <style>
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1220;color:#e8eef8}
   main{max-width:28rem;padding:2rem;text-align:center}
@@ -253,9 +272,9 @@ function sendHtmlNotFound(res) {
 </head>
 <body>
 <main>
-  <h1>Page not found</h1>
-  <p>The link you opened doesn't exist or has moved.</p>
-  <p><a href="/app/">Open Hidook Site Builder</a></p>
+  <h1>${heading}</h1>
+  <p>${body}</p>
+  <p><a href="/app/">Deschide Hidook Site Builder</a></p>
 </main>
 </body>
 </html>`;
@@ -263,14 +282,34 @@ function sendHtmlNotFound(res) {
     res.writeHead(404, {
         'Content-Type': 'text/html; charset=utf-8',
         'Content-Length': buf.length,
+        'Cache-Control': 'no-store',
     });
     res.end(buf);
 }
 
-/** Prefer HTML product page for browser docs; keep JSON for API-style clients. */
-function sendNotFound(req, res, jsonError = 'not found') {
-    if (wantsHtmlDocument(req)) return sendHtmlNotFound(res);
+/**
+ * Prefer HTML product page for browser docs; keep JSON for API-style clients.
+ * @param {import('http').IncomingMessage} req
+ * @param {import('http').ServerResponse} res
+ * @param {string} [jsonError]
+ * @param {{ kind?: 'not_found'|'unpublished'|'unpaid' }} [opts]
+ */
+function sendNotFound(req, res, jsonError = 'not found', opts = {}) {
+    if (wantsHtmlDocument(req)) return sendHtmlNotFound(res, opts);
     return sendJson(res, 404, { error: jsonError });
+}
+
+/** Resolve registry site by public slug (isolated /live path). */
+function findSiteBySlug(slug) {
+    try {
+        const reg = getRegistry();
+        const want = String(slug || '').toLowerCase();
+        if (!want) return null;
+        const all = typeof reg.listAllSites === 'function' ? reg.listAllSites() : [];
+        return all.find((s) => s && String(s.slug || '').toLowerCase() === want) || null;
+    } catch (_) {
+        return null;
+    }
 }
 
 function escapeHtml(s) {
@@ -561,7 +600,29 @@ function serveStatic(req, res, urlPath) {
 // ---------------------------------------------------------------------------
 // Isolated live sites — GET /live/<slug>/* from $DATA_DIR/published/<slug>/
 // Only written by HIDOOK_ISOLATED_DEPLOY after paid publish (unpaid → 404).
+// Cancel/unpublish removes files; browser gets clear Romanian locked state.
 // ---------------------------------------------------------------------------
+
+/**
+ * When isolated files are missing: distinguish cancelled/unpublished vs never-live.
+ * Never silently re-serve stale business HTML after cancel.
+ */
+function sendLiveMissing(req, res, slug) {
+    const site = findSiteBySlug(slug);
+    let kind = 'not_found';
+    if (site) {
+        const st = String(site.status || '').toLowerCase();
+        if (st === 'unpublished' || st === 'canceled' || st === 'cancelled' || site.canceledAt) {
+            kind = 'unpublished';
+        } else if (!site.paid || st === 'draft') {
+            kind = 'unpaid';
+        } else {
+            // Was paid but files gone — treat as locked/unpublished product state
+            kind = 'unpublished';
+        }
+    }
+    return sendNotFound(req, res, 'not found', { kind });
+}
 
 function serveLive(req, res, urlPath) {
     // urlPath like /live/<slug> or /live/<slug>/ or /live/<slug>/foo.css
@@ -611,19 +672,19 @@ function serveLive(req, res, urlPath) {
 
     let stat;
     try { stat = fs.statSync(realFile); } catch {
-        // Unpaid / missing live site: HTML 404 for browsers (S62), JSON for API clients
-        return sendNotFound(req, res, 'not found');
+        // Unpaid / cancelled / missing live site: HTML product state (RO), JSON for API
+        return sendLiveMissing(req, res, slug);
     }
 
     if (stat.isDirectory()) {
         realFile = path.join(realFile, 'index.html');
         try { stat = fs.statSync(realFile); } catch {
-            return sendNotFound(req, res, 'not found');
+            return sendLiveMissing(req, res, slug);
         }
     }
 
     if (!stat.isFile()) {
-        return sendNotFound(req, res, 'not found');
+        return sendLiveMissing(req, res, slug);
     }
 
     const ext  = path.extname(realFile).toLowerCase();

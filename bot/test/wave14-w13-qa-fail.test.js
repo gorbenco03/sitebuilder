@@ -143,19 +143,19 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
   const js = headRead(BUILDER_JS);
   const blob = html + '\n' + js;
 
-  assert.ok(/Add a card to go live/.test(blob), 'unpaid success title');
+  assert.ok(/Adaugă un card ca să fii live/.test(blob), 'unpaid success title');
   assert.ok(
-    /Add a card to start a 7-day trial\. Your site goes live now\. You are charged on day 7 unless you cancel\./.test(
+    /Adaugă un card ca să începi trialul de 7 zile\. Site-ul e live imediat\. Ești taxat în ziua 7 dacă nu anulezi\. Apoi reînnoire 29€\/an\./.test(
       blob
     ),
     'unpaid success note'
   );
   assert.ok(
-    /Add a card — start 7-day trial/.test(blob),
+    /Adaugă un card — începe trialul de 7 zile/.test(blob),
     'unpaid CTA label'
   );
   assert.ok(
-    /Add a card to start a 7-day trial/.test(blob),
+    /Adaugă un card ca să începi trialul de 7 zile/.test(blob),
     'aria / long trial phrase'
   );
 
@@ -173,11 +173,11 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
 check('HEAD live success + toast are trial started, not paid year', () => {
   const js = headRead(BUILDER_JS);
   assert.ok(
-    /Your site is live — 7-day trial started/.test(js),
+    /Site-ul tău e live — trial de 7 zile început/.test(js),
     'live success title'
   );
   assert.ok(
-    /Trial started\. Your site is live\./.test(js),
+    /Trial început\. Site-ul tău e live\./.test(js),
     'trial started toast'
   );
   assert.ok(
@@ -194,10 +194,10 @@ check('HEAD dashboard trial line during trial; Hosting until only after', () => 
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || js;
   assert.ok(
-    /7-day trial/.test(card) && /first charge/.test(card),
+    (/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) && /first charge|prima taxare/i.test(card),
     'buildSiteCard trial hosting line'
   );
-  assert.ok(/Hosting until /.test(card), 'Hosting until remains for non-trial paid');
+  assert.ok(/Hosting until |Hosting până pe /.test(card), 'Hosting until remains for non-trial paid');
 });
 
 check('HEAD .site-live-link does not use word-break:break-all', () => {

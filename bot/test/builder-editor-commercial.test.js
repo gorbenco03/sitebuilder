@@ -185,10 +185,10 @@ check('replace copy + image updates preview (renderHtml + app apply path)', () =
 check('Hidook Site Builder chrome, pay-before-publish, Instagram slot preserved', () => {
   const html = read(BUILDER_HTML);
   assert.ok(html.includes('Hidook Site Builder'), 'product name');
-  assert.ok(/id="btn-publish"|Publish site/.test(html), 'publish CTA');
-  assert.ok(/id="btn-pay-publish"|Add a card — start 7-day trial/.test(html), 'trial-card CTA');
+  assert.ok(/id="btn-publish"|Publish site|Publică/i.test(html), 'publish CTA');
+  assert.ok(/id="btn-pay-publish"|Adaugă un card — începe trialul de 7 zile/.test(html), 'trial-card CTA');
   assert.ok(/id="btn-add-instagram"|Add Instagram/.test(html), 'Instagram partner slot');
-  assert.ok(/lang="en"/.test(html), 'English UI');
+  assert.ok(/lang="ro"|lang="en"/.test(html), 'document lang set');
 });
 
 if (failed) {
