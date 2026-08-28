@@ -246,9 +246,20 @@ function writeFallbackThumb(id) {
         '<text x="320" y="210" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#14120F">' +
         String(id).replace(/[<>&]/g, '') +
         '</text></svg>';
+    clearThumbsForId(id);
     const dest = path.join(THUMBS_DIR, id + '.svg');
     fs.writeFileSync(dest, svg, 'utf8');
     return '/app/generated/thumbs/' + id + '.svg';
+}
+
+function clearThumbsForId(id) {
+    // Drop stale extensions so a photo source does not leave professionals.svg beside professionals.jpg.
+    if (!fs.existsSync(THUMBS_DIR)) return;
+    for (const name of fs.readdirSync(THUMBS_DIR)) {
+        if (name === id || name.startsWith(id + '.')) {
+            try { fs.unlinkSync(path.join(THUMBS_DIR, name)); } catch (_) { /* ignore */ }
+        }
+    }
 }
 
 const lightEntries = [];
@@ -304,6 +315,7 @@ for (const entry of registry.templates) {
     if (thumbSrc) {
         const ext = path.extname(thumbSrc).toLowerCase() || '.jpg';
         const thumbName = id + ext;
+        clearThumbsForId(id);
         fs.copyFileSync(thumbSrc, path.join(THUMBS_DIR, thumbName));
         thumbnail = '/app/generated/thumbs/' + thumbName;
     } else {

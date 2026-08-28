@@ -31,8 +31,8 @@
           "lightboxPrev": "Anterior",
           "lightboxNext": "Următor"
         },
-        "logo": "images/logo.jpg",
-        "showWordmark": false,
+        "logo": "",
+        "showWordmark": true,
         "hero": {
           "background": "url('images/hero.jpg')",
           "ctaLabel": "Comandă acum"
@@ -133,7 +133,7 @@
     },
     {
       "id": "desserdirina-en",
-      "name": "Desserdirina — bakery (EN sample)",
+      "name": "Desserdirina — bakery (EN)",
       "config": {
         "business": {
           "name": "Desserdirina",
@@ -162,8 +162,8 @@
           "lightboxPrev": "Previous",
           "lightboxNext": "Next"
         },
-        "logo": "images/logo.jpg",
-        "showWordmark": false,
+        "logo": "",
+        "showWordmark": true,
         "hero": {
           "background": "url('images/hero.jpg')",
           "ctaLabel": "Order now"
