@@ -1,0 +1,21 @@
+{
+  "base": "http://127.0.0.1:53028",
+  "PUBLIC_URL": null,
+  "HIDOOK_ISOLATED_DEPLOY": "1",
+  "HIDOOK_TEST_PAY": "1",
+  "HIDOOK_FAKE_DEPLOY": null,
+  "slug": "ev-iso-8c8dfa84",
+  "siteId": "afb6b6c6-9023-4922-9f86-4a7a85d0dc7f",
+  "results": {
+    "unpaid404": 404,
+    "trialLive200": 200,
+    "siteStatusAfterTrial": "live",
+    "paid": true,
+    "siteUrl": "/live/ev-iso-8c8dfa84/",
+    "activGate": true,
+    "republishStatus": 200,
+    "republishHasPublicUrlError": false,
+    "cancelLiveStatus": 404,
+    "cancelRegistryStatus": "unpublished"
+  }
+}

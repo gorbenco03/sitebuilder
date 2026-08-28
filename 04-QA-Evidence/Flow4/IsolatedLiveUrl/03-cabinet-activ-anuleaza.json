@@ -1,0 +1,21 @@
+{
+  "site": {
+    "id": "afb6b6c6-9023-4922-9f86-4a7a85d0dc7f",
+    "userId": "d551a2d8-9a1c-44e8-9bcb-fc60db3f21a9",
+    "templateId": "product-menu",
+    "templateVersion": 1,
+    "slug": "ev-iso-8c8dfa84",
+    "projectName": "ev-iso-8c8dfa84",
+    "platform": "web",
+    "status": "live",
+    "paid": true,
+    "url": "/live/ev-iso-8c8dfa84/",
+    "createdAt": "2026-08-28T17:41:04.566Z",
+    "stripeCustomerId": "cus_test_cs_test_2695220b7dc0c166012467d6",
+    "stripeSubscriptionId": "sub_test_cs_test_2695220b7dc0c166012467d6",
+    "paidUntil": "2027-08-28T17:41:04.577Z"
+  },
+  "activGate": true,
+  "anuleazaGate": true,
+  "note": "builder shows Activ + Anulează when paid && (live||active)"
+}

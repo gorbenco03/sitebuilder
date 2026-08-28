@@ -19,8 +19,9 @@
  * {url:'https://<slug>.test.local', provider:'fake'} — for offline unit tests.
  *
  * HIDOOK_ISOLATED_DEPLOY=1 (refused in production) → copy built site into
- * $DATA_DIR/published/<slug>/ and return {url: PUBLIC_URL+'/live/'+slug+'/',
- * provider:'isolated'}. Served by GET /live/<slug>/ (same HTTP server).
+ * $DATA_DIR/published/<slug>/ and return {url: (PUBLIC_URL||'')+'/live/'+slug+'/'
+ * (relative /live/<slug>/ when PUBLIC_URL is unset), provider:'isolated'}.
+ * Served by GET /live/<slug>/ (same HTTP server). Never copy-then-throw on empty PUBLIC_URL.
  *
  * Commercial amounts come only from ./pricing.js.
  * CommonJS, zero new npm dependencies, Node 18+.
@@ -217,9 +218,12 @@ async function _isolatedDeploy(siteDir, slug) {
     fs.rmSync(dest, { recursive: true, force: true });
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.cpSync(siteDir, dest, { recursive: true });
+    // Prefer absolute PUBLIC_URL when set; otherwise same-origin relative path
+    // so isolated local boot (no PUBLIC_URL) still returns a fetchable /live URL.
+    // Do not throw after copy — that left files on disk while publish failed.
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-    if (!publicUrl) throw new Error('PUBLIC_URL is required for isolated deploy');
-    return { url: `${publicUrl}/live/${safe}/`, provider: 'isolated' };
+    const url = publicUrl ? `${publicUrl}/live/${safe}/` : `/live/${safe}/`;
+    return { url, provider: 'isolated' };
 }
 
 // ---------------------------------------------------------------------------

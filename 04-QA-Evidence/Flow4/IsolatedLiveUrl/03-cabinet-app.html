@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Site-ul afacerii tale, gata azi — alege un design, personalizează-l și publică." />
+  <title>Hidook Site Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/app.css" />
+</head>
+<body>
+
+<!-- ===== LOADING OVERLAY ===== -->
+<div id="loading-overlay" class="loading-overlay" aria-live="polite">
+  <div class="spinner" aria-hidden="true"></div>
+  <span id="loading-msg">Se încarcă…</span>
+</div>
+
+<!-- ===== HEADER ===== -->
+<header class="app-header" id="app-header">
+  <a href="#templates" class="logo" aria-label="Hidook Site Builder — Home">
+    <span class="logo-mark" aria-hidden="true">H</span>
+    <span class="logo-word">Hidook<span class="logo-word-full"> Site Builder</span></span>
+  </a>
+  <nav class="header-nav" id="header-nav" aria-label="Navigare principală">
+    <a href="#templates" data-route="templates">Designuri</a>
+    <a href="#cum-e" data-route="how">Cum funcționează</a>
+    <a href="#dashboard" data-route="dashboard" id="nav-dashboard" style="display:none">Proiectele mele</a>
+  </nav>
+  <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
+  <div class="header-right">
+    <span id="user-badge" style="display:none" class="user-badge" aria-label="Utilizator conectat"></span>
+    <button id="btn-logout" style="display:none" class="btn-ghost btn-sm" aria-label="Deconectare">Deconectare</button>
+  </div>
+</header>
+
+<!-- ===== EDITOR TOPBAR (shown only in #edit) ===== -->
+<div id="editor-topbar" class="editor-topbar" style="display:none" role="toolbar" aria-label="Bară editor">
+  <div class="editor-topbar-left">
+    <button id="btn-back-templates" class="btn-icon-back" aria-label="Înapoi la designuri">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="editor-topbar-back-label">Înapoi</span>
+    </button>
+    <span id="editor-template-name" class="editor-tpl-name"></span>
+  </div>
+  <div class="editor-topbar-center">
+    <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
+      <button id="btn-preview-desktop" class="device-btn active" aria-label="Vizualizare desktop" aria-pressed="true" title="Desktop">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button id="btn-preview-mobile" class="device-btn" aria-label="Vizualizare mobil" aria-pressed="false" title="Mobil">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+  <div class="editor-topbar-right">
+    <div id="checklist-indicator" class="checklist-indicator" title="Câmpuri obligatorii completate" aria-label="Câmpuri completate">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+        <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="checklist-text">...</span>
+    </div>
+    <button id="btn-add-instagram" class="btn-topbar" type="button" aria-label="Adaugă Instagram">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <rect x="2" y="2" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="7.5" cy="7.5" r="2.4" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="11" cy="4.2" r=".7" fill="currentColor"/>
+      </svg>
+      <span class="btn-topbar-label">Adaugă Instagram</span>
+    </button>
+    <button id="btn-color-picker" class="btn-topbar" aria-label="Culoare temă" title="Culoare temă">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7.5 2C7.5 2 3 4.5 3 7.5a4.5 4.5 0 009 0C12 4.5 7.5 2 7.5 2z" fill="currentColor" opacity=".2"/>
+      </svg>
+      <span class="btn-topbar-label">Culoare</span>
+    </button>
+    <button id="btn-open-drawer" class="btn-topbar" aria-label="Detalii și câmpuri suplimentare" title="Detalii">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <circle cx="7.5" cy="3" r="1.2" fill="currentColor"/>
+        <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
+        <circle cx="7.5" cy="12" r="1.2" fill="currentColor"/>
+      </svg>
+      <span class="btn-topbar-label">Detalii</span>
+    </button>
+    <button id="btn-download-html" class="btn-topbar" type="button" aria-label="Descarcă HTML" title="Descarcă HTML">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <path d="M7.5 2v7M4.5 6.5L7.5 9.5l3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2.5 12.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <span class="btn-topbar-label">Descarcă HTML</span>
+    </button>
+    <button id="btn-download-zip" class="btn-topbar" type="button" aria-label="Descarcă ZIP" title="Descarcă ZIP pentru self-host">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <path d="M4 2.5h5.5L12 5v7.5H4V2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M9.5 2.5V5H12" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M7.5 7v3.5M6 9l1.5 1.5L9 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="btn-topbar-label">Descarcă ZIP</span>
+    </button>
+    <button id="btn-publish" class="btn-primary btn-publish-top" type="button" aria-label="Publică site-ul">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M7 2v7M4 5l3 3 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 12h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span>Publică site-ul</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<main id="app-main">
+
+  <!-- ========== SCREEN: TEMPLATES ========== -->
+  <section id="screen-templates" class="screen" role="main" aria-label="Alege un design">
+    <div class="hero-section">
+      <div class="hero-copy">
+        <h1 class="hero-title">Site-ul afacerii tale,<br><em>gata azi</em></h1>
+        <p class="hero-sub" id="hero-sub">
+          Alege un design, editează texte și poze, vezi preview.
+          Adaugă un card ca să începi trialul de 7 zile — site-ul e live imediat.
+          Taxăm <strong id="hero-price">—</strong> în ziua 7 dacă nu anulezi
+          (primul an; reînnoire <strong id="hero-renewal">—</strong>/an).
+        </p>
+        <div class="hero-actions">
+          <a href="#templates-grid" class="btn-primary" id="hero-cta">Alege un design</a>
+          <a href="#cum-e" class="btn-text">Cum funcționează</a>
+        </div>
+      </div>
+      <div class="hero-stage" aria-hidden="true">
+        <div class="hero-stage-stack" id="hero-stage-stack">
+          <div class="hero-stage-card hero-stage-card--side hero-stage-card--left" data-stage-slot="0"></div>
+          <div class="hero-stage-card hero-stage-card--center" data-stage-slot="1"></div>
+          <div class="hero-stage-card hero-stage-card--side hero-stage-card--right" data-stage-slot="2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="catalog-chips" id="catalog-chips" role="group" aria-label="Tip de afacere">
+      <button type="button" class="catalog-chip" data-filter="all" aria-pressed="true">Toate</button>
+      <button type="button" class="catalog-chip" data-filter="product-menu" aria-pressed="false">Restaurant</button>
+      <button type="button" class="catalog-chip" data-filter="portfolio" aria-pressed="false">Salon</button>
+      <button type="button" class="catalog-chip" data-filter="local-service" aria-pressed="false">Meserii</button>
+      <button type="button" class="catalog-chip" data-filter="professionals" aria-pressed="false">Servicii profesionale</button>
+      <button type="button" class="catalog-chip" data-filter="desserdirina" aria-pressed="false">Cofetărie</button>
+    </div>
+
+    <div id="templates-grid" class="templates-grid" role="list" aria-label="Available designs">
+      <div class="card-skeleton" aria-hidden="true">
+        <div class="skeleton-preview"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line skeleton-line--short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line skeleton-line--med"></div>
+        </div>
+      </div>
+      <div class="card-skeleton" aria-hidden="true">
+        <div class="skeleton-preview"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line skeleton-line--short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line skeleton-line--med"></div>
+        </div>
+      </div>
+      <div class="card-skeleton" aria-hidden="true">
+        <div class="skeleton-preview"></div>
+        <div class="skeleton-body">
+          <div class="skeleton-line skeleton-line--short"></div>
+          <div class="skeleton-line"></div>
+          <div class="skeleton-line skeleton-line--med"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="proof-row" aria-label="Detalii produs">
+      <div class="proof-item">
+        <div class="proof-value" id="proof-price">—</div>
+        <div class="proof-label">primul an după trial</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value" id="proof-renewal">—</div>
+        <div class="proof-label">reînnoire / an</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value">Trial de 7 zile</div>
+        <div class="proof-label">card obligatoriu — live imediat; taxare în ziua 7 dacă nu anulezi</div>
+      </div>
+      <div class="proof-item">
+        <div class="proof-value">Editezi oricând</div>
+        <div class="proof-label">republici același site în timpul și după trial</div>
+      </div>
+    </div>
+
+    <section class="how-section" id="cum-e" aria-labelledby="how-title">
+      <h2 id="how-title">Cum funcționează</h2>
+      <div class="how-grid">
+        <article class="how-step">
+          <div class="how-step-num">01</div>
+          <h3>Alege un design</h3>
+          <p>Restaurant, meserii, salon, servicii profesionale sau cofetărie — vezi un site real, cu conținut de start real, nu un șablon gol.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">02</div>
+          <h3>Editează în browser</h3>
+          <p>Text, poze, meniu, culoare — totul editabil. Conectează Instagram înainte să începi trialul.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">03</div>
+          <h3>Începe trialul de 7 zile</h3>
+          <p>Adaugă un card — site-ul e live imediat. Taxăm <strong id="how-price">—</strong> în ziua 7 dacă nu anulezi. Apoi reînnoire <strong id="how-renewal">—</strong>/an.</p>
+        </article>
+        <article class="how-step">
+          <div class="how-step-num">04</div>
+          <h3>Editează și republică</h3>
+          <p>Revii oricând la același site, schimbi ce vrei și publici din nou. După trial, reînnoirea e <strong id="how-renewal-step">—</strong>/an.</p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <p>Hidook Site Builder — <strong id="footer-price">—</strong> primul an, apoi <strong id="footer-renewal">—</strong>/an.</p>
+      <p>Fără boți. Card → trial de 7 zile → live imediat. Taxare în ziua 7 dacă nu anulezi. Site-ul tău, editările tale.</p>
+      <p class="landing-footer-legal">
+        <a href="/app/terms.html">Termeni</a>
+        <span aria-hidden="true">·</span>
+        <a href="/app/privacy.html">Confidențialitate</a>
+        <span aria-hidden="true">·</span>
+        <a href="/app/cookies.html">Cookie-uri</a>
+      </p>
+    </footer>
+  </section>
+
+  <!-- ========== SCREEN: EDITOR (Inline) ========== -->
+  <section id="screen-edit" class="screen screen-edit" role="main" aria-label="Editează site-ul" style="display:none">
+    <div class="editor-canvas-wrap" id="editor-canvas-wrap">
+      <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">
+        <div class="preview-shimmer"></div>
+      </div>
+      <div class="preview-spinner-overlay" id="preview-spinner-overlay" style="display:none" aria-hidden="true">
+        <div class="spinner spinner--sm"></div>
+      </div>
+      <iframe
+        id="preview-iframe"
+        class="preview-iframe preview-iframe--edit"
+        title="Editează site-ul"
+        sandbox="allow-scripts"
+        aria-label="Editează direct pe site"
+      ></iframe>
+    </div>
+  </section>
+
+  <!-- ========== SCREEN: DASHBOARD ========== -->
+  <section id="screen-dashboard" class="screen" role="main" aria-label="Proiectele mele" style="display:none">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h2>Proiectele mele</h2>
+        <a href="#templates" class="btn-primary btn-sm">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+            <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Site nou
+        </a>
+      </div>
+      <div id="sites-list" class="sites-list" aria-live="polite"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== COLOR PICKER POPOVER ===== -->
+<div id="color-popover" class="color-popover" role="dialog" aria-label="Culori temă" style="display:none">
+  <div class="color-popover-inner">
+    <div class="color-popover-title">Culoare accent</div>
+    <div class="color-presets" id="color-presets" role="group" aria-label="Culori presetate"></div>
+    <div class="color-custom-row">
+      <input type="color" id="color-custom-swatch" class="field-color-swatch" aria-label="Culoare accent personalizată" />
+      <input type="text" id="color-custom-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Culoare accent hex" />
+    </div>
+    <div class="color-popover-divider" role="separator"></div>
+    <div class="color-popover-title">Fundal pagină</div>
+    <div class="color-custom-row">
+      <input type="color" id="color-bg-swatch" class="field-color-swatch" aria-label="Culoare fundal pagină" />
+      <input type="text" id="color-bg-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Culoare fundal hex" />
+    </div>
+  </div>
+</div>
+
+<!-- ===== DETAILS DRAWER ===== -->
+<div id="drawer-overlay" class="drawer-overlay" style="display:none" aria-hidden="true"></div>
+<aside id="details-drawer" class="details-drawer" role="complementary" aria-label="Detalii site" style="display:none">
+  <div class="drawer-header">
+    <span class="drawer-title">Detalii site</span>
+    <button id="btn-close-drawer" class="modal-close-btn" aria-label="Închide">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body">
+    <!-- populated by js -->
+  </div>
+</aside>
+
+<!-- ===== MODAL: PUBLISH FLOW ===== -->
+<div id="modal-publish" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-publish-title" style="display:none">
+  <div class="modal-box modal-box--publish">
+    <button class="modal-close" id="btn-close-publish" aria-label="Închide">&times;</button>
+    <div id="publish-step-1" class="publish-step">
+      <div class="publish-icon" aria-hidden="true">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="#F3EFE8" stroke="#D9D2C6"/>
+          <path d="M10 16.5l4 4 8-9" stroke="#1E3A32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 id="modal-publish-title" class="modal-title">Gata de publicare</h2>
+      <ul class="publish-plan" aria-label="Cum funcționează publicarea">
+        <li>
+          <span class="publish-plan-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>Alege adresa site-ului pe Hidook Site Builder</span>
+        </li>
+        <li>
+          <span class="publish-plan-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span>Adaugă un card pentru trialul de 7 zile — site-ul e live imediat</span>
+        </li>
+        <li>
+          <span class="publish-plan-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span><strong id="publish-price">—</strong> după trial acoperă primul an (reînnoire <strong id="publish-renewal">—</strong>/an)</span>
+        </li>
+      </ul>
+      <div class="slug-chooser" role="group" aria-labelledby="slug-label">
+        <label id="slug-label" class="field-label" for="input-slug">Adresa site-ului tău</label>
+        <div class="slug-input-row">
+          <input id="input-slug" class="field-input" type="text" placeholder="numele-afacerii-tale" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="slug-preview slug-status" />
+          <span class="slug-status-icon" id="slug-status-icon" aria-hidden="true"></span>
+        </div>
+        <p class="slug-preview" id="slug-preview" aria-live="polite"></p>
+        <p class="field-error" id="slug-error" role="alert" style="display:none"></p>
+      </div>
+      <button id="btn-publish-continue" class="btn-primary btn-full" type="button">Continuă cu această adresă</button>
+    </div>
+    <div id="publish-step-2" class="publish-step" style="display:none">
+      <h2 class="modal-title">Autentifică-te ca să publici</h2>
+      <p class="modal-sub">Îți trimitem un link magic pe email — fără parolă, fără cont de creat.</p>
+      <form id="form-auth-email" novalidate autocomplete="off">
+        <div class="field-group">
+          <label class="field-label" for="input-email">Adresă de email</label>
+          <input id="input-email" class="field-input" type="email" placeholder="email@exemplu.com" autocomplete="email" required aria-describedby="auth-error" />
+        </div>
+        <div id="auth-error" class="field-error" role="alert" style="display:none"></div>
+        <button class="btn-primary btn-full" type="submit" id="btn-send-magic" style="margin-top:.75rem">Trimite link magic</button>
+      </form>
+      <div id="auth-sent" style="display:none" class="auth-sent">
+        <div class="auth-sent-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#DCFCE7"/><path d="M8 12l3 3 5-6" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
+        <p class="auth-sent-sub">Deschide emailul și apasă linkul ca să te autentifici.</p>
+        <a id="dev-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none" class="dev-link" aria-label="Deschide site-ul">Deschide site-ul</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: SUCCESS ===== -->
+<div id="modal-success" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-success-title" style="display:none">
+  <div class="modal-box modal-box--success">
+    <button class="modal-close" id="btn-close-success" aria-label="Închide">&times;</button>
+    <div class="success-check" aria-hidden="true">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="23" fill="#DCFCE7" stroke="#16A34A" stroke-width="2"/>
+        <path d="M14 24l8 8 12-14" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2 id="modal-success-title" class="success-title">Adaugă un card ca să fii live</h2>
+    <div class="success-url-block">
+      <a id="success-url-link" href="#" target="_blank" rel="noopener noreferrer" class="success-url-link" aria-label="Deschide site-ul publicat" style="display:none">
+        <span id="success-url-text"></span>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M6 2H2v10h10V8M8 2h4v4M7 7l5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      <p id="success-draft-note" class="modal-sub">Adaugă un card ca să începi trialul de 7 zile. Site-ul e live imediat. Ești taxat în ziua 7 dacă nu anulezi. Apoi reînnoire <strong id="success-renewal">—</strong>/an.</p>
+      <button id="btn-copy-url" class="btn-copy" type="button" aria-label="Copiază adresa site-ului" style="display:none">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        Copiază
+      </button>
+    </div>
+    <div class="success-actions">
+      <button id="btn-pay-publish" class="btn-primary btn-full" type="button" style="display:none" aria-label="Adaugă un card ca să începi trialul de 7 zile">
+        Adaugă un card — începe trialul de 7 zile — <span id="success-price">—</span>
+      </button>
+      <button id="btn-share-wa" class="btn-whatsapp btn-full" type="button">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 9.5c-.2.6-1.1 1.1-1.6 1.1-.4 0-1.9-.5-3.2-1.8C5.4 8.5 4.9 7 4.9 6.6c0-.5.5-1.4 1.1-1.6.1 0 .3 0 .4.1l1 2c0 .1 0 .2-.1.3l-.5.5c0 .1 0 .1.1.2.3.5.7 1 1.2 1.3.1.1.2.1.3 0l.5-.5c.1-.1.2-.1.3-.1l2 1c.1.1.1.3.3.3z" fill="currentColor"/>
+        </svg>
+        Trimite pe WhatsApp
+      </button>
+      <button id="btn-success-close" class="btn-ghost btn-full" type="button">Înapoi la editor</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: PREVIEW (template preview fullscreen) ===== -->
+<div id="modal-preview" class="modal-overlay modal-overlay--wide" role="dialog" aria-modal="true" aria-labelledby="modal-preview-title" style="display:none">
+  <div class="modal-box modal-box--wide">
+    <div class="modal-preview-header">
+      <span id="modal-preview-title" class="modal-preview-title">Previzualizare design</span>
+      <div class="modal-preview-controls">
+        <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
+          <button id="modal-preview-desktop" class="device-btn active" aria-label="Vizualizare desktop" aria-pressed="true" title="Desktop">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button id="modal-preview-mobile" class="device-btn" aria-label="Vizualizare mobil" aria-pressed="false" title="Mobil">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+        <button class="modal-close-btn" id="btn-close-preview" aria-label="Închide previzualizarea">&times;</button>
+      </div>
+    </div>
+    <div class="modal-preview-body" id="modal-preview-body">
+      <iframe id="preview-modal-iframe" class="preview-iframe preview-iframe--modal" title="Previzualizare design completă" sandbox="allow-scripts" aria-label="Previzualizare completă a designului"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: VERSIONS ===== -->
+<div id="modal-versions" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-versions-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-versions" aria-label="Închide">&times;</button>
+    <h2 id="modal-versions-title" class="modal-title">Istoric versiuni</h2>
+    <div id="versions-list" class="versions-list" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: IMAGE GALLERY ===== -->
+<div id="modal-gallery" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-gallery-title" style="display:none">
+  <div class="modal-box modal-box--gallery">
+    <button class="modal-close" id="btn-close-gallery" aria-label="Închide">&times;</button>
+    <h2 id="modal-gallery-title" class="modal-title">Galerie foto</h2>
+    <div id="gallery-modal-body" class="gallery-modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ADD INSTAGRAM ===== -->
+<div id="modal-instagram" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-instagram-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-instagram" aria-label="Închide">&times;</button>
+    <h2 id="modal-instagram-title" class="modal-title">Adaugă Instagram</h2>
+    <p class="modal-sub">Conectează Instagram din editor, înainte să începi trialul. Feed-ul apare pe site — Hidook Site Builder nu vorbește direct cu Meta.</p>
+    <p id="ig-partner-note" class="modal-sub">Feed-ul Instagram este oferit de Instafidget, un produs partener. Inclus gratuit 12 luni, apoi Instafidget Free (watermark).</p>
+
+    <!-- Step A: sign-in (before trial / without leaving editor) -->
+    <div id="ig-auth-panel" style="display:none">
+      <p class="modal-sub" id="ig-auth-lead">Autentifică-te cu email ca să conectezi Instagram. Este același cont pe care îl folosești la publicare — fără parolă.</p>
+      <form id="form-ig-auth-email" novalidate autocomplete="off">
+        <div class="field-group">
+          <label class="field-label" for="input-ig-email">Adresă de email</label>
+          <input id="input-ig-email" class="field-input" type="email" placeholder="email@exemplu.com" autocomplete="email" required />
+        </div>
+        <div id="ig-auth-error" class="field-error" role="alert" style="display:none"></div>
+        <button class="btn-primary btn-full" type="submit" id="btn-ig-send-magic" style="margin-top:.75rem">Trimite link magic</button>
+      </form>
+      <div id="ig-auth-sent" class="auth-sent" style="display:none">
+        <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
+        <p class="auth-sent-sub">Deschide emailul, apoi revino aici — rămâi în editor.</p>
+        <a id="ig-dev-link" href="#" class="dev-link" style="display:none" aria-label="Deschide linkul de autentificare">Deschide linkul de autentificare</a>
+      </div>
+    </div>
+
+    <!-- Step B: terms + connect (after account; draft may auto-save) -->
+    <div id="ig-connect-panel" style="display:none">
+      <label class="ig-terms" for="ig-terms-check">
+        <input id="ig-terms-check" type="checkbox" />
+        <span>Sunt de acord cu
+          <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a>
+          și
+          <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Politica de confidențialitate</a>
+          pentru feed-ul Instagram. Se creează un cont pe același email.
+        </span>
+      </label>
+      <p id="ig-status" class="ig-status" aria-live="polite"></p>
+      <button id="btn-ig-connect" class="btn-primary btn-full" type="button" disabled>Conectează Instagram</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
+
+<!-- Flow 3: builder-origin cookie banner (dismissible) -->
+<div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
+  <p>Folosim stocare esențială în browser ca să rămâi conectat și să păstrezi progresul ciornei. <a href="/app/cookies.html">Cookie-uri</a></p>
+  <div class="hb-cookie-actions">
+    <button type="button" id="hb-cookie-accept">Acceptă</button>
+    <a class="hb-cookie-link" href="/app/cookies.html">Află mai mult</a>
+  </div>
+</div>
+<style>
+.hb-cookie-banner{position:fixed;z-index:99999;left:1rem;right:1rem;bottom:1rem;max-width:32rem;margin:0 auto;padding:1rem 1.1rem;border-radius:12px;background:#111;color:#f5f5f5;box-shadow:0 12px 40px rgba(0,0,0,.28);font-size:.92rem;line-height:1.45;display:flex;flex-direction:column;gap:.75rem}
+.hb-cookie-banner[hidden]{display:none!important}
+.hb-cookie-banner p{margin:0;opacity:.92}
+.hb-cookie-banner a{color:#c8e6c9;text-decoration:underline}
+.hb-cookie-actions{display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center}
+.hb-cookie-banner button{appearance:none;border:0;border-radius:8px;padding:.55rem 1rem;font:inherit;font-weight:600;cursor:pointer;background:#25d366;color:#06210f}
+</style>
+<script>
+(function(){var K='hb-cookie-consent';function ok(){try{return!!localStorage.getItem(K)}catch(e){return false}}function accept(){try{localStorage.setItem(K,'accepted')}catch(e){}var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
+</script>
+
+<!-- Hidden file input for image replacement -->
+<input type="file" id="img-file-input" accept="image/*" style="display:none" aria-hidden="true" />
+
+<script src="/app/generated/templates-data.js"></script>
+<script src="/app/generated/engine.js"></script>
+<script src="/app/app.js"></script>
+</body>
+</html>
