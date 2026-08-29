@@ -11,6 +11,8 @@ const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const { renderHtml } = require('../../build.js');
+const { makeLocalSeedImagesEager } = require('../webpublish.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -62,6 +64,9 @@ check('builder chrome contains no known English QA leaks', () => {
         '>Restore<',
         'Restore</button>',
         'Version restored successfully!',
+        'Payment cancelled.',
+        'Your sign-in link has expired',
+        'Payment processed! Your site will be published',
     ];
     const source = appSrc + '\n' + overlaySrc + '\n' + indexHtml;
     for (const phrase of forbidden) {
@@ -79,6 +84,13 @@ check('builder chrome contains no known English QA leaks', () => {
     assert.ok(overlaySrc.includes('Înlocuiește fotografia'), 'photo overlay label is Romanian');
     assert.ok(indexHtml.includes('vezi previzualizarea.'), 'landing uses Previzualizare wording');
     assert.ok(indexHtml.includes('apoi Instafidget Free (filigran)'), 'partner note uses filigran');
+    for (const phrase of [
+        'Plata a fost anulată.',
+        'Linkul de autentificare a expirat. Încearcă din nou.',
+        'Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.',
+    ]) {
+        assert.ok(appSrc.includes(phrase), `Romanian return toast is missing: ${phrase}`);
+    }
 });
 
 check('Istoric loading, empty, and restore states are Romanian', () => {
@@ -112,6 +124,16 @@ check('connected Instafidget editor is never described as unavailable locally', 
     assert.ok(
         appSrc.includes('Editorul este pregătit și se va deschide într-un tab nou.'),
         'ready/new-tab status is missing'
+    );
+    const connect = extractFunction(appSrc, 'connectInstagram');
+    assert.ok(connect, 'connectInstagram exists');
+    assert.ok(
+        /instagramEditorUrl\s*=\s*String\(\(session\s*&&\s*session\.editorUrl\)\s*\|\|\s*['"]['"]\)/.test(connect),
+        'connect path does not retain the returned Instafidget editor URL'
+    );
+    assert.ok(
+        /btn-ig-editor[\s\S]{0,500}disabled\s*=\s*!instagramEditorUrl/.test(connect),
+        'connect path does not enable the open-editor control'
     );
 });
 
@@ -241,6 +263,32 @@ check('hero replace-photo control owns the top hit target', () => {
         /resolvedPath\s*=\s*['"]hero\.background['"]/.test(overlaySrc),
         'hero background path has no deterministic click fallback'
     );
+});
+
+check('gallery replace-photo control owns the top hit target', () => {
+    assert.ok(
+        /\.hb-img-btn[\s\S]{0,700}z-index:\s*2147483647/.test(overlaySrc),
+        'gallery replace-photo control does not have an unambiguous top layer'
+    );
+    assert.ok(
+        /\.hb-img-wrap:hover\s*>\s*\.hb-img-btn[\s\S]{0,160}pointer-events:\s*auto/.test(overlaySrc),
+        'gallery replace-photo control is not the direct clickable hover target'
+    );
+    assert.ok(
+        /\.hb-img-wrap\s*>\s*img[\s\S]{0,140}position:\s*relative[\s\S]{0,80}z-index:\s*0/.test(overlaySrc),
+        'wrapped gallery photo is not pinned below the replace-photo control'
+    );
+    const setupImages = extractFunction(overlaySrc, 'setupImages');
+    assert.ok(
+        /toParent\(\{\s*hb:\s*['"]image['"],\s*path:\s*resolvedPath,\s*src:/.test(setupImages),
+        'gallery click does not send its source for parent-side path recovery'
+    );
+    assert.ok(
+        /onImageChangeRequest\(msg\.path,\s*msg\.src\)/.test(appSrc),
+        'parent does not receive the image source fallback'
+    );
+    const imageRequest = extractFunction(appSrc, 'onImageChangeRequest');
+    assert.ok(/resolveImagePathFromSrc\(src\)/.test(imageRequest), 'parent cannot recover a missing image path');
 });
 
 check('cabinet cancellation requires explicit Romanian confirmation', () => {
@@ -375,6 +423,31 @@ check('all five first presets render seed content and local photography', () => 
             );
         }
         assert.ok(html.includes('data-hidook-preview'), `${id}: deterministic preview visibility CSS missing`);
+    }
+});
+
+check('all five published first presets eagerly load reachable same-origin seed photos', () => {
+    assert.strictEqual(
+        typeof makeLocalSeedImagesEager,
+        'function',
+        'isolated publish has no local seed-photo normalizer'
+    );
+    const registry = JSON.parse(read('templates/registry.json')).templates || [];
+    assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');
+    for (const entry of registry) {
+        const dir = `templates/${entry.id}`;
+        const config = JSON.parse(read(`${dir}/presets.json`)).presets[0].config;
+        const rendered = renderHtml(read(`${dir}/template.html`), config);
+        const liveHtml = makeLocalSeedImagesEager(rendered);
+        const imgTags = liveHtml.match(/<img\b[^>]*>/gi) || [];
+        const localTags = imgTags.filter((tag) => /\bsrc=["']images\//i.test(tag));
+        assert.ok(localTags.length > 0 || entry.id === 'professionals', `${entry.id}: no local seed <img> found`);
+        for (const tag of localTags) {
+            const src = tag.match(/\bsrc=["']([^"']+)["']/i)[1];
+            assert.ok(fs.existsSync(path.join(ROOT, dir, src)), `${entry.id}: missing published asset ${src}`);
+            assert.ok(!/\bloading=["']lazy["']/i.test(tag), `${entry.id}: ${src} can remain naturalWidth=0`);
+            assert.ok(/\bloading=["']eager["']/i.test(tag), `${entry.id}: ${src} is not eager in live HTML`);
+        }
     }
 });
 

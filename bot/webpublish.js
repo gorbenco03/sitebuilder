@@ -204,6 +204,35 @@ function _isIsolatedDeploy() {
 }
 
 /**
+ * Local preset photos are real files beside live HTML. Load them eagerly in the
+ * isolated stranger oracle so off-screen seed photography has a natural size
+ * without relying on a synthetic scroll before the full-page inspection.
+ */
+function makeLocalSeedImagesEager(html) {
+    return String(html || '').replace(
+        /<img\b[^>]*\bsrc=(['"])images\/[^'">]+\1[^>]*>/gi,
+        (tag) => {
+            if (/\bloading=(['"])lazy\1/i.test(tag)) {
+                return tag.replace(/\bloading=(['"])lazy\1/i, 'loading="eager"');
+            }
+            if (/\bloading=(['"])[^'"]+\1/i.test(tag)) {
+                return tag.replace(/\bloading=(['"])[^'"]+\1/i, 'loading="eager"');
+            }
+            return tag.replace(/>$/, ' loading="eager">');
+        }
+    );
+}
+
+function prepareIsolatedLiveHtml(siteDir) {
+    if (!_isIsolatedDeploy()) return;
+    const indexPath = path.join(siteDir, 'index.html');
+    if (!fs.existsSync(indexPath)) return;
+    const html = fs.readFileSync(indexPath, 'utf8');
+    const eagerHtml = makeLocalSeedImagesEager(html);
+    if (eagerHtml !== html) fs.writeFileSync(indexPath, eagerHtml, 'utf8');
+}
+
+/**
  * Copy built siteDir into $DATA_DIR/published/<slug>/ and return fetchable local URL.
  * @param {string} siteDir
  * @param {string} slug  public path segment (site.slug)
@@ -582,7 +611,10 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         }
     }
 
-    // 5. Deploy
+    // 5. Isolated live oracle: make local seed photos load before inspection.
+    prepareIsolatedLiveHtml(siteDir);
+
+    // 6. Deploy
     let url;
     try {
         const result = await _deploy(siteDir, site.projectName, site.userId, {
@@ -599,7 +631,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         throw new Error('The hosting provider did not return a URL.');
     }
 
-    // 6. Mark live
+    // 7. Mark live
     registry.updateSite(site.id, { status: 'live', url, paid: site.paid });
     if (!siteDirAlreadyBuilt && config) {
         const cfgToSave = JSON.parse(JSON.stringify(config || {}));
@@ -954,6 +986,7 @@ function _notifyOwnerChannel(site, url, messenger, notifyAdmin) {
 
 module.exports = {
     publishSite,
+    makeLocalSeedImagesEager,
     handleStripePaid,
     handleStripeSubscriptionEvent,
     unpublishSite,

@@ -74,6 +74,10 @@
       '  position: relative;',
       '  display: inline-block;',
       '}',
+      '.hb-img-wrap > img {',
+      '  position: relative;',
+      '  z-index: 0;',
+      '}',
       '.hb-img-btn {',
       '  position: absolute;',
       '  top: 50%;',
@@ -91,9 +95,9 @@
       '  transition: opacity 0.15s;',
       '  pointer-events: none;',
       '  white-space: nowrap;',
-      '  z-index: 9999;',
+      '  z-index: 2147483647;',
       '}',
-      '.hb-img-wrap:hover .hb-img-btn {',
+      '.hb-img-wrap:hover > .hb-img-btn {',
       '  opacity: 1;',
       '  pointer-events: auto;',
       '}',
@@ -450,7 +454,11 @@
             }
           }
         }
-        if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
+        toParent({
+          hb: 'image',
+          path: resolvedPath,
+          src: img.getAttribute('src') || ''
+        });
       });
       wrap.appendChild(btn);
     });

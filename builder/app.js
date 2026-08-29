@@ -810,7 +810,7 @@ function initPostMessageListener() {
         onInlineTextEdit(msg.path, msg.value);
         break;
       case 'image':
-        onImageChangeRequest(msg.path);
+        onImageChangeRequest(msg.path, msg.src);
         break;
       case 'list-add':
         onListAdd(msg.listPath);
@@ -961,7 +961,23 @@ function onInlineTextEdit(path, value) {
   // No re-render for ordinary text — already visible in contenteditable
 }
 
-function onImageChangeRequest(path) {
+function resolveImagePathFromSrc(src) {
+  const value = String(src || '').trim();
+  if (!value || !draft.config) return '';
+  let map = buildImgMap(draft.config);
+  const tpl = draft.templateId ? getTemplateById(draft.templateId) : null;
+  const imageMap = tpl && tpl.files && tpl.files.imageMap;
+  if (imageMap) map = mergePreviewImageMap(map, imageMap);
+  if (map[value]) return map[value];
+  const keys = Object.keys(map);
+  for (const key of keys) {
+    if (key && (value.endsWith(key) || key.endsWith(value))) return map[key];
+  }
+  return '';
+}
+
+function onImageChangeRequest(path, src) {
+  if (!path) path = resolveImagePathFromSrc(src);
   if (!path) return;
   pendingImagePath = path;
   const fileInput = $('img-file-input');
@@ -2142,7 +2158,16 @@ async function connectInstagram() {
       acceptedTerms: true,
     });
     const session = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/editor-session', {});
+    instagramEditorUrl = String((session && session.editorUrl) || '');
     if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
+    const editorBtn = $('btn-ig-editor');
+    const editorStatus = $('ig-editor-status');
+    if (editorBtn) editorBtn.disabled = !instagramEditorUrl;
+    if (editorStatus) {
+      editorStatus.textContent = instagramEditorUrl
+        ? 'Editorul este pregătit și se va deschide într-un tab nou.'
+        : 'Nu am putut pregăti editorul Instafidget. Încearcă din nou.';
+    }
     // Isolated/test finish: grant already stored embed; no partner editor UI required
     if (grant1.embedUrl && !(session && session.editorUrl)) {
       setIgStatus('Instagram este afișat pe site.');
@@ -3880,13 +3905,13 @@ async function handleRoute(hash) {
       }
     }
   } else if (route === 'paid') {
-    showToast('Payment processed! Your site will be published in a few moments.', 'success', 6000);
+    showToast('Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.', 'success', 6000);
     window.location.hash = '#dashboard';
   } else if (route === 'cancelled') {
-    showToast('Payment cancelled.', '', 4000);
+    showToast('Plata a fost anulată.', '', 4000);
     window.location.hash = '#edit';
   } else if (route === 'login-expired') {
-    showToast('Your sign-in link has expired. Try again.', 'error', 5000);
+    showToast('Linkul de autentificare a expirat. Încearcă din nou.', 'error', 5000);
     window.location.hash = '#templates';
   } else {
     showScreen('templates');
