@@ -45,10 +45,22 @@
             "title": "",
             "blurb": "",
             "photos": [
-              { "src": "images/torturi-1.jpg", "alt": "Torturi tematice de sărbătoare" },
-              { "src": "images/catering-1.jpg", "alt": "Platouri catering cu dulciuri asortate" },
-              { "src": "images/placinte-1.jpg", "alt": "Plăcinte tradiționale românești" },
-              { "src": "images/cupcakes-1.jpg", "alt": "Torturi mousse și cupcakes" }
+              {
+                "src": "images/torturi-1.jpg",
+                "alt": "Torturi tematice de sărbătoare"
+              },
+              {
+                "src": "images/catering-1.jpg",
+                "alt": "Platouri catering cu dulciuri asortate"
+              },
+              {
+                "src": "images/placinte-1.jpg",
+                "alt": "Plăcinte tradiționale românești"
+              },
+              {
+                "src": "images/cupcakes-1.jpg",
+                "alt": "Torturi mousse și cupcakes"
+              }
             ]
           }
         ],
@@ -90,20 +102,34 @@
           "title": "Meniu",
           "en": [
             {
-              "category": "Cakes",
-              "items": ["Red Velvet", "Carrot Cake", "Oreo Cake", "Victoria Sponge", "Chocolate Cake"],
+              "category": "Torturi",
+              "items": [
+                "Red Velvet",
+                "Tort de morcovi",
+                "Tort Oreo",
+                "Pandispan Victoria",
+                "Tort de ciocolată"
+              ],
               "empty": false
             },
             {
-              "category": "Pies",
-              "items": ["Vegetarian", "Cheese"],
+              "category": "Plăcinte",
+              "items": [
+                "Cu legume",
+                "Cu brânză"
+              ],
               "empty": false
             }
           ],
           "ro": [
             {
               "category": "Torturi",
-              "items": ["Napoleon", "Poveste", "Smântânel", "Medovic"],
+              "items": [
+                "Napoleon",
+                "Poveste",
+                "Smântânel",
+                "Medovic"
+              ],
               "empty": false
             },
             {
@@ -133,15 +159,15 @@
     },
     {
       "id": "desserdirina-en",
-      "name": "Desserdirina — bakery (EN)",
+      "name": "Desserdirina — cofetărie",
       "config": {
         "business": {
           "name": "Desserdirina",
-          "tagline": "Artisan cakes, pastries & bread",
-          "title": "Desserdirina | Cake shop & catering | Romford, London",
-          "metaDescription": "Artisan cakes, pastries and bread, freshly baked daily in Romford. Food catering, custom cakes, traditional Romanian delicacies.",
-          "about": "Welcome to Desserdirina! Our cake shop and catering kitchen in Romford, London. We bake artisan cakes, pastries and bread fresh every day — from traditional Moldovan treats to custom celebration cakes.",
-          "lang": "en"
+          "tagline": "Torturi, prăjituri și pâine artizanală",
+          "title": "Desserdirina | Cofetărie & catering | Romford, Londra",
+          "metaDescription": "Torturi, prăjituri și pâine artizanală, coapte zilnic în Romford. Catering, torturi la comandă, delicatese românești. Comandă pe WhatsApp sau vino la 28 High St.",
+          "about": "Bine ați venit la Desserdirina! Cofetăria și serviciul nostru de catering din Romford, Londra. Creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale moldovenești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație.",
+          "lang": "ro"
         },
         "theme": {
           "primary": "#E8588C",
@@ -150,25 +176,25 @@
           "cream": "#faf8f8"
         },
         "labels": {
-          "about": "About us",
-          "instaTitle": "Follow us on Instagram",
-          "instaFollow": "Follow",
-          "scroll": "Scroll",
-          "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web",
+          "about": "Despre noi",
+          "instaTitle": "Urmărește-ne pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Derulează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
           "whatsapp": "WhatsApp",
-          "close": "Close",
-          "menuLang": "Menu language",
-          "lightboxPrev": "Previous",
-          "lightboxNext": "Next"
+          "close": "Închide",
+          "menuLang": "Limba meniului",
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "logo": "",
         "showWordmark": true,
         "hero": {
           "background": "url('images/hero.jpg')",
-          "ctaLabel": "Order now"
+          "ctaLabel": "Comandă acum"
         },
-        "servicesTitle": "Our specialties",
+        "servicesTitle": "Specialitățile noastre",
         "services": [],
         "galleryTitle": "",
         "categories": [
@@ -176,10 +202,22 @@
             "title": "",
             "blurb": "",
             "photos": [
-              { "src": "images/torturi-1.jpg", "alt": "Themed celebration cakes" },
-              { "src": "images/catering-1.jpg", "alt": "Catering platters with assorted sweets" },
-              { "src": "images/placinte-1.jpg", "alt": "Traditional Romanian pastries" },
-              { "src": "images/cupcakes-1.jpg", "alt": "Mousse cakes and cupcakes" }
+              {
+                "src": "images/torturi-1.jpg",
+                "alt": "Torturi tematice de sărbătoare"
+              },
+              {
+                "src": "images/catering-1.jpg",
+                "alt": "Platouri catering cu dulciuri asortate"
+              },
+              {
+                "src": "images/placinte-1.jpg",
+                "alt": "Plăcinte tradiționale românești"
+              },
+              {
+                "src": "images/cupcakes-1.jpg",
+                "alt": "Torturi mousse și cupcakes"
+              }
             ]
           }
         ],
@@ -190,8 +228,8 @@
           "gallery": []
         },
         "contact": {
-          "title": "Order now",
-          "intro": "Order via WhatsApp or visit the shop. Book our space for events!",
+          "title": "Comandă acum",
+          "intro": "Comandă prin WhatsApp sau vino la patiserie. Rezervă spațiul pentru evenimente!",
           "instagram": {
             "url": "https://www.instagram.com/desserdirina",
             "label": "@desserdirina"
@@ -204,8 +242,8 @@
           "phone": "+447****1006",
           "phoneDisplay": "+44 7519 511006",
           "waHref": "https://wa.me/447519511006",
-          "waMessage": "Hello! I would like more information about your cakes.",
-          "address": "28 High St, Romford<br>London, RM11HR<br>Near Havering Museum",
+          "waMessage": "Bună ziua, aș dori o comandă de tort.",
+          "address": "28 High St, Romford<br>London, RM11HR<br>Lângă Havering Museum",
           "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7"
         },
         "seo": {
@@ -215,31 +253,61 @@
         "footer": {
           "address": "28 High St, Romford, London RM11HR",
           "year": 2026,
-          "note": "Freshly baked daily with love."
+          "note": "Coapte zilnic, cu drag."
         },
         "menu": {
-          "title": "Menu",
+          "title": "Meniu",
           "en": [
             {
-              "category": "Cakes",
-              "items": ["Red Velvet", "Carrot Cake", "Oreo Cake", "Victoria Sponge", "Chocolate Cake"],
+              "category": "Torturi",
+              "items": [
+                "Red Velvet",
+                "Tort de morcovi",
+                "Tort Oreo",
+                "Pandispan Victoria",
+                "Tort de ciocolată"
+              ],
               "empty": false
             },
             {
-              "category": "Pies",
-              "items": ["Vegetarian", "Cheese"],
+              "category": "Plăcinte",
+              "items": [
+                "Cu legume",
+                "Cu brânză"
+              ],
               "empty": false
             }
           ],
           "ro": [
             {
               "category": "Torturi",
-              "items": ["Napoleon", "Poveste", "Smântânel", "Medovic"],
+              "items": [
+                "Napoleon",
+                "Poveste",
+                "Smântânel",
+                "Medovic"
+              ],
               "empty": false
             },
             {
               "category": "La comandă",
-              "items": ["Torturi", "Colaci", "Sarmale", "Mâncare la cutie"],
+              "items": [
+                "Torturi",
+                "Colaci",
+                "Sarmale",
+                "Mâncare la cutie",
+                "Plăcinte și brânzoaice",
+                "Prăjituri și platouri cu prăjituri"
+              ],
+              "empty": false
+            },
+            {
+              "category": "Servicii și Evenimente",
+              "items": [
+                "Catering și mâncare la comandă",
+                "Zile de naștere în local",
+                "Evenimente"
+              ],
               "empty": false
             }
           ]

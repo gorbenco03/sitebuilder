@@ -6,33 +6,33 @@
       "config": {
         "business": {
           "name": "Atelier Ivoire",
-          "tagline": "Hair, skin & nails — calm, precise, by appointment",
-          "title": "Atelier Ivoire | Salon & Skin Studio | Brooklyn, NY",
-          "metaDescription": "Boutique salon in Brooklyn — hair, manicures, skin treatments. Book on WhatsApp.",
-          "about": "Atelier Ivoire is a small studio in Williamsburg. We work by appointment: color, cut, nails, and skincare. Certified products, a consultation at every visit, and results that last.",
-          "lang": "en"
+          "tagline": "Păr, îngrijirea tenului și manichiură — cu răbdare și precizie",
+          "title": "Atelier Ivoire | Salon și studio de îngrijire | Brooklyn, NY",
+          "metaDescription": "Salon boutique în Brooklyn pentru coafură, manichiură și tratamente faciale. Programări pe WhatsApp.",
+          "about": "Atelier Ivoire este un studio mic din Williamsburg. Lucrăm numai cu programare pentru culoare, tuns, manichiură și îngrijirea tenului. Folosim produse certificate și începem fiecare vizită cu o consultație.",
+          "lang": "ro"
         },
         "labels": {
           "whatsapp": "WhatsApp",
-          "close": "Close",
-          "about": "Our story",
-          "instaTitle": "Real results on Instagram",
-          "instaFollow": "Follow",
-          "scroll": "Explore",
-          "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web",
-          "servicesEyebrow": "Service menu",
-          "scheduleEyebrow": "Hours",
-          "galleryEyebrow": "Our work",
-          "teamEyebrow": "Our team",
-          "bookingEyebrow": "Booking",
-          "waBookBtn": "Book on WhatsApp",
-          "navGallery": "Gallery",
-          "navServices": "Services",
-          "navBooking": "Booking",
+          "close": "Închide",
+          "about": "Povestea noastră",
+          "instaTitle": "Rezultate reale pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Explorează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "servicesEyebrow": "Servicii",
+          "scheduleEyebrow": "Program",
+          "galleryEyebrow": "Lucrările noastre",
+          "teamEyebrow": "Echipa noastră",
+          "bookingEyebrow": "Programări",
+          "waBookBtn": "Programează-te pe WhatsApp",
+          "navGallery": "Galerie",
+          "navServices": "Servicii",
+          "navBooking": "Programare",
           "aboutCap": "Salon",
-          "lightboxPrev": "Previous",
-          "lightboxNext": "Next"
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#6b7f5a",
@@ -44,166 +44,166 @@
         "showWordmark": true,
         "hero": {
           "background": "url('images/iv-hero.jpg')",
-          "ctaLabel": "Book your visit"
+          "ctaLabel": "Programează o vizită"
         },
-        "servicesTitle": "Services",
+        "servicesTitle": "Servicii",
         "services": [
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
-            "label": "Cut & styling",
-            "price": "from $60"
+            "label": "Tuns și coafat",
+            "price": "de la $60"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
-            "label": "Gel manicure",
-            "price": "from $45"
+            "label": "Manichiură cu gel",
+            "price": "de la $45"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
-            "label": "Spa pedicure",
-            "price": "from $55"
+            "label": "Pedichiură spa",
+            "price": "de la $55"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
-            "label": "Event makeup",
-            "price": "from $85"
+            "label": "Machiaj de eveniment",
+            "price": "de la $85"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
-            "label": "Skincare treatment",
-            "price": "from $75"
+            "label": "Tratament facial",
+            "price": "de la $75"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
-            "label": "Hair treatment",
-            "price": "from $65"
+            "label": "Tratament pentru păr",
+            "price": "de la $65"
           }
         ],
         "pricing": [
           {
-            "name": "Cut + blow-dry",
+            "name": "Tuns și coafat",
             "price": "$55–75"
           },
           {
-            "name": "Root touch-up color",
+            "name": "Vopsirea rădăcinilor",
             "price": "$95–130"
           },
           {
-            "name": "Full balayage",
+            "name": "Balayage complet",
             "price": "$180–260"
           },
           {
-            "name": "Classic manicure",
+            "name": "Manichiură clasică",
             "price": "$40"
           },
           {
-            "name": "Gel color manicure",
+            "name": "Manichiură cu ojă gel",
             "price": "$55"
           },
           {
-            "name": "Nail art (per nail)",
+            "name": "Nail art (pe unghie)",
             "price": "$5–10"
           },
           {
-            "name": "Classic pedicure",
+            "name": "Pedichiură clasică",
             "price": "$45"
           },
           {
-            "name": "Spa pedicure + gel",
+            "name": "Pedichiură spa cu gel",
             "price": "$85"
           },
           {
-            "name": "Day makeup",
+            "name": "Machiaj de zi",
             "price": "$85"
           },
           {
-            "name": "Bridal makeup",
+            "name": "Machiaj de mireasă",
             "price": "$180"
           }
         ],
         "schedule": {
-          "title": "Hours",
+          "title": "Program",
           "rows": [
             {
-              "day": "Monday – Friday",
+              "day": "Luni – Vineri",
               "hours": "9:00 AM – 8:00 PM"
             },
             {
-              "day": "Saturday",
+              "day": "Sâmbătă",
               "hours": "9:00 AM – 6:00 PM"
             },
             {
-              "day": "Sunday",
+              "day": "Duminică",
               "hours": "10:00 AM – 3:00 PM"
             }
           ]
         },
         "team": {
-          "title": "The Atelier Ivoire team",
+          "title": "Echipa Atelier Ivoire",
           "members": [
             {
               "name": "Chloe Bennett",
-              "role": "Senior stylist & colorist",
-              "bio": "15 years of experience in hair and color, specializing in balayage and cold color techniques.",
+              "role": "Stilist senior și colorist",
+              "bio": "15 ani de experiență în coafură și culoare, cu specializare în balayage și tehnici de nuanțare rece.",
               "photo": "images/iv-team-c.jpg"
             },
             {
               "name": "Dana Park",
-              "role": "Nail specialist & nail artist",
-              "bio": "Internationally certified in gel and acrylic techniques, passionate about minimalist and floral nail art.",
+              "role": "Specialist în manichiură și nail art",
+              "bio": "Certificată internațional în tehnici cu gel și acril, pasionată de modele minimaliste și florale.",
               "photo": "images/iv-team-d.jpg"
             },
             {
               "name": "Lauren Marsh",
-              "role": "Makeup artist & esthetician",
-              "bio": "Trained at beauty schools in New York and Milan — makeup for everyday, evening, and special occasions.",
+              "role": "Make-up artist și estetician",
+              "bio": "Pregătită la școli de frumusețe din New York și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
             }
           ]
         },
-        "galleryTitle": "From the chair",
+        "galleryTitle": "Din salon",
         "categories": [
           {
-            "title": "Hair & color",
-            "blurb": "From subtle balayage to bold color — every cut is a signature.",
+            "title": "Coafură și culoare",
+            "blurb": "De la balayage discret la culoare îndrăzneață — fiecare tunsoare poartă o semnătură.",
             "photos": [
               {
                 "src": "images/iv-par1.jpg",
-                "alt": "Elegant honey-toned balayage"
+                "alt": "Balayage elegant în tonuri de miere"
               },
               {
                 "src": "images/iv-par2.jpg",
-                "alt": "Voluminous, glossy waves"
+                "alt": "Bucle ample și lucioase"
               },
               {
                 "src": "images/iv-par3.jpg",
-                "alt": "Modern textured cut"
+                "alt": "Tunsoare modernă, texturată"
               },
               {
                 "src": "images/iv-par4.jpg",
-                "alt": "Subtle highlights on brunette hair"
+                "alt": "Șuvițe discrete pe păr brunet"
               }
             ]
           },
           {
-            "title": "Manicures & nail art",
-            "blurb": "Gel, acrylic, BIAB, or simple — well-groomed nails that speak for themselves.",
+            "title": "Manichiură și nail art",
+            "blurb": "Gel, acril, BIAB sau manichiură simplă — unghii îngrijite, cu un rezultat care te reprezintă.",
             "photos": [
               {
                 "src": "images/iv-mani1.jpg",
-                "alt": "Nude gel manicure with a gold line"
+                "alt": "Manichiură nude cu gel și linie aurie"
               },
               {
                 "src": "images/iv-mani2.jpg",
-                "alt": "Spring floral nail art"
+                "alt": "Model floral de primăvară"
               },
               {
                 "src": "images/iv-mani3.jpg",
-                "alt": "Pink-to-white ombré on short nails"
+                "alt": "Ombré roz-alb pe unghii scurte"
               },
               {
                 "src": "images/iv-mani4.jpg",
-                "alt": "Classic bright red manicure"
+                "alt": "Manichiură clasică roșu intens"
               }
             ]
           }
@@ -222,8 +222,8 @@
           "embedUrl": ""
         },
         "contact": {
-          "title": "Book your visit",
-          "intro": "Message us on WhatsApp and we'll confirm your date and time within 2 hours. We can't wait to see you at our Williamsburg studio!",
+          "title": "Programează o vizită",
+          "intro": "Scrie-ne pe WhatsApp și îți confirmăm ziua și ora în cel mult două ore. Te așteptăm în studioul nostru din Williamsburg.",
           "instagram": {
             "url": "https://www.instagram.com/atelier.ivoire",
             "label": "@atelier.ivoire"
@@ -238,7 +238,7 @@
           "waHref": "https://wa.me/19175550142",
           "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
           "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
-          "waMessage": "Hello! I would like more information about your services."
+          "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
@@ -247,7 +247,7 @@
         "footer": {
           "address": "62 Bedford Ave, Brooklyn, NY 11249",
           "year": 2026,
-          "note": "Calm, precise, by appointment."
+          "note": "Răbdare, precizie, numai cu programare."
         }
       }
     },
@@ -257,33 +257,33 @@
       "config": {
         "business": {
           "name": "Studio Forma",
-          "tagline": "Editorial cuts, clean color — London",
-          "title": "Studio Forma | Editorial Hair Studio | London",
-          "metaDescription": "Editorial salon in London — cuts, color, makeup. Book on WhatsApp.",
-          "about": "Studio Forma works with shape and contrast. Precise cuts, controlled balayage, event makeup. A small team, limited appointments, camera-ready results.",
-          "lang": "en"
+          "tagline": "Tunsori editoriale, culoare curată — Londra",
+          "title": "Studio Forma | Salon editorial | Londra",
+          "metaDescription": "Salon editorial în Londra pentru tuns, culoare și machiaj. Programări pe WhatsApp.",
+          "about": "Studio Forma lucrează cu formă și contrast: tunsori precise, balayage controlat și machiaj de eveniment. Suntem o echipă restrânsă și lucrăm cu un număr limitat de programări.",
+          "lang": "ro"
         },
         "labels": {
           "whatsapp": "WhatsApp",
-          "close": "Close",
-          "about": "About the studio",
-          "instaTitle": "From the chair, on Instagram",
-          "instaFollow": "Follow",
-          "scroll": "Explore",
-          "waQr": "Open WhatsApp on your phone",
-          "waOpen": "Or open WhatsApp Web",
-          "servicesEyebrow": "Service menu",
-          "scheduleEyebrow": "Hours",
-          "galleryEyebrow": "Our work",
-          "teamEyebrow": "Our team",
-          "bookingEyebrow": "Booking",
-          "waBookBtn": "Book on WhatsApp",
-          "navGallery": "Gallery",
-          "navServices": "Services",
-          "navBooking": "Booking",
+          "close": "Închide",
+          "about": "Despre studio",
+          "instaTitle": "Din salon, pe Instagram",
+          "instaFollow": "Urmărește",
+          "scroll": "Explorează",
+          "waQr": "Deschide WhatsApp pe telefon",
+          "waOpen": "Sau deschide WhatsApp Web",
+          "servicesEyebrow": "Servicii",
+          "scheduleEyebrow": "Program",
+          "galleryEyebrow": "Lucrările noastre",
+          "teamEyebrow": "Echipa noastră",
+          "bookingEyebrow": "Programări",
+          "waBookBtn": "Programează-te pe WhatsApp",
+          "navGallery": "Galerie",
+          "navServices": "Servicii",
+          "navBooking": "Programare",
           "aboutCap": "Studio",
-          "lightboxPrev": "Previous",
-          "lightboxNext": "Next"
+          "lightboxPrev": "Anterior",
+          "lightboxNext": "Următor"
         },
         "theme": {
           "primary": "#1c1c1c",
@@ -295,158 +295,158 @@
         "showWordmark": true,
         "hero": {
           "background": "linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.7)), url('images/sf-hero.jpg') center/cover no-repeat",
-          "ctaLabel": "Book your chair"
+          "ctaLabel": "Programează-te"
         },
-        "servicesTitle": "Services",
+        "servicesTitle": "Servicii",
         "services": [
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>",
-            "label": "Natural hair extensions",
-            "price": "from £180"
+            "label": "Extensii de păr natural",
+            "price": "de la £180"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
-            "label": "Bridal hair",
-            "price": "from £120"
+            "label": "Coafură de mireasă",
+            "price": "de la £120"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
-            "label": "Event makeup",
-            "price": "from £90"
+            "label": "Machiaj de eveniment",
+            "price": "de la £90"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/></svg>",
-            "label": "Color & balayage",
-            "price": "from £75"
+            "label": "Culoare și balayage",
+            "price": "de la £75"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
-            "label": "Artistic manicure",
-            "price": "from £35"
+            "label": "Manichiură artistică",
+            "price": "de la £35"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
-            "label": "Keratin treatment",
-            "price": "from £140"
+            "label": "Tratament cu keratină",
+            "price": "de la £140"
           }
         ],
         "pricing": [
           {
-            "name": "Tape-in extensions (50 wefts)",
+            "name": "Extensii tape-in (50 de benzi)",
             "price": "£180"
           },
           {
-            "name": "Micro-ring extensions (100 strands)",
+            "name": "Extensii cu microring (100 de șuvițe)",
             "price": "£340"
           },
           {
-            "name": "Extensions touch-up (monthly)",
+            "name": "Întreținere lunară a extensiilor",
             "price": "£85"
           },
           {
-            "name": "Bridal hair",
+            "name": "Coafură de mireasă",
             "price": "£120–180"
           },
           {
-            "name": "Bridesmaid hair",
+            "name": "Coafură pentru domnișoara de onoare",
             "price": "£75"
           },
           {
-            "name": "Bridal makeup",
+            "name": "Machiaj de mireasă",
             "price": "£130"
           },
           {
-            "name": "Event makeup",
+            "name": "Machiaj de eveniment",
             "price": "£90"
           },
           {
-            "name": "Gel manicure",
+            "name": "Manichiură cu gel",
             "price": "£40"
           },
           {
-            "name": "Manicure + pedicure",
+            "name": "Manichiură și pedichiură",
             "price": "£70"
           },
           {
-            "name": "Full balayage",
+            "name": "Balayage complet",
             "price": "£150–230"
           }
         ],
         "schedule": {
-          "title": "Hours",
+          "title": "Program",
           "rows": [
             {
-              "day": "Monday – Saturday",
+              "day": "Luni – Sâmbătă",
               "hours": "9:00 AM – 7:00 PM"
             },
             {
-              "day": "Sunday",
-              "hours": "by request (weddings & events)"
+              "day": "Duminică",
+              "hours": "la cerere (nunți și evenimente)"
             }
           ]
         },
         "team": {
-          "title": "The studio team",
+          "title": "Echipa studioului",
           "members": [
             {
               "name": "Michelle Russo",
-              "role": "Founder & senior stylist",
-              "bio": "12 years of experience, trained at hair schools in London and Milan.",
+              "role": "Fondatoare și stilist senior",
+              "bio": "12 ani de experiență și pregătire la școli de coafură din Londra și Milano.",
               "photo": "images/sf-team-m.jpg"
             },
             {
               "name": "Anna Clarke",
-              "role": "Makeup artist",
-              "bio": "Specializes in bridal makeup and editorial shoots.",
+              "role": "Make-up artist",
+              "bio": "Specializată în machiaj de mireasă și ședințe foto editoriale.",
               "photo": "images/sf-team-a.jpg"
             },
             {
               "name": "Olivia Bell",
-              "role": "Nail specialist",
-              "bio": "Nail art, nail extensions, and spa pedicures — with patience and precision.",
+              "role": "Specialist în manichiură",
+              "bio": "Nail art, extensii de unghii și pedichiură spa, realizate cu răbdare și precizie.",
               "photo": "images/sf-team-o.jpg"
             }
           ]
         },
-        "galleryTitle": "Portfolio",
+        "galleryTitle": "Portofoliu",
         "categories": [
           {
-            "title": "Extensions & event hair",
-            "blurb": "Natural hair extensions and styling for weddings, christenings, and events.",
+            "title": "Extensii și coafuri de eveniment",
+            "blurb": "Extensii cu aspect natural și coafuri pentru nunți, botezuri și evenimente.",
             "photos": [
               {
                 "src": "images/sf-ext1.jpg",
-                "alt": "Tape-in extensions on brunette hair"
+                "alt": "Extensii tape-in pe păr brunet"
               },
               {
                 "src": "images/sf-ext2.jpg",
-                "alt": "Bridal hair with soft curls"
+                "alt": "Coafură de mireasă cu bucle lejere"
               },
               {
                 "src": "images/sf-ext3.jpg",
-                "alt": "Elegant updo for a wedding"
+                "alt": "Coc elegant pentru nuntă"
               },
               {
                 "src": "images/sf-ext4.jpg",
-                "alt": "Blonde extensions on brown hair"
+                "alt": "Extensii blonde pe păr șaten"
               }
             ]
           },
           {
-            "title": "Makeup & full looks",
-            "blurb": "Natural or dramatic makeup — every look created around your personality.",
+            "title": "Machiaj și ținute complete",
+            "blurb": "Machiaj natural sau dramatic, creat în jurul personalității tale.",
             "photos": [
               {
                 "src": "images/sf-mua1.jpg",
-                "alt": "Natural bridal makeup with a glow"
+                "alt": "Machiaj natural de mireasă, cu luminozitate"
               },
               {
                 "src": "images/sf-mua2.jpg",
-                "alt": "Evening look with smoky eye"
+                "alt": "Machiaj de seară cu ochi conturați"
               },
               {
                 "src": "images/sf-mua3.jpg",
-                "alt": "Editorial makeup on a photoshoot"
+                "alt": "Machiaj editorial la o ședință foto"
               }
             ]
           }
@@ -465,8 +465,8 @@
           "embedUrl": ""
         },
         "contact": {
-          "title": "Book your chair",
-          "intro": "Message us on WhatsApp for an appointment or a free consultation about extensions. We reply the same day!",
+          "title": "Programează-te",
+          "intro": "Scrie-ne pe WhatsApp pentru o programare sau o consultație gratuită despre extensii. Răspundem în aceeași zi.",
           "instagram": {
             "url": "https://www.instagram.com/studioforma.london",
             "label": "@studioforma.london"
@@ -481,7 +481,7 @@
           "waHref": "https://wa.me/447700900456",
           "address": "24 Redchurch Street<br>London, E2 7DJ",
           "addressHref": "https://maps.google.com/?q=24+Redchurch+Street+London",
-          "waMessage": "Hello! I would like more information about your services."
+          "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/sf-og.jpg",
@@ -490,7 +490,7 @@
         "footer": {
           "address": "24 Redchurch Street, London, E2 7DJ",
           "year": 2026,
-          "note": "Shape before trend."
+          "note": "Forma înaintea tendinței."
         }
       }
     },
@@ -515,15 +515,15 @@
           "scroll": "Explorează",
           "waQr": "Deschide WhatsApp pe telefon",
           "waOpen": "Sau deschide WhatsApp Web",
-          "servicesEyebrow": "Meniu servicii",
+          "servicesEyebrow": "Servicii",
           "scheduleEyebrow": "Program",
           "galleryEyebrow": "Lucrările noastre",
-          "teamEyebrow": "Echipa",
+          "teamEyebrow": "Echipa noastră",
           "bookingEyebrow": "Programări",
-          "waBookBtn": "Programează pe WhatsApp",
+          "waBookBtn": "Programează-te pe WhatsApp",
           "navGallery": "Galerie",
           "navServices": "Servicii",
-          "navBooking": "Programări",
+          "navBooking": "Programare",
           "aboutCap": "Salon",
           "lightboxPrev": "Anterior",
           "lightboxNext": "Următor"
@@ -538,166 +538,166 @@
         "showWordmark": true,
         "hero": {
           "background": "url('images/iv-hero.jpg')",
-          "ctaLabel": "Programează vizita"
+          "ctaLabel": "Programează o vizită"
         },
-        "servicesTitle": "Services",
+        "servicesTitle": "Servicii",
         "services": [
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
-            "label": "Cut & styling",
-            "price": "from $60"
+            "label": "Tuns și coafat",
+            "price": "de la $60"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
-            "label": "Gel manicure",
-            "price": "from $45"
+            "label": "Manichiură cu gel",
+            "price": "de la $45"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
-            "label": "Spa pedicure",
-            "price": "from $55"
+            "label": "Pedichiură spa",
+            "price": "de la $55"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
-            "label": "Event makeup",
-            "price": "from $85"
+            "label": "Machiaj de eveniment",
+            "price": "de la $85"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
-            "label": "Skincare treatment",
-            "price": "from $75"
+            "label": "Tratament facial",
+            "price": "de la $75"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
-            "label": "Hair treatment",
-            "price": "from $65"
+            "label": "Tratament pentru păr",
+            "price": "de la $65"
           }
         ],
         "pricing": [
           {
-            "name": "Cut + blow-dry",
+            "name": "Tuns și coafat",
             "price": "$55–75"
           },
           {
-            "name": "Root touch-up color",
+            "name": "Vopsirea rădăcinilor",
             "price": "$95–130"
           },
           {
-            "name": "Full balayage",
+            "name": "Balayage complet",
             "price": "$180–260"
           },
           {
-            "name": "Classic manicure",
+            "name": "Manichiură clasică",
             "price": "$40"
           },
           {
-            "name": "Gel color manicure",
+            "name": "Manichiură cu ojă gel",
             "price": "$55"
           },
           {
-            "name": "Nail art (per nail)",
+            "name": "Nail art (pe unghie)",
             "price": "$5–10"
           },
           {
-            "name": "Classic pedicure",
+            "name": "Pedichiură clasică",
             "price": "$45"
           },
           {
-            "name": "Spa pedicure + gel",
+            "name": "Pedichiură spa cu gel",
             "price": "$85"
           },
           {
-            "name": "Day makeup",
+            "name": "Machiaj de zi",
             "price": "$85"
           },
           {
-            "name": "Bridal makeup",
+            "name": "Machiaj de mireasă",
             "price": "$180"
           }
         ],
         "schedule": {
-          "title": "Hours",
+          "title": "Program",
           "rows": [
             {
-              "day": "Monday – Friday",
+              "day": "Luni – Vineri",
               "hours": "9:00 AM – 8:00 PM"
             },
             {
-              "day": "Saturday",
+              "day": "Sâmbătă",
               "hours": "9:00 AM – 6:00 PM"
             },
             {
-              "day": "Sunday",
+              "day": "Duminică",
               "hours": "10:00 AM – 3:00 PM"
             }
           ]
         },
         "team": {
-          "title": "The Atelier Ivoire team",
+          "title": "Echipa Atelier Ivoire",
           "members": [
             {
               "name": "Chloe Bennett",
-              "role": "Senior stylist & colorist",
-              "bio": "15 years of experience in hair and color, specializing in balayage and cold color techniques.",
+              "role": "Stilist senior și colorist",
+              "bio": "15 ani de experiență în coafură și culoare, cu specializare în balayage și tehnici de nuanțare rece.",
               "photo": "images/iv-team-c.jpg"
             },
             {
               "name": "Dana Park",
-              "role": "Nail specialist & nail artist",
-              "bio": "Internationally certified in gel and acrylic techniques, passionate about minimalist and floral nail art.",
+              "role": "Specialist în manichiură și nail art",
+              "bio": "Certificată internațional în tehnici cu gel și acril, pasionată de modele minimaliste și florale.",
               "photo": "images/iv-team-d.jpg"
             },
             {
               "name": "Lauren Marsh",
-              "role": "Makeup artist & esthetician",
-              "bio": "Trained at beauty schools in New York and Milan — makeup for everyday, evening, and special occasions.",
+              "role": "Make-up artist și estetician",
+              "bio": "Pregătită la școli de frumusețe din New York și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
             }
           ]
         },
-        "galleryTitle": "From the chair",
+        "galleryTitle": "Din salon",
         "categories": [
           {
-            "title": "Hair & color",
-            "blurb": "From subtle balayage to bold color — every cut is a signature.",
+            "title": "Coafură și culoare",
+            "blurb": "De la balayage discret la culoare îndrăzneață — fiecare tunsoare poartă o semnătură.",
             "photos": [
               {
                 "src": "images/iv-par1.jpg",
-                "alt": "Elegant honey-toned balayage"
+                "alt": "Balayage elegant în tonuri de miere"
               },
               {
                 "src": "images/iv-par2.jpg",
-                "alt": "Voluminous, glossy waves"
+                "alt": "Bucle ample și lucioase"
               },
               {
                 "src": "images/iv-par3.jpg",
-                "alt": "Modern textured cut"
+                "alt": "Tunsoare modernă, texturată"
               },
               {
                 "src": "images/iv-par4.jpg",
-                "alt": "Subtle highlights on brunette hair"
+                "alt": "Șuvițe discrete pe păr brunet"
               }
             ]
           },
           {
-            "title": "Manicures & nail art",
-            "blurb": "Gel, acrylic, BIAB, or simple — well-groomed nails that speak for themselves.",
+            "title": "Manichiură și nail art",
+            "blurb": "Gel, acril, BIAB sau manichiură simplă — unghii îngrijite, cu un rezultat care te reprezintă.",
             "photos": [
               {
                 "src": "images/iv-mani1.jpg",
-                "alt": "Nude gel manicure with a gold line"
+                "alt": "Manichiură nude cu gel și linie aurie"
               },
               {
                 "src": "images/iv-mani2.jpg",
-                "alt": "Spring floral nail art"
+                "alt": "Model floral de primăvară"
               },
               {
                 "src": "images/iv-mani3.jpg",
-                "alt": "Pink-to-white ombré on short nails"
+                "alt": "Ombré roz-alb pe unghii scurte"
               },
               {
                 "src": "images/iv-mani4.jpg",
-                "alt": "Classic bright red manicure"
+                "alt": "Manichiură clasică roșu intens"
               }
             ]
           }
@@ -716,8 +716,8 @@
           "embedUrl": ""
         },
         "contact": {
-          "title": "Programări",
-          "intro": "Scrie-ne pe WhatsApp pentru o oră. Răspundem în aceeași zi.",
+          "title": "Programează o vizită",
+          "intro": "Scrie-ne pe WhatsApp și îți confirmăm ziua și ora. Te așteptăm la salon.",
           "instagram": {
             "url": "https://www.instagram.com/atelier.ivoire",
             "label": "@atelier.ivoire"
@@ -732,7 +732,7 @@
           "waHref": "https://wa.me/40721234567",
           "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
           "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
-          "waMessage": "Bună ziua, aș dori o programare."
+          "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
@@ -741,7 +741,7 @@
         "footer": {
           "address": "62 Bedford Ave, Brooklyn, NY 11249",
           "year": 2026,
-          "note": "Programări confirmate separat."
+          "note": "Răbdare, precizie, numai cu programare."
         }
       }
     }
