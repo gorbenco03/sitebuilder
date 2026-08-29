@@ -111,7 +111,7 @@ check('HEAD connectInstagram opens editor as _blank tab without named popup/size
 });
 
 // ── HEAD: product-visible copy = 12 months free + Free watermark ─────────
-check('HEAD #ig-partner-note states free 12 months then Instafidget Free (watermark)', () => {
+check('HEAD #ig-partner-note states free 12 months then Instafidget Free (filigran)', () => {
   const html = headRead('builder/index.html');
   const note = extractPartnerNoteText(html);
   assert.ok(
@@ -123,8 +123,8 @@ check('HEAD #ig-partner-note states free 12 months then Instafidget Free (waterm
     'included free for 12 months'
   );
   assert.ok(
-    /Instafidget Free\s*\(watermark\)/i.test(note),
-    'then Instafidget Free (watermark)'
+    /Instafidget Free\s*\(filigran\)/i.test(note),
+    'then Instafidget Free (filigran)'
   );
 });
 

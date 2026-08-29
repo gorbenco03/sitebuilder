@@ -183,6 +183,7 @@
           "key": "hero.background",
           "type": "background",
           "label": "Fundal deschidere (culoare sau foto)",
+          "hint": "Alege o culoare și opțional o poză. Previzualizarea live se actualizează imediat.",
           "required": false
         },
         {

@@ -236,15 +236,15 @@ function httpGet(port, urlPath, headers = {}) {
     assert.ok(/Open the site|Deschide site|Deschide site-ul/i.test(surface), 'live site label expected');
   });
 
-  await check('HEAD first local-service preset is commercial US market (not Londra +44)', () => {
+  await check('HEAD first local-service preset is Romanian market (not Londra +44)', () => {
     const data = JSON.parse(headRead('templates/local-service/presets.json'));
     const first = data.presets[0];
-    assert.strictEqual(first.id, 'renovari-interioare-londra', 'keep stable id');
+    assert.strictEqual(first.id, 'renovari-bucuresti', 'București preset opens by default');
     const surface = JSON.stringify({ name: first.name, config: first.config });
     assert.ok(!/\bLondra\b/i.test(surface), 'no Londra in human surface');
     assert.ok(!/\+44\b|4479/i.test(surface), 'no +44 contact');
-    assert.ok(/\+1[\s-]?512|512-555/.test(surface), 'US (Austin) phone expected');
-    assert.ok(/Austin/i.test(surface), 'US zone expected');
+    assert.ok(/\+40|407/.test(surface), 'Romanian phone expected');
+    assert.ok(/București|Ilfov/i.test(surface), 'Romanian zone expected');
     // Keep image refs
     assert.ok(/images\/pr-hero\.jpg/.test(surface), 'keep existing images/ refs');
     assert.ok(!/picsum|unsplash/i.test(surface), 'no external stock conveyor');

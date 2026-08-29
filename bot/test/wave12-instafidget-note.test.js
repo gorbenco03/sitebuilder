@@ -36,7 +36,7 @@ const PARENT_SHA = '037f2f130b22280be76017ba441e5aeb0a88d5d3';
 const PHRASE_PARTNER_RO =
   'Feed-ul Instagram este oferit de Instafidget, un produs partener';
 const PHRASE_FREE_RO = 'Inclus gratuit 12 luni';
-const PHRASE_WATERMARK_RO = 'apoi Instafidget Free (watermark)';
+const PHRASE_WATERMARK_RO = 'apoi Instafidget Free (filigran)';
 const PHRASE_PARTNER_EN =
   'Instagram feed is provided by Instafidget, a partner product';
 const PHRASE_FREE_EN = 'Included free for 12 months';
@@ -48,7 +48,7 @@ function hasPartnerFacts(text) {
   const free = t.includes(PHRASE_FREE_RO) || t.includes(PHRASE_FREE_EN) ||
     /Inclus gratuit 12 luni|Included free for 12 months/i.test(t);
   const mark = t.includes(PHRASE_WATERMARK_RO) || t.includes(PHRASE_WATERMARK_EN) ||
-    /Instafidget Free\s*\(watermark\)/i.test(t);
+    /Instafidget Free\s*\((?:filigran|watermark)\)/i.test(t);
   return partner && free && mark;
 }
 

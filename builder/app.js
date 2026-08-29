@@ -610,7 +610,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '    if(el.dataset.hbListInit)return;el.dataset.hbListInit="1";',
   '    var lp=el.dataset.hbList;',
   '    var btn=document.createElement("button");',
-  '    btn.type="button";btn.textContent="+ Add item";',
+  '    btn.type="button";btn.textContent="+ Adaugă articol";',
   '    btn.style.marginTop="8px";btn.style.padding="5px 10px";btn.style.fontSize="12px";',
   '    btn.style.fontFamily="system-ui";btn.style.background="#14120F";btn.style.color="#FFFcf7";',
   '    btn.style.border="none";btn.style.borderRadius="8px";btn.style.cursor="pointer";btn.style.display="block";',
@@ -2169,7 +2169,7 @@ async function downloadDraftHtml() {
       } catch (_) {
         /* body may be empty or plain text */
       }
-      if (res.status === 401) msg = 'Sign in to download your draft as HTML.';
+      if (res.status === 401) msg = 'Intră în cont ca să descarci ciorna ca HTML.';
       showToast(msg, 'error', 5000);
       return;
     }
@@ -2197,7 +2197,7 @@ async function downloadDraftHtml() {
       try { document.body.removeChild(a); } catch (_) {}
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
-    showToast('HTML downloaded.', 'success', 2500);
+    showToast('HTML descărcat.', 'success', 2500);
   } catch (e) {
     showToast((e && e.message) || 'Could not download HTML.', 'error', 5000);
   } finally {
@@ -3670,17 +3670,17 @@ async function loadVersions(siteId) {
       const d = new Date(v.publishedAt);
       const dateStr = d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
       const verNum = versionsSorted.length - idx;
-      const label = 'Version ' + verNum;
+      const label = 'Versiunea ' + verNum;
       item.innerHTML = `
         <span class="version-date">${escHtml(dateStr)}</span>
         <span style="font-size:.76rem;color:var(--text-light);flex:1;padding:0 .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>
-        <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restore</button>`;
+        <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restabilește</button>`;
       item.querySelector('.btn-rollback').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         setBtnLoading(btn, true, 'Restoring…');
         try {
           await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/rollback', { versionId: v.versionId });
-          showToast('Version restored successfully!', 'success');
+          showToast('Versiunea a fost restabilită.', 'success');
           closeModal('modal-versions');
         } catch (err) {
           showToast('Error restoring: ' + err.message, 'error');

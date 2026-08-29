@@ -322,7 +322,7 @@ async function loginClient(base, email) {
         assert.ok(/ensureDraftSiteForInstagram/.test(appSrc), 'can save unpaid draft for siteId');
         assert.ok(/form-ig-auth-email/.test(htmlSrc), 'IG auth form in HTML');
         assert.ok(/ig-connect-panel/.test(htmlSrc), 'connect panel present');
-        assert.ok(/before you start the trial/i.test(htmlSrc + openFn), 'copy says before trial starts');
+        assert.ok(/înainte să începi trialul/i.test(htmlSrc + openFn), 'copy says before trial starts');
         // Must not early-return with only toast before openModal
         const toastBeforeOpen = openFn.indexOf("showToast('Intră în cont");
         const openIdx = openFn.indexOf("openModal('modal-instagram')");
@@ -377,8 +377,8 @@ async function loginClient(base, email) {
                 /\\d\+\\.items\$/.test(overlaySrc),
             'nested menu items safe'
         );
-        assert.ok(/\+ Add section/.test(overlaySrc), 'add section label EN');
-        assert.ok(/\+ Add item/.test(overlaySrc), 'add item label EN');
+        assert.ok(/\+ Adaugă secțiune/.test(overlaySrc), 'add section label RO');
+        assert.ok(/\+ Adaugă articol/.test(overlaySrc), 'add item label RO');
     });
 
     await check('HEAD: onListAdd creates menu section + dish; extractImages keeps hero', () => {

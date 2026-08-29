@@ -588,11 +588,11 @@
       addBtn.className = 'hb-add-btn';
       // Restaurant menu structure gets its own wording
       if (/^menu\.(en|ro)$/.test(root)) {
-        addBtn.textContent = '+ Add section';
+        addBtn.textContent = '+ Adaugă secțiune';
       } else if (/^menu\.(en|ro)\.\d+\.items$/.test(root)) {
-        addBtn.textContent = '+ Add item';
+        addBtn.textContent = '+ Adaugă articol';
       } else {
-        addBtn.textContent = '+ Add';
+        addBtn.textContent = '+ Adaugă';
       }
       addBtn.addEventListener('click', function () {
         toParent({ hb: 'list-add', listPath: root });

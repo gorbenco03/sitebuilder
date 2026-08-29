@@ -7,7 +7,7 @@
         "business": {
           "name": "Whitfield Law",
           "tagline": "Claritate pentru deciziile importante.",
-          "title": "Whitfield Law | Consultanță juridică | New York, NY",
+          "title": "Whitfield Law | Consultanță juridică | București",
           "metaDescription": "Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.",
           "about": "Lucrăm cu antreprenori și profesioniști care vor răspunsuri clare înainte să semneze. Pornim de la situația ta, nu de la un pachet standard. Nu promitem rezultate, ci analiză riguroasă și recomandări directe.",
           "lang": "ro",
@@ -134,7 +134,7 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
-          "timezone": "America/New_York",
+          "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "45",
           "minLeadMinutes": "120",
@@ -195,12 +195,12 @@
         "contact": {
           "title": "Contact",
           "intro": "Preferi emailul sau telefonul? Contactează-ne — răspundem în zilele lucrătoare.",
-          "phone": "+12125550148",
-          "phoneDisplay": "+1 212 555 0148",
+          "phone": "+407****5014",
+          "phoneDisplay": "+40 721 555 014",
           "email": "contact@whitfieldlaw.example",
-          "whatsapp": "12125550148",
-          "waHref": "https://wa.me/12125550148",
-          "address": "123 Main Street, Suite 400<br>New York, NY 10001",
+          "whatsapp": "40721555014",
+          "waHref": "https://wa.me/40721555014",
+          "address": "Strada Academiei 12, etajul 4<br>București 010014",
           "addressHref": "",
           "hoursNote": "Luni–Vineri, numai cu programare",
           "instagram": {
@@ -225,7 +225,7 @@
           "jsonLd": ""
         },
         "footer": {
-          "address": "New York, NY · numai cu programare",
+          "address": "București · numai cu programare",
           "year": "2026",
           "note": "Cererile de programare se confirmă separat."
         }

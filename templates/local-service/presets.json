@@ -1,19 +1,19 @@
 {
   "presets": [
     {
-      "id": "renovari-interioare-londra",
-      "name": "Ridgeline Renovations — Austin, TX",
+      "id": "renovari-bucuresti",
+      "name": "Renovări Ridgeline — București",
       "config": {
         "business": {
-          "name": "Ridgeline Renovations",
+          "name": "Renovări Ridgeline",
           "tagline": "Renovări interioare și finisaje premium",
-          "title": "Ridgeline Renovations | Renovări interioare în Austin | Finisaje de calitate",
-          "metaDescription": "Renovări interioare complete în Austin și împrejurimi: gresie, gips-carton, zugrăveli și instalații. Echipă cu 12 ani de experiență. Cere o ofertă gratuită.",
-          "about": "Ridgeline Renovations este o firmă de construcții și renovări din Austin, Texas. Realizăm renovări interioare complete, de la demolare și structură până la finisaje premium. Lucrăm curat, respectăm termenele și oferim garanție scrisă.",
+          "title": "Renovări Ridgeline | Renovări interioare București",
+          "metaDescription": "Renovări complete de interior în București și împrejurimi. Gresie, gips-carton, vopsitorie, instalații. Echipă cu 12 ani de experiență. Cere o ofertă gratuită.",
+          "about": "Renovări Ridgeline este o firmă de construcții și renovări din București. Ne ocupăm de renovări complete de interior — de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la fiecare lucrare.",
           "lang": "ro",
           "yearsExp": "12",
           "projectsDone": "240",
-          "zone": "Austin și Hill Country (Round Rock, Cedar Park, Pflugerville)"
+          "zone": "București și Ilfov (Voluntari, Otopeni, Popești-Leordeni)"
         },
         "labels": {
           "whatsapp": "WhatsApp",
@@ -102,7 +102,7 @@
           {
             "icon": "",
             "title": "12 ani de experiență",
-            "text": "Peste un deceniu de lucrări în Austin și Hill Country. Cunoaștem normele locale și lucrăm la standarde ridicate."
+            "text": "Peste un deceniu de lucrări în București și Ilfov. Cunoaștem normele locale și lucrăm la standarde ridicate."
           },
           {
             "icon": "",
@@ -133,18 +133,18 @@
             "photos": [
               {
                 "src": "images/pr-baie1.jpg",
-                "alt": "Baie modernă renovată complet · Austin, TX",
-                "caption": "Renovări complete de baie · Austin, TX"
+                "alt": "Baie modernă renovată complet · București",
+                "caption": "Renovări complete de baie · București"
               },
               {
                 "src": "images/pr-baie2.jpg",
-                "alt": "Finisaje premium cu gresie · Austin, TX",
-                "caption": "Renovări complete de baie · Austin, TX"
+                "alt": "Finisaje premium cu gresie · București",
+                "caption": "Renovări complete de baie · București"
               },
               {
                 "src": "images/pr-baie3.jpg",
-                "alt": "Duș walk-in placat cu gresie · Austin, TX",
-                "caption": "Renovări complete de baie · Austin, TX"
+                "alt": "Duș walk-in placat cu gresie · București",
+                "caption": "Renovări complete de baie · București"
               }
             ]
           },
@@ -154,18 +154,18 @@
             "photos": [
               {
                 "src": "images/pr-buc1.jpg",
-                "alt": "Bucătărie renovată în plan deschis · Austin, TX",
-                "caption": "Bucătării și spații deschise · Austin, TX"
+                "alt": "Bucătărie renovată în plan deschis · București",
+                "caption": "Bucătării și spații deschise · București"
               },
               {
                 "src": "images/pr-buc2.jpg",
-                "alt": "Living cu pardoseală din lemn · Austin, TX",
-                "caption": "Bucătării și spații deschise · Austin, TX"
+                "alt": "Living cu pardoseală din lemn · București",
+                "caption": "Bucătării și spații deschise · București"
               },
               {
                 "src": "images/pr-buc3.jpg",
-                "alt": "Tavan suspendat cu LED în bucătărie · Austin, TX",
-                "caption": "Bucătării și spații deschise · Austin, TX"
+                "alt": "Tavan suspendat cu LED în bucătărie · București",
+                "caption": "Bucătării și spații deschise · București"
               }
             ]
           },
@@ -175,13 +175,13 @@
             "photos": [
               {
                 "src": "images/pr-ext1.jpg",
-                "alt": "Extindere de casă pe structură metalică · Austin, TX",
-                "caption": "Extinderi și lucrări structurale · Austin, TX"
+                "alt": "Extindere de casă pe structură metalică · București",
+                "caption": "Extinderi și lucrări structurale · București"
               },
               {
                 "src": "images/pr-ext2.jpg",
-                "alt": "Construcție finalizată în curte · Austin, TX",
-                "caption": "Extinderi și lucrări structurale · Austin, TX"
+                "alt": "Construcție finalizată în curte · București",
+                "caption": "Extinderi și lucrări structurale · București"
               }
             ]
           }
@@ -210,21 +210,21 @@
             "url": "https://www.facebook.com/ridgelinerenovations",
             "label": "Ridgeline Renovations"
           },
-          "whatsapp": "15125550148",
-          "phone": "+1512****0148",
-          "phoneDisplay": "+1 512-555-0148",
-          "waHref": "https://wa.me/15125550148",
-          "address": "Austin, TX — deservim întreaga zonă metropolitană",
-          "addressHref": "https://maps.google.com/?q=Austin+TX",
+          "whatsapp": "40721234567",
+          "phone": "+407****4567",
+          "phoneDisplay": "+40 721 234 567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "București și împrejurimi",
+          "addressHref": "https://maps.google.com/?q=Bucuresti+Romania",
           "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
           "canonical": "https://ridgelinerenovations.com",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Ridgeline Renovations\",\"description\":\"Full interior renovations in Austin, TX\",\"telephone\":\"+1512****0148\",\"areaServed\":\"Austin\",\"url\":\"https://ridgelinerenovations.com\"}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Renovări Ridgeline\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721234567\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://ridgelinerenovations.com\"}"
         },
         "footer": {
-          "address": "Austin și Hill Country",
+          "address": "București și împrejurimi",
           "year": "2026",
           "note": "Calitate garantată. Lucrări curate, termene respectate."
         }
@@ -457,236 +457,6 @@
           "address": "Manchester, Greater Manchester",
           "year": "2026",
           "note": "Acoperișuri durabile. Garanție de 10 ani."
-        }
-      }
-    },
-    {
-      "id": "renovari-bucuresti",
-      "name": "Renovări Ridgeline — București",
-      "config": {
-        "business": {
-          "name": "Renovări Ridgeline",
-          "tagline": "Renovări interioare și finisaje premium",
-          "title": "Renovări Ridgeline | Renovări interioare București",
-          "metaDescription": "Renovări complete de interior în București și împrejurimi. Gresie, gips-carton, vopsitorie, instalații. Echipă cu 12 ani de experiență. Cere o ofertă gratuită.",
-          "about": "Renovări Ridgeline este o firmă de construcții și renovări din București. Ne ocupăm de renovări complete de interior — de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la fiecare lucrare.",
-          "lang": "ro",
-          "yearsExp": "12",
-          "projectsDone": "240",
-          "zone": "București și Ilfov (Voluntari, Otopeni, Popești-Leordeni)"
-        },
-        "labels": {
-          "whatsapp": "WhatsApp",
-          "close": "Închide",
-          "about": "Despre noi",
-          "instaTitle": "De pe șantier",
-          "instaFollow": "Urmărește",
-          "scroll": "Explorează",
-          "waQr": "Deschide WhatsApp pe telefon",
-          "waOpen": "Sau deschide WhatsApp Web",
-          "callCta": "Sună",
-          "estimateCta": "Cere ofertă",
-          "yearsExperience": "ani de experiență",
-          "projects": "proiecte",
-          "yearsOnJob": "ani în domeniu",
-          "servicesEyebrow": "Servicii",
-          "processEyebrow": "Proces",
-          "processTitle": "Cum lucrăm",
-          "defaultStep1Title": "Evaluare gratuită",
-          "defaultStep1Text": "Te contactăm în 24 de ore, venim la fața locului și pregătim o ofertă clară, fără costuri ascunse.",
-          "defaultStep2Title": "Execuție controlată",
-          "defaultStep2Text": "Echipă prezentă pe șantier, termene scrise și materiale verificate.",
-          "defaultStep3Title": "Predare și garanție",
-          "defaultStep3Text": "Facem recepția împreună și oferim garanție pentru lucrare.",
-          "trustEyebrow": "Angajament",
-          "trustTitle": "De ce să ne alegi",
-          "contactBandTitle": "Pregătit să începem?",
-          "contactBandText": "Cere o ofertă — răspundem în aceeași zi.",
-          "contactBandAria": "Contactează-ne",
-          "dockAria": "Apel rapid",
-          "galleryEyebrow": "Lucrări",
-          "lightboxPreview": "Previzualizare fotografie",
-          "lightboxPrev": "Anterior",
-          "lightboxNext": "Următor"
-        },
-        "theme": {
-          "primary": "#0b3d91",
-          "primaryLight": "#1a5bbf",
-          "primaryDark": "#0f1720",
-          "cream": "#eef1f4"
-        },
-        "logo": "",
-        "showWordmark": true,
-        "hero": {
-          "background": "linear-gradient(160deg, rgba(10,12,15,0.72) 0%, rgba(26,32,40,0.5) 60%, rgba(255,77,0,0.28) 100%), url('images/pr-hero.jpg') center/cover no-repeat",
-          "ctaLabel": "Cere ofertă",
-          "callLabel": "Sună acum"
-        },
-        "servicesTitle": "Servicii",
-        "services": [
-          {
-            "icon": "",
-            "label": "Structuri și compartimentări"
-          },
-          {
-            "icon": "",
-            "label": "Gips-carton și tavane suspendate"
-          },
-          {
-            "icon": "",
-            "label": "Zugrăveli și tencuieli"
-          },
-          {
-            "icon": "",
-            "label": "Gresie, faianță și pardoseli"
-          },
-          {
-            "icon": "",
-            "label": "Instalații sanitare"
-          },
-          {
-            "icon": "",
-            "label": "Instalații electrice"
-          },
-          {
-            "icon": "",
-            "label": "Parchet din lemn și laminat"
-          },
-          {
-            "icon": "",
-            "label": "Renovări complete"
-          }
-        ],
-        "galleryTitle": "Lucrări finalizate",
-        "trust": [
-          {
-            "icon": "",
-            "title": "12 ani de experiență",
-            "text": "Peste un deceniu de lucrări în Austin și Hill Country. Cunoaștem normele locale și lucrăm la standarde ridicate."
-          },
-          {
-            "icon": "",
-            "title": "Garanție scrisă de 2 ani",
-            "text": "Fiecare lucrare de construcții și finisaje primește garanție scrisă. Calitatea se vede în rezultat."
-          },
-          {
-            "icon": "",
-            "title": "Oferte transparente",
-            "text": "Primești devizul detaliat înainte de începere, fără costuri ascunse sau surprize pe parcurs."
-          },
-          {
-            "icon": "",
-            "title": "Firmă autorizată și asigurată",
-            "text": "Suntem autorizați și asigurați pentru lucrări rezidențiale. Păstrăm șantierul ordonat și comunicăm clar."
-          }
-        ],
-        "certifications": [
-          "Constructor general autorizat",
-          "Certificare OSHA pentru siguranță",
-          "Firmă asigurată și garantată",
-          "Garanție scrisă de 2 ani"
-        ],
-        "categories": [
-          {
-            "title": "Renovări complete de baie",
-            "blurb": "Refacem baia de la structură: demolare, hidroizolație, placări, obiecte sanitare și feronerie de calitate.",
-            "photos": [
-              {
-                "src": "images/pr-baie1.jpg",
-                "alt": "Baie modernă renovată complet · București",
-                "caption": "Renovări complete de baie · București"
-              },
-              {
-                "src": "images/pr-baie2.jpg",
-                "alt": "Finisaje premium cu gresie · București",
-                "caption": "Renovări complete de baie · București"
-              },
-              {
-                "src": "images/pr-baie3.jpg",
-                "alt": "Duș walk-in placat cu gresie · București",
-                "caption": "Renovări complete de baie · București"
-              }
-            ]
-          },
-          {
-            "title": "Bucătării și spații deschise",
-            "blurb": "Amenajăm spații moderne: desființări de pereți, structură, instalații electrice, gresie porțelanată și zugrăveli.",
-            "photos": [
-              {
-                "src": "images/pr-buc1.jpg",
-                "alt": "Bucătărie renovată în plan deschis · București",
-                "caption": "Bucătării și spații deschise · București"
-              },
-              {
-                "src": "images/pr-buc2.jpg",
-                "alt": "Living cu pardoseală din lemn · București",
-                "caption": "Bucătării și spații deschise · București"
-              },
-              {
-                "src": "images/pr-buc3.jpg",
-                "alt": "Tavan suspendat cu LED în bucătărie · București",
-                "caption": "Bucătării și spații deschise · București"
-              }
-            ]
-          },
-          {
-            "title": "Extinderi și lucrări structurale",
-            "blurb": "Extinderi de locuințe, mansardări, desființări autorizate de pereți portanți și construcții noi în curte.",
-            "photos": [
-              {
-                "src": "images/pr-ext1.jpg",
-                "alt": "Extindere de casă pe structură metalică · București",
-                "caption": "Extinderi și lucrări structurale · București"
-              },
-              {
-                "src": "images/pr-ext2.jpg",
-                "alt": "Construcție finalizată în curte · București",
-                "caption": "Extinderi și lucrări structurale · București"
-              }
-            ]
-          }
-        ],
-        "instagram": {
-          "handle": "ridgeline.renovations",
-          "url": "https://www.instagram.com/ridgeline.renovations",
-          "gallery": [
-            "images/pr-ig1.jpg",
-            "images/pr-ig2.jpg",
-            "images/pr-ig3.jpg",
-            "images/pr-ig4.jpg",
-            "images/pr-ig5.jpg",
-            "images/pr-ig6.jpg"
-          ],
-          "embedUrl": ""
-        },
-        "contact": {
-          "title": "Cere o ofertă gratuită",
-          "intro": "Sună-ne sau scrie-ne pe WhatsApp pentru o evaluare gratuită la fața locului. Răspundem în aceeași zi.",
-          "instagram": {
-            "url": "https://www.instagram.com/ridgeline.renovations",
-            "label": "@ridgeline.renovations"
-          },
-          "facebook": {
-            "url": "https://www.facebook.com/ridgelinerenovations",
-            "label": "Ridgeline Renovations"
-          },
-          "whatsapp": "40721234567",
-          "phone": "+407****4567",
-          "phoneDisplay": "+40 721 234 567",
-          "waHref": "https://wa.me/40721234567",
-          "address": "București și împrejurimi",
-          "addressHref": "https://maps.google.com/?q=Austin+TX",
-          "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
-        },
-        "seo": {
-          "ogImage": "images/pr-og.jpg",
-          "canonical": "https://ridgelinerenovations.com",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Ridgeline Renovations\",\"description\":\"Full interior renovations in Austin, TX\",\"telephone\":\"+1512****0148\",\"areaServed\":\"Austin\",\"url\":\"https://ridgelinerenovations.com\"}"
-        },
-        "footer": {
-          "address": "București și împrejurimi",
-          "year": "2026",
-          "note": "Calitate garantată. Lucrări curate, termene respectate."
         }
       }
     }

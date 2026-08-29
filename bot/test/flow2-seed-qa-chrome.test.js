@@ -29,6 +29,7 @@ function check(name, fn) {
 const appSrc = read('builder/app.js');
 const appCss = read('builder/app.css');
 const overlaySrc = read('builder/edit-overlay.js');
+const indexHtml = read('builder/index.html');
 const professionalsTemplate = read('templates/professionals/template.html');
 const professionalsScript = read('templates/professionals/script.js');
 const professionalsPresetsSrc = read('templates/professionals/presets.json');
@@ -41,13 +42,64 @@ check('builder chrome contains no known English QA leaks', () => {
         'Replace photo',
         'Instagram is live on your site',
         'Instagram connected.',
+        '+ Add',
+        'Sign in to download your draft as HTML.',
+        'HTML downloaded.',
+        'Version ',
+        '>Restore<',
+        'Restore</button>',
+        'Version restored successfully!',
     ];
-    const source = appSrc + '\n' + overlaySrc;
+    const source = appSrc + '\n' + overlaySrc + '\n' + indexHtml;
     for (const phrase of forbidden) {
         assert.ok(!source.includes(phrase), `customer-visible English remains: ${phrase}`);
     }
+    assert.ok(!/link magic/i.test(indexHtml), 'customer-visible auth still says link magic');
+    assert.ok(!indexHtml.includes('vezi preview.'), 'landing hero still says vezi preview');
+    assert.ok(!source.includes('Preview-ul live'), 'Details hint still says Preview-ul live');
+
+    const partnerNote = indexHtml.match(/id="ig-partner-note"[^>]*>([\s\S]*?)<\/p>/i);
+    assert.ok(partnerNote, 'Instagram partner note exists');
+    assert.ok(!partnerNote[1].includes('(watermark)'), 'partner note still says watermark');
+
     assert.ok(appSrc.includes('Previzualizare:'), 'preview modal title is Romanian');
     assert.ok(overlaySrc.includes('Înlocuiește fotografia'), 'photo overlay label is Romanian');
+    assert.ok(indexHtml.includes('vezi previzualizarea.'), 'landing uses Previzualizare wording');
+    assert.ok(indexHtml.includes('apoi Instafidget Free (filigran)'), 'partner note uses filigran');
+});
+
+check('all five Details schemas use the Romanian preview hint', () => {
+    const registry = JSON.parse(read('templates/registry.json')).templates || [];
+    assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');
+    for (const entry of registry) {
+        const schema = JSON.parse(read(`templates/${entry.id}/schema.json`));
+        const fields = (schema.sections || []).flatMap((section) => section.fields || []);
+        const background = fields.find((field) => field.key === 'hero.background');
+        assert.ok(background, `${entry.id}: hero background field exists`);
+        assert.strictEqual(
+            background.hint,
+            'Alege o culoare și opțional o poză. Previzualizarea live se actualizează imediat.',
+            `${entry.id}: hero background hint is Romanian`
+        );
+    }
+});
+
+check('opened local-service and professionals seeds use București contact details', () => {
+    const localFirst = JSON.parse(read('templates/local-service/presets.json')).presets[0];
+    assert.ok(localFirst && localFirst.config, 'local-service first preset exists');
+    const localSurface = JSON.stringify(localFirst);
+    for (const leftover of ['Austin', '512-555', 'Ridgeline Renovations — Austin']) {
+        assert.ok(!localSurface.includes(leftover), `local-service US seed remains: ${leftover}`);
+    }
+    assert.ok(/București|Ilfov/.test(localSurface), 'local-service default uses București / Ilfov');
+    assert.ok(/\+40|407/.test(localSurface), 'local-service default uses a Romanian phone');
+
+    const professionalFirst = JSON.parse(professionalsPresetsSrc).presets[0];
+    assert.ok(professionalFirst && professionalFirst.config, 'professionals first preset exists');
+    const professionalSurface = JSON.stringify(professionalFirst);
+    assert.ok(!professionalSurface.includes('New York, NY'), 'professionals default still names New York');
+    assert.ok(!professionalSurface.includes('123 Main Street'), 'professionals default still uses US address');
+    assert.ok(professionalSurface.includes('București'), 'professionals default uses București');
 });
 
 check('professional booking chrome and presets are Romanian', () => {
