@@ -29,7 +29,7 @@
         {
           "key": "business.title",
           "type": "text",
-          "label": "SEO page title (shown in the browser tab)",
+          "label": "Titlu pagină pentru browser (bara de sus)",
           "required": true,
           "maxLen": 70
         },
@@ -64,7 +64,7 @@
         {
           "key": "business.projectsDone",
           "type": "text",
-          "label": "Projects completed (e.g. 240) — shown in the hero and stats",
+          "label": "Proiecte finalizate (ex. 240) — pe deschidere și la statistici",
           "required": false,
           "maxLen": 10
         },
@@ -147,14 +147,14 @@
         {
           "key": "labels.yearsExperience",
           "type": "text",
-          "label": "Hero meter label under years (e.g. years experience)",
+          "label": "Etichetă contor sub ani (ex. ani experiență)",
           "required": false,
           "maxLen": 40
         },
         {
           "key": "labels.projects",
           "type": "text",
-          "label": "Hero meter label under project count (e.g. projects)",
+          "label": "Etichetă contor sub numărul de proiecte (ex. proiecte)",
           "required": false,
           "maxLen": 40
         },
@@ -344,12 +344,12 @@
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima impresie)",
+      "title": "Prima impresie",
       "fields": [
         {
           "key": "hero.background",
           "type": "background",
-          "label": "Fundal hero",
+          "label": "Fundal deschidere",
           "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": true
         },
@@ -571,7 +571,7 @@
     },
     {
       "id": "seo",
-      "title": "SEO și partajare socială",
+      "title": "Partajare pe rețele sociale",
       "fields": [
         {
           "key": "seo.ogImage",

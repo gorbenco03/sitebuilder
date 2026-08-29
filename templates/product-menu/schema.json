@@ -36,7 +36,7 @@
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere SEO scurtă (ce oferi și unde ești — 1–2 propoziții)",
+          "label": "Descriere scurtă pentru Google (ce oferi și unde ești — 1–2 propoziții)",
           "required": true,
           "maxLen": 160
         },
@@ -84,7 +84,7 @@
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Text indicator scroll pe hero (ex. Explorează)",
+          "label": "Text indicator de derulare pe deschidere (ex. Explorează)",
           "required": true,
           "maxLen": 20
         },
@@ -164,7 +164,7 @@
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima impresie)",
+      "title": "Prima impresie",
       "fields": [
         {
           "key": "logo",
@@ -176,13 +176,13 @@
         {
           "key": "showWordmark",
           "type": "text",
-          "label": "Arată numele ca text elegant pe hero când nu există logo? (true / false)",
+          "label": "Arată numele ca text elegant pe deschidere când nu există logo? (true / false)",
           "required": false
         },
         {
           "key": "hero.background",
           "type": "background",
-          "label": "Fundal hero",
+          "label": "Fundal deschidere",
           "hint": "Alege o culoare și opțional o poză. Preview-ul live se actualizează imediat.",
           "required": true,
           "maxLen": 2000
@@ -409,7 +409,7 @@
     },
     {
       "id": "seo",
-      "title": "SEO și partajare socială",
+      "title": "Partajare pe rețele sociale",
       "fields": [
         {
           "key": "seo.ogImage",

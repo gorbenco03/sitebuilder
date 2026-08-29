@@ -36,7 +36,7 @@
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "SEO description (1–2 sentences about services and location)",
+          "label": "Descriere scurtă pentru Google (1–2 propoziții despre servicii și locație)",
           "required": true,
           "maxLen": 160
         },
@@ -84,7 +84,7 @@
         {
           "key": "labels.scroll",
           "type": "text",
-          "label": "Scroll indicator text on the hero",
+          "label": "Text indicator de derulare pe deschidere",
           "required": true,
           "maxLen": 20
         },
@@ -234,7 +234,7 @@
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima impresie)",
+      "title": "Prima impresie",
       "fields": [
         {
           "key": "logo",
@@ -246,13 +246,13 @@
         {
           "key": "showWordmark",
           "type": "text",
-          "label": "Show the name as text on the hero if you don't have a logo? (true / false)",
+          "label": "Arată numele ca text pe deschidere dacă nu ai logo? (true / false)",
           "required": false
         },
         {
           "key": "hero.background",
           "type": "background",
-          "label": "Fundal hero",
+          "label": "Fundal deschidere",
           "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": true,
           "maxLen": 2000
@@ -507,7 +507,7 @@
     },
     {
       "id": "seo",
-      "title": "SEO și partajare socială",
+      "title": "Partajare pe rețele sociale",
       "fields": [
         {
           "key": "seo.ogImage",

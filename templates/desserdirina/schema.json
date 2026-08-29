@@ -36,7 +36,7 @@
         {
           "key": "business.metaDescription",
           "type": "textarea",
-          "label": "Descriere SEO scurtă (ce oferi și unde — 1–2 propoziții)",
+          "label": "Descriere scurtă pentru Google (ce oferi și unde — 1–2 propoziții)",
           "required": true,
           "maxLen": 160
         },
@@ -171,7 +171,7 @@
     },
     {
       "id": "hero",
-      "title": "Secțiunea hero (prima impresie)",
+      "title": "Prima impresie",
       "fields": [
         {
           "key": "logo",
@@ -182,13 +182,13 @@
         {
           "key": "hero.background",
           "type": "background",
-          "label": "Fundal hero (culoare sau foto)",
+          "label": "Fundal deschidere (culoare sau foto)",
           "required": false
         },
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Text buton CTA hero",
+          "label": "Text buton principal pe deschidere",
           "required": true,
           "maxLen": 40
         }
@@ -370,7 +370,7 @@
     },
     {
       "id": "seo",
-      "title": "SEO și partajare socială",
+      "title": "Partajare pe rețele sociale",
       "fields": [
         {
           "key": "seo.ogImage",

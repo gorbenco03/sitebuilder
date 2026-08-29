@@ -1,14 +1,13 @@
 'use strict';
 /**
- * bot/test/flow4-ro-loading-detalii.test.js — Flow 4 QA FAIL remake oracle.
+ * bot/test/flow4-ro-loading-detalii.test.js — Flow 4 Detalii HERO/SEO jargon oracle.
  *
- * tester-qa FAIL on parent f62032d: stranger still saw English loading overlays
- * «Publishing…» after magic-link login and «Confirming payment…» after the test
- * card, plus Detalii factory chrome HERO / SEO / Facebook URL / Imagine pentru
- * social sharing.
+ * tester-qa FAIL on parent 1e13cf4: Detalii still showed SECȚIUNEA HERO /
+ * Fundal hero / SEO ȘI PARTAJARE SOCIALĂ (schema titles/labels with hero/SEO).
+ * RO loading overlays were already GREEN on that parent.
  *
- * Causal RED on required parent f62032d0e06a7a64feec7a4b6e12572ab94bd266;
- * GREEN on HEAD after remake.
+ * Causal RED on required parent 1e13cf4f19a509ee6fd2e77d2103dec7e65cd687;
+ * GREEN on HEAD after label remake (no \bhero\b / \bSEO\b in customer titles/labels).
  *
  * Run: node bot/test/flow4-ro-loading-detalii.test.js
  */
@@ -18,8 +17,8 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-/** Required parent for this remake card (thumbs + RO IG + cookie accepted). */
-const PARENT_SHA = 'f62032d0e06a7a64feec7a4b6e12572ab94bd266';
+/** Required parent for this remake card (RO loading + leftover Detalii hero/SEO). */
+const PARENT_SHA = '1e13cf4f19a509ee6fd2e77d2103dec7e65cd687';
 
 const FIVE = [
   'product-menu',
@@ -30,10 +29,13 @@ const FIVE = [
 ];
 const SCHEMAS = FIVE.map((id) => `templates/${id}/schema.json`);
 
-const EN_PUBLISH = 'Publishing…';
-const EN_PAY = 'Confirming payment…';
 const RO_PUBLISH = 'Se publică…';
 const RO_PAY = 'Se confirmă plata…';
+const EN_PUBLISH = 'Publishing…';
+const EN_PAY = 'Confirming payment…';
+
+const HERO_RE = /\bhero\b/i;
+const SEO_RE = /\bSEO\b/;
 
 let failed = 0;
 function check(name, fn) {
@@ -82,43 +84,70 @@ function collectSurface(schemaSrc) {
   return items;
 }
 
-// ── Causal RED on required parent f62032d ────────────────────────────────
+function surfaceHasHeroOrSeo(items) {
+  return items.some((i) => HERO_RE.test(i.text) || SEO_RE.test(i.text));
+}
 
-check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} ships English Publishing… loading`, () => {
-  const app = parentBlob('builder/app.js');
-  assert.ok(app.includes(EN_PUBLISH), 'parent has Publishing…');
+function assertNoHeroSeo(rel, items) {
+  for (const i of items) {
+    assert.ok(
+      !HERO_RE.test(i.text),
+      rel + ' ' + i.kind + ' leaks hero: ' + JSON.stringify(i.text)
+    );
+    assert.ok(
+      !SEO_RE.test(i.text),
+      rel + ' ' + i.kind + ' leaks SEO: ' + JSON.stringify(i.text)
+    );
+  }
+}
+
+// ── Causal RED on required parent 1e13cf4 ────────────────────────────────
+
+check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} Detalii titles/labels still leak hero/SEO`, () => {
+  let leakCount = 0;
+  const samples = [];
+  for (const rel of SCHEMAS) {
+    const items = collectSurface(parentBlob(rel));
+    for (const i of items) {
+      if (HERO_RE.test(i.text) || SEO_RE.test(i.text)) {
+        leakCount++;
+        if (samples.length < 8) samples.push(rel + ' ' + i.kind + '=' + i.text);
+      }
+    }
+  }
   assert.ok(
-    /setBtnLoading\([^)]*Publishing…/.test(app) || /setLoading\(\s*true,\s*'Publishing…'/.test(app),
-    'parent sets Publishing… on btn or overlay'
+    leakCount > 0,
+    'parent must still leak hero/SEO in customer titles/labels; got none'
   );
-  assert.ok(!app.includes(RO_PUBLISH), 'parent lacks RO Se publică…');
+  // Opened evidence family on desserdirina
+  const dess = collectSurface(parentBlob('templates/desserdirina/schema.json'));
+  const dessTitles = dess.filter((i) => i.kind === 'title').map((i) => i.text);
+  const dessLabels = dess.filter((i) => i.kind === 'label').map((i) => i.text);
+  assert.ok(
+    dessTitles.some((t) => /hero/i.test(t)),
+    'parent desserdirina hero section title still contains hero'
+  );
+  assert.ok(
+    dessLabels.some((l) => /Fundal hero/i.test(l)),
+    'parent desserdirina Fundal hero label'
+  );
+  assert.ok(
+    dessTitles.some((t) => SEO_RE.test(t)),
+    'parent desserdirina SEO section title still contains SEO'
+  );
+  assert.ok(
+    surfaceHasHeroOrSeo(collectSurface(parentBlob('templates/product-menu/schema.json'))),
+    'parent product-menu also leaks'
+  );
+  void samples;
 });
 
-check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} ships English Confirming payment…`, () => {
+check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} already ships RO loading (held)`, () => {
   const app = parentBlob('builder/app.js');
-  assert.ok(app.includes(EN_PAY), 'parent has Confirming payment…');
-  assert.ok(
-    /setLoading\(\s*true,\s*'Confirming payment…'/.test(app),
-    'parent setLoading Confirming payment…'
-  );
-  assert.ok(!app.includes(RO_PAY), 'parent lacks RO Se confirmă plata…');
-});
-
-check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} Detalii still has HERO/SEO/Facebook URL/social sharing`, () => {
-  // Opened evidence was desserdirina Detalii; parent must still leak those exact strings.
-  const dess = parentBlob('templates/desserdirina/schema.json');
-  assert.ok(/"title":\s*"Hero"/.test(dess) || /"title":\s*"HERO"/.test(dess), 'parent desserdirina Hero title');
-  assert.ok(/"title":\s*"SEO"/.test(dess), 'parent desserdirina standalone SEO title');
-  assert.ok(dess.includes('Facebook URL'), 'parent Facebook URL');
-  assert.ok(dess.includes('Imagine pentru social sharing'), 'parent Imagine pentru social sharing');
-
-  // professionals also had bare Hero + English social sharing
-  const pro = parentBlob('templates/professionals/schema.json');
-  assert.ok(/"title":\s*"Hero"/.test(pro), 'parent professionals Hero title');
-  assert.ok(
-    /Image for social sharing|social sharing/i.test(pro),
-    'parent professionals English social sharing'
-  );
+  assert.ok(app.includes(RO_PUBLISH), 'parent has Se publică…');
+  assert.ok(app.includes(RO_PAY), 'parent has Se confirmă plata…');
+  assert.ok(!app.includes(EN_PUBLISH), 'parent no Publishing…');
+  assert.ok(!app.includes(EN_PAY), 'parent no Confirming payment…');
 });
 
 // ── HEAD GREEN ───────────────────────────────────────────────────────────
@@ -143,42 +172,18 @@ check('HEAD: RO loading replacements present (Se publică… / Se confirmă plat
     /setLoading\(\s*true,\s*'Se confirmă plata…'/.test(app),
     'Se confirmă plata… on setLoading'
   );
-  // Same family as existing RO overlays
   assert.ok(/Se trimite…/.test(app), 'Se trimite… family kept');
   assert.ok(/Se încarcă site-ul…/.test(app), 'Se încarcă site-ul… family kept');
 });
 
-check('HEAD: all five schemas — no HERO bare title, no standalone SEO, no Facebook URL, no social sharing EN', () => {
+check('HEAD: all five schemas — no \\bhero\\b / \\bSEO\\b in customer title or label', () => {
   for (const rel of SCHEMAS) {
     const src = headRead(rel);
     const items = collectSurface(src);
-    const titles = items.filter((i) => i.kind === 'title').map((i) => i.text);
-    const labels = items.filter((i) => i.kind === 'label').map((i) => i.text);
+    assertNoHeroSeo(rel, items);
 
-    for (const t of titles) {
-      assert.ok(
-        !/^(HERO|Hero)$/i.test(t.trim()),
-        rel + ' bare HERO/Hero title forbidden: ' + t
-      );
-      assert.ok(
-        t.trim() !== 'SEO',
-        rel + ' standalone SEO title forbidden'
-      );
-      assert.ok(
-        !/^Hero section\b/i.test(t),
-        rel + ' English Hero section title forbidden: ' + t
-      );
-      assert.ok(
-        !/SEO\s*&\s*social sharing/i.test(t),
-        rel + ' English SEO & social sharing title forbidden: ' + t
-      );
-      assert.ok(
-        t.trim() !== 'Social sharing' && t.trim() !== 'Search details',
-        rel + ' English SEO section title forbidden: ' + t
-      );
-    }
-
-    for (const lab of labels) {
+    // Keep prior Facebook / EN social-sharing bans
+    for (const lab of items.filter((i) => i.kind === 'label').map((i) => i.text)) {
       assert.ok(
         lab !== 'Facebook URL' && !/^Facebook URL\b/i.test(lab),
         rel + ' Facebook URL label forbidden: ' + lab
@@ -201,20 +206,38 @@ check('HEAD: all five schemas — no HERO bare title, no standalone SEO, no Face
       );
     }
 
-    // Positive RO chrome on hero + seo + facebook where those sections exist
+    // Do NOT require "Secțiunea hero" or "SEO și partajare socială" as positive strings.
+    // Positive: commercial RO without factory jargon where those sections exist.
     const schema = parseSchema(src);
     const byId = Object.create(null);
     for (const sec of schema.sections || []) byId[sec.id] = sec;
     if (byId.hero) {
       assert.ok(
-        /Secțiunea hero|hero \(prima/i.test(byId.hero.title),
-        rel + ' hero title RO commercial: ' + byId.hero.title
+        typeof byId.hero.title === 'string' && byId.hero.title.trim().length > 0,
+        rel + ' hero section still has a customer title'
+      );
+      assert.ok(
+        !HERO_RE.test(byId.hero.title),
+        rel + ' hero title must not contain hero: ' + byId.hero.title
+      );
+      // Bakery-owner friendly: first impression / opening, not factory jargon
+      assert.ok(
+        /impresie|deschidere|pagină|introducere|banner/i.test(byId.hero.title),
+        rel + ' hero title should read as first-impression RO: ' + byId.hero.title
       );
     }
     if (byId.seo) {
       assert.ok(
-        /SEO și partajare socială/i.test(byId.seo.title),
-        rel + ' seo title RO: ' + byId.seo.title
+        typeof byId.seo.title === 'string' && byId.seo.title.trim().length > 0,
+        rel + ' seo section still has a customer title'
+      );
+      assert.ok(
+        !SEO_RE.test(byId.seo.title),
+        rel + ' seo title must not contain SEO: ' + byId.seo.title
+      );
+      assert.ok(
+        /partajare|rețele|social|vizibilitate|Google/i.test(byId.seo.title),
+        rel + ' seo title should read as sharing/visibility RO: ' + byId.seo.title
       );
       const og = (byId.seo.fields || []).find((f) => f.key === 'seo.ogImage');
       if (og) {
@@ -222,9 +245,9 @@ check('HEAD: all five schemas — no HERO bare title, no standalone SEO, no Face
           /Imagine pentru partajare socială/i.test(og.label),
           rel + ' ogImage RO label: ' + og.label
         );
+        assert.ok(!SEO_RE.test(og.label) && !HERO_RE.test(og.label), rel + ' ogImage clean');
       }
     }
-    // facebook url field when present
     for (const sec of schema.sections || []) {
       for (const f of sec.fields || []) {
         if (f.key === 'contact.facebook.url') {
