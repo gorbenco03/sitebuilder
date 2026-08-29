@@ -80,9 +80,9 @@ const BUILDER_RO_MUST = [
   'Află mai mult',
   'Adaugă Instagram',
   'Adresă de email',
-  'Trimite link magic',
+  'Trimite linkul pe email',
   'Inclus gratuit 12 luni',
-  'Instafidget Free (watermark)',
+  'Instafidget Free (filigran)',
   '>Culoare</span>',
   'Descarcă HTML',
   "versBtn.textContent = 'Istoric'",
@@ -205,7 +205,7 @@ check('HEAD Instafidget commercial facts survive RO translation', () => {
   assert.ok(/produs partener|partner/i.test(text), 'partner framing');
   assert.ok(/12\s*luni|12\s*months/i.test(text), '12 months');
   assert.ok(/gratuit|free/i.test(text), 'free');
-  assert.ok(/Instafidget Free/i.test(text) && /watermark/i.test(text), 'Free watermark');
+  assert.ok(/Instafidget Free/i.test(text) && /filigran/i.test(text), 'Free filigran');
 });
 
 check('HEAD cookie Accept button is Acceptă on builder + site-legal source', () => {

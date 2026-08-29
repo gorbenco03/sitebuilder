@@ -238,13 +238,13 @@
         "business": {
           "name": "Northline Consulting",
           "tagline": "Îndrumare profesionistă, explicată pe înțelesul tuturor.",
-          "title": "Northline Consulting | Strategie și operațiuni | Austin, TX",
-          "metaDescription": "Consultanță de strategie și operațiuni pentru echipe mici. Sesiuni online sau la biroul din Austin, numai cu programare.",
+          "title": "Northline Consulting | Strategie și operațiuni | București",
+          "metaDescription": "Consultanță de strategie și operațiuni pentru echipe mici. Sesiuni online sau la biroul din București, numai cu programare.",
           "about": "Îi ajutăm pe fondatori și manageri să își clarifice prioritățile, procesele și comunicarea internă. Lucrăm în sesiuni scurte, cu concluzii scrise și pași practici pentru echipă.",
           "lang": "ro",
           "profession": "Consultant în strategie și operațiuni",
           "languages": "Română și engleză",
-          "modes": "Online · biroul din Austin"
+          "modes": "Online · biroul din București"
         },
         "labels": {
           "whatsapp": "WhatsApp",
@@ -336,7 +336,7 @@
               "label": "Sesiuni numai cu programare"
             },
             {
-              "label": "Austin și online"
+              "label": "București și online"
             }
           ]
         },
@@ -361,11 +361,11 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră. Confirmăm cererea prin email; formularul nu rezervă automat în calendar.",
-          "timezone": "America/Chicago",
+          "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "50",
           "minLeadMinutes": "180",
-          "modeLabel": "Online sau la biroul din Austin",
+          "modeLabel": "Online sau la biroul din București",
           "types": [
             {
               "id": "discovery",
@@ -411,12 +411,12 @@
         "contact": {
           "title": "Contact",
           "intro": "Scrie-ne pe email sau solicită o programare prin formular.",
-          "phone": "+15125550142",
-          "phoneDisplay": "+1 512 555 0142",
+          "phone": "+40721550142",
+          "phoneDisplay": "+40 721 550 142",
           "email": "hello@northlineconsulting.example",
           "whatsapp": "",
           "waHref": "",
-          "address": "Austin, TX<br>numai cu programare",
+          "address": "București<br>numai cu programare",
           "addressHref": "",
           "hoursNote": "Marți–Vineri, numai cu programare",
           "instagram": {
@@ -441,7 +441,7 @@
           "jsonLd": ""
         },
         "footer": {
-          "address": "Austin, TX",
+          "address": "București",
           "year": "2026",
           "note": "Programări la cerere."
         }
@@ -581,7 +581,7 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
-          "timezone": "America/New_York",
+          "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "45",
           "minLeadMinutes": "120",
@@ -647,7 +647,7 @@
           "email": "contact@whitfieldlaw.example",
           "whatsapp": "40721234567",
           "waHref": "https://wa.me/40721234567",
-          "address": "123 Main Street, Suite 400<br>New York, NY 10001",
+          "address": "Strada Academiei 12, etajul 4<br>București 010014",
           "addressHref": "",
           "hoursNote": "Luni–Vineri, pe programare",
           "instagram": {

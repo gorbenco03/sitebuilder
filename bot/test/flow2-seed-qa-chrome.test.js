@@ -84,7 +84,7 @@ check('all five Details schemas use the Romanian preview hint', () => {
     }
 });
 
-check('opened local-service and professionals seeds use București contact details', () => {
+check('opened local-service and all professionals seeds use Romanian contact details', () => {
     const localFirst = JSON.parse(read('templates/local-service/presets.json')).presets[0];
     assert.ok(localFirst && localFirst.config, 'local-service first preset exists');
     const localSurface = JSON.stringify(localFirst);
@@ -94,12 +94,30 @@ check('opened local-service and professionals seeds use București contact detai
     assert.ok(/București|Ilfov/.test(localSurface), 'local-service default uses București / Ilfov');
     assert.ok(/\+40|407/.test(localSurface), 'local-service default uses a Romanian phone');
 
-    const professionalFirst = JSON.parse(professionalsPresetsSrc).presets[0];
+    const professionalPresets = JSON.parse(professionalsPresetsSrc).presets || [];
+    const professionalFirst = professionalPresets[0];
     assert.ok(professionalFirst && professionalFirst.config, 'professionals first preset exists');
     const professionalSurface = JSON.stringify(professionalFirst);
     assert.ok(!professionalSurface.includes('New York, NY'), 'professionals default still names New York');
     assert.ok(!professionalSurface.includes('123 Main Street'), 'professionals default still uses US address');
     assert.ok(professionalSurface.includes('București'), 'professionals default uses București');
+
+    for (const preset of professionalPresets) {
+        const surface = JSON.stringify(preset);
+        assert.ok(!surface.includes('123 Main Street'), `${preset.id}: US street address remains`);
+        assert.ok(!surface.includes('New York, NY 10001'), `${preset.id}: New York address remains`);
+    }
+
+    const cabinetMarinRo = professionalPresets.find((preset) => preset.id === 'cabinet-marin-ro');
+    assert.ok(cabinetMarinRo && cabinetMarinRo.config, 'cabinet-marin-ro preset exists');
+    assert.ok(
+        cabinetMarinRo.config.contact.address.includes('București'),
+        'cabinet-marin-ro contact address uses București'
+    );
+
+    const atelierNord = professionalPresets.find((preset) => preset.id === 'atelier-nord');
+    assert.ok(atelierNord && atelierNord.config, 'atelier-nord preset exists');
+    assert.ok(!/Austin(?:, TX)?/i.test(JSON.stringify(atelierNord)), 'atelier-nord still names Austin');
 });
 
 check('professional booking chrome and presets are Romanian', () => {
