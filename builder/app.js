@@ -3967,7 +3967,7 @@ function wireStaticButtons() {
       const rawSlug = slugInput ? toSlug(slugInput.value) : '';
       if (!rawSlug || rawSlug.length < 3) {
         const err = $('slug-error');
-        if (err) { err.textContent = 'Enter a valid address (at least 3 characters).'; show(err); }
+        if (err) { err.textContent = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).'; show(err); }
         if (slugInput) slugInput.focus();
         return;
       }

@@ -135,8 +135,14 @@ check('publish address validation is Romanian', () => {
         'publish address minimum-length message is still English'
     );
     assert.ok(
-        appSrc.includes('Adresa trebuie să aibă cel puțin 3 caractere'),
-        'publish address minimum-length message is not Romanian'
+        !appSrc.includes('Enter a valid address (at least 3 characters).'),
+        'publish continue address validation is still English'
+    );
+    const romanianMinimumLength = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).';
+    assert.strictEqual(
+        appSrc.split(romanianMinimumLength).length - 1,
+        2,
+        'both publish address minimum-length writers use the same Romanian copy'
     );
 });
 
