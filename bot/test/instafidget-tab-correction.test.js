@@ -6,8 +6,8 @@
  *   - Instafidget is NOT a separately paid Site Builder add-on.
  *   - Site Builder includes Instafidget free for 12 months; then Instafidget Free
  *     with watermark unless the customer upgrades in Instafidget.
- *   - Editor must open as a normal new tab in the same browser (_blank), not a
- *     named popup with width/height features. Preserve noopener.
+ *   - Editor must open as a normal new tab in the same browser (_blank), with
+ *     no windowFeatures argument. Isolate the opener after opening the tab.
  *
  * Run: node bot/test/instafidget-tab-correction.test.js
  * Exits non-zero on failure.
@@ -82,7 +82,7 @@ check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} LAUNCH.md still says Instafi
 });
 
 // ── HEAD: editor opens as same-browser new tab ───────────────────────────
-check('HEAD connectInstagram opens editor as _blank tab without named popup/size features', () => {
+check('HEAD connectInstagram opens editor as _blank tab without window features', () => {
   const app = headRead('builder/app.js');
   const fn = extractConnectInstagram(app);
 
@@ -94,14 +94,17 @@ check('HEAD connectInstagram opens editor as _blank tab without named popup/size
     !/width\s*=\s*\d+|height\s*=\s*\d+/.test(fn),
     'must not pass popup width/height features'
   );
-  // window.open(url, '_blank', 'noopener') or equivalent without sizing
   assert.ok(
-    /window\.open\s*\(\s*session\.editorUrl\s*,\s*['"]_blank['"]/.test(fn),
-    'must open with target _blank'
+    /window\.open\s*\(\s*session\.editorUrl\s*,\s*['"]_blank['"]\s*\)/.test(fn),
+    'must open with target _blank and no third windowFeatures argument'
   );
   assert.ok(
-    /noopener/.test(fn),
-    'must preserve noopener safety'
+    !/window\.open\s*\(\s*session\.editorUrl\s*,\s*['"]_blank['"]\s*,/.test(fn),
+    'must not pass a third windowFeatures argument'
+  );
+  assert.ok(
+    /\.opener\s*=\s*null/.test(fn),
+    'must isolate the new tab opener without windowFeatures'
   );
   // Guard: no leftover sized feature string on this open
   assert.ok(

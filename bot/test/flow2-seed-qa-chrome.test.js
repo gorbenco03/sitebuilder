@@ -201,10 +201,23 @@ check('Instagram reconnect opens a persisted connected panel and Romanian status
         /ig-connected-panel[\s\S]{0,800}instagram\.embedUrl/.test(appSrc),
         'persisted Instagram embed is not used to select the connected panel'
     );
-    assert.ok(
-        /btn-ig-editor[\s\S]{0,1200}window\.open\([^,]+,\s*['_"]_blank['_"],\s*['_"]noopener['_"]\)/.test(appSrc),
-        'connected panel does not open Instafidget in a normal same-browser tab'
-    );
+    const editorOpens = [
+        ['openInstagramEditor', 'instagramEditorUrl'],
+        ['connectInstagram', 'session\\.editorUrl'],
+    ];
+    for (const [functionName, editorUrl] of editorOpens) {
+        const fn = extractFunction(appSrc, functionName);
+        assert.ok(fn, `${functionName} exists`);
+        assert.ok(
+            new RegExp(`window\\.open\\(\\s*${editorUrl}\\s*,\\s*['_"]_blank['_"]\\s*\\)`).test(fn),
+            `${functionName} does not open Instafidget in a normal same-browser tab without window features`
+        );
+        assert.ok(
+            !new RegExp(`window\\.open\\(\\s*${editorUrl}\\s*,\\s*['_"]_blank['_"]\\s*,`).test(fn),
+            `${functionName} passes a prohibited third windowFeatures argument`
+        );
+        assert.ok(/\.opener\s*=\s*null/.test(fn), `${functionName} does not isolate the opener`);
+    }
     for (const phrase of [
         'Sign in to connect Instagram.',
         'Connecting Instagram…',

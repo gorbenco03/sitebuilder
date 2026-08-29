@@ -1960,7 +1960,8 @@ async function prepareInstagramEditor() {
 
 function openInstagramEditor() {
   if (!instagramEditorUrl) return;
-  window.open(instagramEditorUrl, '_blank', 'noopener');
+  const editorTab = window.open(instagramEditorUrl, '_blank');
+  if (editorTab) editorTab.opener = null;
 }
 
 function disconnectInstagram() {
@@ -2150,8 +2151,9 @@ async function connectInstagram() {
       return;
     }
     if (session.editorUrl) {
-      // Same-browser new tab (not a sized/named popup window). noopener keeps opener isolation.
-      window.open(session.editorUrl, '_blank', 'noopener');
+      // Same-browser new tab (not a sized/named popup window), with opener isolation.
+      const editorTab = window.open(session.editorUrl, '_blank');
+      if (editorTab) editorTab.opener = null;
     }
     setIgStatus('După ce termini conectarea, revenim aici și actualizăm feed-ul de pe site.');
     const onFocus = async () => {
