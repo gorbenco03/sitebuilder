@@ -150,13 +150,13 @@
               "id": "contract-review",
               "label": "Revizuire contract",
               "durationMin": "60",
-              "mode": "office"
+              "mode": "cabinet"
             },
             {
               "id": "follow-up",
               "label": "Discuție de urmărire",
               "durationMin": "30",
-              "mode": "phone"
+              "mode": "telefon"
             }
           ],
           "weekly": [
@@ -377,7 +377,7 @@
               "id": "strategy-session",
               "label": "Sesiune de strategie",
               "durationMin": "60",
-              "mode": "office"
+              "mode": "cabinet"
             }
           ],
           "weekly": [
@@ -597,13 +597,13 @@
               "id": "contract-review",
               "label": "Revizuire contract",
               "durationMin": "60",
-              "mode": "office"
+              "mode": "cabinet"
             },
             {
               "id": "follow-up",
               "label": "Discuție de urmărire",
               "durationMin": "30",
-              "mode": "phone"
+              "mode": "telefon"
             }
           ],
           "weekly": [

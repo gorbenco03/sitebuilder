@@ -370,7 +370,7 @@
 
   /**
    * When preview has inlined images/* as data URLs but imgMap only has file paths,
-   * pick the best *.background config path so «Replace photo» still opens the chooser.
+   * pick the best *.background config path so «Înlocuiește fotografia» still opens the chooser.
    */
   function resolveBackgroundPathFallback() {
     var keys = Object.keys(imgMap);
@@ -392,12 +392,12 @@
     return bgPaths[0] || null;
   }
 
-  /** Create a "Replace photo" button and attach it to a wrapper element. */
+  /** Create an "Înlocuiește fotografia" button and attach it to a wrapper element. */
   function makeChangeBtn(path) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'hb-img-btn';
-    btn.textContent = 'Replace photo';
+    btn.textContent = 'Înlocuiește fotografia';
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       e.preventDefault();
@@ -431,7 +431,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hb-img-btn';
-      btn.textContent = 'Replace photo';
+      btn.textContent = 'Înlocuiește fotografia';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
@@ -507,7 +507,7 @@
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'hb-bg-btn';
-      btn.textContent = 'Replace photo';
+      btn.textContent = 'Înlocuiește fotografia';
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         e.preventDefault();

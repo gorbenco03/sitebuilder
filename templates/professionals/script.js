@@ -67,10 +67,10 @@ function ymdInTz(date, timeZone) {
 }
 
 function weekdayInTz(date, timeZone) {
-    // 1=Mon … 7=Sun
+    // 1=luni … 7=duminică
     try {
-        const w = new Intl.DateTimeFormat('en-US', { timeZone, weekday: 'short' }).format(date);
-        const map = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+        const w = new Intl.DateTimeFormat('ro-RO', { timeZone, weekday: 'long' }).format(date);
+        const map = { luni: 1, marți: 2, miercuri: 3, joi: 4, vineri: 5, sâmbătă: 6, duminică: 7 };
         return map[w] || 1;
     } catch (_) {
         const d = date.getUTCDay();
@@ -251,7 +251,7 @@ function initAppointment() {
             const opt = document.createElement('option');
             opt.value = day.ymd;
             try {
-                const label = new Intl.DateTimeFormat('en-US', {
+                const label = new Intl.DateTimeFormat('ro-RO', {
                     timeZone: tz,
                     weekday: 'short',
                     day: 'numeric',
@@ -395,7 +395,7 @@ function initAppointment() {
             done.hidden = false;
             let when = startISO;
             try {
-                when = new Intl.DateTimeFormat('en-US', {
+                when = new Intl.DateTimeFormat('ro-RO', {
                     timeZone: tz,
                     weekday: 'long',
                     day: 'numeric',
@@ -409,7 +409,7 @@ function initAppointment() {
             if (doneBody) {
                 doneBody.textContent =
                     `${type.label} · ${when}` +
-                    (localOnly ? ' · local preview status' : '');
+                    (localOnly ? ' · stare de previzualizare locală' : '');
             }
             if (doneConfirm) {
                 doneConfirm.textContent = confirmText;

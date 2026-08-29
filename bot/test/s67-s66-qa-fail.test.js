@@ -383,7 +383,7 @@ function runBuildImgMap(appSrc, config, imageMap) {
             assert.strictEqual(sb.result, 'hero.background', 'fallback → hero.background');
         }
         assert.ok(/hb:\s*['\"]image['\"]/.test(overlaySrc), 'posts hb image');
-        assert.ok(/Replace photo/.test(overlaySrc), 'Replace photo present');
+        assert.ok(/Înlocuiește fotografia/.test(overlaySrc), 'Romanian photo overlay label present');
     });
 
     await check('HEAD: ensureDraftSiteForInstagram sets currentSiteSlug; own slug valid', () => {
@@ -458,11 +458,11 @@ function runBuildImgMap(appSrc, config, imageMap) {
         assert.ok(!/HIDOOK_FAKE_DEPLOY/.test(appSrc), 'no fake deploy');
     });
 
-    await check('HEAD: catalog Trades uses renovation (no Romanian renovari leftover)', () => {
+    await check('HEAD: catalog Meseriași uses renovări with diacritic', () => {
         assert.ok(!/\brenovari\b/i.test(regSrc), 'no leftover Romanian renovari');
         const local = JSON.parse(regSrc).templates.find((t) => t.id === 'local-service');
         assert.ok(local, 'local-service');
-        assert.ok(/renovation/i.test(local.description || ''), 'has renovation wording');
+        assert.ok(/renovări/i.test(local.description || ''), 'has Romanian renovări wording');
         assert.ok(!/\brenovari\b/i.test(local.description || ''), 'no renovari typo');
     });
 

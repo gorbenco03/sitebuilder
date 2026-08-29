@@ -594,7 +594,7 @@ var EDIT_OVERLAY_SCRIPT = [
   '  ov.style.cursor="pointer";ov.style.borderRadius="inherit";',
   '  ov.style.pointerEvents="auto";ov.style.zIndex="5";',
   '  var sp=document.createElement("span");',
-  '  sp.textContent="Replace photo";',
+  '  sp.textContent="Înlocuiește fotografia";',
   '  sp.style.background="rgba(0,0,0,.5)";sp.style.padding="4px 10px";sp.style.borderRadius="6px";',
   '  ov.appendChild(sp);',
   '  par&&par.appendChild(ov);',
@@ -2094,8 +2094,8 @@ async function connectInstagram() {
     if (grant1.embedUrl) applyEmbedUrl(grant1.embedUrl);
     // Isolated/test finish: grant already stored embed; no partner editor UI required
     if (grant1.embedUrl && !(session && session.editorUrl)) {
-      setIgStatus('Instagram is live on your site.');
-      showToast('Instagram connected.', 'success', 3500);
+      setIgStatus('Instagram este afișat pe site.');
+      showToast('Instagram a fost conectat.', 'success', 3500);
       closeModal('modal-instagram');
       return;
     }
@@ -3349,7 +3349,7 @@ async function openPreviewModal(templateId) {
   const meta = (registry || []).find(t => t.id === templateId) || {};
 
   const title = $('modal-preview-title');
-  if (title) title.textContent = 'Preview: ' + (meta.name || templateId);
+  if (title) title.textContent = 'Previzualizare: ' + (meta.name || templateId);
 
   const iframe = $('preview-modal-iframe');
 
@@ -3361,7 +3361,7 @@ async function openPreviewModal(templateId) {
   }
 
   if (!tplData || typeof window.HidookEngine === 'undefined') {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Preview unavailable</body>';
+    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Previzualizarea nu este disponibilă</body>';
     openModal('modal-preview');
     return;
   }
@@ -3371,7 +3371,7 @@ async function openPreviewModal(templateId) {
     const html = window.HidookEngine.renderPreview(tplData.files, config);
     if (iframe) iframe.srcdoc = html;
   } catch (e) {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Error: ' + escHtml(e.message) + '</body>';
+    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>';
   }
 
   const body = $('modal-preview-body');
@@ -3391,7 +3391,7 @@ async function openPreviewModal(templateId) {
 async function loadDashboard() {
   const list = $('sites-list');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Loading your projects…</p>';
+  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Se încarcă proiectele…</p>';
 
   try {
     const data = await apiGet('/api/sites');
