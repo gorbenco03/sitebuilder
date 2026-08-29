@@ -187,19 +187,29 @@ check('HEAD: professionals schema has no Link Instagram la contact / Link Instag
   const schema = read(PRO_SCHEMA);
   assert.ok(!schema.includes('Link Instagram la contact'), 'no Link Instagram la contact');
   assert.ok(!/Link Instagram/.test(schema), 'no Link Instagram');
+  // RO Detalii family (Flow 4): not English "Instagram (contact section)"
   assert.ok(
-    schema.includes('Instagram (contact section)'),
-    'has Instagram (contact section)'
+    /Instagram \(secțiune contact\)/.test(schema) ||
+      /Instagram \(secțiunea contact\)/.test(schema),
+    'has Instagram (secțiune contact) RO label'
+  );
+  assert.ok(
+    !schema.includes('Instagram (contact section)'),
+    'no English Instagram (contact section)'
   );
 });
 
-check('HEAD: four schemas language label is Site language without (ro sau en)', () => {
+check('HEAD: four schemas language label is Limba site-ului without (ro sau en)', () => {
   for (const rel of SCHEMA_LANG) {
     const s = read(rel);
     assert.ok(!/\(ro sau en\)/.test(s), rel + ' no (ro sau en)');
     assert.ok(
-      /"label"\s*:\s*"Site language"/.test(s),
-      rel + ' has Site language label'
+      /"label"\s*:\s*"Limba site-ului"/.test(s),
+      rel + ' has Limba site-ului label'
+    );
+    assert.ok(
+      !/"label"\s*:\s*"Site language"/.test(s),
+      rel + ' no English Site language label'
     );
   }
 });

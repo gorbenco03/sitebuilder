@@ -10,26 +10,26 @@
   "sections": [
     {
       "id": "business",
-      "title": "About the salon",
+      "title": "Despre salon",
       "fields": [
         {
           "key": "business.name",
           "type": "text",
-          "label": "Studio, salon, or brand name",
+          "label": "Nume studio, salon sau brand",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "business.tagline",
           "type": "text",
-          "label": "Short tagline (e.g. Real beauty, heartfelt care)",
+          "label": "Slogan scurt (ex. Frumusețe reală, grijă din suflet)",
           "required": true,
           "maxLen": 100
         },
         {
           "key": "business.title",
           "type": "text",
-          "label": "Page title for the browser tab and Google",
+          "label": "Titlu pagină pentru browser și Google",
           "required": true,
           "maxLen": 80
         },
@@ -43,14 +43,14 @@
         {
           "key": "business.about",
           "type": "textarea",
-          "label": "The salon's story — the \"About us\" section",
+          "label": "Povestea salonului — secțiunea „Despre noi”",
           "required": true,
           "maxLen": 600
         },
         {
           "key": "business.lang",
           "type": "text",
-          "label": "Site language",
+          "label": "Limba site-ului",
           "required": true,
           "maxLen": 5
         }
@@ -58,26 +58,26 @@
     },
     {
       "id": "labels",
-      "title": "Button and section text",
+      "title": "Texte butoane și secțiuni",
       "fields": [
         {
           "key": "labels.about",
           "type": "text",
-          "label": "\"About us\" section title",
+          "label": "Titlu secțiune „Despre noi”",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.instaTitle",
           "type": "text",
-          "label": "Instagram section title",
+          "label": "Titlu secțiune Instagram",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.instaFollow",
           "type": "text",
-          "label": "Instagram follow button text",
+          "label": "Text buton urmărire Instagram",
           "required": true,
           "maxLen": 20
         },
@@ -91,112 +91,112 @@
         {
           "key": "labels.waQr",
           "type": "text",
-          "label": "WhatsApp QR modal title",
+          "label": "Titlu modal QR WhatsApp",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.waOpen",
           "type": "text",
-          "label": "\"Open WhatsApp Web\" link text",
+          "label": "Text link „Deschide WhatsApp Web”",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.servicesEyebrow",
           "type": "text",
-          "label": "Small label above the services section (e.g. Service menu)",
+          "label": "Etichetă mică deasupra serviciilor (ex. Meniu servicii)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.scheduleEyebrow",
           "type": "text",
-          "label": "Small label above the hours section (e.g. Hours)",
+          "label": "Etichetă mică deasupra programului (ex. Program)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.galleryEyebrow",
           "type": "text",
-          "label": "Small label above the gallery (e.g. Our work)",
+          "label": "Etichetă mică deasupra galeriei (ex. Lucrările noastre)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.teamEyebrow",
           "type": "text",
-          "label": "Small label above the team section (e.g. Our team)",
+          "label": "Etichetă mică deasupra echipei (ex. Echipa noastră)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.bookingEyebrow",
           "type": "text",
-          "label": "Small label above the contact section (e.g. Bookings)",
+          "label": "Etichetă mică deasupra contactului (ex. Programări)",
           "required": true,
           "maxLen": 40
         },
         {
           "key": "labels.waBookBtn",
           "type": "text",
-          "label": "WhatsApp button text in the contact section (e.g. Book on WhatsApp)",
+          "label": "Text buton WhatsApp la contact (ex. Programează pe WhatsApp)",
           "required": true,
           "maxLen": 60
         },
         {
           "key": "labels.navGallery",
           "type": "text",
-          "label": "Gallery nav link (e.g. Gallery)",
+          "label": "Link navigare Galerie (ex. Galerie)",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navServices",
           "type": "text",
-          "label": "Services nav link (e.g. Services)",
+          "label": "Link navigare Servicii (ex. Servicii)",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.navBooking",
           "type": "text",
-          "label": "Booking nav link (e.g. Booking)",
+          "label": "Link navigare Programări (ex. Programare)",
           "required": true,
           "maxLen": 24
         },
         {
           "key": "labels.aboutCap",
           "type": "text",
-          "label": "Short label next to \"About\" (e.g. Salon / Studio)",
+          "label": "Etichetă scurtă lângă „Despre” (ex. Salon / Studio)",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "labels.whatsapp",
           "type": "text",
-          "label": "WhatsApp link label (contact section)",
+          "label": "Etichetă link WhatsApp (secțiune contact)",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "labels.close",
           "type": "text",
-          "label": "Close button label (accessibility)",
+          "label": "Etichetă buton Închide (accesibilitate)",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "labels.lightboxPrev",
           "type": "text",
-          "label": "Lightbox previous button aria-label",
+          "label": "Aria-label buton anterior lightbox",
           "required": false,
           "maxLen": 24
         },
         {
           "key": "labels.lightboxNext",
           "type": "text",
-          "label": "Lightbox next button aria-label",
+          "label": "Aria-label buton următor lightbox",
           "required": false,
           "maxLen": 24
         }
@@ -204,30 +204,30 @@
     },
     {
       "id": "theme",
-      "title": "Colors & visual theme",
+      "title": "Culori",
       "fields": [
         {
           "key": "theme.primary",
           "type": "color",
-          "label": "Primary color — gold-beige accent (e.g. #C4956A)",
+          "label": "Culoare principală — accent auriu-bej (ex. #C4956A)",
           "required": true
         },
         {
           "key": "theme.primaryLight",
           "type": "color",
-          "label": "Lighter accent shade (e.g. #D9B08C)",
+          "label": "Nuanță accent mai deschisă (ex. #D9B08C)",
           "required": true
         },
         {
           "key": "theme.primaryDark",
           "type": "color",
-          "label": "Darker accent shade (e.g. #A07548)",
+          "label": "Nuanță accent mai închisă (ex. #A07548)",
           "required": true
         },
         {
           "key": "theme.cream",
           "type": "color",
-          "label": "Background color (nude cream, e.g. #FAF7F4)",
+          "label": "Culoare fundal (crem nude, ex. #FAF7F4)",
           "required": true
         }
       ]
@@ -239,7 +239,7 @@
         {
           "key": "logo",
           "type": "text",
-          "label": "Logo image path (e.g. images/logo.png) or leave blank",
+          "label": "Cale logo (ex. images/logo.png) — lasă gol dacă nu ai",
           "required": false,
           "maxLen": 200
         },
@@ -253,14 +253,14 @@
           "key": "hero.background",
           "type": "background",
           "label": "Fundal deschidere",
-          "hint": "Pick a color and optional photo. The live preview updates immediately.",
+          "hint": "Alege o culoare și opțional o poză. Preview-ul live se actualizează imediat.",
           "required": true,
           "maxLen": 2000
         },
         {
           "key": "hero.ctaLabel",
           "type": "text",
-          "label": "Main button text (e.g. Book now)",
+          "label": "Text buton principal (ex. Programează-te)",
           "required": true,
           "maxLen": 40
         }
@@ -268,19 +268,19 @@
     },
     {
       "id": "services",
-      "title": "Services & pricing",
+      "title": "Servicii și tarife",
       "fields": [
         {
           "key": "servicesTitle",
           "type": "text",
-          "label": "Services menu title (e.g. Our services)",
+          "label": "Titlu meniu servicii (ex. Serviciile noastre)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "services",
           "type": "list",
-          "label": "Services list (SVG icon + name + optional price)",
+          "label": "Listă servicii (icon SVG + nume + preț opțional)",
           "required": false,
           "min": 0,
           "max": 16,
@@ -293,7 +293,7 @@
         {
           "key": "pricing",
           "type": "list",
-          "label": "Detailed price list (optional — shown in addition to the services list)",
+          "label": "Listă de prețuri detaliată (opțional — pe lângă lista de servicii)",
           "required": false,
           "min": 0,
           "max": 20,
@@ -306,19 +306,19 @@
     },
     {
       "id": "schedule",
-      "title": "Business hours (optional)",
+      "title": "Program (opțional)",
       "fields": [
         {
           "key": "schedule.title",
           "type": "text",
-          "label": "Hours section title (e.g. Business hours)",
+          "label": "Titlu secțiune program (ex. Program)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "schedule.rows",
           "type": "list",
-          "label": "Hours rows (day + hours)",
+          "label": "Rânduri program (zi + ore)",
           "required": false,
           "min": 0,
           "max": 7,
@@ -331,19 +331,19 @@
     },
     {
       "id": "gallery",
-      "title": "Work gallery",
+      "title": "Galerie lucrări",
       "fields": [
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Gallery section title (e.g. Our portfolio) or leave blank",
+          "label": "Titlu galerie (ex. Portofoliu) — lasă gol ca să omiți",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "categories",
           "type": "list",
-          "label": "Work categories (e.g. Nails, Hair, Makeup)",
+          "label": "Categorii lucrări (ex. Unghii, Păr, Machiaj)",
           "required": true,
           "min": 1,
           "max": 6,
@@ -357,19 +357,19 @@
     },
     {
       "id": "team",
-      "title": "Team (optional)",
+      "title": "Echipă (opțional)",
       "fields": [
         {
           "key": "team.title",
           "type": "text",
-          "label": "Team section title (e.g. Our team)",
+          "label": "Titlu secțiune echipă (ex. Echipa noastră)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "team.members",
           "type": "list",
-          "label": "Team members",
+          "label": "Membri echipă",
           "required": false,
           "min": 0,
           "max": 8,
@@ -389,14 +389,14 @@
         {
           "key": "instagram.handle",
           "type": "text",
-          "label": "Instagram username (no @)",
+          "label": "Utilizator Instagram (fără @)",
           "required": false,
           "maxLen": 60
         },
         {
           "key": "instagram.url",
           "type": "url",
-          "label": "Instagram URL (https://www.instagram.com/...)",
+          "label": "URL Instagram (https://www.instagram.com/...)",
           "required": false
         },
         {
@@ -408,72 +408,72 @@
         {
           "key": "instagram.gallery",
           "type": "photos",
-          "label": "Instagram grid photos (results / fallback)",
+          "label": "Poze grilă Instagram (rezultate / fallback)",
           "required": false
         }
       ]
     },
     {
       "id": "contact",
-      "title": "Contact & bookings",
+      "title": "Contact și programări",
       "fields": [
         {
           "key": "contact.title",
           "type": "text",
-          "label": "Contact section title (e.g. Book an appointment)",
+          "label": "Titlu secțiune contact (ex. Programează o întâlnire)",
           "required": true,
           "maxLen": 50
         },
         {
           "key": "contact.intro",
           "type": "textarea",
-          "label": "Intro text for contact / booking",
+          "label": "Text intro contact / programări",
           "required": true,
           "maxLen": 200
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "WhatsApp number (international format, no +, e.g. 14155550112)",
+          "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
           "required": false
         },
         {
           "key": "contact.waMessage",
           "type": "textarea",
-          "label": "WhatsApp prefilled message (plain text; diacritics OK)",
+          "label": "Mesaj precompletat WhatsApp (text simplu; diacritice OK)",
           "required": false,
           "maxLen": 300
         },
         {
           "key": "contact.waHref",
           "type": "url",
-          "label": "WhatsApp link (derived — do not edit)",
+          "label": "Link WhatsApp (derivat — nu edita)",
           "required": false,
           "maxLen": 500
         },
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Phone number (with country code, e.g. +14155550112)",
+          "label": "Telefon cu prefix de țară (ex. +40 721 234 567)",
           "required": false
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
-          "label": "Displayed phone number (e.g. +1 415 555 0112)",
+          "label": "Telefon afișat pe site (ex. +40 721 234 567)",
           "required": false,
           "maxLen": 30
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
-          "label": "Instagram (contact section)",
+          "label": "Instagram (secțiune contact)",
           "required": false
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
-          "label": "Instagram text (e.g. @yoursalon)",
+          "label": "Etichetă Instagram (ex. @salonul_tau)",
           "required": false,
           "maxLen": 60
         },
@@ -493,14 +493,14 @@
         {
           "key": "contact.address",
           "type": "textarea",
-          "label": "Physical address (one line per row)",
+          "label": "Adresă fizică (câte un rând pe linie)",
           "required": false,
           "maxLen": 200
         },
         {
           "key": "contact.addressHref",
           "type": "url",
-          "label": "Google Maps link for the address",
+          "label": "Link Google Maps pentru adresă",
           "required": false
         }
       ]
@@ -519,26 +519,26 @@
     },
     {
       "id": "footer",
-      "title": "Footer",
+      "title": "Subsol",
       "fields": [
         {
           "key": "footer.address",
           "type": "text",
-          "label": "Short address for the footer",
+          "label": "Adresă scurtă în subsol",
           "required": true,
           "maxLen": 120
         },
         {
           "key": "footer.year",
           "type": "text",
-          "label": "Copyright year (e.g. 2026)",
+          "label": "An copyright (ex. 2026)",
           "required": true,
           "maxLen": 4
         },
         {
           "key": "footer.note",
           "type": "text",
-          "label": "Small footer note (e.g. Beauty with heart.)",
+          "label": "Notă scurtă subsol (ex. Frumusețe cu suflet.)",
           "required": false,
           "maxLen": 100
         }
