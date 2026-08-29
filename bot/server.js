@@ -1655,7 +1655,7 @@ async function handleSocialFeedGrant(req, res, siteId) {
 /**
  * POST /api/sites/:id/social-feed/editor-session
  * Returns Instafidget editorUrl. Does not change billing.
- * Isolated/test-pay without partner secret: no live partner; empty editorUrl (grant already stubs embed).
+ * Isolated/test-pay without partner secret: same-origin editor handoff page.
  */
 async function handleSocialFeedEditor(req, res, siteId) {
     try { await parseJson(req); } catch (_) { /* empty body ok */ }
@@ -1663,8 +1663,8 @@ async function handleSocialFeedEditor(req, res, siteId) {
     if (!ctx) return;
 
     if (!ctx.partnerConfigured && isIsolatedTestSocial()) {
-        // No real Instafidget UI in isolated mode — client keeps embed from grant.
-        return sendJson(res, 200, { editorUrl: null, isolated: true });
+        const editorUrl = requestPublicOrigin(req) + '/app/instafidget-editor.html?siteId=' + encodeURIComponent(siteId);
+        return sendJson(res, 200, { editorUrl, isolated: true });
     }
 
     let partnerRes;

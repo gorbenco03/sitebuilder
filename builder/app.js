@@ -1951,7 +1951,7 @@ async function prepareInstagramEditor() {
     if (status) {
       status.textContent = instagramEditorUrl
         ? 'Editorul este pregătit și se va deschide într-un tab nou.'
-        : 'Feed-ul este conectat. Editorul Instafidget nu este disponibil în mediul local.';
+        : 'Nu am putut pregăti editorul Instafidget. Încearcă din nou.';
     }
   } catch (e) {
     if (status) status.textContent = e.message || 'Nu am putut pregăti editorul Instafidget.';
@@ -3403,6 +3403,18 @@ async function openPreviewModal(templateId) {
 
   const iframe = $('preview-modal-iframe');
 
+  // Make the iframe paintable before loading its heavy payload. Assigning
+  // srcdoc while the wide modal is hidden can leave Chromium with a blank
+  // sandboxed document when template entry animations are throttled.
+  const body = $('modal-preview-body');
+  const desktopBtn = $('modal-preview-desktop');
+  const mobileBtn = $('modal-preview-mobile');
+  if (body) body.classList.remove('mode-mobile');
+  if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
+  if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
+  if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#6B7280;margin:0;font-size:.95rem">Se încarcă previzualizarea…</body>';
+  openModal('modal-preview');
+
   let tplData = null;
   try {
     tplData = await ensureTemplateLoaded(templateId);
@@ -3411,8 +3423,7 @@ async function openPreviewModal(templateId) {
   }
 
   if (!tplData || typeof window.HidookEngine === 'undefined') {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Previzualizarea nu este disponibilă</body>';
-    openModal('modal-preview');
+    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>';
     return;
   }
 
@@ -3424,14 +3435,6 @@ async function openPreviewModal(templateId) {
     if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>';
   }
 
-  const body = $('modal-preview-body');
-  const desktopBtn = $('modal-preview-desktop');
-  const mobileBtn = $('modal-preview-mobile');
-  if (body) body.classList.remove('mode-mobile');
-  if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
-  if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
-
-  openModal('modal-preview');
 }
 
 // ---------------------------------------------------------------------------
@@ -3701,7 +3704,7 @@ async function loadSiteForEdit(siteId) {
 
 async function loadVersions(siteId) {
   const list = $('versions-list');
-  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Loading…</p>';
+  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
   openModal('modal-versions');
 
   try {
@@ -3710,7 +3713,7 @@ async function loadVersions(siteId) {
     if (!list) return;
 
     if (versions.length === 0) {
-      list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">No saved versions yet.</p>';
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">Nu există versiuni salvate.</p>';
       return;
     }
 
@@ -3732,13 +3735,13 @@ async function loadVersions(siteId) {
         <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restabilește</button>`;
       item.querySelector('.btn-rollback').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
-        setBtnLoading(btn, true, 'Restoring…');
+        setBtnLoading(btn, true, 'Se restabilește…');
         try {
           await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/rollback', { versionId: v.versionId });
           showToast('Versiunea a fost restabilită.', 'success');
           closeModal('modal-versions');
         } catch (err) {
-          showToast('Error restoring: ' + err.message, 'error');
+          showToast('Eroare la restabilire: ' + err.message, 'error');
           setBtnLoading(btn, false);
         }
       });
@@ -4086,7 +4089,7 @@ function wireStaticButtons() {
 // ---------------------------------------------------------------------------
 
 async function boot() {
-  setLoading(true, 'Loading…');
+  setLoading(true, 'Se încarcă…');
   try {
     initPostMessageListener();
     wireStaticButtons();

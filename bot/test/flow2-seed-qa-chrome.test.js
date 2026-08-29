@@ -15,6 +15,19 @@ const vm = require('vm');
 const ROOT = path.resolve(__dirname, '../..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
+function extractFunction(src, name) {
+    const start = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{').exec(src);
+    if (!start) return '';
+    let index = start.index + start[0].length;
+    let depth = 1;
+    while (index < src.length && depth > 0) {
+        const char = src[index++];
+        if (char === '{') depth++;
+        else if (char === '}') depth--;
+    }
+    return src.slice(start.index, index);
+}
+
 let failed = 0;
 function check(name, fn) {
     try {
@@ -66,6 +79,40 @@ check('builder chrome contains no known English QA leaks', () => {
     assert.ok(overlaySrc.includes('Înlocuiește fotografia'), 'photo overlay label is Romanian');
     assert.ok(indexHtml.includes('vezi previzualizarea.'), 'landing uses Previzualizare wording');
     assert.ok(indexHtml.includes('apoi Instafidget Free (filigran)'), 'partner note uses filigran');
+});
+
+check('Istoric loading, empty, and restore states are Romanian', () => {
+    for (const phrase of ['Loading…', 'Restoring…', 'No saved versions yet.', 'Error restoring:']) {
+        assert.ok(!appSrc.includes(phrase), `Istoric customer-visible English remains: ${phrase}`);
+    }
+    for (const phrase of ['Se încarcă…', 'Se restabilește…', 'Nu există versiuni salvate.']) {
+        assert.ok(appSrc.includes(phrase), `Istoric Romanian state is missing: ${phrase}`);
+    }
+    assert.ok(appSrc.includes('Eroare la restabilire:'), 'restore error is not Romanian');
+});
+
+check('catalog preview opens visibly before assigning rendered first-preset HTML', () => {
+    const fn = extractFunction(appSrc, 'openPreviewModal');
+    assert.ok(fn, 'openPreviewModal exists');
+    const openAt = fn.indexOf("openModal('modal-preview')");
+    const loadAt = fn.indexOf('await ensureTemplateLoaded(templateId)');
+    const renderAt = fn.indexOf('window.HidookEngine.renderPreview(tplData.files, config)');
+    const assignAt = fn.indexOf('iframe.srcdoc = html');
+    assert.ok(openAt >= 0 && openAt < loadAt, 'preview iframe must be visible before heavy load/render');
+    assert.ok(renderAt > loadAt, 'preview uses HidookEngine.renderPreview after payload load');
+    assert.ok(assignAt > renderAt, 'rendered first-preset HTML is assigned to the modal iframe');
+    assert.ok(!fn.includes('Previzualizarea nu este disponibilă'), 'blank/unavailable preview body remains');
+});
+
+check('connected Instafidget editor is never described as unavailable locally', () => {
+    assert.ok(
+        !appSrc.includes('nu este disponibil în mediul local'),
+        'connected Instafidget editor remains unavailable in local mode'
+    );
+    assert.ok(
+        appSrc.includes('Editorul este pregătit și se va deschide într-un tab nou.'),
+        'ready/new-tab status is missing'
+    );
 });
 
 check('all five preset catalogs and publish collision chrome are Romanian', () => {

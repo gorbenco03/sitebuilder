@@ -406,8 +406,10 @@ function parentBgMatch(style) {
         });
         assert.strictEqual(ed.status, 200, 'editor-session 200 isolated');
         const edBody = await ed.json();
-        // No live partner UI required; null editorUrl is OK when embed already set
-        assert.ok(edBody.editorUrl == null || typeof edBody.editorUrl === 'string');
+        assert.ok(typeof edBody.editorUrl === 'string' && edBody.editorUrl.length > 0, 'isolated editorUrl');
+        const editorUrl = new URL(edBody.editorUrl, base);
+        assert.strictEqual(editorUrl.origin, new URL(base).origin, 'isolated editor stays same-origin');
+        assert.strictEqual(editorUrl.pathname, '/app/instafidget-editor.html');
         assert.ok(!/nu e configurat/i.test(JSON.stringify(edBody)));
     });
 
