@@ -68,6 +68,56 @@ check('builder chrome contains no known English QA leaks', () => {
     assert.ok(indexHtml.includes('apoi Instafidget Free (filigran)'), 'partner note uses filigran');
 });
 
+check('all five preset catalogs and publish collision chrome are Romanian', () => {
+    assert.ok(
+        !appSrc.includes('That address is already taken'),
+        'publish slug collision message is still English'
+    );
+
+    const templateIds = ['professionals', 'local-service', 'portfolio', 'product-menu', 'desserdirina'];
+    const forbidden = [
+        'Whitfield Law',
+        'Northline Consulting',
+        'Ridgeline',
+        'OSHA',
+        'ConstTop',
+        'Manchester',
+        'Salford',
+        'New York',
+        '+44',
+        'London',
+        'Londra',
+        'Romford',
+        'Austin',
+    ];
+    for (const templateId of templateIds) {
+        const presets = JSON.parse(read(`templates/${templateId}/presets.json`)).presets || [];
+        for (const preset of presets) {
+            const surface = JSON.stringify({ name: preset.name, config: preset.config });
+            for (const leftover of forbidden) {
+                assert.ok(
+                    !surface.includes(leftover),
+                    `${templateId}/${preset.id || preset.name}: leftover customer seed: ${leftover}`
+                );
+            }
+        }
+    }
+
+    const professionalDefault = JSON.parse(professionalsPresetsSrc).presets[0];
+    assert.ok(professionalDefault && professionalDefault.config, 'professionals default preset exists');
+    assert.ok(
+        !/\b(?:Law|Consulting)\b/i.test(professionalDefault.config.business.name),
+        'professionals default still uses an English law/consulting brand'
+    );
+
+    const localDefault = JSON.parse(read('templates/local-service/presets.json')).presets[0];
+    assert.ok(localDefault && localDefault.config, 'local-service default preset exists');
+    assert.ok(
+        !/Ridgeline/i.test(localDefault.config.business.name),
+        'local-service default still uses the Ridgeline brand'
+    );
+});
+
 check('all five Details schemas use the Romanian preview hint', () => {
     const registry = JSON.parse(read('templates/registry.json')).templates || [];
     assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');

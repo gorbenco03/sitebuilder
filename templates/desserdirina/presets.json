@@ -7,9 +7,9 @@
         "business": {
           "name": "Desserdirina",
           "tagline": "Torturi, prăjituri și pâine artizanală",
-          "title": "Desserdirina | Cofetărie & catering | Romford, Londra",
-          "metaDescription": "Torturi, prăjituri și pâine artizanală, coapte zilnic în Romford. Catering, torturi la comandă, delicatese românești. Comandă pe WhatsApp sau vino la 28 High St.",
-          "about": "Bine ați venit la Desserdirina! Cofetăria și serviciul nostru de catering din Romford, Londra. Creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale moldovenești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație.",
+          "title": "Desserdirina | Cofetărie & catering | București",
+          "metaDescription": "Torturi, prăjituri și pâine artizanală, coapte zilnic în București. Catering, torturi la comandă și delicatese românești. Comandă pe WhatsApp sau vino la cofetărie.",
+          "about": "Bine ați venit la Desserdirina! În cofetăria și serviciul nostru de catering din București creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale moldovenești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație.",
           "lang": "ro"
         },
         "theme": {
@@ -86,15 +86,15 @@
           "phoneDisplay": "+40 721 234 567",
           "waHref": "https://wa.me/40721234567",
           "waMessage": "Bună ziua, aș dori o comandă de tort.",
-          "address": "28 High St, Romford<br>London, RM11HR<br>Lângă Havering Museum",
-          "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7"
+          "address": "Strada Franceză 28<br>București 030105<br>Lângă Centrul Vechi",
+          "addressHref": "https://maps.google.com/?q=Strada+Franceza+28+Bucuresti"
         },
         "seo": {
           "ogImage": "images/hero.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Desserdirina\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"28 High St\",\"addressLocality\":\"Romford\",\"addressCountry\":\"GB\"}}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Desserdirina\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Franceză 28\",\"addressLocality\":\"București\",\"postalCode\":\"030105\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
-          "address": "28 High St, Romford, London RM11HR",
+          "address": "Strada Franceză 28, București 030105",
           "year": 2026,
           "note": "Coapte zilnic, cu drag."
         },
@@ -164,9 +164,9 @@
         "business": {
           "name": "Desserdirina",
           "tagline": "Torturi, prăjituri și pâine artizanală",
-          "title": "Desserdirina | Cofetărie & catering | Romford, Londra",
-          "metaDescription": "Torturi, prăjituri și pâine artizanală, coapte zilnic în Romford. Catering, torturi la comandă, delicatese românești. Comandă pe WhatsApp sau vino la 28 High St.",
-          "about": "Bine ați venit la Desserdirina! Cofetăria și serviciul nostru de catering din Romford, Londra. Creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale moldovenești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație.",
+          "title": "Desserdirina | Cofetărie & catering | București",
+          "metaDescription": "Torturi, prăjituri și pâine artizanală, coapte zilnic în București. Catering, torturi la comandă și delicatese românești. Comandă pe WhatsApp sau vino la cofetărie.",
+          "about": "Bine ați venit la Desserdirina! În cofetăria și serviciul nostru de catering din București creăm torturi, prăjituri și pâine artizanală, toate coapte proaspăt în fiecare zi. De la delicatese tradiționale moldovenești până la torturi personalizate pentru ocazii speciale, punem suflet în fiecare creație.",
           "lang": "ro"
         },
         "theme": {
@@ -238,20 +238,20 @@
             "url": "https://www.facebook.com/desserdirina",
             "label": "Desserdirina"
           },
-          "whatsapp": "447519511006",
-          "phone": "+447****1006",
-          "phoneDisplay": "+44 7519 511006",
-          "waHref": "https://wa.me/447519511006",
+          "whatsapp": "40722511006",
+          "phone": "+40722511006",
+          "phoneDisplay": "+40 722 511 006",
+          "waHref": "https://wa.me/40722511006",
           "waMessage": "Bună ziua, aș dori o comandă de tort.",
-          "address": "28 High St, Romford<br>London, RM11HR<br>Lângă Havering Museum",
-          "addressHref": "https://maps.app.goo.gl/FG4QUFwjt2mxJZLr7"
+          "address": "Strada Franceză 28<br>București 030105<br>Lângă Centrul Vechi",
+          "addressHref": "https://maps.google.com/?q=Strada+Franceza+28+Bucuresti"
         },
         "seo": {
           "ogImage": "images/hero.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Desserdirina\",\"telephone\":\"+447****1006\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"28 High St\",\"addressLocality\":\"Romford\",\"addressCountry\":\"GB\"}}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Bakery\",\"name\":\"Desserdirina\",\"telephone\":\"+40722511006\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Franceză 28\",\"addressLocality\":\"București\",\"postalCode\":\"030105\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
-          "address": "28 High St, Romford, London RM11HR",
+          "address": "Strada Franceză 28, București 030105",
           "year": 2026,
           "note": "Coapte zilnic, cu drag."
         },

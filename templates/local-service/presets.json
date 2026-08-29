@@ -2,14 +2,14 @@
   "presets": [
     {
       "id": "renovari-bucuresti",
-      "name": "Renovări Ridgeline — București",
+      "name": "Renovări Casa Nord — București",
       "config": {
         "business": {
-          "name": "Renovări Ridgeline",
+          "name": "Renovări Casa Nord",
           "tagline": "Renovări interioare și finisaje premium",
-          "title": "Renovări Ridgeline | Renovări interioare București",
+          "title": "Renovări Casa Nord | Renovări interioare București",
           "metaDescription": "Renovări complete de interior în București și împrejurimi. Gresie, gips-carton, vopsitorie, instalații. Echipă cu 12 ani de experiență. Cere o ofertă gratuită.",
-          "about": "Renovări Ridgeline este o firmă de construcții și renovări din București. Ne ocupăm de renovări complete de interior — de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la fiecare lucrare.",
+          "about": "Renovări Casa Nord este o firmă de construcții și renovări din București. Ne ocupăm de renovări complete de interior — de la demolare și structură până la finisaje de lux. Lucrăm curat, respectăm termenele și oferim garanție scrisă la fiecare lucrare.",
           "lang": "ro",
           "yearsExp": "12",
           "projectsDone": "240",
@@ -122,7 +122,7 @@
         ],
         "certifications": [
           "Constructor general autorizat",
-          "Certificare OSHA pentru siguranță",
+          "Instruire SSM pentru siguranța muncii",
           "Firmă asigurată și garantată",
           "Garanție scrisă de 2 ani"
         ],
@@ -187,8 +187,8 @@
           }
         ],
         "instagram": {
-          "handle": "ridgeline.renovations",
-          "url": "https://www.instagram.com/ridgeline.renovations",
+          "handle": "renovari.casa.nord",
+          "url": "https://www.instagram.com/renovari.casa.nord",
           "gallery": [
             "images/pr-ig1.jpg",
             "images/pr-ig2.jpg",
@@ -203,15 +203,15 @@
           "title": "Cere o ofertă gratuită",
           "intro": "Sună-ne sau scrie-ne pe WhatsApp pentru o evaluare gratuită la fața locului. Răspundem în aceeași zi.",
           "instagram": {
-            "url": "https://www.instagram.com/ridgeline.renovations",
-            "label": "@ridgeline.renovations"
+            "url": "https://www.instagram.com/renovari.casa.nord",
+            "label": "@renovari.casa.nord"
           },
           "facebook": {
-            "url": "https://www.facebook.com/ridgelinerenovations",
-            "label": "Ridgeline Renovations"
+            "url": "https://www.facebook.com/renovaricasanord",
+            "label": "Renovări Casa Nord"
           },
           "whatsapp": "40721234567",
-          "phone": "+407****4567",
+          "phone": "+40721234567",
           "phoneDisplay": "+40 721 234 567",
           "waHref": "https://wa.me/40721234567",
           "address": "București și împrejurimi",
@@ -220,8 +220,8 @@
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
-          "canonical": "https://ridgelinerenovations.com",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Renovări Ridgeline\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721234567\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://ridgelinerenovations.com\"}"
+          "canonical": "https://renovaricasanord.example",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Renovări Casa Nord\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721234567\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://renovaricasanord.example\"}"
         },
         "footer": {
           "address": "București și împrejurimi",
@@ -232,18 +232,18 @@
     },
     {
       "id": "acoperisuri-fatade-manchester",
-      "name": "ConstTop Roofing — Manchester",
+      "name": "Acoperișuri Dacia — București",
       "config": {
         "business": {
-          "name": "ConstTop Roofing",
+          "name": "Acoperișuri Dacia",
           "tagline": "Acoperișuri, fațade și termoizolații",
-          "title": "ConstTop Roofing | Acoperișuri și fațade în Manchester | Reparații și montaj",
-          "metaDescription": "Montaj și reparații de acoperișuri, fațade ventilate și termoizolații în Manchester și împrejurimi. 15 ani de experiență și intervenții rapide.",
-          "about": "ConstTop Roofing este specializată în lucrări de acoperiș și fațadă în Manchester și nord-vestul Angliei. Montăm țiglă ceramică și metalică, membrane, ferestre de mansardă și sisteme complete de termoizolație.",
+          "title": "Acoperișuri Dacia | Acoperișuri și fațade în București | Reparații și montaj",
+          "metaDescription": "Montaj și reparații de acoperișuri, fațade ventilate și termoizolații în București și Ilfov. 15 ani de experiență și intervenții rapide.",
+          "about": "Acoperișuri Dacia este specializată în lucrări de acoperiș și fațadă în București și Ilfov. Montăm țiglă ceramică și metalică, membrane, ferestre de mansardă și sisteme complete de termoizolație.",
           "lang": "ro",
           "yearsExp": "15",
           "projectsDone": "380",
-          "zone": "Manchester, Salford, Stockport, Bolton"
+          "zone": "București și Ilfov (Voluntari, Otopeni, Bragadiru)"
         },
         "labels": {
           "whatsapp": "WhatsApp",
@@ -332,12 +332,12 @@
           {
             "icon": "",
             "title": "Urgențe 24/7",
-            "text": "Intervenim rapid, la orice oră, pentru infiltrații și pagube produse de furtuni în zona metropolitană Manchester."
+            "text": "Intervenim rapid, la orice oră, pentru infiltrații și pagube produse de furtuni în București și Ilfov."
           },
           {
             "icon": "",
             "title": "Firmă autorizată și asigurată",
-            "text": "Suntem înregistrați, asigurați integral și incluși în programe britanice de garanție pentru constructori."
+            "text": "Suntem autorizați, asigurați și lucrăm cu garanție scrisă pentru fiecare proiect."
           },
           {
             "icon": "",
@@ -351,10 +351,10 @@
           }
         ],
         "certifications": [
-          "Membru NFRC",
+          "Firmă autorizată pentru lucrări de construcții",
           "Montator Velux autorizat",
-          "Membru Federation of Master Builders",
-          "Înregistrare UTR"
+          "Specialiști atestați pentru sisteme de acoperiș",
+          "Asigurare de răspundere civilă"
         ],
         "categories": [
           {
@@ -363,18 +363,18 @@
             "photos": [
               {
                 "src": "images/ct-ac1.jpg",
-                "alt": "Acoperiș rezidențial nou cu țiglă ceramică · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "Acoperiș rezidențial nou cu țiglă ceramică · București",
+                "caption": "Acoperișuri rezidențiale · București"
               },
               {
                 "src": "images/ct-ac2.jpg",
-                "alt": "Acoperiș modern din tablă fălțuită · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "Acoperiș modern din tablă fălțuită · București",
+                "caption": "Acoperișuri rezidențiale · București"
               },
               {
                 "src": "images/ct-ac3.jpg",
-                "alt": "Mansardă amenajată cu ferestre de acoperiș · Manchester",
-                "caption": "Acoperișuri rezidențiale · Manchester"
+                "alt": "Mansardă amenajată cu ferestre de acoperiș · București",
+                "caption": "Acoperișuri rezidențiale · București"
               }
             ]
           },
@@ -384,13 +384,13 @@
             "photos": [
               {
                 "src": "images/ct-fat1.jpg",
-                "alt": "Fațadă ventilată modernă · Manchester",
-                "caption": "Fațade ventilate și termoizolații · Manchester"
+                "alt": "Fațadă ventilată modernă · București",
+                "caption": "Fațade ventilate și termoizolații · București"
               },
               {
                 "src": "images/ct-fat2.jpg",
-                "alt": "Termoizolație exterioară montată · Manchester",
-                "caption": "Fațade ventilate și termoizolații · Manchester"
+                "alt": "Termoizolație exterioară montată · București",
+                "caption": "Fațade ventilate și termoizolații · București"
               }
             ]
           },
@@ -400,25 +400,25 @@
             "photos": [
               {
                 "src": "images/ct-rep1.jpg",
-                "alt": "Reparație urgentă după furtună · Manchester",
-                "caption": "Reparații și intervenții de urgență · Manchester"
+                "alt": "Reparație urgentă după furtună · București",
+                "caption": "Reparații și intervenții de urgență · București"
               },
               {
                 "src": "images/ct-rep2.jpg",
-                "alt": "Montaj de jgheaburi și burlane · Manchester",
-                "caption": "Reparații și intervenții de urgență · Manchester"
+                "alt": "Montaj de jgheaburi și burlane · București",
+                "caption": "Reparații și intervenții de urgență · București"
               },
               {
                 "src": "images/ct-rep3.jpg",
-                "alt": "Coș de fum reconstruit · Manchester",
-                "caption": "Reparații și intervenții de urgență · Manchester"
+                "alt": "Coș de fum reconstruit · București",
+                "caption": "Reparații și intervenții de urgență · București"
               }
             ]
           }
         ],
         "instagram": {
-          "handle": "consttop.roofing",
-          "url": "https://www.instagram.com/consttop.roofing",
+          "handle": "acoperisuri.dacia",
+          "url": "https://www.instagram.com/acoperisuri.dacia",
           "gallery": [
             "images/ct-ig1.jpg",
             "images/ct-ig2.jpg",
@@ -433,28 +433,28 @@
           "title": "Cere o ofertă gratuită",
           "intro": "Disponibili șapte zile din șapte. Sună sau scrie-ne pe WhatsApp pentru o evaluare gratuită, fără obligații.",
           "instagram": {
-            "url": "https://www.instagram.com/consttop.roofing",
-            "label": "@consttop.roofing"
+            "url": "https://www.instagram.com/acoperisuri.dacia",
+            "label": "@acoperisuri.dacia"
           },
           "facebook": {
-            "url": "https://www.facebook.com/consttop.roofing",
-            "label": "ConstTop Roofing"
+            "url": "https://www.facebook.com/acoperisuridacia",
+            "label": "Acoperișuri Dacia"
           },
-          "whatsapp": "447755443322",
-          "phone": "+447755443322",
-          "phoneDisplay": "+44 7755 443 322",
-          "waHref": "https://wa.me/447755443322",
-          "address": "Manchester, Greater Manchester M1",
-          "addressHref": "https://maps.google.com/?q=Manchester",
+          "whatsapp": "40722333444",
+          "phone": "+40722333444",
+          "phoneDisplay": "+40 722 333 444",
+          "waHref": "https://wa.me/40722333444",
+          "address": "București și Ilfov",
+          "addressHref": "https://maps.google.com/?q=Bucuresti+Romania",
           "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/ct-og.jpg",
-          "canonical": "https://consttop-roofing.co.uk",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"ConstTop Roofing\",\"description\":\"Roofing and facades in Manchester\",\"telephone\":\"+447755443322\",\"areaServed\":\"Manchester\",\"url\":\"https://consttop-roofing.co.uk\"}"
+          "canonical": "https://acoperisuridacia.example",
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"Acoperișuri Dacia\",\"description\":\"Acoperișuri și fațade în București și Ilfov\",\"telephone\":\"+40722333444\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://acoperisuridacia.example\"}"
         },
         "footer": {
-          "address": "Manchester, Greater Manchester",
+          "address": "București și Ilfov",
           "year": "2026",
           "note": "Acoperișuri durabile. Garanție de 10 ani."
         }

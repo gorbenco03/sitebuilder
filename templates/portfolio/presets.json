@@ -156,7 +156,7 @@
             {
               "name": "Lauren Marsh",
               "role": "Make-up artist și estetician",
-              "bio": "Pregătită la școli de frumusețe din New York și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
+              "bio": "Pregătită la școli de frumusețe din București și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
             }
           ]
@@ -257,9 +257,9 @@
       "config": {
         "business": {
           "name": "Studio Forma",
-          "tagline": "Tunsori editoriale, culoare curată — Londra",
-          "title": "Studio Forma | Salon editorial | Londra",
-          "metaDescription": "Salon editorial în Londra pentru tuns, culoare și machiaj. Programări pe WhatsApp.",
+          "tagline": "Tunsori editoriale, culoare curată — București",
+          "title": "Studio Forma | Salon editorial | București",
+          "metaDescription": "Salon editorial în București pentru tuns, culoare și machiaj. Programări pe WhatsApp.",
           "about": "Studio Forma lucrează cu formă și contrast: tunsori precise, balayage controlat și machiaj de eveniment. Suntem o echipă restrânsă și lucrăm cu un număr limitat de programări.",
           "lang": "ro"
         },
@@ -302,74 +302,74 @@
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'/><circle cx='9' cy='7' r='4'/><path d='M23 21v-2a4 4 0 0 0-3-3.87'/><path d='M16 3.13a4 4 0 0 1 0 7.75'/></svg>",
             "label": "Extensii de păr natural",
-            "price": "de la £180"
+            "price": "de la 1.050 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
             "label": "Coafură de mireasă",
-            "price": "de la £120"
+            "price": "de la 700 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
             "label": "Machiaj de eveniment",
-            "price": "de la £90"
+            "price": "de la 520 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><rect x='2' y='3' width='20' height='14' rx='2'/><path d='M8 21h8M12 17v4'/></svg>",
             "label": "Culoare și balayage",
-            "price": "de la £75"
+            "price": "de la 440 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
             "label": "Manichiură artistică",
-            "price": "de la £35"
+            "price": "de la 200 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
             "label": "Tratament cu keratină",
-            "price": "de la £140"
+            "price": "de la 820 lei"
           }
         ],
         "pricing": [
           {
             "name": "Extensii tape-in (50 de benzi)",
-            "price": "£180"
+            "price": "1.050 lei"
           },
           {
             "name": "Extensii cu microring (100 de șuvițe)",
-            "price": "£340"
+            "price": "1.980 lei"
           },
           {
             "name": "Întreținere lunară a extensiilor",
-            "price": "£85"
+            "price": "500 lei"
           },
           {
             "name": "Coafură de mireasă",
-            "price": "£120–180"
+            "price": "700–1.050 lei"
           },
           {
             "name": "Coafură pentru domnișoara de onoare",
-            "price": "£75"
+            "price": "440 lei"
           },
           {
             "name": "Machiaj de mireasă",
-            "price": "£130"
+            "price": "760 lei"
           },
           {
             "name": "Machiaj de eveniment",
-            "price": "£90"
+            "price": "520 lei"
           },
           {
             "name": "Manichiură cu gel",
-            "price": "£40"
+            "price": "230 lei"
           },
           {
             "name": "Manichiură și pedichiură",
-            "price": "£70"
+            "price": "410 lei"
           },
           {
             "name": "Balayage complet",
-            "price": "£150–230"
+            "price": "880–1.350 lei"
           }
         ],
         "schedule": {
@@ -377,7 +377,7 @@
           "rows": [
             {
               "day": "Luni – Sâmbătă",
-              "hours": "9:00 AM – 7:00 PM"
+              "hours": "09:00 – 19:00"
             },
             {
               "day": "Duminică",
@@ -389,19 +389,19 @@
           "title": "Echipa studioului",
           "members": [
             {
-              "name": "Michelle Russo",
+              "name": "Mirela Rusu",
               "role": "Fondatoare și stilist senior",
-              "bio": "12 ani de experiență și pregătire la școli de coafură din Londra și Milano.",
+              "bio": "12 ani de experiență și pregătire la școli de coafură din București și Milano.",
               "photo": "images/sf-team-m.jpg"
             },
             {
-              "name": "Anna Clarke",
+              "name": "Ana Pavel",
               "role": "Make-up artist",
               "bio": "Specializată în machiaj de mireasă și ședințe foto editoriale.",
               "photo": "images/sf-team-a.jpg"
             },
             {
-              "name": "Olivia Bell",
+              "name": "Oana Belu",
               "role": "Specialist în manichiură",
               "bio": "Nail art, extensii de unghii și pedichiură spa, realizate cu răbdare și precizie.",
               "photo": "images/sf-team-o.jpg"
@@ -452,8 +452,8 @@
           }
         ],
         "instagram": {
-          "handle": "studioforma.london",
-          "url": "https://www.instagram.com/studioforma.london",
+          "handle": "studioforma.bucuresti",
+          "url": "https://www.instagram.com/studioforma.bucuresti",
           "gallery": [
             "images/sf-ig1.jpg",
             "images/sf-ig2.jpg",
@@ -468,27 +468,27 @@
           "title": "Programează-te",
           "intro": "Scrie-ne pe WhatsApp pentru o programare sau o consultație gratuită despre extensii. Răspundem în aceeași zi.",
           "instagram": {
-            "url": "https://www.instagram.com/studioforma.london",
-            "label": "@studioforma.london"
+            "url": "https://www.instagram.com/studioforma.bucuresti",
+            "label": "@studioforma.bucuresti"
           },
           "facebook": {
             "url": "",
             "label": ""
           },
-          "whatsapp": "447700900456",
-          "phone": "+447700900456",
-          "phoneDisplay": "+44 7700 900456",
-          "waHref": "https://wa.me/447700900456",
-          "address": "24 Redchurch Street<br>London, E2 7DJ",
-          "addressHref": "https://maps.google.com/?q=24+Redchurch+Street+London",
+          "whatsapp": "40724555046",
+          "phone": "+40724555046",
+          "phoneDisplay": "+40 724 555 046",
+          "waHref": "https://wa.me/40724555046",
+          "address": "Strada Polonă 24<br>București 010493",
+          "addressHref": "https://maps.google.com/?q=Strada+Polona+24+Bucuresti",
           "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/sf-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Studio Forma\",\"url\":\"https://studioforma.london\",\"telephone\":\"+447700900456\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"24 Redchurch Street\",\"addressLocality\":\"London\",\"postalCode\":\"E2 7DJ\",\"addressCountry\":\"GB\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Studio Forma\",\"url\":\"https://studioforma.example\",\"telephone\":\"+40724555046\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Polonă 24\",\"addressLocality\":\"București\",\"postalCode\":\"010493\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
         },
         "footer": {
-          "address": "24 Redchurch Street, London, E2 7DJ",
+          "address": "Strada Polonă 24, București 010493",
           "year": 2026,
           "note": "Forma înaintea tendinței."
         }
@@ -650,7 +650,7 @@
             {
               "name": "Lauren Marsh",
               "role": "Make-up artist și estetician",
-              "bio": "Pregătită la școli de frumusețe din New York și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
+              "bio": "Pregătită la școli de frumusețe din București și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
             }
           ]

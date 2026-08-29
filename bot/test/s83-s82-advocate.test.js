@@ -205,19 +205,19 @@ check('HEAD: after name cascade, restaurant renderHtml <title>/og drop Casa Nord
   assert.ok(!/Casa Nord este o sală mică/i.test(html), 'about no longer factory lead-in');
 });
 
-check('HEAD: cascadeBusinessNameIdentity updates professionals title for Whitfield Law', () => {
+check('HEAD: cascadeBusinessNameIdentity updates professionals title for Cabinet Juridic Ionescu', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PRO_PRESETS);
-  assert.ok(/Whitfield Law/.test(cfg.business.name + cfg.business.title), 'factory Whitfield Law');
+  assert.ok(/Cabinet Juridic Ionescu/.test(cfg.business.name + cfg.business.title), 'factory Cabinet Juridic Ionescu');
   const newName = 'Cabinet S81';
-  const next = runCascade(appSrc, cfg, 'Whitfield Law', newName);
+  const next = runCascade(appSrc, cfg, 'Cabinet Juridic Ionescu', newName);
   assert.ok(next.business.title.includes(newName), 'title has new name: ' + next.business.title);
-  assert.ok(!/Whitfield Law/.test(next.business.title), 'title free of Whitfield Law');
+  assert.ok(!/Cabinet Juridic Ionescu/.test(next.business.title), 'title free of Cabinet Juridic Ionescu');
   const html = renderHtml(read(PRO_TPL), next);
   const titleM = html.match(/<title>([^<]*)<\/title>/i);
   assert.ok(titleM, 'has title');
   assert.ok(titleM[1].includes(newName), 'live title has new name');
-  assert.ok(!/Whitfield Law/.test(titleM[1]), 'live title free of Whitfield Law');
+  assert.ok(!/Cabinet Juridic Ionescu/.test(titleM[1]), 'live title free of Cabinet Juridic Ionescu');
 });
 
 check('HEAD: Meseriași first opened preset/template has no ASCII below-fold leftovers', () => {
@@ -232,15 +232,15 @@ check('HEAD: Meseriași first opened preset/template has no ASCII below-fold lef
     }
     assert.ok(!joined.includes(s), 'no leftover: ' + s);
   }
-  // Positive: finished English forms present somewhere in opened Trades source
-  assert.ok(/Get a free quote/.test(joined), 'finished "Get a free quote"');
-  assert.ok(/structural work/i.test(joined), 'finished "structural work"');
-  assert.ok(/Why choose us/.test(joined), 'finished "Why choose us"');
-  assert.ok(/written warranty/i.test(joined), 'finished "written warranty"');
-  assert.ok(/Completed work/.test(joined), 'finished "Completed work"');
-  assert.ok(/bathroom renovation/i.test(joined), 'finished "bathroom renovations"');
-  assert.ok(/How we work/.test(joined), 'finished "How we work"');
-  assert.ok(/\bFollow\b/.test(joined), 'finished "Follow"');
+  // Positive: finished Romanian forms remain present in the opened Meserii source.
+  assert.ok(/Cere o ofertă gratuită/.test(joined), 'Cere o ofertă gratuită');
+  assert.ok(/lucrări structurale/i.test(joined), 'lucrări structurale');
+  assert.ok(/De ce să ne alegi/.test(joined), 'De ce să ne alegi');
+  assert.ok(/garanție scrisă/i.test(joined), 'garanție scrisă');
+  assert.ok(/Lucrări finalizate/.test(joined), 'Lucrări finalizate');
+  assert.ok(/Renovări complete de baie/i.test(joined), 'Renovări complete de baie');
+  assert.ok(/Cum lucrăm/.test(joined), 'Cum lucrăm');
+  assert.ok(/\bUrmărește\b/.test(joined), 'Urmărește');
 });
 
 check('HEAD: professionals Detalii labels have no tel: and no URL Instagram contact', () => {

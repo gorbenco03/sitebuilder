@@ -2735,7 +2735,7 @@ async function checkSlug(rawSlug) {
       if (slugInput) slugInput.value = slugNormalized;
     } else {
       updateSlugPreview(slugNormalized, 'taken');
-      if (errorEl) { errorEl.textContent = 'That address is already taken. Try another one.'; show(errorEl); }
+      if (errorEl) { errorEl.textContent = 'Această adresă este deja folosită. Încearcă alta.'; show(errorEl); }
       slugValid = false;
     }
   } catch (_) {

@@ -256,20 +256,20 @@ check('HEAD: after restaurant cascade, renderHtml has no factory IG/FB slug', ()
   assert.ok(/Advocate S85/.test(html), 'html shows new name');
 });
 
-check('HEAD: professionals cascade clears Whitfield Law heading leftovers and whitfieldlaw email', () => {
+check('HEAD: professionals cascade clears Cabinet Juridic Ionescu heading leftovers and email', () => {
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PRO_PRESETS);
-  assert.ok(/Whitfield Law/.test(cfg.business.name), 'factory name');
-  assert.ok(/whitfieldlaw\.example/.test(cfg.contact.email), 'factory email before');
+  assert.ok(/Cabinet Juridic Ionescu/.test(cfg.business.name), 'factory name');
+  assert.ok(/cabinetjuridicionescu\.example/.test(cfg.contact.email), 'factory email before');
   const newName = 'Cabinet Advocate S85';
-  const next = runCascade(appSrc, cfg, 'Whitfield Law', newName);
+  const next = runCascade(appSrc, cfg, 'Cabinet Juridic Ionescu', newName);
   assert.strictEqual(next.business.name, newName);
-  assert.ok(!/Whitfield Law/.test(next.business.title || ''), 'title free of Whitfield Law');
-  assert.ok(!/whitfieldlaw/i.test(next.contact.email || ''), 'email free of whitfieldlaw');
-  assert.ok(!/Whitfield Law/.test(JSON.stringify(next.business)), 'business block free of Whitfield Law');
+  assert.ok(!/Cabinet Juridic Ionescu/.test(next.business.title || ''), 'title free of Cabinet Juridic Ionescu');
+  assert.ok(!/cabinetjuridicionescu/i.test(next.contact.email || ''), 'email free of factory identity');
+  assert.ok(!/Cabinet Juridic Ionescu/.test(JSON.stringify(next.business)), 'business block free of Cabinet Juridic Ionescu');
   const html = renderHtml(read(PRO_TPL), next);
-  assert.ok(!/Whitfield Law/.test(html), 'live html free of Whitfield Law');
-  assert.ok(!/whitfieldlaw\.example/i.test(html), 'live html free of factory email');
+  assert.ok(!/Cabinet Juridic Ionescu/.test(html), 'live html free of Cabinet Juridic Ionescu');
+  assert.ok(!/cabinetjuridicionescu\.example/i.test(html), 'live html free of factory email');
   assert.ok(html.includes(newName), 'live html has new name');
 });
 
@@ -280,16 +280,16 @@ check('HEAD: Meseriași first opened preset/template has no S85 ASCII leftovers'
   for (const s of MESERIASI_ASCII_S85) {
     assert.ok(!joined.includes(s), 'no leftover: ' + s);
   }
-  // Positive finished-English forms
-  assert.ok(/Drywall & suspended ceilings/.test(joined), 'Drywall & suspended ceilings');
-  assert.ok(/Painting & plastering/.test(joined), 'Painting & plastering');
-  assert.ok(/Tile & flooring/.test(joined), 'Tile & flooring');
-  assert.ok(/Plumbing/.test(joined), 'Plumbing');
-  assert.ok(/Electrical work/.test(joined), 'Electrical work');
-  assert.ok(/Hardwood & laminate flooring/.test(joined), 'Hardwood & laminate flooring');
-  assert.ok(/Whole-house renovations/.test(joined), 'Whole-house renovations');
-  assert.ok(/Ready to get started\?/.test(joined), 'Ready to get started?');
-  assert.ok(/we reply the same day/i.test(joined), 'we reply the same day');
+  // Positive finished Romanian forms.
+  assert.ok(/Gips-carton și tavane suspendate/.test(joined), 'Gips-carton și tavane suspendate');
+  assert.ok(/Zugrăveli și tencuieli/.test(joined), 'Zugrăveli și tencuieli');
+  assert.ok(/Gresie, faianță și pardoseli/.test(joined), 'Gresie, faianță și pardoseli');
+  assert.ok(/Instalații sanitare/.test(joined), 'Instalații sanitare');
+  assert.ok(/Instalații electrice/.test(joined), 'Instalații electrice');
+  assert.ok(/Parchet din lemn și laminat/.test(joined), 'Parchet din lemn și laminat');
+  assert.ok(/Renovări complete/.test(joined), 'Renovări complete');
+  assert.ok(/Pregătit să începem\?/.test(joined), 'Pregătit să începem?');
+  assert.ok(/răspundem în aceeași zi/i.test(joined), 'răspundem în aceeași zi');
 });
 
 check('HEAD: professionals Detalii labels have no Link Instagram contact and no tel:', () => {
