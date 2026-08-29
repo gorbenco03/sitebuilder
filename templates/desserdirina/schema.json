@@ -171,7 +171,7 @@
     },
     {
       "id": "hero",
-      "title": "Hero",
+      "title": "Secțiunea hero (prima impresie)",
       "fields": [
         {
           "key": "logo",
@@ -316,7 +316,7 @@
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "Facebook URL",
+          "label": "Link Facebook (opțional)",
           "required": false
         },
         {
@@ -370,12 +370,12 @@
     },
     {
       "id": "seo",
-      "title": "SEO",
+      "title": "SEO și partajare socială",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "text",
-          "label": "Imagine pentru social sharing",
+          "label": "Imagine pentru partajare socială (recomandat 1200×630px)",
           "required": false,
           "maxLen": 200
         },

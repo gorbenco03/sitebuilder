@@ -6,8 +6,8 @@
  *   Share image (images/... or URL)
  *   Instagram gallery photos (URLs or images/...)
  *
- * Restaurant / trades / salon already use human labels (Image for social sharing… /
- * Social sharing image). Labels only — no key/type/value changes.
+ * Restaurant / trades / salon already use human RO labels (Imagine pentru partajare
+ * socială…). Labels only — no key/type/value changes.
  *
  * VISION 2026-08-26: card → 7-day trial → live now → charge day 7 unless cancel.
  *
@@ -124,12 +124,13 @@ check('HEAD professionals seo.ogImage label is commercial photo control (no fact
   assert.strictEqual(f.type, 'text', 'type unchanged');
   assert.ok(typeof f.label === 'string' && f.label.length > 4, 'label present');
   assert.ok(!labelHasFactoryPathHint(f.label), 'no images/... / URL / URLs in label');
-  // Match restaurant / trades / salon voice
+  // Commercial RO photo control (Flow 4 RO Detalii chrome)
   assert.ok(
-    /social sharing/i.test(f.label) || /^Image for social sharing/i.test(f.label),
+    /partajare social/i.test(f.label) || /Imagine pentru partajare/i.test(f.label),
     'label reads as social-sharing image control: ' + f.label
   );
   assert.ok(!/^Share image\b/i.test(f.label), 'must not keep terse factory "Share image" lead-in');
+  assert.ok(!/social sharing/i.test(f.label), 'no English "social sharing" in label');
 });
 
 check('HEAD professionals instagram.gallery label is photo list (no path/URL factory hint)', () => {
@@ -175,8 +176,12 @@ check('HEAD other three schemas keep commercial share labels (no regression to f
       rel + ' must not gain factory Share image path glob'
     );
     assert.ok(
-      /Image for social sharing|Social sharing image/.test(src),
-      rel + ' keeps human social-sharing label'
+      /Imagine pentru partajare socială|partajare socială/.test(src),
+      rel + ' keeps human RO social-sharing label'
+    );
+    assert.ok(
+      !/Image for social sharing|Social sharing image/.test(src),
+      rel + ' must not keep English social-sharing factory label'
     );
   }
 });

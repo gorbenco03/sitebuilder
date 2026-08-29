@@ -344,12 +344,12 @@
     },
     {
       "id": "hero",
-      "title": "Hero section (main banner)",
+      "title": "Secțiunea hero (prima impresie)",
       "fields": [
         {
           "key": "hero.background",
           "type": "background",
-          "label": "Hero background",
+          "label": "Fundal hero",
           "hint": "Pick a color and optional photo. The live preview updates immediately.",
           "required": true
         },
@@ -514,13 +514,13 @@
         {
           "key": "contact.facebook.url",
           "type": "url",
-          "label": "Facebook link",
+          "label": "Link Facebook (opțional)",
           "required": false
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
-          "label": "Facebook link text (e.g. Your Business)",
+          "label": "Text link Facebook (ex. Afacerea ta)",
           "required": false,
           "maxLen": 40
         },
@@ -571,12 +571,12 @@
     },
     {
       "id": "seo",
-      "title": "Social sharing",
+      "title": "SEO și partajare socială",
       "fields": [
         {
           "key": "seo.ogImage",
           "type": "url",
-          "label": "Social sharing image (1200×630px)",
+          "label": "Imagine pentru partajare socială (recomandat 1200×630px)",
           "required": false
         }
       ]

@@ -2757,7 +2757,7 @@ async function doActualPublish(chosenSlug) {
   }
 
   const continueBtn = $('btn-publish-continue');
-  setBtnLoading(continueBtn, true, 'Publishing…');
+  setBtnLoading(continueBtn, true, 'Se publică…');
   try {
     await execPublish(chosenSlug);
   } catch (e) {
@@ -2855,7 +2855,7 @@ function wireAuthForm(onAuthSuccess) {
                 updateUserUI(user);
                 closeModal('modal-publish');
                 if (onAuthSuccess) {
-                  setLoading(true, 'Publishing…');
+                  setLoading(true, 'Se publică…');
                   try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
                 } else if (await resumeLocalDraft()) {
                   window.location.hash = '#edit';
@@ -2948,7 +2948,7 @@ async function completeTestCheckout(sessionId) {
     showToast('Invalid payment session.', 'error');
     return;
   }
-  setLoading(true, 'Confirming payment…');
+  setLoading(true, 'Se confirmă plata…');
   try {
     const data = await apiPost('/api/test-pay/complete', { sessionId: id });
     const site = data && data.site;
