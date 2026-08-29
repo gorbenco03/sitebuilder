@@ -7,9 +7,9 @@
         "business": {
           "name": "Atelier Ivoire",
           "tagline": "Păr, îngrijirea tenului și manichiură — cu răbdare și precizie",
-          "title": "Atelier Ivoire | Salon și studio de îngrijire | Brooklyn, NY",
-          "metaDescription": "Salon boutique în Brooklyn pentru coafură, manichiură și tratamente faciale. Programări pe WhatsApp.",
-          "about": "Atelier Ivoire este un studio mic din Williamsburg. Lucrăm numai cu programare pentru culoare, tuns, manichiură și îngrijirea tenului. Folosim produse certificate și începem fiecare vizită cu o consultație.",
+          "title": "Atelier Ivoire | Salon și studio de îngrijire | București",
+          "metaDescription": "Salon boutique în București pentru coafură, manichiură și tratamente faciale. Programări pe WhatsApp.",
+          "about": "Atelier Ivoire este un studio mic din București. Lucrăm numai cu programare pentru culoare, tuns, manichiură și îngrijirea tenului. Folosim produse certificate și începem fiecare vizită cu o consultație.",
           "lang": "ro"
         },
         "labels": {
@@ -51,74 +51,74 @@
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
             "label": "Tuns și coafat",
-            "price": "de la $60"
+            "price": "de la 300 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
             "label": "Manichiură cu gel",
-            "price": "de la $45"
+            "price": "de la 220 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
             "label": "Pedichiură spa",
-            "price": "de la $55"
+            "price": "de la 260 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
             "label": "Machiaj de eveniment",
-            "price": "de la $85"
+            "price": "de la 400 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
             "label": "Tratament facial",
-            "price": "de la $75"
+            "price": "de la 350 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
             "label": "Tratament pentru păr",
-            "price": "de la $65"
+            "price": "de la 320 lei"
           }
         ],
         "pricing": [
           {
             "name": "Tuns și coafat",
-            "price": "$55–75"
+            "price": "260–350 lei"
           },
           {
             "name": "Vopsirea rădăcinilor",
-            "price": "$95–130"
+            "price": "450–620 lei"
           },
           {
             "name": "Balayage complet",
-            "price": "$180–260"
+            "price": "850–1.250 lei"
           },
           {
             "name": "Manichiură clasică",
-            "price": "$40"
+            "price": "190 lei"
           },
           {
             "name": "Manichiură cu ojă gel",
-            "price": "$55"
+            "price": "260 lei"
           },
           {
             "name": "Nail art (pe unghie)",
-            "price": "$5–10"
+            "price": "25–50 lei"
           },
           {
             "name": "Pedichiură clasică",
-            "price": "$45"
+            "price": "220 lei"
           },
           {
             "name": "Pedichiură spa cu gel",
-            "price": "$85"
+            "price": "400 lei"
           },
           {
             "name": "Machiaj de zi",
-            "price": "$85"
+            "price": "400 lei"
           },
           {
             "name": "Machiaj de mireasă",
-            "price": "$180"
+            "price": "850 lei"
           }
         ],
         "schedule": {
@@ -126,15 +126,15 @@
           "rows": [
             {
               "day": "Luni – Vineri",
-              "hours": "9:00 AM – 8:00 PM"
+              "hours": "09:00 – 20:00"
             },
             {
               "day": "Sâmbătă",
-              "hours": "9:00 AM – 6:00 PM"
+              "hours": "09:00 – 18:00"
             },
             {
               "day": "Duminică",
-              "hours": "10:00 AM – 3:00 PM"
+              "hours": "10:00 – 15:00"
             }
           ]
         },
@@ -142,19 +142,19 @@
           "title": "Echipa Atelier Ivoire",
           "members": [
             {
-              "name": "Chloe Bennett",
+              "name": "Claudia Benea",
               "role": "Stilist senior și colorist",
               "bio": "15 ani de experiență în coafură și culoare, cu specializare în balayage și tehnici de nuanțare rece.",
               "photo": "images/iv-team-c.jpg"
             },
             {
-              "name": "Dana Park",
+              "name": "Dana Pârvu",
               "role": "Specialist în manichiură și nail art",
               "bio": "Certificată internațional în tehnici cu gel și acril, pasionată de modele minimaliste și florale.",
               "photo": "images/iv-team-d.jpg"
             },
             {
-              "name": "Lauren Marsh",
+              "name": "Laura Marinescu",
               "role": "Make-up artist și estetician",
               "bio": "Pregătită la școli de frumusețe din București și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
@@ -223,7 +223,7 @@
         },
         "contact": {
           "title": "Programează o vizită",
-          "intro": "Scrie-ne pe WhatsApp și îți confirmăm ziua și ora în cel mult două ore. Te așteptăm în studioul nostru din Williamsburg.",
+          "intro": "Scrie-ne pe WhatsApp și îți confirmăm ziua și ora în cel mult două ore. Te așteptăm în studioul nostru din București.",
           "instagram": {
             "url": "https://www.instagram.com/atelier.ivoire",
             "label": "@atelier.ivoire"
@@ -232,20 +232,20 @@
             "url": "https://www.facebook.com/atelierivoire",
             "label": "Atelier Ivoire"
           },
-          "whatsapp": "19175550142",
-          "phone": "+19175550142",
-          "phoneDisplay": "+1 917-555-0142",
-          "waHref": "https://wa.me/19175550142",
-          "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
-          "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
+          "whatsapp": "40721234567",
+          "phone": "+40721234567",
+          "phoneDisplay": "+40 721 234 567",
+          "waHref": "https://wa.me/40721234567",
+          "address": "Strada Icoanei 18<br>București 020451",
+          "addressHref": "https://maps.google.com/?q=Strada+Icoanei+18+Bucuresti",
           "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.com\",\"telephone\":\"+19175550142\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"62 Bedford Ave\",\"addressLocality\":\"Brooklyn\",\"addressRegion\":\"NY\",\"postalCode\":\"11249\",\"addressCountry\":\"US\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.example\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
         },
         "footer": {
-          "address": "62 Bedford Ave, Brooklyn, NY 11249",
+          "address": "Strada Icoanei 18, București 020451",
           "year": 2026,
           "note": "Răbdare, precizie, numai cu programare."
         }
@@ -545,74 +545,74 @@
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2a10 10 0 1 0 10 10'/><path d='M12 6v6l4 2'/><circle cx='19' cy='5' r='3'/></svg>",
             "label": "Tuns și coafat",
-            "price": "de la $60"
+            "price": "de la 300 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3'/><rect x='9' y='11' width='14' height='10' rx='2'/><path d='M13 16h4'/><path d='M13 19h2'/></svg>",
             "label": "Manichiură cu gel",
-            "price": "de la $45"
+            "price": "de la 220 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'/></svg>",
             "label": "Pedichiură spa",
-            "price": "de la $55"
+            "price": "de la 260 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='10'/><path d='M8 14s1.5 2 4 2 4-2 4-2'/><line x1='9' y1='9' x2='9.01' y2='9'/><line x1='15' y1='9' x2='15.01' y2='9'/></svg>",
             "label": "Machiaj de eveniment",
-            "price": "de la $85"
+            "price": "de la 400 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>",
             "label": "Tratament facial",
-            "price": "de la $75"
+            "price": "de la 350 lei"
           },
           {
             "icon": "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/></svg>",
             "label": "Tratament pentru păr",
-            "price": "de la $65"
+            "price": "de la 320 lei"
           }
         ],
         "pricing": [
           {
             "name": "Tuns și coafat",
-            "price": "$55–75"
+            "price": "260–350 lei"
           },
           {
             "name": "Vopsirea rădăcinilor",
-            "price": "$95–130"
+            "price": "450–620 lei"
           },
           {
             "name": "Balayage complet",
-            "price": "$180–260"
+            "price": "850–1.250 lei"
           },
           {
             "name": "Manichiură clasică",
-            "price": "$40"
+            "price": "190 lei"
           },
           {
             "name": "Manichiură cu ojă gel",
-            "price": "$55"
+            "price": "260 lei"
           },
           {
             "name": "Nail art (pe unghie)",
-            "price": "$5–10"
+            "price": "25–50 lei"
           },
           {
             "name": "Pedichiură clasică",
-            "price": "$45"
+            "price": "220 lei"
           },
           {
             "name": "Pedichiură spa cu gel",
-            "price": "$85"
+            "price": "400 lei"
           },
           {
             "name": "Machiaj de zi",
-            "price": "$85"
+            "price": "400 lei"
           },
           {
             "name": "Machiaj de mireasă",
-            "price": "$180"
+            "price": "850 lei"
           }
         ],
         "schedule": {
@@ -620,15 +620,15 @@
           "rows": [
             {
               "day": "Luni – Vineri",
-              "hours": "9:00 AM – 8:00 PM"
+              "hours": "09:00 – 20:00"
             },
             {
               "day": "Sâmbătă",
-              "hours": "9:00 AM – 6:00 PM"
+              "hours": "09:00 – 18:00"
             },
             {
               "day": "Duminică",
-              "hours": "10:00 AM – 3:00 PM"
+              "hours": "10:00 – 15:00"
             }
           ]
         },
@@ -636,19 +636,19 @@
           "title": "Echipa Atelier Ivoire",
           "members": [
             {
-              "name": "Chloe Bennett",
+              "name": "Claudia Benea",
               "role": "Stilist senior și colorist",
               "bio": "15 ani de experiență în coafură și culoare, cu specializare în balayage și tehnici de nuanțare rece.",
               "photo": "images/iv-team-c.jpg"
             },
             {
-              "name": "Dana Park",
+              "name": "Dana Pârvu",
               "role": "Specialist în manichiură și nail art",
               "bio": "Certificată internațional în tehnici cu gel și acril, pasionată de modele minimaliste și florale.",
               "photo": "images/iv-team-d.jpg"
             },
             {
-              "name": "Lauren Marsh",
+              "name": "Laura Marinescu",
               "role": "Make-up artist și estetician",
               "bio": "Pregătită la școli de frumusețe din București și Milano — machiaj de zi, de seară și pentru ocazii speciale.",
               "photo": "images/iv-team-l.jpg"
@@ -730,16 +730,16 @@
           "phone": "+407****4567",
           "phoneDisplay": "+40 721 234 567",
           "waHref": "https://wa.me/40721234567",
-          "address": "62 Bedford Ave<br>Brooklyn, NY 11249",
-          "addressHref": "https://maps.google.com/?q=62+Bedford+Ave+Brooklyn+NY",
+          "address": "Strada Icoanei 18<br>București 020451",
+          "addressHref": "https://maps.google.com/?q=Strada+Icoanei+18+Bucuresti",
           "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.com\",\"telephone\":\"+19175550142\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"62 Bedford Ave\",\"addressLocality\":\"Brooklyn\",\"addressRegion\":\"NY\",\"postalCode\":\"11249\",\"addressCountry\":\"US\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.example\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
         },
         "footer": {
-          "address": "62 Bedford Ave, Brooklyn, NY 11249",
+          "address": "Strada Icoanei 18, București 020451",
           "year": 2026,
           "note": "Răbdare, precizie, numai cu programare."
         }

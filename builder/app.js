@@ -1913,15 +1913,60 @@ function applyEmbedUrl(embedUrl) {
   draft.config.instagram.embedUrl = embedUrl;
   saveDraft();
   fullRerender();
+  syncInstagramModalPanels();
 }
 
-/** Show auth panel vs connect panel inside the Instagram modal. */
+let instagramEditorUrl = '';
+
+function connectedInstagramEmbedUrl() {
+  return String((((draft || {}).config || {}).instagram || {}).embedUrl || '').trim();
+}
+
+/** Show auth, connect, or persisted-connected state inside the Instagram modal. */
 function syncInstagramModalPanels() {
   const authPanel = $('ig-auth-panel');
   const connectPanel = $('ig-connect-panel');
+  const connectedPanel = $('ig-connected-panel');
+  const title = $('modal-instagram-title');
   const hasUser = !!(currentUser && currentUser.email);
+  const isConnected = hasUser && !!connectedInstagramEmbedUrl();
   if (authPanel) authPanel.style.display = hasUser ? 'none' : '';
-  if (connectPanel) connectPanel.style.display = hasUser ? '' : 'none';
+  if (connectPanel) connectPanel.style.display = hasUser && !isConnected ? '' : 'none';
+  if (connectedPanel) connectedPanel.style.display = isConnected ? '' : 'none';
+  if (title) title.textContent = isConnected ? 'Instagram conectat' : 'Adaugă Instagram';
+}
+
+async function prepareInstagramEditor() {
+  const btn = $('btn-ig-editor');
+  const status = $('ig-editor-status');
+  if (!connectedInstagramEmbedUrl()) return;
+  instagramEditorUrl = '';
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = 'Pregătim editorul Instafidget…';
+  try {
+    const siteId = await ensureDraftSiteForInstagram();
+    const session = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/editor-session', {});
+    instagramEditorUrl = String((session && session.editorUrl) || '');
+    if (btn) btn.disabled = !instagramEditorUrl;
+    if (status) {
+      status.textContent = instagramEditorUrl
+        ? 'Editorul este pregătit și se va deschide într-un tab nou.'
+        : 'Feed-ul este conectat. Editorul Instafidget nu este disponibil în mediul local.';
+    }
+  } catch (e) {
+    if (status) status.textContent = e.message || 'Nu am putut pregăti editorul Instafidget.';
+  }
+}
+
+function openInstagramEditor() {
+  if (!instagramEditorUrl) return;
+  window.open(instagramEditorUrl, '_blank', 'noopener');
+}
+
+function disconnectInstagram() {
+  instagramEditorUrl = '';
+  applyEmbedUrl('');
+  setIgStatus('Instagram a fost deconectat. Feed-ul nu mai este afișat pe site.');
 }
 
 /**
@@ -1939,12 +1984,12 @@ async function ensureDraftSiteForInstagram() {
     return siteId;
   }
   if (!currentUser || !currentUser.email) {
-    throw new Error('Sign in to save your draft.');
+    throw new Error('Autentifică-te ca să salvezi ciorna.');
   }
   if (!draft.config || !draft.templateId) {
     throw new Error('Alege mai întâi un design.');
   }
-  setIgStatus('Saving your draft so Instagram can connect…');
+  setIgStatus('Salvăm ciorna pentru conectarea Instagram…');
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
   const baseSlug = toSlug(
@@ -1960,7 +2005,7 @@ async function ensureDraftSiteForInstagram() {
   if (currentSiteId) payload.siteId = currentSiteId;
   const data = await apiPost('/api/publish', payload);
   if (!data.site || !data.site.id) {
-    throw new Error('Could not save the draft. Try again.');
+    throw new Error('Nu am putut salva ciorna. Încearcă din nou.');
   }
   currentSiteId = data.site.id;
   publishedSiteId = data.site.id;
@@ -2012,12 +2057,12 @@ function wireIgAuthForm() {
             if (user) {
               updateUserUI(user);
               syncInstagramModalPanels();
-              setIgStatus('Account active. Preparing the connection…');
+              setIgStatus('Cont activ. Pregătim conectarea…');
               try {
                 await ensureDraftSiteForInstagram();
-                setIgStatus('You can connect Instagram. Check the terms box, then click Connect.');
+                setIgStatus('Poți conecta Instagram. Bifează acordul, apoi apasă Conectează Instagram.');
               } catch (err) {
-                setIgStatus(err.message || 'Could not save the draft.', true);
+                setIgStatus(err.message || 'Nu am putut salva ciorna.', true);
               }
             } else {
               window.location.href = href;
@@ -2030,7 +2075,7 @@ function wireIgAuthForm() {
       }
     } catch (err) {
       if (errorDiv) {
-        errorDiv.textContent = err.message || 'Could not send the link. Try again.';
+        errorDiv.textContent = err.message || 'Nu am putut trimite linkul. Încearcă din nou.';
         show(errorDiv);
       }
     } finally {
@@ -2055,13 +2100,18 @@ function openInstagramModal() {
     return;
   }
 
+  if (connectedInstagramEmbedUrl()) {
+    prepareInstagramEditor();
+    return;
+  }
+
   // Logged in: ensure draft siteId (unpaid OK), then show connect controls.
   (async () => {
     try {
       await ensureDraftSiteForInstagram();
       setIgStatus('');
     } catch (e) {
-      setIgStatus(e.message || 'Could not prepare Instagram. Try again.', true);
+      setIgStatus(e.message || 'Nu am putut pregăti Instagram. Încearcă din nou.', true);
     }
   })();
 }
@@ -2070,21 +2120,21 @@ async function connectInstagram() {
   const check = $('ig-terms-check');
   const btn = $('btn-ig-connect');
   if (!currentUser || !currentUser.email) {
-    setIgStatus('Sign in to connect Instagram.', true);
+    setIgStatus('Autentifică-te ca să conectezi Instagram.', true);
     syncInstagramModalPanels();
     wireIgAuthForm();
     return;
   }
   if (!check || !check.checked) {
-    setIgStatus('Check the Terms and Privacy box for the Instagram feed.', true);
+    setIgStatus('Bifează acordul pentru Termeni și Politica de confidențialitate.', true);
     return;
   }
   setBtnLoading(btn, true);
-  setIgStatus('Connecting Instagram…');
+  setIgStatus('Conectăm Instagram…');
   try {
     const siteId = await ensureDraftSiteForInstagram();
     if (!siteId) {
-      setIgStatus('Save your draft first.', true);
+      setIgStatus('Salvează mai întâi ciorna.', true);
       return;
     }
     const grant1 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
@@ -2103,7 +2153,7 @@ async function connectInstagram() {
       // Same-browser new tab (not a sized/named popup window). noopener keeps opener isolation.
       window.open(session.editorUrl, '_blank', 'noopener');
     }
-    setIgStatus("Once you finish connecting, we'll come back and update the feed on your site.");
+    setIgStatus('După ce termini conectarea, revenim aici și actualizăm feed-ul de pe site.');
     const onFocus = async () => {
       window.removeEventListener('focus', onFocus);
       try {
@@ -2116,15 +2166,15 @@ async function connectInstagram() {
           showToast('Instagram e conectat.', 'success', 3500);
           closeModal('modal-instagram');
         } else {
-          setIgStatus('The feed is not ready yet. Reopen Instagram after saving the connection.');
+          setIgStatus('Feed-ul nu este gata încă. Redeschide Instagram după ce salvezi conectarea.');
         }
       } catch (e) {
-        setIgStatus(e.message || 'Could not reload the Instagram feed.', true);
+        setIgStatus(e.message || 'Nu am putut reîncărca feed-ul Instagram.', true);
       }
     };
     window.addEventListener('focus', onFocus);
   } catch (e) {
-    setIgStatus(e.message || 'Could not connect Instagram.', true);
+    setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -2709,7 +2759,7 @@ async function checkSlug(rawSlug) {
 
   if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(rawSlug) && rawSlug.length < 3) {
     updateSlugPreview(rawSlug, 'invalid');
-    if (errorEl) { errorEl.textContent = 'Address must be at least 3 characters (lowercase letters, numbers, hyphens).'; show(errorEl); }
+    if (errorEl) { errorEl.textContent = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).'; show(errorEl); }
     slugValid = false;
     return;
   }
@@ -3574,6 +3624,11 @@ function buildSiteCard(site) {
     cancelBtn.textContent = 'Anulează';
     cancelBtn.setAttribute('aria-label', 'Anulează abonamentul pentru ' + (site.projectName || site.slug || 'acest site'));
     cancelBtn.addEventListener('click', async () => {
+      const projectLabel = site.projectName || site.slug || 'acest site';
+      const confirmed = window.confirm(
+        'Sigur vrei să anulezi abonamentul pentru „' + projectLabel + '”? Site-ul nu va mai fi public după confirmare.'
+      );
+      if (!confirmed) return;
       try {
         setBtnLoading(cancelBtn, true, 'Se deschide…');
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
@@ -3879,6 +3934,10 @@ function wireStaticButtons() {
     igCheck.addEventListener('change', () => { igGo.disabled = !igCheck.checked; });
   }
   if (igGo) igGo.addEventListener('click', () => { connectInstagram(); });
+  const igEditor = $('btn-ig-editor');
+  if (igEditor) igEditor.addEventListener('click', openInstagramEditor);
+  const igDisconnect = $('btn-ig-disconnect');
+  if (igDisconnect) igDisconnect.addEventListener('click', disconnectInstagram);
 
   // Drawer
   const drawerBtn = $('btn-open-drawer');

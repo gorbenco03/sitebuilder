@@ -116,10 +116,10 @@
       '  cursor: pointer;',
       '  opacity: 0;',
       '  transition: opacity 0.15s;',
-      '  z-index: 9999;',
+      '  z-index: 2147483647;',
       '  pointer-events: none;',
       '}',
-      '.hb-bg-wrap:hover .hb-bg-btn {',
+      '.hb-bg-wrap:hover > .hb-bg-btn {',
       '  opacity: 1;',
       '  pointer-events: auto;',
       '}',
@@ -516,6 +516,11 @@
         if (!resolvedPath && imgMap[bgUrl]) resolvedPath = imgMap[bgUrl];
         // Preview inlines images/* → data:; map may still be path-only
         if (!resolvedPath) resolvedPath = resolveBackgroundPathFallback();
+        // Hero frames are the five systems' shared background editing seam. Keep
+        // the visible control functional even if imgmap arrives after the click.
+        if (!resolvedPath && /(^|[-_])hero($|[-_])/.test(el.className || '')) {
+          resolvedPath = 'hero.background';
+        }
         if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
       });
       el.appendChild(btn);

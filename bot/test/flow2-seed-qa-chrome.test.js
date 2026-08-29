@@ -89,6 +89,17 @@ check('all five preset catalogs and publish collision chrome are Romanian', () =
         'Londra',
         'Romford',
         'Austin',
+        'Williamsburg',
+        'Brooklyn',
+        'NY 11249',
+        '+1 917',
+        'Chloe Bennett',
+        'Dana Park',
+        'Lauren Marsh',
+        'de la $',
+        '$55',
+        '$60',
+        '$75',
     ];
     for (const templateId of templateIds) {
         const presets = JSON.parse(read(`templates/${templateId}/presets.json`)).presets || [];
@@ -116,6 +127,65 @@ check('all five preset catalogs and publish collision chrome are Romanian', () =
         !/Ridgeline/i.test(localDefault.config.business.name),
         'local-service default still uses the Ridgeline brand'
     );
+});
+
+check('publish address validation is Romanian', () => {
+    assert.ok(
+        !appSrc.includes('Address must be at least 3 characters'),
+        'publish address minimum-length message is still English'
+    );
+    assert.ok(
+        appSrc.includes('Adresa trebuie să aibă cel puțin 3 caractere'),
+        'publish address minimum-length message is not Romanian'
+    );
+});
+
+check('Instagram reconnect opens a persisted connected panel and Romanian statuses', () => {
+    assert.ok(indexHtml.includes('id="ig-connected-panel"'), 'connected Instagram panel is missing');
+    assert.ok(indexHtml.includes('id="btn-ig-editor"'), 'Instafidget editor control is missing');
+    assert.ok(
+        /instagram\.embedUrl[\s\S]{0,800}ig-connected-panel/.test(appSrc) ||
+        /ig-connected-panel[\s\S]{0,800}instagram\.embedUrl/.test(appSrc),
+        'persisted Instagram embed is not used to select the connected panel'
+    );
+    assert.ok(
+        /btn-ig-editor[\s\S]{0,1200}window\.open\([^,]+,\s*['_"]_blank['_"],\s*['_"]noopener['_"]\)/.test(appSrc),
+        'connected panel does not open Instafidget in a normal same-browser tab'
+    );
+    for (const phrase of [
+        'Sign in to connect Instagram.',
+        'Connecting Instagram…',
+        'Could not prepare Instagram',
+        'Once you finish connecting',
+    ]) {
+        assert.ok(!appSrc.includes(phrase), `Instagram status remains English: ${phrase}`);
+    }
+});
+
+check('hero replace-photo control owns the top hit target', () => {
+    assert.ok(
+        /\.hb-bg-btn[\s\S]{0,700}z-index:\s*2147483647/.test(overlaySrc),
+        'hero replace-photo control does not have an unambiguous top layer'
+    );
+    assert.ok(
+        /\.hb-bg-wrap:hover\s*>\s*\.hb-bg-btn[\s\S]{0,160}pointer-events:\s*auto/.test(overlaySrc),
+        'hero replace-photo control is not the direct clickable hover target'
+    );
+    assert.ok(
+        /resolvedPath\s*=\s*['"]hero\.background['"]/.test(overlaySrc),
+        'hero background path has no deterministic click fallback'
+    );
+});
+
+check('cabinet cancellation requires explicit Romanian confirmation', () => {
+    const cancelHandler = appSrc.match(/cancelBtn\.addEventListener\('click',[\s\S]*?actions\.appendChild\(cancelBtn\)/);
+    assert.ok(cancelHandler, 'cancel button handler exists');
+    const source = cancelHandler[0];
+    const confirmAt = source.indexOf('window.confirm(');
+    const portalAt = source.indexOf('/billing-portal');
+    assert.ok(confirmAt >= 0, 'cancel button has no explicit confirmation');
+    assert.ok(portalAt > confirmAt, 'billing portal is reached before confirmation');
+    assert.ok(/Sigur|confirm|anulezi|anularea/i.test(source), 'confirmation copy is not understandable Romanian');
 });
 
 check('all five Details schemas use the Romanian preview hint', () => {
