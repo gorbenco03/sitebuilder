@@ -137,9 +137,9 @@ function initAppointment() {
     const interval = Math.max(15, parseInt(root.getAttribute('data-interval') || '60', 10) || 60);
     const defaultDur = Math.max(15, parseInt(root.getAttribute('data-duration') || '45', 10) || 45);
     const lead = Math.max(0, parseInt(root.getAttribute('data-lead') || '120', 10) || 120);
-    const confirmText = root.getAttribute('data-confirm') || 'Your request has been logged.';
-    const emptyText = root.getAttribute('data-empty') || 'No time slots are available right now.';
-    const submitLabel = root.getAttribute('data-submit') || 'Send request';
+    const confirmText = root.getAttribute('data-confirm') || 'Cererea ta a fost înregistrată.';
+    const emptyText = root.getAttribute('data-empty') || 'Nu există intervale disponibile în această perioadă.';
+    const submitLabel = root.getAttribute('data-submit') || 'Trimite cererea';
 
     const dateSel = document.getElementById('pr-appt-date');
     const slotSel = document.getElementById('pr-appt-slot');
@@ -163,7 +163,7 @@ function initAppointment() {
             };
         }
         const first = typeInputs()[0];
-        if (!first) return { id: 'default', label: 'Consultation', durationMin: defaultDur, mode: '' };
+        if (!first) return { id: 'default', label: 'Consultație', durationMin: defaultDur, mode: '' };
         first.checked = true;
         return {
             id: first.value,
@@ -316,7 +316,7 @@ function initAppointment() {
         if (!name.trim() || !email.trim() || !startISO) {
             if (hint) {
                 hint.hidden = false;
-                hint.textContent = 'Please fill in your name, email, and a time slot.';
+                hint.textContent = 'Completează numele, emailul și un interval orar.';
             }
             return;
         }
@@ -324,8 +324,8 @@ function initAppointment() {
         if (submitBtn) {
             submitBtn.disabled = true;
             const span = submitBtn.querySelector('span');
-            if (span) span.textContent = 'Sending…';
-            else submitBtn.textContent = 'Sending…';
+            if (span) span.textContent = 'Se trimite…';
+            else submitBtn.textContent = 'Se trimite…';
         }
 
         const payload = {
@@ -356,17 +356,18 @@ function initAppointment() {
                 if (res.ok && body && body.ok) {
                     result = body;
                 } else {
-                    throw new Error((body && body.error) || 'We couldn\'t log your request.');
+                    throw new Error((body && body.error) || 'Cererea nu a putut fi înregistrată.');
                 }
             } catch (err) {
                 if (hint) {
                     hint.hidden = false;
-                    hint.textContent = err.message || 'Something went wrong sending your request. Try again or use the contact email.';
+                    hint.textContent = 'Nu am putut trimite cererea. Încearcă din nou sau folosește emailul de contact.';
                 }
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     const span = submitBtn.querySelector('span');
                     if (span) span.textContent = submitLabel;
+                    else submitBtn.textContent = submitLabel;
                 }
                 return;
             }

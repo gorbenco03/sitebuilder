@@ -323,8 +323,8 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
         );
         // Empty submit still guides the visitor
         assert.ok(
-            /Please fill in your name,\s*email,\s*and a time slot/i.test(proScript),
-            'empty-submit guidance preserved'
+            /Completează numele,\s*emailul și un interval orar/i.test(proScript),
+            'Romanian empty-submit guidance preserved'
         );
         // Preview local path without live slug
         assert.ok(/localOnly|stare locală de previzualizare|status:\s*['"]requested['"]/.test(proScript),
