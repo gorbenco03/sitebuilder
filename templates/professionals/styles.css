@@ -547,8 +547,8 @@ a.pr-contact__row:hover { border-color: var(--accent); }
 
 /* Reveal */
 .pr-reveal {
-    opacity: 0;
-    transform: translateY(14px);
+    opacity: 1;
+    transform: none;
     transition: opacity 0.7s var(--ease), transform 0.7s var(--ease);
 }
 .pr-reveal.is-in { opacity: 1; transform: none; }
