@@ -632,7 +632,7 @@
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'hb-remove-btn';
-        removeBtn.setAttribute('aria-label', 'Delete item ' + (idx + 1));
+        removeBtn.setAttribute('aria-label', 'Șterge elementul ' + (idx + 1));
         removeBtn.textContent = '×'; // ×
         removeBtn.addEventListener('click', function (e) {
           e.stopPropagation();

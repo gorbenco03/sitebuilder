@@ -201,6 +201,35 @@ check('salon edit preview keeps its configured hero photograph visible', () => {
     );
 });
 
+check('catalog logo accessibility label is Romanian', () => {
+    const catalogLogo = indexHtml.match(/<a\b[^>]*class="logo"[^>]*>/i);
+    assert.ok(catalogLogo, 'catalog logo exists');
+    assert.match(catalogLogo[0], /aria-label="[^"]*Acasă[^"]*"/i, 'catalog logo does not announce Acasă');
+    assert.ok(!/aria-label="[^"]*Home[^"]*"/i.test(catalogLogo[0]), 'catalog logo still announces Home');
+});
+
+check('catalog grid accessibility label is Romanian', () => {
+    const templatesGrid = indexHtml.match(/<div\b[^>]*id="templates-grid"[^>]*>/i);
+    assert.ok(templatesGrid, 'catalog templates grid exists');
+    assert.match(
+        templatesGrid[0],
+        /aria-label="Designuri disponibile"/i,
+        'catalog templates grid does not have a Romanian label'
+    );
+    assert.ok(
+        !/aria-label="[^"]*Available designs[^"]*"/i.test(templatesGrid[0]),
+        'catalog templates grid still announces Available designs'
+    );
+});
+
+check('editor remove-control accessibility labels are Romanian', () => {
+    assert.ok(
+        /removeBtn\.setAttribute\(['"]aria-label['"],\s*['"]Șterge elementul ['"]\s*\+\s*\(idx\s*\+\s*1\)\)/.test(overlaySrc),
+        'editor remove controls do not announce Șterge elementul N'
+    );
+    assert.ok(!/aria-label['"],\s*['"]Delete item /.test(overlaySrc), 'editor remove controls still announce Delete item N');
+});
+
 check('builder chrome contains no known English QA leaks', () => {
     const forbidden = [
         'Preview:',
