@@ -89,6 +89,13 @@ function showToast(msg, type, durationMs) {
   toastTimer = setTimeout(() => { t.style.display = 'none'; }, durationMs || 3500);
 }
 
+function hideToast() {
+  const t = $('toast');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = null;
+  if (t) t.style.display = 'none';
+}
+
 function openModal(id) {
   const el = $(id);
   if (!el) return;
@@ -3429,6 +3436,8 @@ async function startWithTemplate(templateId) {
     showToast('Nu am putut încărca designul. Încearcă din nou.', 'error');
     return;
   }
+
+  hideToast();
 
   // Always drop paid-site bind when starting a design from the catalog.
   // Same-template republish re-binds via bindSignedInPaidSiteForEdit (template match).

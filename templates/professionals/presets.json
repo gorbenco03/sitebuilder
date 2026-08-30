@@ -54,7 +54,7 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(145deg, #F3EFE8 0%, #E8E2D6 48%, #D9D2C4 100%)",
+          "background": "linear-gradient(145deg, rgba(243, 239, 232, 0.32), rgba(20, 18, 15, 0.48)), url('images/hero.jpg') center / cover",
           "ctaLabel": "Programează o consultație",
           "qualifier": "Consultații online sau la cabinet, numai cu programare."
         },
@@ -285,7 +285,7 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(160deg, #F7F4EE 0%, #EEE8DC 55%, #E0D8C8 100%)",
+          "background": "linear-gradient(160deg, rgba(247, 244, 238, 0.3), rgba(21, 34, 55, 0.5)), url('images/hero.jpg') center / cover",
           "ctaLabel": "Programează o consultație",
           "qualifier": "Sesiuni online sau la birou, numai cu programare."
         },
@@ -501,7 +501,7 @@
         "logo": "",
         "showWordmark": true,
         "hero": {
-          "background": "linear-gradient(145deg, #F3EFE8 0%, #E8E2D6 48%, #D9D2C4 100%)",
+          "background": "linear-gradient(145deg, rgba(243, 239, 232, 0.32), rgba(20, 18, 15, 0.48)), url('images/hero.jpg') center / cover",
           "ctaLabel": "Programează o consultație",
           "qualifier": "Consultații online sau la cabinet, numai cu programare."
         },

@@ -259,6 +259,45 @@ check('design-load and required-field errors are Romanian', () => {
     );
 });
 
+check('starting a loaded catalog design dismisses any stale toast', () => {
+    const hideToast = extractFunction(appSrc, 'hideToast');
+    assert.ok(hideToast, 'hideToast exists');
+    assert.ok(hideToast.includes("t.style.display = 'none'"), 'hideToast does not hide the visible toast');
+    assert.ok(/clearTimeout\(toastTimer\)/.test(hideToast), 'hideToast does not cancel the stale timer');
+
+    const start = extractFunction(appSrc, 'startWithTemplate');
+    assert.ok(start, 'startWithTemplate exists');
+    const loadedAt = start.indexOf('if (!tplData || !meta)');
+    const dismissAt = start.indexOf('hideToast()');
+    const configAt = start.indexOf('draft.config =');
+    assert.ok(dismissAt > loadedAt, 'catalog start dismisses the toast before the new design has loaded');
+    assert.ok(dismissAt < configAt, 'catalog start does not dismiss the stale toast before loading its draft');
+});
+
+check('professional presets and rendered pages use the bundled hero photograph', () => {
+    const presets = JSON.parse(professionalsPresetsSrc).presets || [];
+    assert.ok(presets.length > 0, 'professionals has presets');
+    assert.ok(fs.existsSync(path.join(ROOT, 'templates/professionals/images/hero.jpg')), 'professional hero.jpg exists');
+    for (const preset of presets) {
+        const label = preset.id || preset.name;
+        const background = String((((preset || {}).config || {}).hero || {}).background || '');
+        assert.match(background, /url\(\s*['"]?images\/hero\.jpg['"]?\s*\)/, `${label}: hero background omits images/hero.jpg`);
+        const html = renderHtml(professionalsTemplate, preset.config);
+        assert.match(
+            html,
+            /url\(\s*(?:['"]|&#39;)?images\/hero\.jpg(?:['"]|&#39;)?\s*\)/,
+            `${label}: rendered hero is gradient-only`
+        );
+    }
+});
+
+check('salon presets avoid awkward skin-service seed copy', () => {
+    const source = read('templates/portfolio/presets.json');
+    for (const phrase of ['Păr, piele și unghii', 'tratamente de piele']) {
+        assert.ok(!source.includes(phrase), `salon customer seed still contains: ${phrase}`);
+    }
+});
+
 check('Instafidget draft slug collision matches Romanian publish copy', () => {
     const collisionCopy = 'Această adresă este deja folosită. Încearcă alta.';
     assert.ok(!appSrc.includes('That slug is already taken.'), 'connect can display raw English slug collision');
@@ -608,12 +647,10 @@ check('all five first presets render seed content and local photography', () => 
         const businessName = String(((config || {}).business || {}).name || '').trim();
         assert.ok(businessName && html.includes(businessName), `${id}: preview omits seed business name`);
         assert.ok(!html.includes('{{'), `${id}: preview contains unresolved template tokens`);
-        if (id !== 'professionals') {
-            assert.ok(
-                html.includes(`/app/generated/template-assets/${id}/images/`),
-                `${id}: preview omits local photography`
-            );
-        }
+        assert.ok(
+            html.includes(`/app/generated/template-assets/${id}/images/`),
+            `${id}: preview omits local photography`
+        );
         assert.ok(html.includes('data-hidook-preview'), `${id}: deterministic preview visibility CSS missing`);
     }
 });
@@ -633,7 +670,14 @@ check('all five published first presets eagerly load reachable same-origin seed 
         const liveHtml = makeLocalSeedImagesEager(rendered);
         const imgTags = liveHtml.match(/<img\b[^>]*>/gi) || [];
         const localTags = imgTags.filter((tag) => /\bsrc=["']images\//i.test(tag));
-        assert.ok(localTags.length > 0 || entry.id === 'professionals', `${entry.id}: no local seed <img> found`);
+        const localPhotoRefs = Array.from(
+            liveHtml.matchAll(/(?:\bsrc=["']|url\(\s*(?:["']|&#39;)?)(images\/[^"')&\s]+)/gi),
+            (match) => match[1]
+        );
+        assert.ok(localPhotoRefs.length > 0, `${entry.id}: no local seed photo found`);
+        for (const src of localPhotoRefs) {
+            assert.ok(fs.existsSync(path.join(ROOT, dir, src)), `${entry.id}: missing published asset ${src}`);
+        }
         for (const tag of localTags) {
             const src = tag.match(/\bsrc=["']([^"']+)["']/i)[1];
             assert.ok(fs.existsSync(path.join(ROOT, dir, src)), `${entry.id}: missing published asset ${src}`);
