@@ -1152,7 +1152,7 @@ async function handleTestPayComplete(req, res) {
     }
     const sessionId = body && typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     if (!sessionId || !/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
-        return sendJson(res, 400, { error: 'Invalid payment session.' });
+        return sendJson(res, 400, { error: 'Sesiune de plată invalidă.' });
     }
 
     const reg = getRegistry();
@@ -1758,7 +1758,7 @@ async function handlePublish(req, res) {
         const unpaid   = existing.filter(s => !s.paid && s.status !== 'deleted');
         if (unpaid.length > 0) {
             return sendJson(res, 409, {
-                error: 'You already have an unpaid site. Pay for it or delete it before creating another.',
+                error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.',
                 siteId: unpaid[0].id,
             });
         }

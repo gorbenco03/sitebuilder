@@ -1683,7 +1683,7 @@ function openImagePickerForPath(configPath, cb) {
     return;
   }
   const onChange = () => {
-    input.removeEventListener('change', onChange);
+    input.removeEventListener('change', onChange, true);
     const file = input.files && input.files[0];
     input.value = '';
     if (!file) {
@@ -1699,7 +1699,8 @@ function openImagePickerForPath(configPath, cb) {
     };
     reader.readAsDataURL(file);
   };
-  input.addEventListener('change', onChange);
+  // Capture before the shared inline-image listener clears this input's files.
+  input.addEventListener('change', onChange, true);
   input.click();
 }
 
@@ -3067,7 +3068,7 @@ function showSuccessScreen(url, paymentUrl) {
 async function completeTestCheckout(sessionId) {
   const id = String(sessionId || '').trim();
   if (!/^cs_test_[A-Za-z0-9]+$/.test(id)) {
-    showToast('Invalid payment session.', 'error');
+    showToast('Sesiune de plată invalidă.', 'error');
     return;
   }
   setLoading(true, 'Se confirmă plata…');
@@ -4087,7 +4088,7 @@ function wireStaticButtons() {
     logoutBtn.addEventListener('click', async () => {
       try { await fetch('/api/auth/logout', { method:'POST', credentials:'include' }); } catch (_) {}
       updateUserUI(null);
-      showToast('Signed out.', '', 3000);
+      showToast('Te-ai deconectat.', '', 3000);
       window.location.hash = '#templates';
     });
   }
