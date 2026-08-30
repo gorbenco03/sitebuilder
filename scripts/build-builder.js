@@ -223,8 +223,8 @@ function pickThumbnailSource(dir, id) {
     const preferred = [
         'images/cn-hero.jpg', 'images/pr-hero.jpg', 'images/ct-hero.jpg',
         'images/iv-hero.jpg', 'images/sf-hero.jpg',
-        // Landscape bakery promo before portrait cake hero (avoids beige top crop).
-        'images/cover.jpg', 'images/hero.jpg',
+        // Clean pastry collage before portrait cake hero (avoids legacy promo chrome).
+        'images/torturi-1.jpg', 'images/hero.jpg',
     ];
     for (const rel of preferred) {
         const abs = path.join(dir, rel);

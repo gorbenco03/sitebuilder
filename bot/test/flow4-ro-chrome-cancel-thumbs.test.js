@@ -228,9 +228,10 @@ check('HEAD: professionals + desserdirina catalog thumbs are non-empty photograp
     'professionals hero is real interior photography (>' + proSize + ' vs parent screenshot)'
   );
 
-  // desserdirina prefers cover.jpg landscape bakery promo
+  // Desserdirina prefers a clean pastry collage, never the legacy promo artwork.
   const build = headRead('scripts/build-builder.js');
-  assert.ok(/images\/cover\.jpg/.test(build), 'pickThumbnailSource prefers cover.jpg');
+  assert.ok(/images\/torturi-1\.jpg/.test(build), 'pickThumbnailSource prefers clean pastry photography');
+  assert.ok(!/['"]images\/cover\.jpg['"]/.test(build), 'pickThumbnailSource does not prefer legacy promo chrome');
 
   // Catalog cards use object-fit cover thumb class (not iframe scale on photos)
   const app = headRead('builder/app.js');
