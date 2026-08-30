@@ -116,10 +116,9 @@
       '  font-size: 12px;',
       '  font-family: system-ui, sans-serif;',
       '  cursor: pointer;',
-      '  opacity: 0;',
       '  transition: opacity 0.15s;',
       '  z-index: 2147483647;',
-      '  pointer-events: none;',
+      '  pointer-events: auto;',
       '}',
       '.hb-bg-wrap:hover > .hb-bg-btn {',
       '  opacity: 1;',
@@ -556,9 +555,18 @@
       btn.type = 'button';
       btn.className = 'hb-bg-btn';
       btn.textContent = 'Înlocuiește fotografia';
-      btn.addEventListener('click', function (e) {
+      var backgroundPointerHandled = false;
+      function chooseBackgroundImage(e) {
         e.stopPropagation();
         e.preventDefault();
+        if (e.type === 'click' && backgroundPointerHandled) {
+          backgroundPointerHandled = false;
+          return;
+        }
+        if (e.type === 'pointerdown') {
+          backgroundPointerHandled = true;
+          setTimeout(function () { backgroundPointerHandled = false; }, 500);
+        }
         var resolvedPath = resolveImgPath(bgUrl);
         // Prefer explicit hero.background when CSS multi-layer maps through imgMap
         if (!resolvedPath && imgMap[bgUrl]) resolvedPath = imgMap[bgUrl];
@@ -571,8 +579,21 @@
         }
         toParent({ hb: 'image', path: resolvedPath, src: bgUrl, alt: '' });
         requestImageChange(resolvedPath, bgUrl, '');
-      });
-      el.appendChild(btn);
+      }
+      btn.addEventListener('pointerdown', chooseBackgroundImage);
+      btn.addEventListener('click', chooseBackgroundImage);
+      // A child cannot out-rank an ancestor's negative stacking context. Keep
+      // fixed/parallax hero photography behind the page while hosting its
+      // editor control on the positioned hero frame above it.
+      var buttonHost = el;
+      var stackLevel = parseInt(window.getComputedStyle(el).zIndex, 10);
+      if (!isNaN(stackLevel) && stackLevel < 0 && el.parentElement) {
+        buttonHost = el.parentElement;
+        if (window.getComputedStyle(buttonHost).position === 'static') {
+          buttonHost.style.position = 'relative';
+        }
+      }
+      buttonHost.appendChild(btn);
     });
   }
 

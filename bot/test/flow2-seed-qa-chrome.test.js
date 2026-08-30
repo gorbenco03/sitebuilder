@@ -472,6 +472,11 @@ check('Instagram reconnect opens a persisted connected panel and Romanian status
 });
 
 check('hero replace-photo control owns the top hit target', () => {
+    const baseRule = (overlaySrc.match(/\.hb-bg-btn\s*\{([^}]*)\}/) || [])[1] || '';
+    assert.ok(baseRule, 'hero replace-photo base CSS rule is missing');
+    assert.match(baseRule, /pointer-events:\s*auto/, 'hero replace-photo control is not clickable by default');
+    assert.ok(!/pointer-events:\s*none/.test(baseRule), 'hero replace-photo control disables pointer input by default');
+    assert.ok(!/opacity:\s*0(?:\D|$)/.test(baseRule), 'hero replace-photo control is invisible by default');
     assert.ok(
         /\.hb-bg-btn[\s\S]{0,700}z-index:\s*2147483647/.test(overlaySrc),
         'hero replace-photo control does not have an unambiguous top layer'
@@ -484,6 +489,32 @@ check('hero replace-photo control owns the top hit target', () => {
         /resolvedPath\s*=\s*['"]hero\.background['"]/.test(overlaySrc),
         'hero background path has no deterministic click fallback'
     );
+    const setupImages = extractFunction(overlaySrc, 'setupImages');
+    const backgroundSetup = setupImages.slice(setupImages.indexOf('/* ── 5b.'));
+    assert.ok(backgroundSetup, 'hero background setup is missing');
+    assert.ok(
+        /btn\.addEventListener\(['"]pointerdown['"],\s*chooseBackgroundImage\)/.test(backgroundSetup),
+        'hero replace-photo control does not listen on pointer-down'
+    );
+    assert.ok(
+        /btn\.addEventListener\(['"]click['"],\s*chooseBackgroundImage\)/.test(backgroundSetup),
+        'hero replace-photo control does not retain a click fallback'
+    );
+    assert.ok(
+        /toParent\(\{\s*hb:\s*['"]image['"],\s*path:\s*resolvedPath/.test(backgroundSetup),
+        'hero replace-photo control does not post its resolved image path'
+    );
+    assert.ok(
+        /stackLevel\s*<\s*0[\s\S]{0,180}buttonHost\s*=\s*el\.parentElement/.test(backgroundSetup),
+        'hero replace-photo control remains trapped under negative background stacking contexts'
+    );
+    assert.ok(
+        /buttonHost\.appendChild\(btn\)/.test(backgroundSetup),
+        'hero replace-photo control is not mounted on its usable stacking host'
+    );
+    const imageRequest = extractFunction(appSrc, 'onImageChangeRequest');
+    assert.ok(/\$\(['"]img-file-input['"]\)/.test(imageRequest), 'parent image request does not find the shared chooser');
+    assert.ok(/fileInput\.click\(\)/.test(imageRequest), 'parent image request does not open the shared chooser');
 });
 
 check('gallery replace-photo control owns the top hit target', () => {
