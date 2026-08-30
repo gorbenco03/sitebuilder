@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 
 const DRAFT_KEY = 'hb.draft.v1';
+const PUBLISH_SLUG_COLLISION_MESSAGE = 'Această adresă este deja folosită. Încearcă alta.';
 
 const draft = { templateId: null, config: null };
 
@@ -810,7 +811,7 @@ function initPostMessageListener() {
         onInlineTextEdit(msg.path, msg.value);
         break;
       case 'image':
-        onImageChangeRequest(msg.path, msg.src);
+        onImageChangeRequest(msg.path, msg.src, msg.alt);
         break;
       case 'list-add':
         onListAdd(msg.listPath);
@@ -976,9 +977,30 @@ function resolveImagePathFromSrc(src) {
   return '';
 }
 
-function onImageChangeRequest(path, src) {
+function resolveImagePathFromAlt(alt) {
+  const value = String(alt || '').trim();
+  if (!value || !draft.config) return '';
+  const matches = [];
+  function walk(item, prefix) {
+    if (!item || typeof item !== 'object') return;
+    if (!Array.isArray(item) && String(item.alt || '').trim() === value && typeof item.src === 'string') {
+      matches.push(prefix ? prefix + '.src' : 'src');
+    }
+    if (Array.isArray(item)) {
+      item.forEach((child, index) => walk(child, prefix ? prefix + '.' + index : String(index)));
+      return;
+    }
+    Object.entries(item).forEach(([key, child]) => {
+      if (child && typeof child === 'object') walk(child, prefix ? prefix + '.' + key : key);
+    });
+  }
+  walk(draft.config, '');
+  return matches.length === 1 ? matches[0] : '';
+}
+
+function onImageChangeRequest(path, src, alt) {
   if (!path) path = resolveImagePathFromSrc(src);
-  if (!path) return;
+  if (!path) path = resolveImagePathFromAlt(alt);
   pendingImagePath = path;
   const fileInput = $('img-file-input');
   if (fileInput) {
@@ -2020,7 +2042,13 @@ async function ensureDraftSiteForInstagram() {
     slug: baseSlug,
   };
   if (currentSiteId) payload.siteId = currentSiteId;
-  const data = await apiPost('/api/publish', payload);
+  let data;
+  try {
+    data = await apiPost('/api/publish', payload);
+  } catch (error) {
+    if (error && error.status === 409) throw new Error(PUBLISH_SLUG_COLLISION_MESSAGE);
+    throw error;
+  }
   if (!data.site || !data.site.id) {
     throw new Error('Nu am putut salva ciorna. Încearcă din nou.');
   }
@@ -2709,7 +2737,7 @@ async function openPublishModal() {
     if (missing.length > 0) {
       const firstMissing = missing[0];
       const msgParts = missing.map(f => f.label || f.key);
-      showToast('Complete these first: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
+      showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
       // Highlight in iframe
       sendHighlightToIframe(firstMissing.key);
       // Open drawer if field is a drawer field
@@ -2812,7 +2840,7 @@ async function checkSlug(rawSlug) {
       if (slugInput) slugInput.value = slugNormalized;
     } else {
       updateSlugPreview(slugNormalized, 'taken');
-      if (errorEl) { errorEl.textContent = 'Această adresă este deja folosită. Încearcă alta.'; show(errorEl); }
+      if (errorEl) { errorEl.textContent = PUBLISH_SLUG_COLLISION_MESSAGE; show(errorEl); }
       slugValid = false;
     }
   } catch (_) {
@@ -3383,12 +3411,12 @@ async function startWithTemplate(templateId) {
   try {
     tplData = await ensureTemplateLoaded(templateId);
   } catch (e) {
-    showToast('Could not load the design. Try again.', 'error');
+    showToast('Nu am putut încărca designul. Încearcă din nou.', 'error');
     return;
   }
 
   if (!tplData || !meta) {
-    showToast('Could not load the design. Try again.', 'error');
+    showToast('Nu am putut încărca designul. Încearcă din nou.', 'error');
     return;
   }
 

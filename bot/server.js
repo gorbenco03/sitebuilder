@@ -1771,7 +1771,7 @@ async function handlePublish(req, res) {
                 return sendJson(res, 422, { error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
             }
             if (!isSlugAvailable(slug)) {
-                return sendJson(res, 409, { error: 'That slug is already taken.' });
+                return sendJson(res, 409, { error: 'Această adresă este deja folosită. Încearcă alta.' });
             }
         } else {
             const bizName = (config && config.business && config.business.name) || 'site';

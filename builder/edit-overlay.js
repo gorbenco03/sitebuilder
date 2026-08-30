@@ -457,7 +457,8 @@
         toParent({
           hb: 'image',
           path: resolvedPath,
-          src: img.getAttribute('src') || ''
+          src: img.getAttribute('src') || '',
+          alt: img.getAttribute('alt') || ''
         });
       });
       wrap.appendChild(btn);

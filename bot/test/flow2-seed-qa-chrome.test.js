@@ -44,6 +44,7 @@ function check(name, fn) {
 const appSrc = read('builder/app.js');
 const appCss = read('builder/app.css');
 const overlaySrc = read('builder/edit-overlay.js');
+const serverSrc = read('bot/server.js');
 const indexHtml = read('builder/index.html');
 const professionalsTemplate = read('templates/professionals/template.html');
 const professionalsScript = read('templates/professionals/script.js');
@@ -91,6 +92,36 @@ check('builder chrome contains no known English QA leaks', () => {
     ]) {
         assert.ok(appSrc.includes(phrase), `Romanian return toast is missing: ${phrase}`);
     }
+});
+
+check('design-load and required-field errors are Romanian', () => {
+    assert.ok(!appSrc.includes('Could not load the design. Try again.'), 'design-load error remains English');
+    assert.ok(!appSrc.includes('Complete these first:'), 'required-field error remains English');
+    assert.strictEqual(
+        appSrc.split('Nu am putut încărca designul. Încearcă din nou.').length - 1,
+        2,
+        'both design-load error writers use the same Romanian copy'
+    );
+    assert.ok(
+        appSrc.includes("showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', ')"),
+        'required-field toast is not Romanian with diacritics'
+    );
+});
+
+check('Instafidget draft slug collision matches Romanian publish copy', () => {
+    const collisionCopy = 'Această adresă este deja folosită. Încearcă alta.';
+    assert.ok(!appSrc.includes('That slug is already taken.'), 'connect can display raw English slug collision');
+    assert.ok(!serverSrc.includes('That slug is already taken.'), 'publish API still emits raw English slug collision');
+    assert.ok(appSrc.includes(`const PUBLISH_SLUG_COLLISION_MESSAGE = '${collisionCopy}'`), 'shared collision copy is missing');
+    assert.ok(
+        /ensureDraftSiteForInstagram[\s\S]*?catch\s*\(error\)[\s\S]*?error\.status\s*===\s*409[\s\S]*?PUBLISH_SLUG_COLLISION_MESSAGE/.test(appSrc),
+        'Instafidget draft creation does not map a 409 to the publish collision copy'
+    );
+    assert.ok(
+        appSrc.includes('errorEl.textContent = PUBLISH_SLUG_COLLISION_MESSAGE'),
+        'publish form does not use the shared collision copy'
+    );
+    assert.ok(serverSrc.includes(`error: '${collisionCopy}'`), 'publish API collision copy differs from the builder');
 });
 
 check('Istoric loading, empty, and restore states are Romanian', () => {
@@ -283,12 +314,18 @@ check('gallery replace-photo control owns the top hit target', () => {
         /toParent\(\{\s*hb:\s*['"]image['"],\s*path:\s*resolvedPath,\s*src:/.test(setupImages),
         'gallery click does not send its source for parent-side path recovery'
     );
-    assert.ok(
-        /onImageChangeRequest\(msg\.path,\s*msg\.src\)/.test(appSrc),
-        'parent does not receive the image source fallback'
-    );
     const imageRequest = extractFunction(appSrc, 'onImageChangeRequest');
     assert.ok(/resolveImagePathFromSrc\(src\)/.test(imageRequest), 'parent cannot recover a missing image path');
+    assert.ok(
+        /toParent\(\{[\s\S]{0,150}hb:\s*['"]image['"][\s\S]{0,220}alt:\s*img\.getAttribute\(['"]alt['"]\)/.test(setupImages),
+        'gallery click does not send alt text for unresolved-path recovery'
+    );
+    assert.ok(
+        /onImageChangeRequest\(msg\.path,\s*msg\.src,\s*msg\.alt\)/.test(appSrc),
+        'parent does not receive unresolved image identity'
+    );
+    assert.ok(/resolveImagePathFromAlt\(alt\)/.test(imageRequest), 'parent cannot recover a gallery path from alt text');
+    assert.ok(!imageRequest.includes('if (!path) return'), 'unresolved image exits before opening the parent chooser');
 });
 
 check('cabinet cancellation requires explicit Romanian confirmation', () => {
