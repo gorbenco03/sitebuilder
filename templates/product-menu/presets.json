@@ -145,7 +145,7 @@
             "label": "Casa Nord"
           },
           "whatsapp": "40721234567",
-          "phone": "+407****4567",
+          "phone": "+40721234567",
           "phoneDisplay": "+40 721 234 567",
           "waHref": "https://wa.me/40721234567",
           "address": "Str. Herăstrău 12<br>București",
@@ -154,7 +154,7 @@
         },
         "seo": {
           "ogImage": "images/cn-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Casa Nord\",\"telephone\":\"+407****4567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Herăstrău 12\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Casa Nord\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Herăstrău 12\",\"addressLocality\":\"București\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
           "address": "Str. Herăstrău 12, București",
@@ -310,7 +310,7 @@
             "label": "Traista Verde"
           },
           "whatsapp": "40745111222",
-          "phone": "+407****1222",
+          "phone": "+40745111222",
           "phoneDisplay": "+40 745 111 222",
           "waHref": "https://wa.me/40745111222",
           "address": "Str. Memorandumului 18<br>Cluj-Napoca",
@@ -319,7 +319,7 @@
         },
         "seo": {
           "ogImage": "images/tv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Traista Verde\",\"telephone\":\"+407****1222\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 18\",\"addressLocality\":\"Cluj-Napoca\",\"addressCountry\":\"RO\"}}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"Restaurant\",\"name\":\"Traista Verde\",\"telephone\":\"+40745111222\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Str. Memorandumului 18\",\"addressLocality\":\"Cluj-Napoca\",\"addressCountry\":\"RO\"}}"
         },
         "footer": {
           "address": "Str. Memorandumului 18, Cluj-Napoca",

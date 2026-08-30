@@ -77,6 +77,7 @@
       '.hb-img-wrap > img {',
       '  position: relative;',
       '  z-index: 0;',
+      '  pointer-events: none;',
       '}',
       '.hb-img-btn {',
       '  position: absolute;',
@@ -93,7 +94,7 @@
       '  cursor: pointer;',
       '  opacity: 0;',
       '  transition: opacity 0.15s;',
-      '  pointer-events: none;',
+      '  pointer-events: auto;',
       '  white-space: nowrap;',
       '  z-index: 2147483647;',
       '}',
@@ -103,9 +104,6 @@
       '}',
 
       /* background-image change overlay */
-      '.hb-bg-wrap {',
-      '  position: relative;',
-      '}',
       '.hb-bg-btn {',
       '  position: absolute;',
       '  top: 12px;',
@@ -194,6 +192,27 @@
   /** Send a message to the parent safely. */
   function toParent(msg) {
     try { window.parent.postMessage(msg, '*'); } catch (_) {}
+  }
+
+  /**
+   * Open inside the iframe while the click still owns a browser user gesture.
+   * The parent also receives the ordinary image request and attempts its shared
+   * chooser; sandboxed postMessage delivery may lose activation in Chromium, so
+   * this direct chooser returns the selected File for the same parent pipeline.
+   */
+  function requestImageChange(path, src, alt) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (file) toParent({ hb: 'image-file', path: path || null, src: src || '', alt: alt || '', file: file });
+      if (file && input.parentNode) input.parentNode.removeChild(input);
+    });
+    document.body.appendChild(input);
+    if (typeof input.showPicker === 'function') input.showPicker();
+    else input.click();
   }
 
   /** Find a single element by exact data-hb-edit path value. */
@@ -405,7 +424,8 @@
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       e.preventDefault();
-      if (path) toParent({ hb: 'image', path: path });
+      toParent({ hb: 'image', path: path || null });
+      requestImageChange(path, '', '');
     });
     return btn;
   }
@@ -436,9 +456,18 @@
       btn.type = 'button';
       btn.className = 'hb-img-btn';
       btn.textContent = 'Înlocuiește fotografia';
-      btn.addEventListener('click', function (e) {
+      var pointerHandled = false;
+      function chooseImage(e) {
         e.stopPropagation();
         e.preventDefault();
+        if (e.type === 'click' && pointerHandled) {
+          pointerHandled = false;
+          return;
+        }
+        if (e.type === 'pointerdown') {
+          pointerHandled = true;
+          setTimeout(function () { pointerHandled = false; }, 500);
+        }
         // Re-resolve on click in case imgMap arrived after mount.
         var resolvedPath = resolveImgPath(img.getAttribute('src') || '');
         if (!resolvedPath && /^data:image\//i.test(img.getAttribute('src') || '')) {
@@ -460,7 +489,14 @@
           src: img.getAttribute('src') || '',
           alt: img.getAttribute('alt') || ''
         });
-      });
+        requestImageChange(
+          resolvedPath,
+          img.getAttribute('src') || '',
+          img.getAttribute('alt') || ''
+        );
+      }
+      btn.addEventListener('pointerdown', chooseImage);
+      btn.addEventListener('click', chooseImage);
       wrap.appendChild(btn);
     });
 
@@ -512,6 +548,9 @@
       if (!bgUrl) bgUrl = bgUrls[bgUrls.length - 1];
 
       el.classList.add('hb-bg-wrap');
+      // Preserve template positioning (salon hero photography is absolute).
+      // Only static backgrounds need a containing block for the overlay button.
+      if (window.getComputedStyle(el).position === 'static') el.style.position = 'relative';
 
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -530,7 +569,8 @@
         if (!resolvedPath && /(^|[-_])hero($|[-_])/.test(el.className || '')) {
           resolvedPath = 'hero.background';
         }
-        if (resolvedPath) toParent({ hb: 'image', path: resolvedPath });
+        toParent({ hb: 'image', path: resolvedPath, src: bgUrl, alt: '' });
+        requestImageChange(resolvedPath, bgUrl, '');
       });
       el.appendChild(btn);
     });

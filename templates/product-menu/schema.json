@@ -356,7 +356,7 @@
         {
           "key": "contact.phone",
           "type": "phone",
-          "label": "Telefon cu prefix de țară (ex. +407****4567)",
+          "label": "Telefon cu prefix de țară (ex. +40 721 234 567)",
           "required": false
         },
         {

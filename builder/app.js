@@ -813,6 +813,9 @@ function initPostMessageListener() {
       case 'image':
         onImageChangeRequest(msg.path, msg.src, msg.alt);
         break;
+      case 'image-file':
+        applySelectedImageFile(msg.file, msg.path, msg.src, msg.alt);
+        break;
       case 'list-add':
         onListAdd(msg.listPath);
         break;
@@ -1110,23 +1113,30 @@ function initImageFileInput() {
     if (!file || !pendingImagePath) { fileInput.value = ''; return; }
     const path = pendingImagePath;
     pendingImagePath = null;
-    try {
-      showPreviewSpinner(true);
-      const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
-      // Logo/src: bare data URL then full preview rebuild. Backgrounds: url() rewrite.
-      if (/background|gradient/i.test(path || '')) {
-        applyImageDataUrl(path, dataUrl);
-      } else {
-        setPath(draft.config, path, dataUrl);
-      }
-      saveDraft();
-      fullRerender();
-    } catch (e) {
-      showToast('Error processing the image: ' + e.message, 'error');
-      showPreviewSpinner(false);
-    }
+    await applySelectedImageFile(file, path, '', '');
     fileInput.value = '';
   });
+}
+
+async function applySelectedImageFile(file, path, src, alt) {
+  if (!path) path = resolveImagePathFromSrc(src);
+  if (!path) path = resolveImagePathFromAlt(alt);
+  if (!file || !path) return;
+  try {
+    showPreviewSpinner(true);
+    const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
+    // Logo/src: bare data URL then full preview rebuild. Backgrounds: url() rewrite.
+    if (/background|gradient/i.test(path || '')) {
+      applyImageDataUrl(path, dataUrl);
+    } else {
+      setPath(draft.config, path, dataUrl);
+    }
+    saveDraft();
+    fullRerender();
+  } catch (e) {
+    showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+    showPreviewSpinner(false);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1160,11 +1170,11 @@ function resizeImageToDataUrl(file, maxPx, quality) {
 
 const COLOR_PRESETS = [
   { label: 'Indigo',   hex: '#5B5BD6' },
-  { label: 'Teal',     hex: '#0D9488' },
+  { label: 'Turcoaz',  hex: '#0D9488' },
   { label: 'Violet',   hex: '#7C3AED' },
-  { label: 'Orange',   hex: '#EA580C' },
-  { label: 'Pink',     hex: '#DB2777' },
-  { label: 'Green',    hex: '#16A34A' },
+  { label: 'Portocaliu', hex: '#EA580C' },
+  { label: 'Roz',      hex: '#DB2777' },
+  { label: 'Verde',    hex: '#16A34A' },
 ];
 
 function initColorPicker() {
@@ -3624,8 +3634,7 @@ function buildSiteCard(site) {
       const price = formatPriceLabel(appConfig);
       const hostLine = document.createElement('div');
       hostLine.className = 'site-hosting-until site-trial-line';
-      // NB hyphen keeps "7-zile" one token when the line wraps at spaces / ·.
-      const trialLabel = 'Trial de 7\u2011zile · prima taxare ' + price;
+      const trialLabel = 'Trial de 7 zile · prima taxare ' + price;
       hostLine.textContent = day7 ? trialLabel + ' pe ' + day7 : trialLabel;
       info.appendChild(hostLine);
     } else if (site.paidUntil) {

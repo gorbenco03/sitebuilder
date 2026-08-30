@@ -50,6 +50,112 @@ const professionalsTemplate = read('templates/professionals/template.html');
 const professionalsScript = read('templates/professionals/script.js');
 const professionalsPresetsSrc = read('templates/professionals/presets.json');
 
+check('seed phones are dialable in every preset and rendered call link', () => {
+    const registry = JSON.parse(read('templates/registry.json')).templates || [];
+    assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');
+    for (const entry of registry) {
+        const schemaSrc = read(`templates/${entry.id}/schema.json`);
+        const presetsSrc = read(`templates/${entry.id}/presets.json`);
+        assert.ok(!schemaSrc.includes('****'), `${entry.id}: schema exposes a masked phone example`);
+        assert.ok(!presetsSrc.includes('****'), `${entry.id}: preset contains a masked phone value`);
+
+        const presets = JSON.parse(presetsSrc).presets || [];
+        assert.ok(presets.length > 0, `${entry.id}: has at least one preset`);
+        for (const preset of presets) {
+            const html = renderHtml(read(`templates/${entry.id}/template.html`), preset.config);
+            const telHrefs = Array.from(html.matchAll(/href=["'](tel:[^"']+)["']/gi), (match) => match[1]);
+            assert.ok(telHrefs.length > 0, `${entry.id}/${preset.id || preset.name}: renders a call link`);
+            for (const href of telHrefs) {
+                assert.ok(!href.includes('*'), `${entry.id}/${preset.id || preset.name}: masked call link ${href}`);
+                assert.match(href, /^tel:\+?[0-9]{10,}$/, `${entry.id}/${preset.id || preset.name}: broken call link ${href}`);
+            }
+        }
+    }
+});
+
+check('trial and color controls use customer-facing Romanian copy', () => {
+    assert.ok(appSrc.includes('Trial de 7 zile'), 'cabinet trial label is missing ordinary Romanian spacing');
+    for (const leak of ['7\u2011zile', '7-zile', '\\u2011zile']) {
+        assert.ok(!appSrc.includes(leak), `cabinet trial label contains forbidden spelling: ${leak}`);
+    }
+    const presetsBlock = appSrc.match(/const COLOR_PRESETS\s*=\s*\[([\s\S]*?)\];/);
+    assert.ok(presetsBlock, 'COLOR_PRESETS exists');
+    for (const english of ['Teal', 'Orange', 'Pink', 'Green']) {
+        assert.ok(!new RegExp(`label:\\s*['"]${english}['"]`).test(presetsBlock[1]), `English color name remains: ${english}`);
+    }
+    for (const romanian of ['Turcoaz', 'Portocaliu', 'Roz', 'Verde']) {
+        assert.ok(new RegExp(`label:\\s*['"]${romanian}['"]`).test(presetsBlock[1]), `Romanian color name is missing: ${romanian}`);
+    }
+});
+
+check('image messages open the parent chooser even when path resolution is empty', () => {
+    const setupImages = extractFunction(overlaySrc, 'setupImages');
+    assert.ok(
+        /toParent\(\{[\s\S]{0,100}hb:\s*['"]image['"][\s\S]{0,120}path:\s*resolvedPath/.test(setupImages),
+        'gallery click does not post an image request with its possibly-empty path'
+    );
+    assert.ok(
+        !/if\s*\(resolvedPath\)\s*toParent\(\{\s*hb:\s*['"]image['"]/.test(setupImages),
+        'background click suppresses the image request when path is unresolved'
+    );
+    assert.ok(
+        /requestImageChange\(\s*resolvedPath,[\s\S]{0,100}img\.getAttribute\(['"]src['"]\)/.test(setupImages),
+        'gallery click does not retain the direct user gesture for its native chooser'
+    );
+    assert.ok(
+        /btn\.addEventListener\(['"]pointerdown['"]/.test(setupImages),
+        'moving salon collage does not open the chooser on pointer-down'
+    );
+    const directChooser = extractFunction(overlaySrc, 'requestImageChange');
+    assert.ok(/createElement\(['"]input['"]\)/.test(directChooser), 'overlay does not create a chooser in the click gesture');
+    assert.ok(/input\.showPicker\(\)/.test(directChooser), 'overlay does not open its direct native chooser');
+    assert.ok(/hb:\s*['"]image-file['"]/.test(directChooser), 'chosen overlay file is not returned to the parent');
+
+    const imageRequest = extractFunction(appSrc, 'onImageChangeRequest');
+    assert.ok(imageRequest, 'parent image request handler exists');
+    assert.ok(!imageRequest.includes('if (!path) return'), 'parent exits before opening a chooser for an unresolved path');
+    const chooser = { value: 'stale', clicks: 0, click() { this.clicks++; } };
+    const sandbox = {
+        resolveImagePathFromSrc: () => '',
+        resolveImagePathFromAlt: () => '',
+        pendingImagePath: 'stale',
+        $: (id) => id === 'img-file-input' ? chooser : null,
+    };
+    vm.runInNewContext(`${imageRequest}; onImageChangeRequest(null, '', '');`, sandbox);
+    assert.strictEqual(chooser.clicks, 1, 'unresolved image request does not open the native file chooser');
+    assert.strictEqual(chooser.value, '', 'chooser is not reset before it opens');
+    assert.ok(/case\s+['"]image-file['"]/.test(appSrc), 'parent does not accept the file chosen inside the overlay');
+    assert.ok(
+        /id="preview-iframe"[\s\S]{0,220}sandbox="[^"]*allow-forms[^"]*"/.test(indexHtml),
+        'editor iframe sandbox blocks its native file input'
+    );
+});
+
+check('salon edit preview keeps its configured hero photograph visible', () => {
+    const engineSrc = read('builder/generated/engine.js');
+    const sandbox = { window: {}, console };
+    vm.runInNewContext(engineSrc, sandbox);
+    const files = {
+        templateHtml: read('templates/portfolio/template.html'),
+        stylesCss: read('templates/portfolio/styles.css'),
+        scriptJs: read('templates/portfolio/script.js'),
+        collageJs: read('templates/portfolio/collage.js'),
+        imageMap: { 'images/iv-hero.jpg': '/app/generated/template-assets/portfolio/images/iv-hero.jpg' },
+    };
+    const config = JSON.parse(read('templates/portfolio/presets.json')).presets[0].config;
+    const html = sandbox.window.HidookEngine.renderPreview(files, config, { editMode: true });
+    const heroTag = (html.match(/<div\b[^>]*class="[^"]*pf-hero__bg[^"]*"[^>]*>/) || [])[0] || '';
+    assert.ok(heroTag, 'salon editor hero background element is missing');
+    assert.ok(
+        heroTag.includes('/app/generated/template-assets/portfolio/images/iv-hero.jpg'),
+        `salon editor hero omits the configured Atelier Ivoire photograph: ${heroTag}`
+    );
+    assert.ok(
+        !/\.hb-bg-wrap\s*\{[^}]*position:\s*relative/.test(overlaySrc),
+        'edit overlay changes the absolutely-positioned salon hero photo into an empty relative layer'
+    );
+});
+
 check('builder chrome contains no known English QA leaks', () => {
     const forbidden = [
         'Preview:',
@@ -308,6 +414,10 @@ check('gallery replace-photo control owns the top hit target', () => {
     assert.ok(
         /\.hb-img-wrap\s*>\s*img[\s\S]{0,140}position:\s*relative[\s\S]{0,80}z-index:\s*0/.test(overlaySrc),
         'wrapped gallery photo is not pinned below the replace-photo control'
+    );
+    assert.ok(
+        /\.hb-img-wrap\s*>\s*img[\s\S]{0,180}pointer-events:\s*none/.test(overlaySrc),
+        'gallery photo can still intercept the replace-photo click'
     );
     const setupImages = extractFunction(overlaySrc, 'setupImages');
     assert.ok(
