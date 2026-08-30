@@ -3468,7 +3468,10 @@ async function startWithTemplate(templateId) {
   window.location.hash = '#edit';
 }
 
+let previewModalGeneration = 0;
+
 async function openPreviewModal(templateId) {
+  const previewGeneration = ++previewModalGeneration;
   const registry = getTemplateList();
   const meta = (registry || []).find(t => t.id === templateId) || {};
 
@@ -3495,6 +3498,8 @@ async function openPreviewModal(templateId) {
   } catch (_) {
     tplData = null;
   }
+
+  if (previewGeneration !== previewModalGeneration) return;
 
   if (!tplData || typeof window.HidookEngine === 'undefined') {
     if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>';
