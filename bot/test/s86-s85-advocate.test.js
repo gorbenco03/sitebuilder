@@ -260,7 +260,7 @@ check('HEAD: professionals cascade clears Cabinet Juridic Ionescu heading leftov
   const appSrc = read(APP_JS);
   const cfg = loadFirstPreset(PRO_PRESETS);
   assert.ok(/Cabinet Juridic Ionescu/.test(cfg.business.name), 'factory name');
-  assert.ok(/cabinetjuridicionescu\.example/.test(cfg.contact.email), 'factory email before');
+  assert.strictEqual(cfg.contact.email, 'contact@cabinetjuridicionescu.ro', 'professional seed uses a plausible .ro email');
   const newName = 'Cabinet Advocate S85';
   const next = runCascade(appSrc, cfg, 'Cabinet Juridic Ionescu', newName);
   assert.strictEqual(next.business.name, newName);
@@ -269,7 +269,7 @@ check('HEAD: professionals cascade clears Cabinet Juridic Ionescu heading leftov
   assert.ok(!/Cabinet Juridic Ionescu/.test(JSON.stringify(next.business)), 'business block free of Cabinet Juridic Ionescu');
   const html = renderHtml(read(PRO_TPL), next);
   assert.ok(!/Cabinet Juridic Ionescu/.test(html), 'live html free of Cabinet Juridic Ionescu');
-  assert.ok(!/cabinetjuridicionescu\.example/i.test(html), 'live html free of factory email');
+  assert.ok(!/contact@cabinetjuridicionescu\.ro/i.test(html), 'live html free of factory email');
   assert.ok(html.includes(newName), 'live html has new name');
 });
 

@@ -50,6 +50,21 @@ const professionalsTemplate = read('templates/professionals/template.html');
 const professionalsScript = read('templates/professionals/script.js');
 const professionalsPresetsSrc = read('templates/professionals/presets.json');
 
+function collectEmailFields(value, trail = [], found = []) {
+    if (Array.isArray(value)) {
+        value.forEach((item, index) => collectEmailFields(item, trail.concat(index), found));
+    } else if (value && typeof value === 'object') {
+        for (const [key, item] of Object.entries(value)) {
+            const nextTrail = trail.concat(key);
+            if (/email/i.test(key) && typeof item === 'string') {
+                found.push({ path: nextTrail.join('.'), value: item });
+            }
+            collectEmailFields(item, nextTrail, found);
+        }
+    }
+    return found;
+}
+
 check('seed phones are dialable in every preset and rendered call link', () => {
     const registry = JSON.parse(read('templates/registry.json')).templates || [];
     assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');
@@ -68,6 +83,36 @@ check('seed phones are dialable in every preset and rendered call link', () => {
             for (const href of telHrefs) {
                 assert.ok(!href.includes('*'), `${entry.id}/${preset.id || preset.name}: masked call link ${href}`);
                 assert.match(href, /^tel:\+?[0-9]{10,}$/, `${entry.id}/${preset.id || preset.name}: broken call link ${href}`);
+            }
+        }
+    }
+});
+
+check('customer-visible preset emails and professional renders never use reserved .example domains', () => {
+    const registry = JSON.parse(read('templates/registry.json')).templates || [];
+    assert.strictEqual(registry.length, 5, 'launch catalog contains five systems');
+    for (const entry of registry) {
+        const presets = JSON.parse(read(`templates/${entry.id}/presets.json`)).presets || [];
+        for (const preset of presets) {
+            const label = `${entry.id}/${preset.id || preset.name}`;
+            for (const email of collectEmailFields(preset.config)) {
+                assert.ok(
+                    !/@[^\s@]+\.example(?:$|[/?#])/i.test(email.value),
+                    `${label}: ${email.path} uses reserved email ${email.value}`
+                );
+            }
+
+            if (entry.id === 'professionals') {
+                const html = renderHtml(read('templates/professionals/template.html'), preset.config);
+                const mailtoHrefs = Array.from(html.matchAll(/href=["']mailto:([^"']+)["']/gi), (match) => match[1]);
+                for (const href of mailtoHrefs) {
+                    assert.ok(!/\.example(?:$|[?&#])/i.test(href), `${label}: reserved mailto ${href}`);
+                }
+                const visibleText = html
+                    .replace(/<script\b[\s\S]*?<\/script>/gi, '')
+                    .replace(/<style\b[\s\S]*?<\/style>/gi, '')
+                    .replace(/<[^>]+>/g, ' ');
+                assert.ok(!/@[^\s<>@]+\.example\b/i.test(visibleText), `${label}: rendered visible email uses .example`);
             }
         }
     }
