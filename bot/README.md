@@ -79,7 +79,7 @@ Commercial amounts come from `bot/pricing.js`. Do not set `BUILD_FEE_EUR=49` to 
 | Variable | Description |
 |---|---|
 | `SERVER_SECRET` | Random 32+ char secret for HMAC session cookies. Without it, `/api/auth/*` and `/api/me` return 503. |
-| `PUBLIC_URL` | Public base URL (magic links, Stripe return URLs), e.g. `https://builder.example.com` |
+| `PUBLIC_URL` | Public base URL (magic links, Stripe return URLs), e.g. `https://lp.hidook.agency` |
 
 ### AI (optional — without it, Telegram uses wizard)
 

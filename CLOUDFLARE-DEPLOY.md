@@ -35,7 +35,7 @@ Do **not** run live `wrangler pages deploy` against a production Hidook project,
 Per `PRODUCT.md`, **do not implement** as team work in this slice:
 
 - Production Cloudflare account wiring and live Pages project creation for Hidook (owner-only)
-- Live DNS for `hidook.agency` / `sites.hidook.agency` (owner-only; not this slice)
+- Live DNS for `hidook.agency` / `lp.hidook.agency` / `sites.hidook.agency` (owner-only; not this slice)
 - Custom-domain cutover for paying customers (concierge after card/trial; not required for the launch happy path; owner-only)
 - Live Stripe Product/Prices, Customer Portal, and refunds (owner-only)
 

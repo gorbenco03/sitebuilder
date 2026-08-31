@@ -50,7 +50,7 @@ prerequisite, not a technical one, but it blocks going live just as hard.
 | Variable | Value | Why |
 |---|---|---|
 | `SERVER_SECRET` | `openssl rand -hex 32` | Signs session cookies and magic-link tokens. **Without it, every auth route returns 503** — nobody can sign in. |
-| `PUBLIC_URL` | `https://builder.yourdomain.com` | Used to build magic links and Stripe return URLs. Must be the real public URL, no trailing slash. |
+| `PUBLIC_URL` | `https://lp.hidook.agency` | Used to build magic links and Stripe return URLs. Must be the real public URL, no trailing slash. |
 | `DATA_DIR` | `/data` (a **persistent volume**) | Accounts, the site registry, drafts and published artifacts live here. On ephemeral disk you lose every customer site on redeploy. |
 | `PORT` | injected by your host | The HTTP server binds it and serves `GET /health`. |
 
@@ -190,15 +190,15 @@ vars select Stripe catalog IDs; they do not override cents in code.
 
 ## 5. DNS
 
-Assuming your brand domain is `yourdomain.com`:
+Assuming the brand domain is `hidook.agency`:
 
 | Record | Points to | Purpose |
 |---|---|---|
-| `builder.yourdomain.com` | your app host | Where customers use the builder |
-| `*.sites.yourdomain.com` | Cloudflare Pages | Where published customer sites live |
+| `lp.hidook.agency` | your app host | Where customers use the builder |
+| `*.sites.hidook.agency` | Cloudflare Pages | Where published customer sites live |
 
-Then set `PUBLIC_URL=https://builder.yourdomain.com` and
-`BRAND_DOMAIN=sites.yourdomain.com`.
+Then set `PUBLIC_URL=https://lp.hidook.agency` and
+`BRAND_DOMAIN=sites.hidook.agency`.
 
 Verify both resolve over HTTPS with a valid certificate before taking cards.
 
@@ -248,7 +248,7 @@ failure above.
 ```bash
 NODE_ENV=production
 PORT=<injected by host>
-PUBLIC_URL=https://builder.yourdomain.com
+PUBLIC_URL=https://lp.hidook.agency
 DATA_DIR=/data                      # persistent volume
 SERVER_SECRET=<openssl rand -hex 32>
 

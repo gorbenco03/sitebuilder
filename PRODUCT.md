@@ -6,7 +6,7 @@ Authority: `VISION.md` is the synchronized source of truth. This file is a compa
 
 Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 
-- Builder: `https://builder.hidook.agency`
+- Builder: `https://lp.hidook.agency`
 - Customer sites: `https://{slug}.sites.hidook.agency`
 - Custom domains: concierge after launch; not required for the first happy path.
 

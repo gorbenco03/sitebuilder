@@ -47,7 +47,7 @@ These stay with the owner. Do **not** treat the following as a team checklist to
 
 - Production Stripe (or other live payment) keys and live mode
 - Live Stripe Product/Prices, Customer Portal, and refund policy
-- Production Cloudflare / DNS for `hidook.agency` / `builder.hidook.agency` / `*.sites.hidook.agency`
+- Production Cloudflare / DNS for `hidook.agency` / `lp.hidook.agency` / `*.sites.hidook.agency`
 - Production email sender and legal entity / VAT copy
 - Live Railway (or other host) production cutover with real charges
 
