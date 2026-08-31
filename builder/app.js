@@ -2300,14 +2300,9 @@ async function downloadDraftHtml() {
       headers: { Accept: 'text/html' },
     });
     if (!res.ok) {
-      let msg = 'Nu am putut descărca HTML-ul.';
-      try {
-        const json = await res.json();
-        if (json && json.error) msg = json.error;
-      } catch (_) {
-        /* body may be empty or plain text */
-      }
-      if (res.status === 401) msg = 'Intră în cont ca să descarci ciorna ca HTML.';
+      const msg = res.status === 401
+        ? 'Intră în cont ca să descarci ciorna ca HTML.'
+        : 'Nu am putut descărca HTML-ul.';
       showToast(msg, 'error', 5000);
       return;
     }
@@ -2336,8 +2331,8 @@ async function downloadDraftHtml() {
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
     showToast('HTML descărcat.', 'success', 2500);
-  } catch (e) {
-    showToast((e && e.message) || 'Nu am putut descărca HTML-ul.', 'error', 5000);
+  } catch (_) {
+    showToast('Nu am putut descărca HTML-ul.', 'error', 5000);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2361,12 +2356,9 @@ async function downloadDraftZip() {
       headers: { Accept: 'application/zip' },
     });
     if (!res.ok) {
-      let msg = 'Nu am putut descărca ZIP-ul.';
-      try {
-        const json = await res.json();
-        if (json && json.error) msg = json.error;
-      } catch (_) { /* empty */ }
-      if (res.status === 401) msg = 'Autentifică-te ca să descarci ZIP-ul.';
+      const msg = res.status === 401
+        ? 'Autentifică-te ca să descarci ZIP-ul.'
+        : 'Nu am putut descărca ZIP-ul.';
       showToast(msg, 'error', 5000);
       return;
     }
@@ -2395,8 +2387,8 @@ async function downloadDraftZip() {
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
     showToast('ZIP descărcat.', 'success', 2500);
-  } catch (e) {
-    showToast((e && e.message) || 'Nu am putut descărca ZIP-ul.', 'error', 5000);
+  } catch (_) {
+    showToast('Nu am putut descărca ZIP-ul.', 'error', 5000);
   } finally {
     if (btn) btn.disabled = false;
   }

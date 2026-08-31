@@ -37,6 +37,8 @@ function extractFunction(src, name) {
 }
 
 const completeTestCheckout = extractFunction(appSrc, 'completeTestCheckout');
+const downloadDraftHtml = extractFunction(appSrc, 'downloadDraftHtml');
+const downloadDraftZip = extractFunction(appSrc, 'downloadDraftZip');
 const unpaidRomanian = 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.';
 check('invalid payment copy', () => {
   assert.ok(
@@ -60,6 +62,64 @@ check('second unpaid site copy', () => {
     'second-unpaid-site API path cannot expose the raw English error'
   );
 });
+
+async function runExportFailure(downloadFunction, response) {
+  const toasts = [];
+  const button = { disabled: false };
+  const sandbox = {
+    currentSiteId: null,
+    $: () => button,
+    fetch: async () => {
+      if (response instanceof Error) throw response;
+      return response;
+    },
+    showToast: (...args) => toasts.push(args),
+  };
+  const functionName = downloadFunction.match(/function\s+(\w+)/)[1];
+  vm.runInNewContext(`${downloadFunction}\nthis.download = ${functionName};`, sandbox);
+  await sandbox.download();
+  assert.strictEqual(button.disabled, false, 'export button is restored after a failed download');
+  assert.strictEqual(toasts.length, 1, 'failed export shows exactly one toast');
+  return toasts[0][0];
+}
+
+async function proveExportErrorsStayRomanian() {
+  const backendFailure = {
+    ok: false,
+    status: 500,
+    json: async () => ({ error: 'Export failed' }),
+  };
+  assert.strictEqual(
+    await runExportFailure(downloadDraftHtml, backendFailure),
+    'Nu am putut descărca HTML-ul.',
+    'HTML export cannot toast a raw backend error'
+  );
+  assert.strictEqual(
+    await runExportFailure(downloadDraftHtml, new Error('Network failed')),
+    'Nu am putut descărca HTML-ul.',
+    'HTML export cannot toast a raw exception message'
+  );
+  assert.strictEqual(
+    await runExportFailure(downloadDraftZip, backendFailure),
+    'Nu am putut descărca ZIP-ul.',
+    'ZIP export cannot toast a raw backend error'
+  );
+  assert.strictEqual(
+    await runExportFailure(downloadDraftZip, new Error('Network failed')),
+    'Nu am putut descărca ZIP-ul.',
+    'ZIP export cannot toast a raw exception message'
+  );
+  assert.strictEqual(
+    await runExportFailure(downloadDraftHtml, { ...backendFailure, status: 401 }),
+    'Intră în cont ca să descarci ciorna ca HTML.',
+    'HTML export keeps its Romanian sign-in guidance'
+  );
+  assert.strictEqual(
+    await runExportFailure(downloadDraftZip, { ...backendFailure, status: 401 }),
+    'Autentifică-te ca să descarci ZIP-ul.',
+    'ZIP export keeps its Romanian sign-in guidance'
+  );
+}
 
 const initImageFileInput = extractFunction(appSrc, 'initImageFileInput');
 const openImagePickerForPath = extractFunction(appSrc, 'openImagePickerForPath');
@@ -127,9 +187,12 @@ async function proveDetailsPhotoSurvivesSharedChooser() {
   assert.notStrictEqual(appliedBackground, '#1a1a1a', 'chosen Salon photo cannot collapse to a black color-only hero');
 }
 
-proveDetailsPhotoSurvivesSharedChooser()
+Promise.all([
+  proveDetailsPhotoSurvivesSharedChooser(),
+  proveExportErrorsStayRomanian(),
+])
   .catch((error) => {
-    failures.push(`Salon Detalii photo: ${error.message}`);
+    failures.push(error.message);
   })
   .then(() => {
     if (failures.length) {
