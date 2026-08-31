@@ -95,6 +95,40 @@ check('rendered preview/export HTML starts in Romanian for both presets', () => 
   }
 });
 
+check('parent-era product-menu configs receive the Romanian group label', () => {
+  for (const preset of presets) {
+    for (const legacyValue of [undefined, '']) {
+      const config = JSON.parse(JSON.stringify(preset.config));
+      if (legacyValue === undefined) delete config.labels.menuLang;
+      else config.labels.menuLang = legacyValue;
+
+      const warnings = [];
+      const originalWarn = console.warn;
+      let html;
+      try {
+        console.warn = (...args) => warnings.push(args.join(' '));
+        html = renderHtml(template, config, { editMode: false });
+      } finally {
+        console.warn = originalWarn;
+      }
+
+      const variant = legacyValue === undefined ? 'missing' : 'empty';
+      const context = `${preset.id}/${variant}`;
+      assert.ok(/<html\b[^>]*lang=["']ro["']/i.test(html), `${context}: document language`);
+      assert.ok(
+        /role=["']group["'][^>]*aria-label=["']Limba meniului["']/i.test(html),
+        `${context}: Romanian group label`
+      );
+      assert.ok(/data-menu-lang=["']ro["'][^>]*aria-pressed=["']true["']/i.test(html), `${context}: RO selected`);
+      assert.ok(!html.includes('{{labels.menuLang}}'), `${context}: unresolved token remains`);
+      assert.ok(
+        !warnings.some((warning) => warning.includes('unresolved token: {{labels.menuLang}}')),
+        `${context}: unresolved-token warning`
+      );
+    }
+  }
+});
+
 function expectedEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

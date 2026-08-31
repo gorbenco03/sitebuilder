@@ -158,6 +158,19 @@ function normalizeInstagramForPublic(cfg) {
     cfg.instagram = ig;
 }
 
+/** Backfill customer configs saved before newer visible labels were introduced. */
+function normalizeConfigForRender(config) {
+    const cfg = Object.assign({}, config);
+    const labels = cfg.labels && typeof cfg.labels === 'object'
+        ? Object.assign({}, cfg.labels)
+        : {};
+    if (typeof labels.menuLang !== 'string' || !labels.menuLang.trim()) {
+        labels.menuLang = 'Limba meniului';
+    }
+    cfg.labels = labels;
+    return cfg;
+}
+
 /**
  * Phone number tokens that appear in tel: href attributes.
  * We sanitize these by stripping everything except digits, +, -, (, ), and spaces
@@ -535,8 +548,8 @@ function expandEach(str, scope, editOpts) {
  *   When false/absent the output is BYTE-IDENTICAL to the non-opts call.
  */
 function renderHtml(templateHtml, config, opts) {
-    // Work on a shallow clone so we don't mutate the caller's config.
-    const cfg = Object.assign({}, config);
+    // Normalize a shallow clone so old local/server drafts render with current defaults.
+    const cfg = normalizeConfigForRender(config);
     if (cfg.contact) {
         cfg.contact = Object.assign({}, cfg.contact);
         cfg.contact.addressNoHref =
