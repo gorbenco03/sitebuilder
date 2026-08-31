@@ -117,12 +117,12 @@
                     <div class="pm-menublock" id="pm-menu-block">
                         <div class="pm-menublock__head">
                             <h3 class="pm-menublock__h">{{menu.title}}</h3>
-                            <div class="menu-langs pm-langs" role="group" aria-label="Menu language">
-                                <button type="button" class="menu-lang-btn is-active" data-menu-lang="en" aria-pressed="true">EN</button>
-                                <button type="button" class="menu-lang-btn" data-menu-lang="ro" aria-pressed="false">RO</button>
+                            <div class="menu-langs pm-langs" role="group" aria-label="{{labels.menuLang}}">
+                                <button type="button" class="menu-lang-btn" data-menu-lang="en" aria-pressed="false">EN</button>
+                                <button type="button" class="menu-lang-btn is-active" data-menu-lang="ro" aria-pressed="true">RO</button>
                             </div>
                         </div>
-                        <div class="menu-panel pm-panel" data-menu-panel="en">
+                        <div class="menu-panel pm-panel" data-menu-panel="en" hidden>
                             <div class="pm-groups">
                                 <!-- @each menu.en -->
                                 <!-- @if items -->
@@ -137,7 +137,7 @@
                                 <!-- @end -->
                             </div>
                         </div>
-                        <div class="menu-panel pm-panel" data-menu-panel="ro" hidden>
+                        <div class="menu-panel pm-panel" data-menu-panel="ro">
                             <div class="pm-groups">
                                 <!-- @each menu.ro -->
                                 <!-- @if items -->

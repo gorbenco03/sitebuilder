@@ -119,6 +119,13 @@
           "maxLen": 24
         },
         {
+          "key": "labels.menuLang",
+          "type": "text",
+          "label": "Etichetă alegere limbă meniu (accesibilitate)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
           "key": "labels.lightboxPrev",
           "type": "text",
           "label": "Aria-label buton anterior lightbox",
@@ -237,7 +244,7 @@
         {
           "key": "menu.en",
           "type": "list",
-          "label": "Secțiuni meniu (primar) — fiecare cu categorie + feluri",
+          "label": "Secțiuni meniu în engleză — fiecare cu categorie + feluri",
           "required": false,
           "min": 0,
           "max": 20,
@@ -249,7 +256,7 @@
         {
           "key": "menu.ro",
           "type": "list",
-          "label": "Secțiuni meniu (limbă secundară) — fiecare cu categorie + feluri",
+          "label": "Secțiuni meniu în română — fiecare cu categorie + feluri",
           "required": false,
           "min": 0,
           "max": 20,

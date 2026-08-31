@@ -15,6 +15,7 @@
         "labels": {
           "whatsapp": "WhatsApp",
           "close": "Închide",
+          "menuLang": "Limba meniului",
           "about": "Povestea noastră",
           "heroEyebrow": "Restaurant · București",
           "instaTitle": "Din bucătărie, pe Instagram",
@@ -50,26 +51,26 @@
           "title": "Meniu",
           "en": [
             {
-              "category": "Aperitive",
+              "category": "Starters",
               "items": [
-                "Pâine maia, unt cultivat",
-                "Tartar de sfeclă, cremă de hrean",
-                "Salată de legume de sezon"
+                "Sourdough bread, cultured butter",
+                "Beetroot tartare, horseradish cream",
+                "Seasonal vegetable salad"
               ]
             },
             {
-              "category": "De la vatră",
+              "category": "From the hearth",
               "items": [
-                "Antricot maturat, jus de măduvă",
-                "Pește de Dunăre, unt prăjit",
-                "Țelină prăjită, alune, salvie"
+                "Dry-aged ribeye, bone marrow jus",
+                "Danube fish, brown butter",
+                "Roasted celeriac, hazelnuts, sage"
               ]
             },
             {
               "category": "Desert",
               "items": [
-                "Ciocolată neagră, sare de mare, ulei de măsline",
-                "Fructe de sezon, crème fraîche"
+                "Dark chocolate, sea salt, olive oil",
+                "Seasonal fruit, crème fraîche"
               ]
             }
           ],
@@ -178,6 +179,7 @@
         "labels": {
           "whatsapp": "WhatsApp",
           "close": "Închide",
+          "menuLang": "Limba meniului",
           "about": "Despre noi",
           "heroEyebrow": "Bistro · Cluj-Napoca",
           "instaTitle": "Din farfurie, pe Instagram",
@@ -213,27 +215,27 @@
           "title": "Meniu",
           "en": [
             {
-              "category": "Mic dejun",
+              "category": "Breakfast",
               "items": [
-                "Ouă la alegere, pâine de casă",
-                "Iaurt, miere, fructe de sezon",
-                "Toast cu avocado, ierburi"
+                "Eggs your way, homemade bread",
+                "Yogurt, honey, seasonal fruit",
+                "Avocado toast, herbs"
               ]
             },
             {
-              "category": "Prânz",
+              "category": "Lunch",
               "items": [
-                "Salată de piață, semințe prăjite",
-                "Supa zilei",
-                "Pui la grătar, legume"
+                "Market salad, toasted seeds",
+                "Soup of the day",
+                "Grilled chicken, vegetables"
               ]
             },
             {
-              "category": "Seară",
+              "category": "Evening",
               "items": [
-                "Platou de brânzeturi, miere locală",
-                "Pastele zilei",
-                "Prăjitură de casă"
+                "Cheese board, local honey",
+                "Pasta of the day",
+                "Homemade cake"
               ]
             }
           ],

@@ -92,7 +92,6 @@ function initMenuLangToggle() {
             b.classList.toggle('is-active', active);
             b.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
-        document.documentElement.setAttribute('lang', lang);
     }
 
     buttons.forEach(btn =>
