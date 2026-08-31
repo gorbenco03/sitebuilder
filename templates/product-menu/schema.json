@@ -49,10 +49,12 @@
         },
         {
           "key": "business.lang",
-          "type": "text",
+          "type": "select",
           "label": "Limba site-ului",
           "required": true,
-          "maxLen": 5
+          "options": [
+            { "value": "ro", "label": "Română" }
+          ]
         }
       ]
     },

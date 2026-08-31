@@ -1553,6 +1553,15 @@ function buildDrawerField(field) {
     input.className = 'field-textarea';
     if (field.maxLen) input.maxLength = field.maxLen;
     input.rows = 3;
+  } else if (type === 'select') {
+    input = document.createElement('select');
+    input.className = 'field-input';
+    (field.options || []).forEach((choice) => {
+      const option = document.createElement('option');
+      option.value = String(choice.value);
+      option.textContent = choice.label || String(choice.value);
+      input.appendChild(option);
+    });
   } else if (type === 'color') {
     // Accent triad is owned by the color popover (primary + derived light/dark).
     // theme.cream (page background) is also in the popover — skip all four here.
@@ -1711,7 +1720,7 @@ function syncDrawerField(path, value) {
   if (!body) return;
   const wrap = body.querySelector('[data-field-key="' + path + '"]');
   if (!wrap) return;
-  const input = wrap.querySelector('input,textarea');
+  const input = wrap.querySelector('input,textarea,select');
   if (input && input.value !== value) input.value = value;
 }
 
@@ -1984,12 +1993,18 @@ function syncInstagramModalPanels() {
   const connectPanel = $('ig-connect-panel');
   const connectedPanel = $('ig-connected-panel');
   const title = $('modal-instagram-title');
+  const lead = $('ig-state-lead');
   const hasUser = !!(currentUser && currentUser.email);
   const isConnected = hasUser && !!connectedInstagramEmbedUrl();
   if (authPanel) authPanel.style.display = hasUser ? 'none' : '';
   if (connectPanel) connectPanel.style.display = hasUser && !isConnected ? '' : 'none';
   if (connectedPanel) connectedPanel.style.display = isConnected ? '' : 'none';
   if (title) title.textContent = isConnected ? 'Instagram conectat' : 'Adaugă Instagram';
+  if (lead) {
+    lead.textContent = isConnected
+      ? 'Feed-ul Instagram este activ pe site și poate fi administrat din editorul Instafidget.'
+      : 'Conectează Instagram din editor, înainte să începi trialul. Feed-ul apare pe site — Hidook Site Builder nu vorbește direct cu Meta.';
+  }
 }
 
 async function prepareInstagramEditor() {
