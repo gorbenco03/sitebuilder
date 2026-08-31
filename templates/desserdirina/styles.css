@@ -1344,8 +1344,8 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 
 /* Fade in on scroll */
 .fade-in-section {
-    opacity: 0;
-    transform: translateY(34px);
+    opacity: 1;
+    transform: none;
     transition: opacity 0.8s var(--transition-smooth), transform 0.8s var(--spring);
 }
 
