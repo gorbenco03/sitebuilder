@@ -3387,7 +3387,7 @@ function loadCardPreview(templateId, wrap, shimmer) {
   if (meta && meta.thumbnail) {
     const img = document.createElement('img');
     img.className = 'template-card-preview-thumb';
-    img.alt = (meta.name || 'Design') + ' preview';
+    img.alt = 'Previzualizare ' + (meta.name || 'design');
     img.loading = 'lazy';
     img.decoding = 'async';
     img.src = meta.thumbnail;
@@ -3409,7 +3409,7 @@ function loadCardPreview(templateId, wrap, shimmer) {
 
       const iframe = document.createElement('iframe');
       iframe.className = 'template-card-preview-frame';
-      iframe.title = 'Design preview';
+      iframe.title = 'Previzualizare design';
       iframe.setAttribute('sandbox', 'allow-scripts');
       iframe.setAttribute('aria-hidden', 'true');
       iframe.addEventListener('load', () => shimmer.classList.add('loaded'));

@@ -222,6 +222,50 @@ check('catalog grid accessibility label is Romanian', () => {
     );
 });
 
+check('catalog thumbnail accessibility text is Romanian', () => {
+    const loadCardPreview = extractFunction(appSrc, 'loadCardPreview');
+    assert.ok(loadCardPreview, 'catalog card preview loader exists');
+    assert.ok(
+        !/\+\s*['"] preview['"]/.test(loadCardPreview),
+        'catalog thumbnail alt still concatenates the English preview suffix'
+    );
+    assert.ok(
+        !/meta\.name\s*\|\|\s*['"]Design['"]/.test(loadCardPreview),
+        'catalog thumbnail alt still falls back to English Design'
+    );
+    assert.ok(
+        !/iframe\.title\s*=\s*['"]Design preview['"]/.test(loadCardPreview),
+        'catalog fallback iframe title is still English Design preview'
+    );
+
+    const names = ['Restaurant', 'Meserii', 'Salon', 'Servicii profesionale', 'Desserdirina'];
+    const appended = [];
+    const sandbox = {
+        getTemplateList: () => names.map((name, index) => ({ id: `design-${index}`, name, thumbnail: `/thumb-${index}.jpg` })),
+        document: {
+            createElement: () => ({
+                addEventListener() {},
+                setAttribute() {},
+            }),
+        },
+        ensureTemplateLoaded: () => Promise.reject(new Error('thumbnail fast path expected')),
+        window: {},
+    };
+    vm.runInNewContext(`${loadCardPreview}; this.loadCardPreview = loadCardPreview;`, sandbox);
+    names.forEach((name, index) => {
+        sandbox.loadCardPreview(
+            `design-${index}`,
+            { appendChild(node) { appended.push(node); } },
+            { classList: { add() {} } }
+        );
+    });
+    assert.deepStrictEqual(
+        appended.map((node) => node.alt),
+        names.map((name) => `Previzualizare ${name}`),
+        'all five customer-visible thumbnail alts must start with Previzualizare'
+    );
+});
+
 check('editor remove-control accessibility labels are Romanian', () => {
     assert.ok(
         /removeBtn\.setAttribute\(['"]aria-label['"],\s*['"]Șterge elementul ['"]\s*\+\s*\(idx\s*\+\s*1\)\)/.test(overlaySrc),
