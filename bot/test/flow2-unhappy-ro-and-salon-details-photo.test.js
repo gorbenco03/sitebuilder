@@ -39,7 +39,27 @@ function extractFunction(src, name) {
 const completeTestCheckout = extractFunction(appSrc, 'completeTestCheckout');
 const downloadDraftHtml = extractFunction(appSrc, 'downloadDraftHtml');
 const downloadDraftZip = extractFunction(appSrc, 'downloadDraftZip');
+const doActualPublish = extractFunction(appSrc, 'doActualPublish');
+const wireAuthForm = extractFunction(appSrc, 'wireAuthForm');
 const unpaidRomanian = 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.';
+
+check('auth email network failure copy', () => {
+  assert.ok(
+    wireAuthForm.includes("errorDiv.textContent = 'Nu am putut trimite linkul. Încearcă din nou.'"),
+    'auth email failure uses the fixed Romanian fallback'
+  );
+  assert.ok(!/errorDiv\.textContent\s*=\s*(?:err|e)\.message/.test(wireAuthForm), 'auth error cannot expose an exception message');
+  assert.ok(!wireAuthForm.includes('Something went wrong. Try again.'), 'auth error cannot retain the English fallback');
+});
+
+check('publish network failure copy', () => {
+  assert.ok(
+    doActualPublish.includes("showToast('Publicarea a eșuat. Încearcă din nou.', 'error', 5000)"),
+    'publish failure uses the fixed Romanian fallback'
+  );
+  assert.ok(!/showToast\(\s*(?:err|e)\.message/.test(doActualPublish), 'publish failure cannot expose an exception message');
+});
+
 check('invalid payment copy', () => {
   assert.ok(
     completeTestCheckout.includes("showToast('Sesiune de plată invalidă.', 'error')"),

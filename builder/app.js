@@ -2891,7 +2891,7 @@ async function doActualPublish(chosenSlug) {
   try {
     await execPublish(chosenSlug);
   } catch (e) {
-    showToast(e.message || 'Publicarea a eșuat. Încearcă din nou.', 'error', 5000);
+    showToast('Publicarea a eșuat. Încearcă din nou.', 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }
@@ -3001,7 +3001,7 @@ function wireAuthForm(onAuthSuccess) {
           });
         }
       } catch (err) {
-        if (errorDiv) { errorDiv.textContent = err.message || 'Something went wrong. Try again.'; show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
