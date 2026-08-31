@@ -292,7 +292,7 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; }
   catch (e) {
     if (e.name === 'QuotaExceededError' || (e.code && e.code === 22)) {
-      showToast('This project has large images — it could not be saved as a draft. Publish before closing the page.', 'error', 7000);
+      showToast('Proiectul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.', 'error', 7000);
     }
     return false;
   }
@@ -2300,7 +2300,7 @@ async function downloadDraftHtml() {
       headers: { Accept: 'text/html' },
     });
     if (!res.ok) {
-      let msg = 'Could not download HTML.';
+      let msg = 'Nu am putut descărca HTML-ul.';
       try {
         const json = await res.json();
         if (json && json.error) msg = json.error;
@@ -2337,7 +2337,7 @@ async function downloadDraftHtml() {
     }, 0);
     showToast('HTML descărcat.', 'success', 2500);
   } catch (e) {
-    showToast((e && e.message) || 'Could not download HTML.', 'error', 5000);
+    showToast((e && e.message) || 'Nu am putut descărca HTML-ul.', 'error', 5000);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -2899,7 +2899,7 @@ async function doActualPublish(chosenSlug) {
   try {
     await execPublish(chosenSlug);
   } catch (e) {
-    showToast(e.message || 'Publish failed. Try again.', 'error', 5000);
+    showToast(e.message || 'Publicarea a eșuat. Încearcă din nou.', 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }
@@ -2917,7 +2917,7 @@ async function execPublish(slug) {
   if (currentSiteId) payload.siteId = currentSiteId;
 
   const data = await apiPost('/api/publish', payload);
-  if (!data.site) { showToast('Unexpected response from the server.', 'error'); return; }
+  if (!data.site) { showToast('Răspuns neașteptat de la server.', 'error'); return; }
 
   closeModal('modal-publish');
 
@@ -3127,7 +3127,7 @@ async function completeTestCheckout(sessionId) {
       showToast('Plata a fost procesată.', 'success', 5000);
     }
   } catch (e) {
-    showToast('Error confirming payment: ' + (e.message || 'try again'), 'error', 6000);
+    showToast('Nu am putut confirma plata. Încearcă din nou.', 'error', 6000);
   } finally {
     setLoading(false);
   }
@@ -3790,7 +3790,7 @@ async function loadSiteForEdit(siteId) {
 
     window.location.hash = '#edit';
   } catch (e) {
-    showToast('Error loading the site: ' + e.message, 'error');
+    showToast('Nu am putut încărca site-ul.', 'error');
   } finally {
     setLoading(false);
   }
@@ -4199,7 +4199,7 @@ async function boot() {
     await handleRoute(window.location.hash);
   } catch (e) {
     console.error('Boot error:', e);
-    showToast('Initialization failed. Reload the page.', 'error', 8000);
+    showToast('Inițializarea a eșuat. Reîncarcă pagina.', 'error', 8000);
   } finally {
     setLoading(false);
   }
