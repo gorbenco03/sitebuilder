@@ -32,6 +32,14 @@ assert.doesNotMatch(
     'Desserdirina sections must be visible by default, without waiting for JavaScript'
 );
 
+const defaultCollagePhotoRule = styles.match(/\.collage-photo\s*\{([^}]*)\}/);
+assert.ok(defaultCollagePhotoRule, 'Desserdirina styles must define the default .collage-photo rule');
+assert.doesNotMatch(
+    defaultCollagePhotoRule[1],
+    /opacity\s*:\s*0(?:\.0+)?\s*(?:;|$)/,
+    'Desserdirina collage photos must be visible by default, without waiting for JavaScript'
+);
+
 const initScrollAnimations = script.match(/function initScrollAnimations\(\)\s*\{[\s\S]*?\n\}/);
 assert.ok(initScrollAnimations, 'Desserdirina script may keep initScrollAnimations');
 assert.match(

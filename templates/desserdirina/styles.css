@@ -665,7 +665,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     --x: 0px; --y: 0px; --r: 0deg; --dx: 0px; --dy: 0px; --s: 1;
     transform: translate(calc(-50% + var(--x) + var(--dx)), calc(var(--y) + var(--dy))) rotate(var(--r)) scale(var(--s));
     transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease;
-    opacity: 0;
+    opacity: 1;
     cursor: grab;
     touch-action: none;
     -webkit-user-select: none;
