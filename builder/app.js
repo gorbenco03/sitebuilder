@@ -4071,13 +4071,13 @@ function wireStaticButtons() {
       try {
         await navigator.clipboard.writeText(url);
         copyBtn.classList.add('copied');
-        copyBtn.textContent = 'Copied!';
+        copyBtn.textContent = 'Copiat!';
         setTimeout(() => {
           copyBtn.classList.remove('copied');
-          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copy';
+          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copiază';
         }, 2000);
       } catch (_) {
-        showToast("Couldn't copy. Select the text manually.", 'error');
+        showToast('Nu am putut copia adresa. Selectează textul manual.', 'error');
       }
     });
   }

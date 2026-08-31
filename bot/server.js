@@ -772,7 +772,7 @@ async function handleAuthEmail(req, res) {
     const body = await parseJson(req);
     const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return sendJson(res, 400, { error: 'Enter a valid email address.' });
+        return sendJson(res, 400, { error: 'Introdu o adresă de email validă.' });
     }
 
     const reg = getRegistry();
@@ -1755,7 +1755,14 @@ async function handlePublish(req, res) {
     } else {
         // Max 1 unpaid site per user (prevents abuse)
         const existing = await reg.listSites(userId);
-        const unpaid   = existing.filter(s => !s.paid && s.status !== 'deleted');
+        const unpaid = existing.filter((s) => {
+            if (s.status === 'deleted') return false;
+            const subscriptionStatus = String(s.stripeSubscriptionStatus || s.subscriptionStatus || '').toLowerCase();
+            const cancelledDraft =
+                s.status === 'unpublished' &&
+                (s.canceledAt || subscriptionStatus === 'canceled' || subscriptionStatus === 'cancelled');
+            return !s.paid || cancelledDraft;
+        });
         if (unpaid.length > 0) {
             return sendJson(res, 409, {
                 error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.',
