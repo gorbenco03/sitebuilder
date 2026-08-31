@@ -14,14 +14,20 @@
     // All gallery images across every deck, in document order — used for prev/next.
     const allImgs = Array.from(document.querySelectorAll('.collage-photo img'));
 
+    // Labels from template data-lb-* on <html>, with Romanian fallbacks.
+    const root = document.documentElement;
+    const lbCloseAria = root.getAttribute('data-lb-close') || 'Închide';
+    const lbPrevAria  = root.getAttribute('data-lb-prev')  || 'Anterior';
+    const lbNextAria  = root.getAttribute('data-lb-next')  || 'Următor';
+
     const lb = document.createElement('div');
     lb.className = 'lightbox';
     lb.setAttribute('hidden', '');
     lb.innerHTML =
-        '<button class="lightbox-close" aria-label="Close">&times;</button>' +
-        '<button class="lightbox-nav lightbox-prev" aria-label="Previous">&#8249;</button>' +
+        '<button class="lightbox-close" aria-label="' + lbCloseAria.replace(/"/g, '&quot;') + '">&times;</button>' +
+        '<button class="lightbox-nav lightbox-prev" aria-label="' + lbPrevAria.replace(/"/g, '&quot;') + '">&#8249;</button>' +
         '<img class="lightbox-img" alt="">' +
-        '<button class="lightbox-nav lightbox-next" aria-label="Next">&#8250;</button>';
+        '<button class="lightbox-nav lightbox-next" aria-label="' + lbNextAria.replace(/"/g, '&quot;') + '">&#8250;</button>';
     document.body.appendChild(lb);
 
     const lbImg   = lb.querySelector('.lightbox-img');
