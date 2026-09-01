@@ -127,32 +127,6 @@ function renderPreview(files, config, opts) {
         '<script data-hb-cookie-banner>' + COOKIE_BANNER_JS + '</script>'
     );
 
-    // Business legal pages as data: URLs so footer/banner links open the
-    // generated Romanian placeholders for THIS draft, not /app/ builder legal.
-    {
-        var legalDocs = {
-            'privacy.html': privacyHtml(config),
-            'terms.html': termsHtml(config),
-            'cookies.html': cookiesHtml(config),
-        };
-        var legalNames = Object.keys(legalDocs);
-        for (var li = 0; li < legalNames.length; li++) {
-            var legalName = legalNames[li];
-            var pageHtml = String(legalDocs[legalName] || '');
-            pageHtml = pageHtml
-                .replace(/<link\\s[^>]*href=["']styles\\.css["'][^>]*>/gi, '')
-                .replace(/<script\\s[^>]*src=["']cookie-banner\\.js["'][^>]*>\\s*<\\/script>/gi, '');
-            var href = 'data:text/html;charset=utf-8,' + encodeURIComponent(pageHtml);
-            // target=_blank + sandbox allow-popups-to-escape-sandbox opens the
-            // business page in a real tab instead of navigating the srcdoc away
-            // or resolving relative paths against /app/.
-            html = html.replace(
-                new RegExp('href=(["\\'])' + legalName.replace('.', '\\\\.') + '\\\\1', 'gi'),
-                'href="' + href + '" target="_blank" rel="noopener noreferrer" data-hb-preview-legal="' + legalName + '"'
-            );
-        }
-    }
-
     // PREVIEW MODE: complete every entry animation instantly (keeping the
     // \`forwards\` end state). Two reasons: (1) each debounced re-render would
     // otherwise restart all fade-ins — janky while typing; (2) Chrome throttles
@@ -219,6 +193,45 @@ function renderPreview(files, config, opts) {
         );
     }
 
+    // Business legal pages: hash hrefs + in-iframe click interceptor.
+    // Chromium will not open top-level data:text/html navigations from srcdoc
+    // (and build.js already treats data:text/html as hostile). Relative
+    // privacy.html would resolve against /app/ builder chrome. Instead: store
+    // generated RO pages as JSON, rewrite links to #hb-preview-legal-*, and on
+    // real click document.write the page inside the sandboxed preview iframe.
+    {
+        var legalDocs = {
+            'privacy.html': privacyHtml(config),
+            'terms.html': termsHtml(config),
+            'cookies.html': cookiesHtml(config),
+        };
+        var legalNames = Object.keys(legalDocs);
+        for (var li = 0; li < legalNames.length; li++) {
+            var legalName = legalNames[li];
+            var pageHtml = String(legalDocs[legalName] || '');
+            pageHtml = pageHtml
+                .replace(/<link\\s[^>]*href=["']styles\\.css["'][^>]*>/gi, '')
+                .replace(/<script\\s[^>]*src=["']cookie-banner\\.js["'][^>]*>\\s*<\\/script>/gi, '');
+            legalDocs[legalName] = pageHtml;
+            html = html.replace(
+                new RegExp('href=(["\\'])' + legalName.replace('.', '\\\\.') + '\\\\1', 'gi'),
+                'href="#hb-preview-legal-' + legalName + '" data-hb-preview-legal="' + legalName + '"'
+            );
+        }
+        // Escape < so a </script> inside legal HTML cannot break out of the JSON script tag.
+        var legalJson = JSON.stringify(legalDocs).replace(/</g, '\\\\u003c');
+        // Append at the final </body> so earlier preview injects (forcer/edit) cannot
+        // splice into this payload if it ever contained that substring.
+        var closeBodyTag = '</bod' + 'y>';
+        var legalBoot = '<script type="application/json" id="hb-preview-legal-docs">' + legalJson + '</script>' +
+            '<script data-hb-preview-legal-nav>' + PREVIEW_LEGAL_NAV_SRC + '</script>' + closeBodyTag;
+        var bodyCloseAt = html.lastIndexOf(closeBodyTag);
+        if (bodyCloseAt === -1) bodyCloseAt = html.toLowerCase().lastIndexOf(closeBodyTag);
+        if (bodyCloseAt !== -1) html = html.slice(0, bodyCloseAt) + legalBoot + html.slice(bodyCloseAt + closeBodyTag.length);
+        else html += legalBoot;
+    }
+
+
     return html;
 }
 `;
@@ -227,6 +240,10 @@ function renderPreview(files, config, opts) {
 // We JSON.stringify it so it is safe to embed inside a JS string (escapes quotes,
 // newlines, backslashes, etc.).
 const editOverlayEmbedded = JSON.stringify(editOverlaySrc);
+
+// Click-interceptor source embedded for renderPreview legal isolation.
+const previewLegalNavSrc = "(function () {\n  function docs() {\n    var el = document.getElementById('hb-preview-legal-docs');\n    return el ? JSON.parse(el.textContent) : {};\n  }\n  function bootScripts() {\n    var j = document.getElementById('hb-preview-legal-docs');\n    var n = document.querySelector('script[data-hb-preview-legal-nav]');\n    if (!j || !n) return '';\n    return (\n      '<scr' + 'ipt type=\"application/json\" id=\"hb-preview-legal-docs\">' +\n      j.textContent +\n      '</scr' + 'ipt>' +\n      '<scr' + 'ipt data-hb-preview-legal-nav>' +\n      n.textContent +\n      '</scr' + 'ipt>'\n    );\n  }\n  function prepare(html) {\n    html = String(html || '');\n    html = html.replace(/href=([\"'])(privacy|terms|cookies)\\.html\\1/gi, function (_m, _q, p) {\n      return 'href=\"#hb-preview-legal-' + p + '.html\" data-hb-preview-legal=\"' + p + '.html\"';\n    });\n    html = html.replace(/href=([\"'])index\\.html\\1/gi, 'href=\"#hb-preview-home\" data-hb-preview-home=\"1\"');\n    if (!/id=[\"']hb-preview-legal-docs[\"']/.test(html)) {\n      var closeBody = '</bod' + 'y>';\n      var reBody = new RegExp(closeBody.replace('/', '\\\\/'), 'i');\n      if (reBody.test(html)) html = html.replace(reBody, bootScripts() + closeBody);\n      else html += bootScripts();\n    }\n    return html;\n  }\n  function show(name) {\n    var page = docs()[name];\n    if (!page) return;\n    document.open();\n    document.write(prepare(page));\n    document.close();\n  }\n  document.addEventListener('click', function (e) {\n    var t = e.target;\n    if (t && t.nodeType === 3) t = t.parentElement;\n    var a = t && t.closest ? t.closest('a') : null;\n    if (!a) return;\n    if (a.getAttribute('data-hb-preview-home') === '1') {\n      e.preventDefault();\n      try { location.reload(); } catch (err) {}\n      return;\n    }\n    var name = a.getAttribute('data-hb-preview-legal');\n    if (!name) return;\n    e.preventDefault();\n    if (e.stopPropagation) e.stopPropagation();\n    show(name);\n  }, true);\n})();";
+const previewLegalNavEmbedded = JSON.stringify(previewLegalNavSrc);
 
 const engineIife = `(function () {
 'use strict';
@@ -243,6 +260,9 @@ ${pureFunctions}
 // ── Edit overlay source (inlined by bundler from builder/edit-overlay.js) ────
 // Used by renderPreview in editMode to inject the overlay script into srcdoc.
 var EDIT_OVERLAY_SRC = ${editOverlayEmbedded};
+
+// ── Preview legal click interceptor (in-iframe document.write; no data: hrefs) ─
+var PREVIEW_LEGAL_NAV_SRC = ${previewLegalNavEmbedded};
 
 // ── Generated-site legal + cookie banner (pure; from bot/site-legal.js) ──────
 ${siteLegalPure}

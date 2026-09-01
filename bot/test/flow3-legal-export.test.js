@@ -28,6 +28,9 @@ const vm = require('vm');
 const ROOT = path.resolve(__dirname, '../..');
 const BASE_SHA = '275e534232cd20105781ca0fbc6ec5bb5d9a2b97';
 const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
+const REJECTED_SHA = 'f1cda5f66c297ecea358c68629223e49cce51a2e'; // data:text/html legal hrefs — Chromium dead clicks
+const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
+const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 
 const SERVER_SECRET = 'flow3-server-secret-' + crypto.randomBytes(8).toString('hex');
@@ -197,6 +200,26 @@ function unzipStore(zipBuf, destDir) {
         );
     });
 
+    await check('causal RED: rejected f1cda5f still ships data:text/html legal hrefs', () => {
+        let rejectedBuild;
+        try {
+            rejectedBuild = execFileSync('git', ['-C', ROOT, 'show', REJECTED_SHA + ':scripts/build-builder.js'], {
+                encoding: 'utf8',
+                maxBuffer: 2 * 1024 * 1024,
+            });
+        } catch (e) {
+            assert.fail('rejected build-builder missing: ' + e.message);
+        }
+        assert.ok(
+            /data:text\/html;charset=utf-8/.test(rejectedBuild),
+            'rejected candidate must still use data:text/html legal hrefs for causal RED'
+        );
+        assert.ok(
+            !/#hb-preview-legal-|PREVIEW_LEGAL_NAV_SRC|hb-preview-legal-docs/.test(rejectedBuild),
+            'rejected candidate must lack hash/interceptor legal navigation'
+        );
+    });
+
     // ── HEAD GREEN: templates ────────────────────────────────────────────
     await check('HEAD all five templates footer link privacy/terms/cookies + cookie banner', () => {
         for (const id of TPLS) {
@@ -246,7 +269,13 @@ function unzipStore(zipBuf, destDir) {
         const engineSrc = fs.readFileSync(path.join(ROOT, 'builder/generated/engine.js'), 'utf8');
         assert.ok(/data-hb-cookie-banner/.test(engineSrc), 'engine inlines cookie banner assets');
         assert.ok(/data-hb-preview-legal/.test(engineSrc), 'engine marks preview legal links');
+        assert.ok(/hb-preview-legal-docs|PREVIEW_LEGAL_NAV_SRC|data-hb-preview-legal-nav/.test(engineSrc), 'engine ships legal click interceptor');
         assert.ok(!/owner-gated/i.test(engineSrc), 'engine legal copy has no owner-gated');
+        // Must NOT treat data:text/html as the navigable legal mechanism (Chromium dead-click).
+        assert.ok(
+            !/href\s*=\s*['"]data:text\/html|var href = 'data:text\/html/.test(engineSrc),
+            'engine must not assign data:text/html as legal href'
+        );
 
         const sandbox = { window: {}, console };
         vm.runInNewContext(engineSrc, sandbox);
@@ -273,7 +302,6 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/data-hb-cookie-banner/.test(html), id + ' cookie assets inlined');
             assert.ok(!/href=["']cookie-banner\.css["']/.test(html), id + ' no external cookie css');
             assert.ok(!/src=["']cookie-banner\.js["']/.test(html), id + ' no external cookie js');
-            // Banner starts hidden; inlined script must be able to reveal it.
             assert.ok(/hb-cookie-banner[\s\S]*?\bhidden\b/.test(html), id + ' banner has hidden attr');
             assert.ok(/el\.hidden\s*=\s*false/.test(html), id + ' accept/show path sets hidden=false');
             assert.ok(/el\.hidden\s*=\s*true/.test(html), id + ' accept path can hide banner');
@@ -284,26 +312,20 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/data-hb-preview-legal="privacy\.html"/.test(html), id + ' privacy isolated');
             assert.ok(/data-hb-preview-legal="terms\.html"/.test(html), id + ' terms isolated');
             assert.ok(/data-hb-preview-legal="cookies\.html"/.test(html), id + ' cookies isolated');
+            assert.ok(/href="#hb-preview-legal-privacy\.html"/.test(html), id + ' privacy hash href');
+            assert.ok(/href="#hb-preview-legal-terms\.html"/.test(html), id + ' terms hash href');
+            assert.ok(/href="#hb-preview-legal-cookies\.html"/.test(html), id + ' cookies hash href');
+            assert.ok(/id="hb-preview-legal-docs"/.test(html), id + ' embedded legal docs JSON');
+            assert.ok(/data-hb-preview-legal-nav/.test(html), id + ' legal nav interceptor');
+            assert.ok(!/href=["']data:text\/html/i.test(html), id + ' no data:text/html legal href');
             assert.ok(!/\/app\/(?:privacy|terms|cookies)\.html/.test(html), id + ' no builder /app legal paths');
             assert.ok(!/owner-gated|owner-ului/i.test(html), id + ' no owner jargon in preview');
 
-            // Decode one legal data URL and confirm business Romanian placeholder page.
-            const marker = 'data-hb-preview-legal="privacy.html"';
-            const at = html.indexOf(marker);
-            assert.ok(at !== -1, id + ' privacy marker index');
-            const windowStart = Math.max(0, at - 20000);
-            const slice = html.slice(windowStart, at + marker.length);
-            const dm = slice.match(/href="(data:text\/html;charset=utf-8,[^"]+)"[^>]*data-hb-preview-legal="privacy\.html"|data-hb-preview-legal="privacy\.html"[^>]*href="(data:text\/html;charset=utf-8,[^"]+)"/);
-            // Attribute order is href first then data-hb-preview-legal — scan backward for href=
-            let dataHref = null;
-            const hrefIdx = slice.lastIndexOf('href="data:text/html;charset=utf-8,');
-            if (hrefIdx !== -1) {
-                const from = slice.slice(hrefIdx + 'href="'.length);
-                const end = from.indexOf('"');
-                if (end !== -1) dataHref = from.slice(0, end);
-            }
-            assert.ok(dataHref, id + ' privacy data: href');
-            const raw = decodeURIComponent(dataHref.replace(/^data:text\/html;charset=utf-8,/, ''));
+            // Pull privacy payload from the embedded JSON (not a data: URL).
+            const docsMatch = html.match(/id="hb-preview-legal-docs"[^>]*>([\s\S]*?)<\/script>/);
+            assert.ok(docsMatch, id + ' legal docs script body');
+            const docs = JSON.parse(docsMatch[1]);
+            const raw = String(docs['privacy.html'] || '');
             assert.ok(/Politica de confidențialitate/i.test(raw), id + ' privacy RO title');
             assert.ok(raw.includes(config.business.name), id + ' privacy names business');
             assert.ok(/\[PLACEHOLDER/i.test(raw), id + ' privacy PLACEHOLDER');
@@ -521,6 +543,284 @@ function unzipStore(zipBuf, destDir) {
         await new Promise((r) => server.close(() => r()));
         try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
     }
+
+
+    // ── Brave/Playwright causal click probes ─────────────────────────────
+    // Sandboxed srcdoc iframes without allow-same-origin block parent
+    // contentDocument access. Drive clicks via Playwright frame handles (CDP).
+    function loadPlaywright() {
+        return require(PW_PATH);
+    }
+
+    async function withBrave(fn) {
+        assert.ok(fs.existsSync(BRAVE), 'Brave binary missing at ' + BRAVE);
+        const { chromium } = loadPlaywright();
+        const browser = await chromium.launch({
+            headless: true,
+            executablePath: BRAVE,
+        });
+        try {
+            return await fn(browser);
+        } finally {
+            await browser.close();
+        }
+    }
+
+    function sleep(ms) {
+        return new Promise((r) => setTimeout(r, ms));
+    }
+
+    async function attachSrcdoc(page, sandbox, html) {
+        await page.setContent(
+            '<!DOCTYPE html><html><body style="margin:0">' +
+                '<iframe id="preview" title="preview" sandbox="' +
+                sandbox +
+                '" style="width:100%;height:100vh;border:0"></iframe>' +
+                '</body></html>',
+            { waitUntil: 'domcontentloaded' }
+        );
+        await page.evaluate((docHtml) => {
+            const f = document.getElementById('preview');
+            f.srcdoc = docHtml;
+        }, html);
+        // Wait until Playwright sees a child frame with a body
+        const deadline = Date.now() + 15000;
+        while (Date.now() < deadline) {
+            const fr = await previewFrame(page);
+            if (fr) {
+                try {
+                    const ready = await fr.evaluate(() => !!(document && document.body));
+                    if (ready) return fr;
+                } catch (_) {
+                    // frame may be mid-navigation
+                }
+            }
+            await sleep(50);
+        }
+        throw new Error('preview frame did not become ready');
+    }
+
+    async function previewFrame(page) {
+        const handle = await page.$('#preview');
+        if (!handle) return null;
+        return handle.contentFrame();
+    }
+
+    async function waitFrameSelector(page, selector, timeoutMs) {
+        const deadline = Date.now() + (timeoutMs || 15000);
+        while (Date.now() < deadline) {
+            const fr = await previewFrame(page);
+            if (fr) {
+                try {
+                    const el = await fr.$(selector);
+                    if (el) return fr;
+                } catch (_) {}
+            }
+            await sleep(50);
+        }
+        throw new Error('timeout waiting for ' + selector + ' in preview frame');
+    }
+
+    async function waitFrameText(page, predicate, timeoutMs, label) {
+        const deadline = Date.now() + (timeoutMs || 8000);
+        let last = '';
+        while (Date.now() < deadline) {
+            const fr = await previewFrame(page);
+            if (fr) {
+                try {
+                    last = await fr.evaluate(() => (document.body && document.body.innerText) || '');
+                    if (predicate(last)) return last;
+                } catch (_) {}
+            }
+            await sleep(50);
+        }
+        throw new Error('timeout waiting for frame text (' + label + '): ' + last.slice(0, 200));
+    }
+
+    async function clickInFrame(fr, selector) {
+        const ok = await fr.evaluate((sel) => {
+            const el = document.querySelector(sel);
+            if (!el) return false;
+            try {
+                el.scrollIntoView({ block: 'center', inline: 'nearest' });
+            } catch (_) {}
+            if (typeof el.click === 'function') el.click();
+            else {
+                el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+            }
+            return true;
+        }, selector);
+        assert.ok(ok, 'clickInFrame missing ' + selector);
+    }
+
+    function assertVisibleLegal(bodyText, bizName, which) {
+        const t = String(bodyText || '');
+        assert.ok(t.length > 40, which + ' legal body non-empty');
+        assert.ok(!/\/app\/(?:privacy|terms|cookies)/i.test(t), which + ' must not be builder /app chrome');
+        assert.ok(!/Hidook Site Builder/i.test(t), which + ' must not be builder product chrome title');
+        assert.ok(/\[PLACEHOLDER/i.test(t), which + ' shows PLACEHOLDER');
+        assert.ok(
+            /confiden|termen|cookie|Politica|Termeni/i.test(t),
+            which + ' shows Romanian legal wording'
+        );
+        if (bizName) {
+            assert.ok(t.includes(bizName), which + ' names business ' + bizName);
+        }
+        assert.ok(!/owner-gated|owner-ului/i.test(t), which + ' no owner-gated jargon');
+    }
+
+    await check('causal RED: data:text/html target=_blank legal click does not open a page in Brave', async () => {
+        await withBrave(async (browser) => {
+            const page = await browser.newPage();
+            const legalHtml =
+                '<!DOCTYPE html><html lang="ro"><body><main class="hb-legal"><h1>Politica de confidențialitate</h1><p>' +
+                BIZ_NAME +
+                '</p><p>[PLACEHOLDER: denumire legală]</p></main></body></html>';
+            const dataHref = 'data:text/html;charset=utf-8,' + encodeURIComponent(legalHtml);
+            const srcdoc =
+                '<!DOCTYPE html><html><body style="font-family:system-ui">' +
+                '<p id="home-marker">HOME_PREVIEW</p>' +
+                '<a id="legal" href="' +
+                dataHref +
+                '" target="_blank" rel="noopener" data-hb-preview-legal="privacy.html">Confidențialitate</a>' +
+                '</body></html>';
+            await attachSrcdoc(page, 'allow-scripts allow-popups allow-popups-to-escape-sandbox', srcdoc);
+            await waitFrameSelector(page, '#legal', 8000);
+            const beforePages = browser.contexts()[0].pages().length;
+            const fr = await previewFrame(page);
+            await clickInFrame(fr, '#legal');
+            await sleep(700);
+            const afterPages = browser.contexts()[0].pages().length;
+            let frameText = '';
+            try {
+                const fr2 = await previewFrame(page);
+                if (fr2) frameText = await fr2.evaluate(() => (document.body && document.body.innerText) || '');
+            } catch (_) {}
+            const openedLegal =
+                afterPages > beforePages ||
+                (/Politica de confiden/i.test(frameText) && /PLACEHOLDER: denumire/i.test(frameText));
+            assert.ok(
+                !openedLegal,
+                'data:text/html click must NOT open legal page (pages ' +
+                    beforePages +
+                    '→' +
+                    afterPages +
+                    ', frame=' +
+                    frameText.slice(0, 160) +
+                    ')'
+            );
+            assert.ok(/HOME_PREVIEW/.test(frameText), 'iframe should remain on home after dead data: click');
+            await page.close();
+        });
+    });
+
+    await check('HEAD Brave: catalog + editor preview legal clicks open generated RO pages for all five templates', async () => {
+        execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
+            cwd: ROOT,
+            stdio: ['ignore', 'ignore', 'pipe'],
+        });
+        const engineSrc = fs.readFileSync(path.join(ROOT, 'builder/generated/engine.js'), 'utf8');
+        const sandbox = { window: {}, console };
+        vm.runInNewContext(engineSrc, sandbox);
+        const engine = sandbox.window.HidookEngine;
+
+        await withBrave(async (browser) => {
+            for (const id of TPLS) {
+                const dir = path.join(ROOT, 'templates', id);
+                const files = {
+                    templateHtml: fs.readFileSync(path.join(dir, 'template.html'), 'utf8'),
+                    stylesCss: fs.readFileSync(path.join(dir, 'styles.css'), 'utf8'),
+                    scriptJs: fs.readFileSync(path.join(dir, 'script.js'), 'utf8'),
+                };
+                const collage = path.join(dir, 'collage.js');
+                if (fs.existsSync(collage)) files.collageJs = fs.readFileSync(collage, 'utf8');
+                const presets = JSON.parse(fs.readFileSync(path.join(dir, 'presets.json'), 'utf8')).presets;
+                const config = JSON.parse(JSON.stringify(presets[0].config || presets[0]));
+                config.business = config.business || {};
+                const biz = (config.business.name || BIZ_NAME + ' ' + id).trim();
+                config.business.name = biz;
+
+                const previewHtml = engine.renderPreview(files, config);
+                assert.ok(!/href=["']data:text\/html/i.test(previewHtml), id + ' catalog html has no data: legal href');
+                assert.ok(/data-hb-preview-legal-nav/.test(previewHtml), id + ' ships interceptor');
+
+                // Fresh context per template avoids Chromium srcdoc flakiness on large 5th payload.
+                const context = await browser.newContext();
+                try {
+                    const page = await context.newPage();
+                    await attachSrcdoc(page, 'allow-scripts', previewHtml);
+                    let fr = await waitFrameSelector(page, '[data-hb-preview-legal="privacy.html"]', 20000);
+                    // Wait until document complete so late template scripts don't race the interceptor.
+                    await fr.evaluate(async () => {
+                        if (document.readyState === 'complete') return;
+                        await new Promise((r) => window.addEventListener('load', r, { once: true }));
+                    });
+
+                    const banner = await fr.evaluate(() => {
+                        const el = document.getElementById('hb-cookie-banner');
+                        const btn = document.getElementById('hb-cookie-accept');
+                        if (!el || !btn) return { ok: false };
+                        try { el.hidden = false; } catch (_) {}
+                        btn.click();
+                        return { ok: true, hiddenAfter: !!el.hidden };
+                    });
+                    assert.ok(banner.ok, id + ' catalog cookie banner/accept present');
+
+                    const kinds = [
+                        { key: 'privacy.html', re: /Politica de confiden/i },
+                        { key: 'terms.html', re: /Termeni/i },
+                        { key: 'cookies.html', re: /Cookie/i },
+                    ];
+                    for (const kind of kinds) {
+                        await page.evaluate((docHtml) => {
+                            document.getElementById('preview').srcdoc = docHtml;
+                        }, previewHtml);
+                        fr = await waitFrameSelector(page, '[data-hb-preview-legal="' + kind.key + '"]', 20000);
+                        await fr.evaluate(async () => {
+                            if (document.readyState === 'complete') return;
+                            await new Promise((r) => window.addEventListener('load', r, { once: true }));
+                        });
+                        await clickInFrame(fr, '[data-hb-preview-legal="' + kind.key + '"]');
+                        const bodyText = await waitFrameText(
+                            page,
+                            (t) => kind.re.test(t) && /PLACEHOLDER/i.test(t),
+                            15000,
+                            id + ' ' + kind.key
+                        );
+                        assertVisibleLegal(bodyText, biz, id + ' catalog ' + kind.key);
+                        assert.ok(!/Se încarcă previzualizarea/i.test(bodyText), id + ' catalog not stuck on loading');
+                    }
+                    await page.close();
+
+                    // Editor-style preview (editMode) — Privacy click
+                    const editHtml = engine.renderPreview(files, config, { editMode: true });
+                    assert.ok(!/href=["']data:text\/html/i.test(editHtml), id + ' editor html has no data: legal href');
+                    const editPage = await context.newPage();
+                    await attachSrcdoc(
+                        editPage,
+                        'allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox',
+                        editHtml
+                    );
+                    fr = await waitFrameSelector(editPage, '[data-hb-preview-legal="privacy.html"]', 20000);
+                    await fr.evaluate(async () => {
+                        if (document.readyState === 'complete') return;
+                        await new Promise((r) => window.addEventListener('load', r, { once: true }));
+                    });
+                    await clickInFrame(fr, '[data-hb-preview-legal="privacy.html"]');
+                    const editText = await waitFrameText(
+                        editPage,
+                        (t) => /Politica de confiden/i.test(t) && /PLACEHOLDER/i.test(t),
+                        15000,
+                        id + ' editor privacy'
+                    );
+                    assertVisibleLegal(editText, biz, id + ' editor privacy');
+                    await editPage.close();
+                } finally {
+                    await context.close();
+                }
+            }
+        });
+    });
 
     if (failed) {
         console.error('\nflow3-legal-export.test.js: FAILED (' + failed + ')');
