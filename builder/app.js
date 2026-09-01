@@ -1731,24 +1731,16 @@ function composeHeroBackground(opts) {
  */
 function openImagePickerForPath(configPath, cb) {
   const input = $('img-file-input');
-  if (!input) {
-    if (typeof cb === 'function') cb('');
-    return;
-  }
+  if (!input) return;
   const onChange = () => {
     input.removeEventListener('change', onChange, true);
     const file = input.files && input.files[0];
     input.value = '';
-    if (!file) {
-      if (typeof cb === 'function') cb('');
-      return;
-    }
+    if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof cb === 'function') cb(String(reader.result || ''));
-    };
-    reader.onerror = () => {
-      if (typeof cb === 'function') cb('');
+      const chosenImage = String(reader.result || '');
+      if (chosenImage && typeof cb === 'function') cb(chosenImage);
     };
     reader.readAsDataURL(file);
   };
@@ -3300,6 +3292,32 @@ async function resumeLocalDraft() {
 // 21. Templates screen
 // ---------------------------------------------------------------------------
 
+async function reloadTemplateRegistry() {
+  const button = $('btn-retry-templates');
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Se încarcă…';
+  }
+  try {
+    const response = await fetch('/app/generated/templates-data.js', {
+      credentials: 'same-origin',
+      cache: 'no-cache',
+    });
+    if (!response.ok) throw new Error('Template registry HTTP ' + response.status);
+    const source = await response.text();
+    const runRegistry = new Function(source);
+    runRegistry();
+    if (getTemplateList().length === 0) throw new Error('Template registry is empty');
+    renderTemplatesGrid();
+  } catch (_) {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Reîncearcă';
+    }
+    showToast('Designurile nu s-au încărcat. Reîncearcă.', 'error');
+  }
+}
+
 function renderTemplatesGrid() {
   const grid = $('templates-grid');
   if (!grid) return;
@@ -3307,7 +3325,8 @@ function renderTemplatesGrid() {
 
   const registry = getTemplateList();
   if (!registry || registry.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Designurile nu sunt disponibile momentan.</p></div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Designurile nu sunt disponibile momentan.</p><button type="button" class="btn-ghost" id="btn-retry-templates">Reîncearcă</button></div>';
+    $('btn-retry-templates').addEventListener('click', reloadTemplateRegistry);
     return;
   }
 

@@ -157,8 +157,10 @@ function check(name, fn) {
       'catalog uses thumbnails');
     assert.ok(app.includes('applyThemeBackground'), 'applyThemeBackground for theme.cream');
     assert.ok(
-      indexHtml.includes('color-bg-swatch') && indexHtml.includes('Page background'),
-      'color popover exposes page background control'
+      indexHtml.includes('color-bg-swatch') &&
+        indexHtml.includes('Fundal pagină') &&
+        indexHtml.includes('Culoare fundal pagină'),
+      'color popover exposes Romanian page background control'
     );
   });
 

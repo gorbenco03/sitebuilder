@@ -28,11 +28,11 @@ Save screenshots here:
 ### B. Theme colors paint preview (ITEM 11)
 
 1. Start any template → editor.
-2. Open **Color** popover (top bar).
+2. Open the **Culoare** popover (top bar).
 3. Set **Accent** to green `#16A34A` → preview buttons/accents turn green **inside the iframe**.
-4. Set **Page background** to red `#FF0000` → page paper/background turns red in the iframe.
+4. Set **Fundal pagină** to red `#FF0000` → page paper/background turns red in the iframe.
 5. Repeat for **each** template: product-menu, local-service, portfolio, **professionals** (historically dead).
-6. Open **Site details** → **Hero background**: change color and/or Choose photo → hero region updates (not a raw CSS-only box).
+6. Open **Detalii site** → hero background: change its color and/or choose a photo → hero region updates (not a raw CSS-only box).
 7. Optional: test-pay publish → live/isolated URL matches preview colors.
 
 Save screenshots:
