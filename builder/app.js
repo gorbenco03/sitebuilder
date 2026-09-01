@@ -1647,6 +1647,9 @@ function buildDrawerField(field) {
       prevName = getPath(draft.config, key);
     }
     setPath(draft.config, key, nextValue);
+    if (key === 'appointment.bookingUrl') {
+      scheduleRerender(true);
+    }
     if (key === 'contact.whatsapp' || key === 'contact.waMessage') {
       deriveWaHref(draft.config);
       scheduleRerender(true);

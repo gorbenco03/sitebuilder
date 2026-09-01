@@ -108,6 +108,19 @@ check('valid booking URL replaces the local form with a safe new-tab Romanian CT
     assert.doesNotMatch(html, /id="pr-appt-form"/i);
 });
 
+check('clearing a previously valid booking URL restores the local request form', () => {
+    const { template, config } = loadProfessionals();
+    config.appointment.bookingUrl = 'https://cal.com/demo/hidook-test';
+    const linkedHtml = renderHtml(template, config);
+    assert.match(linkedHtml, /class="[^"]*pr-booking-link[^"]*"/i);
+    assert.doesNotMatch(linkedHtml, /id="pr-appt-form"/i);
+
+    config.appointment.bookingUrl = '';
+    const clearedHtml = renderHtml(template, config);
+    assert.match(clearedHtml, /<form[^>]+id="pr-appt-form"/i);
+    assert.doesNotMatch(clearedHtml, /class="[^"]*pr-booking-link[^"]*"/i);
+});
+
 check('custom Cal.com domains are accepted when they use http or https', () => {
     const { template, config } = loadProfessionals();
     config.appointment.bookingUrl = 'https://programari.exemplu.ro/consultatie';
@@ -134,6 +147,23 @@ check('builder rejects invalid URL input with Romanian visible error copy before
     assert.match(app, /setCustomValidity|aria-invalid/);
     assert.match(app, /field-input--url\[aria-invalid=["']true["']\]/);
     assert.match(app, /invalidUrlInput\.focus\(\)/);
+});
+
+check('builder saves cleared booking URLs and fully refreshes their structural preview', () => {
+    const app = fs.readFileSync(APP_PATH, 'utf8');
+    const inputHandler = app.match(/input\.addEventListener\('input', \(\) => \{([\s\S]*?)\n  \}\);/);
+    assert.ok(inputHandler, 'drawer input handler');
+    const source = inputHandler[1];
+    const invalidGuard = source.indexOf('if (!updateUrlValidity()) return;');
+    const nextValue = source.indexOf("const nextValue = type === 'url' ? input.value.trim() : input.value;");
+    const saveValue = source.indexOf('setPath(draft.config, key, nextValue);');
+    assert.ok(invalidGuard >= 0 && invalidGuard < nextValue, 'invalid URLs return before save');
+    assert.ok(nextValue >= 0 && nextValue < saveValue, 'empty trimmed URL reaches setPath');
+    assert.match(
+        source,
+        /if \(key === 'appointment\.bookingUrl'\) \{\s*scheduleRerender\(true\);\s*\}/,
+        'booking URL changes require a full preview render'
+    );
 });
 
 if (failed) {
