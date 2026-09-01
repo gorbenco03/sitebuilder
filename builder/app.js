@@ -3605,7 +3605,19 @@ async function openPreviewModal(templateId) {
   const title = $('modal-preview-title');
   if (title) title.textContent = 'Previzualizare: ' + (meta.name || templateId);
 
-  const iframe = $('preview-modal-iframe');
+  let iframe = $('preview-modal-iframe');
+
+  function replacePreviewDocument(html) {
+    if (!iframe) return;
+    if (typeof iframe.cloneNode !== 'function' || typeof iframe.replaceWith !== 'function') {
+      iframe.srcdoc = html;
+      return;
+    }
+    const replacement = iframe.cloneNode(false);
+    replacement.srcdoc = html;
+    iframe.replaceWith(replacement);
+    iframe = replacement;
+  }
 
   // Make the iframe paintable before loading its heavy payload. Assigning
   // srcdoc while the wide modal is hidden can leave Chromium with a blank
@@ -3616,7 +3628,7 @@ async function openPreviewModal(templateId) {
   if (body) body.classList.remove('mode-mobile');
   if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
   if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
-  if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#6B7280;margin:0;font-size:.95rem">Se încarcă previzualizarea…</body>';
+  replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#6B7280;margin:0;font-size:.95rem">Se încarcă previzualizarea…</body>');
   openModal('modal-preview');
 
   let tplData = null;
@@ -3628,17 +3640,17 @@ async function openPreviewModal(templateId) {
 
   if (previewGeneration !== previewModalGeneration) return;
 
-  if (!tplData || typeof window.HidookEngine === 'undefined') {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>';
+  if (!tplData || !tplData.files || !window.HidookEngine || typeof window.HidookEngine.renderPreview !== 'function') {
+    replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>');
     return;
   }
 
   try {
     const config = (tplData.presets || []).length > 0 ? tplData.presets[0].config : {};
     const html = window.HidookEngine.renderPreview(tplData.files, config);
-    if (iframe) iframe.srcdoc = html;
+    replacePreviewDocument(html);
   } catch (e) {
-    if (iframe) iframe.srcdoc = '<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>';
+    replacePreviewDocument('<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>');
   }
 
 }
