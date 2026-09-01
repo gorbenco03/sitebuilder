@@ -1732,21 +1732,69 @@ function composeHeroBackground(opts) {
 function openImagePickerForPath(configPath, cb) {
   const input = $('img-file-input');
   if (!input) return;
-  const onChange = () => {
+  const pickerWindow = typeof window === 'undefined' ? null : window;
+
+  if (input._hbPathImagePicker && typeof input._hbPathImagePicker.cancel === 'function') {
+    input._hbPathImagePicker.cancel();
+  }
+
+  let listenersActive = true;
+  const request = { cancel: release };
+  input._hbPathImagePicker = request;
+
+  function removePendingListeners() {
+    if (!listenersActive) return;
+    listenersActive = false;
     input.removeEventListener('change', onChange, true);
+    input.removeEventListener('cancel', release, true);
+    if (pickerWindow) pickerWindow.removeEventListener('focus', onWindowFocus, true);
+  }
+
+  function release() {
+    removePendingListeners();
+    if (input._hbPathImagePicker === request) input._hbPathImagePicker = null;
+  }
+
+  function onWindowFocus() {
+    // File selection dispatches `change` after focus returns. Give it that turn;
+    // if no change follows, the operating-system chooser was cancelled.
+    setTimeout(() => {
+      if (input._hbPathImagePicker === request && listenersActive) release();
+    }, 0);
+  }
+
+  const onChange = () => {
+    removePendingListeners();
     const file = input.files && input.files[0];
     input.value = '';
-    if (!file) return;
+    if (!file) {
+      release();
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const chosenImage = String(reader.result || '');
+      if (input._hbPathImagePicker !== request) return;
+      release();
       if (chosenImage && typeof cb === 'function') cb(chosenImage);
     };
-    reader.readAsDataURL(file);
+    reader.onerror = release;
+    reader.onabort = release;
+    try {
+      reader.readAsDataURL(file);
+    } catch (_) {
+      release();
+    }
   };
   // Capture before the shared inline-image listener clears this input's files.
   input.addEventListener('change', onChange, true);
-  input.click();
+  input.addEventListener('cancel', release, true);
+  if (pickerWindow) pickerWindow.addEventListener('focus', onWindowFocus, true);
+  try {
+    input.click();
+  } catch (_) {
+    release();
+  }
 }
 
 // Sync a drawer field value when it changes via inline editing

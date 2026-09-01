@@ -42,44 +42,82 @@ function check(name, fn) {
 }
 
 (async () => {
-  await check('empty image selection keeps the existing hero photo', () => {
+  await check('real cancel then reopen selects only for the current hero', async () => {
     const pickerSrc = extractBetween(
       'function openImagePickerForPath',
       '// Sync a drawer field value when it changes via inline editing'
     );
-    let changeHandler = null;
+    const inputListeners = new Map();
+    const windowListeners = new Map();
+    const addListener = (listeners, type, handler) => {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(handler);
+    };
+    const removeListener = (listeners, type, handler) => {
+      if (listeners.has(type)) listeners.get(type).delete(handler);
+    };
+    const dispatch = async (listeners, type) => {
+      for (const handler of Array.from(listeners.get(type) || [])) await handler();
+    };
     const input = {
       files: [],
       value: '',
-      addEventListener(type, handler) {
-        if (type === 'change') changeHandler = handler;
-      },
-      removeEventListener() {},
-      click() {
-        assert.ok(changeHandler, 'picker must listen for a file selection');
-        changeHandler();
-      },
+      addEventListener(type, handler) { addListener(inputListeners, type, handler); },
+      removeEventListener(type, handler) { removeListener(inputListeners, type, handler); },
+      click() {},
     };
-    let heroImage = 'images/hero.jpg';
-    let callbackCalls = 0;
+    const hero = { color: '#5b2134', image: 'images/hero-current.jpg' };
+    let previousCalls = 0;
+    let currentCalls = 0;
     const sandbox = {
       $: (id) => {
         assert.strictEqual(id, 'img-file-input');
         return input;
       },
-      keepHeroImage(value) {
-        callbackCalls += 1;
-        heroImage = value;
+      window: {
+        addEventListener(type, handler) { addListener(windowListeners, type, handler); },
+        removeEventListener(type, handler) { removeListener(windowListeners, type, handler); },
+      },
+      setTimeout,
+      FileReader: class {
+        readAsDataURL() {
+          this.result = 'data:image/jpeg;base64,Q1VSUkVOVA==';
+          this.onload();
+        }
       },
     };
 
     vm.runInNewContext(
-      `${pickerSrc}\nopenImagePickerForPath('hero.background', keepHeroImage);`,
+      `${pickerSrc}\nthis.openImagePickerForPath = openImagePickerForPath;`,
       sandbox
     );
 
-    assert.strictEqual(callbackCalls, 0, 'cancel/empty selection must not invoke replacement callback');
-    assert.strictEqual(heroImage, 'images/hero.jpg');
+    sandbox.openImagePickerForPath('hero.previous', () => { previousCalls += 1; });
+    assert.strictEqual((inputListeners.get('change') || new Set()).size, 1);
+
+    // A real operating-system cancel returns focus without dispatching `change`.
+    await dispatch(windowListeners, 'focus');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.strictEqual(previousCalls, 0, 'cancel must not invoke the previous callback');
+    assert.deepStrictEqual(hero, { color: '#5b2134', image: 'images/hero-current.jpg' });
+    assert.strictEqual(
+      (inputListeners.get('change') || new Set()).size,
+      0,
+      'cancel must remove the pending selection listener'
+    );
+
+    sandbox.openImagePickerForPath('hero.current', (image) => {
+      currentCalls += 1;
+      hero.image = image;
+    });
+    assert.strictEqual((inputListeners.get('change') || new Set()).size, 1);
+    input.files = [{ name: 'current.jpg', type: 'image/jpeg' }];
+    await dispatch(inputListeners, 'change');
+
+    assert.strictEqual(previousCalls, 0, 'reopen must not revive a cancelled callback');
+    assert.strictEqual(currentCalls, 1, 'the current selection callback must run exactly once');
+    assert.strictEqual(hero.color, '#5b2134', 'selecting a photo must preserve the hero color');
+    assert.strictEqual(hero.image, 'data:image/jpeg;base64,Q1VSUkVOVA==');
   });
 
   await check('empty registry offers Romanian retry wired to a registry refetch', () => {
