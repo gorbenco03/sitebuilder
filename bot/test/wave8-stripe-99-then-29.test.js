@@ -154,6 +154,15 @@ function assertCheckoutFirstPeriodOnly(form) {
         '7',
         'trial_period_days must stay 7'
     );
+    assert.strictEqual(
+        form.allow_promotion_codes,
+        'true',
+        'Checkout must enable Stripe promo-code entry without changing the 99-then-29 subscription'
+    );
+    assert.ok(
+        !Object.keys(form).some((k) => /^discounts\[/.test(k)),
+        'allow_promotion_codes cannot be paired with discounts[]'
+    );
     assert.ok(
         !hasOneTimeLineItem(form),
         'Checkout must not send a one-time line item together with trial_period_days=7 ' +

@@ -145,6 +145,15 @@ function parseStripeForm(body) {
                 '7',
                 'trial_period_days must be 7'
             );
+            assert.strictEqual(
+                form.allow_promotion_codes,
+                'true',
+                'Checkout must enable Stripe promo-code entry'
+            );
+            assert.ok(
+                !Object.keys(form).some((k) => /^discounts\[/.test(k)),
+                'allow_promotion_codes cannot be paired with discounts[]'
+            );
             assert.ok(
                 form['line_items[0][price_data][recurring][interval]'] === 'year' ||
                     form['line_items[0][price_data][recurring][interval]'] === 'month',
@@ -194,6 +203,7 @@ function parseStripeForm(body) {
             assert.strictEqual(form.mode, 'subscription');
             assert.strictEqual(form['line_items[0][price]'], 'price_test_eur_wave4');
             assert.strictEqual(form['subscription_data[trial_period_days]'], '7');
+            assert.strictEqual(form.allow_promotion_codes, 'true');
             assert.ok(!form['line_items[0][price_data][unit_amount]'], 'catalog path must not send unit_amount price_data');
         } finally {
             global.fetch = origFetch;

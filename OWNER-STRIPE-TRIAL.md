@@ -13,7 +13,7 @@
 | Path | When | Behaviour |
 |------|------|-----------|
 | `HIDOOK_TEST_PAY=1` (non-production) | Local / E2E | Offline `cs_test_*` checkout + `#test-checkout=` return. **No network, no charge.** Returns the same **99-then-29** billing contract. Offline **Cancel** opens `#test-billing-portal=bps_test_*` and finishes cancel without network (site unpublished). |
-| `STRIPE_SECRET_KEY=sk_test_…` without Price env | Stripe **test** mode | Checkout `mode=subscription`, `subscription_data.trial_period_days=7`, **single** inline recurring `price_data` at **99**/year. On `checkout.session.completed`, app attaches a **Subscription Schedule**: phase 0 = 99 through trial + first paid year; phase 1 = **29**/year thereafter. Builder **Cancel** → `billing_portal.sessions`. |
+| `STRIPE_SECRET_KEY=sk_test_…` without Price env | Stripe **test** mode | Checkout `mode=subscription`, `allow_promotion_codes=true`, `subscription_data.trial_period_days=7`, **single** inline recurring `price_data` at **99**/year. On `checkout.session.completed`, app attaches a **Subscription Schedule**: phase 0 = 99 through trial + first paid year; phase 1 = **29**/year thereafter. Builder **Cancel** → `billing_portal.sessions`. |
 | `STRIPE_SECRET_KEY` + first-year `STRIPE_PRICE_ID_*` | Test or live | Same subscription + 7-day trial on your first-year Dashboard **Price**. Schedule phase 1 uses `STRIPE_PRICE_ID_RENEWAL_*` when set, else creates a **29**/year Price from `bot/pricing.js`. |
 | + optional `STRIPE_PRICE_ID_RENEWAL_*` | Test or live | Schedule phase 1 uses your **29**/year Catalog Price id (preferred for live). |
 

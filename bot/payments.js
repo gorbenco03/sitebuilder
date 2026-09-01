@@ -20,6 +20,8 @@
  * Card is collected at signup ($0 now); first charge is automatic on day 7 at
  * first-period amount (99); subsequent years are renewal amount (29) via a
  * Stripe Subscription Schedule phase — never forever-99, never one-time+trial.
+ * Checkout sets allow_promotion_codes so Stripe shows a promo-code field;
+ * that does not change mode, trial, first-year 99, or renewal 29.
  * Cancel: builder opens a Customer Portal session (createBillingPortalSession).
  * When Stripe sends customer.subscription.deleted (or updated status=canceled),
  * the app unpublishes the public site. Refunds stay Dashboard / Portal — no
@@ -515,6 +517,10 @@ async function createCheckout({
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: sessionMeta,
+        // Stripe Checkout promo-code field. Do not pair with `discounts`
+        // (Stripe rejects both on the same session). Billing model stays
+        // subscription + 7-day trial + 99 then 29 via schedule.
+        allow_promotion_codes: true,
     };
     if (trialDays > 0) {
         params.subscription_data = {
