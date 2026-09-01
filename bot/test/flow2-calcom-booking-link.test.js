@@ -74,6 +74,7 @@ check('Detalii exposes an optional Romanian Cal.com booking-link field', () => {
     assert.ok(field, 'appointment.bookingUrl field');
     assert.strictEqual(field.type, 'url');
     assert.strictEqual(field.required, false);
+    assert.strictEqual(field.previewRefresh, 'full');
     assert.ok(field.maxLen >= 250 && field.maxLen <= 500, 'bounded URL length');
     assert.match(field.label, /Link Cal\.com de programări.*opțional/i);
     assert.match(field.hint, /cont gratuit.*cal\.com.*lipește linkul/i);
@@ -149,7 +150,7 @@ check('builder rejects invalid URL input with Romanian visible error copy before
     assert.match(app, /invalidUrlInput\.focus\(\)/);
 });
 
-check('builder saves cleared booking URLs and fully refreshes their structural preview', () => {
+check('builder saves cleared URLs and uses declared capability for structural preview refresh', () => {
     const app = fs.readFileSync(APP_PATH, 'utf8');
     const inputHandler = app.match(/input\.addEventListener\('input', \(\) => \{([\s\S]*?)\n  \}\);/);
     assert.ok(inputHandler, 'drawer input handler');
@@ -161,9 +162,10 @@ check('builder saves cleared booking URLs and fully refreshes their structural p
     assert.ok(nextValue >= 0 && nextValue < saveValue, 'empty trimmed URL reaches setPath');
     assert.match(
         source,
-        /if \(key === 'appointment\.bookingUrl'\) \{\s*scheduleRerender\(true\);\s*\}/,
-        'booking URL changes require a full preview render'
+        /if \(field\.previewRefresh === 'full'\) \{\s*scheduleRerender\(true\);\s*\}/,
+        'fields with the full-preview capability require a full preview render'
     );
+    assert.doesNotMatch(source, /key === ['"]appointment\.bookingUrl['"]/, 'no bookingUrl key-name branch');
 });
 
 if (failed) {

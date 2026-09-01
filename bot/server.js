@@ -1958,6 +1958,12 @@ function createHandler({ onStripeEvent } = {}) {
                 return serveLive(req, res, url);
             }
 
+            // ── Builder favicon at the browser-default origin path ──────────
+            if ((req.method === 'GET' || req.method === 'HEAD') && url === '/favicon.ico') {
+                const target = path.join(BUILDER_DIR, 'favicon.svg');
+                return sendCachedFile(req, res, target, fs.statSync(target));
+            }
+
             // ── Static: /app and /app/* ────────────────────────────────────
             // Bare /app (no trailing slash) must redirect so relative assets resolve under /app/.
             if ((req.method === 'GET' || req.method === 'HEAD') && url === '/app') {
