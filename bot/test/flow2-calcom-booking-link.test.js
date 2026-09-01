@@ -12,6 +12,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const TEMPLATE_PATH = path.join(ROOT, 'templates', 'professionals', 'template.html');
 const SCHEMA_PATH = path.join(ROOT, 'templates', 'professionals', 'schema.json');
 const PRESETS_PATH = path.join(ROOT, 'templates', 'professionals', 'presets.json');
+const REGISTRY_PATH = path.join(ROOT, 'templates', 'registry.json');
 const APP_PATH = path.join(ROOT, 'builder', 'app.js');
 const BUILDER_INDEX_PATH = path.join(ROOT, 'builder', 'index.html');
 const { renderHtml } = require('../../build.js');
@@ -42,6 +43,17 @@ function getIframeSandboxTokens(html, id) {
     assert.ok(sandbox, `#${id} sandbox`);
     return new Set(sandbox[1].trim().split(/\s+/).filter(Boolean));
 }
+
+check('professionals catalog copy describes local requests and optional customer-owned Cal.com', () => {
+    const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, 'utf8'));
+    const professionals = registry.templates.find((template) => template.id === 'professionals');
+    assert.ok(professionals, 'professionals registry entry');
+    assert.strictEqual(typeof professionals.description, 'string');
+    assert.match(professionals.description, /Avocați.*consultanți.*cereri de programare/i);
+    assert.match(professionals.description, /link Cal\.com opțional/i);
+    assert.doesNotMatch(professionals.description, /fără calendar extern|fara calendar extern|calendar extern/i);
+    assert.doesNotMatch(professionals.description, /cal\.diy|calendar (?:găzduit|oferit) de Hidook/i);
+});
 
 check('interactive previews allow safe new tabs without same-origin access', () => {
     const html = fs.readFileSync(BUILDER_INDEX_PATH, 'utf8');
