@@ -13,6 +13,7 @@ const TEMPLATE_PATH = path.join(ROOT, 'templates', 'professionals', 'template.ht
 const SCHEMA_PATH = path.join(ROOT, 'templates', 'professionals', 'schema.json');
 const PRESETS_PATH = path.join(ROOT, 'templates', 'professionals', 'presets.json');
 const APP_PATH = path.join(ROOT, 'builder', 'app.js');
+const BUILDER_INDEX_PATH = path.join(ROOT, 'builder', 'index.html');
 const { renderHtml } = require('../../build.js');
 
 let failed = 0;
@@ -33,6 +34,25 @@ function loadProfessionals() {
     const config = JSON.parse(JSON.stringify(presets[0].config));
     return { template, presets, config };
 }
+
+function getIframeSandboxTokens(html, id) {
+    const iframe = html.match(new RegExp(`<iframe\\b[^>]*\\bid=["']${id}["'][^>]*>`, 'i'));
+    assert.ok(iframe, `#${id} iframe`);
+    const sandbox = iframe[0].match(/\bsandbox=["']([^"']*)["']/i);
+    assert.ok(sandbox, `#${id} sandbox`);
+    return new Set(sandbox[1].trim().split(/\s+/).filter(Boolean));
+}
+
+check('interactive previews allow safe new tabs without same-origin access', () => {
+    const html = fs.readFileSync(BUILDER_INDEX_PATH, 'utf8');
+    for (const id of ['preview-iframe', 'preview-modal-iframe']) {
+        const tokens = getIframeSandboxTokens(html, id);
+        for (const required of ['allow-scripts', 'allow-popups', 'allow-popups-to-escape-sandbox']) {
+            assert.ok(tokens.has(required), `#${id} sandbox includes ${required}`);
+        }
+        assert.ok(!tokens.has('allow-same-origin'), `#${id} sandbox excludes allow-same-origin`);
+    }
+});
 
 check('Detalii exposes an optional Romanian Cal.com booking-link field', () => {
     const schema = JSON.parse(fs.readFileSync(SCHEMA_PATH, 'utf8'));
