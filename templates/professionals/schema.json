@@ -447,8 +447,16 @@
     },
     {
       "id": "appointment",
-      "title": "Programări (cerere locală, fără calendar extern)",
+      "title": "Programări",
       "fields": [
+        {
+          "key": "appointment.bookingUrl",
+          "type": "url",
+          "label": "Link Cal.com de programări (opțional)",
+          "hint": "Creează-ți un cont gratuit pe cal.com și lipește linkul de rezervare aici. Poți folosi și un domeniu Cal.com personalizat.",
+          "required": false,
+          "maxLen": 300
+        },
         {
           "key": "appointment.enabled",
           "type": "text",

@@ -48,11 +48,11 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 - Privacy, Cookies and Terms machinery exists; final legal content is owner-gated.
 - Export/self-deploy produces a complete static ZIP.
 - Instafidget is included free for 12 months with Site Builder, then Instafidget Free with watermark; the editor opens in a new tab in the same browser, and disconnected feed is hidden.
-- Professional calendar uses Hidook-hosted cal.diy only after owner approves hosting/DNS/spend.
+- Professional customers create their own free Cal.com account and paste the booking link in Detalii; when absent, the existing local appointment-request form remains available.
 
 ## Launch gates — owner only
 
-No push, production deploy, live DNS, real charges, production Stripe, production email sender, cal.diy hosting spend, or final legal/VAT text without explicit owner approval.
+No push, production deploy, live DNS, real charges, production Stripe, production email sender, or final legal/VAT text without explicit owner approval.
 
 ## Done before client delivery
 

@@ -131,6 +131,7 @@
           ]
         },
         "appointment": {
+          "bookingUrl": "",
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
@@ -358,6 +359,7 @@
           ]
         },
         "appointment": {
+          "bookingUrl": "",
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră. Confirmăm cererea prin email; formularul nu rezervă automat în calendar.",
@@ -578,6 +580,7 @@
           ]
         },
         "appointment": {
+          "bookingUrl": "",
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",

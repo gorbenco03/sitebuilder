@@ -2,7 +2,7 @@
 
 **Autoritate:** acest fișier este sursa de adevăr pentru Site Builder până când owner-ul îl schimbă explicit. Orice `PRODUCT.md`, `AGENTS.md`, task Kanban, spec vechi sau comentariu care contrazice acest document este depășit.
 
-**Sincronizat:** 2026-08-28. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare din 2026-08-26 + regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
+**Sincronizat:** 2026-09-01. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01 + regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
 
 ## 1. Ce este produsul
 
@@ -179,16 +179,15 @@ Reguli:
 
 ## 8. Calendar Professional
 
-Owner a ales opțiunea C: Hidook găzduiește cal.diy pentru plan Professional.
+Decizia owner din 2026-09-01: Hidook **nu** găzduiește cal.diy. Fiecare client Professional își creează propriul cont gratuit Cal.com și lipește linkul de rezervare în Detalii.
 
-Adevăr tehnic:
+Reguli:
 
-- cal.diy este MIT, deci licența e verde;
-- este aplicație separată Next.js/TypeScript + Postgres/Prisma;
-- nu este o librărie mică pentru repo-ul zero-dep curent;
-- cere infra, backup, upgrade, email, GDPR pentru date de programare.
-
-Studio poate pregăti designul și planul de integrare. Hosting, DNS, costuri și producție rămân owner-gate.
+- linkul este opțional; fără link, formularul local de cerere rămâne neschimbat;
+- se acceptă numai linkuri complete `http://` sau `https://`, inclusiv domenii Cal.com personalizate;
+- cu link valid, secțiunea Programări afișează `Programează-te` în tab nou și înlocuiește formularul local;
+- fără iframe, popup sau infrastructură calendar Hidook;
+- contul Cal.com și gestionarea rezervărilor aparțin clientului Professional.
 
 ## 9. Landing page Site Builder
 
@@ -209,7 +208,6 @@ Owner face doar pașii imposibili fără el:
 - DNS / Cloudflare live pentru hidook.agency;
 - email sender production;
 - date legale/VAT/jurisdicție;
-- hosting spend pentru cal.diy;
 - brand tokens exacte hidook.agency;
 - orice deploy/push/producție/charge real.
 
@@ -257,14 +255,14 @@ Acceptare:
 
 ### Flow 4 — Commercial E2E + calendar/LP readiness
 
-Include: trial/card/live/cancel/renew, cal.diy integration plan/groundwork, LP hidook.agency când există brand tokens.
+Include: trial/card/live/cancel/renew, linkul Cal.com deținut de client pentru Professional, LP hidook.agency când există brand tokens.
 
 Acceptare:
 
 - card test → trial live imediat;
 - cancel trial → comportament clar;
 - renewal 29/an reflectat corect;
-- calendar Professional are plan și punct de owner-gate;
+- clientul Professional poate lipi un link Cal.com valid, iar site-ul public deschide rezervarea în tab nou;
 - LP nu intră până nu există brand tokens.
 
 ## 12. Reguli pentru studio

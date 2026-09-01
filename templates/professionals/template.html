@@ -176,6 +176,12 @@
             <div class="pr-shell">
                 <p class="pr-kicker">{{labels.bookEyebrow}}</p>
                 <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
+                <!-- @if appointment.bookingUrl -->
+                <div class="pr-booking-action">
+                    <a href="{{appointment.bookingUrl}}" class="pr-btn pr-btn--primary pr-booking-link" target="_blank" rel="noopener noreferrer">Programează-te</a>
+                </div>
+                <!-- @endif -->
+                <!-- @if !appointment.bookingUrl -->
                 <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
                 <!-- @if appointment.confidentialityWarning -->
                 <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
@@ -263,6 +269,7 @@
                     <span data-w="{{weekday}}" data-s="{{start}}" data-e="{{end}}"></span>
                     <!-- @end -->
                 </div>
+                <!-- @endif -->
             </div>
         </section>
         <!-- @endif -->

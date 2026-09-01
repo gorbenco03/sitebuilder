@@ -283,6 +283,17 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
   ].forEach(cascadeStringPath);
 }
 
+function isPlausibleHttpUrl(value) {
+  const str = typeof value === 'string' ? value.trim() : '';
+  if (!/^https?:\/\//i.test(str)) return false;
+  try {
+    const parsed = new URL(str);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && !!parsed.hostname;
+  } catch (_) {
+    return false;
+  }
+}
+
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 function lsGet(key) {
@@ -1600,13 +1611,42 @@ function buildDrawerField(field) {
   const curVal = getPath(draft.config, key);
   if (curVal != null && typeof curVal !== 'object') input.value = String(curVal);
 
+  let urlError = null;
+  const urlErrorCopy = 'Introdu un link complet care începe cu http:// sau https://.';
+  function updateUrlValidity() {
+    if (type !== 'url') return true;
+    const value = input.value.trim();
+    const valid = !value || isPlausibleHttpUrl(value);
+    input.setCustomValidity(valid ? '' : urlErrorCopy);
+    input.classList.toggle('invalid', !valid);
+    if (valid) input.removeAttribute('aria-invalid');
+    else input.setAttribute('aria-invalid', 'true');
+    if (urlError) {
+      urlError.textContent = valid ? '' : urlErrorCopy;
+      urlError.style.display = valid ? 'none' : '';
+    }
+    return valid;
+  }
+
+  if (type === 'url') {
+    urlError = document.createElement('p');
+    urlError.id = safeId + '_error';
+    urlError.className = 'field-error';
+    urlError.setAttribute('role', 'alert');
+    urlError.style.display = 'none';
+    input.setAttribute('aria-describedby', urlError.id);
+    updateUrlValidity();
+  }
+
   // Sync to config on change
   input.addEventListener('input', () => {
+    if (!updateUrlValidity()) return;
+    const nextValue = type === 'url' ? input.value.trim() : input.value;
     let prevName = null;
     if (key === 'business.name') {
       prevName = getPath(draft.config, key);
     }
-    setPath(draft.config, key, input.value);
+    setPath(draft.config, key, nextValue);
     if (key === 'contact.whatsapp' || key === 'contact.waMessage') {
       deriveWaHref(draft.config);
       scheduleRerender(true);
@@ -1631,7 +1671,7 @@ function buildDrawerField(field) {
     saveDraft();
     updateChecklist();
     // Try chirurgical update if field has a visible representation
-    sendSetToIframe(key, input.value);
+    sendSetToIframe(key, nextValue);
     // Schedule re-render on drawer close
     if (drawerSaveTimer) clearTimeout(drawerSaveTimer);
     drawerSaveTimer = setTimeout(() => {
@@ -1641,6 +1681,7 @@ function buildDrawerField(field) {
   });
 
   wrap.appendChild(input);
+  if (urlError) wrap.appendChild(urlError);
   wrap.dataset.fieldKey = key;
   return wrap;
 }
@@ -2754,6 +2795,14 @@ async function openPublishModal() {
   show($('form-auth-email'));
   hideId('auth-error');
   hideId('slug-error');
+
+  const invalidUrlInput = document.querySelector('.field-input--url[aria-invalid="true"]');
+  if (invalidUrlInput) {
+    showToast('Introdu un link complet care începe cu http:// sau https://.', 'error', 5000);
+    openDrawer();
+    invalidUrlInput.focus();
+    return;
+  }
 
   // Validate required fields
   if (currentTemplate && currentTemplate.data && currentTemplate.data.schema) {
