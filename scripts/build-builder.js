@@ -49,6 +49,17 @@ const editOverlaySrc = fs.existsSync(editOverlayPath)
     ? fs.readFileSync(editOverlayPath, 'utf8')
     : '/* TODO: builder/edit-overlay.js not found — overlay agent must create it */';
 
+// Pure site-legal generators + cookie banner assets for preview isolation.
+// Strips Node fs/path + writeLegalSiteFiles so the browser engine stays pure.
+const siteLegalSrc = fs.readFileSync(path.join(ROOT, 'bot/site-legal.js'), 'utf8');
+const siteLegalPure = siteLegalSrc
+    .replace(/^[\s\S]*?\nconst fs = require\('fs'\);\nconst path = require\('path'\);\n/, '')
+    .replace(
+        /\n\/\*\*\n \* Write privacy\.html[\s\S]*?\nfunction writeLegalSiteFiles\(siteDir, config\) \{[\s\S]*?\n\}\n/,
+        '\n'
+    )
+    .replace(/\nmodule\.exports\s*=\s*\{[\s\S]*?\};\s*$/, '\n');
+
 // The renderPreview helper: inlines CSS/JS assets into the rendered HTML so it
 // can be used as an <iframe srcdoc="…"> without cross-origin issues.
 const renderPreviewSrc = `
@@ -101,6 +112,45 @@ function renderPreview(files, config, opts) {
             /<script\\s[^>]*src=["']collage\\.js["'][^>]*>\\s*<\\/script>/gi,
             '<script>' + files.collageJs + '</script>'
         );
+    }
+
+    // Flow 3 preview isolation: cookie-banner.css/js are written beside live/ZIP
+    // index.html, not shipped in template files. Without inlining, srcdoc keeps
+    // #hb-cookie-banner[hidden] forever and relative legal links escape to
+    // builder chrome /app/privacy|terms|cookies.html.
+    html = html.replace(
+        /<link\\s[^>]*href=["']cookie-banner\\.css["'][^>]*>/gi,
+        '<style data-hb-cookie-banner>' + COOKIE_BANNER_CSS + '</style>'
+    );
+    html = html.replace(
+        /<script\\s[^>]*src=["']cookie-banner\\.js["'][^>]*>\\s*<\\/script>/gi,
+        '<script data-hb-cookie-banner>' + COOKIE_BANNER_JS + '</script>'
+    );
+
+    // Business legal pages as data: URLs so footer/banner links open the
+    // generated Romanian placeholders for THIS draft, not /app/ builder legal.
+    {
+        var legalDocs = {
+            'privacy.html': privacyHtml(config),
+            'terms.html': termsHtml(config),
+            'cookies.html': cookiesHtml(config),
+        };
+        var legalNames = Object.keys(legalDocs);
+        for (var li = 0; li < legalNames.length; li++) {
+            var legalName = legalNames[li];
+            var pageHtml = String(legalDocs[legalName] || '');
+            pageHtml = pageHtml
+                .replace(/<link\\s[^>]*href=["']styles\\.css["'][^>]*>/gi, '')
+                .replace(/<script\\s[^>]*src=["']cookie-banner\\.js["'][^>]*>\\s*<\\/script>/gi, '');
+            var href = 'data:text/html;charset=utf-8,' + encodeURIComponent(pageHtml);
+            // target=_blank + sandbox allow-popups-to-escape-sandbox opens the
+            // business page in a real tab instead of navigating the srcdoc away
+            // or resolving relative paths against /app/.
+            html = html.replace(
+                new RegExp('href=(["\\'])' + legalName.replace('.', '\\\\.') + '\\\\1', 'gi'),
+                'href="' + href + '" target="_blank" rel="noopener noreferrer" data-hb-preview-legal="' + legalName + '"'
+            );
+        }
     }
 
     // PREVIEW MODE: complete every entry animation instantly (keeping the
@@ -193,6 +243,9 @@ ${pureFunctions}
 // ── Edit overlay source (inlined by bundler from builder/edit-overlay.js) ────
 // Used by renderPreview in editMode to inject the overlay script into srcdoc.
 var EDIT_OVERLAY_SRC = ${editOverlayEmbedded};
+
+// ── Generated-site legal + cookie banner (pure; from bot/site-legal.js) ──────
+${siteLegalPure}
 
 ${renderPreviewSrc}
 

@@ -1,8 +1,8 @@
 'use strict';
 /**
  * bot/site-legal.js — generated-site Privacy / Terms / Cookies pages + cookie banner.
- * Romanian visible copy. Owner-gated legal entity/VAT/jurisdiction placeholders only.
- * Zero dependencies. Used by build.js and ZIP export.
+ * Romanian visible copy. Honest unfinished placeholders for entity/VAT/jurisdiction.
+ * Zero dependencies. Used by build.js, ZIP export, and builder preview isolation.
  */
 
 const fs = require('fs');
@@ -72,8 +72,8 @@ function legalShell(opts) {
       <strong>Placeholder de produs — nu este consultanță juridică.</strong>
       Textul de mai jos este un schelet pentru site-ul generat. Datele legale complete
       (denumire entitate, CUI/VAT, adresă, jurisdicție, listă subprocessori) rămân
-      <em>owner-gated</em> — nu inventăm text final de avocat. Înlocuiți marcajele
-      <code>[PLACEHOLDER …]</code> înainte de livrare comercială.
+      de completat de către titularul afacerii — nu inventăm text final de avocat.
+      Înlocuiți marcajele <code>[PLACEHOLDER …]</code> înainte de livrare comercială.
     </div>
     ${body}
     <nav class="hb-legal-nav" aria-label="Pagini legale">
@@ -115,7 +115,8 @@ function privacyHtml(config) {
     <h2>De ce le folosim</h2>
     <p>
       Pentru a răspunde solicitărilor dumneavoastră, a confirma o programare sau a livra serviciul cerut.
-      Baza legală tipică este interesul legitim sau executarea unei cereri precontractuale — detaliile finale rămân owner-gated.
+      Baza legală tipică este interesul legitim sau executarea unei cereri precontractuale — detaliile finale rămân de completat
+      (<code>[PLACEHOLDER: bază legală / temei final]</code>).
     </p>
     <h2>Păstrare și partajare</h2>
     <p>
@@ -193,7 +194,7 @@ function cookiesHtml(config) {
     <h2>Ce folosim pe acest site</h2>
     <ul>
       <li><strong>Esențiale / funcționale</strong> — reținerea alegerii din bannerul de cookie-uri (<code>hb-cookie-consent</code>), astfel încât să nu reapară la fiecare vizită.</li>
-      <li><strong>Opționale</strong> — nu activăm analytics sau marketing fără consimțământ; orice instrument viitor va fi listat aici după decizia owner-ului.</li>
+      <li><strong>Opționale</strong> — nu activăm analytics sau marketing fără consimțământ; orice instrument viitor va fi listat aici după decizia titularului afacerii.</li>
     </ul>
     <h2>Controlul dumneavoastră</h2>
     <p>

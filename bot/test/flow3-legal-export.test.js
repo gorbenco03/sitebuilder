@@ -23,9 +23,11 @@ const { execFileSync } = require('child_process');
 const { createZip } = require('../zip.js');
 const { exportSiteZip, buildStaticSiteTree } = require('../site-export.js');
 const { writeLegalSiteFiles, privacyHtml, termsHtml, cookiesHtml } = require('../site-legal.js');
+const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const BASE_SHA = '275e534232cd20105781ca0fbc6ec5bb5d9a2b97';
+const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 
 const SERVER_SECRET = 'flow3-server-secret-' + crypto.randomBytes(8).toString('hex');
@@ -166,6 +168,35 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
+    await check('causal RED: parent legal pages still ship English owner-gated jargon', () => {
+        let parentLegal;
+        try {
+            parentLegal = execFileSync('git', ['-C', ROOT, 'show', PARENT_SHA + ':bot/site-legal.js'], {
+                encoding: 'utf8',
+                maxBuffer: 2 * 1024 * 1024,
+            });
+        } catch (e) {
+            assert.fail('parent site-legal missing: ' + e.message);
+        }
+        assert.ok(/owner-gated/i.test(parentLegal), 'parent must still contain owner-gated for causal RED');
+    });
+
+    await check('causal RED: parent renderPreview does not isolate cookie banner or legal links', () => {
+        let parentBuild;
+        try {
+            parentBuild = execFileSync('git', ['-C', ROOT, 'show', PARENT_SHA + ':scripts/build-builder.js'], {
+                encoding: 'utf8',
+                maxBuffer: 2 * 1024 * 1024,
+            });
+        } catch (e) {
+            assert.fail('parent build-builder missing: ' + e.message);
+        }
+        assert.ok(
+            !/cookie-banner\.css|COOKIE_BANNER_CSS|data-hb-preview-legal|data-hb-cookie-banner/i.test(parentBuild),
+            'parent renderPreview must lack cookie/legal preview isolation'
+        );
+    });
+
     // ── HEAD GREEN: templates ────────────────────────────────────────────
     await check('HEAD all five templates footer link privacy/terms/cookies + cookie banner', () => {
         for (const id of TPLS) {
@@ -182,7 +213,7 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
-    await check('HEAD legal page generators are Romanian placeholders with owner-gated markers', () => {
+    await check('HEAD legal page generators are Romanian placeholders without factory English jargon', () => {
         const cfg = { business: { name: BIZ_NAME }, footer: { year: '2026' } };
         for (const [label, html] of [
             ['privacy', privacyHtml(cfg)],
@@ -191,10 +222,93 @@ function unzipStore(zipBuf, destDir) {
         ]) {
             assert.ok(html.includes(BIZ_NAME), label + ' names business');
             assert.ok(/placeholder|nu este consultanță|nu este consultanta/i.test(html), label + ' placeholder honesty');
-            assert.ok(/\[PLACEHOLDER/i.test(html), label + ' owner-gated PLACEHOLDER');
+            assert.ok(/\[PLACEHOLDER/i.test(html), label + ' unfinished PLACEHOLDER markers');
             assert.ok(/lang="ro"/i.test(html), label + ' lang=ro');
             assert.ok(/Build by/i.test(html) && /hidook\.tech/i.test(html), label + ' attribution');
             assert.ok(!/Kanban/i.test(html), label + ' no Kanban');
+            assert.ok(
+                !/owner-gated|owner-ului|\bfactory\b|studio process/i.test(html),
+                label + ' no owner-gated / factory-English process words'
+            );
+            assert.ok(
+                /titularul afacerii|de completat/i.test(html) || /PLACEHOLDER/i.test(html),
+                label + ' honest Romanian unfinished wording'
+            );
+        }
+    });
+
+    await check('HEAD catalog/editor renderPreview isolates cookie banner + business legal pages', () => {
+        // Ensure engine matches this worktree (generated/ is gitignored).
+        execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
+            cwd: ROOT,
+            stdio: ['ignore', 'ignore', 'pipe'],
+        });
+        const engineSrc = fs.readFileSync(path.join(ROOT, 'builder/generated/engine.js'), 'utf8');
+        assert.ok(/data-hb-cookie-banner/.test(engineSrc), 'engine inlines cookie banner assets');
+        assert.ok(/data-hb-preview-legal/.test(engineSrc), 'engine marks preview legal links');
+        assert.ok(!/owner-gated/i.test(engineSrc), 'engine legal copy has no owner-gated');
+
+        const sandbox = { window: {}, console };
+        vm.runInNewContext(engineSrc, sandbox);
+        const engine = sandbox.window.HidookEngine;
+        assert.ok(engine && typeof engine.renderPreview === 'function', 'HidookEngine.renderPreview');
+
+        for (const id of TPLS) {
+            const dir = path.join(ROOT, 'templates', id);
+            const files = {
+                templateHtml: fs.readFileSync(path.join(dir, 'template.html'), 'utf8'),
+                stylesCss: fs.readFileSync(path.join(dir, 'styles.css'), 'utf8'),
+                scriptJs: fs.readFileSync(path.join(dir, 'script.js'), 'utf8'),
+            };
+            const collage = path.join(dir, 'collage.js');
+            if (fs.existsSync(collage)) files.collageJs = fs.readFileSync(collage, 'utf8');
+            const presets = JSON.parse(fs.readFileSync(path.join(dir, 'presets.json'), 'utf8')).presets;
+            const config = JSON.parse(JSON.stringify(presets[0].config || presets[0]));
+            config.business = config.business || {};
+            if (!config.business.name) config.business.name = BIZ_NAME + ' ' + id;
+
+            const html = engine.renderPreview(files, config);
+            assert.ok(/id="hb-cookie-banner"/.test(html), id + ' preview banner present');
+            assert.ok(/id="hb-cookie-accept"/.test(html), id + ' preview Accept present');
+            assert.ok(/data-hb-cookie-banner/.test(html), id + ' cookie assets inlined');
+            assert.ok(!/href=["']cookie-banner\.css["']/.test(html), id + ' no external cookie css');
+            assert.ok(!/src=["']cookie-banner\.js["']/.test(html), id + ' no external cookie js');
+            // Banner starts hidden; inlined script must be able to reveal it.
+            assert.ok(/hb-cookie-banner[\s\S]*?\bhidden\b/.test(html), id + ' banner has hidden attr');
+            assert.ok(/el\.hidden\s*=\s*false/.test(html), id + ' accept/show path sets hidden=false');
+            assert.ok(/el\.hidden\s*=\s*true/.test(html), id + ' accept path can hide banner');
+
+            assert.ok(!/href=["']privacy\.html["']/.test(html), id + ' no raw privacy.html (would hit /app/)');
+            assert.ok(!/href=["']terms\.html["']/.test(html), id + ' no raw terms.html');
+            assert.ok(!/href=["']cookies\.html["']/.test(html), id + ' no raw cookies.html');
+            assert.ok(/data-hb-preview-legal="privacy\.html"/.test(html), id + ' privacy isolated');
+            assert.ok(/data-hb-preview-legal="terms\.html"/.test(html), id + ' terms isolated');
+            assert.ok(/data-hb-preview-legal="cookies\.html"/.test(html), id + ' cookies isolated');
+            assert.ok(!/\/app\/(?:privacy|terms|cookies)\.html/.test(html), id + ' no builder /app legal paths');
+            assert.ok(!/owner-gated|owner-ului/i.test(html), id + ' no owner jargon in preview');
+
+            // Decode one legal data URL and confirm business Romanian placeholder page.
+            const marker = 'data-hb-preview-legal="privacy.html"';
+            const at = html.indexOf(marker);
+            assert.ok(at !== -1, id + ' privacy marker index');
+            const windowStart = Math.max(0, at - 20000);
+            const slice = html.slice(windowStart, at + marker.length);
+            const dm = slice.match(/href="(data:text\/html;charset=utf-8,[^"]+)"[^>]*data-hb-preview-legal="privacy\.html"|data-hb-preview-legal="privacy\.html"[^>]*href="(data:text\/html;charset=utf-8,[^"]+)"/);
+            // Attribute order is href first then data-hb-preview-legal — scan backward for href=
+            let dataHref = null;
+            const hrefIdx = slice.lastIndexOf('href="data:text/html;charset=utf-8,');
+            if (hrefIdx !== -1) {
+                const from = slice.slice(hrefIdx + 'href="'.length);
+                const end = from.indexOf('"');
+                if (end !== -1) dataHref = from.slice(0, end);
+            }
+            assert.ok(dataHref, id + ' privacy data: href');
+            const raw = decodeURIComponent(dataHref.replace(/^data:text\/html;charset=utf-8,/, ''));
+            assert.ok(/Politica de confidențialitate/i.test(raw), id + ' privacy RO title');
+            assert.ok(raw.includes(config.business.name), id + ' privacy names business');
+            assert.ok(/\[PLACEHOLDER/i.test(raw), id + ' privacy PLACEHOLDER');
+            assert.ok(!/owner-gated|Hidook Site Builder/i.test(raw), id + ' privacy not builder chrome / jargon');
+            assert.ok(/titularul afacerii|de completat|PLACEHOLDER/i.test(raw), id + ' privacy honest RO unfinished');
         }
     });
 
@@ -379,6 +493,8 @@ function unzipStore(zipBuf, destDir) {
                 // Static serve smoke: privacy page readable
                 const priv = fs.readFileSync(path.join(dest, 'privacy.html'), 'utf8');
                 assert.ok(/placeholder|PLACEHOLDER|consultan/i.test(priv), 'privacy placeholder');
+                assert.ok(!/owner-gated|owner-ului/i.test(priv), 'export privacy has no owner-gated jargon');
+                assert.ok(!/Hidook Site Builder/i.test(priv), 'export privacy is business page not builder chrome');
             } finally {
                 try { fs.rmSync(dest, { recursive: true, force: true }); } catch (_) {}
             }
