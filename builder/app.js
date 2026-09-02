@@ -4014,6 +4014,9 @@ async function loadVersions(siteId) {
 const screens = ['templates', 'edit', 'dashboard'];
 
 function showScreen(name) {
+  // The editor canvas is itself a generated-site preview. Its consent belongs
+  // inside the iframe, so the builder-origin notice must stay outside this view.
+  document.body.classList.toggle('editor-preview-cookie-isolated', name === 'edit');
   screens.forEach(s => {
     const el = $('screen-' + s);
     if (el) el.style.display = s === name ? '' : 'none';

@@ -561,7 +561,7 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/\/app\/privacy\.html/.test(res.bodyText), 'builder privacy link');
         });
 
-        await check('HEAD Brave: all previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
+        await check('HEAD Brave: catalog and editor previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
             await withBrave(async (browser) => {
                 const context = await browser.newContext({ acceptDownloads: true });
                 const page = await context.newPage();
@@ -578,6 +578,7 @@ function unzipStore(zipBuf, destDir) {
                     const accept = frame.locator('#hb-cookie-accept');
                     await accept.waitFor({ state: 'visible', timeout: 20000 });
                     await accept.click();
+                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
                     assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' generated Accept hides notice');
 
                     await page.click('#btn-close-preview');
@@ -586,16 +587,39 @@ function unzipStore(zipBuf, destDir) {
                     assert.notStrictEqual(restored, 'none', id + ' restores builder notice after preview closes');
                 }
 
+                for (const id of TPLS) {
+                    await page.click('.btn-start-tpl[data-id="' + id + '"]');
+                    await page.waitForURL(/#edit$/, { timeout: 20000 });
+                    await page.waitForSelector('#preview-iframe');
+                    const closeDrawer = page.locator('#btn-close-drawer');
+                    if (await closeDrawer.isVisible()) await closeDrawer.click();
+
+                    const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
+                    assert.strictEqual(outerDisplay, 'none', id + ' editor hides builder-origin notice');
+
+                    const frame = page.frameLocator('#preview-iframe');
+                    const accept = frame.locator('#hb-cookie-accept');
+                    await accept.waitFor({ state: 'visible', timeout: 20000 });
+                    await accept.click();
+                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
+                    assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' editor generated Accept hides notice');
+
+                    await page.goto(`http://127.0.0.1:${port}/app/#templates`);
+                    await page.waitForSelector('.btn-start-tpl[data-id="' + id + '"]');
+                }
+
                 await page.click('.btn-start-tpl[data-id="product-menu"]');
                 await page.waitForURL(/#edit$/, { timeout: 20000 });
                 await page.waitForSelector('#btn-publish');
-                const ogImage = await page.locator('[name="seo.ogImage"]').inputValue();
+                const ogImageInput = page.locator('[name="seo.ogImage"]');
+                if (!(await ogImageInput.isVisible())) await page.click('#btn-open-drawer');
+                const ogImage = await ogImageInput.inputValue();
                 assert.ok(/^images\//.test(ogImage), 'Restaurant starts with a relative site-local og:image');
-                assert.notStrictEqual(await page.locator('[name="seo.ogImage"]').getAttribute('aria-invalid'), 'true', 'relative og:image is valid');
-                await page.locator('[name="seo.ogImage"]').fill('nu este o imagine');
-                assert.strictEqual(await page.locator('[name="seo.ogImage"]').getAttribute('aria-invalid'), 'true', 'garbage asset text stays invalid');
-                assert.ok(/images\/|link complet/i.test(await page.locator('[name="seo.ogImage"]').evaluate((el) => el.validationMessage)), 'invalid asset explains accepted URL/path formats in Romanian');
-                await page.locator('[name="seo.ogImage"]').fill(ogImage);
+                assert.notStrictEqual(await ogImageInput.getAttribute('aria-invalid'), 'true', 'relative og:image is valid');
+                await ogImageInput.fill('nu este o imagine');
+                assert.strictEqual(await ogImageInput.getAttribute('aria-invalid'), 'true', 'garbage asset text stays invalid');
+                assert.ok(/images\/|link complet/i.test(await ogImageInput.evaluate((el) => el.validationMessage)), 'invalid asset explains accepted URL/path formats in Romanian');
+                await ogImageInput.fill(ogImage);
                 await page.click('#btn-close-drawer');
 
                 await page.click('#btn-publish');
