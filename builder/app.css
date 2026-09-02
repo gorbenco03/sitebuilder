@@ -981,6 +981,11 @@ input, textarea, select {
   transition: width var(--transition-md), box-shadow var(--transition-md), border-radius var(--transition-md);
 }
 
+/* Catalog controls cannot receive a provisional click while srcdoc settles. */
+.preview-iframe--modal.preview-iframe--loading {
+  pointer-events: none;
+}
+
 /* Constrained "window" frame on large screens */
 @media (min-width: 900px) {
   .editor-canvas-wrap:not(.mode-mobile) .preview-iframe--edit {
@@ -1725,6 +1730,13 @@ input, textarea, select {
 }
 .toast.toast-error   { background: var(--error); }
 .toast.toast-success { background: var(--success); }
+
+/* Generated-site consent stays at the bottom of the editor iframe. Keep
+   builder feedback by the topbar so both messages remain readable. */
+body.editor-preview-cookie-isolated .toast {
+  top: calc(var(--topbar-h) + 1rem);
+  bottom: auto;
+}
 
 .ig-terms {
   display: flex;

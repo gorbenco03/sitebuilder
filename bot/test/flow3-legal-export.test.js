@@ -406,7 +406,7 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
-    await check('HEAD exportSiteZip contains legal pages, styles, attribution, no secrets', () => {
+    await check('HEAD exportSiteZip contains legal pages, styles, attribution, favicon, no secrets', async () => {
         const preset = JSON.parse(
             fs.readFileSync(path.join(ROOT, 'templates/product-menu/presets.json'), 'utf8')
         );
@@ -432,7 +432,48 @@ function unzipStore(zipBuf, destDir) {
             // Must not require Hidook API host strings for core function
             assert.ok(!/\/api\/export|hidook\.agency\/api/i.test(index), 'no hidook api dependency in index');
             assertNoSecretLeak(index);
-            assertNoSecretLeak(fs.readFileSync(path.join(dest, 'privacy.html'), 'utf8'));
+            const privacy = fs.readFileSync(path.join(dest, 'privacy.html'), 'utf8');
+            assertNoSecretLeak(privacy);
+            assert.ok(
+                /<link\s+rel=["']icon["']\s+href=["']data:image\/svg\+xml/i.test(privacy),
+                'exported legal page declares an inline favicon instead of requesting /favicon.ico'
+            );
+
+            const staticServer = http.createServer((req, res) => {
+                const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
+                const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
+                const file = path.resolve(dest, rel);
+                if (!file.startsWith(path.resolve(dest) + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+                    res.statusCode = 404;
+                    res.end('not found');
+                    return;
+                }
+                res.statusCode = 200;
+                res.end(fs.readFileSync(file));
+            });
+            await new Promise((resolve, reject) => {
+                staticServer.once('error', reject);
+                staticServer.listen(0, '127.0.0.1', resolve);
+            });
+            try {
+                const staticPort = staticServer.address().port;
+                await withBrave(async (browser) => {
+                    const page = await browser.newPage();
+                    const requests = [];
+                    const notFound = [];
+                    page.on('request', (request) => requests.push(request.url()));
+                    page.on('response', (response) => {
+                        if (response.status() === 404) notFound.push(response.url());
+                    });
+                    await page.goto(`http://127.0.0.1:${staticPort}/privacy.html`, { waitUntil: 'load' });
+                    await sleep(300);
+                    assert.ok(!requests.some((url) => /\/favicon\.ico(?:$|[?#])/.test(url)), 'legal page does not request /favicon.ico');
+                    assert.deepStrictEqual(notFound, [], 'plain static legal page has no 404 responses');
+                    await page.close();
+                });
+            } finally {
+                await new Promise((resolve) => staticServer.close(resolve));
+            }
         } finally {
             try { fs.rmSync(dest, { recursive: true, force: true }); } catch (_) {}
         }
@@ -571,6 +612,8 @@ function unzipStore(zipBuf, destDir) {
                 for (const id of TPLS) {
                     await page.click('.btn-preview-tpl[data-id="' + id + '"]');
                     await page.waitForSelector('#modal-preview', { state: 'visible' });
+                    await page.waitForSelector('#preview-modal-iframe[aria-busy="true"]', { timeout: 5000 });
+                    await page.waitForSelector('#preview-modal-iframe[aria-busy="false"]', { timeout: 20000 });
                     const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
                     assert.strictEqual(outerDisplay, 'none', id + ' hides builder-origin notice while preview is open');
 
@@ -580,6 +623,17 @@ function unzipStore(zipBuf, destDir) {
                     await accept.click();
                     await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
                     assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' generated Accept hides notice');
+
+                    // Use Playwright's trusted pointer input as soon as the visible
+                    // catalog controls are available. A DOM el.click() after waiting
+                    // for document.complete missed Desserdirina's provisional srcdoc.
+                    const privacy = frame.locator('[data-hb-preview-legal="privacy.html"]');
+                    await privacy.click({ timeout: 20000 });
+                    await frame.locator('.hb-legal').waitFor({ state: 'visible', timeout: 15000 });
+                    assert.ok(
+                        /Politica de confidențialitate/i.test(await frame.locator('body').innerText()),
+                        id + ' first trusted catalog legal click opens the generated page'
+                    );
 
                     await page.click('#btn-close-preview');
                     await page.waitForSelector('#modal-preview', { state: 'hidden' });
@@ -627,8 +681,17 @@ function unzipStore(zipBuf, destDir) {
                 assert.ok(!/Introdu un link complet/.test(await page.locator('#toast').textContent()), 'publish is not blocked by relative og:image');
                 await page.click('#btn-close-publish');
 
+                const generatedNotice = page.frameLocator('#preview-iframe').locator('#hb-cookie-banner');
+                await generatedNotice.waitFor({ state: 'visible', timeout: 10000 });
                 await page.click('#btn-download-zip');
                 await page.waitForFunction(() => /Autentifică-te ca să descarci ZIP-ul/.test(document.getElementById('toast').textContent));
+                const errorToastBox = await page.locator('#toast').boundingBox();
+                const noticeBox = await generatedNotice.boundingBox();
+                assert.ok(errorToastBox && noticeBox, 'ZIP sign-in toast and generated notice are measurable');
+                assert.ok(
+                    errorToastBox.y + errorToastBox.height <= noticeBox.y || noticeBox.y + noticeBox.height <= errorToastBox.y,
+                    'ZIP sign-in toast must not overlap the generated cookie notice'
+                );
 
                 await page.goto(`http://127.0.0.1:${port}/app/#dashboard`);
                 await page.waitForSelector('#btn-dashboard-auth', { timeout: 10000 });
@@ -642,6 +705,17 @@ function unzipStore(zipBuf, destDir) {
                 const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
                 await page.click('#btn-download-zip');
                 const download = await downloadPromise;
+                await page.waitForFunction(() => /ZIP descărcat/.test(document.getElementById('toast').textContent));
+                const successNotice = page.frameLocator('#preview-iframe').locator('#hb-cookie-banner');
+                await successNotice.waitFor({ state: 'visible', timeout: 10000 });
+                const successToastBox = await page.locator('#toast').boundingBox();
+                const successNoticeBox = await successNotice.boundingBox();
+                assert.ok(successToastBox && successNoticeBox, 'ZIP success toast and generated notice are measurable');
+                assert.ok(
+                    successToastBox.y + successToastBox.height <= successNoticeBox.y ||
+                        successNoticeBox.y + successNoticeBox.height <= successToastBox.y,
+                    'ZIP success toast must not overlap the generated cookie notice'
+                );
                 assert.ok(/\.zip$/i.test(download.suggestedFilename()), 'UI download filename is .zip');
                 const zipPath = await download.path();
                 assert.ok(zipPath && fs.existsSync(zipPath), 'browser produced a real downloaded file');

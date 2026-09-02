@@ -43,6 +43,7 @@ function legalShell(opts) {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, follow" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314120f'/%3E%3Cpath d='M9 10h3v5h8v-5h3v12h-3v-5h-8v5H9z' fill='%23fffaf3'/%3E%3C/svg%3E" type="image/svg+xml" />
   <title>${escapeHtml(title)} — ${biz}</title>
   <link rel="stylesheet" href="styles.css" />
   <style>

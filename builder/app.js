@@ -3645,16 +3645,35 @@ async function openPreviewModal(templateId) {
 
   let iframe = $('preview-modal-iframe');
 
-  function replacePreviewDocument(html) {
+  function replacePreviewDocument(html, readyOnLoad) {
     if (!iframe) return;
     if (typeof iframe.cloneNode !== 'function' || typeof iframe.replaceWith !== 'function') {
+      iframe.setAttribute('aria-busy', 'true');
+      iframe.classList.toggle('preview-iframe--loading', !!readyOnLoad);
+      if (readyOnLoad) {
+        iframe.addEventListener('load', () => {
+          iframe.setAttribute('aria-busy', 'false');
+          iframe.classList.remove('preview-iframe--loading');
+        }, { once: true });
+      }
       iframe.srcdoc = html;
       return;
     }
     const replacement = iframe.cloneNode(false);
-    replacement.srcdoc = html;
+    replacement.setAttribute('aria-busy', 'true');
+    replacement.classList.toggle('preview-iframe--loading', !!readyOnLoad);
     iframe.replaceWith(replacement);
     iframe = replacement;
+    if (readyOnLoad) {
+      replacement.addEventListener('load', () => {
+        replacement.setAttribute('aria-busy', 'false');
+        replacement.classList.remove('preview-iframe--loading');
+      }, { once: true });
+    }
+    // Assign srcdoc only after the clone is connected. With the large
+    // Desserdirina payload, assigning it while detached could expose a
+    // provisional document and then navigate again after insertion.
+    replacement.srcdoc = html;
   }
 
   // Make the iframe paintable before loading its heavy payload. Assigning
@@ -3666,7 +3685,7 @@ async function openPreviewModal(templateId) {
   if (body) body.classList.remove('mode-mobile');
   if (desktopBtn) { desktopBtn.classList.add('active'); desktopBtn.setAttribute('aria-pressed','true'); }
   if (mobileBtn)  { mobileBtn.classList.remove('active'); mobileBtn.setAttribute('aria-pressed','false'); }
-  replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#6B7280;margin:0;font-size:.95rem">Se încarcă previzualizarea…</body>');
+  replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#6B7280;margin:0;font-size:.95rem">Se încarcă previzualizarea…</body>', false);
   openModal('modal-preview');
 
   let tplData = null;
@@ -3679,16 +3698,16 @@ async function openPreviewModal(templateId) {
   if (previewGeneration !== previewModalGeneration) return;
 
   if (!tplData || !tplData.files || !window.HidookEngine || typeof window.HidookEngine.renderPreview !== 'function') {
-    replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>');
+    replacePreviewDocument('<body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;color:#9CA3AF;margin:0;font-size:.95rem">Nu am putut încărca previzualizarea. Încearcă din nou.</body>', true);
     return;
   }
 
   try {
     const config = (tplData.presets || []).length > 0 ? tplData.presets[0].config : {};
     const html = window.HidookEngine.renderPreview(tplData.files, config);
-    replacePreviewDocument(html);
+    replacePreviewDocument(html, true);
   } catch (e) {
-    replacePreviewDocument('<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>');
+    replacePreviewDocument('<body style="font-family:system-ui;padding:2rem;color:#9CA3AF">Nu am putut încărca previzualizarea: ' + escHtml(e.message) + '</body>', true);
   }
 
 }
