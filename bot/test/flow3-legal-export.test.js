@@ -281,6 +281,25 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
+    await check('HEAD builder legal pages are customer placeholders without studio process copy', () => {
+        const processCopy = /necunoscut|această pagină există|pagina de mai jos este un text de orientare|builderul deschis|configurația comercială live|pricing-ul produsului|originea builderului|livrare comercială|proprietarul produsului|\/app\b/i;
+        for (const [label, rel] of [
+            ['privacy', 'builder/privacy.html'],
+            ['terms', 'builder/terms.html'],
+            ['cookies', 'builder/cookies.html'],
+        ]) {
+            const html = headRead(rel);
+            const visibleText = html.replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ');
+            assert.ok(/Hidook Site Builder/.test(html), label + ' keeps product identity');
+            assert.ok(/placeholder/i.test(html), label + ' clearly labels unfinished content');
+            assert.ok(
+                /nu (?:este|reprezintă) (?:o |un )?(?:politică|notificare|contract|text juridic|consultanță juridică)[^<.]*final/i.test(html),
+                label + ' says the legal text is not final'
+            );
+            assert.ok(!processCopy.test(visibleText), label + ' has no tester, route, origin, live-config, or product-owner copy');
+        }
+    });
+
     await check('HEAD catalog/editor renderPreview isolates cookie banner + business legal pages', () => {
         // Ensure engine matches this worktree (generated/ is gitignored).
         execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
