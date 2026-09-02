@@ -46,7 +46,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 - WhatsApp badge is recognizable and supports a user-defined prefilled message.
 - Preview is clear before card/trial.
 - Privacy, Cookies and Terms machinery exists; final legal content is owner-gated.
-- Export/self-deploy produces complete static HTML/ZIP only for a paid or trial-active site; an unpaid draft receives a clear Romanian upsell and no file.
+- Export/self-deploy uses the live-publish entitlement allowlist: Stripe `active`, `trialing`, or an unexpired legacy paid entitlement. Unpaid, `past_due`, canceled, and expired-`paidUntil` drafts receive a clear Romanian upsell and no file.
 - Instafidget is included free for 12 months with Site Builder, then Instafidget Free with watermark; the editor opens in a new tab in the same browser, and disconnected feed is hidden.
 - Professional customers create their own free Cal.com account and paste the booking link in Detalii; when absent, the existing local appointment-request form remains available.
 
@@ -56,4 +56,4 @@ No push, production deploy, live DNS, real charges, production Stripe, productio
 
 ## Done before client delivery
 
-A stranger can use the browser builder end-to-end on the real browser surface: choose template → edit → preview → card test → trial live immediately → edit/republish → export HTML/ZIP → cancel. Export uses the same paid/trial-active entitlement as live publish; unpaid drafts cannot download files. QA and devil's advocate must open it themselves and save evidence. Client does not QA.
+A stranger can use the browser builder end-to-end on the real browser surface: choose template → edit → preview → card test → trial live immediately → edit/republish → export HTML/ZIP → cancel. Export uses the same explicit active/trialing or unexpired-paid entitlement as live publish; unpaid, `past_due`, canceled, and expired sites cannot download files. QA and devil's advocate must open it themselves and save evidence. Client does not QA.

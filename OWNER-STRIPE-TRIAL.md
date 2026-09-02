@@ -102,11 +102,11 @@ Set a long random `HIDOOK_ADMIN_TOKEN` in the **host environment only** (never c
 
 ## Download HTML (current draft)
 
-In the **Hidook Site Builder** editor topbar, **Download HTML** fetches `GET /api/export-html` (session cookie) and saves a complete `.html` file of the **current draft** from the registry — same `build.js` renderer as a live site, but no new Stripe charge, deploy, or unpublish. Export requires an active paid subscription or active 7-day card trial; a historical `paid=true` marker after cancellation is not sufficient. A signed-in unpaid or canceled draft receives a Romanian activation upsell and no file; missing draft also returns an error toast. Never print secrets.
+In the **Hidook Site Builder** editor topbar, **Download HTML** fetches `GET /api/export-html` (session cookie) and saves a complete `.html` file of the **current draft** from the registry — same `build.js` renderer as a live site, but no new Stripe charge, deploy, or unpublish. Export uses the live-publish entitlement allowlist: Stripe `active`, Stripe `trialing`, or an unexpired legacy paid entitlement. `paid=true` alone is historical and insufficient: unpaid, `past_due`, canceled, and expired-`paidUntil` drafts receive a Romanian activation upsell and no file; missing draft also returns an error toast. Never print secrets.
 
 ## Download ZIP / self-deploy (Flow 3)
 
-**Descarcă ZIP** fetches `GET /api/export-zip` (session cookie) and saves a `.zip` of the current draft: `index.html`, CSS/JS, images, Privacy/Terms/Cookies pages, cookie banner assets, and the Hidook attribution badge. Unzip and serve with any static host — **no** Hidook runtime and **no** required requests to Hidook domains. Same entitlement as Download HTML: sign-in, draft, and a paid or trial-active site are required. An unpaid draft receives a Romanian activation upsell and no file. Export is not a live publish and does not create a new charge.
+**Descarcă ZIP** fetches `GET /api/export-zip` (session cookie) and saves a `.zip` of the current draft: `index.html`, CSS/JS, images, Privacy/Terms/Cookies pages, cookie banner assets, and the Hidook attribution badge. Unzip and serve with any static host — **no** Hidook runtime and **no** required requests to Hidook domains. It uses the same explicit entitlement allowlist as Download HTML and live publish: `active`, `trialing`, or unexpired legacy paid. Unpaid, `past_due`, canceled, and expired-`paidUntil` drafts receive a Romanian activation upsell and no file. Export is not a live publish and does not create a new charge.
 
 ---
 

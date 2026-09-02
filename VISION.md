@@ -161,8 +161,8 @@ Done înseamnă:
 - ZIP-ul conține HTML/CSS/JS/images/legal pages/badge;
 - poate fi servit de pe orice static host fără runtime Hidook;
 - site-ul exportat nu face request-uri către domenii Hidook pentru a funcționa;
-- exportul HTML/ZIP cere un drept comercial activ, inclusiv trialul pornit cu card valid; istoricul `paid=true` după anulare nu deblochează exportul;
-- un draft unpaid primește eroare/upsell clar în română și niciun fișier;
+- exportul HTML/ZIP folosește aceeași listă explicită de drepturi ca publicarea live: numai abonament Stripe `active`, trial `trialing` sau un drept paid legacy încă valabil; `past_due`, anularea și un `paidUntil` expirat blochează exportul chiar dacă istoricul păstrează `paid=true`;
+- un draft unpaid, `past_due`, anulat sau expirat primește eroare/upsell clar în română și niciun fișier;
 - exportul este verificat prin unzip + static server + browser real.
 
 ## 7. Instafidget
@@ -251,7 +251,7 @@ Acceptare:
 
 - pagini și banner generate cu placeholder legal clar;
 - export ZIP complet;
-- export HTML/ZIP disponibil numai pentru abonament plătit sau trial activ; unpaid nu descarcă fișiere;
+- export HTML/ZIP disponibil numai pentru abonament `active`, trial `trialing` sau drept paid legacy neexpirat; unpaid, `past_due`, anulat și `paidUntil` expirat nu descarcă fișiere;
 - unzip + static serve + browser real;
 - niciun link legal mort.
 

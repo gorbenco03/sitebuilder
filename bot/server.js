@@ -389,8 +389,37 @@ function adminTokenOk(provided) {
  */
 function adminPublishLabel(site) {
     const st = String((site && site.status) || '').toLowerCase();
-    if (st === 'live' || st === 'active') return 'Live';
+    if ((st === 'live' || st === 'active') && hasActiveCommercialEntitlement(site)) return 'Live';
     return 'Unpublished';
+}
+
+/**
+ * One commercial allowlist for live publishing, republishing, and export.
+ * `paid` is historical, so it is never sufficient by itself. Stripe-backed
+ * sites must be active/trialing; legacy paid sites must still be live/active
+ * (or carry an explicit paid/trial billing state). Any paidUntil is a hard
+ * upper bound regardless of the other markers.
+ */
+function hasActiveCommercialEntitlement(site, nowMs = Date.now()) {
+    if (!site || site.paid !== true || site.canceledAt) return false;
+
+    if (site.paidUntil) {
+        const paidUntilMs = Date.parse(site.paidUntil);
+        if (!Number.isFinite(paidUntilMs) || paidUntilMs <= nowMs) return false;
+    }
+
+    const subscriptionStatus = String(
+        site.stripeSubscriptionStatus || site.subscriptionStatus || ''
+    ).toLowerCase();
+    if (subscriptionStatus) {
+        return subscriptionStatus === 'active' || subscriptionStatus === 'trialing';
+    }
+
+    const billingState = String(site.billingState || '').toLowerCase();
+    if (billingState) return billingState === 'paid' || billingState === 'trial';
+
+    const publishStatus = String(site.status || '').toLowerCase();
+    return !!site.paidUntil && (publishStatus === 'live' || publishStatus === 'active');
 }
 
 /**
@@ -916,7 +945,9 @@ async function handleRollback(req, res, siteId) {
     const site = await reg.getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site not found.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
-    if (!site.paid) return sendJson(res, 402, { error: 'Site has not been paid for.' });
+    if (!hasActiveCommercialEntitlement(site)) {
+        return sendJson(res, 402, { error: 'Site-ul necesită un abonament sau trial activ.' });
+    }
 
     const config = await reg.getVersionConfig(siteId, versionId);
     if (!config) return sendJson(res, 404, { error: 'Version not found.' });
@@ -1506,15 +1537,7 @@ async function resolveExportDraft(req, res, query) {
         return null;
     }
 
-    // paid remains historical after cancellation, so reject explicit inactive
-    // subscription state as well as drafts that never activated checkout.
-    const subscriptionStatus = String(
-        site.stripeSubscriptionStatus || site.subscriptionStatus || ''
-    ).toLowerCase();
-    const inactiveSubscription =
-        !!site.canceledAt ||
-        ['canceled', 'cancelled', 'unpaid', 'incomplete', 'incomplete_expired', 'paused'].includes(subscriptionStatus);
-    if (!site.paid || inactiveSubscription) {
+    if (!hasActiveCommercialEntitlement(site)) {
         sendJson(res, 402, {
             error: 'Exportul este disponibil după activarea trialului de 7 zile sau cu un abonament activ.',
             code: 'EXPORT_REQUIRES_SUBSCRIPTION',
@@ -1929,14 +1952,9 @@ async function handlePublish(req, res) {
     } else {
         // Max 1 unpaid site per user (prevents abuse)
         const existing = await reg.listSites(userId);
-        const unpaid = existing.filter((s) => {
-            if (s.status === 'deleted') return false;
-            const subscriptionStatus = String(s.stripeSubscriptionStatus || s.subscriptionStatus || '').toLowerCase();
-            const cancelledDraft =
-                s.status === 'unpublished' &&
-                (s.canceledAt || subscriptionStatus === 'canceled' || subscriptionStatus === 'cancelled');
-            return !s.paid || cancelledDraft;
-        });
+        const unpaid = existing.filter((s) =>
+            s.status !== 'deleted' && !hasActiveCommercialEntitlement(s)
+        );
         if (unpaid.length > 0) {
             return sendJson(res, 409, {
                 error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.',
@@ -1970,8 +1988,8 @@ async function handlePublish(req, res) {
 
     const webpublish = require('./webpublish.js');
 
-    // If already paid — publish directly (re-edit)
-    if (site.paid) {
+    // Only a currently entitled site may publish directly (re-edit).
+    if (hasActiveCommercialEntitlement(site)) {
         try {
             const result = await webpublish.publishSite({ site, config, images: imgList });
             const updated = await reg.getSite(site.id);

@@ -29,6 +29,7 @@ const http   = require('http');
 const ROOT = path.resolve(__dirname, '../..');
 const PARENT_SHA = 'ede35fa85e8aaae9494e1e1e0b7804ba14b4105b';
 const EXPORT_GATE_BASE_SHA = 'a448a3bfb1b9b2ad7c37354d5f1f62eb0bce49ba';
+const REJECTED_EXPORT_GATE_SHA = 'ee2ec93548e615f91b38111a18ebea02a0d72438';
 
 const SERVER_SECRET = 'wave11-server-secret-' + crypto.randomBytes(8).toString('hex');
 const BIZ_NAME = 'Wave11 Export Cafe ' + crypto.randomBytes(3).toString('hex');
@@ -139,6 +140,34 @@ function assertNoSecretLeak(body) {
         assert.ok(!/site\.paid|plăt|trial/i.test(resolver[0]), 'base resolver had no paid/trial export gate');
     });
 
+    await check(`rejected export gate ${REJECTED_EXPORT_GATE_SHA.slice(0, 7)} used an incomplete denylist (causal RED archive)`, () => {
+        const rejectedSrc = require('child_process').execFileSync(
+            'git',
+            ['-C', ROOT, 'show', `${REJECTED_EXPORT_GATE_SHA}:bot/server.js`],
+            { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }
+        );
+        const resolver = rejectedSrc.match(/async function resolveExportDraft[\s\S]*?\n}\n\n\/\*\*/);
+        assert.ok(resolver, 'rejected resolveExportDraft function found');
+        assert.ok(!/past_due/.test(resolver[0]), 'rejected resolver did not block Stripe past_due');
+        assert.ok(!/paidUntil/.test(resolver[0]), 'rejected resolver did not enforce paidUntil');
+    });
+
+    await check('HEAD export and live-publish paths share one explicit entitlement allowlist', () => {
+        const serverSrc = fs.readFileSync(path.join(ROOT, 'bot/server.js'), 'utf8');
+        const predicate = serverSrc.match(/function hasActiveCommercialEntitlement[\s\S]*?\n}/);
+        assert.ok(predicate, 'shared entitlement predicate exists');
+        assert.ok(/subscriptionStatus === 'active'/.test(predicate[0]), 'active is explicitly allowed');
+        assert.ok(/subscriptionStatus === 'trialing'/.test(predicate[0]), 'trialing is explicitly allowed');
+        assert.ok(/paidUntilMs <= nowMs/.test(predicate[0]), 'expired paidUntil is explicitly rejected');
+        assert.ok(/!!site\.paidUntil/.test(predicate[0]), 'legacy paid state requires an explicit entitlement end');
+        assert.ok(/hasActiveCommercialEntitlement\(site\)/.test(
+            serverSrc.match(/async function resolveExportDraft[\s\S]*?\n}/)[0]
+        ), 'export resolver uses shared predicate');
+        assert.ok(/if \(hasActiveCommercialEntitlement\(site\)\)/.test(
+            serverSrc.match(/async function handlePublish[\s\S]*?\n}/)[0]
+        ), 'live publish uses shared predicate');
+    });
+
     const server = startServer({ port: 0 });
     await new Promise((resolve, reject) => {
         if (server.listening) return resolve();
@@ -241,6 +270,64 @@ function assertNoSecretLeak(body) {
             assertNoSecretLeak(res.body);
             // Must not be a live publish / redirect to checkout
             assert.ok(!/paymentUrl|checkout\.stripe/i.test(res.body), 'not a checkout response');
+        });
+
+        for (const exportKind of ['html', 'zip']) {
+            await check(`GET /api/export-${exportKind} with past_due subscription → 402 and no attachment`, async () => {
+                registry.updateSite(site.id, {
+                    paid: true,
+                    status: 'live',
+                    canceledAt: null,
+                    paidUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
+                    stripeSubscriptionStatus: 'past_due',
+                    subscriptionStatus: 'past_due',
+                });
+                const res = await httpReq(port, '/api/export-' + exportKind + '?siteId=' + encodeURIComponent(site.id), {
+                    headers: { Cookie: cookie, Accept: exportKind === 'zip' ? 'application/zip' : 'text/html' },
+                });
+                assert.strictEqual(res.status, 402, 'past_due must not export ' + exportKind);
+                assert.ok(/trial|abonament|activează|plăt/i.test(res.body), 'Romanian entitlement error');
+                assert.ok(!res.headers['content-disposition'], 'past_due response is not an attachment');
+                assertNoSecretLeak(res.body);
+            });
+        }
+
+        for (const exportKind of ['html', 'zip']) {
+            await check(`GET /api/export-${exportKind} with expired paidUntil → 402 and no attachment`, async () => {
+                registry.updateSite(site.id, {
+                    paid: true,
+                    status: 'live',
+                    canceledAt: null,
+                    paidUntil: new Date(Date.now() - 86400000).toISOString(),
+                    stripeSubscriptionStatus: 'active',
+                    subscriptionStatus: 'active',
+                });
+                const res = await httpReq(port, '/api/export-' + exportKind + '?siteId=' + encodeURIComponent(site.id), {
+                    headers: { Cookie: cookie, Accept: exportKind === 'zip' ? 'application/zip' : 'text/html' },
+                });
+                assert.strictEqual(res.status, 402, 'expired paidUntil must not export ' + exportKind);
+                assert.ok(/trial|abonament|activează|plăt/i.test(res.body), 'Romanian entitlement error');
+                assert.ok(!res.headers['content-disposition'], 'expired response is not an attachment');
+                assertNoSecretLeak(res.body);
+            });
+        }
+
+        await check('GET /api/export-zip with currently entitled paid site → 200 ZIP attachment', async () => {
+            registry.updateSite(site.id, {
+                paid: true,
+                status: 'live',
+                canceledAt: null,
+                paidUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
+                stripeSubscriptionStatus: 'active',
+                subscriptionStatus: 'active',
+            });
+            const res = await httpReq(port, '/api/export-zip?siteId=' + encodeURIComponent(site.id), {
+                headers: { Cookie: cookie, Accept: 'application/zip' },
+            });
+            assert.strictEqual(res.status, 200, 'currently entitled paid ZIP export');
+            assert.ok(/application\/zip/i.test(String(res.headers['content-type'] || '')), 'ZIP content type');
+            assert.ok(/attachment/i.test(String(res.headers['content-disposition'] || '')), 'ZIP attachment');
+            assert.ok(res.body.startsWith('PK'), 'complete ZIP bytes');
         });
 
         await check('GET /api/export-html after subscription cancellation → 402 and no file', async () => {

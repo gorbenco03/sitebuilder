@@ -773,6 +773,9 @@ function unzipStore(zipBuf, destDir) {
                     );
                     await page.click('#modal-preview-mobile');
                     await page.click('#modal-preview-desktop');
+                    // Match the editor path below: wait for the width transition
+                    // before deriving trusted pointer coordinates.
+                    await page.waitForTimeout(350);
                     const box = await accept.boundingBox();
                     assert.ok(box, 'Salon Accept has trusted-click coordinates');
                     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
