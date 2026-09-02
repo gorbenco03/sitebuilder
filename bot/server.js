@@ -27,6 +27,7 @@
  *   POST /api/sites/:id/social-feed/grant          → Instafidget Year-1 grant; stores instagram.embedUrl
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
+ *   POST /api/draft          → save the signed-in browser draft without publishing
  *   GET  /api/export-html   → download current draft as complete static HTML (session; not a live publish)
  *   GET  /api/export-zip    → download current draft as self-hostable static ZIP (session; not a live publish)
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
@@ -1395,6 +1396,62 @@ function exportHtmlFilename(site, config) {
 }
 
 /**
+ * POST /api/draft — persist the browser's current config for export without
+ * creating checkout, deploying, or changing a paid site's public state.
+ */
+async function handleSaveDraft(req, res) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    let body;
+    try { body = await parseJson(req, PUBLISH_BODY_MAX); }
+    catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
+
+    const { siteId, templateId, config } = body || {};
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+        return sendJson(res, 422, { error: 'Ciorna nu conține o configurație validă.' });
+    }
+    const templates = loadTemplates();
+    const tpl = templates.find(t => t.id === templateId);
+    if (!tpl) return sendJson(res, 422, { error: 'Design necunoscut: ' + templateId });
+
+    const reg = getRegistry();
+    let site = null;
+    if (siteId) {
+        site = await reg.getSite(siteId);
+        if (!site) return sendJson(res, 404, { error: 'Ciorna nu a fost găsită.' });
+        if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
+        if (site.templateId && site.templateId !== templateId) {
+            return sendJson(res, 409, { error: 'Ciorna aparține altui design.' });
+        }
+    } else {
+        const existing = (await reg.listSites(userId)) || [];
+        site = existing.slice().reverse().find(s =>
+            s && s.status !== 'deleted' && !s.paid && s.templateId === templateId
+        ) || null;
+        if (!site) {
+            let slug = slugify((config.business && config.business.name) || 'site');
+            if (!SLUG_RE.test(slug)) slug = 'site-' + crypto.randomBytes(4).toString('hex');
+            if (!isSlugAvailable(slug)) {
+                slug = (slug.slice(0, 30).replace(/-+$/, '') || 'site') + '-' + crypto.randomBytes(3).toString('hex');
+            }
+            site = await reg.createSite({
+                userId,
+                templateId,
+                templateVersion: tpl.version,
+                slug,
+                platform: 'web',
+            });
+        }
+    }
+
+    await reg.saveVersion(site.id, config);
+    if (!site.paid) await reg.updateSite(site.id, { status: 'draft', paid: false });
+    const updated = await reg.getSite(site.id);
+    return sendJson(res, 200, { site: updated });
+}
+
+/**
  * Resolve the caller's draft site + latest config (shared by export-html / export-zip).
  * Sends 401/400 itself on failure; returns null when response already written.
  */
@@ -2051,6 +2108,11 @@ function createHandler({ onStripeEvent } = {}) {
 
             if (req.method === 'POST' && url === '/api/publish') {
                 return await handlePublish(req, res);
+            }
+
+            // Save the current editor draft for export without publish or checkout
+            if (req.method === 'POST' && url === '/api/draft') {
+                return await handleSaveDraft(req, res);
             }
 
             // Download current draft as complete static HTML (not a live publish)

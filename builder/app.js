@@ -108,6 +108,7 @@ function openModal(id) {
 function closeModal(id) {
   const el = $(id);
   if (el) el.style.display = 'none';
+  if (id === 'modal-preview') document.body.classList.remove('preview-cookie-isolated');
 }
 
 function setBtnLoading(btn, loading, originalText) {
@@ -292,6 +293,18 @@ function isPlausibleHttpUrl(value) {
   } catch (_) {
     return false;
   }
+}
+
+function isSiteLocalAssetField(key) {
+  return /(?:^|\.)(?:ogImage|image|imageUrl|photo|logo|src)$/i.test(String(key || ''));
+}
+
+function isPlausibleSiteAssetPath(value) {
+  const str = typeof value === 'string' ? value.trim() : '';
+  if (!str || /[\\\s:]/.test(str) || str.includes('//')) return false;
+  const pathname = str.split(/[?#]/, 1)[0];
+  if (pathname.split('/').includes('..')) return false;
+  return /^(?:\.\/|\/)?(?:images|assets)\/[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(pathname);
 }
 
 function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
@@ -1612,11 +1625,13 @@ function buildDrawerField(field) {
   if (curVal != null && typeof curVal !== 'object') input.value = String(curVal);
 
   let urlError = null;
-  const urlErrorCopy = 'Introdu un link complet care începe cu http:// sau https://.';
+  const urlErrorCopy = isSiteLocalAssetField(key)
+    ? 'Introdu un link complet http(s) sau o cale locală din images/ ori assets/.'
+    : 'Introdu un link complet care începe cu http:// sau https://.';
   function updateUrlValidity() {
     if (type !== 'url') return true;
     const value = input.value.trim();
-    const valid = !value || isPlausibleHttpUrl(value);
+    const valid = !value || isPlausibleHttpUrl(value) || (isSiteLocalAssetField(key) && isPlausibleSiteAssetPath(value));
     input.setCustomValidity(valid ? '' : urlErrorCopy);
     input.classList.toggle('invalid', !valid);
     if (valid) input.removeAttribute('aria-invalid');
@@ -2428,8 +2443,28 @@ async function downloadDraftHtml() {
  */
 async function downloadDraftZip() {
   const btn = $('btn-download-zip');
+  if (!currentUser) {
+    showToast('Autentifică-te ca să descarci ZIP-ul.', 'error', 5000);
+    return;
+  }
   if (btn) btn.disabled = true;
   try {
+    if (!draft.templateId || !draft.config) {
+      showToast('Alege mai întâi un design.', 'error', 5000);
+      return;
+    }
+    const saved = await apiPost('/api/draft', {
+      siteId: currentSiteId || undefined,
+      templateId: draft.templateId,
+      config: draft.config,
+    });
+    if (!saved.site || !saved.site.id) throw new Error('Ciorna nu a fost salvată.');
+    currentSiteId = saved.site.id;
+    publishedSiteId = saved.site.id;
+    currentSitePaid = !!saved.site.paid;
+    currentSiteSlug = saved.site.slug || saved.site.projectName || currentSiteSlug || '';
+    saveDraft();
+
     let url = '/api/export-zip';
     if (currentSiteId) {
       url += '?siteId=' + encodeURIComponent(currentSiteId);
@@ -2841,7 +2876,7 @@ async function openPublishModal() {
 
   const invalidUrlInput = document.querySelector('.field-input--url[aria-invalid="true"]');
   if (invalidUrlInput) {
-    showToast('Introdu un link complet care începe cu http:// sau https://.', 'error', 5000);
+    showToast(invalidUrlInput.validationMessage || 'Verifică linkul introdus.', 'error', 5000);
     openDrawer();
     invalidUrlInput.focus();
     return;
@@ -3599,6 +3634,9 @@ let previewModalGeneration = 0;
 
 async function openPreviewModal(templateId) {
   const previewGeneration = ++previewModalGeneration;
+  // The generated site owns consent inside its preview. Keep the builder-origin
+  // notice out of this modal so it cannot cover or intercept iframe controls.
+  document.body.classList.add('preview-cookie-isolated');
   const registry = getTemplateList();
   const meta = (registry || []).find(t => t.id === templateId) || {};
 
@@ -4278,7 +4316,7 @@ function wireStaticButtons() {
   // Close on overlay click
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.style.display = 'none';
+      if (e.target === overlay) closeModal(overlay.id);
     });
   });
 
@@ -4287,7 +4325,7 @@ function wireStaticButtons() {
     if (e.key === 'Escape') {
       ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery'].forEach(id => {
         const el = $(id);
-        if (el && el.style.display !== 'none') el.style.display = 'none';
+        if (el && el.style.display !== 'none') closeModal(id);
       });
       if (drawerOpen) closeDrawer();
       if (colorPopoverOpen) closeColorPopover();

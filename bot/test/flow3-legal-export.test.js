@@ -29,6 +29,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const BASE_SHA = '275e534232cd20105781ca0fbc6ec5bb5d9a2b97';
 const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
 const REJECTED_SHA = 'f1cda5f66c297ecea358c68629223e49cce51a2e'; // data:text/html legal hrefs — Chromium dead clicks
+const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping consent + no current-draft UI ZIP
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
 const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
@@ -218,6 +219,26 @@ function unzipStore(zipBuf, destDir) {
             !/#hb-preview-legal-|PREVIEW_LEGAL_NAV_SRC|hb-preview-legal-docs/.test(rejectedBuild),
             'rejected candidate must lack hash/interceptor legal navigation'
         );
+    });
+
+    await check('causal RED: R3 parent overlaps builder consent and cannot save the browser draft for ZIP', () => {
+        const parentApp = execFileSync('git', ['-C', ROOT, 'show', R3_PARENT_SHA + ':builder/app.js'], {
+            encoding: 'utf8',
+            maxBuffer: 4 * 1024 * 1024,
+        });
+        const parentHtml = execFileSync('git', ['-C', ROOT, 'show', R3_PARENT_SHA + ':builder/index.html'], {
+            encoding: 'utf8',
+            maxBuffer: 2 * 1024 * 1024,
+        });
+        const parentServer = execFileSync('git', ['-C', ROOT, 'show', R3_PARENT_SHA + ':bot/server.js'], {
+            encoding: 'utf8',
+            maxBuffer: 4 * 1024 * 1024,
+        });
+        assert.ok(/id="hb-cookie-banner"/.test(parentHtml), 'parent has builder-origin notice');
+        assert.ok(!/preview-cookie-isolated/.test(parentApp + parentHtml), 'parent does not isolate builder notice during preview');
+        assert.ok(/const valid = !value \|\| isPlausibleHttpUrl\(value\)/.test(parentApp), 'parent rejects relative preset assets');
+        assert.ok(!/\/api\/draft/.test(parentApp), 'parent ZIP click cannot persist the current browser draft');
+        assert.ok(!/handleSaveDraft|url === '\/api\/draft'/.test(parentServer), 'parent has no current-draft save route');
     });
 
     // ── HEAD GREEN: templates ────────────────────────────────────────────
@@ -538,6 +559,87 @@ function unzipStore(zipBuf, destDir) {
             assert.strictEqual(res.status, 200);
             assert.ok(/hb-cookie-banner/.test(res.bodyText), 'builder banner');
             assert.ok(/\/app\/privacy\.html/.test(res.bodyText), 'builder privacy link');
+        });
+
+        await check('HEAD Brave: all previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
+            await withBrave(async (browser) => {
+                const context = await browser.newContext({ acceptDownloads: true });
+                const page = await context.newPage();
+                await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
+                await page.waitForSelector('.btn-preview-tpl[data-id="product-menu"]', { timeout: 20000 });
+
+                for (const id of TPLS) {
+                    await page.click('.btn-preview-tpl[data-id="' + id + '"]');
+                    await page.waitForSelector('#modal-preview', { state: 'visible' });
+                    const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
+                    assert.strictEqual(outerDisplay, 'none', id + ' hides builder-origin notice while preview is open');
+
+                    const frame = page.frameLocator('#preview-modal-iframe');
+                    const accept = frame.locator('#hb-cookie-accept');
+                    await accept.waitFor({ state: 'visible', timeout: 20000 });
+                    await accept.click();
+                    assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' generated Accept hides notice');
+
+                    await page.click('#btn-close-preview');
+                    await page.waitForSelector('#modal-preview', { state: 'hidden' });
+                    const restored = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
+                    assert.notStrictEqual(restored, 'none', id + ' restores builder notice after preview closes');
+                }
+
+                await page.click('.btn-start-tpl[data-id="product-menu"]');
+                await page.waitForURL(/#edit$/, { timeout: 20000 });
+                await page.waitForSelector('#btn-publish');
+                const ogImage = await page.locator('[name="seo.ogImage"]').inputValue();
+                assert.ok(/^images\//.test(ogImage), 'Restaurant starts with a relative site-local og:image');
+                assert.notStrictEqual(await page.locator('[name="seo.ogImage"]').getAttribute('aria-invalid'), 'true', 'relative og:image is valid');
+                await page.locator('[name="seo.ogImage"]').fill('nu este o imagine');
+                assert.strictEqual(await page.locator('[name="seo.ogImage"]').getAttribute('aria-invalid'), 'true', 'garbage asset text stays invalid');
+                assert.ok(/images\/|link complet/i.test(await page.locator('[name="seo.ogImage"]').evaluate((el) => el.validationMessage)), 'invalid asset explains accepted URL/path formats in Romanian');
+                await page.locator('[name="seo.ogImage"]').fill(ogImage);
+                await page.click('#btn-close-drawer');
+
+                await page.click('#btn-publish');
+                await page.waitForSelector('#modal-publish', { state: 'visible' });
+                assert.ok(!/Introdu un link complet/.test(await page.locator('#toast').textContent()), 'publish is not blocked by relative og:image');
+                await page.click('#btn-close-publish');
+
+                await page.click('#btn-download-zip');
+                await page.waitForFunction(() => /Autentifică-te ca să descarci ZIP-ul/.test(document.getElementById('toast').textContent));
+
+                await page.goto(`http://127.0.0.1:${port}/app/#dashboard`);
+                await page.waitForSelector('#btn-dashboard-auth', { timeout: 10000 });
+                await page.click('#btn-dashboard-auth');
+                await page.fill('#input-email', `flow3-ui-${crypto.randomUUID()}@example.com`);
+                await page.click('#btn-send-magic');
+                await page.waitForSelector('#dev-link', { state: 'visible' });
+                await page.click('#dev-link');
+                await page.waitForURL(/#edit$/, { timeout: 20000 });
+
+                const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
+                await page.click('#btn-download-zip');
+                const download = await downloadPromise;
+                assert.ok(/\.zip$/i.test(download.suggestedFilename()), 'UI download filename is .zip');
+                const zipPath = await download.path();
+                assert.ok(zipPath && fs.existsSync(zipPath), 'browser produced a real downloaded file');
+                const zip = fs.readFileSync(zipPath);
+                assert.strictEqual(zip.readUInt32LE(0), 0x04034b50, 'UI download has ZIP signature');
+
+                const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'flow3-ui-zip-'));
+                try {
+                    const names = unzipStore(zip, dest);
+                    for (const name of ['index.html', 'styles.css', 'script.js', 'privacy.html', 'terms.html', 'cookies.html', 'cookie-banner.js']) {
+                        assert.ok(names.includes(name), 'UI ZIP contains ' + name);
+                    }
+                    assert.ok(names.some((name) => /^images\//.test(name)), 'UI ZIP contains images');
+                    const index = fs.readFileSync(path.join(dest, 'index.html'), 'utf8');
+                    assert.ok(/Build by hidook\.tech powered by hidook\.agency/.test(index.replace(/<[^>]+>/g, '')), 'UI ZIP keeps attribution');
+                    assert.ok(/hb-cookie-banner/.test(index), 'UI ZIP keeps generated cookie banner');
+                    assert.ok(!/\/api\/|HIDOOK_TEMPLATES|HidookEngine/.test(index), 'UI ZIP has no Hidook runtime dependency');
+                } finally {
+                    fs.rmSync(dest, { recursive: true, force: true });
+                }
+                await context.close();
+            });
         });
     } finally {
         await new Promise((r) => server.close(() => r()));

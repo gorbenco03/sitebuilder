@@ -1,0 +1,27 @@
+{
+  "outerCookieDisplayInPreview": "none",
+  "generatedCookieVisible": true,
+  "generatedCookieHiddenAfterAccept": true,
+  "ogImage": "images/cn-og.jpg",
+  "ogImageInvalid": null,
+  "unauthenticatedZipCopy": "Autentifică-te ca să descarci ZIP-ul.",
+  "zipFilename": "casa-nord-eb06cc.zip",
+  "zipBytes": 6856365,
+  "zipSignature": "504b0304",
+  "unzippedFiles": [
+    "README-EXPORT.txt",
+    "collage.js",
+    "cookie-banner.css",
+    "cookie-banner.js",
+    "cookies.html",
+    "images",
+    "index.html",
+    "privacy.html",
+    "script.js",
+    "styles.css",
+    "terms.html"
+  ],
+  "staticAttribution": "Build by hidook.tech powered by hidook.agency",
+  "staticRuntimeRequests": [],
+  "staticPrivacyTitle": "Politica de confidențialitate"
+}
