@@ -224,12 +224,13 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
   border-radius: 12px;
   background: #111;
   color: #f5f5f5;
-  box-shadow: 0 12px 40px rgba(0,0,0,.28);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
   font-size: 0.92rem;
   line-height: 1.45;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  pointer-events: auto;
 }
 .hb-cookie-banner[hidden] { display: none !important; }
 .hb-cookie-banner p { margin: 0; opacity: 0.92; }
@@ -239,6 +240,7 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: center;
+  pointer-events: auto;
 }
 .hb-cookie-banner button {
   appearance: none;
@@ -250,6 +252,12 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
   cursor: pointer;
   background: #25d366;
   color: #06210f;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .hb-cookie-banner button:focus-visible {
   outline: 2px solid #fff;
@@ -276,6 +284,7 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
 const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking essentials */
 (function () {
   var KEY = 'hb-cookie-consent';
+  var docBound = false;
   function readCookie() {
     try {
       var parts = document.cookie.split(';');
@@ -299,21 +308,75 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     try { localStorage.setItem(KEY, 'accepted'); } catch (e) { /* private mode */ }
     try { document.cookie = KEY + '=accepted; Path=/; Max-Age=31536000; SameSite=Lax'; } catch (e) { /* ignore */ }
   }
-  function accept() {
-    persist();
+  function hideBanner() {
     var el = document.getElementById('hb-cookie-banner');
-    if (el) el.hidden = true;
+    if (!el) return;
+    el.hidden = true;
+    try { el.setAttribute('hidden', ''); } catch (e) { /* ignore */ }
+    try { el.style.setProperty('display', 'none', 'important'); } catch (e) { /* ignore */ }
+    try { el.setAttribute('data-hb-consent-dismissed', 'true'); } catch (e) { /* ignore */ }
+  }
+  function accept(e) {
+    // Avoid preventDefault: on pointerdown it can suppress the subsequent click
+    // and confuse actionability in sandboxed srcdoc previews.
+    persist();
+    hideBanner();
+  }
+  function acceptTarget(t) {
+    if (!t) return null;
+    if (t.nodeType === 3) t = t.parentElement;
+    if (!t || !t.closest) {
+      return t && t.id === 'hb-cookie-accept' ? t : null;
+    }
+    return t.closest('#hb-cookie-accept');
+  }
+  function onActivate(e) {
+    if (!acceptTarget(e && e.target)) return;
+    accept(e);
+  }
+  function bindDocument() {
+    if (docBound) return;
+    docBound = true;
+    // Capture-phase delegation survives node swaps and runs even when a
+    // direct button listener was lost after a provisional srcdoc paint.
+    // pointerdown fires before layout can cancel the click gesture.
+    document.addEventListener('pointerdown', onActivate, true);
+    document.addEventListener('click', onActivate, true);
+  }
+  function bindButton(btn) {
+    if (!btn) return;
+    if (btn.getAttribute('data-hb-bound') === '1') return;
+    btn.setAttribute('data-hb-bound', '1');
+    btn._hbBound = true;
+    btn.addEventListener('pointerdown', accept);
+    btn.addEventListener('click', accept);
+    // Property handler: first trusted click must dismiss even if addEventListener
+    // was dropped by a mid-load document replacement in catalog srcdoc previews.
+    btn.onclick = accept;
+  }
+  function markReady(el) {
+    if (!el) return;
+    try { el.setAttribute('data-hb-consent-ready', 'true'); } catch (e) { /* ignore */ }
   }
   function show() {
+    bindDocument();
     var el = document.getElementById('hb-cookie-banner');
-    if (!el || accepted()) return;
-    el.hidden = false;
-    var btn = document.getElementById('hb-cookie-accept');
-    if (btn && !btn._hbBound) {
-      btn._hbBound = true;
-      btn.addEventListener('click', accept);
+    if (!el) return;
+    if (accepted() || el.getAttribute('data-hb-consent-dismissed') === 'true') {
+      hideBanner();
+      markReady(el);
+      return;
     }
+    el.hidden = false;
+    try { el.removeAttribute('hidden'); } catch (e) { /* ignore */ }
+    try { el.style.removeProperty('display'); } catch (e) { /* ignore */ }
+    bindButton(document.getElementById('hb-cookie-accept'));
+    markReady(el);
   }
+  // Expose for inline fallback + preview-ready gating.
+  try { window.__hbCookieAccept = accept; } catch (e) { /* ignore */ }
+  bindDocument();
+  if (document.getElementById('hb-cookie-banner')) show();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', show);
   } else {
@@ -326,7 +389,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
 const COOKIE_BANNER_HTML = `    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
       <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
       <div class="hb-cookie-actions">
-        <button type="button" id="hb-cookie-accept">Acceptă</button>
+        <button type="button" id="hb-cookie-accept" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}">Acceptă</button>
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
       </div>
     </div>

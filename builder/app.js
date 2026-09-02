@@ -3654,9 +3654,20 @@ async function openPreviewModal(templateId) {
 
     function prepareInteractiveDocument(documentHtml) {
       if (!readyOnLoad) return documentHtml;
-      const readyScript = '<script data-hb-preview-ready>(function(){var send=function(){parent.postMessage({type:"hb-preview-ready",token:' +
+      // Gate preview-ready until consent is bound AND the preview forcer has
+      // finished its first pass. A deferred forcer reflow after ready was the
+      // intermittent first Acceptă miss (trusted click landed, handler silent).
+      const readyScript = '<script data-hb-preview-ready>(function(){var token=' +
         JSON.stringify(readyToken) +
-        '},"*");};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",send,{once:true});else send();})();</script>';
+        ';var sent=false;var send=function(){if(sent)return;sent=true;try{parent.postMessage({type:"hb-preview-ready",token:token},"*");}catch(e){}};' +
+        'var ensureConsent=function(){var el=document.getElementById("hb-cookie-banner");var btn=document.getElementById("hb-cookie-accept");' +
+        'if(!el||!btn)return true;' +
+        'if(typeof window.__hbCookieAccept==="function"){try{if(btn.getAttribute("data-hb-bound")!=="1"){btn.setAttribute("data-hb-bound","1");btn._hbBound=true;btn.addEventListener("click",window.__hbCookieAccept);btn.onclick=window.__hbCookieAccept;}if(el.hidden){el.hidden=false;try{el.removeAttribute("hidden");}catch(e){}}el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
+        'return el.getAttribute("data-hb-consent-ready")==="true";};' +
+        'var readyToSend=function(){return ensureConsent()&&document.documentElement.getAttribute("data-hb-forcer-done")==="1";};' +
+        'var finish=function(){if(readyToSend()){requestAnimationFrame(function(){requestAnimationFrame(send);});return true;}return false;};' +
+        'var arm=function(){if(finish())return;var n=0;var t=setInterval(function(){n++;if(finish()||n>80){clearInterval(t);if(!sent)requestAnimationFrame(function(){requestAnimationFrame(send);});}},25);};' +
+        'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",arm,{once:true});else arm();})();</script>';
       const closeBodyAt = documentHtml.toLowerCase().lastIndexOf('</body>');
       if (closeBodyAt === -1) return documentHtml + readyScript;
       return documentHtml.slice(0, closeBodyAt) + readyScript + documentHtml.slice(closeBodyAt);
@@ -3670,11 +3681,20 @@ async function openPreviewModal(templateId) {
       const onReady = (event) => {
         if (event.source !== target.contentWindow || !event.data ||
             event.data.type !== 'hb-preview-ready' || event.data.token !== readyToken) return;
-        target.setAttribute('aria-busy', 'false');
-        target.dataset.previewReady = 'true';
-        target.classList.remove('preview-iframe--loading');
         window.removeEventListener('message', onReady);
         if (clearPreviewReadyListener === clear) clearPreviewReadyListener = null;
+        // Flip pointer-events first, commit layout, then advertise ready.
+        // Advertising ready in the same turn as removing --loading let the first
+        // trusted Acceptă click land before hit-testing saw pointer-events:auto.
+        target.classList.remove('preview-iframe--loading');
+        try { void target.offsetWidth; } catch (e) { /* ignore */ }
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (target.getAttribute('aria-busy') !== 'true') return;
+            target.setAttribute('aria-busy', 'false');
+            target.dataset.previewReady = 'true';
+          });
+        });
       };
       const clear = () => window.removeEventListener('message', onReady);
       clearPreviewReadyListener = clear;

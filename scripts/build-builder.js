@@ -167,9 +167,11 @@ function renderPreview(files, config, opts) {
     // throttled iframe never plays). Deterministic sweep: any element that an
     // entry animation left at computed opacity 0 gets forced visible. Runs only
     // inside the srcdoc preview, never on published sites.
+    // Synchronous on DOMContentLoaded/load (no 60/120ms timers): deferred force
+    // reflows raced the first trusted Acceptă click after preview-ready.
     html = html.replace(
         '</body>',
-        '<scr' + 'ipt data-hidook-forcer>(function(){function force(){var els=document.querySelectorAll("*");for(var i=0;i<els.length;i++){var cs=getComputedStyle(els[i]);if(cs.opacity==="0"&&cs.animationName!=="none"){els[i].style.setProperty("opacity","1","important");els[i].style.setProperty("transform","none","important");}}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){setTimeout(force,60);});}else{setTimeout(force,60);}window.addEventListener("load",function(){setTimeout(force,120);});})();</scr' + 'ipt></body>'
+        '<scr' + 'ipt data-hidook-forcer>(function(){var ran=false;function force(){if(ran)return;ran=true;var banner=document.getElementById("hb-cookie-banner");var els=document.querySelectorAll("*");for(var i=0;i<els.length;i++){var el=els[i];if(banner&&(el===banner||banner.contains(el)))continue;var cs=getComputedStyle(el);if(cs.opacity==="0"&&cs.animationName!=="none"){el.style.setProperty("opacity","1","important");el.style.setProperty("transform","none","important");}}try{document.documentElement.setAttribute("data-hb-forcer-done","1");}catch(e){}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",force);}else{force();}window.addEventListener("load",force);})();</scr' + 'ipt></body>'
     );
 
     // EDIT MODE: inject the edit overlay (affordances + postMessage bridge) and
