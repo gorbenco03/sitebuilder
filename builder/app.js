@@ -772,6 +772,54 @@ function showPreviewSpinner(vis) {
   if (el) el.style.display = vis ? '' : 'none';
 }
 
+let editorPreviewGeneration = 0;
+let clearEditorPreviewReadyListener = null;
+
+function prepareInteractivePreviewDocument(documentHtml, readyToken) {
+  // The preview is only ready once generated consent is bound and the first
+  // animation-forcer pass has completed. This applies equally to catalog and
+  // editor srcdoc documents.
+  const readyScript = '<script data-hb-preview-ready>(function(){var token=' +
+    JSON.stringify(readyToken) +
+    ';var sent=false;var send=function(){if(sent)return;sent=true;try{parent.postMessage({type:"hb-preview-ready",token:token},"*");}catch(e){}};' +
+    'var ensureConsent=function(){var el=document.getElementById("hb-cookie-banner");var btn=document.getElementById("hb-cookie-accept");' +
+    'if(!el||!btn)return true;' +
+    'if(typeof window.__hbCookieAccept==="function"){try{if(btn.getAttribute("data-hb-bound")!=="1"){btn.setAttribute("data-hb-bound","1");btn._hbBound=true;btn.addEventListener("pointerdown",window.__hbCookieAccept);btn.addEventListener("click",window.__hbCookieAccept);btn.onclick=window.__hbCookieAccept;}if(el.hidden){el.hidden=false;try{el.removeAttribute("hidden");}catch(e){}}el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
+    'return el.getAttribute("data-hb-consent-ready")==="true";};' +
+    'var readyToSend=function(){return ensureConsent()&&document.documentElement.getAttribute("data-hb-forcer-done")==="1";};' +
+    'var finish=function(){if(readyToSend()){requestAnimationFrame(function(){requestAnimationFrame(send);});return true;}return false;};' +
+    'var arm=function(){if(finish())return;var n=0;var t=setInterval(function(){n++;if(finish()||n>80){clearInterval(t);if(!sent)requestAnimationFrame(function(){requestAnimationFrame(send);});}},25);};' +
+    'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",arm,{once:true});else arm();})();</script>';
+  const closeBodyAt = documentHtml.toLowerCase().lastIndexOf('</body>');
+  if (closeBodyAt === -1) return documentHtml + readyScript;
+  return documentHtml.slice(0, closeBodyAt) + readyScript + documentHtml.slice(closeBodyAt);
+}
+
+function waitForInteractivePreview(target, readyToken) {
+  target.setAttribute('aria-busy', 'true');
+  target.dataset.previewReady = 'false';
+  target.classList.add('preview-iframe--loading');
+  const onReady = (event) => {
+    if (event.source !== target.contentWindow || !event.data ||
+        event.data.type !== 'hb-preview-ready' || event.data.token !== readyToken) return;
+    clear();
+    // Commit hit testing before exposing the ready contract. Otherwise a
+    // trusted first click can still land while pointer-events is provisional.
+    target.classList.remove('preview-iframe--loading');
+    try { void target.offsetWidth; } catch (e) { /* ignore */ }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (target.getAttribute('aria-busy') !== 'true') return;
+        target.setAttribute('aria-busy', 'false');
+        target.dataset.previewReady = 'true';
+      });
+    });
+  };
+  const clear = () => window.removeEventListener('message', onReady);
+  window.addEventListener('message', onReady);
+  return clear;
+}
+
 // Full re-render: new srcdoc. Called for: initial load, image change, list add/remove, color change.
 function fullRerender() {
   if (!draft.config || !draft.templateId) return;
@@ -781,10 +829,13 @@ function fullRerender() {
   if (previewSpinTimer) clearTimeout(previewSpinTimer);
   previewSpinTimer = setTimeout(() => showPreviewSpinner(true), 200);
 
-  const html = buildSrcdoc();
+  const readyToken = 'hb-editor-preview-ready-' + (++editorPreviewGeneration);
+  const html = prepareInteractivePreviewDocument(buildSrcdoc(), readyToken);
   const iframe = getPreviewIframe();
   if (!iframe) return;
 
+  if (clearEditorPreviewReadyListener) clearEditorPreviewReadyListener();
+  clearEditorPreviewReadyListener = waitForInteractivePreview(iframe, readyToken);
   iframe.srcdoc = html;
 
   if (!previewFirstRender) {
@@ -3652,65 +3703,26 @@ async function openPreviewModal(templateId) {
     const readyToken = 'hb-preview-ready-' + previewGeneration + '-' + (++previewDocumentGeneration);
     if (clearPreviewReadyListener) clearPreviewReadyListener();
 
-    function prepareInteractiveDocument(documentHtml) {
-      if (!readyOnLoad) return documentHtml;
-      // Gate preview-ready until consent is bound AND the preview forcer has
-      // finished its first pass. A deferred forcer reflow after ready was the
-      // intermittent first Acceptă miss (trusted click landed, handler silent).
-      const readyScript = '<script data-hb-preview-ready>(function(){var token=' +
-        JSON.stringify(readyToken) +
-        ';var sent=false;var send=function(){if(sent)return;sent=true;try{parent.postMessage({type:"hb-preview-ready",token:token},"*");}catch(e){}};' +
-        'var ensureConsent=function(){var el=document.getElementById("hb-cookie-banner");var btn=document.getElementById("hb-cookie-accept");' +
-        'if(!el||!btn)return true;' +
-        'if(typeof window.__hbCookieAccept==="function"){try{if(btn.getAttribute("data-hb-bound")!=="1"){btn.setAttribute("data-hb-bound","1");btn._hbBound=true;btn.addEventListener("click",window.__hbCookieAccept);btn.onclick=window.__hbCookieAccept;}if(el.hidden){el.hidden=false;try{el.removeAttribute("hidden");}catch(e){}}el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
-        'return el.getAttribute("data-hb-consent-ready")==="true";};' +
-        'var readyToSend=function(){return ensureConsent()&&document.documentElement.getAttribute("data-hb-forcer-done")==="1";};' +
-        'var finish=function(){if(readyToSend()){requestAnimationFrame(function(){requestAnimationFrame(send);});return true;}return false;};' +
-        'var arm=function(){if(finish())return;var n=0;var t=setInterval(function(){n++;if(finish()||n>80){clearInterval(t);if(!sent)requestAnimationFrame(function(){requestAnimationFrame(send);});}},25);};' +
-        'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",arm,{once:true});else arm();})();</script>';
-      const closeBodyAt = documentHtml.toLowerCase().lastIndexOf('</body>');
-      if (closeBodyAt === -1) return documentHtml + readyScript;
-      return documentHtml.slice(0, closeBodyAt) + readyScript + documentHtml.slice(closeBodyAt);
-    }
-
-    function waitForInteractiveDocument(target) {
+    function markPreviewLoading(target) {
       target.setAttribute('aria-busy', 'true');
       target.dataset.previewReady = 'false';
-      target.classList.toggle('preview-iframe--loading', !!readyOnLoad);
-      if (!readyOnLoad) return;
-      const onReady = (event) => {
-        if (event.source !== target.contentWindow || !event.data ||
-            event.data.type !== 'hb-preview-ready' || event.data.token !== readyToken) return;
-        window.removeEventListener('message', onReady);
-        if (clearPreviewReadyListener === clear) clearPreviewReadyListener = null;
-        // Flip pointer-events first, commit layout, then advertise ready.
-        // Advertising ready in the same turn as removing --loading let the first
-        // trusted Acceptă click land before hit-testing saw pointer-events:auto.
-        target.classList.remove('preview-iframe--loading');
-        try { void target.offsetWidth; } catch (e) { /* ignore */ }
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (target.getAttribute('aria-busy') !== 'true') return;
-            target.setAttribute('aria-busy', 'false');
-            target.dataset.previewReady = 'true';
-          });
-        });
-      };
-      const clear = () => window.removeEventListener('message', onReady);
-      clearPreviewReadyListener = clear;
-      window.addEventListener('message', onReady);
+      target.classList.remove('preview-iframe--loading');
     }
 
-    const interactiveHtml = prepareInteractiveDocument(String(html || ''));
+    const interactiveHtml = readyOnLoad
+      ? prepareInteractivePreviewDocument(String(html || ''), readyToken)
+      : String(html || '');
     if (typeof iframe.cloneNode !== 'function' || typeof iframe.replaceWith !== 'function') {
-      waitForInteractiveDocument(iframe);
+      if (readyOnLoad) clearPreviewReadyListener = waitForInteractivePreview(iframe, readyToken);
+      else markPreviewLoading(iframe);
       iframe.srcdoc = interactiveHtml;
       return;
     }
     const replacement = iframe.cloneNode(false);
     iframe.replaceWith(replacement);
     iframe = replacement;
-    waitForInteractiveDocument(replacement);
+    if (readyOnLoad) clearPreviewReadyListener = waitForInteractivePreview(replacement, readyToken);
+    else markPreviewLoading(replacement);
     // Assign srcdoc only after the clone is connected. With the large
     // Desserdirina payload, assigning it while detached could expose a
     // provisional document and then navigate again after insertion.

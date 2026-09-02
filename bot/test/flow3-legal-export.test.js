@@ -742,7 +742,13 @@ function unzipStore(zipBuf, destDir) {
                 for (const id of TPLS) {
                     await page.click('.btn-start-tpl[data-id="' + id + '"]');
                     await page.waitForURL(/#edit$/, { timeout: 20000 });
-                    await page.waitForSelector('#preview-iframe');
+                    await page.waitForSelector('#preview-iframe[aria-busy="true"]', { timeout: 5000 });
+                    await page.waitForSelector('#preview-iframe[aria-busy="false"]', { timeout: 20000 });
+                    await page.waitForFunction(
+                        () => document.getElementById('preview-iframe').dataset.previewReady === 'true',
+                        null,
+                        { timeout: 5000 }
+                    );
                     const closeDrawer = page.locator('#btn-close-drawer');
                     if (await closeDrawer.isVisible()) await closeDrawer.click();
 
@@ -752,9 +758,20 @@ function unzipStore(zipBuf, destDir) {
                     const frame = page.frameLocator('#preview-iframe');
                     const accept = frame.locator('#hb-cookie-accept');
                     await accept.waitFor({ state: 'visible', timeout: 20000 });
-                    await accept.click();
+                    await page.click('#btn-preview-mobile');
+                    await page.click('#btn-preview-desktop');
+                    // Wait for the editor frame's width transition to settle so
+                    // the pointer coordinates exercise the button, not its old
+                    // mobile position.
+                    await page.waitForTimeout(350);
+                    const box = await accept.boundingBox();
+                    assert.ok(box, id + ' editor Accept has trusted-click coordinates');
+                    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
                     await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
-                    assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' editor generated Accept hides notice');
+                    assert.ok(
+                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
+                        id + ' editor first generated Accept after Mobile → Desktop hides notice'
+                    );
 
                     await page.goto(`http://127.0.0.1:${port}/app/#templates`);
                     await page.waitForSelector('.btn-start-tpl[data-id="' + id + '"]');

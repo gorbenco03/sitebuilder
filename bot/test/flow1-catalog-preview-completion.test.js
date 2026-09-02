@@ -32,8 +32,12 @@ function extractFunction(source, name) {
 const generationDeclaration = app.match(/let previewModalGeneration\s*=\s*0\s*;/);
 const openPreviewSource = extractFunction(app, 'openPreviewModal');
 const replaceDocumentSource = extractFunction(app, 'replacePreviewModalDocument');
+const prepareInteractivePreviewSource = extractFunction(app, 'prepareInteractivePreviewDocument');
+const waitForInteractivePreviewSource = extractFunction(app, 'waitForInteractivePreview');
 assert.ok(generationDeclaration, 'Catalog previews need a request generation counter');
 assert.ok(openPreviewSource, 'openPreviewModal remains extractable');
+assert.ok(prepareInteractivePreviewSource, 'Shared preview document readiness helper remains extractable');
+assert.ok(waitForInteractivePreviewSource, 'Shared preview frame readiness helper remains extractable');
 
 function deferred() {
   let resolve;
@@ -49,6 +53,11 @@ function makeHarness(ensureTemplateLoaded, { engineAvailable = true } = {}) {
     let acceptedDocument = '';
     let assignmentCount = 0;
     return {
+      dataset: {},
+      contentWindow: {},
+      classList: { add() {}, remove() {} },
+      setAttribute() {},
+      getAttribute() { return 'true'; },
       get srcdoc() { return acceptedDocument; },
       set srcdoc(value) {
         assignmentCount++;
@@ -75,7 +84,10 @@ function makeHarness(ensureTemplateLoaded, { engineAvailable = true } = {}) {
           return `<main data-preview="ready">${config.brand}</main>`;
         },
       } : null,
+      addEventListener() {},
+      removeEventListener() {},
     },
+    document: { body: { classList: { add() {} } } },
     getTemplateList() {
       return [
         { id: 'product-menu', name: 'Restaurant' },
@@ -88,7 +100,11 @@ function makeHarness(ensureTemplateLoaded, { engineAvailable = true } = {}) {
     escHtml(value) { return String(value); },
     console,
   };
-  const supportSource = replaceDocumentSource ? `${replaceDocumentSource}\n` : '';
+  const supportSource = [
+    replaceDocumentSource,
+    prepareInteractivePreviewSource,
+    waitForInteractivePreviewSource,
+  ].filter(Boolean).join('\n');
   vm.runInNewContext(
     `${generationDeclaration[0]}\n${supportSource}${openPreviewSource}\nthis.openPreviewModal = openPreviewModal;`,
     sandbox

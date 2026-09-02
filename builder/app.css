@@ -983,8 +983,8 @@ input, textarea, select {
   transition: width var(--transition-md), box-shadow var(--transition-md), border-radius var(--transition-md);
 }
 
-/* Catalog controls cannot receive a provisional click while srcdoc settles. */
-.preview-iframe--modal.preview-iframe--loading {
+/* Generated controls cannot receive a provisional click while srcdoc settles. */
+.preview-iframe.preview-iframe--loading {
   pointer-events: none;
 }
 

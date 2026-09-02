@@ -403,10 +403,10 @@ check('catalog preview opens visibly before assigning rendered first-preset HTML
     const openAt = fn.indexOf("openModal('modal-preview')");
     const loadAt = fn.indexOf('await ensureTemplateLoaded(templateId)');
     const renderAt = fn.indexOf('window.HidookEngine.renderPreview(tplData.files, config)');
-    const assignAt = fn.indexOf('iframe.srcdoc = html');
+    const assignAt = fn.indexOf('replacePreviewDocument(html, true)');
     assert.ok(openAt >= 0 && openAt < loadAt, 'preview iframe must be visible before heavy load/render');
     assert.ok(renderAt > loadAt, 'preview uses HidookEngine.renderPreview after payload load');
-    assert.ok(assignAt > renderAt, 'rendered first-preset HTML is assigned to the modal iframe');
+    assert.ok(assignAt > renderAt, 'rendered first-preset HTML replaces the modal iframe document');
     assert.ok(!fn.includes('Previzualizarea nu este disponibilă'), 'blank/unavailable preview body remains');
 });
 
