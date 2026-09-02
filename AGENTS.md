@@ -31,6 +31,8 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 - Task bodies are written fresh from `VISION.md`, not copied from historical failures.
 - QA/devil’s advocate must open the real browser product and save screenshots under `04-QA-Evidence/`.
 - Client does not QA and does not receive Kanban IDs, SHAs, worktree names, or half-done screenshots.
+- **Docs-stay-current rule (owner rule 2026-09-02):** any task that changes product behavior, pricing, scope, or commercial rules covered by `VISION.md` / `PRODUCT.md` must update the relevant doc section itself, in the same task, before being marked done. No separate "update docs later" task. Critic/reviewer must reject ACCEPT on a behavior-changing task that left the docs stale.
+- **Screenshot-claim binding rule (owner rule 2026-09-02):** QA/E2E proof screenshots must be produced by a deterministic script that names each screenshot file from the exact action it just performed (not chosen/labeled after the fact by an agent). Prefer a Playwright/Node oracle per flow over prose-trusted manual walkthroughs — cheaper in tokens and not spoofable. See `00-Governance/OWNER-FEEDBACK-2026-09-02.md` item 7 for the pattern.
 
 ## Tests
 

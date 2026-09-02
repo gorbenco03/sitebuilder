@@ -2,15 +2,15 @@
 /**
  * bot/test/wave11-html-export.test.js — Wave 11 Download HTML of the current draft.
  *
- * VISION/LAUNCH: stranger in the browser builder downloads the current draft as a
- * complete static HTML file (not a live publish). No Stripe, no deploy.
+ * VISION Flow 3: paid/trial-active customers may download the current draft as a
+ * complete static HTML/ZIP file (not a live publish). No new charge or deploy.
  *
  * Causal contracts:
- *   1. Authenticated GET /api/export-html (session cookie, draft in registry) →
+ *   1. Authenticated paid/trial GET /api/export-html (session cookie, draft) →
  *      200 text/html; charset=utf-8, Content-Disposition: attachment; filename*.html,
  *      body is a complete HTML document including the draft business/title string.
- *   2. Unauthenticated → 401. Missing draft → 400. No Stripe secrets, SERVER_SECRET,
- *      magic-link tokens, or factory jargon in the response.
+ *   2. Unauthenticated → 401. Missing draft → 400. Signed-in unpaid HTML/ZIP →
+ *      402 Romanian upsell and no attachment. No secrets or factory jargon.
  *   3. builder/index.html topbar has id="btn-download-html" labeled Download HTML;
  *      builder/app.js wires fetch + blob / a[download] (no new publish).
  *   4. OWNER-STRIPE-TRIAL.md documents Download HTML (no secrets).
@@ -28,6 +28,7 @@ const http   = require('http');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PARENT_SHA = 'ede35fa85e8aaae9494e1e1e0b7804ba14b4105b';
+const EXPORT_GATE_BASE_SHA = 'a448a3bfb1b9b2ad7c37354d5f1f62eb0bce49ba';
 
 const SERVER_SECRET = 'wave11-server-secret-' + crypto.randomBytes(8).toString('hex');
 const BIZ_NAME = 'Wave11 Export Cafe ' + crypto.randomBytes(3).toString('hex');
@@ -127,6 +128,17 @@ function assertNoSecretLeak(body) {
         );
     });
 
+    await check(`export-gate base ${EXPORT_GATE_BASE_SHA.slice(0, 7)} allowed signed-in unpaid export (causal RED archive)`, () => {
+        const baseSrc = require('child_process').execFileSync(
+            'git',
+            ['-C', ROOT, 'show', `${EXPORT_GATE_BASE_SHA}:bot/server.js`],
+            { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 }
+        );
+        const resolver = baseSrc.match(/async function resolveExportDraft[\s\S]*?\n}\n\n\/\*\*/);
+        assert.ok(resolver, 'base resolveExportDraft function found');
+        assert.ok(!/site\.paid|plăt|trial/i.test(resolver[0]), 'base resolver had no paid/trial export gate');
+    });
+
     const server = startServer({ port: 0 });
     await new Promise((resolve, reject) => {
         if (server.listening) return resolve();
@@ -174,7 +186,35 @@ function assertNoSecretLeak(body) {
             assertNoSecretLeak(res.body);
         });
 
-        await check('GET /api/export-html with session + draft → 200 HTML attachment', async () => {
+        await check('GET /api/export-html signed-in unpaid draft → 402 Romanian upsell and no file', async () => {
+            const res = await httpReq(port, '/api/export-html?siteId=' + encodeURIComponent(site.id), {
+                headers: { Cookie: cookie, Accept: 'text/html' },
+            });
+            assert.strictEqual(res.status, 402, 'expected 402 unpaid, got ' + res.status + ' body=' + res.body.slice(0, 200));
+            assert.ok(/trial|abonament|activează|plăt/i.test(res.body), 'clear Romanian trial/subscription upsell');
+            assert.ok(!res.headers['content-disposition'], 'unpaid response is not an attachment');
+            assert.ok(!/<!DOCTYPE html>/i.test(res.body), 'unpaid response contains no exported document');
+            assertNoSecretLeak(res.body);
+        });
+
+        await check('GET /api/export-zip signed-in unpaid draft → 402 Romanian upsell and no file', async () => {
+            const res = await httpReq(port, '/api/export-zip?siteId=' + encodeURIComponent(site.id), {
+                headers: { Cookie: cookie, Accept: 'application/zip' },
+            });
+            assert.strictEqual(res.status, 402, 'expected 402 unpaid, got ' + res.status + ' body=' + res.body.slice(0, 200));
+            assert.ok(/trial|abonament|activează|plăt/i.test(res.body), 'clear Romanian trial/subscription upsell');
+            assert.ok(!res.headers['content-disposition'], 'unpaid response is not an attachment');
+            assert.ok(!res.body.startsWith('PK'), 'unpaid response contains no ZIP bytes');
+            assertNoSecretLeak(res.body);
+        });
+
+        registry.updateSite(site.id, {
+            paid: true,
+            status: 'live',
+            subscriptionStatus: 'trialing',
+        });
+
+        await check('GET /api/export-html with trial-active site → 200 HTML attachment', async () => {
             const res = await httpReq(port, '/api/export-html', {
                 headers: { Cookie: cookie, Accept: 'text/html' },
             });
@@ -203,6 +243,24 @@ function assertNoSecretLeak(body) {
             assert.ok(!/paymentUrl|checkout\.stripe/i.test(res.body), 'not a checkout response');
         });
 
+        await check('GET /api/export-html after subscription cancellation → 402 and no file', async () => {
+            registry.updateSite(site.id, {
+                status: 'unpublished',
+                canceledAt: new Date().toISOString(),
+                stripeSubscriptionStatus: 'canceled',
+            });
+            const res = await httpReq(port, '/api/export-html?siteId=' + encodeURIComponent(site.id), {
+                headers: { Cookie: cookie, Accept: 'text/html' },
+            });
+            assert.strictEqual(res.status, 402, 'historical paid flag must not unlock canceled export');
+            assert.ok(!res.headers['content-disposition'], 'canceled response is not an attachment');
+            registry.updateSite(site.id, {
+                status: 'live',
+                canceledAt: null,
+                stripeSubscriptionStatus: 'active',
+            });
+        });
+
         await check('save current browser draft then export returns unsaved name and cleared Cal.com state', async () => {
             const professionalSite = registry.createSite({
                 userId: user.id,
@@ -218,6 +276,11 @@ function assertNoSecretLeak(body) {
             professionalConfig.appointment = professionalConfig.appointment || {};
             professionalConfig.appointment.bookingUrl = 'https://cal.com/versiune-veche';
             registry.saveVersion(professionalSite.id, professionalConfig);
+            registry.updateSite(professionalSite.id, {
+                paid: true,
+                status: 'live',
+                subscriptionStatus: 'active',
+            });
             const currentName = 'Cabinet Browser Curent ' + crypto.randomBytes(3).toString('hex');
             const currentConfig = JSON.parse(JSON.stringify(professionalConfig));
             currentConfig.business.name = currentName;
@@ -283,6 +346,8 @@ function assertNoSecretLeak(body) {
             const m = js.match(/btn-download-html[\s\S]{0,1200}/);
             assert.ok(m, 'handler region found');
             assert.ok(!/\/api\/publish/.test(m[0]), 'download handler must not call /api/publish');
+            assert.ok(/res\.status\s*===\s*402/.test(js), 'builder handles unpaid export status explicitly');
+            assert.ok(/Activează trialul|abonamentul activ/i.test(js), 'builder shows Romanian trial/subscription upsell');
         });
 
         await check('OWNER-STRIPE-TRIAL.md documents Download HTML (no secrets)', () => {

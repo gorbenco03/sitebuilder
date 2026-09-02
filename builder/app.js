@@ -2470,7 +2470,7 @@ async function apiGet(url) {
 }
 
 /**
- * Download the current draft as a complete static HTML file.
+ * Download the current paid/trial-active draft as a complete static HTML file.
  * Fetches GET /api/export-html (session cookie) and saves via blob + a[download].
  * Does not publish or open checkout.
  */
@@ -2506,7 +2506,9 @@ async function downloadDraftHtml() {
     if (!res.ok) {
       const msg = res.status === 401
         ? 'Intră în cont ca să descarci ciorna ca HTML.'
-        : 'Nu am putut descărca HTML-ul.';
+        : res.status === 402
+          ? 'Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul.'
+          : 'Nu am putut descărca HTML-ul.';
       showToast(msg, 'error', 5000);
       return;
     }
@@ -2543,7 +2545,7 @@ async function downloadDraftHtml() {
 }
 
 /**
- * Download the current draft as a self-hostable static ZIP (Flow 3).
+ * Download the current paid/trial-active draft as a self-hostable static ZIP.
  * GET /api/export-zip — HTML/CSS/JS/images/legal pages. Not a live publish.
  */
 async function downloadDraftZip() {
@@ -2582,7 +2584,9 @@ async function downloadDraftZip() {
     if (!res.ok) {
       const msg = res.status === 401
         ? 'Autentifică-te ca să descarci ZIP-ul.'
-        : 'Nu am putut descărca ZIP-ul.';
+        : res.status === 402
+          ? 'Activează trialul de 7 zile sau abonamentul ca să descarci ZIP-ul.'
+          : 'Nu am putut descărca ZIP-ul.';
       showToast(msg, 'error', 5000);
       return;
     }

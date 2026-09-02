@@ -29,8 +29,8 @@
  *   POST /api/sites/:id/social-feed/disconnect     → clear instagram.embedUrl (explicit disconnect)
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *   POST /api/draft          → save the signed-in browser draft without publishing
- *   GET  /api/export-html   → download current draft as complete static HTML (session; not a live publish)
- *   GET  /api/export-zip    → download current draft as self-hostable static ZIP (session; not a live publish)
+ *   GET  /api/export-html   → paid/trial download of current draft as complete static HTML
+ *   GET  /api/export-zip    → paid/trial download of current draft as self-hostable static ZIP
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
  *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
  *
@@ -1453,8 +1453,9 @@ async function handleSaveDraft(req, res) {
 }
 
 /**
- * Resolve the caller's draft site + latest config (shared by export-html / export-zip).
- * Sends 401/400 itself on failure; returns null when response already written.
+ * Resolve the caller's paid/trial-active draft site + latest config
+ * (shared by export-html / export-zip).
+ * Sends 401/400/402 itself on failure; returns null when response already written.
  */
 async function resolveExportDraft(req, res, query) {
     const userId = requireAuth(req, res);
@@ -1505,17 +1506,33 @@ async function resolveExportDraft(req, res, query) {
         return null;
     }
 
+    // paid remains historical after cancellation, so reject explicit inactive
+    // subscription state as well as drafts that never activated checkout.
+    const subscriptionStatus = String(
+        site.stripeSubscriptionStatus || site.subscriptionStatus || ''
+    ).toLowerCase();
+    const inactiveSubscription =
+        !!site.canceledAt ||
+        ['canceled', 'cancelled', 'unpaid', 'incomplete', 'incomplete_expired', 'paused'].includes(subscriptionStatus);
+    if (!site.paid || inactiveSubscription) {
+        sendJson(res, 402, {
+            error: 'Exportul este disponibil după activarea trialului de 7 zile sau cu un abonament activ.',
+            code: 'EXPORT_REQUIRES_SUBSCRIPTION',
+        });
+        return null;
+    }
+
     return { userId, reg, site, config, templateId };
 }
 
 /**
  * GET /api/export-html — download the current draft as a complete static HTML
- * document (build.js renderer). Session required. Not a live publish / deploy.
+ * document (build.js renderer). Paid/trial-active session required. Not a deploy.
  *
  * Query: optional siteId (must be owned). Without siteId, uses the user's most
  * recent site that has a saved version.
  *
- * 401 unauthenticated · 400 missing draft · 200 text/html attachment.
+ * 401 unauthenticated · 400 missing draft · 402 unpaid · 200 HTML attachment.
  */
 async function handleExportHtml(req, res, query) {
     const draft = await resolveExportDraft(req, res, query);
@@ -1557,8 +1574,8 @@ async function handleExportHtml(req, res, query) {
 
 /**
  * GET /api/export-zip — complete static site ZIP (HTML/CSS/JS/images/legal/badge).
- * Session required. Same draft resolution as export-html. Not a live publish.
- * No new commercial lock (VISION Flow 3): any signed-in draft may export.
+ * Paid/trial-active session required. Same draft resolution as export-html.
+ * Not a live publish and does not create a new charge.
  */
 async function handleExportZip(req, res, query) {
     const draft = await resolveExportDraft(req, res, query);

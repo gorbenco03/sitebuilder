@@ -2,7 +2,7 @@
 
 **Autoritate:** acest fișier este sursa de adevăr pentru Site Builder până când owner-ul îl schimbă explicit. Orice `PRODUCT.md`, `AGENTS.md`, task Kanban, spec vechi sau comentariu care contrazice acest document este depășit.
 
-**Sincronizat:** 2026-09-01. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01 + regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
+**Sincronizat:** 2026-09-02. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01, poarta comercială pentru export din `00-Governance/OWNER-FEEDBACK-2026-09-02.md` și regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
 
 ## 1. Ce este produsul
 
@@ -161,7 +161,8 @@ Done înseamnă:
 - ZIP-ul conține HTML/CSS/JS/images/legal pages/badge;
 - poate fi servit de pe orice static host fără runtime Hidook;
 - site-ul exportat nu face request-uri către domenii Hidook pentru a funcționa;
-- draft unpaid/trial neeligibil nu primește export dacă politica comercială așa cere;
+- exportul HTML/ZIP cere un drept comercial activ, inclusiv trialul pornit cu card valid; istoricul `paid=true` după anulare nu deblochează exportul;
+- un draft unpaid primește eroare/upsell clar în română și niciun fișier;
 - exportul este verificat prin unzip + static server + browser real.
 
 ## 7. Instafidget
@@ -250,6 +251,7 @@ Acceptare:
 
 - pagini și banner generate cu placeholder legal clar;
 - export ZIP complet;
+- export HTML/ZIP disponibil numai pentru abonament plătit sau trial activ; unpaid nu descarcă fișiere;
 - unzip + static serve + browser real;
 - niciun link legal mort.
 

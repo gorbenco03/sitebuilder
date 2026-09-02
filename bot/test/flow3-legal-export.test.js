@@ -684,7 +684,22 @@ function unzipStore(zipBuf, destDir) {
             assert.strictEqual(res.status, 400, 'expected 400 got ' + res.status + ' ' + res.bodyText.slice(0, 200));
         });
 
-        await check('GET /api/export-zip session+draft → 200 application/zip with legal pages', async () => {
+        await check('GET /api/export-zip signed-in unpaid draft → 402 Romanian upsell', async () => {
+            const res = await httpReq(port, '/api/export-zip?siteId=' + encodeURIComponent(site.id), {
+                headers: { Cookie: cookie, Accept: 'application/zip' },
+            });
+            assert.strictEqual(res.status, 402, 'expected 402 got ' + res.status + ' ' + res.bodyText.slice(0, 200));
+            assert.ok(/trial|abonament|activează|plăt/i.test(res.bodyText), 'Romanian trial/subscription upsell');
+            assert.ok(!res.headers['content-disposition'], 'unpaid response is not a ZIP attachment');
+        });
+
+        registry.updateSite(site.id, {
+            paid: true,
+            status: 'live',
+            subscriptionStatus: 'trialing',
+        });
+
+        await check('GET /api/export-zip trial-active draft → 200 application/zip with legal pages', async () => {
             const res = await httpReq(port, '/api/export-zip?siteId=' + encodeURIComponent(site.id), {
                 headers: { Cookie: cookie, Accept: 'application/zip' },
             });
@@ -909,11 +924,28 @@ function unzipStore(zipBuf, destDir) {
                 await page.goto(`http://127.0.0.1:${port}/app/#dashboard`);
                 await page.waitForSelector('#btn-dashboard-auth', { timeout: 10000 });
                 await page.click('#btn-dashboard-auth');
-                await page.fill('#input-email', `flow3-ui-${crypto.randomUUID()}@example.com`);
+                const browserEmail = `flow3-ui-${crypto.randomUUID()}@example.com`;
+                await page.fill('#input-email', browserEmail);
                 await page.click('#btn-send-magic');
                 await page.waitForSelector('#dev-link', { state: 'visible' });
                 await page.click('#dev-link');
                 await page.waitForURL(/#edit$/, { timeout: 20000 });
+
+                let unpaidDownloadStarted = false;
+                page.once('download', () => { unpaidDownloadStarted = true; });
+                await page.click('#btn-download-zip');
+                await page.waitForFunction(() => /Activează trialul de 7 zile/.test(document.getElementById('toast').textContent));
+                await page.waitForTimeout(250);
+                assert.strictEqual(unpaidDownloadStarted, false, 'unpaid browser export starts no download');
+
+                const browserUser = registry.getOrCreateUserByEmail(browserEmail);
+                const browserSites = registry.listSites(browserUser.id);
+                assert.strictEqual(browserSites.length, 1, 'unpaid browser export saved one draft');
+                registry.updateSite(browserSites[0].id, {
+                    paid: true,
+                    status: 'live',
+                    subscriptionStatus: 'active',
+                });
 
                 const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
                 await page.click('#btn-download-zip');
