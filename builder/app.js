@@ -3644,36 +3644,57 @@ async function openPreviewModal(templateId) {
   if (title) title.textContent = 'Previzualizare: ' + (meta.name || templateId);
 
   let iframe = $('preview-modal-iframe');
+  let previewDocumentGeneration = 0;
+  let clearPreviewReadyListener = null;
 
   function replacePreviewDocument(html, readyOnLoad) {
     if (!iframe) return;
+    const readyToken = 'hb-preview-ready-' + previewGeneration + '-' + (++previewDocumentGeneration);
+    if (clearPreviewReadyListener) clearPreviewReadyListener();
+
+    function prepareInteractiveDocument(documentHtml) {
+      if (!readyOnLoad) return documentHtml;
+      const readyScript = '<script data-hb-preview-ready>(function(){var send=function(){parent.postMessage({type:"hb-preview-ready",token:' +
+        JSON.stringify(readyToken) +
+        '},"*");};if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",send,{once:true});else send();})();</script>';
+      const closeBodyAt = documentHtml.toLowerCase().lastIndexOf('</body>');
+      if (closeBodyAt === -1) return documentHtml + readyScript;
+      return documentHtml.slice(0, closeBodyAt) + readyScript + documentHtml.slice(closeBodyAt);
+    }
+
+    function waitForInteractiveDocument(target) {
+      target.setAttribute('aria-busy', 'true');
+      target.dataset.previewReady = 'false';
+      target.classList.toggle('preview-iframe--loading', !!readyOnLoad);
+      if (!readyOnLoad) return;
+      const onReady = (event) => {
+        if (event.source !== target.contentWindow || !event.data ||
+            event.data.type !== 'hb-preview-ready' || event.data.token !== readyToken) return;
+        target.setAttribute('aria-busy', 'false');
+        target.dataset.previewReady = 'true';
+        target.classList.remove('preview-iframe--loading');
+        window.removeEventListener('message', onReady);
+        if (clearPreviewReadyListener === clear) clearPreviewReadyListener = null;
+      };
+      const clear = () => window.removeEventListener('message', onReady);
+      clearPreviewReadyListener = clear;
+      window.addEventListener('message', onReady);
+    }
+
+    const interactiveHtml = prepareInteractiveDocument(String(html || ''));
     if (typeof iframe.cloneNode !== 'function' || typeof iframe.replaceWith !== 'function') {
-      iframe.setAttribute('aria-busy', 'true');
-      iframe.classList.toggle('preview-iframe--loading', !!readyOnLoad);
-      if (readyOnLoad) {
-        iframe.addEventListener('load', () => {
-          iframe.setAttribute('aria-busy', 'false');
-          iframe.classList.remove('preview-iframe--loading');
-        }, { once: true });
-      }
-      iframe.srcdoc = html;
+      waitForInteractiveDocument(iframe);
+      iframe.srcdoc = interactiveHtml;
       return;
     }
     const replacement = iframe.cloneNode(false);
-    replacement.setAttribute('aria-busy', 'true');
-    replacement.classList.toggle('preview-iframe--loading', !!readyOnLoad);
     iframe.replaceWith(replacement);
     iframe = replacement;
-    if (readyOnLoad) {
-      replacement.addEventListener('load', () => {
-        replacement.setAttribute('aria-busy', 'false');
-        replacement.classList.remove('preview-iframe--loading');
-      }, { once: true });
-    }
+    waitForInteractiveDocument(replacement);
     // Assign srcdoc only after the clone is connected. With the large
     // Desserdirina payload, assigning it while detached could expose a
     // provisional document and then navigate again after insertion.
-    replacement.srcdoc = html;
+    replacement.srcdoc = interactiveHtml;
   }
 
   // Make the iframe paintable before loading its heavy payload. Assigning

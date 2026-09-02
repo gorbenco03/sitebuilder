@@ -602,6 +602,45 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/\/app\/privacy\.html/.test(res.bodyText), 'builder privacy link');
         });
 
+        await check('HEAD Brave: Salon first trusted Accept works after Mobile → Desktop once generated controls report ready', async () => {
+            await withBrave(async (browser) => {
+                const context = await browser.newContext();
+                try {
+                    const page = await context.newPage();
+                    await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
+                    await page.waitForSelector('.btn-preview-tpl[data-id="portfolio"]', { timeout: 20000 });
+                    await page.click('.btn-preview-tpl[data-id="portfolio"]');
+                    await page.waitForSelector('#modal-preview', { state: 'visible' });
+                    const frame = page.frameLocator('#preview-modal-iframe');
+                    const accept = frame.locator('#hb-cookie-accept');
+                    await accept.waitFor({ state: 'visible', timeout: 20000 });
+                    await page.waitForFunction(
+                        () => document.getElementById('preview-modal-iframe').dataset.previewReady === 'true',
+                        null,
+                        { timeout: 5000 }
+                    );
+                    assert.strictEqual(
+                        await page.locator('#preview-modal-iframe').getAttribute('aria-busy'),
+                        'false',
+                        'Salon generated controls report interactive readiness'
+                    );
+                    await page.click('#modal-preview-mobile');
+                    await page.click('#modal-preview-desktop');
+                    const box = await accept.boundingBox();
+                    assert.ok(box, 'Salon Accept has trusted-click coordinates');
+                    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
+                    assert.ok(
+                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
+                        'Salon first trusted Accept hides notice after viewport switch'
+                    );
+                    await page.close();
+                } finally {
+                    await context.close();
+                }
+            });
+        });
+
         await check('HEAD Brave: catalog and editor previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
             await withBrave(async (browser) => {
                 const context = await browser.newContext({ acceptDownloads: true });
@@ -614,15 +653,25 @@ function unzipStore(zipBuf, destDir) {
                     await page.waitForSelector('#modal-preview', { state: 'visible' });
                     await page.waitForSelector('#preview-modal-iframe[aria-busy="true"]', { timeout: 5000 });
                     await page.waitForSelector('#preview-modal-iframe[aria-busy="false"]', { timeout: 20000 });
+                    await page.waitForFunction(
+                        () => document.getElementById('preview-modal-iframe').dataset.previewReady === 'true',
+                        null,
+                        { timeout: 5000 }
+                    );
                     const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
                     assert.strictEqual(outerDisplay, 'none', id + ' hides builder-origin notice while preview is open');
 
                     const frame = page.frameLocator('#preview-modal-iframe');
                     const accept = frame.locator('#hb-cookie-accept');
                     await accept.waitFor({ state: 'visible', timeout: 20000 });
+                    await page.click('#modal-preview-mobile');
+                    await page.click('#modal-preview-desktop');
                     await accept.click();
                     await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
-                    assert.ok(await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden), id + ' generated Accept hides notice');
+                    assert.ok(
+                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
+                        id + ' first generated Accept after Mobile → Desktop hides notice'
+                    );
 
                     // Use Playwright's trusted pointer input as soon as the visible
                     // catalog controls are available. A DOM el.click() after waiting
@@ -688,6 +737,21 @@ function unzipStore(zipBuf, destDir) {
                 const errorToastBox = await page.locator('#toast').boundingBox();
                 const noticeBox = await generatedNotice.boundingBox();
                 assert.ok(errorToastBox && noticeBox, 'ZIP sign-in toast and generated notice are measurable');
+                const errorToastStack = await page.evaluate(() => {
+                    const toast = document.getElementById('toast');
+                    const preview = document.getElementById('preview-iframe');
+                    return {
+                        toastZ: getComputedStyle(toast).zIndex,
+                        previewZ: getComputedStyle(preview).zIndex,
+                        opacity: getComputedStyle(toast).opacity,
+                    };
+                });
+                assert.ok(
+                    Number.isFinite(Number(errorToastStack.previewZ)) &&
+                        Number(errorToastStack.toastZ) > Number(errorToastStack.previewZ),
+                    'ZIP sign-in toast computed stack must be above #preview-iframe: ' + JSON.stringify(errorToastStack)
+                );
+                assert.ok(Number(errorToastStack.opacity) >= 0.99, 'ZIP sign-in toast must be fully opaque immediately');
                 assert.ok(
                     errorToastBox.y + errorToastBox.height <= noticeBox.y || noticeBox.y + noticeBox.height <= errorToastBox.y,
                     'ZIP sign-in toast must not overlap the generated cookie notice'
@@ -711,6 +775,21 @@ function unzipStore(zipBuf, destDir) {
                 const successToastBox = await page.locator('#toast').boundingBox();
                 const successNoticeBox = await successNotice.boundingBox();
                 assert.ok(successToastBox && successNoticeBox, 'ZIP success toast and generated notice are measurable');
+                const successToastStack = await page.evaluate(() => {
+                    const toast = document.getElementById('toast');
+                    const preview = document.getElementById('preview-iframe');
+                    return {
+                        toastZ: getComputedStyle(toast).zIndex,
+                        previewZ: getComputedStyle(preview).zIndex,
+                        opacity: getComputedStyle(toast).opacity,
+                    };
+                });
+                assert.ok(
+                    Number.isFinite(Number(successToastStack.previewZ)) &&
+                        Number(successToastStack.toastZ) > Number(successToastStack.previewZ),
+                    'ZIP success toast computed stack must be above #preview-iframe: ' + JSON.stringify(successToastStack)
+                );
+                assert.ok(Number(successToastStack.opacity) >= 0.99, 'ZIP success toast must be fully opaque immediately');
                 assert.ok(
                     successToastBox.y + successToastBox.height <= successNoticeBox.y ||
                         successNoticeBox.y + successNoticeBox.height <= successToastBox.y,
