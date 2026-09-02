@@ -1602,8 +1602,44 @@ function persistEmbedUrl(reg, siteId, embedUrl) {
     return config;
 }
 
+/**
+ * Per-site operation generation for social-feed grant/disconnect ordering.
+ * Disconnect bumps the counter so an in-flight grant that started earlier
+ * cannot re-persist embedUrl after explicit disconnect.
+ */
+const socialFeedOpGeneration = new Map();
+
+function socialFeedGeneration(siteId) {
+    return socialFeedOpGeneration.get(String(siteId)) || 0;
+}
+
+function bumpSocialFeedGeneration(siteId) {
+    const next = socialFeedGeneration(siteId) + 1;
+    socialFeedOpGeneration.set(String(siteId), next);
+    return next;
+}
+
+/**
+ * Persist grant embed only if no disconnect (or newer op) happened since genAtStart.
+ * Returns { stale, config }.
+ */
+function persistEmbedUrlIfCurrent(reg, siteId, embedUrl, genAtStart) {
+    const genNow = socialFeedGeneration(siteId);
+    if (genNow !== genAtStart) {
+        log('server.social_feed.grant.stale_dropped', {
+            siteId,
+            genAtStart,
+            genNow,
+        });
+        return { stale: true, config: latestSiteConfig(reg, siteId) };
+    }
+    return { stale: false, config: persistEmbedUrl(reg, siteId, embedUrl) };
+}
+
 /** Clear partner embed so disconnect stays authoritative after republish. */
 function clearEmbedUrl(reg, siteId) {
+    // Authoritative: void any in-flight grant that captured an older generation.
+    bumpSocialFeedGeneration(siteId);
     const config = latestSiteConfig(reg, siteId);
     if (!config.instagram || typeof config.instagram !== 'object') {
         config.instagram = {};
@@ -1684,10 +1720,20 @@ async function handleSocialFeedGrant(req, res, siteId) {
     const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
     if (!ctx) return;
 
+    // Capture before any await so disconnect during partner I/O voids this write.
+    const genAtStart = socialFeedGeneration(siteId);
+
     // Isolated QA path: finish without SITEBUILDER_PARTNER_SECRET / live Instafidget
     if (!ctx.partnerConfigured && isIsolatedTestSocial()) {
         const embedUrl = isolatedStubEmbedUrl(ctx.email);
-        persistEmbedUrl(ctx.reg, siteId, embedUrl);
+        const saved = persistEmbedUrlIfCurrent(ctx.reg, siteId, embedUrl, genAtStart);
+        if (saved.stale) {
+            return sendJson(res, 200, {
+                ...publicGrantPayload({ embedUrl: null }),
+                disconnected: true,
+                stale: true,
+            });
+        }
         return sendJson(res, 200, publicGrantPayload({
             embedUrl,
             entitlement: 'site_bundle_isolated',
@@ -1717,7 +1763,25 @@ async function handleSocialFeedGrant(req, res, siteId) {
         return sendJson(res, 502, { error: 'Instafidget could not create the Instagram bonus.' });
     }
 
-    persistEmbedUrl(ctx.reg, siteId, partnerRes.json.embedUrl);
+    const saved = persistEmbedUrlIfCurrent(
+        ctx.reg,
+        siteId,
+        partnerRes.json && partnerRes.json.embedUrl,
+        genAtStart
+    );
+    if (saved.stale) {
+        // Disconnect won the race: do not re-connect from a pre-disconnect grant.
+        return sendJson(res, 200, {
+            ...publicGrantPayload({
+                embedUrl: null,
+                entitlement: partnerRes.json && partnerRes.json.entitlement,
+                showWatermark: partnerRes.json && partnerRes.json.showWatermark,
+                siteBundleExpiresAt: partnerRes.json && partnerRes.json.siteBundleExpiresAt,
+            }),
+            disconnected: true,
+            stale: true,
+        });
+    }
     sendJson(res, 200, publicGrantPayload(partnerRes.json));
 }
 

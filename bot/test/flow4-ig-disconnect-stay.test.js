@@ -182,10 +182,39 @@ check('HEAD: server exposes disconnect that clears embedUrl', () => {
   const clear = extractFunction(server, 'clearEmbedUrl');
   assert.ok(clear, 'clearEmbedUrl exists');
   assert.ok(/embedUrl\s*=\s*['"]['"]/.test(clear), 'clearEmbedUrl writes empty embedUrl');
+  assert.ok(
+    /bumpSocialFeedGeneration\s*\(/.test(clear),
+    'clearEmbedUrl bumps op generation so in-flight grants are void'
+  );
   const handler = extractFunction(server, 'handleSocialFeedDisconnect');
   assert.ok(handler, 'handleSocialFeedDisconnect body');
   assert.ok(/clearEmbedUrl\s*\(/.test(handler), 'handler calls clearEmbedUrl');
   assert.ok(/disconnected:\s*true/.test(handler), 'response marks disconnected');
+});
+
+check('HEAD: grant persists only when op generation still matches', () => {
+  const server = headRead('bot/server.js');
+  assert.ok(/socialFeedOpGeneration|function socialFeedGeneration/.test(server), 'generation map');
+  assert.ok(/function persistEmbedUrlIfCurrent/.test(server), 'guarded persist helper');
+  const grant = extractFunction(server, 'handleSocialFeedGrant');
+  assert.ok(grant, 'handleSocialFeedGrant body');
+  assert.ok(
+    /genAtStart\s*=\s*socialFeedGeneration\s*\(/.test(grant),
+    'grant captures generation before partner await'
+  );
+  assert.ok(
+    /persistEmbedUrlIfCurrent\s*\(/.test(grant),
+    'grant uses generation-guarded persist'
+  );
+  assert.ok(
+    /stale:\s*true/.test(grant),
+    'stale grant response marks stale (does not re-connect silently)'
+  );
+  // Unconditional post-await persistEmbedUrl( would reintroduce the race.
+  assert.ok(
+    !/persistEmbedUrl\s*\(\s*ctx\.reg\s*,\s*siteId\s*,\s*(?:partnerRes|embedUrl)/.test(grant),
+    'grant must not call bare persistEmbedUrl after partner without generation check'
+  );
 });
 
 (async () => {
@@ -406,6 +435,251 @@ check('HEAD: server exposes disconnect that clears embedUrl', () => {
       srv.close();
     }
   });
+
+  /**
+   * Concurrent race oracle (not serial grant-then-disconnect):
+   * hold partner grant pending → disconnect completes → release grant →
+   * latest persisted config must remain disconnected (empty embedUrl).
+   */
+  await checkAsync(
+    'HTTP concurrent: in-flight grant after disconnect must not re-persist embedUrl',
+    async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ig-disc-race-'));
+      process.env.DATA_DIR = tmpDir;
+      process.env.SERVER_SECRET =
+        'test-secret-ig-race-' + crypto.randomBytes(4).toString('hex');
+      process.env.PUBLIC_URL = 'http://127.0.0.1:0';
+      process.env.HIDOOK_ISOLATED_DEPLOY = '1';
+      process.env.HIDOOK_TEST_PAY = '1';
+      process.env.NODE_ENV = 'test';
+      // Partner path required so grant actually awaits external I/O.
+      process.env.SITEBUILDER_PARTNER_SECRET = 'unit-test-secret-ig-race-not-real';
+      delete process.env.STRIPE_SECRET_KEY;
+      delete process.env.HIDOOK_FAKE_DEPLOY;
+
+      delete require.cache[require.resolve('../auth.js')];
+      delete require.cache[require.resolve('../registry.js')];
+      delete require.cache[require.resolve('../instafidget-partner.js')];
+      delete require.cache[require.resolve('../server.js')];
+
+      const auth = require('../auth.js');
+      const registry = require('../registry.js');
+      const { startServer } = require('../server.js');
+
+      const realFetch = global.fetch;
+      let releaseGrant = null;
+      let grantPartnerSeen = null;
+      const grantPartnerReady = new Promise((resolve) => {
+        grantPartnerSeen = resolve;
+      });
+      const STALE_EMBED = 'https://isolated.local/social-feed/stale-after-disconnect';
+
+      global.fetch = async (url, opts) => {
+        const u = String(url);
+        if (u.includes('/billing/partner/site-bundle-grant')) {
+          if (grantPartnerSeen) grantPartnerSeen();
+          await new Promise((resolve) => {
+            releaseGrant = resolve;
+          });
+          return {
+            status: 200,
+            async json() {
+              return {
+                embedUrl: STALE_EMBED,
+                entitlement: 'site_bundle_year1',
+                showWatermark: false,
+                siteBundleExpiresAt: new Date(Date.now() + 365 * 864e5).toISOString(),
+              };
+            },
+          };
+        }
+        if (u.includes('/billing/partner/')) {
+          return {
+            status: 200,
+            async json() {
+              return { editorUrl: 'https://isolated.local/app/instafidget-editor.html' };
+            },
+          };
+        }
+        return realFetch(url, opts);
+      };
+
+      const srv = startServer({ port: 0 });
+      await new Promise((r) => srv.once('listening', r));
+      const base = `http://127.0.0.1:${srv.address().port}`;
+
+      try {
+        const user = registry.getOrCreateUserByEmail('ig-race@example.com');
+        const site = registry.createSite({
+          userId: user.id,
+          templateId: 'product-menu',
+          templateVersion: 1,
+          slug: 'ig-disc-race',
+          platform: 'web',
+        });
+        registry.saveVersion(site.id, {
+          business: { name: 'IG Race' },
+          instagram: { handle: 'x', url: 'https://instagram.com/x', gallery: [] },
+        });
+        const cookie = 'hb_session=' + auth.signSession(user.id);
+
+        // Seed a connected state first (serial), then start a SECOND in-flight grant.
+        global.fetch = async (url, opts) => {
+          const u = String(url);
+          if (u.includes('/billing/partner/site-bundle-grant')) {
+            return {
+              status: 200,
+              async json() {
+                return {
+                  embedUrl: 'https://isolated.local/social-feed/connected-seed',
+                  entitlement: 'site_bundle_year1',
+                  showWatermark: false,
+                };
+              },
+            };
+          }
+          return realFetch(url, opts);
+        };
+        const seedGrant = await fetch(`${base}/api/sites/${site.id}/social-feed/grant`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ acceptedTerms: true }),
+        });
+        assert.strictEqual(seedGrant.status, 200, 'seed grant ok');
+        let versions = registry.listVersions(site.id);
+        let latest = versions[versions.length - 1];
+        let cfg = registry.getVersionConfig(site.id, latest.versionId);
+        assert.strictEqual(
+          cfg.instagram.embedUrl,
+          'https://isolated.local/social-feed/connected-seed',
+          'seed connected'
+        );
+
+        // Arm delayed partner grant for the concurrent race.
+        releaseGrant = null;
+        grantPartnerSeen = null;
+        const partnerHit = new Promise((resolve) => {
+          grantPartnerSeen = resolve;
+        });
+        global.fetch = async (url, opts) => {
+          const u = String(url);
+          if (u.includes('/billing/partner/site-bundle-grant')) {
+            await new Promise((resolve) => {
+              releaseGrant = resolve;
+              if (grantPartnerSeen) grantPartnerSeen();
+            });
+            return {
+              status: 200,
+              async json() {
+                return {
+                  embedUrl: STALE_EMBED,
+                  entitlement: 'site_bundle_year1',
+                  showWatermark: false,
+                };
+              },
+            };
+          }
+          return realFetch(url, opts);
+        };
+
+        const grant2Promise = fetch(`${base}/api/sites/${site.id}/social-feed/grant`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ acceptedTerms: true }),
+        });
+
+        await partnerHit;
+        // Partner request is held; disconnect must win before release.
+        assert.ok(typeof releaseGrant === 'function', 'grant held pending on partner');
+
+        const disc = await fetch(`${base}/api/sites/${site.id}/social-feed/disconnect`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({}),
+        });
+        assert.strictEqual(disc.status, 200, 'disconnect during in-flight grant');
+        const discBody = await disc.json();
+        assert.strictEqual(discBody.disconnected, true);
+
+        versions = registry.listVersions(site.id);
+        latest = versions[versions.length - 1];
+        cfg = registry.getVersionConfig(site.id, latest.versionId);
+        assert.strictEqual(
+          String((cfg.instagram && cfg.instagram.embedUrl) || ''),
+          '',
+          'cleared while grant still pending'
+        );
+
+        releaseGrant();
+        const grant2 = await grant2Promise;
+        assert.strictEqual(grant2.status, 200, 'stale grant still HTTP-completes');
+        const grant2Body = await grant2.json();
+        assert.ok(
+          !grant2Body.embedUrl || grant2Body.stale === true || grant2Body.disconnected === true,
+          'stale grant must not advertise a live embedUrl without stale/disconnected markers'
+        );
+        assert.notStrictEqual(
+          grant2Body.embedUrl,
+          STALE_EMBED,
+          'stale partner embedUrl must not be returned as authoritative'
+        );
+
+        versions = registry.listVersions(site.id);
+        latest = versions[versions.length - 1];
+        cfg = registry.getVersionConfig(site.id, latest.versionId);
+        assert.strictEqual(
+          String((cfg.instagram && cfg.instagram.embedUrl) || ''),
+          '',
+          'latest persisted config remains disconnected after stale grant resolves'
+        );
+        assert.ok(
+          !String((cfg.instagram && cfg.instagram.embedUrl) || '').includes('stale-after-disconnect'),
+          'public feed slot stays hidden (empty embedUrl)'
+        );
+
+        // Fresh connect after disconnect still works (generation advanced, new grant OK).
+        global.fetch = async (url, opts) => {
+          const u = String(url);
+          if (u.includes('/billing/partner/site-bundle-grant')) {
+            return {
+              status: 200,
+              async json() {
+                return {
+                  embedUrl: 'https://isolated.local/social-feed/fresh-reconnect',
+                  entitlement: 'site_bundle_year1',
+                  showWatermark: false,
+                };
+              },
+            };
+          }
+          return realFetch(url, opts);
+        };
+        const fresh = await fetch(`${base}/api/sites/${site.id}/social-feed/grant`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie },
+          body: JSON.stringify({ acceptedTerms: true }),
+        });
+        assert.strictEqual(fresh.status, 200, 'fresh grant after disconnect ok');
+        const freshBody = await fresh.json();
+        assert.strictEqual(
+          freshBody.embedUrl,
+          'https://isolated.local/social-feed/fresh-reconnect'
+        );
+        versions = registry.listVersions(site.id);
+        latest = versions[versions.length - 1];
+        cfg = registry.getVersionConfig(site.id, latest.versionId);
+        assert.strictEqual(
+          cfg.instagram.embedUrl,
+          'https://isolated.local/social-feed/fresh-reconnect',
+          'new post-disconnect grant may persist'
+        );
+      } finally {
+        global.fetch = realFetch;
+        delete process.env.SITEBUILDER_PARTNER_SECRET;
+        srv.close();
+      }
+    }
+  );
 
   if (failed) {
     console.error('\nflow4-ig-disconnect-stay.test.js: FAILED');
