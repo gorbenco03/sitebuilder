@@ -176,6 +176,96 @@ function walkFiles(dir, base, out) {
     }
 }
 
+function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function mimeTypeForImage(filename) {
+    const ext = path.extname(filename).toLowerCase();
+    if (ext === '.png') return 'image/png';
+    if (ext === '.webp') return 'image/webp';
+    if (ext === '.gif') return 'image/gif';
+    if (ext === '.avif') return 'image/avif';
+    if (ext === '.svg') return 'image/svg+xml';
+    return 'image/jpeg';
+}
+
+function inlineTreeAssets(html, siteDir) {
+    let out = String(html || '');
+    for (const name of ['styles.css', 'cookie-banner.css']) {
+        const file = path.join(siteDir, name);
+        if (!fs.existsSync(file)) continue;
+        const css = fs.readFileSync(file, 'utf8').replace(/<\/style/gi, '<\\/style');
+        out = out.replace(
+            new RegExp('<link\\s[^>]*href=["\']' + escapeRegExp(name) + '["\'][^>]*>', 'gi'),
+            '<style data-hb-inline="' + name + '">' + css + '</style>'
+        );
+    }
+    for (const name of ['script.js', 'collage.js', 'cookie-banner.js']) {
+        const file = path.join(siteDir, name);
+        if (!fs.existsSync(file)) continue;
+        const js = fs.readFileSync(file, 'utf8').replace(/<\/script/gi, '<\\/script');
+        out = out.replace(
+            new RegExp('<script\\s[^>]*src=["\']' + escapeRegExp(name) + '["\'][^>]*>\\s*<\\/script>', 'gi'),
+            '<script data-hb-inline="' + name + '">' + js + '</script>'
+        );
+    }
+    const imagesDir = path.join(siteDir, 'images');
+    if (fs.existsSync(imagesDir)) {
+        for (const name of fs.readdirSync(imagesDir)) {
+            const file = path.join(imagesDir, name);
+            if (!fs.statSync(file).isFile()) continue;
+            const rel = 'images/' + name;
+            const dataUrl = 'data:' + mimeTypeForImage(name) + ';base64,' + fs.readFileSync(file).toString('base64');
+            out = out.split(rel).join(dataUrl);
+        }
+    }
+    return out;
+}
+
+const STANDALONE_LEGAL_NAV_JS = `(function () {
+  function documents() {
+    var node = document.getElementById('hb-export-documents');
+    return node ? JSON.parse(node.textContent) : {};
+  }
+  function bootMarkup() {
+    var data = document.getElementById('hb-export-documents');
+    var boot = document.querySelector('script[data-hb-export-nav]');
+    if (!data || !boot) return '';
+    return '<scr' + 'ipt type="application/json" id="hb-export-documents">' + data.textContent +
+      '</scr' + 'ipt><scr' + 'ipt data-hb-export-nav>' + boot.textContent + '</scr' + 'ipt>';
+  }
+  function show(name) {
+    var page = documents()[name];
+    if (!page) return;
+    page = String(page).replace(/<\\/body>/i, bootMarkup() + '</body>');
+    document.open(); document.write(page); document.close();
+    try { window.scrollTo(0, 0); } catch (_) {}
+  }
+  document.addEventListener('click', function (event) {
+    var target = event.target && event.target.closest ? event.target.closest('a[data-hb-export-page]') : null;
+    if (!target) return;
+    event.preventDefault();
+    show(target.getAttribute('data-hb-export-page'));
+  });
+})();`;
+
+function rewriteStandalonePageLinks(html) {
+    return String(html || '').replace(
+        /href=(["'])(index|privacy|terms|cookies)\.html\1/gi,
+        (_match, _quote, page) => 'href="#hb-export-' + page + '" data-hb-export-page="' + page + '.html"'
+    );
+}
+
+function appendStandaloneDocuments(html, documents) {
+    const json = JSON.stringify(documents).replace(/</g, '\\u003c');
+    const boot = '<script type="application/json" id="hb-export-documents">' + json + '</script>' +
+        '<script data-hb-export-nav>' + STANDALONE_LEGAL_NAV_JS + '</script>';
+    const bodyAt = html.toLowerCase().lastIndexOf('</body>');
+    if (bodyAt < 0) return html + boot;
+    return html.slice(0, bodyAt) + boot + html.slice(bodyAt);
+}
+
 /**
  * Build a complete static site directory (HTML/CSS/JS/images/legal/badge).
  * @returns {{ siteDir: string, cleanup: function }}
@@ -250,8 +340,27 @@ function exportSiteZip(opts) {
     }
 }
 
+/** Build one browser-openable HTML document with all local assets and legal pages embedded. */
+function exportSiteHtml(opts) {
+    const built = buildStaticSiteTree(opts);
+    try {
+        const documents = {};
+        for (const name of ['index.html', 'privacy.html', 'terms.html', 'cookies.html']) {
+            const file = path.join(built.siteDir, name);
+            if (!fs.existsSync(file)) continue;
+            documents[name] = rewriteStandalonePageLinks(
+                inlineTreeAssets(fs.readFileSync(file, 'utf8'), built.siteDir)
+            );
+        }
+        return { html: appendStandaloneDocuments(documents['index.html'] || '', documents) };
+    } finally {
+        if (!opts || !opts.siteDir) built.cleanup();
+    }
+}
+
 module.exports = {
     buildStaticSiteTree,
+    exportSiteHtml,
     exportSiteZip,
     materializeImages,
 };

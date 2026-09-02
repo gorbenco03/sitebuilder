@@ -1522,12 +1522,15 @@ async function handleExportHtml(req, res, query) {
     if (!draft) return;
     const { site, config, templateId } = draft;
 
-    const templatePath = path.join(TEMPLATES_DIR, templateId, 'template.html');
     let html;
     try {
-        const { renderHtml } = require('../build.js');
-        const templateHtml = fs.readFileSync(templatePath, 'utf8');
-        html = renderHtml(templateHtml, config);
+        const { exportSiteHtml } = require('./site-export.js');
+        html = exportSiteHtml({
+            templateId,
+            config,
+            images: [],
+            slug: site.slug || (config.business && config.business.name) || 'site',
+        }).html;
     } catch (e) {
         log('server.export_html.render_error', { siteId: site.id, err: e.message }, 'error');
         return sendJson(res, 500, { error: 'Could not build the HTML file.' });

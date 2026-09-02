@@ -2478,6 +2478,22 @@ async function downloadDraftHtml() {
   const btn = $('btn-download-html');
   if (btn) btn.disabled = true;
   try {
+    if (!draft.templateId || !draft.config) {
+      showToast('Alege mai întâi un design.', 'error', 5000);
+      return;
+    }
+    const saved = await apiPost('/api/draft', {
+      siteId: currentSiteId || undefined,
+      templateId: draft.templateId,
+      config: draft.config,
+    });
+    if (!saved.site || !saved.site.id) throw new Error('Ciorna nu a fost salvată.');
+    currentSiteId = saved.site.id;
+    publishedSiteId = saved.site.id;
+    currentSitePaid = !!saved.site.paid;
+    currentSiteSlug = saved.site.slug || saved.site.projectName || currentSiteSlug || '';
+    saveDraft();
+
     let url = '/api/export-html';
     if (currentSiteId) {
       url += '?siteId=' + encodeURIComponent(currentSiteId);
@@ -4264,6 +4280,22 @@ async function handleRoute(hash) {
 // 24. Static button wiring
 // ---------------------------------------------------------------------------
 
+async function returnToEditor() {
+  closeModal('modal-success');
+  if (!draft.templateId) {
+    await ensureDraftBoundToPaidSite(currentSiteId);
+  }
+  if (!draft.templateId) return;
+  // Checkout can update history without a hashchange. Run the route explicitly
+  // so preview readiness belongs to a newly loaded, non-empty srcdoc document.
+  try {
+    history.replaceState(null, '', window.location.pathname + window.location.search + '#edit');
+  } catch (_) {
+    window.location.hash = '#edit';
+  }
+  await handleRoute('#edit');
+}
+
 function wireStaticButtons() {
   // Back to templates
   const backBtn = $('btn-back-templates');
@@ -4395,16 +4427,7 @@ function wireStaticButtons() {
 
   const successCloseBtn = $('btn-success-close');
   if (successCloseBtn) {
-    successCloseBtn.addEventListener('click', async () => {
-      closeModal('modal-success');
-      // After pay, open the paid site editor — not stay on dashboard/catalog (S92)
-      if (!draft.templateId) {
-        await ensureDraftBoundToPaidSite(currentSiteId);
-      }
-      if (draft.templateId) {
-        window.location.hash = '#edit';
-      }
-    });
+    successCloseBtn.addEventListener('click', returnToEditor);
   }
 
   // Preview modal device toggle

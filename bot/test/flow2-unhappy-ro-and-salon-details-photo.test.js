@@ -87,8 +87,15 @@ async function runExportFailure(downloadFunction, response) {
   const toasts = [];
   const button = { disabled: false };
   const sandbox = {
+    currentUser: { email: 'test@example.test' },
     currentSiteId: null,
+    currentSitePaid: false,
+    currentSiteSlug: '',
+    publishedSiteId: null,
+    draft: { templateId: 'professionals', config: { business: { name: 'Test' } } },
     $: () => button,
+    apiPost: async () => ({ site: { id: 'site-test', paid: false, slug: 'test' } }),
+    saveDraft() {},
     fetch: async () => {
       if (response instanceof Error) throw response;
       return response;

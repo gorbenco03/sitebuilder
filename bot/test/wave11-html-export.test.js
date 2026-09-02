@@ -65,7 +65,7 @@ async function check(name, fn) {
     }
 }
 
-function httpReq(port, urlPath, { method = 'GET', headers = {} } = {}) {
+function httpReq(port, urlPath, { method = 'GET', headers = {}, body = null } = {}) {
     return new Promise((resolve, reject) => {
         const req = http.request(
             {
@@ -88,6 +88,7 @@ function httpReq(port, urlPath, { method = 'GET', headers = {} } = {}) {
             }
         );
         req.on('error', reject);
+        if (body != null) req.write(body);
         req.end();
     });
 }
@@ -187,9 +188,63 @@ function assertNoSecretLeak(body) {
             assert.ok(/<!DOCTYPE html>/i.test(res.body), 'complete HTML document DOCTYPE');
             assert.ok(/<html[\s>]/i.test(res.body), 'complete HTML document <html');
             assert.ok(res.body.includes(BIZ_NAME), 'includes draft business name ' + BIZ_NAME);
+            assert.ok(/<style(?:\s|>)/i.test(res.body), 'stylesheet is inlined');
+            assert.ok(
+                !/(?:href|src)=["'](?:styles\.css|script\.js|collage\.js|cookie-banner\.(?:css|js)|images\/)/i.test(res.body),
+                'standalone HTML has no required sibling CSS, JS, or image references'
+            );
+            assert.ok(
+                !/href=["'](?:privacy|terms|cookies)\.html["']/i.test(res.body),
+                'legal navigation does not depend on missing sibling pages'
+            );
+            assert.ok(/data:image\//i.test(res.body), 'template images are embedded');
             assertNoSecretLeak(res.body);
             // Must not be a live publish / redirect to checkout
             assert.ok(!/paymentUrl|checkout\.stripe/i.test(res.body), 'not a checkout response');
+        });
+
+        await check('save current browser draft then export returns unsaved name and cleared Cal.com state', async () => {
+            const professionalSite = registry.createSite({
+                userId: user.id,
+                templateId: 'professionals',
+                templateVersion: 1,
+                slug: 'w11professional-' + crypto.randomUUID().slice(0, 8),
+                platform: 'web',
+            });
+            const professionalPresets = JSON.parse(
+                fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8')
+            );
+            const professionalConfig = JSON.parse(JSON.stringify(professionalPresets.presets[0].config));
+            professionalConfig.appointment = professionalConfig.appointment || {};
+            professionalConfig.appointment.bookingUrl = 'https://cal.com/versiune-veche';
+            registry.saveVersion(professionalSite.id, professionalConfig);
+            const currentName = 'Cabinet Browser Curent ' + crypto.randomBytes(3).toString('hex');
+            const currentConfig = JSON.parse(JSON.stringify(professionalConfig));
+            currentConfig.business.name = currentName;
+            currentConfig.business.title = currentName;
+            currentConfig.appointment.bookingUrl = '';
+            const payload = JSON.stringify({
+                siteId: professionalSite.id,
+                templateId: 'professionals',
+                config: currentConfig,
+            });
+            const saved = await httpReq(port, '/api/draft', {
+                method: 'POST',
+                headers: {
+                    Cookie: cookie,
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload),
+                },
+                body: payload,
+            });
+            assert.strictEqual(saved.status, 200, 'current draft save 200, got ' + saved.status);
+            const res = await httpReq(port, '/api/export-html?siteId=' + encodeURIComponent(professionalSite.id), {
+                headers: { Cookie: cookie, Accept: 'text/html' },
+            });
+            assert.strictEqual(res.status, 200, 'current export 200, got ' + res.status);
+            assert.ok(res.body.includes(currentName), 'download contains current browser business name');
+            assert.ok(!/cal\.com/i.test(res.body), 'cleared Cal.com does not leak stale booking CTA');
+            assert.ok(/<form/i.test(res.body), 'cleared Cal.com restores the local appointment form');
         });
 
         await check('GET /api/export-html?siteId= owned draft → 200 with business name', async () => {
