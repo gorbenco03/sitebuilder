@@ -799,23 +799,27 @@ function waitForInteractivePreview(target, readyToken) {
   target.setAttribute('aria-busy', 'true');
   target.dataset.previewReady = 'false';
   target.classList.add('preview-iframe--loading');
+  let cancelled = false;
   const onReady = (event) => {
     if (event.source !== target.contentWindow || !event.data ||
         event.data.type !== 'hb-preview-ready' || event.data.token !== readyToken) return;
-    clear();
+    window.removeEventListener('message', onReady);
     // Commit hit testing before exposing the ready contract. Otherwise a
     // trusted first click can still land while pointer-events is provisional.
     target.classList.remove('preview-iframe--loading');
     try { void target.offsetWidth; } catch (e) { /* ignore */ }
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (target.getAttribute('aria-busy') !== 'true') return;
+        if (cancelled || target.getAttribute('aria-busy') !== 'true') return;
         target.setAttribute('aria-busy', 'false');
         target.dataset.previewReady = 'true';
       });
     });
   };
-  const clear = () => window.removeEventListener('message', onReady);
+  const clear = () => {
+    cancelled = true;
+    window.removeEventListener('message', onReady);
+  };
   window.addEventListener('message', onReady);
   return clear;
 }

@@ -31,6 +31,7 @@ const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
 const REJECTED_SHA = 'f1cda5f66c297ecea358c68629223e49cce51a2e'; // data:text/html legal hrefs — Chromium dead clicks
 const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping consent + no current-draft UI ZIP
 const R8_PARENT_SHA = '56f7de08c909807320707d02f0d6140139abf2be'; // retained legal scroll + process copy
+const R10_PARENT_SHA = 'fa6f80c9fd005a2f8a89cf58cb758ded30708295'; // deferred ready commit crosses generations
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
 const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
@@ -74,6 +75,68 @@ function baseBlob(rel) {
 
 function headRead(rel) {
     return fs.readFileSync(path.join(ROOT, rel), 'utf8');
+}
+
+function exerciseDeferredPreviewReady(appSource) {
+    const match = appSource.match(/function waitForInteractivePreview\([\s\S]*?\n}\n\n\/\/ Full re-render:/);
+    assert.ok(match, 'waitForInteractivePreview source');
+
+    const animationFrames = [];
+    const messageListeners = new Set();
+    const sandbox = {
+        requestAnimationFrame(callback) {
+            animationFrames.push(callback);
+        },
+        window: {
+            addEventListener(type, callback) {
+                if (type === 'message') messageListeners.add(callback);
+            },
+            removeEventListener(type, callback) {
+                if (type === 'message') messageListeners.delete(callback);
+            },
+        },
+    };
+    vm.runInNewContext(match[0].replace(/\n\n\/\/ Full re-render:$/, '') + '\nthis.wait = waitForInteractivePreview;', sandbox);
+
+    const attrs = new Map();
+    const classes = new Set();
+    const contentWindow = {};
+    const target = {
+        contentWindow,
+        dataset: {},
+        classList: {
+            add(name) { classes.add(name); },
+            remove(name) { classes.delete(name); },
+            contains(name) { return classes.has(name); },
+        },
+        getAttribute(name) { return attrs.has(name) ? attrs.get(name) : null; },
+        setAttribute(name, value) { attrs.set(name, String(value)); },
+        get offsetWidth() { return 800; },
+    };
+
+    const clearOld = sandbox.wait(target, 'old-generation');
+    for (const listener of [...messageListeners]) {
+        listener({
+            source: contentWindow,
+            data: { type: 'hb-preview-ready', token: 'old-generation' },
+        });
+    }
+    assert.strictEqual(animationFrames.length, 1, 'old ready event schedules its deferred commit');
+
+    clearOld();
+    sandbox.wait(target, 'new-generation');
+    assert.strictEqual(target.getAttribute('aria-busy'), 'true', 'new generation starts busy');
+    assert.ok(target.classList.contains('preview-iframe--loading'), 'new generation blocks pointer input');
+
+    animationFrames.shift()();
+    assert.strictEqual(animationFrames.length, 1, 'second deferred frame is scheduled');
+    animationFrames.shift()();
+
+    return {
+        busy: target.getAttribute('aria-busy'),
+        ready: target.dataset.previewReady,
+        loading: target.classList.contains('preview-iframe--loading'),
+    };
 }
 
 function httpReq(port, urlPath, { method = 'GET', headers = {} } = {}) {
@@ -259,6 +322,26 @@ function unzipStore(zipBuf, destDir) {
         const nav = parentBuild.match(/const previewLegalNavSrc = ([\s\S]*?);\nconst previewLegalNavEmbedded/);
         assert.ok(nav, 'R8 parent preview legal interceptor');
         assert.ok(!/scrollTo\s*\(\s*0\s*,\s*0\s*\)/.test(nav[1]), 'R8 parent must lack a legal scroll reset');
+    });
+
+    await check('causal RED: R10 parent lets an old deferred ready commit mark a newer generation ready', () => {
+        const parentApp = execFileSync('git', ['-C', ROOT, 'show', R10_PARENT_SHA + ':builder/app.js'], {
+            encoding: 'utf8',
+            maxBuffer: 4 * 1024 * 1024,
+        });
+        assert.deepStrictEqual(exerciseDeferredPreviewReady(parentApp), {
+            busy: 'false',
+            ready: 'true',
+            loading: true,
+        });
+    });
+
+    await check('HEAD preview readiness: an old deferred commit cannot mark a newer generation ready', () => {
+        assert.deepStrictEqual(exerciseDeferredPreviewReady(headRead('builder/app.js')), {
+            busy: 'true',
+            ready: 'false',
+            loading: true,
+        });
     });
 
     // ── HEAD GREEN: templates ────────────────────────────────────────────
