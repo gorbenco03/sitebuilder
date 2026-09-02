@@ -2136,6 +2136,18 @@ function applyEmbedUrl(embedUrl) {
 }
 
 let instagramEditorUrl = '';
+/** Pending window-focus handler from connectInstagram; disconnect must cancel it. */
+let instagramConnectFocusHandler = null;
+/** Bumped on disconnect / new connect so in-flight grant-after-focus cannot re-apply. */
+let instagramConnectGeneration = 0;
+
+function cancelPendingInstagramConnect() {
+  if (instagramConnectFocusHandler) {
+    window.removeEventListener('focus', instagramConnectFocusHandler);
+    instagramConnectFocusHandler = null;
+  }
+  instagramConnectGeneration += 1;
+}
 
 function connectedInstagramEmbedUrl() {
   return String((((draft || {}).config || {}).instagram || {}).embedUrl || '').trim();
@@ -2189,10 +2201,22 @@ function openInstagramEditor() {
   if (editorTab) editorTab.opener = null;
 }
 
-function disconnectInstagram() {
+async function disconnectInstagram() {
+  // Authoritative: kill stale focus→re-grant path before clearing local state.
+  cancelPendingInstagramConnect();
   instagramEditorUrl = '';
   applyEmbedUrl('');
   setIgStatus('Instagram a fost deconectat. Feed-ul nu mai este afișat pe site.');
+  const siteId = siteIdForInstagram();
+  if (!siteId || !currentUser || !currentUser.email) return;
+  try {
+    await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/disconnect', {});
+  } catch (e) {
+    setIgStatus(
+      (e && e.message) || 'Instagram a fost deconectat local, dar serverul nu a confirmat. Reîncearcă publicarea.',
+      true
+    );
+  }
 }
 
 /**
@@ -2396,12 +2420,20 @@ async function connectInstagram() {
       if (editorTab) editorTab.opener = null;
     }
     setIgStatus('După ce termini conectarea, revenim aici și actualizăm feed-ul de pe site.');
+    // Drop any prior focus waiter so only this connect attempt can finish.
+    cancelPendingInstagramConnect();
+    const connectGen = instagramConnectGeneration;
     const onFocus = async () => {
+      if (instagramConnectFocusHandler !== onFocus) return;
       window.removeEventListener('focus', onFocus);
+      instagramConnectFocusHandler = null;
+      // Explicit disconnect (or a newer connect) voids this return-from-editor grant.
+      if (connectGen !== instagramConnectGeneration) return;
       try {
         const grant2 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
           acceptedTerms: true,
         });
+        if (connectGen !== instagramConnectGeneration) return;
         if (grant2.embedUrl) {
           applyEmbedUrl(grant2.embedUrl);
           setIgStatus('Instagram e pe site.');
@@ -2411,9 +2443,11 @@ async function connectInstagram() {
           setIgStatus('Feed-ul nu este gata încă. Redeschide Instagram după ce salvezi conectarea.');
         }
       } catch (e) {
+        if (connectGen !== instagramConnectGeneration) return;
         setIgStatus(e.message || 'Nu am putut reîncărca feed-ul Instagram.', true);
       }
     };
+    instagramConnectFocusHandler = onFocus;
     window.addEventListener('focus', onFocus);
   } catch (e) {
     setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);

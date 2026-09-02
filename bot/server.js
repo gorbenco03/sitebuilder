@@ -26,6 +26,7 @@
  *   POST /api/sites/:id/billing-portal → {portalUrl} Stripe Customer Portal (cancel)
  *   POST /api/sites/:id/social-feed/grant          → Instafidget Year-1 grant; stores instagram.embedUrl
  *   POST /api/sites/:id/social-feed/editor-session → Instafidget editor SSO URL
+ *   POST /api/sites/:id/social-feed/disconnect     → clear instagram.embedUrl (explicit disconnect)
  *   POST /api/publish        → pay-before-publish: unpaid saves draft (+ checkout URL); paid deploys
  *   POST /api/draft          → save the signed-in browser draft without publishing
  *   GET  /api/export-html   → download current draft as complete static HTML (session; not a live publish)
@@ -1601,6 +1602,17 @@ function persistEmbedUrl(reg, siteId, embedUrl) {
     return config;
 }
 
+/** Clear partner embed so disconnect stays authoritative after republish. */
+function clearEmbedUrl(reg, siteId) {
+    const config = latestSiteConfig(reg, siteId);
+    if (!config.instagram || typeof config.instagram !== 'object') {
+        config.instagram = {};
+    }
+    config.instagram.embedUrl = '';
+    reg.saveVersion(siteId, config);
+    return config;
+}
+
 function publicGrantPayload(json) {
     return {
         embedUrl: typeof json.embedUrl === 'string' ? json.embedUrl : null,
@@ -1755,6 +1767,27 @@ async function handleSocialFeedEditor(req, res, siteId) {
         return sendJson(res, 502, { error: 'Instafidget did not return an editor link.' });
     }
     sendJson(res, 200, { editorUrl });
+}
+
+/**
+ * POST /api/sites/:id/social-feed/disconnect
+ * Explicit Disconnect Instagram: clear persisted embedUrl. Does not touch billing.
+ */
+async function handleSocialFeedDisconnect(req, res, siteId) {
+    try { await parseJson(req); } catch (_) { /* empty body ok */ }
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const reg = getRegistry();
+    const site = await reg.getSite(siteId);
+    if (!site) {
+        return sendJson(res, 404, { error: 'Site not found.' });
+    }
+    if (site.userId !== userId) {
+        return sendJson(res, 403, { error: 'Access denied.' });
+    }
+    const config = clearEmbedUrl(reg, siteId);
+    const embedUrl = config && config.instagram ? String(config.instagram.embedUrl || '') : '';
+    sendJson(res, 200, { ok: true, embedUrl: embedUrl || null, disconnected: true });
 }
 
 /**
@@ -2098,6 +2131,11 @@ function createHandler({ onStripeEvent } = {}) {
             const editorMatch = url.match(/^\/api\/sites\/([^/]+)\/social-feed\/editor-session$/);
             if (req.method === 'POST' && editorMatch) {
                 return await handleSocialFeedEditor(req, res, editorMatch[1]);
+            }
+
+            const disconnectMatch = url.match(/^\/api\/sites\/([^/]+)\/social-feed\/disconnect$/);
+            if (req.method === 'POST' && disconnectMatch) {
+                return await handleSocialFeedDisconnect(req, res, disconnectMatch[1]);
             }
 
             // /api/sites/:id
