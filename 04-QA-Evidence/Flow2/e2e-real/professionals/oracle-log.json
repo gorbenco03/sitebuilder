@@ -1,0 +1,226 @@
+{
+  "oracle": "flow2-template-e2e",
+  "version": 1,
+  "system": "professionals",
+  "boot": {
+    "HIDOOK_TEST_PAY": "1",
+    "HIDOOK_ISOLATED_DEPLOY": "1",
+    "PUBLIC_URL": null,
+    "HIDOOK_FAKE_DEPLOY": null,
+    "liveStripeKeys": false
+  },
+  "startedAt": "2026-09-02T22:00:55.182Z",
+  "verified": true,
+  "entries": [
+    {
+      "index": 0,
+      "step": "accept-cookie",
+      "selector": "#hb-cookie-accept",
+      "action": "click",
+      "screenshot": "01-accept-cookie.png",
+      "screenshotSha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-02T22:00:57.211Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "builder cookie notice accepted and hidden"
+      }
+    },
+    {
+      "index": 1,
+      "step": "pick-template",
+      "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
+      "action": "click",
+      "screenshot": "02-pick-template.png",
+      "screenshotSha256": "e7f7fc60071e1b152cc911a7a2b02430dce10390282d5b738baa558ed990aa0f",
+      "timestamp": "2026-09-02T22:00:57.538Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "professionals selected; editor and auto-open Details visible"
+      }
+    },
+    {
+      "index": 2,
+      "step": "close-details-for-inline-edit",
+      "selector": "#btn-close-drawer",
+      "action": "click",
+      "screenshot": "03-close-details-for-inline-edit.png",
+      "screenshotSha256": "83fe930fb964851586b4aed18e7785f94467d54e3abf3097774276ec00146d94",
+      "timestamp": "2026-09-02T22:00:57.718Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "auto-open Details closed to expose inline preview editing"
+      }
+    },
+    {
+      "index": 3,
+      "step": "edit-distinctive-text",
+      "selector": "#preview-iframe [data-hb-edit=\"business.name\"]",
+      "action": "click + fill + blur",
+      "screenshot": "04-edit-distinctive-text.png",
+      "screenshotSha256": "9c1ee2746d5431a361b01ffbf592bf157c0d79695558387bcbc96af0aea4bf32",
+      "timestamp": "2026-09-02T22:00:58.139Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor preview contains distinctive text: OF7 Cabinet Delta — Profesioniști"
+      }
+    },
+    {
+      "index": 4,
+      "step": "open-details-for-photo",
+      "selector": "#btn-open-drawer",
+      "action": "click",
+      "screenshot": "05-open-details-for-photo.png",
+      "screenshotSha256": "3b46f2a154012e4b9fd39a06bd684a72dc8f69cf1e805c41b86105c4d8dae05f",
+      "timestamp": "2026-09-02T22:00:58.313Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Details reopened for structured hero photo control"
+      }
+    },
+    {
+      "index": 5,
+      "step": "edit-distinctive-photo",
+      "selector": "[data-field-key=\"hero.background\"] button",
+      "action": "click + setInputFiles",
+      "screenshot": "06-edit-distinctive-photo.png",
+      "screenshotSha256": "c0157d2a9e9eef84ba98cff9bc906652dd757cecb1eb702a11cf10298fcdeef1",
+      "timestamp": "2026-09-02T22:00:58.630Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "hero photo replaced through file chooser with templates/product-menu/images/cn-d1.jpg"
+      }
+    },
+    {
+      "index": 6,
+      "step": "close-details",
+      "selector": "#btn-close-drawer",
+      "action": "click",
+      "screenshot": "07-close-details.png",
+      "screenshotSha256": "bdfc9e7897dcfa55a3c43c046f3d64cf9fce616cfee54c2c22c7da5dd81d4ffa",
+      "timestamp": "2026-09-02T22:00:58.785Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Details closed after text and photo edits"
+      }
+    },
+    {
+      "index": 7,
+      "step": "edit-distinctive-colors",
+      "selector": "#btn-color-picker, #color-custom-text, #color-bg-text",
+      "action": "click + fill",
+      "screenshot": "08-edit-distinctive-colors.png",
+      "screenshotSha256": "8c16817af50951e5eeb687d56a5e6a4cdc8e953f145b8fb1f0760e1b557c2883",
+      "timestamp": "2026-09-02T22:00:59.107Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "accent #2F6B5F and background #E8F2EE applied"
+      }
+    },
+    {
+      "index": 8,
+      "step": "close-colors",
+      "selector": "#btn-color-picker",
+      "action": "click",
+      "screenshot": "09-close-colors.png",
+      "screenshotSha256": "191b593bca5ec8f46ae0ac281a391420538e6e1447e9973aa2953da242c65433",
+      "timestamp": "2026-09-02T22:00:59.269Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "color controls closed after committed edits"
+      }
+    },
+    {
+      "index": 9,
+      "step": "preview-mobile",
+      "selector": "#btn-preview-mobile",
+      "action": "click",
+      "screenshot": "10-preview-mobile.png",
+      "screenshotSha256": "b3f2ff446a7ae928df62424c4d2586463c42e4f305d9a41a2e1e6c64c1d8db3a",
+      "timestamp": "2026-09-02T22:00:59.506Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "mobile preview selected and still contains distinctive text"
+      }
+    },
+    {
+      "index": 10,
+      "step": "open-publish",
+      "selector": "#btn-publish",
+      "action": "click",
+      "screenshot": "11-open-publish.png",
+      "screenshotSha256": "8c0f24553eaee8a6701863a4682d8455e3b05128a7360087d6bc6f0dd54be2ab",
+      "timestamp": "2026-09-02T22:00:59.614Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "publish dialog visible after preview"
+      }
+    },
+    {
+      "index": 11,
+      "step": "continue-publish-address",
+      "selector": "#input-slug, #btn-publish-continue",
+      "action": "fill + click",
+      "screenshot": "12-continue-publish-address.png",
+      "screenshotSha256": "11c6fa2ea8ba490f0f37d454b3b097cff9966387f19f9acdf832f801ac698c26",
+      "timestamp": "2026-09-02T22:00:59.941Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "isolated slug accepted: of7-professionals-binding"
+      }
+    },
+    {
+      "index": 12,
+      "step": "send-magic-link",
+      "selector": "#input-email, #btn-send-magic",
+      "action": "fill + click",
+      "screenshot": "13-send-magic-link.png",
+      "screenshotSha256": "af6b5b54cee52c9914957572cfa2a1d51ac2a358e08181edf299156a7cb9aa81",
+      "timestamp": "2026-09-02T22:01:00.099Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "local magic link issued for isolated test account"
+      }
+    },
+    {
+      "index": 13,
+      "step": "open-magic-link",
+      "selector": "#dev-link",
+      "action": "click",
+      "screenshot": "14-open-magic-link.png",
+      "screenshotSha256": "7ba577d15ea309bcf1dd59dbf19005c516c184d9aba42863ccaa722263495d0d",
+      "timestamp": "2026-09-02T22:01:00.202Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "authenticated draft published unpaid; test-card CTA visible"
+      }
+    },
+    {
+      "index": 14,
+      "step": "test-pay-publish",
+      "selector": "#btn-pay-publish",
+      "action": "click",
+      "screenshot": "15-test-pay-publish.png",
+      "screenshotSha256": "e84aa4db6b38319a7878b8484b053aa74dfe8939c98752d4ab05503a3fbd4d5d",
+      "timestamp": "2026-09-02T22:01:00.585Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "HIDOOK_TEST_PAY completed; isolated live URL: http://127.0.0.1:54792/live/of7-professionals-binding/"
+      }
+    },
+    {
+      "index": 15,
+      "step": "open-live-site",
+      "selector": "#success-url-link",
+      "action": "click",
+      "screenshot": "16-open-live-site.png",
+      "screenshotSha256": "bf8077fb4fd0ad9edf07eb93a164ad73b4b45bf71a16dabfaeb01bb0a363adf4",
+      "timestamp": "2026-09-02T22:01:01.395Z",
+      "contentCheck": {
+        "ok": true,
+        "detail": "live site shows distinctive text, color, and byte-identical uploaded hero photo"
+      }
+    }
+  ],
+  "completedAt": "2026-09-02T22:01:01.401Z",
+  "liveUrl": "http://127.0.0.1:54792/live/of7-professionals-binding/"
+}

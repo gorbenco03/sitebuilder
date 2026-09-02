@@ -6,6 +6,10 @@
   "scripts": {
     "build": "node scripts/build-site.js",
     "gallery": "node scripts/build-gallery.js",
-    "build:app": "node scripts/build-builder.js"
+    "build:app": "node scripts/build-builder.js",
+    "e2e:flow2": "node bot/test/flow2-template-e2e.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }
