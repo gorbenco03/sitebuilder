@@ -68,13 +68,12 @@ function legalShell(opts) {
 <body>
   <main class="hb-legal">
     <h1>${escapeHtml(h1)}</h1>
-    <p class="hb-legal-meta">${biz} · ${y} · placeholder de produs</p>
+    <p class="hb-legal-meta">${biz} · ${y} · informații legale în curs de completare</p>
     <div class="hb-legal-notice" role="note">
-      <strong>Placeholder de produs — nu este consultanță juridică.</strong>
-      Textul de mai jos este un schelet pentru site-ul generat. Datele legale complete
-      (denumire entitate, CUI/VAT, adresă, jurisdicție, listă subprocessori) rămân
-      de completat de către titularul afacerii — nu inventăm text final de avocat.
-      Înlocuiți marcajele <code>[PLACEHOLDER …]</code> înainte de livrare comercială.
+      <strong>Informații legale în curs de completare — acest text nu este consultanță juridică.</strong>
+      Această pagină nu reprezintă un text juridic final. Titularul afacerii trebuie să completeze
+      denumirea legală, CUI/VAT, adresa, jurisdicția și furnizorii relevanți. Marcajele
+      <code>[PLACEHOLDER …]</code> indică informațiile care lipsesc încă.
     </div>
     ${body}
     <nav class="hb-legal-nav" aria-label="Pagini legale">
@@ -189,12 +188,12 @@ function cookiesHtml(config) {
         bodyHtml: `
     <h2>Ce sunt cookie-urile</h2>
     <p>
-      Cookie-urile și stocarea similară (localStorage) ajută site-ul <strong>${e}</strong>
-      să țină minte preferințe simple, de exemplu consimțământul afișat în banner.
+      Cookie-urile și tehnologiile similare ajută site-ul <strong>${e}</strong>
+      să țină minte preferințe simple, de exemplu alegerea făcută în banner.
     </p>
     <h2>Ce folosim pe acest site</h2>
     <ul>
-      <li><strong>Esențiale / funcționale</strong> — reținerea alegerii din bannerul de cookie-uri (<code>hb-cookie-consent</code>), astfel încât să nu reapară la fiecare vizită.</li>
+      <li><strong>Esențiale / funcționale</strong> — browserul reține alegerea din bannerul de cookie-uri, astfel încât acesta să nu reapară la fiecare vizită.</li>
       <li><strong>Opționale</strong> — nu activăm analytics sau marketing fără consimțământ; orice instrument viitor va fi listat aici după decizia titularului afacerii.</li>
     </ul>
     <h2>Controlul dumneavoastră</h2>

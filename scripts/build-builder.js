@@ -243,7 +243,12 @@ const editOverlayEmbedded = JSON.stringify(editOverlaySrc);
 
 // Click-interceptor source embedded for renderPreview legal isolation.
 const previewLegalNavSrc = "(function () {\n  function docs() {\n    var el = document.getElementById('hb-preview-legal-docs');\n    return el ? JSON.parse(el.textContent) : {};\n  }\n  function bootScripts() {\n    var j = document.getElementById('hb-preview-legal-docs');\n    var n = document.querySelector('script[data-hb-preview-legal-nav]');\n    if (!j || !n) return '';\n    return (\n      '<scr' + 'ipt type=\"application/json\" id=\"hb-preview-legal-docs\">' +\n      j.textContent +\n      '</scr' + 'ipt>' +\n      '<scr' + 'ipt data-hb-preview-legal-nav>' +\n      n.textContent +\n      '</scr' + 'ipt>'\n    );\n  }\n  function prepare(html) {\n    html = String(html || '');\n    html = html.replace(/href=([\"'])(privacy|terms|cookies)\\.html\\1/gi, function (_m, _q, p) {\n      return 'href=\"#hb-preview-legal-' + p + '.html\" data-hb-preview-legal=\"' + p + '.html\"';\n    });\n    html = html.replace(/href=([\"'])index\\.html\\1/gi, 'href=\"#hb-preview-home\" data-hb-preview-home=\"1\"');\n    if (!/id=[\"']hb-preview-legal-docs[\"']/.test(html)) {\n      var closeBody = '</bod' + 'y>';\n      var reBody = new RegExp(closeBody.replace('/', '\\\\/'), 'i');\n      if (reBody.test(html)) html = html.replace(reBody, bootScripts() + closeBody);\n      else html += bootScripts();\n    }\n    return html;\n  }\n  function show(name) {\n    var page = docs()[name];\n    if (!page) return;\n    document.open();\n    document.write(prepare(page));\n    document.close();\n  }\n  document.addEventListener('click', function (e) {\n    var t = e.target;\n    if (t && t.nodeType === 3) t = t.parentElement;\n    var a = t && t.closest ? t.closest('a') : null;\n    if (!a) return;\n    if (a.getAttribute('data-hb-preview-home') === '1') {\n      e.preventDefault();\n      try { location.reload(); } catch (err) {}\n      return;\n    }\n    var name = a.getAttribute('data-hb-preview-legal');\n    if (!name) return;\n    e.preventDefault();\n    if (e.stopPropagation) e.stopPropagation();\n    show(name);\n  }, true);\n})();";
-const previewLegalNavEmbedded = JSON.stringify(previewLegalNavSrc);
+const previewLegalNavEmbedded = JSON.stringify(
+    previewLegalNavSrc.replace(
+        '    document.close();',
+        '    document.close();\n    try { window.scrollTo(0, 0); } catch (err) {}'
+    )
+);
 
 const engineIife = `(function () {
 'use strict';

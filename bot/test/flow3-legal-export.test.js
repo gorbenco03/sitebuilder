@@ -30,6 +30,7 @@ const BASE_SHA = '275e534232cd20105781ca0fbc6ec5bb5d9a2b97';
 const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
 const REJECTED_SHA = 'f1cda5f66c297ecea358c68629223e49cce51a2e'; // data:text/html legal hrefs — Chromium dead clicks
 const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping consent + no current-draft UI ZIP
+const R8_PARENT_SHA = '56f7de08c909807320707d02f0d6140139abf2be'; // retained legal scroll + process copy
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
 const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
@@ -241,6 +242,25 @@ function unzipStore(zipBuf, destDir) {
         assert.ok(!/handleSaveDraft|url === '\/api\/draft'/.test(parentServer), 'parent has no current-draft save route');
     });
 
+    await check('causal RED: R8 parent exposes generated-site process copy and retains preview scroll', () => {
+        const parentLegal = execFileSync('git', ['-C', ROOT, 'show', R8_PARENT_SHA + ':bot/site-legal.js'], {
+            encoding: 'utf8',
+            maxBuffer: 2 * 1024 * 1024,
+        });
+        const parentBuild = execFileSync('git', ['-C', ROOT, 'show', R8_PARENT_SHA + ':scripts/build-builder.js'], {
+            encoding: 'utf8',
+            maxBuffer: 2 * 1024 * 1024,
+        });
+        assert.ok(
+            /placeholder de produs|schelet pentru site-ul generat|nu inventăm text final de avocat|livrare comercială/i.test(parentLegal),
+            'R8 parent must contain the reported generated-site process copy'
+        );
+        assert.ok(/hb-cookie-consent|localStorage/.test(parentLegal), 'R8 parent must expose raw cookie storage details');
+        const nav = parentBuild.match(/const previewLegalNavSrc = ([\s\S]*?);\nconst previewLegalNavEmbedded/);
+        assert.ok(nav, 'R8 parent preview legal interceptor');
+        assert.ok(!/scrollTo\s*\(\s*0\s*,\s*0\s*\)/.test(nav[1]), 'R8 parent must lack a legal scroll reset');
+    });
+
     // ── HEAD GREEN: templates ────────────────────────────────────────────
     await check('HEAD all five templates footer link privacy/terms/cookies + cookie banner', () => {
         for (const id of TPLS) {
@@ -257,8 +277,9 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
-    await check('HEAD legal page generators are Romanian placeholders without factory English jargon', () => {
+    await check('HEAD legal page generators are unfinished customer copy without factory narration', () => {
         const cfg = { business: { name: BIZ_NAME }, footer: { year: '2026' } };
+        const processCopy = /placeholder de produs|schelet pentru site-ul generat|nu inventăm text final de avocat|livrare comercială/i;
         for (const [label, html] of [
             ['privacy', privacyHtml(cfg)],
             ['terms', termsHtml(cfg)],
@@ -270,6 +291,11 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/lang="ro"/i.test(html), label + ' lang=ro');
             assert.ok(/Build by/i.test(html) && /hidook\.tech/i.test(html), label + ' attribution');
             assert.ok(!/Kanban/i.test(html), label + ' no Kanban');
+            const visibleText = html
+                .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+                .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+                .replace(/<[^>]+>/g, ' ');
+            assert.ok(!processCopy.test(visibleText), label + ' no generated-site process narration');
             assert.ok(
                 !/owner-gated|owner-ului|\bfactory\b|studio process/i.test(html),
                 label + ' no owner-gated / factory-English process words'
@@ -278,6 +304,9 @@ function unzipStore(zipBuf, destDir) {
                 /titularul afacerii|de completat/i.test(html) || /PLACEHOLDER/i.test(html),
                 label + ' honest Romanian unfinished wording'
             );
+            if (label === 'cookies') {
+                assert.ok(!/hb-cookie-consent|localStorage/i.test(visibleText), 'cookies hides raw storage implementation details');
+            }
         }
     });
 
@@ -310,6 +339,7 @@ function unzipStore(zipBuf, destDir) {
         assert.ok(/data-hb-cookie-banner/.test(engineSrc), 'engine inlines cookie banner assets');
         assert.ok(/data-hb-preview-legal/.test(engineSrc), 'engine marks preview legal links');
         assert.ok(/hb-preview-legal-docs|PREVIEW_LEGAL_NAV_SRC|data-hb-preview-legal-nav/.test(engineSrc), 'engine ships legal click interceptor');
+        assert.ok(/scrollTo\s*\(\s*0\s*,\s*0\s*\)/.test(engineSrc), 'engine resets legal destinations to scroll 0');
         assert.ok(!/owner-gated/i.test(engineSrc), 'engine legal copy has no owner-gated');
         // Must NOT treat data:text/html as the navigable legal mechanism (Chromium dead-click).
         assert.ok(
@@ -1086,6 +1116,12 @@ function unzipStore(zipBuf, destDir) {
                             id + ' ' + kind.key
                         );
                         assertVisibleLegal(bodyText, biz, id + ' catalog ' + kind.key);
+                        const legalViewport = await (await previewFrame(page)).evaluate(() => ({
+                            scrollY: window.scrollY,
+                            headingTop: document.querySelector('h1').getBoundingClientRect().top,
+                        }));
+                        assert.strictEqual(legalViewport.scrollY, 0, id + ' ' + kind.key + ' starts at scroll 0');
+                        assert.ok(legalViewport.headingTop >= 0, id + ' ' + kind.key + ' heading starts in the viewport');
                         assert.ok(!/Se încarcă previzualizarea/i.test(bodyText), id + ' catalog not stuck on loading');
                     }
                     await page.close();
@@ -1112,6 +1148,12 @@ function unzipStore(zipBuf, destDir) {
                         id + ' editor privacy'
                     );
                     assertVisibleLegal(editText, biz, id + ' editor privacy');
+                    const editorViewport = await (await previewFrame(editPage)).evaluate(() => ({
+                        scrollY: window.scrollY,
+                        headingTop: document.querySelector('h1').getBoundingClientRect().top,
+                    }));
+                    assert.strictEqual(editorViewport.scrollY, 0, id + ' editor privacy starts at scroll 0');
+                    assert.ok(editorViewport.headingTop >= 0, id + ' editor privacy heading starts in the viewport');
                     await editPage.close();
                 } finally {
                     await context.close();
