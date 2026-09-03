@@ -1408,7 +1408,7 @@ function applyThemeBackground(hex) {
 // 13. Drawer — details panel
 // ---------------------------------------------------------------------------
 
-/** Prefer open on first editor entry; remember closed/open across reload. */
+/** Remember the current design's closed/open state across reload. */
 function getDrawerPref() {
   try {
     return localStorage.getItem(DRAWER_PREF_KEY);
@@ -1421,6 +1421,11 @@ function setDrawerPref(value) {
   try {
     localStorage.setItem(DRAWER_PREF_KEY, value);
   } catch (_) { /* ignore quota / private mode */ }
+}
+
+/** A catalog selection starts a fresh design context, so Details gets a fresh open state. */
+function prepareDrawerForNewDesign() {
+  setDrawerPref('open');
 }
 
 /** True when Details should auto-open (first visit or last preference was open). */
@@ -3736,6 +3741,7 @@ async function startWithTemplate(templateId) {
   const nameEl = $('editor-template-name');
   if (nameEl) nameEl.textContent = meta.name;
 
+  prepareDrawerForNewDesign();
   window.location.hash = '#edit';
 }
 
@@ -4161,7 +4167,7 @@ function showScreen(name) {
   if (name === 'edit') {
     if (topbar) show(topbar);
     if (header) hide(header);
-    // VISION 4.3: Details opens on first editor entry; preference survives reload.
+    // Details opens for every newly selected design; a manual close survives reload.
     if (shouldAutoOpenDrawer() && !drawerOpen) {
       requestAnimationFrame(() => {
         if (shouldAutoOpenDrawer() && !drawerOpen) openDrawer();

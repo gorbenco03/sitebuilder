@@ -2,7 +2,7 @@
 
 **Autoritate:** acest fișier este sursa de adevăr pentru Site Builder până când owner-ul îl schimbă explicit. Orice `PRODUCT.md`, `AGENTS.md`, task Kanban, spec vechi sau comentariu care contrazice acest document este depășit.
 
-**Sincronizat:** 2026-09-02. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01, poarta comercială pentru export din `00-Governance/OWNER-FEEDBACK-2026-09-02.md` și regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
+**Sincronizat:** 2026-09-02. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01, poarta comercială pentru export și Details auto-open per design nou din `00-Governance/OWNER-FEEDBACK-2026-09-02.md` și regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
 
 ## 1. Ce este produsul
 
@@ -87,9 +87,9 @@ Done înseamnă:
 
 Done înseamnă:
 
-- Details drawer din builder se deschide automat la prima intrare în editor;
-- userul îl poate închide;
-- preferința închis/deschis se ține la reload;
+- Details drawer din builder se deschide automat la fiecare design nou selectat din catalog, inclusiv după ce a fost închis pe alt design;
+- userul îl poate închide manual pentru designul curent;
+- închiderea se ține la reload pentru designul curent, dar nu suprimă deschiderea la următoarea selecție de design;
 - `<details>` relevante din șabloane care ascund conținut important sunt deschise by default unde are sens.
 
 ### 4.4 WhatsApp
@@ -238,7 +238,7 @@ Acceptare:
 - toate șabloanele în română;
 - Desserdirina remake apare ca șablon real;
 - badge Hidook prezent și non-editabil;
-- Details auto-open;
+- Details auto-open la fiecare design nou selectat;
 - WhatsApp badge + mesaj custom;
 - imaginea pentru distribuire socială se alege automat din fotografia de deschidere sau dintr-o fotografie existentă; clientul nu completează un URL `og:image`;
 - Instafidget menționat ca inclus gratuit 12 luni, apoi Free cu watermark;

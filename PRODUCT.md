@@ -41,7 +41,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 ## Required product capabilities
 
 - First template load works without refresh on realistic network.
-- Details drawer opens automatically on first editor entry.
+- Details drawer opens automatically for every newly selected design; a manual close survives reload for the current design but does not suppress the next design selection.
 - Text, images, hero/section backgrounds and theme colors are actually editable and reflected in preview/live.
 - WhatsApp badge is recognizable and supports a user-defined prefilled message.
 - Social preview artwork is derived automatically from the current hero/business photography; customers are never asked for an `og:image` URL.
