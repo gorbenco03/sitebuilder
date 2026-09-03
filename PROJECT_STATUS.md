@@ -20,6 +20,7 @@ Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, r
 
 ## Ultimele evenimente (din Kanban, cele mai recente `done`)
 
+- Full-pass QA (b9ec4bc, 63230d2 lineage) found 8 defects in one binding walk of all 5 template systems + chrome (leftover legal placeholder copy, wrong unpaid-export toast, broken/inconsistent WhatsApp QR, topbar label clip, cookie banner overlapping CTA, professionals seed broken images, self-contradictory trial-success dialog). Repair packet t_51164c5a fixed all 8 in one round; reviewer t_d159a0b0 (critic-gpt) — VERDICT: ACCEPT (isolated clone re-run of `bot/test/fullpass-63230d2.mjs`: defects=0/46 steps). Fast-forward merged locally to `main` (b9ec4bc..eed3ca0, clean tree, no push). Re-verified independently on integrated main post-merge: same oracle → `FULLPASS defects=0 steps=46`.
 - S72-v2: wave7-legal-pages test oracle fixed to accept shipped Romanian legal titles (Termeni/Confidențialitate/Cookie-uri) — ACCEPT (test-only, no product change; recovered via provider fallback after gpt-5.6-sol/openai-codex quota exhaustion on t_3dc45a42, superseded/archived)
 - Flow 4 E2E: stranger reopen after Cal.com clear-republish remake — ACCEPT
 - OF-2 remake R3/R4: Stripe past_due webhook → export entitlement — ACCEPT
