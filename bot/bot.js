@@ -93,13 +93,29 @@ setMessenger((chatId, text, opts) =>
       "paid" — instant, restart-proof; the poller/sweeper stay as fallback).
       Binds Railway's injected PORT; a bind failure logs but never kills the bot. ── */
 /**
- * Dispatcher: Stripe events are routed by metadata.platform.
+ * Dispatcher: subscription lifecycle events are handled before metadata routing.
+ * Remaining Stripe events are routed by metadata.platform.
+ *   customer.subscription.updated/deleted → persist entitlement / unpublish
  *   platform === 'web'  → webpublish.handleStripePaid (builder web flow)
  *   otherwise           → flow.handleStripeWebhookEvent (Telegram bot flow)
  */
 async function onStripeEvent(event) {
     const cs       = event && event.data && event.data.object;
     const platform = cs && cs.metadata && cs.metadata.platform;
+    const type     = event && event.type;
+
+    if (
+        type === 'customer.subscription.updated' ||
+        type === 'customer.subscription.deleted'
+    ) {
+        try {
+            await webpublish.handleStripeSubscriptionEvent(event);
+            log('webhook.stripe.subscription.handled', { type });
+        } catch (e) {
+            log('webhook.stripe.subscription.error', { err: e.message, type }, 'error');
+        }
+        return;
+    }
 
     if (platform === 'web') {
         // Web builder flow — handled directly by webpublish with no TG messenger
