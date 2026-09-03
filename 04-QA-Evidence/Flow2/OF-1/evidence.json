@@ -1,0 +1,19 @@
+{
+  "url": "http://127.0.0.1:49868/app/",
+  "steps": [
+    {
+      "step": "clicked-professionals-opened-details",
+      "action": "click .template-card[data-template-id=\"professionals\"] .btn-start-tpl",
+      "screenshot": "01-clicked-professionals-opened-details.png",
+      "timestamp": "2026-09-02T21:03:34.096478+00:00",
+      "checks": {
+        "route": "#edit",
+        "detailsVisible": true,
+        "socialImageFieldAbsent": true,
+        "ogImageDerivedFromHero": true,
+        "ogImageAssetHttpStatus": 200,
+        "twitterImageMatches": true
+      }
+    }
+  ]
+}

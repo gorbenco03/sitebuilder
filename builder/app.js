@@ -481,7 +481,7 @@ function designBadgeLabel(tpl) {
 const DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background']);
 const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
-const HIDDEN_DRAWER_KEYS = ['seo.jsonLd', 'seo.canonical', 'contact.waHref'];
+const HIDDEN_DRAWER_KEYS = ['seo.ogImage', 'seo.jsonLd', 'seo.canonical', 'contact.waHref'];
 
 /** Default prefilled WhatsApp inquiry (browser builder; RO product surface; do not edit flow.js). */
 const WA_DEFAULT_MSG = 'Bună ziua, aș dori mai multe informații despre serviciile dumneavoastră.';

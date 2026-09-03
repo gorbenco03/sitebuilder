@@ -114,23 +114,14 @@ check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} professionals Instagram gall
 });
 
 // ── HEAD GREEN ───────────────────────────────────────────────────────────
-check('HEAD professionals seo.ogImage label is commercial photo control (no factory path)', () => {
+check('HEAD professionals seo.ogImage is not a customer field (no factory path)', () => {
   const src = headRead(PRO_SCHEMA);
   assert.ok(!src.includes(FACTORY_SHARE), 'factory Share image (images/... or URL) gone');
   const schema = parseSchema(src);
-  const f = fieldByKey(schema, 'seo.ogImage');
-  assert.ok(f, 'seo.ogImage present');
-  assert.strictEqual(f.key, 'seo.ogImage');
-  assert.strictEqual(f.type, 'text', 'type unchanged');
-  assert.ok(typeof f.label === 'string' && f.label.length > 4, 'label present');
-  assert.ok(!labelHasFactoryPathHint(f.label), 'no images/... / URL / URLs in label');
-  // Commercial RO photo control (Flow 4 RO Detalii chrome)
-  assert.ok(
-    /partajare social/i.test(f.label) || /Imagine pentru partajare/i.test(f.label),
-    'label reads as social-sharing image control: ' + f.label
-  );
-  assert.ok(!/^Share image\b/i.test(f.label), 'must not keep terse factory "Share image" lead-in');
-  assert.ok(!/social sharing/i.test(f.label), 'no English "social sharing" in label');
+  assert.ok(!fieldByKey(schema, 'seo.ogImage'), 'seo.ogImage must not be a customer field');
+  assert.ok(!/Imagine pentru partajare socială/.test(src), 'no customer social-image URL copy');
+  assert.ok(!/Share image\b/i.test(src), 'must not keep terse factory "Share image" lead-in');
+  assert.ok(!/social sharing/i.test(src), 'no English "social sharing" in schema');
 });
 
 check('HEAD professionals instagram.gallery label is photo list (no path/URL factory hint)', () => {
@@ -152,32 +143,34 @@ check('HEAD professionals instagram.gallery label is photo list (no path/URL fac
   );
 });
 
-check('HEAD professionals schema keys/types for share + gallery unchanged from parent', () => {
+check('HEAD professionals drops share field; gallery keys/types unchanged from parent', () => {
   const parent = parseSchema(parentBlob(PRO_SCHEMA));
   const head = parseSchema(headRead(PRO_SCHEMA));
-  for (const key of ['seo.ogImage', 'instagram.gallery']) {
-    const p = fieldByKey(parent, key);
-    const h = fieldByKey(head, key);
-    assert.ok(p && h, key + ' on both');
-    assert.strictEqual(h.key, p.key);
-    assert.strictEqual(h.type, p.type);
-    if (p.required !== undefined) assert.strictEqual(h.required, p.required);
-    if (p.maxLen !== undefined) assert.strictEqual(h.maxLen, p.maxLen);
-    if (p.min !== undefined) assert.strictEqual(h.min, p.min);
-    if (p.max !== undefined) assert.strictEqual(h.max, p.max);
-  }
+  assert.ok(fieldByKey(parent, 'seo.ogImage'), 'parent still has seo.ogImage');
+  assert.ok(!fieldByKey(head, 'seo.ogImage'), 'HEAD dropped seo.ogImage');
+  const key = 'instagram.gallery';
+  const p = fieldByKey(parent, key);
+  const h = fieldByKey(head, key);
+  assert.ok(p && h, key + ' on both');
+  assert.strictEqual(h.key, p.key);
+  assert.strictEqual(h.type, p.type);
+  if (p.required !== undefined) assert.strictEqual(h.required, p.required);
+  if (p.maxLen !== undefined) assert.strictEqual(h.maxLen, p.maxLen);
+  if (p.min !== undefined) assert.strictEqual(h.min, p.min);
+  if (p.max !== undefined) assert.strictEqual(h.max, p.max);
 });
 
-check('HEAD other three schemas keep commercial share labels (no regression to factory)', () => {
+check('HEAD other three schemas drop customer social-image field (no factory regression)', () => {
   for (const rel of OTHER_SCHEMAS) {
     const src = headRead(rel);
     assert.ok(
       !src.includes(FACTORY_SHARE) && !/Share image \(images\//.test(src),
       rel + ' must not gain factory Share image path glob'
     );
+    assert.ok(!fieldByKey(parseSchema(src), 'seo.ogImage'), rel + ' no seo.ogImage field');
     assert.ok(
-      /Imagine pentru partajare socială|partajare socială/.test(src),
-      rel + ' keeps human RO social-sharing label'
+      !/Imagine pentru partajare socială/.test(src),
+      rel + ' no customer social-image URL copy'
     );
     assert.ok(
       !/Image for social sharing|Social sharing image/.test(src),

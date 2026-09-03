@@ -881,20 +881,23 @@ function unzipStore(zipBuf, destDir) {
                 await page.click('.btn-start-tpl[data-id="product-menu"]');
                 await page.waitForURL(/#edit$/, { timeout: 20000 });
                 await page.waitForSelector('#btn-publish');
-                const ogImageInput = page.locator('[name="seo.ogImage"]');
-                if (!(await ogImageInput.isVisible())) await page.click('#btn-open-drawer');
-                const ogImage = await ogImageInput.inputValue();
-                assert.ok(/^images\//.test(ogImage), 'Restaurant starts with a relative site-local og:image');
-                assert.notStrictEqual(await ogImageInput.getAttribute('aria-invalid'), 'true', 'relative og:image is valid');
-                await ogImageInput.fill('nu este o imagine');
-                assert.strictEqual(await ogImageInput.getAttribute('aria-invalid'), 'true', 'garbage asset text stays invalid');
-                assert.ok(/images\/|link complet/i.test(await ogImageInput.evaluate((el) => el.validationMessage)), 'invalid asset explains accepted URL/path formats in Romanian');
-                await ogImageInput.fill(ogImage);
+                const drawer = page.locator('#details-drawer');
+                if (!(await drawer.isVisible())) await page.click('#btn-open-drawer');
+                await drawer.waitFor({ state: 'visible' });
+                assert.strictEqual(
+                    await page.locator('[name="seo.ogImage"]').count(),
+                    0,
+                    'Restaurant Detalii has no customer seo.ogImage control'
+                );
+                assert.ok(
+                    !/Imagine pentru partajare socială/.test(await page.locator('#drawer-body').innerText()),
+                    'Restaurant Detalii has no customer social-image copy'
+                );
                 await page.click('#btn-close-drawer');
 
                 await page.click('#btn-publish');
                 await page.waitForSelector('#modal-publish', { state: 'visible' });
-                assert.ok(!/Introdu un link complet/.test(await page.locator('#toast').textContent()), 'publish is not blocked by relative og:image');
+                assert.ok(!/Introdu un link complet/.test(await page.locator('#toast').textContent()), 'publish is not blocked by auto-derived social image');
                 await page.click('#btn-close-publish');
 
                 const generatedNotice = page.frameLocator('#preview-iframe').locator('#hb-cookie-banner');

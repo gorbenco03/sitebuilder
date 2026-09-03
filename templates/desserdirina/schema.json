@@ -376,13 +376,6 @@
       "title": "Partajare pe rețele sociale",
       "fields": [
         {
-          "key": "seo.ogImage",
-          "type": "text",
-          "label": "Imagine pentru partajare socială (recomandat 1200×630px)",
-          "required": false,
-          "maxLen": 200
-        },
-        {
           "key": "seo.canonical",
           "type": "url",
           "label": "URL canonic",

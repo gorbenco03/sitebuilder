@@ -529,9 +529,17 @@ check('HEAD: all five schemas — no hero/SEO and no factory English in title/la
 });
 
 check('HEAD: schema keys/ids for hero/seo/facebook unchanged (labels only)', () => {
+  function dropRemovedSocialImage(schema) {
+    const next = JSON.parse(JSON.stringify(schema));
+    next.sections = (next.sections || []).map((sec) => {
+      sec.fields = (sec.fields || []).filter((f) => f && f.key !== 'seo.ogImage');
+      return sec;
+    }).filter((sec) => sec.id !== 'seo' || (sec.fields && sec.fields.length));
+    return next;
+  }
   for (const rel of SCHEMAS) {
-    const parent = parseSchema(parentBlob(rel));
-    const head = parseSchema(headRead(rel));
+    const parent = dropRemovedSocialImage(parseSchema(parentBlob(rel)));
+    const head = dropRemovedSocialImage(parseSchema(headRead(rel)));
     const pIds = (parent.sections || []).map((s) => s.id).join(',');
     const hIds = (head.sections || []).map((s) => s.id).join(',');
     assert.strictEqual(hIds, pIds, rel + ' section ids stable');

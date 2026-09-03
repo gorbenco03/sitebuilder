@@ -44,6 +44,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 - Details drawer opens automatically on first editor entry.
 - Text, images, hero/section backgrounds and theme colors are actually editable and reflected in preview/live.
 - WhatsApp badge is recognizable and supports a user-defined prefilled message.
+- Social preview artwork is derived automatically from the current hero/business photography; customers are never asked for an `og:image` URL.
 - Preview is clear before card/trial.
 - Privacy, Cookies and Terms machinery exists; final legal content is owner-gated.
 - Export/self-deploy uses the live-publish entitlement allowlist: Stripe `active`, `trialing`, or an unexpired legacy paid entitlement. Unpaid, `past_due`, canceled, and expired-`paidUntil` drafts receive a clear Romanian upsell and no file.

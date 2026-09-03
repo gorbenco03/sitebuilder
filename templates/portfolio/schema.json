@@ -508,18 +508,6 @@
       ]
     },
     {
-      "id": "seo",
-      "title": "Partajare pe rețele sociale",
-      "fields": [
-        {
-          "key": "seo.ogImage",
-          "type": "url",
-          "label": "Imagine pentru partajare socială (recomandat 1200×630px)",
-          "required": false
-        }
-      ]
-    },
-    {
       "id": "footer",
       "title": "Subsol",
       "fields": [

@@ -10,12 +10,16 @@
     <!-- Open Graph / social sharing -->
     <meta property="og:title" content="{{business.title}}">
     <meta property="og:description" content="{{business.metaDescription}}">
+<!-- @if seo.ogImage -->
     <meta property="og:image" content="{{seo.ogImage}}">
+<!-- @endif -->
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{business.title}}">
     <meta name="twitter:description" content="{{business.metaDescription}}">
+<!-- @if seo.ogImage -->
     <meta name="twitter:image" content="{{seo.ogImage}}">
+<!-- @endif -->
 
     <!-- SEO: canonical + crawlability (canonical/og:url set only when seo.canonical is present) -->
     <meta name="robots" content="index, follow, max-image-preview:large">

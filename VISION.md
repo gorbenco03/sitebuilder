@@ -240,6 +240,7 @@ Acceptare:
 - badge Hidook prezent și non-editabil;
 - Details auto-open;
 - WhatsApp badge + mesaj custom;
+- imaginea pentru distribuire socială se alege automat din fotografia de deschidere sau dintr-o fotografie existentă; clientul nu completează un URL `og:image`;
 - Instafidget menționat ca inclus gratuit 12 luni, apoi Free cu watermark;
 - verificare în browser pe preview și live/test publish.
 

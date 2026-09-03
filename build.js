@@ -170,6 +170,57 @@ function isPlausibleHttpUrl(value) {
     }
 }
 
+/** Return a safe image URL/path already present in customer site data. */
+function isUsableSocialImage(value) {
+    const image = typeof value === 'string' ? value.trim() : '';
+    if (!image || image === '#' || /^about:/i.test(image)) return false;
+    if (SAFE_CSS_DATA_IMAGE.test(image.replace(/\s+/g, ''))) return true;
+    if (/^https?:\/\//i.test(image) || /^\/\//.test(image)) return true;
+    // Relative site assets only; reject protocols and CSS/HTML control characters.
+    return !/^[a-z][a-z0-9+.-]*:/i.test(image) && !/[<>{}"'()]/.test(image);
+}
+
+/** Extract the first image URL from the structured hero background value. */
+function imageFromHeroBackground(value) {
+    const css = typeof value === 'string' ? value : '';
+    const match = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)'"]*))\s*\)/i.exec(css);
+    if (!match) return '';
+    const image = String(match[1] !== undefined ? match[1]
+        : (match[2] !== undefined ? match[2] : match[3])).trim();
+    return isUsableSocialImage(image) ? image : '';
+}
+
+/**
+ * Pick social preview artwork automatically: hero first, then an existing
+ * business/gallery photo. `seo` is skipped so a legacy pasted URL cannot win.
+ */
+function deriveSocialImage(config) {
+    const heroImage = imageFromHeroBackground(config && config.hero && config.hero.background);
+    if (heroImage) return heroImage;
+
+    let found = '';
+    function visit(value, parentKey) {
+        if (found || value == null || parentKey === 'seo') return;
+        if (Array.isArray(value)) {
+            for (const item of value) visit(item, '');
+            return;
+        }
+        if (typeof value !== 'object') return;
+        for (const [key, child] of Object.entries(value)) {
+            if (found || key === 'seo') continue;
+            if (/^(?:image|imageUrl|photo|logo|src)$/i.test(key)
+                && typeof child === 'string'
+                && isUsableSocialImage(child)) {
+                found = child.trim();
+                return;
+            }
+            visit(child, key);
+        }
+    }
+    visit(config, '');
+    return found;
+}
+
 /** Backfill customer configs saved before newer visible labels were introduced. */
 function normalizeConfigForRender(config) {
     const cfg = Object.assign({}, config);
@@ -187,6 +238,10 @@ function normalizeConfigForRender(config) {
             : '';
         cfg.appointment.bookingUrl = isPlausibleHttpUrl(rawBookingUrl) ? rawBookingUrl : '';
     }
+    // Social cards follow the customer's current site photography. Never rely on
+    // the removed customer-facing seo.ogImage URL control or a stale saved value.
+    cfg.seo = cfg.seo && typeof cfg.seo === 'object' ? Object.assign({}, cfg.seo) : {};
+    cfg.seo.ogImage = deriveSocialImage(cfg);
     return cfg;
 }
 
