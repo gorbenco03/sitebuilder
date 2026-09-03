@@ -211,35 +211,125 @@ function cookiesHtml(config) {
 }
 
 /** Shared cookie banner CSS (also linked from templates via cookie-banner.css). */
-const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
+const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner.
+ * Compact bottom-LEFT card (never bottom-right, never full-bleed bottom bar):
+ *   - bottom-right is reserved for .ls-dock / .whatsapp-float primary actions
+ *   - left/center hero + section seeds stay free via open-state clearance
+ *   - stays in the editor iframe bottom so builder #toast can sit top under
+ *     body.editor-preview-cookie-isolated without vertical overlap
+ * Open state is class-driven (html/body.hb-cookie-open) AND :has() so clearance
+ * still applies if either signal is missing in a preview paint.
+ */
 .hb-cookie-banner {
   position: fixed;
   z-index: 40;
-  left: 1rem;
+  top: auto;
+  left: 0.75rem;
   right: auto;
-  bottom: 1rem;
-  max-width: min(22rem, calc(100vw - 2rem));
+  bottom: 0.75rem;
+  max-width: min(14.5rem, calc(100vw - 5.5rem));
   margin: 0;
-  padding: 0.85rem 1rem;
+  padding: 0.65rem 0.8rem;
   border-radius: 12px;
   background: #111;
   color: #f5f5f5;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.82rem;
+  line-height: 1.35;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.5rem;
   pointer-events: auto;
 }
-@media (max-width: 520px) {
+/* Narrow canvases: local-service full-bleed call dock sits at bottom:0 — keep
+ * the card above that strip so Sună / WhatsApp stay fully tappable. */
+@media (max-width: 899px) {
   .hb-cookie-banner {
-    left: 0.75rem;
-    right: 0.75rem;
-    max-width: none;
-    bottom: 0.75rem;
+    left: 0.5rem;
+    right: auto;
+    bottom: 4.5rem;
+    max-width: min(12.5rem, calc(100vw - 1rem));
+    padding: 0.5rem 0.6rem;
+    font-size: 0.76rem;
   }
 }
+/* Clearance token — class + :has so preview paints cannot drop the lift. */
+html.hb-cookie-open,
+body.hb-cookie-open,
+body:has(#hb-cookie-banner:not([hidden])) {
+  --hb-cookie-clearance: 9.5rem;
+  scroll-padding-bottom: var(--hb-cookie-clearance);
+}
+/* Bottom-aligned hero pitch / section seeds clear the left corner card. */
+html.hb-cookie-open .ls-hero__copy,
+body.hb-cookie-open .ls-hero__copy,
+body:has(#hb-cookie-banner:not([hidden])) .ls-hero__copy,
+html.hb-cookie-open .pf-hero__copy,
+body.hb-cookie-open .pf-hero__copy,
+body:has(#hb-cookie-banner:not([hidden])) .pf-hero__copy,
+html.hb-cookie-open .pm-hero__copy,
+body.hb-cookie-open .pm-hero__copy,
+body:has(#hb-cookie-banner:not([hidden])) .pm-hero__copy,
+html.hb-cookie-open .pr-hero__copy,
+body.hb-cookie-open .pr-hero__copy,
+body:has(#hb-cookie-banner:not([hidden])) .pr-hero__copy,
+html.hb-cookie-open .hero-content,
+body.hb-cookie-open .hero-content,
+body:has(#hb-cookie-banner:not([hidden])) .hero-content {
+  padding-bottom: calc(var(--hb-cookie-clearance) + 0.5rem);
+  box-sizing: border-box;
+}
+html.hb-cookie-open .pf-hero__frame,
+body.hb-cookie-open .pf-hero__frame,
+body:has(#hb-cookie-banner:not([hidden])) .pf-hero__frame,
+html.hb-cookie-open .ls-hero__cut,
+body.hb-cookie-open .ls-hero__cut,
+body:has(#hb-cookie-banner:not([hidden])) .ls-hero__cut,
+html.hb-cookie-open .pr-hero,
+body.hb-cookie-open .pr-hero,
+body:has(#hb-cookie-banner:not([hidden])) .pr-hero,
+html.hb-cookie-open header.hero,
+body.hb-cookie-open header.hero,
+body:has(#hb-cookie-banner:not([hidden])) header.hero {
+  box-sizing: border-box;
+  padding-bottom: var(--hb-cookie-clearance);
+}
+/* Section titles near the fold — keep clear of the left corner card. */
+html.hb-cookie-open .pm-ticket__label,
+body.hb-cookie-open .pm-ticket__label,
+body:has(#hb-cookie-banner:not([hidden])) .pm-ticket__label,
+html.hb-cookie-open .pm-menublock__h,
+body.hb-cookie-open .pm-menublock__h,
+body:has(#hb-cookie-banner:not([hidden])) .pm-menublock__h,
+html.hb-cookie-open .pm-rail__label,
+body.hb-cookie-open .pm-rail__label,
+body:has(#hb-cookie-banner:not([hidden])) .pm-rail__label {
+  max-width: calc(100% - min(15rem, 42vw));
+  box-sizing: border-box;
+}
+/* Absolute scroll cues — right-aligned and above the left corner card. */
+html.hb-cookie-open .scroll-indicator,
+body.hb-cookie-open .scroll-indicator,
+body:has(#hb-cookie-banner:not([hidden])) .scroll-indicator,
+html.hb-cookie-open .ls-scroll,
+body.hb-cookie-open .ls-scroll,
+body:has(#hb-cookie-banner:not([hidden])) .ls-scroll,
+html.hb-cookie-open .pf-hint,
+body.hb-cookie-open .pf-hint,
+body:has(#hb-cookie-banner:not([hidden])) .pf-hint,
+html.hb-cookie-open .scroll-hint,
+body.hb-cookie-open .scroll-hint,
+body:has(#hb-cookie-banner:not([hidden])) .scroll-hint {
+  bottom: calc(var(--hb-cookie-clearance) + 0.35rem) !important;
+  left: auto !important;
+  right: 1.1rem !important;
+  transform: none !important;
+  align-items: flex-end !important;
+  text-align: right !important;
+}
+/* Primary call docks / WA floats stay bottom-right — opposite corner from the
+ * consent card — so they remain fully readable and tappable without a fragile
+ * bottom-lift race against the card height. */
 .hb-cookie-banner[hidden] { display: none !important; }
 .hb-cookie-banner p { margin: 0; opacity: 0.92; }
 .hb-cookie-banner a { color: #c8e6c9; text-decoration: underline; }
@@ -316,6 +406,21 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     try { localStorage.setItem(KEY, 'accepted'); } catch (e) { /* private mode */ }
     try { document.cookie = KEY + '=accepted; Path=/; Max-Age=31536000; SameSite=Lax'; } catch (e) { /* ignore */ }
   }
+  function setOpenClass(on) {
+    try {
+      var root = document.documentElement;
+      if (root && root.classList) {
+        if (on) root.classList.add('hb-cookie-open');
+        else root.classList.remove('hb-cookie-open');
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (document.body && document.body.classList) {
+        if (on) document.body.classList.add('hb-cookie-open');
+        else document.body.classList.remove('hb-cookie-open');
+      }
+    } catch (e) { /* ignore */ }
+  }
   function hideBanner() {
     var el = document.getElementById('hb-cookie-banner');
     if (!el) return;
@@ -323,6 +428,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     try { el.setAttribute('hidden', ''); } catch (e) { /* ignore */ }
     try { el.style.setProperty('display', 'none', 'important'); } catch (e) { /* ignore */ }
     try { el.setAttribute('data-hb-consent-dismissed', 'true'); } catch (e) { /* ignore */ }
+    setOpenClass(false);
   }
   function accept(e) {
     // Avoid preventDefault: on pointerdown it can suppress the subsequent click
@@ -378,6 +484,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     el.hidden = false;
     try { el.removeAttribute('hidden'); } catch (e) { /* ignore */ }
     try { el.style.removeProperty('display'); } catch (e) { /* ignore */ }
+    setOpenClass(true);
     bindButton(document.getElementById('hb-cookie-accept'));
     markReady(el);
   }
@@ -397,7 +504,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
 const COOKIE_BANNER_HTML = `    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
       <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
       <div class="hb-cookie-actions">
-        <button type="button" id="hb-cookie-accept" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}">Acceptă</button>
+        <button type="button" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}" id="hb-cookie-accept">Acceptă</button>
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
       </div>
     </div>

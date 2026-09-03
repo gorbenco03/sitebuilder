@@ -26,9 +26,11 @@ const BUILDER_HTML = 'builder/index.html';
 
 /** Same-origin paths strangers open from the builder footer. */
 const LEGAL_PAGES = [
-    { label: 'Terms', file: 'builder/terms.html', path: '/app/terms.html', hrefRe: /\/app\/terms\.html/i },
-    { label: 'Privacy', file: 'builder/privacy.html', path: '/app/privacy.html', hrefRe: /\/app\/privacy\.html/i },
-    { label: 'Cookies', file: 'builder/cookies.html', path: '/app/cookies.html', hrefRe: /\/app\/cookies\.html/i },
+    // Footer chrome still uses English link labels (Terms/Privacy/Cookies);
+    // document <title> + <h1> are Romanian product language (advocate-eed3ca0).
+    { label: 'Terms', topicRe: /Termeni|Terms/i, file: 'builder/terms.html', path: '/app/terms.html', hrefRe: /\/app\/terms\.html/i },
+    { label: 'Privacy', topicRe: /Confidențialitate|Privacy/i, file: 'builder/privacy.html', path: '/app/privacy.html', hrefRe: /\/app\/privacy\.html/i },
+    { label: 'Cookies', topicRe: /Cookie-uri|Cookies/i, file: 'builder/cookies.html', path: '/app/cookies.html', hrefRe: /\/app\/cookies\.html/i },
 ];
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'w7-legal-'));
@@ -186,7 +188,8 @@ function httpGet(port, urlPath) {
             const src = headRead(p.file);
             assertLegalPageBody(src, p.label);
             assert.ok(
-                new RegExp(`<title>[^<]*${p.label}`, 'i').test(src) || new RegExp(`<h1[^>]*>[^<]*${p.label}`, 'i').test(src),
+                new RegExp(`<title>[^<]*(?:${p.topicRe.source})`, 'i').test(src) ||
+                    new RegExp(`<h1[^>]*>[^<]*(?:${p.topicRe.source})`, 'i').test(src),
                 `${p.label}: title or h1 should name the page topic`
             );
         }

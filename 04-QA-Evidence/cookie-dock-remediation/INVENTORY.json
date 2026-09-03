@@ -1,0 +1,124 @@
+{
+  "generatedAt": "2026-09-03T22:27:21.367Z",
+  "inventory": [
+    {
+      "file": "local-service-cookie-open-desktop.png",
+      "system": "local-service",
+      "viewport": "desktop",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 5,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "portfolio-cookie-open-desktop.png",
+      "system": "portfolio",
+      "viewport": "desktop",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "product-menu-cookie-open-desktop.png",
+      "system": "product-menu",
+      "viewport": "desktop",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "professionals-cookie-open-desktop.png",
+      "system": "professionals",
+      "viewport": "desktop",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "desserdirina-cookie-open-desktop.png",
+      "system": "desserdirina",
+      "viewport": "desktop",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "local-service-cookie-open-mobile.png",
+      "system": "local-service",
+      "viewport": "mobile",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 5,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "portfolio-cookie-open-mobile.png",
+      "system": "portfolio",
+      "viewport": "mobile",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "product-menu-cookie-open-mobile.png",
+      "system": "product-menu",
+      "viewport": "mobile",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "professionals-cookie-open-mobile.png",
+      "system": "professionals",
+      "viewport": "mobile",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "desserdirina-cookie-open-mobile.png",
+      "system": "desserdirina",
+      "viewport": "mobile",
+      "bannerCorner": "left",
+      "openClass": true,
+      "actionCount": 2,
+      "overlaps": 0,
+      "ok": true
+    },
+    {
+      "file": "legal-terms-title-desktop.png",
+      "title": "Termeni de utilizare — Hidook Site Builder",
+      "expected": "Termeni de utilizare — Hidook Site Builder",
+      "ok": true
+    },
+    {
+      "file": "legal-privacy-title-desktop.png",
+      "title": "Confidențialitate — Hidook Site Builder",
+      "expected": "Confidențialitate — Hidook Site Builder",
+      "ok": true
+    },
+    {
+      "file": "legal-cookies-title-desktop.png",
+      "title": "Cookie-uri — Hidook Site Builder",
+      "expected": "Cookie-uri — Hidook Site Builder",
+      "ok": true
+    }
+  ],
+  "failures": []
+}

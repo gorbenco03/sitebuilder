@@ -70,9 +70,21 @@ ul, ol { list-style: none; }
     background: linear-gradient(180deg, rgba(15,23,32,0.2) 0%, rgba(15,23,32,0.78) 100%);
 }
 .ls-hero__copy { position: relative; z-index: 1; padding: clamp(3rem, 10vw, 6rem) 22px 3rem; max-width: var(--max); }
-.ls-hero__name, .ls-hero__tag, .hero-tagline {
-    font-family: var(--display); font-weight: 700; line-height: 1.08; letter-spacing: -0.02em;
+.ls-hero__name {
+    font-family: var(--display); font-weight: 700; line-height: 1.12; letter-spacing: -0.02em;
     font-size: clamp(2.1rem, 6vw, 3.4rem);
+    overflow: visible;
+}
+/* Tagline keeps display scale but wraps inside the canvas so long RO seed lines
+   (e.g. «Renovări interioare și finisaje premium») never clip horizontally. */
+.ls-hero__tag, .hero-tagline {
+    font-family: var(--display); font-weight: 700; line-height: 1.18; letter-spacing: -0.02em;
+    font-size: clamp(2.1rem, 6vw, 3.4rem);
+    max-width: min(18ch, 100%);
+    overflow: visible;
+    overflow-wrap: break-word;
+    word-break: normal;
+    white-space: normal;
 }
 .ls-hero__logo { height: 40px; margin-bottom: 1rem; }
 .ls-meters { display: flex; flex-wrap: wrap; gap: 1.75rem; margin: 1.5rem 0; }
