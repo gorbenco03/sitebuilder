@@ -614,6 +614,7 @@ a.pr-contact__row:hover { border-color: var(--accent); }
 .wa-qr__title { margin: 0 2rem 1rem; font-family: var(--display); font-size: 1.55rem; line-height: 1.2; }
 .wa-qr__code { display: grid; place-items: center; min-height: 260px; padding: 10px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
 .wa-qr__code img { display: block; max-width: 100%; height: auto; }
+.wa-qr__code svg { display: block; max-width: 100%; height: auto; }
 .wa-qr__open { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin-top: 1rem; padding: 0.7rem 1.15rem; background: #25D366; color: #fff; border-radius: 999px; font-size: 0.85rem; font-weight: 600; }
 
 @media (prefers-reduced-motion: reduce) {

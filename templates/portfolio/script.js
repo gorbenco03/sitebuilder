@@ -10,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initWhatsAppQR();
 });
 
+/**
+ * WhatsApp QR modal — desktop only.
+ * On mobile the wa.me link opens directly (keeps the pre-filled message draft).
+ * On desktop we show a QR generated locally (zero external CDN) so the user can scan with their phone.
+ */
 /* ─────────────────────────────────────────────────────────────
    Minimal QR Code generator — pure vanilla JS, no CDN.
    Based on the ISO 18004 QR Code standard, numeric/alphanumeric/byte modes.
@@ -230,56 +235,54 @@ document.addEventListener('DOMContentLoaded', () => {
     root.generateQRSVG = function (text, size) { return toSVG(encode(text), size || 240); };
 })(window);
 
-/**
- * WhatsApp QR modal — desktop only.
- * On mobile the wa.me link opens directly (keeps the pre-filled message draft).
- * On desktop we show a QR generated locally (zero external CDN) so the user can scan with their phone.
- */
 function initWhatsAppQR() {
-    var modal  = document.getElementById('wa-qr');
-    var qrWrap = document.getElementById('wa-qr-img');
-    var links  = document.querySelectorAll('a[href*="wa.me"]');
-    if (!modal || !qrWrap || !links.length) return;
+    var modal = document.getElementById('wa-qr');
+    var img = document.getElementById('wa-qr-img');
+    var links = document.querySelectorAll('a[href*="wa.me"]');
+    if (!modal || !img || !links.length) return;
 
-    var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
-        || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
-    if (isMobile) return;
+    // Desktop viewport / UA only — do not treat Mac trackpads as phones (maxTouchPoints).
+    var ua = navigator.userAgent || '';
+    var isMobileUa = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+    var narrow = false;
+    try { narrow = window.matchMedia && window.matchMedia('(max-width: 720px)').matches; } catch (_) {}
+    if (isMobileUa && narrow) return;
 
     var openBtn = document.getElementById('wa-qr-open');
 
-    function openQr(waUrl) {
-        // Generate QR locally — no network request
-        var svg = window.generateQRSVG(waUrl, 240);
+    function paintQr(waUrl) {
+        var svg = (typeof window.generateQRSVG === 'function') ? window.generateQRSVG(waUrl, 240) : '';
         if (svg) {
-            // Replace img with inline SVG (img element kept for layout, replaced by sibling)
-            var existing = modal.querySelector('.wa-qr__svg');
-            if (existing) existing.remove();
-            var wrapper = document.createElement('div');
-            wrapper.className = 'wa-qr__svg';
-            wrapper.innerHTML = svg;
-            qrWrap.replaceWith(wrapper);
+            img.removeAttribute('src');
+            img.setAttribute('alt', 'Cod QR WhatsApp');
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            img.style.display = 'block';
+            var old = modal.querySelector('.wa-qr__svg');
+            if (old) old.remove();
         }
         if (openBtn) openBtn.href = waUrl;
         modal.hidden = false;
+        try { modal.removeAttribute('hidden'); } catch (_) {}
         document.body.style.overflow = 'hidden';
     }
 
     function closeQr() {
         modal.hidden = true;
+        try { modal.setAttribute('hidden', ''); } catch (_) {}
         document.body.style.overflow = '';
     }
 
     links.forEach(function (a) {
         a.addEventListener('click', function (e) {
             e.preventDefault();
-            openQr(a.href);
+            e.stopPropagation();
+            paintQr(a.href);
         });
     });
 
     modal.querySelectorAll('[data-wa-close]').forEach(function (el) {
         el.addEventListener('click', closeQr);
     });
-
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && !modal.hidden) closeQr();
     });

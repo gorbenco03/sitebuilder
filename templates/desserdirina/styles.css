@@ -1279,6 +1279,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     border-radius: 16px;
 }
 .wa-qr__code img {
+
     width: 240px;
     max-width: 100%;
     height: auto;
@@ -1286,6 +1287,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     background: #fff;
     display: block;
 }
+.wa-qr__code svg { display: block; max-width: 100%; height: auto; }
 .wa-qr__open {
     display: inline-flex;
     align-items: center;

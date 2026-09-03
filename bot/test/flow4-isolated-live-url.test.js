@@ -263,7 +263,9 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
         assert.ok(/Termeni/.test(terms), 'terms Romanian title');
         assert.ok(/Confidențialitate|Confiden/.test(privacy), 'privacy Romanian');
         assert.ok(/Cookie-uri/.test(cookies), 'cookies Romanian');
-        assert.ok(/text juridic provizoriu/i.test(blob), 'RO unfinished customer legal framing');
+        // Finished SaaS RO copy (no factory "text juridic provizoriu"); still labelled product framing.
+        assert.ok(!/text juridic provizoriu/i.test(blob), 'no leftover provisional juridic factory copy');
+        assert.ok(/product placeholder|consultanță juridică personalizată/i.test(blob), 'product framing label');
     });
 
     await check('HEAD: no PUBLIC_URL throw in _isolatedDeploy; relative /live fallback', () => {

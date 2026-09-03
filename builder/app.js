@@ -68,13 +68,17 @@ function setLoading(visible, msg) {
   const overlay = $('loading-overlay');
   if (!overlay) return;
   const msgEl = $('loading-msg');
-  if (msgEl && msg) msgEl.textContent = msg;
   if (visible) {
+    if (msgEl && msg) msgEl.textContent = msg;
     overlay.classList.remove('hidden');
     overlay.style.display = '';
+    overlay.setAttribute('aria-busy', 'true');
   } else {
+    // Clear immediately so success/error dialogs never sit under "Se confirmă plata…"
+    if (msgEl) msgEl.textContent = '';
     overlay.classList.add('hidden');
-    setTimeout(() => { if (overlay.classList.contains('hidden')) overlay.style.display = 'none'; }, 250);
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-busy', 'false');
   }
 }
 
@@ -1444,6 +1448,7 @@ function openDrawer() {
   show(drawer);
   drawerOpen = true;
   setDrawerPref('open');
+  document.body.classList.add('details-drawer-open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'true');
   // Focus first field
@@ -1458,6 +1463,7 @@ function closeDrawer() {
   hide($('details-drawer'));
   drawerOpen = false;
   setDrawerPref('closed');
+  document.body.classList.remove('details-drawer-open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'false');
   // Re-render if any drawer field was edited (deferred)
@@ -2481,6 +2487,10 @@ async function apiGet(url) {
  */
 async function downloadDraftHtml() {
   const btn = $('btn-download-html');
+  if (!currentUser) {
+    showToast('Intră în cont ca să descarci HTML-ul.', 'error', 5000);
+    return;
+  }
   if (btn) btn.disabled = true;
   try {
     if (!draft.templateId || !draft.config) {
@@ -2510,7 +2520,7 @@ async function downloadDraftHtml() {
     });
     if (!res.ok) {
       const msg = res.status === 401
-        ? 'Intră în cont ca să descarci ciorna ca HTML.'
+        ? 'Intră în cont ca să descarci HTML-ul.'
         : res.status === 402
           ? 'Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul.'
           : 'Nu am putut descărca HTML-ul.';
@@ -2542,8 +2552,14 @@ async function downloadDraftHtml() {
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
     showToast('HTML descărcat.', 'success', 2500);
-  } catch (_) {
-    showToast('Nu am putut descărca HTML-ul.', 'error', 5000);
+  } catch (err) {
+    const status = err && err.status;
+    const msg = status === 401
+      ? 'Autentifică-te ca să descarci HTML-ul.'
+      : status === 402
+        ? 'Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul.'
+        : 'Nu am putut descărca HTML-ul.';
+    showToast(msg, 'error', 5000);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -3225,6 +3241,8 @@ function wireAuthForm(onAuthSuccess) {
               if (user) {
                 updateUserUI(user);
                 closeModal('modal-publish');
+                hideToast();
+                clearPreviewOverlays();
                 if (onAuthSuccess) {
                   setLoading(true, 'Se publică…');
                   try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
@@ -3250,7 +3268,27 @@ function wireAuthForm(onAuthSuccess) {
   }
 }
 
+function clearPreviewOverlays() {
+  try {
+    const iframe = getPreviewIframe && getPreviewIframe();
+    const doc = iframe && (iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document));
+    if (!doc) return;
+    const qr = doc.getElementById('wa-qr');
+    if (qr) {
+      qr.hidden = true;
+      try { qr.setAttribute('hidden', ''); } catch (_) {}
+    }
+    try { doc.body.style.overflow = ''; } catch (_) {}
+  } catch (_) { /* cross-origin or missing preview */ }
+}
+
 function showSuccessScreen(url, paymentUrl) {
+  // One coherent chrome state: never stack pay-loading / QR / stale toasts on success.
+  setLoading(false);
+  hideToast();
+  clearPreviewOverlays();
+  closeModal('modal-publish');
+
   const titleEl = $('modal-success-title');
   const draftNote = $('success-draft-note');
   const urlText = $('success-url-text');
@@ -3334,6 +3372,10 @@ async function completeTestCheckout(sessionId) {
       await ensureDraftBoundToPaidSite(site.id);
       saveDraft();
     }
+    // Drop pay-loading before any success chrome so title and loader never contradict.
+    setLoading(false);
+    hideToast();
+    clearPreviewOverlays();
     if (site && isLiveSiteUrl(site.url)) {
       sitePaymentUrl = null;
       showSuccessScreen(site.url, null);
@@ -3360,6 +3402,7 @@ async function completeTestCheckout(sessionId) {
       showToast('Plata a fost procesată.', 'success', 5000);
     }
   } catch (e) {
+    setLoading(false);
     showToast('Nu am putut confirma plata. Încearcă din nou.', 'error', 6000);
   } finally {
     setLoading(false);

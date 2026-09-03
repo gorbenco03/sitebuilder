@@ -95,7 +95,7 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  z-index: 9999;
+  z-index: 900;
   font-size: 0.92rem;
   color: var(--text-muted);
   transition: opacity var(--transition-md);
@@ -103,6 +103,7 @@ input, textarea, select {
 .loading-overlay.hidden {
   opacity: 0;
   pointer-events: none;
+  display: none !important;
 }
 
 /* ---------- Spinners ---------- */
@@ -311,14 +312,16 @@ input, textarea, select {
   padding: 0 0.75rem;
   gap: 0.5rem;
   z-index: 200;
+  overflow: hidden;
 }
 
 .editor-topbar-left {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 28%;
 }
 
 .editor-topbar-center {
@@ -332,8 +335,11 @@ input, textarea, select {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   justify-content: flex-end;
+  flex-wrap: nowrap;
+  overflow: visible;
 }
 
 .editor-tpl-name {
@@ -373,8 +379,47 @@ input, textarea, select {
 .btn-topbar-label {
   display: none;
 }
-@media (min-width: 540px) {
+/* Keep download + Details labels readable without packing the full toolbar. */
+@media (min-width: 720px) {
+  #btn-download-html .btn-topbar-label,
+  #btn-download-zip .btn-topbar-label,
+  #btn-open-drawer .btn-topbar-label {
+    display: inline;
+  }
+}
+/* Full labels only on wide chrome where nothing clips. */
+@media (min-width: 1500px) {
   .btn-topbar-label { display: inline; }
+}
+
+/* Details drawer overlays the right edge — reserve space so topbar labels never clip under it. */
+body.details-drawer-open .editor-topbar {
+  padding-right: calc(min(400px, 94vw) + 0.5rem);
+}
+body.details-drawer-open .editor-topbar-left {
+  max-width: 18%;
+}
+body.details-drawer-open .editor-tpl-name {
+  max-width: 7rem;
+}
+/* When drawer is open at typical laptop widths, prefer compact icon labels over clipped text. */
+@media (max-width: 1499px) {
+  body.details-drawer-open .btn-topbar-label {
+    display: none !important;
+  }
+  body.details-drawer-open #btn-download-html .btn-topbar-label,
+  body.details-drawer-open #btn-download-zip .btn-topbar-label {
+    display: inline !important;
+    font-size: 0;
+  }
+  body.details-drawer-open #btn-download-html .btn-topbar-label::after {
+    content: 'HTML';
+    font-size: 0.78rem;
+  }
+  body.details-drawer-open #btn-download-zip .btn-topbar-label::after {
+    content: 'ZIP';
+    font-size: 0.78rem;
+  }
 }
 
 .btn-publish-top {
@@ -1415,7 +1460,7 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+  z-index: 1100;
   padding: 1rem;
   animation: fadeIn .15s ease;
 }
@@ -1774,15 +1819,15 @@ input, textarea, select {
 
 .toast {
   position: fixed;
-  bottom: 1.5rem;
   left: 50%;
+  bottom: 1.25rem;
   transform: translateX(-50%);
   background: var(--text);
   color: #fff;
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
   font-size: 0.86rem;
-  z-index: 1000;
+  z-index: 1200;
   box-shadow: var(--shadow-md);
   max-width: calc(100vw - 2rem);
   text-align: center;

@@ -68,12 +68,12 @@ function legalShell(opts) {
 <body>
   <main class="hb-legal">
     <h1>${escapeHtml(h1)}</h1>
-    <p class="hb-legal-meta">${biz} · ${y} · informații legale în curs de completare</p>
+    <p class="hb-legal-meta">${biz} · ${y} · politici de bază ale site-ului</p>
     <div class="hb-legal-notice" role="note">
-      <strong>Informații legale în curs de completare — acest text nu este consultanță juridică.</strong>
-      Această pagină nu reprezintă un text juridic final. Titularul afacerii trebuie să completeze
-      denumirea legală, CUI/VAT, adresa, jurisdicția și furnizorii relevanți. Marcajele
-      <code>[PLACEHOLDER …]</code> indică informațiile care lipsesc încă.
+      <strong>Politici de bază pentru site-ul publicat — nu sunt consultanță juridică personalizată.</strong>
+      Titularul afacerii completează datele de identificare (denumire legală, CUI/VAT, adresă, jurisdicție)
+      în locurile marcate <code>[PLACEHOLDER …]</code>. Până atunci, aceste pagini descriu practicile tipice
+      ale site-ului generat (formulare, cookie-uri esențiale, contact).
     </div>
     ${body}
     <nav class="hb-legal-nav" aria-label="Pagini legale">
@@ -214,23 +214,31 @@ function cookiesHtml(config) {
 const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner */
 .hb-cookie-banner {
   position: fixed;
-  z-index: 99999;
+  z-index: 40;
   left: 1rem;
-  right: 1rem;
+  right: auto;
   bottom: 1rem;
-  max-width: 32rem;
-  margin: 0 auto;
-  padding: 1rem 1.1rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.85rem 1rem;
   border-radius: 12px;
   background: #111;
   color: #f5f5f5;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   line-height: 1.45;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.65rem;
   pointer-events: auto;
+}
+@media (max-width: 520px) {
+  .hb-cookie-banner {
+    left: 0.75rem;
+    right: 0.75rem;
+    max-width: none;
+    bottom: 0.75rem;
+  }
 }
 .hb-cookie-banner[hidden] { display: none !important; }
 .hb-cookie-banner p { margin: 0; opacity: 0.92; }

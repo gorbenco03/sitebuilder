@@ -1,0 +1,663 @@
+{
+  "oracle": "fullpass-63230d2",
+  "version": 1,
+  "gitHead": "b9ec4bcfabf7cbc4aa478b32983534f8a6d08194",
+  "boot": {
+    "HIDOOK_TEST_PAY": "1",
+    "HIDOOK_ISOLATED_DEPLOY": "1",
+    "PUBLIC_URL": null,
+    "HIDOOK_FAKE_DEPLOY": null,
+    "liveStripeKeys": false
+  },
+  "startedAt": "2026-09-03T19:47:52.732Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "landing-cookie-banner",
+      "action": "open /app/",
+      "selector": "#hb-cookie-banner",
+      "screenshot": "01-landing-cookie-banner.png",
+      "screenshotSha256": "c64c85b9e5e3cfaaada81c86e51e261f2a9b3d364bf44097c90a50d7a69af067",
+      "timestamp": "2026-09-03T19:47:54.730Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "cookie banner visible on first load"
+      }
+    },
+    {
+      "index": 1,
+      "step": "accepted-cookie-landing",
+      "action": "click",
+      "selector": "#hb-cookie-accept",
+      "screenshot": "02-accepted-cookie-landing.png",
+      "screenshotSha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-03T19:47:54.861Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "banner dismissed; catalog landing"
+      }
+    },
+    {
+      "index": 2,
+      "step": "catalog-filter-all",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"all\"]",
+      "screenshot": "03-catalog-filter-all.png",
+      "screenshotSha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-03T19:47:55.271Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip all"
+      }
+    },
+    {
+      "index": 3,
+      "step": "catalog-filter-product-menu",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"product-menu\"]",
+      "screenshot": "04-catalog-filter-product-menu.png",
+      "screenshotSha256": "f7a41a2319d32fbf62aecc67b3e4d70746b0aae51fe2d7faaf0414d32a51abaf",
+      "timestamp": "2026-09-03T19:47:55.642Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip product-menu"
+      }
+    },
+    {
+      "index": 4,
+      "step": "catalog-filter-portfolio",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"portfolio\"]",
+      "screenshot": "05-catalog-filter-portfolio.png",
+      "screenshotSha256": "874c4cb61067e2b4c59e003ba74bfdbc7f43649935bf9de9a8488e7f1ee42462",
+      "timestamp": "2026-09-03T19:47:56.031Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip portfolio"
+      }
+    },
+    {
+      "index": 5,
+      "step": "catalog-filter-local-service",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"local-service\"]",
+      "screenshot": "06-catalog-filter-local-service.png",
+      "screenshotSha256": "4edf7e0b0a7a3eac24030ed1086b2e8ea1e8655f58041d35d0b344bbfe18599c",
+      "timestamp": "2026-09-03T19:47:56.400Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip local-service"
+      }
+    },
+    {
+      "index": 6,
+      "step": "catalog-filter-professionals",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"professionals\"]",
+      "screenshot": "07-catalog-filter-professionals.png",
+      "screenshotSha256": "573cebaf339335c5a76452e745944f13107bb8aebbd7f0607eb0542df13f9d85",
+      "timestamp": "2026-09-03T19:47:56.775Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip professionals"
+      }
+    },
+    {
+      "index": 7,
+      "step": "catalog-filter-desserdirina",
+      "action": "click",
+      "selector": ".catalog-chip[data-filter=\"desserdirina\"]",
+      "screenshot": "08-catalog-filter-desserdirina.png",
+      "screenshotSha256": "74c3b6a493a87711a6d443765b3988f5155dfe1eac5654c6eb7f23baeb19515a",
+      "timestamp": "2026-09-03T19:47:57.152Z",
+      "url": "http://127.0.0.1:55922/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "chip desserdirina"
+      }
+    },
+    {
+      "index": 8,
+      "step": "legal-terms",
+      "action": "open",
+      "selector": "/app/terms.html",
+      "screenshot": "09-legal-terms.png",
+      "screenshotSha256": "d6270d003401653c08fb39dd65317ea2f2eb31b904b7f8055c3263038a068978",
+      "timestamp": "2026-09-03T19:47:57.786Z",
+      "url": "http://127.0.0.1:55922/app/terms.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:55922/app/terms.html"
+      }
+    },
+    {
+      "index": 9,
+      "step": "legal-privacy",
+      "action": "open",
+      "selector": "/app/privacy.html",
+      "screenshot": "10-legal-privacy.png",
+      "screenshotSha256": "6066fe43e2f70359e97d7868177b55f32b607ed2dfd81b72600f01151633e298",
+      "timestamp": "2026-09-03T19:47:58.377Z",
+      "url": "http://127.0.0.1:55922/app/privacy.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:55922/app/privacy.html"
+      }
+    },
+    {
+      "index": 10,
+      "step": "legal-cookies",
+      "action": "open",
+      "selector": "/app/cookies.html",
+      "screenshot": "11-legal-cookies.png",
+      "screenshotSha256": "346ee036ac733582fab0d1bd290a7ad652de15e84bfeca5fcdf81cca06e59baf",
+      "timestamp": "2026-09-03T19:47:58.964Z",
+      "url": "http://127.0.0.1:55922/app/cookies.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:55922/app/cookies.html"
+      }
+    },
+    {
+      "index": 11,
+      "step": "professionals-details-auto-open",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
+      "screenshot": "12-professionals-details-auto-open.png",
+      "screenshotSha256": "df0213468e2770bebc53deaee3a471bb09b6574687e0ddee1b1f9ef95a780073",
+      "timestamp": "2026-09-03T19:48:01.269Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true"
+      }
+    },
+    {
+      "index": 12,
+      "step": "professionals-pressed-editor-chrome",
+      "action": "click-loop",
+      "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
+      "screenshot": "13-professionals-pressed-editor-chrome.png",
+      "screenshotSha256": "33e5b478b432b04b76aebfd719d61d842eb7921720a5c42b707c39302d2d60ba",
+      "timestamp": "2026-09-03T19:48:02.466Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pressed device/color after closing Details"
+      }
+    },
+    {
+      "index": 13,
+      "step": "professionals-calcom-filled",
+      "action": "fill+close-drawer",
+      "selector": "#dr_appointment_bookingUrl",
+      "screenshot": "14-professionals-calcom-filled.png",
+      "screenshotSha256": "608d1000b21d97964063d698a718b1556b2edd6f336eba344e24ba024f1af3f1",
+      "timestamp": "2026-09-03T19:48:04.982Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "bookingLinkCount=1"
+      }
+    },
+    {
+      "index": 14,
+      "step": "professionals-calcom-cleared",
+      "action": "fill-empty+close-drawer",
+      "selector": "#dr_appointment_bookingUrl",
+      "screenshot": "15-professionals-calcom-cleared.png",
+      "screenshotSha256": "608d1000b21d97964063d698a718b1556b2edd6f336eba344e24ba024f1af3f1",
+      "timestamp": "2026-09-03T19:48:06.880Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "leakedCalLinks=0"
+      }
+    },
+    {
+      "index": 15,
+      "step": "professionals-whatsapp-qr",
+      "action": "click",
+      "selector": ".whatsapp-float",
+      "screenshot": "16-professionals-whatsapp-qr.png",
+      "screenshotSha256": "ae4a45f8c9c412b209ef0d8fac81aafcb137f04d038c5c05a292d9ba18af45d2",
+      "timestamp": "2026-09-03T19:48:07.774Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "qrVisible=true"
+      }
+    },
+    {
+      "index": 16,
+      "step": "local-service-details-auto-open",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"local-service\"] .btn-start-tpl",
+      "screenshot": "17-local-service-details-auto-open.png",
+      "screenshotSha256": "301c6ce20160874243de3a19606f4d61c76732b663a11c4f71cfce16867b2c6c",
+      "timestamp": "2026-09-03T19:48:29.522Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true"
+      }
+    },
+    {
+      "index": 17,
+      "step": "local-service-pressed-editor-chrome",
+      "action": "click-loop",
+      "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
+      "screenshot": "18-local-service-pressed-editor-chrome.png",
+      "screenshotSha256": "184dfddbb7f94af11ea3683e7a6b12ea01e681213fefca1d292c960b63bbb556",
+      "timestamp": "2026-09-03T19:48:30.710Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pressed device/color after closing Details"
+      }
+    },
+    {
+      "index": 18,
+      "step": "local-service-add-item",
+      "action": "click",
+      "selector": "#preview-iframe .hb-add-btn",
+      "screenshot": "19-local-service-add-item.png",
+      "screenshotSha256": "7609ca94749595bc0cc96a80ce49dedb3069a73baa4a2e5a6d0032508a2f16ec",
+      "timestamp": "2026-09-03T19:48:35.023Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "added repeatable item"
+      }
+    },
+    {
+      "index": 19,
+      "step": "local-service-whatsapp-qr",
+      "action": "click",
+      "selector": ".whatsapp-float",
+      "screenshot": "20-local-service-whatsapp-qr.png",
+      "screenshotSha256": "2e54f928d69f6537f4bda55082a2aceb88ca50aa608dccad7e6f34f434cb62c8",
+      "timestamp": "2026-09-03T19:48:35.913Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "qrVisible=true"
+      }
+    },
+    {
+      "index": 20,
+      "step": "portfolio-details-auto-open",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"portfolio\"] .btn-start-tpl",
+      "screenshot": "21-portfolio-details-auto-open.png",
+      "screenshotSha256": "74a7e37e2fa780b7a4acb0cf6c21e5eae590953074ec69b5ef9f79adac04f178",
+      "timestamp": "2026-09-03T19:48:57.668Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true"
+      }
+    },
+    {
+      "index": 21,
+      "step": "portfolio-pressed-editor-chrome",
+      "action": "click-loop",
+      "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
+      "screenshot": "22-portfolio-pressed-editor-chrome.png",
+      "screenshotSha256": "9b213a971f2dff2f61fae1397b41ede1925466ad8e205198e106f8f335e9f20c",
+      "timestamp": "2026-09-03T19:48:58.847Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pressed device/color after closing Details"
+      }
+    },
+    {
+      "index": 22,
+      "step": "portfolio-add-item",
+      "action": "click",
+      "selector": "#preview-iframe .hb-add-btn",
+      "screenshot": "23-portfolio-add-item.png",
+      "screenshotSha256": "552a7078b3bb2407a69d90049bfc12267d5ca88669e8ebfb7fa8de06a3f214e7",
+      "timestamp": "2026-09-03T19:49:03.161Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "added repeatable item"
+      }
+    },
+    {
+      "index": 23,
+      "step": "portfolio-whatsapp-qr",
+      "action": "click",
+      "selector": ".whatsapp-float",
+      "screenshot": "24-portfolio-whatsapp-qr.png",
+      "screenshotSha256": "8db743f2442e3f1285e9a9e40a50594e37ff46171164849ae00536787e45dbca",
+      "timestamp": "2026-09-03T19:49:04.046Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "qrVisible=true"
+      }
+    },
+    {
+      "index": 24,
+      "step": "product-menu-details-auto-open",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"product-menu\"] .btn-start-tpl",
+      "screenshot": "25-product-menu-details-auto-open.png",
+      "screenshotSha256": "a2a3fdcaf01af53d8d75c83168c02755d4a19da536b9189164fa6fd6a18aad37",
+      "timestamp": "2026-09-03T19:49:25.757Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true"
+      }
+    },
+    {
+      "index": 25,
+      "step": "product-menu-pressed-editor-chrome",
+      "action": "click-loop",
+      "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
+      "screenshot": "26-product-menu-pressed-editor-chrome.png",
+      "screenshotSha256": "6bb39c0879d5e913d49575b1f001aedbb54e7c25265c52f691f5d01f5e89ffa9",
+      "timestamp": "2026-09-03T19:49:26.883Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pressed device/color after closing Details"
+      }
+    },
+    {
+      "index": 26,
+      "step": "product-menu-add-item",
+      "action": "click",
+      "selector": "#preview-iframe .hb-add-btn",
+      "screenshot": "27-product-menu-add-item.png",
+      "screenshotSha256": "f36d1aa113ecd53c4431c37feaf8dcfb10c75f6f048829cbeb9c47621def5b2f",
+      "timestamp": "2026-09-03T19:49:31.168Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "added repeatable item"
+      }
+    },
+    {
+      "index": 27,
+      "step": "product-menu-whatsapp-qr",
+      "action": "click",
+      "selector": ".whatsapp-float",
+      "screenshot": "28-product-menu-whatsapp-qr.png",
+      "screenshotSha256": "23bc88eb46626775f56f40daf2bbdf29bbfbdc8952a058005ccb6b1e11bf1968",
+      "timestamp": "2026-09-03T19:49:32.075Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "qrVisible=true"
+      }
+    },
+    {
+      "index": 28,
+      "step": "desserdirina-details-auto-open",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"desserdirina\"] .btn-start-tpl",
+      "screenshot": "29-desserdirina-details-auto-open.png",
+      "screenshotSha256": "8b860a4ffb90d15a46d314d6e6066fea857b2e22195b188de5eeed98fa2bbe36",
+      "timestamp": "2026-09-03T19:49:53.822Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true"
+      }
+    },
+    {
+      "index": 29,
+      "step": "desserdirina-pressed-editor-chrome",
+      "action": "click-loop",
+      "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
+      "screenshot": "30-desserdirina-pressed-editor-chrome.png",
+      "screenshotSha256": "e4ba4578ec2f228f9db20c28895026b28d4b5b1245b2b4b6e734896bf680f828",
+      "timestamp": "2026-09-03T19:49:54.998Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pressed device/color after closing Details"
+      }
+    },
+    {
+      "index": 30,
+      "step": "desserdirina-whatsapp-qr",
+      "action": "click",
+      "selector": ".whatsapp-float",
+      "screenshot": "31-desserdirina-whatsapp-qr.png",
+      "screenshotSha256": "7f78c10f88b950bbf41400711616b65862a770b18e0b0d3e15423dbb28160a5f",
+      "timestamp": "2026-09-03T19:49:58.857Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "qrVisible=true"
+      }
+    },
+    {
+      "index": 31,
+      "step": "unpaid-export-html",
+      "action": "click",
+      "selector": "#btn-download-html",
+      "screenshot": "32-unpaid-export-html.png",
+      "screenshotSha256": "07d757f5c968f9e34d8c4b56158342d1154639508ca743e243c964615228ce50",
+      "timestamp": "2026-09-03T19:50:19.694Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Intră în cont ca să descarci HTML-ul."
+      }
+    },
+    {
+      "index": 32,
+      "step": "unpaid-export-zip",
+      "action": "click",
+      "selector": "#btn-download-zip",
+      "screenshot": "33-unpaid-export-zip.png",
+      "screenshotSha256": "f116c19a2bbf0d29501c366d9cace8fedc06280ea427bda4158fb6652baa3f33",
+      "timestamp": "2026-09-03T19:50:20.488Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Autentifică-te ca să descarci ZIP-ul."
+      }
+    },
+    {
+      "index": 33,
+      "step": "instagram-modal-closed-connect",
+      "action": "click",
+      "selector": "#btn-add-instagram",
+      "screenshot": "34-instagram-modal-closed-connect.png",
+      "screenshotSha256": "2d69547ab1171738a1ca1e42f5d200ce984abfa5671e514aa43182035e3e2e1f",
+      "timestamp": "2026-09-03T19:50:20.553Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Instagram modal"
+      }
+    },
+    {
+      "index": 34,
+      "step": "instagram-empty-email-unhappy",
+      "action": "click",
+      "selector": "#btn-ig-send-magic",
+      "screenshot": "35-instagram-empty-email-unhappy.png",
+      "screenshotSha256": "5f614e9e38f97af684ac6f54b5074b4c8a000fbb9f86d6dad1c5862f8a666a8d",
+      "timestamp": "2026-09-03T19:50:21.285Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "empty email submit"
+      }
+    },
+    {
+      "index": 35,
+      "step": "open-publish",
+      "action": "click",
+      "selector": "#btn-publish",
+      "screenshot": "36-open-publish.png",
+      "screenshotSha256": "4ed35e8f1f3cc67530985b996a79e127a8a88d6e24657dae27267f54772a8e7e",
+      "timestamp": "2026-09-03T19:50:21.404Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "publish dialog"
+      }
+    },
+    {
+      "index": 36,
+      "step": "publish-address",
+      "action": "fill+click",
+      "selector": "#input-slug,#btn-publish-continue",
+      "screenshot": "37-publish-address.png",
+      "screenshotSha256": "cb3448255c6a851c856511f59c19a3cec2cd082520cc1f2a318b9b7ae0904a82",
+      "timestamp": "2026-09-03T19:50:21.676Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "fullpass-mtlxwafx"
+      }
+    },
+    {
+      "index": 37,
+      "step": "send-magic-link",
+      "action": "fill+click",
+      "selector": "#input-email,#btn-send-magic",
+      "screenshot": "38-send-magic-link.png",
+      "screenshotSha256": "24025a4e12396ed67012e42bc67097e44d4b92aa7e489e548804423e592a0aad",
+      "timestamp": "2026-09-03T19:50:21.751Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev magic link"
+      }
+    },
+    {
+      "index": 38,
+      "step": "authenticated-unpaid-cta",
+      "action": "click",
+      "selector": "#dev-link",
+      "screenshot": "39-authenticated-unpaid-cta.png",
+      "screenshotSha256": "1b9bd832d35ad12869d81df03cb4ac6893caef74ff1bc34e15c9f1af738e9949",
+      "timestamp": "2026-09-03T19:50:21.840Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "card CTA before test pay"
+      }
+    },
+    {
+      "index": 39,
+      "step": "trial-success-live",
+      "action": "click",
+      "selector": "#btn-pay-publish",
+      "screenshot": "40-trial-success-live.png",
+      "screenshotSha256": "fc68e9346c102cfe54bbd87cad7f521ce16c426dc5a6f5f3b2ff8aa3c0cd5829",
+      "timestamp": "2026-09-03T19:50:22.196Z",
+      "url": "http://127.0.0.1:55922/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "HIDOOK_TEST_PAY live"
+      }
+    },
+    {
+      "index": 40,
+      "step": "return-to-editor-canvas",
+      "action": "click",
+      "selector": "#btn-success-close",
+      "screenshot": "41-return-to-editor-canvas.png",
+      "screenshotSha256": "548b2f2d49b0d823999a5d3b5c04865c5ea2fb660200ec174ffb23bf675f1cc6",
+      "timestamp": "2026-09-03T19:50:23.042Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "canvasVisible=true textLen=1425"
+      }
+    },
+    {
+      "index": 41,
+      "step": "paid-export-html",
+      "action": "click",
+      "selector": "#btn-download-html",
+      "screenshot": "42-paid-export-html.png",
+      "screenshotSha256": "c726caa5de50ff3a2cde37b4b097dff23879e9c423d6f041209fed95659611bc",
+      "timestamp": "2026-09-03T19:50:23.616Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "fullpass-mtlxwafx.html"
+      }
+    },
+    {
+      "index": 42,
+      "step": "paid-export-zip",
+      "action": "click",
+      "selector": "#btn-download-zip",
+      "screenshot": "43-paid-export-zip.png",
+      "screenshotSha256": "9488d97ecf421c3431e817ec852e463555afa6d6b37697f60a32ee2c7c7b0f2e",
+      "timestamp": "2026-09-03T19:50:24.207Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "fullpass-mtlxwafx.zip"
+      }
+    },
+    {
+      "index": 43,
+      "step": "live-site",
+      "action": "open",
+      "selector": "http://127.0.0.1:55922/live/fullpass-mtlxwafx/",
+      "screenshot": "44-live-site.png",
+      "screenshotSha256": "3fb00941a782dc566182d76a372ab5f6365db0bb1258129f6faeca7d8c144b09",
+      "timestamp": "2026-09-03T19:50:25.148Z",
+      "url": "http://127.0.0.1:55922/live/fullpass-mtlxwafx/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "live HTML fetched"
+      }
+    },
+    {
+      "index": 44,
+      "step": "past-due-export-html",
+      "action": "click",
+      "selector": "#btn-download-html",
+      "screenshot": "45-past-due-export-html.png",
+      "screenshotSha256": "5a2055afc43f2403dff2e0f1a534d2eb2146983aab0175ab995c214f3b4ba480",
+      "timestamp": "2026-09-03T19:50:26.064Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "patchedSites=1 toast=Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul."
+      }
+    },
+    {
+      "index": 45,
+      "step": "details-reopen-on-new-design",
+      "action": "click",
+      "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
+      "screenshot": "46-details-reopen-on-new-design.png",
+      "screenshotSha256": "477325696d2eb2c222588266a242f48eb8f13cdfa2850d8acf53bffd726a0b3d",
+      "timestamp": "2026-09-03T19:50:27.521Z",
+      "url": "http://127.0.0.1:55922/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawerVisible=true system=professionals"
+      }
+    }
+  ],
+  "defects": [],
+  "verified": true,
+  "completedAt": "2026-09-03T19:50:27.521Z",
+  "liveHref": "http://127.0.0.1:55922/live/fullpass-mtlxwafx/"
+}
