@@ -43,7 +43,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 - First template load works without refresh on realistic network.
 - Details drawer opens automatically for every newly selected design; a manual close survives reload for the current design but does not suppress the next design selection.
 - Text, images, hero/section backgrounds and theme colors are actually editable and reflected in preview/live.
-- WhatsApp badge is recognizable and supports a user-defined prefilled message.
+- WhatsApp badge is recognizable and supports a user-defined prefilled message. Opening the control shows a horizontally and vertically centered QR in finished customer chrome; the deep-link / QR mechanism is unchanged.
 - Social preview artwork is derived automatically from the current hero/business photography; customers are never asked for an `og:image` URL.
 - Preview is clear before card/trial.
 - Privacy, Cookies and Terms machinery exists; final legal content is owner-gated.

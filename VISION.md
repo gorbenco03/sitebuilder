@@ -101,6 +101,7 @@ Done înseamnă:
 - builder-ul generează `wa.me/<number>?text=<encoded>`;
 - mesajul păstrează diacriticele;
 - dacă nu există număr, badge-ul nu apare rupt;
+- la deschiderea controlului WhatsApp, QR-ul este centrat orizontal și vertical în container; panoul din jur este chrome de produs, nu o cutie goală; mecanismul deep-link/QR rămâne neschimbat;
 - nu se modifică flow-ul Telegram pentru asta; logica se portează în browser/shared.
 
 ### 4.5 Preview
@@ -239,7 +240,7 @@ Acceptare:
 - Desserdirina remake apare ca șablon real;
 - badge Hidook prezent și non-editabil;
 - Details auto-open la fiecare design nou selectat;
-- WhatsApp badge + mesaj custom;
+- WhatsApp badge + mesaj custom; QR-ul din panou este centrat, iar panoul arată ca un produs finit;
 - imaginea pentru distribuire socială se alege automat din fotografia de deschidere sau dintr-o fotografie existentă; clientul nu completează un URL `og:image`;
 - Instafidget menționat ca inclus gratuit 12 luni, apoi Free cu watermark;
 - verificare în browser pe preview și live/test publish.

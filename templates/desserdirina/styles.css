@@ -1220,9 +1220,10 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 .wa-qr__card {
     position: relative;
     background: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.72);
     border-radius: 22px;
     padding: 2rem 1.75rem 1.75rem;
-    max-width: 340px;
+    max-width: 380px;
     width: 100%;
     text-align: center;
     box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
@@ -1258,6 +1259,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.65rem;
     font-weight: 600;
+    line-height: 1.2;
     margin: 0 0 0.4rem;
     color: var(--color-primary-dark, #333);
 }
@@ -1267,26 +1269,39 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     margin: 0 0 1.25rem;
     line-height: 1.45;
 }
+.wa-qr__code {
+    display: grid;
+    place-items: center;
+    min-height: 260px;
+    padding: 10px;
+    background: #fff;
+    border: 1px solid rgba(61, 45, 52, 0.1);
+    border-radius: 16px;
+}
 .wa-qr__code img {
     width: 240px;
-    height: 240px;
+    max-width: 100%;
+    height: auto;
     border-radius: 12px;
     background: #fff;
     display: block;
-    margin: 0 auto;
 }
 .wa-qr__open {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
     margin-top: 1rem;
+    padding: 0.7rem 1.15rem;
     font-size: 0.8rem;
-    font-weight: 500;
-    color: #1eb257;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    opacity: 0.85;
-    transition: opacity 0.2s ease;
+    font-weight: 700;
+    color: #fff;
+    background: #25D366;
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgba(37, 211, 102, 0.24);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.wa-qr__open:hover { opacity: 1; }
+.wa-qr__open:hover { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(37, 211, 102, 0.3); }
 
 .whatsapp-float::before {
     content: '';
