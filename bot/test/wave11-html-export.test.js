@@ -53,6 +53,7 @@ delete process.env.HIDOOK_ADMIN_TOKEN;
 const pricing  = require('../pricing.js');
 const registry = require('../registry.js');
 const auth     = require('../auth.js');
+const webpublish = require('../webpublish.js');
 const { startServer } = require('../server.js');
 
 let failed = 0;
@@ -240,7 +241,26 @@ function assertNoSecretLeak(body) {
         registry.updateSite(site.id, {
             paid: true,
             status: 'live',
-            subscriptionStatus: 'trialing',
+            paidUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
+            stripeSubscriptionId: 'sub_wave11_' + site.id.slice(0, 8),
+        });
+        await webpublish.handleStripeSubscriptionEvent({
+            id: 'evt_wave11_trialing_' + crypto.randomUUID(),
+            type: 'customer.subscription.updated',
+            data: {
+                object: {
+                    id: registry.getSite(site.id).stripeSubscriptionId,
+                    status: 'trialing',
+                    metadata: { siteId: site.id },
+                },
+            },
+        });
+        await check('trialing subscription update persists the entitled Stripe status', () => {
+            assert.strictEqual(
+                registry.getSite(site.id).stripeSubscriptionStatus,
+                'trialing',
+                'trialing webhook persists the entitlement status'
+            );
         });
 
         await check('GET /api/export-html with trial-active site → 200 HTML attachment', async () => {
@@ -272,16 +292,27 @@ function assertNoSecretLeak(body) {
             assert.ok(!/paymentUrl|checkout\.stripe/i.test(res.body), 'not a checkout response');
         });
 
+        await webpublish.handleStripeSubscriptionEvent({
+            id: 'evt_wave11_past_due_' + crypto.randomUUID(),
+            type: 'customer.subscription.updated',
+            data: {
+                object: {
+                    id: registry.getSite(site.id).stripeSubscriptionId,
+                    status: 'past_due',
+                    metadata: { siteId: site.id },
+                },
+            },
+        });
+        await check('past_due subscription update persists the blocking Stripe status', () => {
+            assert.strictEqual(
+                registry.getSite(site.id).stripeSubscriptionStatus,
+                'past_due',
+                'past_due webhook persists the blocking entitlement status'
+            );
+        });
+
         for (const exportKind of ['html', 'zip']) {
-            await check(`GET /api/export-${exportKind} with past_due subscription → 402 and no attachment`, async () => {
-                registry.updateSite(site.id, {
-                    paid: true,
-                    status: 'live',
-                    canceledAt: null,
-                    paidUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
-                    stripeSubscriptionStatus: 'past_due',
-                    subscriptionStatus: 'past_due',
-                });
+            await check(`GET /api/export-${exportKind} after past_due webhook → 402 and no attachment`, async () => {
                 const res = await httpReq(port, '/api/export-' + exportKind + '?siteId=' + encodeURIComponent(site.id), {
                     headers: { Cookie: cookie, Accept: exportKind === 'zip' ? 'application/zip' : 'text/html' },
                 });
@@ -291,6 +322,30 @@ function assertNoSecretLeak(body) {
                 assertNoSecretLeak(res.body);
             });
         }
+
+        await check('other non-entitled subscription updates persist their Stripe status', async () => {
+            for (const status of ['unpaid', 'incomplete', 'incomplete_expired', 'paused']) {
+                await webpublish.handleStripeSubscriptionEvent({
+                    id: 'evt_wave11_' + status + '_' + crypto.randomUUID(),
+                    type: 'customer.subscription.updated',
+                    data: {
+                        object: {
+                            id: registry.getSite(site.id).stripeSubscriptionId,
+                            status,
+                            metadata: { siteId: site.id },
+                        },
+                    },
+                });
+                const fresh = registry.getSite(site.id);
+                assert.strictEqual(fresh.stripeSubscriptionStatus, status, status + ' Stripe status persisted');
+                assert.strictEqual(fresh.subscriptionStatus, status, status + ' compatibility status persisted');
+                const res = await httpReq(port, '/api/export-html?siteId=' + encodeURIComponent(site.id), {
+                    headers: { Cookie: cookie, Accept: 'text/html' },
+                });
+                assert.strictEqual(res.status, 402, status + ' must block HTML export');
+                assert.ok(!res.headers['content-disposition'], status + ' response is not an attachment');
+            }
+        });
 
         for (const exportKind of ['html', 'zip']) {
             await check(`GET /api/export-${exportKind} with expired paidUntil → 402 and no attachment`, async () => {
@@ -318,9 +373,19 @@ function assertNoSecretLeak(body) {
                 status: 'live',
                 canceledAt: null,
                 paidUntil: new Date(Date.now() + 30 * 86400000).toISOString(),
-                stripeSubscriptionStatus: 'active',
-                subscriptionStatus: 'active',
             });
+            await webpublish.handleStripeSubscriptionEvent({
+                id: 'evt_wave11_active_' + crypto.randomUUID(),
+                type: 'customer.subscription.updated',
+                data: {
+                    object: {
+                        id: registry.getSite(site.id).stripeSubscriptionId,
+                        status: 'active',
+                        metadata: { siteId: site.id },
+                    },
+                },
+            });
+            assert.strictEqual(registry.getSite(site.id).stripeSubscriptionStatus, 'active');
             const res = await httpReq(port, '/api/export-zip?siteId=' + encodeURIComponent(site.id), {
                 headers: { Cookie: cookie, Accept: 'application/zip' },
             });

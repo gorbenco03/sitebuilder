@@ -34,7 +34,8 @@ function getFlow() { return require('./flow.js'); }
 /**
  * Web dispatcher: Stripe → webpublish.
  * - checkout.session.completed → handleStripePaid (trial + paid)
- * - customer.subscription.deleted / updated(canceled) → unpublish
+ * - customer.subscription.updated → persist entitlement status; canceled → unpublish
+ * - customer.subscription.deleted → unpublish
  * Exported so focused tests can exercise the Docker/`web.js` path directly.
  *
  * @param {object} event Stripe event

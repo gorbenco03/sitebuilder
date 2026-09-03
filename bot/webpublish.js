@@ -9,8 +9,8 @@
  *     republish last version; if pending draft → first public publish after pay;
  *     notify owner on owner's channel + concierge domain msg.
  *     Also stores stripeCustomerId + stripeSubscriptionId for cancel → unpublish.
- *   - handleStripeSubscriptionEvent: customer.subscription.deleted or
- *     customer.subscription.updated with status=canceled → unpublishSite (idempotent).
+ *   - handleStripeSubscriptionEvent: persist subscription.updated lifecycle status;
+ *     customer.subscription.deleted or status=canceled → unpublishSite (idempotent).
  *   - unpublishSite: stop serving isolated $DATA_DIR/published/<slug>/; registry not live.
  *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
  *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
@@ -122,10 +122,10 @@ function unpublishSite(siteOrId, meta = {}) {
 }
 
 /**
- * Handle Stripe subscription lifecycle for cancel → unpublish.
+ * Handle Stripe subscription lifecycle for entitlement + cancel → unpublish.
  * - customer.subscription.deleted → always unpublish
  * - customer.subscription.updated with status=canceled → unpublish
- * - other statuses → no-op
+ * - other customer.subscription.updated statuses → persist for entitlement checks
  * Idempotent via unpublishSite.
  *
  * @param {object} event Stripe event
@@ -139,11 +139,12 @@ async function handleStripeSubscriptionEvent(event) {
 
     const status = String(sub.status || '').toLowerCase();
     const isDeleted = type === 'customer.subscription.deleted';
+    const isUpdated = type === 'customer.subscription.updated';
     const isCanceledUpdate =
-        type === 'customer.subscription.updated' &&
+        isUpdated &&
         (status === 'canceled' || status === 'cancelled');
 
-    if (!isDeleted && !isCanceledUpdate) {
+    if (!isDeleted && (!isUpdated || !status)) {
         log('webpublish.subscription.ignored', { type, status, subscriptionId: sub.id });
         return null;
     }
@@ -173,10 +174,40 @@ async function handleStripeSubscriptionEvent(event) {
         }
     }
 
-    return unpublishSite(site, {
-        reason: isDeleted ? 'subscription_deleted' : 'subscription_canceled',
-        subscriptionId: sub.id,
-    });
+    if (isDeleted || isCanceledUpdate) {
+        return unpublishSite(site, {
+            reason: isDeleted ? 'subscription_deleted' : 'subscription_canceled',
+            subscriptionId: sub.id,
+        });
+    }
+
+    const patch = {
+        stripeSubscriptionId: sub.id,
+        stripeSubscriptionStatus: status,
+        subscriptionStatus: status,
+    };
+    const customerId = typeof sub.customer === 'string'
+        ? sub.customer
+        : (sub.customer && sub.customer.id);
+    if (customerId) patch.stripeCustomerId = customerId;
+
+    try {
+        const updated = registry.updateSite(site.id, patch);
+        log('webpublish.subscription.status_updated', {
+            siteId: site.id,
+            status,
+            subscriptionId: sub.id,
+        });
+        return updated;
+    } catch (e) {
+        log('webpublish.subscription.status_update_failed', {
+            siteId: site.id,
+            status,
+            subscriptionId: sub.id,
+            err: e.message,
+        }, 'error');
+        return null;
+    }
 }
 
 // ---------------------------------------------------------------------------

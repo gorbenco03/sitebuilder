@@ -26,6 +26,7 @@ Webhook cancel → site comes down:
 
 - `customer.subscription.deleted` → **unpublish** (isolated: remove `$DATA_DIR/published/<slug>/`; registry status not live). Idempotent.
 - `customer.subscription.updated` with `status=canceled` → same unpublish.
+- Other `customer.subscription.updated` lifecycle states are persisted on the site. Export remains available only for `active` / `trialing`; `past_due`, `unpaid`, `incomplete`, `incomplete_expired` and `paused` block HTML/ZIP even when historical `paid=true` and `paidUntil` is still in the future.
 - Cancel during the 7-day trial does **not** charge (no invoice paid yet). Refunds for any later charge stay owner-side via **Dashboard / Customer Portal**.
 
 Amounts stay in `bot/pricing.js` (`PRICE_CENTS=9900` first period, `RENEWAL_CENTS=2900` yearly after). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code. Session metadata alone does **not** change Stripe invoices; the schedule does.
@@ -52,7 +53,7 @@ Use Stripe **test cards** only. Do not set live keys until you intentionally go 
 Listen for (in addition to checkout):
 
 - `customer.subscription.deleted`
-- `customer.subscription.updated` (app only acts when `status=canceled`)
+- `customer.subscription.updated` (app persists lifecycle status for publish/export entitlement and unpublishes when `status=canceled`)
 
 ---
 
@@ -73,7 +74,7 @@ Studio will not ask for these until you decide. Steps:
    `https://<public-host>/webhooks/stripe`.
    Events: **`checkout.session.completed`**, **`customer.subscription.deleted`**, **`customer.subscription.updated`**.
    The paid handler creates/updates a **subscription schedule** on the new subscription.
-   Cancel webhooks **unpublish** the public site.
+   Subscription updates persist the Stripe lifecycle status used by publish/export entitlement; cancel/delete webhooks **unpublish** the public site.
 5. Enable **Customer Portal** for cancel/refund self-serve (Dashboard → Settings → Billing → Customer portal).
    Builder **Cancel** calls `POST /api/sites/:id/billing-portal` → Stripe `billing_portal.sessions`.
 6. Confirm `NODE_ENV=production` and that `HIDOOK_TEST_PAY`, `HIDOOK_FAKE_DEPLOY`, `HIDOOK_ISOLATED_DEPLOY`, `ALLOW_FREE_PUBLISH` are **unset**.
