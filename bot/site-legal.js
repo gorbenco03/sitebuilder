@@ -403,7 +403,7 @@ body:has(#hb-cookie-banner:not([hidden])) .pm-rail__label {
   box-sizing: border-box;
 }
 /* Scroll / explore labels — never under the FAB. Do NOT force left placement
- * (that put centered absolute cues like desserdirina under the cookie card).
+ * (that previously put centered absolute scroll cues under the cookie card).
  * Preserve each template's horizontal anchor; only enforce safe max-width and
  * a lifted bottom while consent is open. */
 .pf-hint,
