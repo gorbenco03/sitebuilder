@@ -2,7 +2,7 @@
 
 **Autoritate:** acest fișier este sursa de adevăr pentru Site Builder până când owner-ul îl schimbă explicit. Orice `PRODUCT.md`, `AGENTS.md`, task Kanban, spec vechi sau comentariu care contrazice acest document este depășit.
 
-**Sincronizat:** 2026-09-02. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional din 2026-09-01, poarta comercială pentru export și Details auto-open per design nou din `00-Governance/OWNER-FEEDBACK-2026-09-02.md` și regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
+**Sincronizat:** 2026-09-04. Bază: spec Opus 5 `t_7f6ffed8` / `OWNER-FEEDBACK-2026-08-26-SPEC.md` + deciziile owner ulterioare, inclusiv calendarul Professional nativ Hidook din 2026-09-04 (supersedează Cal.com-link-only 2026-09-01 și override-ul same-day self-hosted cal.diy), poarta comercială pentru export și Details auto-open per design nou din `00-Governance/OWNER-FEEDBACK-2026-09-02.md` și regulile noi de studio anti-buclă din `Desktop/Hermes/00-Governance/AGENCY-COMPANY-CONTRACT.md`.
 
 ## 1. Ce este produsul
 
@@ -181,15 +181,102 @@ Reguli:
 
 ## 8. Calendar Professional
 
-Decizia owner din 2026-09-01: Hidook **nu** găzduiește cal.diy. Fiecare client Professional își creează propriul cont gratuit Cal.com și lipește linkul de rezervare în Detalii.
+**Override owner 2026-09-04 — NATIVE HIDOOK (LOCKED).** Supersedează atât decizia Cal.com-link-only din 2026-09-01, cât și override-ul earlier same-day (2026-09-04) pentru self-hosted cal.diy / Cal.com Platform. Calendarul Professional final este un **modul nativ Hidook construit în interiorul Site Builder** — **nu** cal.diy, **nu** Cal.com Platform, **nu** embed/integrare către un calendar third-party self-hosted.
 
-Reguli:
+Stare: **țintă forward-looking — NU ESTE CONSTRUIT ÎNCĂ.** Comportamentul ship-uit azi pe site-urile Professional rămâne formularul local de cerere de programare (și, unde e setat, linkul Cal.com opțional din Detalii). Niciun flux nativ de booking, dashboard de programări sau motor de availability nu există încă în produs.
 
-- linkul este opțional; fără link, formularul local de cerere rămâne neschimbat;
-- se acceptă numai linkuri complete `http://` sau `https://`, inclusiv domenii Cal.com personalizate;
-- cu link valid, secțiunea Programări afișează `Programează-te` în tab nou și înlocuiește formularul local;
-- fără iframe, popup sau infrastructură calendar Hidook;
-- contul Cal.com și gestionarea rezervărilor aparțin clientului Professional.
+Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **netulburat și nelegat** de Site Builder: nu se șterge, nu se oprește, nu se modifică din acest track, și **nu** se construiește nicio integrare Site Builder → acel pilot. Este un experiment separat, irelevant pentru arhitectura de mai jos.
+
+### Ce primește fiecare client Professional (țintă)
+
+- disponibilitate izolată, servicii, rezervări și un **dashboard privat de programări** (doar owner-ul autentificat al site-ului);
+- pe site-ul public: un **calendar de booking direct** (nu link extern, nu iframe third-party);
+- primul canal de notificare: **email tranzacțional** only. Telegram opt-in și WhatsApp / Meta Cloud API sunt adaptoare ulterioare — **nu** se construiesc și **nu** se fake-uiesc acum.
+
+### Decizii owner-locked (2026-09-04) — obligatorii la implementare
+
+**State machine booking**
+
+- stări minime: `requested` și `confirmed` (plus `cancelled` / `reschedule_needed` pe lifecycle);
+- default: **confirmare instant** doar când slotul e liber (fără conflict); dacă există conflict de slot, booking-ul rămâne `requested` / `reschedule_needed` — **nu** se confirmă peste un slot ocupat;
+- visitorul și owner-ul văd starea reală; niciodată „confirmat” fals.
+
+**Blocare slot / race prevention**
+
+- sistemul de record previne double-book prin **constraint unic la nivel de DB** și/sau **lock tranzacțional pe (tenant/site + service + slot)**;
+- optimistic-only (check-then-write fără lock/unique) este **interzis** ca singură apărare.
+
+**Anulare / reprogramare**
+
+- **Owner** (autentificat): poate anula sau reprograma orice booking al site-ului său;
+- **Visitor**: poate anula/reprograma doar cu token-ul de gestionare primit pe email, în fereastra de timp configurată de owner (default produs: cu cel puțin 24h înainte de startul slotului; owner poate strânge, nu lărgi peste un plafon rezonabil documentat la implementare);
+- la anulare/reprogramare validă, slotul se **eliberează** imediat pentru alți visitors; starea anterioară rămâne auditată (nu se șterge istoricul brut fără politică de retenție).
+
+**Timezone**
+
+- stocare canonică: **UTC**;
+- timezone-ul de operare al site-ului = timezone-ul owner-ului (setat o dată în setările calendarului);
+- visitorul vede orele în timezone-ul local al browserului (display only); confirmările email includ atât ora owner cât și, unde e util, echivalentul local al visitorului;
+- fără ambiguitate DST: conversiile trec mereu prin UTC.
+
+**Availability / holiday / blackout**
+
+- model: **disponibilitate săptămânală recurentă** (ex. Lu–Vi 09:00–17:00 pe timezone owner) + **override-uri pe dată** (blackout / holiday / ore speciale pe o zi calendaristică);
+- blackout-urile câștigă în fața recurentului; un slot generat trebuie să respecte ambele straturi + durata serviciului + buffer-ul configurat.
+
+**Date personale — minimizare și retenție**
+
+- PII visitor stocat per booking: **nume, email, telefon (opțional), notă scurtă (opțional)** — nimic în plus (fără adresă, CNP, fișiere, tracking third-party);
+- retenție default: păstrate cât timp contul Professional e activ + **24 luni** după anularea abonamentului / ștergerea site-ului, apoi ștergere sau anonimizare; owner poate cere ștergere anticipată (drept de ștergere);
+- nu se loghează body-uri complete de email cu PII în plain text lung-lived fără need-to-know.
+
+**Tenant boundaries**
+
+- cheie de izolare = **Site Builder customer id + site id**;
+- datele unui Professional **nu** sunt query-abile de alt Professional (nici prin API public, nici prin dashboard, nici prin job-uri interne fără scope de tenant);
+- oracle de izolare tenant e obligatoriu înainte de cutover.
+
+**Access control**
+
+- dashboard availability / bookings: **doar** owner-ul autentificat al acelui site;
+- endpoint-ul public de booking este **write-mostly** (citește doar sloturi libere agregate pentru acel site; creează booking); **nu** expune lista de bookings, PII al altor visitors, availability raw a altor tenanți, sau id-uri interne străine;
+- token-urile de anulare/reprogramare visitor sunt unice, unguessable, și scoped la un singur booking.
+
+**Email delivery**
+
+- interfață generică de provider (boundary): implementare reală + **harness local/test** care nu trimite pe fir și nu cere secrete de producție;
+- retry policy documentată (ex. backoff exponențial, N încercări, apoi dead-letter auditat);
+- status de livrare (queued / sent / failed / suppressed) stocat și auditat **fără** a expune API keys, SMTP passwords sau secrets în UI, export HTML, sau loguri publice;
+- niciun sender real de producție și niciun secret live pe acest track până la owner gate separat.
+
+**Dashboard mobile**
+
+- dashboard-ul owner de programări / availability trebuie să fie **util și lizibil la 390px** lățime (mobile-first; fără controale tăiate, fără tabele care forțează scroll orizontal pe acțiunile critice).
+
+**Outage / error path (site public)**
+
+- dacă backend-ul de booking e down, timeout, sau returnează eroare: site-ul public arată un **mesaj clar în română** că programările online sunt temporar indisponibile + cale alternativă onestă (ex. contact WhatsApp/telefon din Detalii, dacă există) — **niciodată** un formular tăcut stricat, spinner infinit, sau submit care pretinde succes;
+- fallback-ul nu inventează confirmări.
+
+**System of record + migrare staged**
+
+- system of record pentru bookings / availability / services = **magazin relațional production-fit** (nu fișiere JSON mutabile ca sursă de adevăr);
+- migrarea este **staged și non-destructivă**: formularul local de cerere de programare (comportamentul curent) rămâne neschimbat până când flow-ul nativ trece QA/advocate; **fără** migrare distructivă, **fără** regressie a comportamentului curent înainte de cutover explicit;
+- cutover per site doar după oracle verde + dovezi de flow.
+
+### Ce NU face acest track
+
+- integrare Site Builder → cal.diy / Cal.com Platform / pilotul Railway „Hidook Calendar”;
+- Telegram / WhatsApp ca canal de notificare booking (mai târziu);
+- Stripe/DNS/secrete de producție în secvența de mai jos.
+
+### Secvență de livrare (inițiativă fresh)
+
+1. acest decision packet + design canvases;
+2. model de date nativ + booking engine + oracle de izolare tenant;
+3. UI public de booking + dashboard owner + editor de availability;
+4. email harness + audit de livrare;
+5. cutover staged de la formularul local de cerere + QA/advocate full + proof-of-flow.
 
 ## 9. Landing page Site Builder
 
