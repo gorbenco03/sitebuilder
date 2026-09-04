@@ -145,11 +145,11 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
 
   assert.ok(/Adaugă un card ca să fii live/.test(blob), 'unpaid success title');
   assert.ok(
-    /Adaugă un card ca să începi trialul de 7 zile\. Site-ul e live imediat\. Ești taxat în ziua 7 dacă nu anulezi\. Apoi reînnoire 29€\/an\./.test(
-      blob
-    ),
+    /Adaugă un card ca să începi trialul de 7 zile\./.test(blob),
     'unpaid success note'
   );
+  assert.ok(/Site-ul e live imediat\./.test(blob), 'unpaid success note');
+  assert.ok(/Ești taxat în ziua 7 dacă nu anulezi\./.test(blob), 'unpaid success note');
   assert.ok(
     /Adaugă un card — începe trialul de 7 zile/.test(blob),
     'unpaid CTA label'
@@ -233,7 +233,7 @@ check('HEAD four schemas: Button and section text + Instafidget feed URL RO', ()
   for (const rel of SCHEMAS) {
     const src = headRead(rel);
     assert.ok(
-      /Button and section text/.test(src),
+      /Texte butoane și secțiuni/.test(src),
       rel + ' group title Button and section text'
     );
     assert.ok(

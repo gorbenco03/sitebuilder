@@ -138,7 +138,7 @@ check('HEAD professionals instagram.gallery label is photo list (no path/URL fac
   assert.ok(typeof f.label === 'string' && f.label.length > 4, 'label present');
   assert.ok(!labelHasFactoryPathHint(f.label), 'no URLs or images/... in label');
   assert.ok(
-    /Instagram gallery photos/i.test(f.label) || /gallery photos/i.test(f.label),
+    /Poze galerie Instagram/.test(f.label),
     'still a photo list label: ' + f.label
   );
 });

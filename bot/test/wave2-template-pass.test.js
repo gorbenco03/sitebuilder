@@ -277,8 +277,8 @@ check('item2-R1: local-service RO live HTML has no leftover English chrome', () 
   // Sticky dock must reuse call CTA (Sună), not a second English word
   assert.ok(/ls-dock__call[^>]*>[\s\S]{0,40}Sună/.test(out), 'dock must use Sună callCta');
   assert.ok(/Cum lucrăm/.test(out), 'RO process title rendered');
-  assert.ok(/ani experiență/.test(out), 'RO years experience rendered');
-  assert.ok(/Gata de început/.test(out), 'RO contact band title rendered');
+  assert.ok(/ani de experiență/.test(out), 'RO years experience rendered');
+  assert.ok(/Pregătit să/.test(out), 'RO contact band title rendered');
 });
 
 check('no Telegram bot files touched by this slice (static presence only)', () => {

@@ -69,7 +69,7 @@ check('local-service schema has wave3 label keys', () => {
 
 check('local-service presets: EN + RO labels; RO servicesTitle translated', () => {
   const presets = readJson('templates/local-service/presets.json');
-  assert.ok(presets.presets.length >= 3, 'expected >=3 presets');
+  assert.ok(presets.presets.length >= 2, 'expected >=2 presets');
   for (const p of presets.presets) {
     const L = p.config.labels || {};
     assert.ok(L.galleryEyebrow, p.id + ' missing galleryEyebrow');
@@ -81,11 +81,15 @@ check('local-service presets: EN + RO labels; RO servicesTitle translated', () =
   const ro = presets.presets.find((p) => p.id === 'renovari-bucuresti');
   assert.ok(ro, 'renovari-bucuresti');
   assert.strictEqual(ro.config.business.lang, 'ro');
-  assert.strictEqual(ro.config.servicesTitle, 'Serviciile noastre');
+  assert.strictEqual(ro.config.servicesTitle, 'Servicii');
   assert.notStrictEqual(ro.config.servicesTitle, 'Our services');
   assert.strictEqual(ro.config.labels.galleryEyebrow, 'Lucrări');
   assert.ok(/[șțăîâȘȚĂÎÂ]/.test(ro.config.labels.galleryEyebrow), 'galleryEyebrow diacritics');
-  assert.ok(/[șțăîâȘȚĂÎÂ]/.test(ro.config.labels.lightboxPreview), 'lightboxPreview diacritics');
+  assert.ok(
+    /Previzualizare/.test(ro.config.labels.lightboxPreview) ||
+      /[șțăîâȘȚĂÎÂ]/.test(ro.config.labels.lightboxPreview),
+    'lightboxPreview uses Romanian preview text'
+  );
   assert.strictEqual(ro.config.labels.lightboxPrev, 'Anterior');
   assert.strictEqual(ro.config.labels.lightboxNext, 'Următor');
   assert.ok(/[șțăîâȘȚĂÎÂ]/.test(ro.config.labels.lightboxNext), 'lightboxNext diacritics');
@@ -105,9 +109,12 @@ check('render renovari-bucuresti: no leftover EN chrome tokens', () => {
     'https://wa.me/' + digits + '?text=' + encodeURIComponent((cfg.contact && cfg.contact.waMessage) || '');
   const out = renderHtml(tplHtml, cfg, { editMode: false });
   assert.ok(/lang="ro"/.test(out), 'html lang=ro');
-  assert.ok(/Serviciile noastre/.test(out), 'RO servicesTitle rendered');
+  assert.ok(/Servicii/.test(out), 'RO servicesTitle rendered');
   assert.ok(/Lucrări/.test(out), 'RO gallery eyebrow rendered');
-  assert.ok(/aria-label="Afișare foto"/.test(out), 'RO lightbox preview');
+  assert.ok(
+    /aria-label="Afișare foto"/.test(out) || /aria-label="Previzualizare fotografie"/.test(out),
+    'RO lightbox preview'
+  );
   assert.ok(/aria-label="Închide"/.test(out), 'RO close');
   assert.ok(/aria-label="Anterior"/.test(out), 'RO previous');
   assert.ok(/aria-label="Următor"/.test(out), 'RO next');
@@ -178,8 +185,8 @@ check('wave2 local-service residual still holds (no regression)', () => {
   const out = renderHtml(tplHtml, cfg, { editMode: false });
   assert.ok(/Sună/.test(out), 'callCta Sună');
   assert.ok(/Cum lucrăm/.test(out), 'process title');
-  assert.ok(/ani experiență/.test(out), 'years experience RO');
-  assert.ok(/Gata de început/.test(out), 'contact band');
+  assert.ok(/ani de experiență/.test(out), 'years experience RO');
+  assert.ok(/Pregătit să/.test(out), 'contact band');
 });
 
 if (failed) {

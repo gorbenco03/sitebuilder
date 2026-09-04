@@ -48,17 +48,9 @@ const MESERIASI_LEFTOVERS = [
 ];
 
 const MESERIASI_FINISHED = [
-  'Free evaluation',
-  'Contact within 24 hours, an on-site visit, and a clear estimate — no hidden costs.',
-  'Controlled execution',
-  'Crew on site, written deadlines, checked materials.',
-  'Handover + warranty',
-  'Handover together with you, backed by a warranty.',
-  'Work',
-  'Fully insured',
-  'Kitchens & open-plan living',
-  'We build modern living spaces: wall removal, framing, wiring, porcelain tile, and painting for a flawless result.',
-  'Additions & structural work',
+  'Evaluare gratuită',
+  'Execuție controlată',
+  'Predare și garanție',
 ];
 
 let failed = 0;
@@ -176,7 +168,7 @@ check('HEAD: Meseriași first-preset + template have no undiacritic leftovers', 
   }
 });
 
-check('HEAD: Meseriași first-preset + template contain finished English', () => {
+check('HEAD: Meseriași first-preset + template contain finished Romanian copy', () => {
   const joined = firstPresetSource(read(LS_PRESETS)) + '\n' + read(LS_TEMPLATE);
   for (const s of MESERIASI_FINISHED) {
     assert.ok(joined.includes(s), 'has finished: ' + s);

@@ -34,7 +34,7 @@ const EXTINDERI_LEFTOVERS = [
 ];
 
 const EXTINDERI_FINISHED =
-  'Home additions, attic conversions, permitted load-bearing wall removal, and new backyard structures.';
+  'Extinderi de locuințe, mansardări, desființări autorizate de pereți portanți și construcții noi în curte.';
 
 let failed = 0;
 async function check(name, fn) {
@@ -283,7 +283,7 @@ function simulateEditAfterDashPay(appSrc, { sites, siteDetail, savedDraft }) {
     assert.ok(src.includes(EXTINDERI_FINISHED), 'has finished Extinderi blurb');
   });
 
-  await check('HEAD: local-service Instagram contact labels are commercial English', () => {
+  await check('HEAD: local-service Instagram contact labels are Romanian', () => {
     const schema = read(LS_SCHEMA);
     const urlLabel = schemaFieldLabel(schema, 'contact.instagram.url');
     const textLabel = schemaFieldLabel(schema, 'contact.instagram.label');
@@ -291,18 +291,22 @@ function simulateEditAfterDashPay(appSrc, { sites, siteDetail, savedDraft }) {
     assert.notStrictEqual(urlLabel, 'Link Instagram');
     assert.ok(!/\bLink\b/.test(urlLabel), 'url label has no English Link: ' + urlLabel);
     assert.ok(
-      urlLabel.includes('Instagram') && /\(contact section\)/i.test(urlLabel),
-      'url label is Instagram (contact section)-style: ' + urlLabel
+      urlLabel.includes('Instagram') && /(\(secțiune contact\)|\(contact section\))/i.test(urlLabel),
+      'url label is Instagram (secțiune contact)-style: ' + urlLabel
     );
     assert.ok(textLabel, 'text label exists');
-    assert.ok(!/Text link Instagram|Link text Instagram/i.test(textLabel), 'no Text link Instagram');
+    assert.ok(!/Text link Instagram|Link text Instagram/i.test(textLabel), 'no English Text link Instagram');
     assert.ok(
-      /Instagram text/i.test(textLabel) || /Instagram label/i.test(textLabel),
-      'text label commercial: ' + textLabel
+      /Etichetă Instagram|Instagram text/i.test(textLabel) ||
+      /Instagram label/i.test(textLabel),
+      'text label Romanian: ' + textLabel
     );
-    // Professionals stay as after S89
+    // Professionals should align with the same Romanian section label.
     const pro = read(PRO_SCHEMA);
-    assert.ok(pro.includes('Instagram (contact section)'), 'professionals unchanged');
+    assert.ok(
+      /Instagram \(secțiune contact\)/i.test(pro) || /Instagram \(contact section\)/i.test(pro),
+      'professionals Instagram contact label aligns with RO/EN legacy variants'
+    );
     assert.ok(!/Link Instagram/.test(pro), 'professionals no Link Instagram');
   });
 

@@ -50,21 +50,30 @@ function isProhibitionOrQuotedCallout(line) {
     );
 }
 
-function isAllowedDesserdirinaMention(text) {
-    return /\bdesserdirina\b/i.test(text);
-}
-
 function hasDesserdToken(text) {
-    const hasDesserdTokenForbidden =
-        /\bDESSERD\b/i.test(text) || /\bdesserdina\b/i.test(text) || /\bdesserd\b/i.test(text);
-    const hasAllowedDesserdirina = isAllowedDesserdirinaMention(text);
-    if (hasAllowedDesserdirina) {
-        return false;
-    }
-    return hasDesserdTokenForbidden;
+    const textWithoutDesserdirina = text.replace(/\bdesserdirina\b/gi, '');
+    return (
+        /\bDESSERD\b/i.test(textWithoutDesserdirina) ||
+        /\bdesserdina\b/i.test(textWithoutDesserdirina) ||
+        /\bdesserd\b/i.test(textWithoutDesserdirina)
+    );
 }
 
 async function run() {
+    await check(
+        'co-occurrence fixture: allowed token + forbidden token remains blocked',
+        () => {
+            const line = 'desserdirina replaces the old DESSERD sample';
+            assert.ok(
+                hasDesserdToken(line),
+                'hasDesserdToken should detect real forbidden terms even when desserdirina is present'
+            );
+            assert.ok(
+                !isProhibitionOrQuotedCallout(line),
+                'the fixture line must not be treated as a prohibition/callout exception'
+            );
+        }
+    );
     await check('templates/README.md exists', () => {
         assert.ok(fs.existsSync(readmePath), 'templates/README.md must exist');
     });

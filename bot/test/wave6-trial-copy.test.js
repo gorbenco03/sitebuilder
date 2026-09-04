@@ -126,7 +126,7 @@ check('HEAD builder keeps Hidook Site Builder; no DESSERD / factory / free-trial
 check('HEAD Instagram pre-trial copy (not before you pay)', () => {
     const html = headRead('builder/index.html');
     assert.ok(
-        /before you start the trial/i.test(html),
+        /înainte\s+să\s+începi\s+trialul|before\s+you\s+start\s+the\s+trial/i.test(html),
         'Instagram may connect before trial starts'
     );
     assert.ok(!/before you pay/i.test(html), 'no leftover before you pay');

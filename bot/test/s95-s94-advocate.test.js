@@ -28,15 +28,12 @@ const INDEX_HTML = 'builder/index.html';
 
 const BAD_CONTACT_IG_LABEL = 'Link Instagram pentru secțiunea contact';
 const BAD_IG_URL_LABEL = 'Link complet Instagram (https://www.instagram.com/...)';
-const GOOD_CONTACT_IG = 'Instagram (contact section)';
-const GOOD_IG_URL = 'Instagram URL (https://www.instagram.com/...)';
+const GOOD_CONTACT_IG = 'Instagram (secțiune contact)';
+const GOOD_IG_URL = 'URL Instagram (https://www.instagram.com/...)';
 // Causal-RED constants: the pre-translation Romanian about text (checked against git history).
 const GATIM_BAD = 'Gatim seara';
 const GATIM_GOOD = 'Gătim seara';
-// HEAD constants: ASCII-hyphen mojibake vs the correct typographic em dash in the
-// finished English about copy — same "finished, not degraded" invariant, new language.
-const COOK_BAD_EN = 'We cook at night -';
-const COOK_GOOD_EN = 'We cook at night —';
+const COOK_RO = 'Gătim seara —';
 
 let failed = 0;
 function check(name, fn) {
@@ -225,14 +222,14 @@ check('HEAD: product-menu contact.instagram.url is commercial English without Li
   assert.notStrictEqual(urlLabel, BAD_CONTACT_IG_LABEL);
   assert.ok(!/\bLink\b/.test(urlLabel), 'no English Link: ' + urlLabel);
   assert.ok(
-    urlLabel.includes('Instagram') && /\(contact section\)/i.test(urlLabel),
+    urlLabel.includes('Instagram') && /\(secțiune contact\)|\(contact section\)/i.test(urlLabel),
     'Instagram (contact section)-style: ' + urlLabel
   );
   assert.strictEqual(urlLabel, GOOD_CONTACT_IG, 'exact family label');
   assert.ok(textLabel, 'text label');
   assert.ok(!/Textul linkului Instagram/i.test(textLabel), 'no Textul linkului Instagram');
   assert.ok(
-    /Instagram label/i.test(textLabel),
+    /Etichetă Instagram|Instagram label/i.test(textLabel),
     'text label commercial: ' + textLabel
   );
 });
@@ -242,8 +239,7 @@ check('HEAD: product-menu instagram.url has no English Link', () => {
   const label = schemaFieldLabel(schema, 'instagram.url');
   assert.ok(label, 'instagram.url label');
   assert.ok(!/\bLink\b/.test(label), 'no English Link: ' + label);
-  assert.ok(
-    /Instagram URL/i.test(label) && /instagram\.com/i.test(label),
+  assert.ok((/Instagram URL/i.test(label) || /URL Instagram/i.test(label)) && /instagram\.com/i.test(label),
     'Instagram URL (...): ' + label
   );
   assert.strictEqual(label, GOOD_IG_URL, 'exact feed url label');
@@ -259,17 +255,18 @@ check('HEAD: portfolio contact.instagram.url same commercial English (no Link)',
   assert.ok(!/\bLink\b/.test(urlLabel), 'portfolio no Link: ' + urlLabel);
   assert.strictEqual(urlLabel, GOOD_CONTACT_IG);
   assert.ok(textLabel && !/Textul linkului Instagram/i.test(textLabel), 'portfolio text label');
-  assert.ok(/Instagram text/i.test(textLabel), 'portfolio Instagram text: ' + textLabel);
+  assert.ok(/Etichetă Instagram|Instagram text/i.test(textLabel), 'portfolio Instagram text: ' + textLabel);
   assert.ok(igUrl && !/\bLink\b/.test(igUrl), 'portfolio ig.url no Link: ' + igUrl);
-  assert.strictEqual(igUrl, 'Instagram URL (https://www.instagram.com/...)');
+  assert.ok(/Instagram URL/.test(igUrl) || /URL Instagram/.test(igUrl), 'portfolio has URL label');
+  assert.strictEqual(igUrl, 'URL Instagram (https://www.instagram.com/...)');
 });
 
-check('HEAD: restaurant first-preset about has "We cook at night —", not a stripped hyphen', () => {
+check('HEAD: restaurant first-preset about has "Gătim seara —"', () => {
   const about = firstPresetAbout(read(PM_PRESETS));
-  assert.ok(about.includes(COOK_GOOD_EN), 'has "We cook at night —"');
-  assert.ok(!about.includes(COOK_BAD_EN), 'no "We cook at night -" (ASCII hyphen)');
+  assert.ok(about.includes(COOK_RO), 'has "Gătim seara —"');
+  assert.ok(!about.includes('We cook'), 'no English about block');
   // Full about still has the rest of the sentence (not truncated rewrite).
-  assert.ok(/We cook at night\s*—/.test(about), 'em dash kept');
+  assert.ok(/Gătim seara\s*—/.test(about), 'em dash kept');
 });
 
 check('HEAD: success-url does not word-break:break-all the live slug', () => {
