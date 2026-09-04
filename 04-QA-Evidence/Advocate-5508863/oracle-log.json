@@ -1,0 +1,549 @@
+{
+  "gitHead": "3099ebb2ca6f5b61c17e4c60469d40d0a8658b9d",
+  "startedAt": "2026-09-04T02:43:51.013Z",
+  "entries": [
+    {
+      "step": "open-app-cookie-banner",
+      "action": "open /app/",
+      "screenshot": "01-open-app-cookie-banner.png",
+      "url": "http://127.0.0.1:57550/app/",
+      "detail": "title=Hidook Site Builder"
+    },
+    {
+      "step": "click-cookie-accept-landing",
+      "action": "click #hb-cookie-accept",
+      "screenshot": "02-click-cookie-accept-landing.png",
+      "url": "http://127.0.0.1:57550/app/",
+      "detail": ""
+    },
+    {
+      "step": "open-legal-terms",
+      "action": "open /app/terms.html",
+      "screenshot": "03-open-legal-terms.png",
+      "url": "http://127.0.0.1:57550/app/terms.html",
+      "detail": "title=Termeni de utilizare — Hidook Site Builder"
+    },
+    {
+      "step": "open-legal-privacy",
+      "action": "open /app/privacy.html",
+      "screenshot": "04-open-legal-privacy.png",
+      "url": "http://127.0.0.1:57550/app/privacy.html",
+      "detail": "title=Confidențialitate — Hidook Site Builder"
+    },
+    {
+      "step": "open-legal-cookies",
+      "action": "open /app/cookies.html",
+      "screenshot": "05-open-legal-cookies.png",
+      "url": "http://127.0.0.1:57550/app/cookies.html",
+      "detail": "title=Cookie-uri — Hidook Site Builder"
+    },
+    {
+      "step": "start-professionals-details-auto-open",
+      "action": "click start professionals",
+      "screenshot": "06-start-professionals-details-auto-open.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "drawer=true"
+    },
+    {
+      "step": "fill-calcom-professionals",
+      "action": "fill #dr_appointment_bookingUrl",
+      "screenshot": "07-fill-calcom-professionals.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "close-drawer-professionals-desktop-preview",
+      "action": "close details desktop",
+      "screenshot": "08-close-drawer-professionals-desktop-preview.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-mobile-preview-390-professionals",
+      "action": "click #btn-preview-mobile",
+      "screenshot": "09-click-mobile-preview-390-professionals.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "iframe-390-professionals-cookie-default",
+      "action": "iframe-390-professionals-cookie-default",
+      "screenshot": "10-iframe-390-professionals-cookie-default.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-whatsapp-qr-390-professionals",
+      "action": "click-whatsapp-qr-390-professionals",
+      "screenshot": "11-click-whatsapp-qr-390-professionals.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "start-local-service-details-auto-open",
+      "action": "click start local-service",
+      "screenshot": "12-start-local-service-details-auto-open.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "drawer=true"
+    },
+    {
+      "step": "close-drawer-local-service-desktop-preview",
+      "action": "close details desktop",
+      "screenshot": "13-close-drawer-local-service-desktop-preview.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-mobile-preview-390-local-service",
+      "action": "click #btn-preview-mobile",
+      "screenshot": "14-click-mobile-preview-390-local-service.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "iframe-390-local-service-cookie-default",
+      "action": "iframe-390-local-service-cookie-default",
+      "screenshot": "15-iframe-390-local-service-cookie-default.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-whatsapp-qr-390-local-service",
+      "action": "click-whatsapp-qr-390-local-service",
+      "screenshot": "16-click-whatsapp-qr-390-local-service.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "start-portfolio-details-auto-open",
+      "action": "click start portfolio",
+      "screenshot": "17-start-portfolio-details-auto-open.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "drawer=true"
+    },
+    {
+      "step": "close-drawer-portfolio-desktop-preview",
+      "action": "close details desktop",
+      "screenshot": "18-close-drawer-portfolio-desktop-preview.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-mobile-preview-390-portfolio",
+      "action": "click #btn-preview-mobile",
+      "screenshot": "19-click-mobile-preview-390-portfolio.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "iframe-390-portfolio-cookie-default",
+      "action": "iframe-390-portfolio-cookie-default",
+      "screenshot": "20-iframe-390-portfolio-cookie-default.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-whatsapp-qr-390-portfolio",
+      "action": "click-whatsapp-qr-390-portfolio",
+      "screenshot": "21-click-whatsapp-qr-390-portfolio.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "start-product-menu-details-auto-open",
+      "action": "click start product-menu",
+      "screenshot": "22-start-product-menu-details-auto-open.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "drawer=true"
+    },
+    {
+      "step": "close-drawer-product-menu-desktop-preview",
+      "action": "close details desktop",
+      "screenshot": "23-close-drawer-product-menu-desktop-preview.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-mobile-preview-390-product-menu",
+      "action": "click #btn-preview-mobile",
+      "screenshot": "24-click-mobile-preview-390-product-menu.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "iframe-390-product-menu-cookie-default",
+      "action": "iframe-390-product-menu-cookie-default",
+      "screenshot": "25-iframe-390-product-menu-cookie-default.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-whatsapp-qr-390-product-menu",
+      "action": "click-whatsapp-qr-390-product-menu",
+      "screenshot": "26-click-whatsapp-qr-390-product-menu.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "start-desserdirina-details-auto-open",
+      "action": "click start desserdirina",
+      "screenshot": "27-start-desserdirina-details-auto-open.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "drawer=true"
+    },
+    {
+      "step": "close-drawer-desserdirina-desktop-preview",
+      "action": "close details desktop",
+      "screenshot": "28-close-drawer-desserdirina-desktop-preview.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-mobile-preview-390-desserdirina",
+      "action": "click #btn-preview-mobile",
+      "screenshot": "29-click-mobile-preview-390-desserdirina.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "iframe-390-desserdirina-cookie-default",
+      "action": "iframe-390-desserdirina-cookie-default",
+      "screenshot": "30-iframe-390-desserdirina-cookie-default.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-whatsapp-qr-390-desserdirina",
+      "action": "click-whatsapp-qr-390-desserdirina",
+      "screenshot": "31-click-whatsapp-qr-390-desserdirina.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "iframe-only"
+    },
+    {
+      "step": "click-unpaid-export-html",
+      "action": "click #btn-download-html",
+      "screenshot": "32-click-unpaid-export-html.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "Intră în cont ca să descarci HTML-ul."
+    },
+    {
+      "step": "click-instagram-modal",
+      "action": "click #btn-add-instagram",
+      "screenshot": "33-click-instagram-modal.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-ig-empty-email",
+      "action": "click #btn-ig-send-magic empty",
+      "screenshot": "34-click-ig-empty-email.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-publish",
+      "action": "click #btn-publish",
+      "screenshot": "35-click-publish.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "×\nGata de publicare\nAlege adresa site-ului pe Hidook Site Builder\nAdaugă un card pentru trialul de 7 zile — site-ul e live imediat\n99€ după trial acoperă primul an (reînnoire 29€/an)\nAdresa site-ului "
+    },
+    {
+      "step": "fill-publish-slug",
+      "action": "fill slug + continue",
+      "screenshot": "36-fill-publish-slug.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "adv550-mtmcrb06"
+    },
+    {
+      "step": "click-send-magic",
+      "action": "send magic",
+      "screenshot": "37-click-send-magic.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-dev-magic-unpaid-cta",
+      "action": "click dev link",
+      "screenshot": "38-click-dev-magic-unpaid-cta.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-test-pay-success",
+      "action": "click #btn-pay-publish",
+      "screenshot": "39-click-test-pay-success.png",
+      "url": "http://127.0.0.1:57550/app/#dashboard",
+      "detail": ""
+    },
+    {
+      "step": "open-live-site-desktop",
+      "action": "open live",
+      "screenshot": "40-open-live-site-desktop.png",
+      "url": "http://127.0.0.1:57550/live/adv550-mtmcrb06/",
+      "detail": "http://127.0.0.1:57550/live/adv550-mtmcrb06/"
+    },
+    {
+      "step": "open-live-site-390",
+      "action": "resize live 390",
+      "screenshot": "41-open-live-site-390.png",
+      "url": "http://127.0.0.1:57550/live/adv550-mtmcrb06/",
+      "detail": "http://127.0.0.1:57550/live/adv550-mtmcrb06/"
+    },
+    {
+      "step": "click-return-to-editor",
+      "action": "click #btn-success-close",
+      "screenshot": "42-click-return-to-editor.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": ""
+    },
+    {
+      "step": "click-paid-export-html",
+      "action": "click #btn-download-html",
+      "screenshot": "43-click-paid-export-html.png",
+      "url": "http://127.0.0.1:57550/app/#edit",
+      "detail": "adv550-mtmcrb06.html"
+    },
+    {
+      "step": "open-hash-projects",
+      "action": "goto #projects",
+      "screenshot": "44-open-hash-projects.png",
+      "url": "http://127.0.0.1:57550/app/#projects",
+      "detail": ""
+    },
+    {
+      "step": "cancel-button-missing",
+      "action": "inspect Anulează",
+      "screenshot": "45-cancel-button-missing.png",
+      "url": "http://127.0.0.1:57550/app/#projects",
+      "detail": "not visible"
+    }
+  ],
+  "defects": [
+    {
+      "severity": "high",
+      "title": "Anulează not reachable after trial",
+      "detail": "no cancel button",
+      "screenshot": "45-cancel-button-missing.png"
+    }
+  ],
+  "namedFixes": {
+    "professionals": {
+      "systemId": "professionals",
+      "vw": 390,
+      "vh": 924,
+      "cookie": {
+        "x": 8,
+        "y": 810.1,
+        "width": 288,
+        "height": 105.9,
+        "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+      },
+      "dock": null,
+      "waCount": 1,
+      "waAffordances": [
+        {
+          "tag": "A",
+          "cls": "whatsapp-float",
+          "aria": "WhatsApp",
+          "href": "https://wa.me/40721555014?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+          "box": {
+            "x": 326,
+            "y": 860,
+            "width": 48,
+            "height": 48,
+            "text": "WhatsApp"
+          }
+        }
+      ],
+      "stripItems": [
+        {
+          "text": "Avocat — drept civil și comercial",
+          "clientW": 203,
+          "scrollW": 203,
+          "clippedX": false,
+          "box": {
+            "x": 20,
+            "y": 1000,
+            "width": 202.8125,
+            "height": 42.65625
+          }
+        },
+        {
+          "text": "Română, engleză și spaniolă",
+          "clientW": 180,
+          "scrollW": 180,
+          "clippedX": false,
+          "box": {
+            "x": 41.59375,
+            "y": 1054.65625,
+            "width": 180.171875,
+            "height": 21.328125
+          }
+        },
+        {
+          "text": "Online și la cabinet",
+          "clientW": 120,
+          "scrollW": 120,
+          "clippedX": false,
+          "box": {
+            "x": 41.59375,
+            "y": 1087.984375,
+            "width": 119.890625,
+            "height": 21.328125
+          }
+        }
+      ],
+      "hint": null,
+      "rowText": "Avocat — drept civil și comercial Română, engleză și spaniolă Online și la cabinet"
+    },
+    "local-service": {
+      "systemId": "local-service",
+      "vw": 390,
+      "vh": 924,
+      "cookie": {
+        "x": 8,
+        "y": 748.5,
+        "width": 288,
+        "height": 105.9,
+        "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+      },
+      "dock": {
+        "x": 0,
+        "y": 874.5,
+        "width": 390,
+        "height": 49.5,
+        "text": "Sună +40 721 234 567"
+      },
+      "waCount": 1,
+      "waAffordances": [
+        {
+          "tag": "A",
+          "cls": "ls-dock__wa",
+          "aria": "WhatsApp",
+          "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+          "box": {
+            "x": 337,
+            "y": 876.5,
+            "width": 53,
+            "height": 47.5,
+            "text": "WhatsApp"
+          }
+        }
+      ],
+      "stripItems": [],
+      "hint": null,
+      "rowText": ""
+    },
+    "portfolio": {
+      "systemId": "portfolio",
+      "vw": 390,
+      "vh": 924,
+      "cookie": {
+        "x": 8,
+        "y": 810.1,
+        "width": 288,
+        "height": 105.9,
+        "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+      },
+      "dock": null,
+      "waCount": 1,
+      "waAffordances": [
+        {
+          "tag": "A",
+          "cls": "whatsapp-float",
+          "aria": "WhatsApp",
+          "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+          "box": {
+            "x": 324,
+            "y": 858,
+            "width": 48,
+            "height": 48,
+            "text": "WhatsApp"
+          }
+        }
+      ],
+      "stripItems": [],
+      "hint": {
+        "text": "EXPLOREAZĂ",
+        "clientW": 103,
+        "scrollW": 103,
+        "clippedX": false,
+        "box": {
+          "x": 12,
+          "y": 734.4,
+          "width": 102.6,
+          "height": 53.6,
+          "text": "EXPLOREAZĂ"
+        }
+      },
+      "rowText": ""
+    },
+    "product-menu": {
+      "systemId": "product-menu",
+      "vw": 390,
+      "vh": 924,
+      "cookie": {
+        "x": 8,
+        "y": 810.1,
+        "width": 288,
+        "height": 105.9,
+        "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+      },
+      "dock": null,
+      "waCount": 1,
+      "waAffordances": [
+        {
+          "tag": "A",
+          "cls": "whatsapp-float",
+          "aria": "WhatsApp",
+          "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20rezervare.",
+          "box": {
+            "x": 324,
+            "y": 858,
+            "width": 48,
+            "height": 48,
+            "text": "WhatsApp"
+          }
+        }
+      ],
+      "stripItems": [],
+      "hint": null,
+      "rowText": ""
+    },
+    "desserdirina": {
+      "systemId": "desserdirina",
+      "vw": 390,
+      "vh": 924,
+      "cookie": {
+        "x": 8,
+        "y": 813.1,
+        "width": 288,
+        "height": 102.9,
+        "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+      },
+      "dock": null,
+      "waCount": 1,
+      "waAffordances": [
+        {
+          "tag": "A",
+          "cls": "whatsapp-float",
+          "aria": "WhatsApp",
+          "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20comand%C4%83%20de%20tort.",
+          "box": {
+            "x": 297,
+            "y": 831,
+            "width": 66,
+            "height": 66,
+            "text": "WhatsApp"
+          }
+        }
+      ],
+      "stripItems": [],
+      "hint": null,
+      "rowText": ""
+    }
+  },
+  "base": "http://127.0.0.1:57550",
+  "liveHref": "http://127.0.0.1:57550/live/adv550-mtmcrb06/",
+  "completedAt": "2026-09-04T02:46:28.200Z"
+}

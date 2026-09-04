@@ -1,0 +1,217 @@
+{
+  "professionals": {
+    "systemId": "professionals",
+    "vw": 390,
+    "vh": 924,
+    "cookie": {
+      "x": 8,
+      "y": 810.1,
+      "width": 288,
+      "height": 105.9,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+    },
+    "dock": null,
+    "waCount": 1,
+    "waAffordances": [
+      {
+        "tag": "A",
+        "cls": "whatsapp-float",
+        "aria": "WhatsApp",
+        "href": "https://wa.me/40721555014?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+        "box": {
+          "x": 326,
+          "y": 860,
+          "width": 48,
+          "height": 48,
+          "text": "WhatsApp"
+        }
+      }
+    ],
+    "stripItems": [
+      {
+        "text": "Avocat — drept civil și comercial",
+        "clientW": 203,
+        "scrollW": 203,
+        "clippedX": false,
+        "box": {
+          "x": 20,
+          "y": 1000,
+          "width": 202.8125,
+          "height": 42.65625
+        }
+      },
+      {
+        "text": "Română, engleză și spaniolă",
+        "clientW": 180,
+        "scrollW": 180,
+        "clippedX": false,
+        "box": {
+          "x": 41.59375,
+          "y": 1054.65625,
+          "width": 180.171875,
+          "height": 21.328125
+        }
+      },
+      {
+        "text": "Online și la cabinet",
+        "clientW": 120,
+        "scrollW": 120,
+        "clippedX": false,
+        "box": {
+          "x": 41.59375,
+          "y": 1087.984375,
+          "width": 119.890625,
+          "height": 21.328125
+        }
+      }
+    ],
+    "hint": null,
+    "rowText": "Avocat — drept civil și comercial Română, engleză și spaniolă Online și la cabinet"
+  },
+  "local-service": {
+    "systemId": "local-service",
+    "vw": 390,
+    "vh": 924,
+    "cookie": {
+      "x": 8,
+      "y": 748.5,
+      "width": 288,
+      "height": 105.9,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+    },
+    "dock": {
+      "x": 0,
+      "y": 874.5,
+      "width": 390,
+      "height": 49.5,
+      "text": "Sună +40 721 234 567"
+    },
+    "waCount": 1,
+    "waAffordances": [
+      {
+        "tag": "A",
+        "cls": "ls-dock__wa",
+        "aria": "WhatsApp",
+        "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+        "box": {
+          "x": 337,
+          "y": 876.5,
+          "width": 53,
+          "height": 47.5,
+          "text": "WhatsApp"
+        }
+      }
+    ],
+    "stripItems": [],
+    "hint": null,
+    "rowText": ""
+  },
+  "portfolio": {
+    "systemId": "portfolio",
+    "vw": 390,
+    "vh": 924,
+    "cookie": {
+      "x": 8,
+      "y": 810.1,
+      "width": 288,
+      "height": 105.9,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+    },
+    "dock": null,
+    "waCount": 1,
+    "waAffordances": [
+      {
+        "tag": "A",
+        "cls": "whatsapp-float",
+        "aria": "WhatsApp",
+        "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+        "box": {
+          "x": 324,
+          "y": 858,
+          "width": 48,
+          "height": 48,
+          "text": "WhatsApp"
+        }
+      }
+    ],
+    "stripItems": [],
+    "hint": {
+      "text": "EXPLOREAZĂ",
+      "clientW": 103,
+      "scrollW": 103,
+      "clippedX": false,
+      "box": {
+        "x": 12,
+        "y": 734.4,
+        "width": 102.6,
+        "height": 53.6,
+        "text": "EXPLOREAZĂ"
+      }
+    },
+    "rowText": ""
+  },
+  "product-menu": {
+    "systemId": "product-menu",
+    "vw": 390,
+    "vh": 924,
+    "cookie": {
+      "x": 8,
+      "y": 810.1,
+      "width": 288,
+      "height": 105.9,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+    },
+    "dock": null,
+    "waCount": 1,
+    "waAffordances": [
+      {
+        "tag": "A",
+        "cls": "whatsapp-float",
+        "aria": "WhatsApp",
+        "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20rezervare.",
+        "box": {
+          "x": 324,
+          "y": 858,
+          "width": 48,
+          "height": 48,
+          "text": "WhatsApp"
+        }
+      }
+    ],
+    "stripItems": [],
+    "hint": null,
+    "rowText": ""
+  },
+  "desserdirina": {
+    "systemId": "desserdirina",
+    "vw": 390,
+    "vh": 924,
+    "cookie": {
+      "x": 8,
+      "y": 813.1,
+      "width": 288,
+      "height": 102.9,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri Acceptă"
+    },
+    "dock": null,
+    "waCount": 1,
+    "waAffordances": [
+      {
+        "tag": "A",
+        "cls": "whatsapp-float",
+        "aria": "WhatsApp",
+        "href": "https://wa.me/40721234567?text=Bun%C4%83%20ziua%2C%20a%C8%99%20dori%20o%20comand%C4%83%20de%20tort.",
+        "box": {
+          "x": 297,
+          "y": 831,
+          "width": 66,
+          "height": 66,
+          "text": "WhatsApp"
+        }
+      }
+    ],
+    "stripItems": [],
+    "hint": null,
+    "rowText": ""
+  }
+}

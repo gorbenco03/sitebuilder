@@ -1,0 +1,25 @@
+{
+  "gitHead": "3099ebb2ca6f5b61c17e4c60469d40d0a8658b9d",
+  "startedAt": "2026-09-04T02:55:53.711Z",
+  "stills": [
+    "01-open-app-cookie-banner.png",
+    "02-click-cookie-accept-catalog.png",
+    "03-start-professionals-details-auto-open.png",
+    "04-close-drawer-desktop-preview.png",
+    "05-click-mobile-preview-390.png",
+    "06-click-publish-trial-copy.png",
+    "07-fill-publish-slug.png",
+    "08-click-send-magic.png",
+    "09-authenticated-unpaid-cta.png",
+    "10-click-test-pay-success.png",
+    "11-open-live-site.png",
+    "12-return-to-editor-canvas.png",
+    "13-click-paid-export-html.png",
+    "14-click-inapoi-catalog.png",
+    "15-click-proiectele-mele.png",
+    "16-click-anuleaza-ciorna.png"
+  ],
+  "liveHref": "http://127.0.0.1:58596/live/proof550-mtmd3p49/",
+  "exportFile": "proof550-mtmd3p49.html",
+  "completedAt": "2026-09-04T02:56:10.419Z"
+}
