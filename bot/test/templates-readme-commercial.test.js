@@ -50,8 +50,18 @@ function isProhibitionOrQuotedCallout(line) {
     );
 }
 
+function isAllowedDesserdirinaMention(text) {
+    return /\bdesserdirina\b/i.test(text);
+}
+
 function hasDesserdToken(text) {
-    return /\bDESSERD\b/i.test(text) || /desserdina/i.test(text) || /desserd/i.test(text);
+    const hasDesserdTokenForbidden =
+        /\bDESSERD\b/i.test(text) || /\bdesserdina\b/i.test(text) || /\bdesserd\b/i.test(text);
+    const hasAllowedDesserdirina = isAllowedDesserdirinaMention(text);
+    if (hasAllowedDesserdirina) {
+        return false;
+    }
+    return hasDesserdTokenForbidden;
 }
 
 async function run() {
