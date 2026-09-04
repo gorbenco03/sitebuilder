@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programare publică — desktop</title>
+  <link rel="stylesheet" href="canvas-shared.css" />
+</head>
+<body class="canvas-page">
+  <header class="canvas-bar">
+    <a href="index.html">← Canvase</a>
+    <span>Public booking · Desktop ≥1100px</span>
+    <nav class="canvas-bar__links">
+      <a href="public-booking-mobile-390.html">390px</a>
+      <a href="owner-dashboard-desktop.html">Owner</a>
+    </nav>
+  </header>
+
+  <div class="site-shell site-shell--desktop">
+    <div class="site-chrome">
+      <div class="site-chrome__brand">Cabinet Dr. Elena Pop</div>
+      <div class="site-chrome__nav">Despre · Servicii · <strong>Programare</strong> · Contact</div>
+    </div>
+
+    <section class="book-panel" aria-labelledby="book-title">
+      <p class="eyebrow">Programări online</p>
+      <h1 id="book-title">Alege un interval</h1>
+      <p class="sub">Confirmarea este instant dacă intervalul e liber. Dacă e ocupat, cererea rămâne în așteptare — nu vei vedea niciodată „confirmat” pe un slot deja rezervat.</p>
+
+      <ol class="steps" aria-label="Pași">
+        <li class="is-done">Serviciu</li>
+        <li class="is-current">Dată &amp; oră</li>
+        <li>Datele tale</li>
+        <li>Gata</li>
+      </ol>
+
+      <div class="book-layout">
+        <aside class="svc-list" aria-label="Servicii">
+          <button type="button" class="svc is-selected">
+            <span class="svc__name">Consultație inițială</span>
+            <span class="svc__meta">45 min · cabinet</span>
+          </button>
+          <button type="button" class="svc">
+            <span class="svc__name">Control</span>
+            <span class="svc__meta">25 min · cabinet</span>
+          </button>
+          <button type="button" class="svc">
+            <span class="svc__name">Ședință online</span>
+            <span class="svc__meta">40 min · video</span>
+          </button>
+        </aside>
+
+        <div class="slot-pane">
+          <div class="day-row" role="tablist" aria-label="Zile disponibile">
+            <button type="button" class="day">Lu<br><strong>8</strong></button>
+            <button type="button" class="day is-selected" aria-selected="true">Ma<br><strong>9</strong></button>
+            <button type="button" class="day">Mi<br><strong>10</strong></button>
+            <button type="button" class="day">Jo<br><strong>11</strong></button>
+            <button type="button" class="day">Vi<br><strong>12</strong></button>
+          </div>
+          <p class="day-label">Marți, 9 septembrie · Europe/Bucharest (afișat și în fusul tău)</p>
+          <div class="slots" role="listbox" aria-label="Intervale libere">
+            <button type="button" class="slot">09:00</button>
+            <button type="button" class="slot is-selected" aria-selected="true">09:45</button>
+            <button type="button" class="slot">10:30</button>
+            <button type="button" class="slot">11:15</button>
+            <button type="button" class="slot" disabled title="Ocupat">12:00</button>
+            <button type="button" class="slot">14:00</button>
+            <button type="button" class="slot">14:45</button>
+            <button type="button" class="slot">15:30</button>
+          </div>
+
+          <form class="visitor-form" onsubmit="return false;">
+            <div class="fields">
+              <label>Nume <input type="text" value="Ana Ionescu" autocomplete="name" /></label>
+              <label>Email <input type="email" value="ana@example.com" autocomplete="email" /></label>
+              <label>Telefon <span class="opt">(opțional)</span> <input type="tel" value="0722 000 000" autocomplete="tel" /></label>
+              <label>Notă scurtă <span class="opt">(opțional)</span> <input type="text" placeholder="ex. prima vizită" maxlength="200" /></label>
+            </div>
+            <p class="privacy">Păstrăm doar nume, email, telefon (dacă îl lași) și nota. Fără CNP, fără fișiere.</p>
+            <button type="button" class="cta" id="submit-demo">Confirmă programarea</button>
+            <p class="alt">Dacă programările online nu răspund: <a href="#">0722 111 222</a> · <a href="#">elena@cabinet.ro</a></p>
+          </form>
+
+          <div class="result result--ok" id="result-ok" hidden>
+            <h2>Programare confirmată</h2>
+            <p>Marți, 9 septembrie, 09:45–10:30 · Consultație inițială</p>
+            <p class="result__hint">Vei primi email cu detaliile și un link de anulare / reprogramare (cu cel puțin 24h înainte).</p>
+          </div>
+          <div class="result result--wait" id="result-wait" hidden>
+            <h2>Cerere înregistrată</h2>
+            <p>Intervalul ales nu a putut fi confirmat automat. Status: <strong>în așteptare</strong>.</p>
+            <p class="result__hint">Te anunțăm pe email când owner-ul confirmă sau propune alt interval. Nu e o confirmare falsă.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-foot">Build by hidook.tech powered by hidook.agency</footer>
+  </div>
+
+  <script>
+    document.getElementById('submit-demo').addEventListener('click', function () {
+      document.querySelector('.visitor-form').hidden = true;
+      document.getElementById('result-ok').hidden = false;
+    });
+  </script>
+</body>
+</html>

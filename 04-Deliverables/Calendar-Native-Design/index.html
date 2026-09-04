@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar nativ Hidook — design canvases</title>
+  <style>
+    :root {
+      --ink: #14201c;
+      --muted: #5a6b64;
+      --line: #d8e2dc;
+      --bg: #f4f7f5;
+      --card: #ffffff;
+      --accent: #0f6b4c;
+      --accent-soft: #e6f3ed;
+      --warn: #8a5a12;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #dff0e8 0%, transparent 55%),
+        radial-gradient(900px 400px at 100% 0%, #efe8d8 0%, transparent 50%),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 80px; }
+    .kicker {
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 12px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      color: var(--accent);
+      font-weight: 700;
+      margin: 0 0 10px;
+    }
+    h1 {
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      line-height: 1.1;
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+    .lede {
+      font-size: 1.125rem;
+      color: var(--muted);
+      max-width: 42rem;
+      line-height: 1.55;
+      margin: 0 0 36px;
+    }
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    a.card {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 22px 22px 20px;
+      box-shadow: 0 10px 30px rgba(20, 32, 28, 0.04);
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    a.card:hover, a.card:focus-visible {
+      transform: translateY(-2px);
+      border-color: #b7d0c4;
+      box-shadow: 0 16px 36px rgba(20, 32, 28, 0.08);
+      outline: none;
+    }
+    .card .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 999px;
+      padding: 5px 10px;
+      margin-bottom: 14px;
+    }
+    .card h2 {
+      font-size: 1.25rem;
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.98rem;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+    .note {
+      margin-top: 40px;
+      padding: 18px 20px;
+      border-left: 3px solid var(--accent);
+      background: #fff;
+      border-radius: 0 12px 12px 0;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .note strong { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="kicker">Hidook Site Builder · VISION §8</p>
+    <h1>Calendar nativ — design canvases</h1>
+    <p class="lede">
+      Canvase navigabile pentru modulul de programări nativ (nu cal.diy / Cal.com).
+      Acoperă widget-ul public de pe site-ul Professional și dashboard-ul privat al owner-ului,
+      pe desktop și pe 390px.
+    </p>
+    <div class="grid">
+      <a class="card" href="public-booking-desktop.html">
+        <span class="tag">Public · Desktop</span>
+        <h2>Widget de programare</h2>
+        <p>Flux visitor: serviciu → zi → oră → date → confirmare instant sau cerere.</p>
+      </a>
+      <a class="card" href="public-booking-mobile-390.html">
+        <span class="tag">Public · 390px</span>
+        <h2>Widget pe mobil</h2>
+        <p>Același flux, pe ecran îngust — ținte tappable, fără scroll orizontal pe acțiuni.</p>
+      </a>
+      <a class="card" href="owner-dashboard-desktop.html">
+        <span class="tag">Owner · Desktop</span>
+        <h2>Dashboard programări</h2>
+        <p>Listă booking-uri, stări reale, availability săptămânală + blackout pe dată.</p>
+      </a>
+      <a class="card" href="owner-dashboard-mobile-390.html">
+        <span class="tag">Owner · 390px</span>
+        <h2>Dashboard pe mobil</h2>
+        <p>Programările zilei și acțiunile critice lizibile la 390px, fără tabele tăiate.</p>
+      </a>
+    </div>
+    <aside class="note">
+      <strong>Contract produs:</strong> limba vizibilă este română. Confirmare instant doar fără conflict de slot.
+      Sloturile blocate se eliberează la anulare validă. Dashboard-ul e doar pentru owner-ul autentificat al site-ului.
+      Aceste fișiere sunt design — nu sunt cablate încă în template-urile live.
+    </aside>
+  </main>
+</body>
+</html>

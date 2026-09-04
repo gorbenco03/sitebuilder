@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programare publică — 390px</title>
+  <link rel="stylesheet" href="canvas-shared.css" />
+</head>
+<body class="canvas-page canvas-page--device">
+  <header class="canvas-bar">
+    <a href="index.html">← Canvase</a>
+    <span>Public booking · 390px</span>
+    <nav class="canvas-bar__links">
+      <a href="public-booking-desktop.html">Desktop</a>
+      <a href="owner-dashboard-mobile-390.html">Owner 390</a>
+    </nav>
+  </header>
+
+  <div class="device-frame" aria-label="Previzualizare 390px">
+    <div class="device-frame__notch" aria-hidden="true"></div>
+    <div class="device-frame__screen">
+      <div class="m-top">
+        <div class="m-brand">Cabinet Dr. Elena Pop</div>
+        <a class="m-pill" href="#book">Programare</a>
+      </div>
+
+      <section class="m-book" id="book">
+        <p class="eyebrow">Programări</p>
+        <h1>Alege intervalul</h1>
+        <p class="sub m-sub">Confirmare instant doar dacă e liber. Altfel rămâne cerere — fără „confirmat” fals.</p>
+
+        <p class="m-label">Serviciu</p>
+        <div class="m-svcs">
+          <button type="button" class="svc is-selected">
+            <span class="svc__name">Consultație inițială</span>
+            <span class="svc__meta">45 min</span>
+          </button>
+          <button type="button" class="svc">
+            <span class="svc__name">Control</span>
+            <span class="svc__meta">25 min</span>
+          </button>
+        </div>
+
+        <p class="m-label">Ziua</p>
+        <div class="day-row day-row--scroll">
+          <button type="button" class="day">Lu<br><strong>8</strong></button>
+          <button type="button" class="day is-selected">Ma<br><strong>9</strong></button>
+          <button type="button" class="day">Mi<br><strong>10</strong></button>
+          <button type="button" class="day">Jo<br><strong>11</strong></button>
+          <button type="button" class="day">Vi<br><strong>12</strong></button>
+        </div>
+
+        <p class="m-label">Ora</p>
+        <div class="slots slots--compact">
+          <button type="button" class="slot">09:00</button>
+          <button type="button" class="slot is-selected">09:45</button>
+          <button type="button" class="slot">10:30</button>
+          <button type="button" class="slot" disabled>12:00</button>
+          <button type="button" class="slot">14:00</button>
+          <button type="button" class="slot">15:30</button>
+        </div>
+
+        <form class="visitor-form visitor-form--stack" onsubmit="return false;">
+          <label>Nume <input type="text" placeholder="Numele tău" /></label>
+          <label>Email <input type="email" placeholder="email@exemplu.ro" /></label>
+          <label>Telefon <span class="opt">(opțional)</span> <input type="tel" /></label>
+          <label>Notă <span class="opt">(opțional)</span> <input type="text" maxlength="200" /></label>
+          <button type="button" class="cta">Confirmă programarea</button>
+          <p class="alt">Indisponibil online? Sună <a href="tel:+40722111222">0722 111 222</a></p>
+        </form>
+      </section>
+      <p class="m-attr">Build by hidook.tech powered by hidook.agency</p>
+    </div>
+  </div>
+</body>
+</html>

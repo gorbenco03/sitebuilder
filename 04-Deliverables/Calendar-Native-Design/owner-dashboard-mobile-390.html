@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard owner — 390px</title>
+  <link rel="stylesheet" href="canvas-shared.css" />
+</head>
+<body class="canvas-page canvas-page--device">
+  <header class="canvas-bar">
+    <a href="index.html">← Canvase</a>
+    <span>Owner dashboard · 390px</span>
+    <nav class="canvas-bar__links">
+      <a href="owner-dashboard-desktop.html">Desktop</a>
+      <a href="public-booking-mobile-390.html">Public 390</a>
+    </nav>
+  </header>
+
+  <div class="device-frame" aria-label="Previzualizare 390px owner">
+    <div class="device-frame__notch" aria-hidden="true"></div>
+    <div class="device-frame__screen device-frame__screen--dash">
+      <header class="m-dash-head">
+        <div>
+          <p class="eyebrow">Cabinet Elena</p>
+          <h1>Programări</h1>
+        </div>
+        <button type="button" class="btn btn--small">+ Blackout</button>
+      </header>
+
+      <div class="m-stats">
+        <div class="stat"><strong>5</strong><span>ok</span></div>
+        <div class="stat"><strong>2</strong><span>cereri</span></div>
+        <div class="stat"><strong>1</strong><span>reprog.</span></div>
+      </div>
+
+      <div class="m-tabs" role="tablist">
+        <button type="button" class="chip is-on">Azi</button>
+        <button type="button" class="chip">Disponibilitate</button>
+        <button type="button" class="chip">Servicii</button>
+      </div>
+
+      <ul class="booking-list booking-list--stack">
+        <li class="booking booking--stack">
+          <div class="booking__top">
+            <strong>09:00 · 45 min</strong>
+            <span class="badge badge--ok">confirmată</span>
+          </div>
+          <div class="booking__who">Ana Ionescu · Consultație</div>
+          <div class="booking__acts booking__acts--row">
+            <button type="button" class="btn btn--small btn--ghost">Reprogramează</button>
+            <button type="button" class="btn btn--small btn--danger">Anulează</button>
+          </div>
+        </li>
+        <li class="booking booking--stack">
+          <div class="booking__top">
+            <strong>10:30 · 25 min</strong>
+            <span class="badge badge--wait">în așteptare</span>
+          </div>
+          <div class="booking__who">Mihai D. · Control</div>
+          <div class="booking__acts booking__acts--row">
+            <button type="button" class="btn btn--small">Confirmă</button>
+            <button type="button" class="btn btn--small btn--ghost">Alt slot</button>
+          </div>
+        </li>
+        <li class="booking booking--stack">
+          <div class="booking__top">
+            <strong>14:00 · 40 min</strong>
+            <span class="badge badge--resched">reprogramare</span>
+          </div>
+          <div class="booking__who">Ioana P. · Online</div>
+          <div class="booking__acts booking__acts--row">
+            <button type="button" class="btn btn--small">Propune oră</button>
+            <button type="button" class="btn btn--small btn--danger">Anulează</button>
+          </div>
+        </li>
+      </ul>
+
+      <section class="m-avail-card">
+        <h2>Marți (azi)</h2>
+        <p>09:00–17:00 · buffer 10 min</p>
+        <button type="button" class="btn btn--ghost btn--block">Editează săptămâna</button>
+      </section>
+
+      <nav class="m-bottom-nav" aria-label="Tab-uri">
+        <span class="is-on">Programări</span>
+        <span>Disponib.</span>
+        <span>Setări</span>
+      </nav>
+    </div>
+  </div>
+</body>
+</html>

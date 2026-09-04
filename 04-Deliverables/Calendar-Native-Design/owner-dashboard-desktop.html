@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard owner — desktop</title>
+  <link rel="stylesheet" href="canvas-shared.css" />
+</head>
+<body class="canvas-page">
+  <header class="canvas-bar">
+    <a href="index.html">← Canvase</a>
+    <span>Owner dashboard · Desktop</span>
+    <nav class="canvas-bar__links">
+      <a href="owner-dashboard-mobile-390.html">390px</a>
+      <a href="public-booking-desktop.html">Public</a>
+    </nav>
+  </header>
+
+  <div class="dash dash--desktop">
+    <aside class="dash-nav" aria-label="Navigare owner">
+      <div class="dash-nav__brand">Hidook · Calendar</div>
+      <a class="dash-nav__link is-active" href="#today">Programări</a>
+      <a class="dash-nav__link" href="#avail">Disponibilitate</a>
+      <a class="dash-nav__link" href="#svc">Servicii</a>
+      <a class="dash-nav__link" href="#set">Setări</a>
+      <p class="dash-nav__site">Site: cabinet-elena<br><span>doar tu vezi aceste date</span></p>
+    </aside>
+
+    <main class="dash-main">
+      <header class="dash-head">
+        <div>
+          <p class="eyebrow">Astăzi · marți 9 sept</p>
+          <h1>Programările tale</h1>
+        </div>
+        <div class="dash-head__actions">
+          <button type="button" class="btn btn--ghost">Exportă ziua</button>
+          <button type="button" class="btn">+ Blochează o zi</button>
+        </div>
+      </header>
+
+      <div class="stat-row" aria-label="Rezumat">
+        <div class="stat"><strong>5</strong><span>confirmate</span></div>
+        <div class="stat"><strong>2</strong><span>în așteptare</span></div>
+        <div class="stat"><strong>1</strong><span>de reprogramat</span></div>
+        <div class="stat"><strong>0</strong><span>anulate azi</span></div>
+      </div>
+
+      <section id="today" class="panel">
+        <div class="panel__head">
+          <h2>Lista zilei</h2>
+          <div class="filters">
+            <button type="button" class="chip is-on">Toate</button>
+            <button type="button" class="chip">Confirmate</button>
+            <button type="button" class="chip">Cereri</button>
+          </div>
+        </div>
+
+        <ul class="booking-list">
+          <li class="booking">
+            <div class="booking__time">09:00<br><span>45 min</span></div>
+            <div class="booking__body">
+              <div class="booking__title">Consultație inițială · <span class="badge badge--ok">confirmată</span></div>
+              <div class="booking__who">Ana Ionescu · ana@example.com · 0722 000 000</div>
+              <div class="booking__note">Prima vizită</div>
+            </div>
+            <div class="booking__acts">
+              <button type="button" class="btn btn--small btn--ghost">Reprogramează</button>
+              <button type="button" class="btn btn--small btn--danger">Anulează</button>
+            </div>
+          </li>
+          <li class="booking">
+            <div class="booking__time">10:30<br><span>25 min</span></div>
+            <div class="booking__body">
+              <div class="booking__title">Control · <span class="badge badge--wait">în așteptare</span></div>
+              <div class="booking__who">Mihai D. · mihai@example.com</div>
+            </div>
+            <div class="booking__acts">
+              <button type="button" class="btn btn--small">Confirmă</button>
+              <button type="button" class="btn btn--small btn--ghost">Propune alt slot</button>
+            </div>
+          </li>
+          <li class="booking">
+            <div class="booking__time">14:00<br><span>40 min</span></div>
+            <div class="booking__body">
+              <div class="booking__title">Ședință online · <span class="badge badge--resched">reprogramare</span></div>
+              <div class="booking__who">Ioana P. · ioana@example.com</div>
+              <div class="booking__note">Conflict de slot — așteaptă propunere</div>
+            </div>
+            <div class="booking__acts">
+              <button type="button" class="btn btn--small">Propune oră</button>
+              <button type="button" class="btn btn--small btn--danger">Anulează</button>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <div class="two-col">
+        <section id="avail" class="panel">
+          <h2>Disponibilitate săptămânală</h2>
+          <p class="panel__hint">Timezone owner: Europe/Bucharest · stocare canonică UTC</p>
+          <table class="avail-table">
+            <thead><tr><th>Zi</th><th>Interval</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Luni</td><td>09:00–17:00</td><td><button type="button" class="linkish">Editează</button></td></tr>
+              <tr><td>Marți</td><td>09:00–17:00</td><td><button type="button" class="linkish">Editează</button></td></tr>
+              <tr><td>Miercuri</td><td>09:00–13:00</td><td><button type="button" class="linkish">Editează</button></td></tr>
+              <tr><td>Joi</td><td>09:00–17:00</td><td><button type="button" class="linkish">Editează</button></td></tr>
+              <tr><td>Vineri</td><td>09:00–15:00</td><td><button type="button" class="linkish">Editează</button></td></tr>
+              <tr><td>Sâmbătă</td><td class="muted">închis</td><td><button type="button" class="linkish">Deschide</button></td></tr>
+              <tr><td>Duminică</td><td class="muted">închis</td><td><button type="button" class="linkish">Deschide</button></td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel">
+          <h2>Blackout / sărbători</h2>
+          <p class="panel__hint">Override-urile pe dată câștigă în fața recurentului.</p>
+          <ul class="blackout-list">
+            <li>
+              <strong>24 dec 2026</strong> — zi liberă (blackout)
+              <button type="button" class="linkish">Șterge</button>
+            </li>
+            <li>
+              <strong>31 dec 2026</strong> — ore speciale 10:00–14:00
+              <button type="button" class="linkish">Editează</button>
+            </li>
+          </ul>
+          <button type="button" class="btn btn--ghost">+ Adaugă override</button>
+        </section>
+      </div>
+
+      <section id="svc" class="panel">
+        <h2>Servicii</h2>
+        <ul class="svc-admin">
+          <li><span>Consultație inițială · 45 min · buffer 10 min</span><button type="button" class="linkish">Editează</button></li>
+          <li><span>Control · 25 min · buffer 5 min</span><button type="button" class="linkish">Editează</button></li>
+          <li><span>Ședință online · 40 min · buffer 0</span><button type="button" class="linkish">Editează</button></li>
+        </ul>
+      </section>
+
+      <section id="set" class="panel">
+        <h2>Setări calendar</h2>
+        <dl class="settings">
+          <div><dt>Timezone</dt><dd>Europe/Bucharest</dd></div>
+          <div><dt>Anulare visitor</dt><dd>cu cel puțin 24h înainte (token pe email)</dd></div>
+          <div><dt>Buffer implicit</dt><dd>10 minute între programări</dd></div>
+          <div><dt>Izolare</dt><dd>customer + site — datele altor Professional nu apar aici</dd></div>
+        </dl>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
