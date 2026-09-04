@@ -1,0 +1,77 @@
+[
+  {
+    "system": "professionals",
+    "shot": "click-mobile-preview-390-professionals-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 810.078125,
+      "width": 288,
+      "height": 105.921875,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politi"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "local-service",
+    "shot": "click-mobile-preview-390-local-service-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 748.484375,
+      "width": 288,
+      "height": 105.921875,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politi"
+    },
+    "actionCount": 3,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "portfolio",
+    "shot": "click-mobile-preview-390-portfolio-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 810.078125,
+      "width": 288,
+      "height": 105.921875,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politi"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "product-menu",
+    "shot": "click-mobile-preview-390-product-menu-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 810.078125,
+      "width": 288,
+      "height": 105.921875,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politi"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "desserdirina",
+    "shot": "click-mobile-preview-390-desserdirina-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 813.078125,
+      "width": 288,
+      "height": 102.921875,
+      "text": "Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politi"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  }
+]

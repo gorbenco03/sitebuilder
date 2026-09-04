@@ -210,24 +210,47 @@ function cookiesHtml(config) {
     });
 }
 
-/** Shared cookie banner CSS (also linked from templates via cookie-banner.css). */
-const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner.
- * Compact bottom-LEFT card (never bottom-right, never full-bleed bottom bar):
- *   - bottom-right is reserved for .ls-dock / .whatsapp-float primary actions
- *   - left/center hero + section seeds stay free via open-state clearance
- *   - stays in the editor iframe bottom so builder #toast can sit top under
- *     body.editor-preview-cookie-isolated without vertical overlap
+/** Shared bottom-chrome layout + cookie banner CSS (cookie-banner.css).
+ * One contract for ALL commercial systems — not per-template patches:
+ *   1. Consent card = compact bottom-LEFT (never bottom-right / full-bleed bar)
+ *   2. Primary actions (.ls-dock / .whatsapp-float) = bottom-RIGHT
+ *   3. Exactly one WhatsApp affordance when a call dock already ships WA
+ *   4. Credibility strips + scroll labels never enter the FAB / cookie AABB
  * Open state is class-driven (html/body.hb-cookie-open) AND :has() so clearance
  * still applies if either signal is missing in a preview paint.
  */
+const COOKIE_BANNER_CSS = `/* Hidook generated-site bottom chrome + cookie consent (shared layout rule). */
+:root {
+  --hb-fab-size: 3.25rem;
+  --hb-fab-gap: 1rem;
+  --hb-fab-safe-right: calc(var(--hb-fab-size) + var(--hb-fab-gap) + 0.35rem);
+  --hb-fab-safe-bottom: calc(var(--hb-fab-size) + var(--hb-fab-gap));
+  --hb-dock-safe-bottom: 0px;
+  --hb-cookie-clearance: 0px;
+  --hb-cookie-width-cap: 14.5rem;
+}
+/* Call dock present → reserve its height; suppress the duplicate WA float so
+ * strangers never see two stacked WhatsApp controls on the first screen. */
+body:has(.ls-dock),
+html:has(.ls-dock) {
+  --hb-dock-safe-bottom: 3.85rem;
+}
+body:has(.ls-dock__wa) .whatsapp-float,
+body:has(.ls-dock) .whatsapp-float,
+html:has(.ls-dock) .whatsapp-float {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 .hb-cookie-banner {
   position: fixed;
   z-index: 40;
   top: auto;
   left: 0.75rem;
   right: auto;
-  bottom: 0.75rem;
-  max-width: min(14.5rem, calc(100vw - 5.5rem));
+  bottom: calc(0.75rem + var(--hb-dock-safe-bottom));
+  /* Never span into the FAB/dock corner — width capped to left half. */
+  max-width: min(var(--hb-cookie-width-cap), calc(100vw - var(--hb-fab-safe-right) - 1.25rem));
   margin: 0;
   padding: 0.65rem 0.8rem;
   border-radius: 12px;
@@ -241,24 +264,42 @@ const COOKIE_BANNER_CSS = `/* Hidook generated-site cookie consent banner.
   gap: 0.5rem;
   pointer-events: auto;
 }
-/* Narrow canvases: local-service full-bleed call dock sits at bottom:0 — keep
- * the card above that strip so Sună / WhatsApp stay fully tappable. */
+/* Narrow canvases: keep card above full-bleed docks; stay compact left. */
 @media (max-width: 899px) {
+  :root {
+    /* Wider + shorter on narrow canvases: a tall skinny card climbs into
+     * hero meta / explore labels. Cap width just left of the FAB zone. */
+    --hb-cookie-width-cap: 18rem;
+  }
   .hb-cookie-banner {
     left: 0.5rem;
     right: auto;
-    bottom: 4.5rem;
-    max-width: min(12.5rem, calc(100vw - 1rem));
-    padding: 0.5rem 0.6rem;
-    font-size: 0.76rem;
+    bottom: calc(0.5rem + max(var(--hb-dock-safe-bottom), 0px));
+    max-width: min(var(--hb-cookie-width-cap), calc(100vw - var(--hb-fab-safe-right) - 0.85rem));
+    padding: 0.45rem 0.55rem;
+    font-size: 0.74rem;
+    line-height: 1.3;
+    gap: 0.4rem;
+  }
+  body:not(:has(.ls-dock)) .hb-cookie-banner {
+    /* Keep left of FAB; no need to stack above it when width is capped. */
+    bottom: 0.5rem;
   }
 }
 /* Clearance token — class + :has so preview paints cannot drop the lift. */
 html.hb-cookie-open,
 body.hb-cookie-open,
 body:has(#hb-cookie-banner:not([hidden])) {
-  --hb-cookie-clearance: 9.5rem;
-  scroll-padding-bottom: var(--hb-cookie-clearance);
+  --hb-cookie-clearance: 10.25rem;
+  scroll-padding-bottom: calc(var(--hb-cookie-clearance) + var(--hb-dock-safe-bottom) + var(--hb-fab-safe-bottom));
+}
+@media (max-width: 899px) {
+  html.hb-cookie-open,
+  body.hb-cookie-open,
+  body:has(#hb-cookie-banner:not([hidden])) {
+    /* Match the shorter mobile card height so hero padding does not overshoot. */
+    --hb-cookie-clearance: 8rem;
+  }
 }
 /* Bottom-aligned hero pitch / section seeds clear the left corner card. */
 html.hb-cookie-open .ls-hero__copy,
@@ -276,9 +317,12 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-hero__copy,
 html.hb-cookie-open .hero-content,
 body.hb-cookie-open .hero-content,
 body:has(#hb-cookie-banner:not([hidden])) .hero-content {
-  padding-bottom: calc(var(--hb-cookie-clearance) + 0.5rem);
+  padding-bottom: calc(var(--hb-cookie-clearance) + 0.75rem);
+  padding-right: max(0.5rem, calc(var(--hb-fab-safe-right) * 0.35));
   box-sizing: border-box;
 }
+/* Hero shells: margin-bottom (not only padding) so border-box min-height
+ * templates actually push the next in-flow strip below the fixed chrome. */
 html.hb-cookie-open .pf-hero__frame,
 body.hb-cookie-open .pf-hero__frame,
 body:has(#hb-cookie-banner:not([hidden])) .pf-hero__frame,
@@ -290,9 +334,60 @@ body.hb-cookie-open .pr-hero,
 body:has(#hb-cookie-banner:not([hidden])) .pr-hero,
 html.hb-cookie-open header.hero,
 body.hb-cookie-open header.hero,
-body:has(#hb-cookie-banner:not([hidden])) header.hero {
+body:has(#hb-cookie-banner:not([hidden])) header.hero,
+html.hb-cookie-open .pf-hero,
+body.hb-cookie-open .pf-hero,
+body:has(#hb-cookie-banner:not([hidden])) .pf-hero,
+html.hb-cookie-open .ls-hero,
+body.hb-cookie-open .ls-hero,
+body:has(#hb-cookie-banner:not([hidden])) .ls-hero {
   box-sizing: border-box;
   padding-bottom: var(--hb-cookie-clearance);
+  margin-bottom: calc(var(--hb-dock-safe-bottom) + 0.35rem);
+}
+/* Credibility / meta strips at the fold — never enter FAB or cookie corners. */
+.pr-strip {
+  padding-inline-end: max(1rem, var(--hb-fab-safe-right)) !important;
+  box-sizing: border-box;
+  overflow-x: clip;
+}
+.pr-strip__row {
+  padding-inline-end: max(0.5rem, var(--hb-fab-safe-right)) !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* While consent is open, keep the strip OFF the first screen under fixed
+ * chrome (border-box min-height heroes otherwise leave a peek strip under FAB). */
+@media (max-width: 899px) {
+  html.hb-cookie-open .pr-hero,
+  body.hb-cookie-open .pr-hero,
+  body:has(#hb-cookie-banner:not([hidden])) .pr-hero {
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    margin-bottom: 0 !important;
+    padding-bottom: calc(var(--hb-cookie-clearance) + 1.25rem) !important;
+  }
+  html.hb-cookie-open .pr-strip,
+  body.hb-cookie-open .pr-strip,
+  body:has(#hb-cookie-banner:not([hidden])) .pr-strip,
+  html.hb-cookie-open .pr-strip__row,
+  body.hb-cookie-open .pr-strip__row,
+  body:has(#hb-cookie-banner:not([hidden])) .pr-strip__row {
+    /* No huge left pad — that crushed the flex row into the FAB column. */
+    padding-inline-start: 0;
+    padding-inline-end: max(1rem, var(--hb-fab-safe-right)) !important;
+    padding-bottom: 0.85rem;
+    box-sizing: border-box;
+  }
+}
+html.hb-cookie-open .pr-hero__meta,
+body.hb-cookie-open .pr-hero__meta,
+body:has(#hb-cookie-banner:not([hidden])) .pr-hero__meta {
+  /* Do not crush width — that wraps meta into a tall block under the card.
+   * Horizontal FAB pad only; vertical clearance comes from hero copy padding. */
+  max-width: 100%;
+  padding-right: max(0.75rem, var(--hb-fab-safe-right));
+  box-sizing: border-box;
 }
 /* Section titles near the fold — keep clear of the left corner card. */
 html.hb-cookie-open .pm-ticket__label,
@@ -307,25 +402,115 @@ body:has(#hb-cookie-banner:not([hidden])) .pm-rail__label {
   max-width: calc(100% - min(15rem, 42vw));
   box-sizing: border-box;
 }
-/* Absolute scroll cues — right-aligned and above the left corner card. */
+/* Scroll / explore labels — never under the FAB. Do NOT force left placement
+ * (that put centered absolute cues like desserdirina under the cookie card).
+ * Preserve each template's horizontal anchor; only enforce safe max-width and
+ * a lifted bottom while consent is open. */
+.pf-hint,
+.scroll-hint,
+.ls-scroll,
+.scroll-indicator,
+.pm-scroll {
+  max-width: calc(100% - var(--hb-fab-safe-right) - 0.35rem);
+  box-sizing: border-box;
+  padding-inline-end: 0.5rem;
+}
+/* Professionals vertical cue — always clear of the FAB corner. */
+.pr-scroll {
+  right: var(--hb-fab-safe-right) !important;
+}
+/* Absolute / fixed scroll cues: lift above cookie + dock; keep template's
+ * horizontal centering (left:50% + translateX) or right anchor. */
 html.hb-cookie-open .scroll-indicator,
 body.hb-cookie-open .scroll-indicator,
-body:has(#hb-cookie-banner:not([hidden])) .scroll-indicator,
-html.hb-cookie-open .ls-scroll,
-body.hb-cookie-open .ls-scroll,
-body:has(#hb-cookie-banner:not([hidden])) .ls-scroll,
+body:has(#hb-cookie-banner:not([hidden])) .scroll-indicator {
+  bottom: calc(var(--hb-cookie-clearance) + var(--hb-dock-safe-bottom) + 0.75rem) !important;
+  max-width: min(16rem, calc(100% - var(--hb-fab-safe-right) - 1rem));
+  box-sizing: border-box;
+  z-index: 2;
+}
+/* In-flow explore labels (portfolio / local-service / product-menu): keep left
+ * of the FAB and pad so the full word is not under the fixed chrome stack. */
 html.hb-cookie-open .pf-hint,
 body.hb-cookie-open .pf-hint,
 body:has(#hb-cookie-banner:not([hidden])) .pf-hint,
 html.hb-cookie-open .scroll-hint,
 body.hb-cookie-open .scroll-hint,
-body:has(#hb-cookie-banner:not([hidden])) .scroll-hint {
-  bottom: calc(var(--hb-cookie-clearance) + 0.35rem) !important;
+body:has(#hb-cookie-banner:not([hidden])) .scroll-hint,
+html.hb-cookie-open .ls-scroll,
+body.hb-cookie-open .ls-scroll,
+body:has(#hb-cookie-banner:not([hidden])) .ls-scroll,
+html.hb-cookie-open .pm-scroll,
+body.hb-cookie-open .pm-scroll,
+body:has(#hb-cookie-banner:not([hidden])) .pm-scroll {
+  max-width: calc(100% - var(--hb-fab-safe-right) - 0.75rem) !important;
+  padding-inline-end: var(--hb-fab-safe-right) !important;
+  padding-bottom: calc(0.85rem + var(--hb-dock-safe-bottom)) !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  box-sizing: border-box;
+}
+/* Portfolio/local/product-menu: park in-flow explore labels ABOVE the fixed
+ * cookie + dock stack (left of FAB). Absolute placement is the only reliable
+ * way past border-box min-height heroes that otherwise leave the label under
+ * the card on the first screen. */
+@media (max-width: 899px) {
+  html.hb-cookie-open .ls-hero,
+  body.hb-cookie-open .ls-hero,
+  body:has(#hb-cookie-banner:not([hidden])) .ls-hero,
+  html.hb-cookie-open .pf-hero,
+  body.hb-cookie-open .pf-hero,
+  body:has(#hb-cookie-banner:not([hidden])) .pf-hero,
+  html.hb-cookie-open header.hero,
+  body.hb-cookie-open header.hero,
+  body:has(#hb-cookie-banner:not([hidden])) header.hero {
+    position: relative;
+  }
+  html.hb-cookie-open .pf-hero__frame,
+  body.hb-cookie-open .pf-hero__frame,
+  body:has(#hb-cookie-banner:not([hidden])) .pf-hero__frame,
+  html.hb-cookie-open .ls-hero__cut,
+  body.hb-cookie-open .ls-hero__cut,
+  body:has(#hb-cookie-banner:not([hidden])) .ls-hero__cut {
+    min-height: calc(100vh - 2.5rem) !important;
+    padding-bottom: calc(var(--hb-cookie-clearance) + var(--hb-dock-safe-bottom) + 2.75rem) !important;
+  }
+  html.hb-cookie-open .pf-hint,
+  body.hb-cookie-open .pf-hint,
+  body:has(#hb-cookie-banner:not([hidden])) .pf-hint,
+  html.hb-cookie-open .ls-scroll,
+  body.hb-cookie-open .ls-scroll,
+  body:has(#hb-cookie-banner:not([hidden])) .ls-scroll,
+  html.hb-cookie-open .pm-scroll,
+  body.hb-cookie-open .pm-scroll,
+  body:has(#hb-cookie-banner:not([hidden])) .pm-scroll {
+    /* fixed to the viewport — absolute bottom was relative to a tall hero
+     * box and left the label under the viewport-fixed cookie card. */
+    position: fixed !important;
+    left: 0.75rem !important;
+    right: auto !important;
+    bottom: calc(var(--hb-cookie-clearance) + var(--hb-dock-safe-bottom) + 0.5rem) !important;
+    width: auto !important;
+    max-width: calc(100vw - var(--hb-fab-safe-right) - 1.5rem) !important;
+    margin: 0 !important;
+    padding: 0.35rem 0.5rem !important;
+    text-align: left !important;
+    align-items: flex-start !important;
+    background: transparent !important;
+    z-index: 36;
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+}
+/* Absolute vertical cue (professionals): above chrome, left of FAB. */
+html.hb-cookie-open .pr-scroll,
+body.hb-cookie-open .pr-scroll,
+body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
   left: auto !important;
-  right: 1.1rem !important;
-  transform: none !important;
-  align-items: flex-end !important;
-  text-align: right !important;
+  right: var(--hb-fab-safe-right) !important;
+  bottom: calc(var(--hb-cookie-clearance) + var(--hb-dock-safe-bottom) + 0.5rem) !important;
+  transform: rotate(180deg) !important;
+  text-align: center !important;
 }
 /* Primary call docks / WA floats stay bottom-right — opposite corner from the
  * consent card — so they remain fully readable and tappable without a fragile
