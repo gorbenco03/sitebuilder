@@ -3,8 +3,18 @@
  * S49: browser editor is the commercial product —
  * pick a design → replace copy/images → preview updates.
  *
- * Catalog must show three human design systems (not raw API ids as badges).
+ * Catalog must show the human design systems (not raw API ids as badges).
  * Builder chrome must not sell DESSERD / bakery / factory "Șabloane" leftovers.
+ *
+ * Stale-oracle repair (2026-09-04, G7): this oracle was pinned to the S49-era
+ * four-system registry. Current contract (VISION.md §Template scope, and
+ * templates/registry.json) is FIVE systems: the four commercial verticals
+ * plus the Desserdirina remake promoted to a real approved template (it has
+ * its own presets/tests: flow2-desserdirina-*.test.js). The exact-id
+ * assertion is updated to the five-id registry; the note below about
+ * "desserdina" (sic — DESSERD-era identity) intentionally keeps matching
+ * only the old identity string, never the new template id "desserdirina".
+ * No product regression involved.
  *
  * Run: node bot/test/builder-editor-commercial.test.js
  */
@@ -13,7 +23,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
-const IDS = ['product-menu', 'local-service', 'portfolio', 'professionals'];
+const IDS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 const BUILDER_HTML = path.join(ROOT, 'builder', 'index.html');
 const BUILDER_JS = path.join(ROOT, 'builder', 'app.js');
 const REGISTRY = path.join(ROOT, 'templates', 'registry.json');
@@ -44,7 +54,7 @@ function deepClone(o) {
   return JSON.parse(JSON.stringify(o));
 }
 
-check('four design systems remain in registry with stable ids', () => {
+check('five design systems remain in registry with stable ids', () => {
   const reg = JSON.parse(read(REGISTRY));
   assert.ok(Array.isArray(reg.templates), 'registry.templates array');
   const ids = reg.templates.map((t) => t.id);
@@ -58,8 +68,11 @@ check('four design systems remain in registry with stable ids', () => {
   const byId = Object.fromEntries(reg.templates.map((t) => [t.id, t]));
   assert.ok(/restaurant/i.test(byId['product-menu'].name), 'product-menu name restaurant');
   assert.ok(/salon/i.test(byId['portfolio'].name), 'portfolio name salon');
-  assert.ok(/trade/i.test(byId['local-service'].name), 'local-service trade name');
-  assert.ok(/profession/i.test(byId['professionals'].name), 'professionals name');
+  // Current visible names are Romanian (AGENTS.md product-language rule:
+  // "Meserii", "Servicii profesionale"). The English-era /trade/i and
+  // /profession/i regexes were stale oracles from the S49 four-system world.
+  assert.ok(/meserii/i.test(byId['local-service'].name), 'local-service name meserii');
+  assert.ok(/profesionale/i.test(byId['professionals'].name), 'professionals name profesionale');
   // Telegram-friendly substrings stay somewhere in registry copy (S48 contract)
   const blob = JSON.stringify(reg);
   assert.ok(/menu/i.test(blob), 'registry keeps menu substring for picker tests');

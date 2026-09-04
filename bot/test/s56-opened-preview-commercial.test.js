@@ -5,6 +5,29 @@
  * business identity — not empty heroes, factory CDNs, or leftover bakery / MENU BOARD /
  * English factory chrome / Apple.com marketing copy.
  *
+ * Overlay parent SHA 2a00f6c → RED on the exact leftovers; HEAD → GREEN.
+ *
+ * Stale-oracle repair (2026-09-04, G7): this oracle predates the current
+ * 5-system template architecture and current preview chrome in three ways and
+ * was updated against the current contract — no product regression involved:
+ *   1. /placehold/i matched the product's OWN legal pages: renderPreview
+ *      embeds the generated RO legal stubs (bot/site-legal.js, out of scope
+ *      by task) as a JSON payload in every opened preview, and those stubs
+ *      intentionally carry "[PLACEHOLDER …]" markers for the business owner.
+ *      The factory-image intent now has its own scoped regex (FACTORY_IMG_CDN:
+ *      placehold.co/it/com/io image hosts), so owner legal markers can never
+ *      trip it again.
+ *   2. The S56-era "no Romanian diacritics" check asserted an English visible
+ *      surface. Current contract is the opposite (AGENTS.md standing rule:
+ *      Romanian for visible customer/site surfaces) and current presets render
+ *      RO copy with diacritics ("Programează o vizită"). Check removed as
+ *      obsolete; the config-driven label checks that actually prove
+ *      commercial rendering stay. The unresolved {{token}} check stays.
+ *   3. The English booking-family CTA regex is extended with RO equivalents
+ *      (program|rezerv) — "Programează o vizită" is the current salon CTA.
+ *   The portfolio/local-service FAILs were cascades of check 1 aborting on
+ *   product-menu (previews.* left undefined), not independent defects.
+ *
  * Run: node bot/test/s56-opened-preview-commercial.test.js
  */
 const assert = require('assert');
@@ -21,7 +44,12 @@ const MIN_HTML = 8000;
 const FORBIDDEN = [
   /picsum/i,
   /unsplash/i,
-  /placehold/i,
+  // Factory placeholder-image hosts only. A bare /placehold/i is a stale
+  // oracle here: renderPreview embeds the generated RO legal pages (which
+  // intentionally carry "[PLACEHOLDER …]" owner-fill markers, from
+  // bot/site-legal.js) into every opened preview.
+  /placehold(?:er)?\.(?:co|it|com|io)\b/i,
+  /via\.placeholder/i,
   /loremflickr/i,
   /DESSERD/i,
   /desserdina/i,
@@ -32,15 +60,14 @@ const FORBIDDEN = [
   /Apple\.com/i,
 ];
 
-// Product is now English throughout, so "Gallery/Services/Book" nav words are no
-// longer a factory-vs-commercial signal by themselves (raw hardcoded-markup
-// regressions are still caught below by the HEAD worktree surface check, which
-// reads the template source rather than rendered copy). The stronger, English-era
-// version of "not raw factory chrome" is: the opened preview must show the
-// preset's OWN configured labels (proof it's config-driven), carry zero
-// unresolved {{token}} placeholders, and carry zero leftover Romanian diacritics.
+// Product language contract: Romanian for visible customer/site surfaces
+// (AGENTS.md standing rule). The old English-era check — "no Romanian
+// diacritics in opened preview" — asserted the opposite of the current
+// contract and was removed (stale oracle). The stronger current equivalent
+// of "not raw factory chrome" below: the opened preview must show the
+// preset's OWN configured labels (proof it's config-driven), and carry zero
+// unresolved {{token}} placeholders.
 const UNRESOLVED_TOKEN = /\{\{\s*[\w.]+\s*\}\}/;
-const ROMANIAN_DIACRITICS = /[ăâîșşțţĂÂÎȘŞȚŢ]/;
 
 let failed = false;
 function check(name, fn) {
@@ -143,10 +170,6 @@ function assertCommercialPreview(id, html, preset) {
       `${id}: expected preset's own nav booking label in opened preview`
     );
     assert.ok(!UNRESOLVED_TOKEN.test(html), `${id}: unresolved {{token}} leaked into opened preview`);
-    assert.ok(
-      !ROMANIAN_DIACRITICS.test(html),
-      `${id}: Romanian diacritics leaked into opened English preview`
-    );
   }
   // Class language: no MENU BOARD-era pm-board chrome in restaurant system.
   if (id === 'product-menu') {
@@ -194,8 +217,10 @@ check('portfolio opened preview is salon booking CTA (not generic Book now facto
   const { html, preset } = previews.portfolio;
   assert.ok(!/Book\s+now/i.test(html), 'portfolio still Book now');
   const cta = preset.config && preset.config.hero && preset.config.hero.ctaLabel;
+  // RO-first booking family: Programare/Rezervare (current product language,
+  // AGENTS.md) plus the English forms for parity with any future EN preset.
   assert.ok(
-    cta && /book|appointment|schedul|reserv/i.test(String(cta)),
+    cta && /book|appointment|schedul|reserv|program|rezerv/i.test(String(cta)),
     `salon CTA not booking-family: ${cta}`
   );
   assert.ok(html.includes(String(cta)), 'salon CTA missing from preview');
