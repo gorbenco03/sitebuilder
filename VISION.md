@@ -183,7 +183,7 @@ Reguli:
 
 **Override owner 2026-09-04 — NATIVE HIDOOK (LOCKED).** Supersedează atât decizia Cal.com-link-only din 2026-09-01, cât și override-ul earlier same-day (2026-09-04) pentru self-hosted cal.diy / Cal.com Platform. Calendarul Professional final este un **modul nativ Hidook construit în interiorul Site Builder** — **nu** cal.diy, **nu** Cal.com Platform, **nu** embed/integrare către un calendar third-party self-hosted.
 
-Stare: **țintă forward-looking — NU ESTE CONSTRUIT ÎNCĂ.** Comportamentul ship-uit azi pe site-urile Professional rămâne formularul local de cerere de programare (și, unde e setat, linkul Cal.com opțional din Detalii). Niciun flux nativ de booking, dashboard de programări sau motor de availability nu există încă în produs.
+Stare: **în construcție (2026-09-05).** Pașii (a)+(b) din secvența de livrare sunt pe branch-ul calendar nativ (design canvases + model SQLite tenant-keyed + booking engine + oracle de izolare). **Parțial (c):** există un **widget public de booking** (preview + API write-mostly tenant-scoped) pe cale separată — **nu** cutover, **nu** înlocuiește formularul local de cerere de pe site-urile Professional ship-uite. Comportamentul public pe site-urile live rămâne formularul local (+ link Cal.com opțional din Detalii) până la cutover explicit după QA/advocate. Lipsesc încă: dashboard owner, editor availability pe produs, email harness, cutover staged.
 
 Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **netulburat și nelegat** de Site Builder: nu se șterge, nu se oprește, nu se modifică din acest track, și **nu** se construiește nicio integrare Site Builder → acel pilot. Este un experiment separat, irelevant pentru arhitectura de mai jos.
 
@@ -272,9 +272,9 @@ Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **n
 
 ### Secvență de livrare (inițiativă fresh)
 
-1. acest decision packet + design canvases;
-2. model de date nativ + booking engine + oracle de izolare tenant;
-3. UI public de booking + dashboard owner + editor de availability;
+1. ~~acest decision packet + design canvases~~ — done (c4406d5 lineage);
+2. ~~model de date nativ + booking engine + oracle de izolare tenant~~ — done (c4406d5 lineage);
+3. UI public de booking + dashboard owner + editor de availability — **public widget (part 1) pe cale separată / preview** (2026-09-05); dashboard owner + editor + cutover site = remaining;
 4. email harness + audit de livrare;
 5. cutover staged de la formularul local de cerere + QA/advocate full + proof-of-flow.
 

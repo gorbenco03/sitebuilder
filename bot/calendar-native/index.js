@@ -2,7 +2,8 @@
 /**
  * bot/calendar-native — native Hidook Professional booking core (VISION.md §8).
  *
- * Step (a)+(b): relational model + booking engine. No public UI wiring yet.
+ * Step (a)+(b): relational model + booking engine.
+ * Step (c) part 1: public booking widget + write-mostly public API.
  * Legacy POST /api/appointments local-request path stays untouched.
  */
 
@@ -10,6 +11,7 @@ const { openCalendarDb, SCHEMA_VERSION } = require('./db');
 const schema = require('./schema');
 const engine = require('./engine');
 const time = require('./time');
+const publicApi = require('./public-api');
 
 module.exports = {
     openCalendarDb,
@@ -17,4 +19,5 @@ module.exports = {
     schema,
     engine,
     time,
+    publicApi,
 };
