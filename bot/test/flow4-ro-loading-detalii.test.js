@@ -2,13 +2,26 @@
 /**
  * bot/test/flow4-ro-loading-detalii.test.js — Flow 4 Detalii Romanian chrome oracle.
  *
+ * STALE ORACLE RECONCILE (S-legacy G2, 2026-09-04):
+ * Parent-vs-HEAD "field keys/types stable" was pinned to 254be23 (labels-only
+ * remake). Later canonical work intentionally evolved schema shape:
+ *   - business.lang: text → select (all five systems)
+ *   - labels.menuLang added on product-menu (desserdirina already had it)
+ *   - appointment.bookingUrl added on professionals (optional Cal.com link slot;
+ *     native Hidook calendar supersedes the product direction, but the key is
+ *     already shipped and is not a Detalii EN leak)
+ * Those are not Detalii EN regressions. Check now allows that documented
+ * evolution while still locking: no factory EN titles/labels/hints, RO
+ * loading chrome, section ids stable, parent keys retained (except the
+ * already-dropped seo.ogImage), and no unexpected key/type drift.
+ *
  * Prior card locked no hero/SEO jargon + RO loading overlays.
  * Advocate on parent 254be23: professionals/local-service/portfolio Detalii still
  * leaked factory English (About the firm / practice, Site language, Pick a color…).
  * Desserdirina + product-menu were already RO on those slots.
  *
  * Causal RED on required parent 254be2353503f62d307fdae8bc93986c8dd140e4;
- * GREEN on HEAD after full title/label/hint romanization (keys stable).
+ * GREEN on HEAD after full title/label/hint romanization (+ documented key evolution).
  *
  * Run: node bot/test/flow4-ro-loading-detalii.test.js
  */
@@ -528,15 +541,34 @@ check('HEAD: all five schemas — no hero/SEO and no factory English in title/la
   }
 });
 
-check('HEAD: schema keys/ids for hero/seo/facebook unchanged (labels only)', () => {
+check('HEAD: schema keys/ids stable aside from documented post-parent evolution', () => {
+  /** seo.ogImage was dropped earlier; ignore for parent/head key parity. */
   function dropRemovedSocialImage(schema) {
     const next = JSON.parse(JSON.stringify(schema));
-    next.sections = (next.sections || []).map((sec) => {
-      sec.fields = (sec.fields || []).filter((f) => f && f.key !== 'seo.ogImage');
-      return sec;
-    }).filter((sec) => sec.id !== 'seo' || (sec.fields && sec.fields.length));
+    next.sections = (next.sections || [])
+      .map((sec) => {
+        sec.fields = (sec.fields || []).filter((f) => f && f.key !== 'seo.ogImage');
+        return sec;
+      })
+      .filter((sec) => sec.id !== 'seo' || (sec.fields && sec.fields.length));
     return next;
   }
+  /** Intentional post-254be23 shape changes (not Detalii EN leaks). */
+  const ALLOWED_TYPE_CHANGES = {
+    'business.lang': { from: 'text', to: 'select' },
+  };
+  const ALLOWED_ADDED_KEYS = new Set(['labels.menuLang', 'appointment.bookingUrl']);
+
+  function fieldMap(schema) {
+    const map = Object.create(null);
+    for (const sec of schema.sections || []) {
+      for (const f of sec.fields || []) {
+        if (f && f.key) map[f.key] = f.type || '';
+      }
+    }
+    return map;
+  }
+
   for (const rel of SCHEMAS) {
     const parent = dropRemovedSocialImage(parseSchema(parentBlob(rel)));
     const head = dropRemovedSocialImage(parseSchema(headRead(rel)));
@@ -544,16 +576,29 @@ check('HEAD: schema keys/ids for hero/seo/facebook unchanged (labels only)', () 
     const hIds = (head.sections || []).map((s) => s.id).join(',');
     assert.strictEqual(hIds, pIds, rel + ' section ids stable');
 
-    function keysOf(schema) {
-      const keys = [];
-      for (const sec of schema.sections || []) {
-        for (const f of sec.fields || []) {
-          if (f && f.key) keys.push(f.key + ':' + (f.type || ''));
-        }
-      }
-      return keys.join('|');
+    const pMap = fieldMap(parent);
+    const hMap = fieldMap(head);
+
+    for (const key of Object.keys(pMap)) {
+      assert.ok(Object.prototype.hasOwnProperty.call(hMap, key), rel + ' retained parent key ' + key);
+      if (pMap[key] === hMap[key]) continue;
+      const allowed = ALLOWED_TYPE_CHANGES[key];
+      assert.ok(
+        allowed && allowed.from === pMap[key] && allowed.to === hMap[key],
+        rel + ' unexpected type change ' + key + ':' + pMap[key] + '->' + hMap[key]
+      );
     }
-    assert.strictEqual(keysOf(head), keysOf(parent), rel + ' field keys/types stable');
+
+    for (const key of Object.keys(hMap)) {
+      if (Object.prototype.hasOwnProperty.call(pMap, key)) continue;
+      assert.ok(
+        ALLOWED_ADDED_KEYS.has(key),
+        rel + ' unexpected added key ' + key + ':' + hMap[key]
+      );
+    }
+
+    // Documented evolution must actually be present on HEAD where applicable.
+    assert.strictEqual(hMap['business.lang'], 'select', rel + ' business.lang is select');
   }
 });
 
