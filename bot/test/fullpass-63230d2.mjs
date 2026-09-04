@@ -502,15 +502,26 @@ async function run() {
 
       await closeDrawer();
       await acceptPreviewCookie();
-      const wa = page.frameLocator('#preview-iframe').locator('.whatsapp-float, #wa-fab, a.whatsapp-float').first();
-      if (await wa.count()) {
-        await wa.click({ timeout: 4000 }).catch(() => {});
+      const waSelectors = '.whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa';
+      const waCandidates = page.frameLocator('#preview-iframe').locator(waSelectors);
+      let waVisible = null;
+      const waCount = await waCandidates.count();
+      for (let i = 0; i < waCount; i++) {
+        const candidate = waCandidates.nth(i);
+        if (await candidate.isVisible().catch(() => false)) {
+          waVisible = candidate;
+          break;
+        }
+      }
+
+      if (waVisible) {
+        await waVisible.click({ timeout: 4000 }).catch(() => {});
         await page.waitForTimeout(500);
         const qr = page.frameLocator('#preview-iframe').locator('#wa-qr, .wa-qr');
         const qrVisible = await qr.first().isVisible().catch(() => false);
         await shot(system + '-whatsapp-qr', {
           action: 'click',
-          selector: '.whatsapp-float',
+          selector: waSelectors,
           detail: 'qrVisible=' + qrVisible,
         });
         if (qrVisible) {
@@ -533,8 +544,8 @@ async function run() {
           defect('medium', 'WhatsApp QR panel did not open on ' + system, 'click float had no dialog');
         }
       } else {
-        defect('medium', 'WhatsApp float missing on ' + system + ' seed', 'no .whatsapp-float');
-        await shot(system + '-whatsapp-missing', { action: 'inspect', selector: '.whatsapp-float', ok: false });
+        defect('medium', 'WhatsApp control missing on ' + system + ' seed', 'no visible .whatsapp-float/#wa-fab/a.whatsapp-float/.ls-dock__wa');
+        await shot(system + '-whatsapp-missing', { action: 'inspect', selector: waSelectors, ok: false });
       }
       } catch (systemErr) {
         defect('high', 'Walk error on ' + system, String(systemErr.message || systemErr).split('\n')[0]);
