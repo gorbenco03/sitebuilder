@@ -1,6 +1,6 @@
 # Hidook Site Builder — PROJECT_STATUS
 
-Actualizat: 2026-09-04 (RO owner override: calendar Professional = modul NATIV Hidook — supersedează override-ul same-day self-hosted cal.diy; VISION.md §8; docs-only t_959ad639)
+Actualizat: 2026-09-05 (calendar nativ Hidook step (a)+(b) integrat pe main la c4406d5, ACCEPT critic-gpt t_e36602c9)
 
 ## Status authority
 
