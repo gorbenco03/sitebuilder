@@ -39,6 +39,10 @@ Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, r
 - `Hidook Site Builder agency supervisor` (`0fa668624ebb`) — every 30m, deliver origin
 - `Sitebuilder dispatch watchdog` (`88e0c0b42953`) — every 10m, script, no-agent
 
+## Notă operațională 2026-09-04 19:37 (HQ, fără impact produs)
+
+`t_7b6facca` (S-legacy reconcile: 22 fișiere oracle stale) a epuizat bugetul de iterații (543 evenimente, compactat de 3 ori) fără nicio schimbare de bytes pe HEAD `cc716ce` — închis ca `OPERATIONAL FAILURE; NOT semantic candidate/ACCEPT`, worktree curățat de artefacte laterale (cookie-banner.css/js, cookies/privacy/terms.html, .hermes/test-failure-logs — generate accidental de rularea testelor, nu produs). Review-ul asociat `t_a1fa2f82` blocat/superseded (nu avea ce revizui). Înlocuit cu **7 carduri micro-slice** (grup de 1-6 fișiere fiecare, aceeași bază `cc716ce`, builder-backend + critic-gpt read-only, aceleași reguli: nu atinge `bot/site-legal.js`/`fullpass-63230d2.mjs`, commit local fără push): G1 flow2 (5 fișiere), G2 flow4 (2), G3 sNN advocate/qa-fail chain (6), G4 s3/s48 design-system+editor (2), G5 s51/s53 renewal+placeholders (2), G6 s54/s55 photos (2), G7 s56/s58/builder-editor (3). G1 rulează acum; restul în coadă (cap 1/profil pe builder-backend, se promovează automat).
+
 ## Următorul pas sigur
 
 După ACCEPT pe docs-only calendar v2 native (`t_959ad639` / review `t_d93bd3bc`): pornește pasul (a)/(b) din secvența VISION §8 — design canvases + model de date nativ + booking engine + tenant isolation oracle — **fără** integrare cal.diy, **fără** Stripe/DNS/secrete producție, **fără** cutover până la QA verde pe flow-ul nativ. Nu reînvia carduri CalDiy arhivate ca path de produs.
