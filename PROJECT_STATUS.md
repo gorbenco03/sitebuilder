@@ -35,6 +35,10 @@ Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, r
 - Flow 3 E2E: stranger reopen after OF-2 export entitlement — ACCEPT
 - Flow 2 replay: OF-1/OF-3/OF-4 (og:image, Details auto-open, WhatsApp QR) — toate ACCEPT
 
+## Ultimul eveniment integrat (2026-09-05, HQ)
+
+Calendar v2 step (c) part 1 (public native booking widget, t_03810a59 / review ACCEPT t_19776a74, SHA 92409d5) fast-forward-echivalent integrat pe `main` local la `9a7afb4` (merge commit, fără push). Verificat independent post-merge pe main integrat: `calendar-native-engine.test.js` + `calendar-native-public-widget.test.js` pass 2/2; `fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`. Widget-ul rămâne o cale separată/nouă — formularul local de appointment-request (s70) e neschimbat și încă live. Fără Stripe/DNS/secrete/cal.diy atins.
+
 ## Cron activ
 
 - `Hidook Site Builder agency supervisor` (`0fa668624ebb`) — every 30m, deliver origin
