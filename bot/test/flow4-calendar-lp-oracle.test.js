@@ -2,6 +2,16 @@
 /**
  * Flow 4.3 oracle — Calendar Professional groundwork + LP readiness.
  *
+ * STALE ORACLE RECONCILE (S-legacy G2, 2026-09-04):
+ * Professionals presets no longer use the English fallback
+ * "request has been logged" / exact "Cererea ta a fost înregistrată" string.
+ * Shipped RO confirmation is "Am înregistrat cererea…" plus intro/FAQ copy
+ * that still denies automatic booking. Schema honesty moved from English
+ * "local request|no external calendar" prose into RO field labels/hints
+ * ("cerere, nu confirmare automată"). Assertions updated to the current
+ * contract — not a product regression. Boundary/cal.diy Option C module
+ * and no-fake-embed guards remain authoritative until native calendar ships.
+ *
  * 1) No fake production cal.diy embed / "book now on hosted calendar" on
  *    public templates (professionals stays local appointment *request*).
  * 2) Builder landing/product chrome prices match commercial model from
@@ -148,13 +158,33 @@ async function run() {
 
     await check('professionals presets keep request-not-booking honesty', () => {
         const presets = read('templates/professionals/presets.json');
-        assert.ok(/isn't an automatic booking|isn't an automatic calendar booking|cererea/i.test(presets));
-        assert.ok(/request has been logged|Cererea ta a fost înregistrată/i.test(presets));
+        // Current RO seeds use "cererea" + explicit no-auto-booking wording.
+        assert.ok(/cererea/i.test(presets), 'presets still speak in request (cerere) terms');
+        assert.ok(
+            /Am înregistrat cererea|Cererea ta a fost înregistrată|request has been logged/i.test(presets),
+            'confirmation acknowledges a logged request (current RO or legacy EN)'
+        );
+        assert.ok(
+            /nu (face o )?rezervare automată|nu rezervă automat|isn't an automatic (calendar )?booking/i.test(
+                presets
+            ),
+            'intro/FAQ still denies automatic booking'
+        );
+        assert.ok(
+            /Confirmăm (disponibilitatea|cererea)|înainte ca întâlnirea să devină fermă/i.test(presets),
+            'confirmation is provisional until owner confirms'
+        );
         assert.ok(!FAKE_CAL_CLAIMS.some((c) => c.re.test(presets)));
         const tpl = read('templates/professionals/template.html');
         assert.ok(!/<iframe/i.test(tpl) || !/cal\.(diy|com)/i.test(tpl));
         const schema = read('templates/professionals/schema.json');
-        assert.ok(/local request|no external calendar/i.test(schema));
+        // Schema honesty is now RO labels/hints, not English "local request" prose.
+        assert.ok(
+            /local request|no external calendar|cerere,\s*nu confirmare automată|nu confirmare automată/i.test(
+                schema
+            ),
+            'schema still documents request-not-auto-confirm honesty'
+        );
     });
 
     await check('builder landing has config-driven price spans (not hard-coded 99€/29€ in how/success)', () => {
