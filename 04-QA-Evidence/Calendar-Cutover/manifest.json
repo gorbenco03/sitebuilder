@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "out": "/Users/Work/Desktop/sitebuilder/.worktrees/t_493652df/04-QA-Evidence/Calendar-Cutover",
+  "shots": [
+    "01-legacy-default-form-desktop.png",
+    "02-native-opt-in-widget-desktop.png",
+    "03-native-opt-in-widget-390.png",
+    "04-book-form-filled-desktop.png",
+    "05-book-result-ro-status.png",
+    "06-manage-token-view-390.png",
+    "07-manage-cancel-confirmed-390.png",
+    "08-manage-invalid-token-390.png",
+    "09-legacy-form-unchanged-390.png"
+  ],
+  "meta": {
+    "bookingStatus": "confirmed",
+    "customerId": "cust_cutover_shot",
+    "siteId": "site_cutover_shot"
+  },
+  "cutoverFlag": "appointment.nativeBooking"
+}

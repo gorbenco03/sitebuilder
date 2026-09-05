@@ -183,7 +183,7 @@ Reguli:
 
 **Override owner 2026-09-04 — NATIVE HIDOOK (LOCKED).** Supersedează atât decizia Cal.com-link-only din 2026-09-01, cât și override-ul earlier same-day (2026-09-04) pentru self-hosted cal.diy / Cal.com Platform. Calendarul Professional final este un **modul nativ Hidook construit în interiorul Site Builder** — **nu** cal.diy, **nu** Cal.com Platform, **nu** embed/integrare către un calendar third-party self-hosted.
 
-Stare: **în construcție (2026-09-05).** Pașii (a)+(b) din secvența de livrare sunt pe branch-ul calendar nativ (design canvases + model SQLite tenant-keyed + booking engine + oracle de izolare). **Parțial (c):** (part 1) **widget public de booking** + (part 2) **dashboard owner autentificat + editor availability** pe cale separată (`/calendar-native/owner/*`, `/api/calendar-native/owner/*`) — **nu** cutover, **nu** înlocuiește formularul local de cerere de pe site-urile Professional ship-uite. **Parțial (d):** harness email tranzacțional nativ (boundary generic de provider + transport local/memory, outbox cu status queued/sent/failed/suppressed/dead_letter, retry backoff exponențial, copy RO onest pe stare, token manage în email visitor) — **fără** sender de producție și **fără** secrete live. Comportamentul public pe site-urile live rămâne formularul local (+ link Cal.com opțional din Detalii) până la cutover explicit după QA/advocate. Lipsește încă: cutover staged (step e).
+Stare: **BUILT ca opt-in per-site (2026-09-05) — nu default global.** Pașii (a)+(b)+(c)+(d)+(e) sunt livrate pe linia calendar nativ: model SQLite tenant-keyed + booking engine + oracle de izolare; widget public de booking; dashboard owner + editor availability; harness email (boundary provider + transport local/memory, outbox queued/sent/failed/suppressed/dead_letter, retry backoff, copy RO onest, token manage); **cutover staged (e)** prin flag-ul de config `appointment.nativeBooking` (`da` / `nu`, reversibil, non-destructiv). Default pe site-urile Professional rămâne formularul local de cerere (+ link Cal.com opțional din Detalii). Opt-in la publicare injectează tenant ids (`nativeCustomerId` / `nativeSiteId` din site.userId + site.id), seed-uiește servicii/weekly din config appointment, și montează widget-ul nativ pe `#appointment`. Opt-out (gol/`nu`) restaurează formularul local; rezervările native **nu** se șterg. Manage-link visitor: `GET/POST /api/calendar-native/manage*` + UI `/calendar-native/manage/?token=` (token unic, unguessable, single-booking; cancel eliberează slotul). **Nu** este încă singura/opțiunea default pe toate site-urile live — cutover forțat pe flota existentă rămâne out of scope până la decizie owner.
 
 Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **netulburat și nelegat** de Site Builder: nu se șterge, nu se oprește, nu se modifică din acest track, și **nu** se construiește nicio integrare Site Builder → acel pilot. Este un experiment separat, irelevant pentru arhitectura de mai jos.
 
@@ -274,9 +274,9 @@ Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **n
 
 1. ~~acest decision packet + design canvases~~ — done (c4406d5 lineage);
 2. ~~model de date nativ + booking engine + oracle de izolare tenant~~ — done (c4406d5 lineage);
-3. UI public de booking + dashboard owner + editor de availability — **public widget (part 1)** + **owner dashboard + availability editor (part 2)** pe cale separată / preview (2026-09-05); cutover pe site-urile live = remaining (step e);
-4. ~~email harness + audit de livrare~~ — done pe branch calendar-v2-email (local/memory provider boundary; fără sender producție);
-5. cutover staged de la formularul local de cerere + QA/advocate full + proof-of-flow.
+3. ~~UI public de booking + dashboard owner + editor de availability~~ — public widget + owner dashboard pe cale nativă (2026-09-05);
+4. ~~email harness + audit de livrare~~ — done (local/memory provider boundary; fără sender producție);
+5. ~~cutover staged de la formularul local de cerere~~ — done ca **opt-in per-site** via `appointment.nativeBooking` (default = legacy form; reversibil; seed la publish; manage-token visitor). Nu e default global / forțat pe flota live.
 
 ## 9. Landing page Site Builder
 

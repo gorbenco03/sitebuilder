@@ -237,6 +237,11 @@ function normalizeConfigForRender(config) {
             ? cfg.appointment.bookingUrl.trim()
             : '';
         cfg.appointment.bookingUrl = isPlausibleHttpUrl(rawBookingUrl) ? rawBookingUrl : '';
+        // Staged native cutover (VISION §8 e): empty/falsy keeps legacy form.
+        // Tenant ids are injected at publish — never invent them here.
+        if (cfg.appointment.nativeCustomerId == null) cfg.appointment.nativeCustomerId = '';
+        if (cfg.appointment.nativeSiteId == null) cfg.appointment.nativeSiteId = '';
+        if (cfg.appointment.nativeBooking == null) cfg.appointment.nativeBooking = '';
     }
     // Social cards follow the customer's current site photography. Never rely on
     // the removed customer-facing seo.ogImage URL control or a stale saved value.
@@ -570,9 +575,9 @@ function expandEach(str, scope, editOpts) {
             const negate = dataPath[0] === '!';
             const resolvedPath = negate ? dataPath.slice(1) : dataPath;
             const ifVal = resolve(scope, resolvedPath);
-            // Treat string 'false' / '0' / 'no' as falsy so schema fields declared as
-            // type:text with value 'false' (e.g. showWordmark) work correctly with @if.
-            const isFalsyString = typeof ifVal === 'string' && /^(false|0|no)$/i.test(ifVal.trim());
+            // Treat string 'false' / '0' / 'no' / 'nu' as falsy so schema fields declared as
+            // type:text with value 'false'/'nu' (e.g. showWordmark, nativeBooking) work with @if.
+            const isFalsyString = typeof ifVal === 'string' && /^(false|0|no|nu)$/i.test(ifVal.trim());
             const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : (!isFalsyString && Boolean(ifVal));
             if (negate ? !truthy : truthy) out += expandEach(block, scope, editOpts);
         } else {

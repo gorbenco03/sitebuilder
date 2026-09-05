@@ -176,6 +176,32 @@
             <div class="pr-shell">
                 <p class="pr-kicker">{{labels.bookEyebrow}}</p>
                 <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
+                <!-- @if appointment.nativeBooking -->
+                <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
+                <!-- @if appointment.confidentialityWarning -->
+                <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
+                <!-- @endif -->
+                <link rel="stylesheet" href="/calendar-native/widget/public-booking-widget.css" />
+                <div
+                    id="hnb-root"
+                    class="pr-native-cal"
+                    data-hidook-cal-native
+                    data-customer-id="{{appointment.nativeCustomerId}}"
+                    data-site-id="{{appointment.nativeSiteId}}"
+                    data-api-base=""
+                    data-brand="{{business.name}}"
+                    data-contact-phone="{{contact.phoneDisplay}}"
+                    data-contact-phone-tel="{{contact.phone}}"
+                    data-contact-email="{{contact.email}}"
+                    data-contact-whatsapp="{{contact.waHref}}"
+                    data-day-count="14"
+                ></div>
+                <!-- @if appointment.privacyNotice -->
+                <p class="pr-privacy">{{appointment.privacyNotice}}</p>
+                <!-- @endif -->
+                <script src="/calendar-native/widget/public-booking-widget.js" defer></script>
+                <!-- @endif -->
+                <!-- @if !appointment.nativeBooking -->
                 <!-- @if appointment.bookingUrl -->
                 <div class="pr-booking-action">
                     <a href="{{appointment.bookingUrl}}" class="pr-btn pr-btn--primary pr-booking-link" target="_blank" rel="noopener noreferrer">Programează-te</a>
@@ -269,6 +295,7 @@
                     <span data-w="{{weekday}}" data-s="{{start}}" data-e="{{end}}"></span>
                     <!-- @end -->
                 </div>
+                <!-- @endif -->
                 <!-- @endif -->
             </div>
         </section>

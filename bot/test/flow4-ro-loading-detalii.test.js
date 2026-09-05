@@ -10,6 +10,8 @@
  *   - appointment.bookingUrl added on professionals (optional Cal.com link slot;
  *     native Hidook calendar supersedes the product direction, but the key is
  *     already shipped and is not a Detalii EN leak)
+ *   - appointment.nativeBooking added on professionals (VISION §8 step e staged
+ *     opt-in cutover flag; type:text da/nu; not a Detalii EN leak)
  * Those are not Detalii EN regressions. Check now allows that documented
  * evolution while still locking: no factory EN titles/labels/hints, RO
  * loading chrome, section ids stable, parent keys retained (except the
@@ -557,7 +559,11 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
   const ALLOWED_TYPE_CHANGES = {
     'business.lang': { from: 'text', to: 'select' },
   };
-  const ALLOWED_ADDED_KEYS = new Set(['labels.menuLang', 'appointment.bookingUrl']);
+  const ALLOWED_ADDED_KEYS = new Set([
+    'labels.menuLang',
+    'appointment.bookingUrl',
+    'appointment.nativeBooking',
+  ]);
 
   function fieldMap(schema) {
     const map = Object.create(null);
