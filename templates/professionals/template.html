@@ -181,14 +181,14 @@
                 <!-- @if appointment.confidentialityWarning -->
                 <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
                 <!-- @endif -->
-                <link rel="stylesheet" href="/calendar-native/widget/public-booking-widget.css" />
+                <link rel="stylesheet" href="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.css" />
                 <div
                     id="hnb-root"
                     class="pr-native-cal"
                     data-hidook-cal-native
                     data-customer-id="{{appointment.nativeCustomerId}}"
                     data-site-id="{{appointment.nativeSiteId}}"
-                    data-api-base=""
+                    data-api-base="{{appointment.nativeApiBase}}"
                     data-brand="{{business.name}}"
                     data-contact-phone="{{contact.phoneDisplay}}"
                     data-contact-phone-tel="{{contact.phone}}"
@@ -199,7 +199,7 @@
                 <!-- @if appointment.privacyNotice -->
                 <p class="pr-privacy">{{appointment.privacyNotice}}</p>
                 <!-- @endif -->
-                <script src="/calendar-native/widget/public-booking-widget.js" defer></script>
+                <script src="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.js" defer></script>
                 <!-- @endif -->
                 <!-- @if !appointment.nativeBooking -->
                 <!-- @if appointment.bookingUrl -->

@@ -7,15 +7,25 @@
     "03-native-opt-in-widget-390.png",
     "04-book-form-filled-desktop.png",
     "05-book-result-ro-status.png",
+    "10-email-outbox.png",
+    "11-owner-dashboard.png",
+    "12-owner-action.png",
+    "13-visitor-manage-link.png",
     "06-manage-token-view-390.png",
+    "14-slot-freed.png",
     "07-manage-cancel-confirmed-390.png",
+    "15-double-book-rejected.png",
     "08-manage-invalid-token-390.png",
     "09-legacy-form-unchanged-390.png"
   ],
+  "surface": "opted-in-professionals-site",
+  "notPreviewOnly": true,
   "meta": {
     "bookingStatus": "confirmed",
-    "customerId": "cust_cutover_shot",
-    "siteId": "site_cutover_shot"
+    "customerId": "4c5bb001-adec-44b8-a8d2-4869dcbd74f2",
+    "siteId": "c2c76d69-a2ce-4a4d-a20b-f49b1bab777e",
+    "liveManageTokenPresent": true
   },
-  "cutoverFlag": "appointment.nativeBooking"
+  "cutoverFlag": "appointment.nativeBooking",
+  "ac5CtaClean": true
 }

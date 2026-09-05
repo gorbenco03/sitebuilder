@@ -18,6 +18,36 @@ const engine = require('./engine');
 const TENANT_RE = /^[a-zA-Z0-9_-]{2,80}$/;
 
 /**
+ * Public origin for native widget assets + public booking API when the published
+ * site is a static export (Cloudflare/Vercel/Netlify) that is not same-origin
+ * with the bot host. Empty string = same-origin relative URLs (local/bot host).
+ *
+ * Env (build/publish time): CALENDAR_PUBLIC_BASE_URL || PUBLIC_BASE_URL
+ * Optional config override: appointment.nativeApiBase (absolute http(s) origin).
+ *
+ * @param {object} [appt]
+ * @returns {string} origin without trailing slash, or ''
+ */
+function resolveNativeApiBase(appt) {
+    const fromCfg =
+        appt && typeof appt.nativeApiBase === 'string' ? appt.nativeApiBase.trim() : '';
+    const fromEnv = String(
+        process.env.CALENDAR_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || ''
+    ).trim();
+    const raw = fromCfg || fromEnv || '';
+    if (!raw) return '';
+    // Absolute origin only — reject path-only or protocol-relative junk.
+    if (!/^https?:\/\//i.test(raw)) return '';
+    try {
+        const u = new URL(raw);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+        return (u.origin + (u.pathname || '').replace(/\/$/, '')).replace(/\/$/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
+/**
  * Truthy nativeBooking values (schema is type:text like appointment.enabled).
  * @param {*} value
  * @returns {boolean}
@@ -79,6 +109,7 @@ function applyCutoverToConfig(config, site) {
         // cannot point at a stale tenant without an explicit re-opt-in publish.
         cfg.appointment.nativeCustomerId = '';
         cfg.appointment.nativeSiteId = '';
+        cfg.appointment.nativeApiBase = '';
         return { config: cfg, optedIn: false, customerId: null, siteId: null };
     }
     const customerId = String((site && site.userId) || '').trim();
@@ -90,9 +121,17 @@ function applyCutoverToConfig(config, site) {
     }
     cfg.appointment.nativeCustomerId = customerId;
     cfg.appointment.nativeSiteId = siteId;
+    // Static export hosts need an explicit bot-origin API base; empty = same-origin.
+    cfg.appointment.nativeApiBase = resolveNativeApiBase(cfg.appointment);
     // Native path wins over Cal.com link when both set.
     // bookingUrl left intact in config so opt-out can restore it.
-    return { config: cfg, optedIn: true, customerId, siteId };
+    return {
+        config: cfg,
+        optedIn: true,
+        customerId,
+        siteId,
+        nativeApiBase: cfg.appointment.nativeApiBase,
+    };
 }
 
 /**
@@ -225,6 +264,7 @@ module.exports = {
     TENANT_RE,
     isNativeBookingEnabled,
     configHasNativeBooking,
+    resolveNativeApiBase,
     applyCutoverToConfig,
     seedTenantFromProfessionalConfig,
     preparePublishCutover,

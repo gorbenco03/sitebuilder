@@ -85,9 +85,47 @@ const optedHtml = renderHtml(TPL, baseCfg);
 assert.match(optedHtml, /data-hidook-cal-native/);
 assert.match(optedHtml, /data-customer-id="cust_cutover_A"/);
 assert.match(optedHtml, /data-site-id="site_cutover_A"/);
+assert.match(optedHtml, /data-api-base="/, 'nativeApiBase attr present');
 assert.match(optedHtml, /public-booking-widget\.js/);
 assert.doesNotMatch(optedHtml, /id="pr-appt-form"/);
 assert.doesNotMatch(optedHtml, /pr-booking-link/);
+
+// CSS must force-hide layout/steps when [hidden] (display:grid/flex otherwise wins)
+const widgetCss = fs.readFileSync(
+    path.join(ROOT, 'bot/calendar-native/widget/public-booking-widget.css'),
+    'utf8'
+);
+assert.match(widgetCss, /\.hnb__layout\[hidden\]/);
+assert.match(widgetCss, /\.hnb__steps\[hidden\]/);
+assert.match(widgetCss, /display:\s*none\s*!important/);
+
+// nativeApiBase: empty same-origin by default; env injects absolute origin at cutover
+const site = { userId: 'cust_cutover_A', id: 'site_cutover_A' };
+assert.strictEqual(cutover.resolveNativeApiBase({}), '');
+assert.strictEqual(cutover.resolveNativeApiBase({ nativeApiBase: 'https://api.example.com/' }), 'https://api.example.com');
+{
+    const prev = process.env.CALENDAR_PUBLIC_BASE_URL;
+    process.env.CALENDAR_PUBLIC_BASE_URL = 'https://bot.hidook.test';
+    const withEnv = cutover.applyCutoverToConfig(
+        { appointment: { nativeBooking: 'da' } },
+        site
+    );
+    assert.strictEqual(withEnv.config.appointment.nativeApiBase, 'https://bot.hidook.test');
+    if (prev == null) delete process.env.CALENDAR_PUBLIC_BASE_URL;
+    else process.env.CALENDAR_PUBLIC_BASE_URL = prev;
+}
+const withBaseHtml = renderHtml(TPL, {
+    ...baseCfg,
+    appointment: {
+        ...baseCfg.appointment,
+        nativeBooking: 'da',
+        nativeCustomerId: 'cust_cutover_A',
+        nativeSiteId: 'site_cutover_A',
+        nativeApiBase: 'https://bot.hidook.test',
+    },
+});
+assert.match(withBaseHtml, /data-api-base="https:\/\/bot\.hidook\.test"/);
+assert.match(withBaseHtml, /href="https:\/\/bot\.hidook\.test\/calendar-native\/widget\/public-booking-widget\.css"/);
 
 baseCfg.appointment.nativeBooking = 'nu';
 const optedOutHtml = renderHtml(TPL, baseCfg);
@@ -103,7 +141,6 @@ assert.doesNotMatch(nativeWins, /pr-booking-link/);
 assert.doesNotMatch(nativeWins, /cal\.com\/should-not-win/);
 
 // --- 4. applyCutoverToConfig injects tenant; opt-out clears ids ---
-const site = { userId: 'cust_cutover_A', id: 'site_cutover_A' };
 const on = cutover.applyCutoverToConfig(
     { appointment: { nativeBooking: 'da', bookingUrl: 'https://cal.com/x' } },
     site
@@ -121,6 +158,7 @@ const off = cutover.applyCutoverToConfig(
 assert.strictEqual(off.optedIn, false);
 assert.strictEqual(off.config.appointment.nativeCustomerId, '');
 assert.strictEqual(off.config.appointment.nativeSiteId, '');
+assert.strictEqual(off.config.appointment.nativeApiBase, '');
 
 // --- 5. Seed from professional appointment types/weekly ---
 const seedCfg = JSON.parse(JSON.stringify(PRESETS[0].config));

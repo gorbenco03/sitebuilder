@@ -307,7 +307,15 @@
   font-size: 14px;
   padding: 8px 0;
 }
-.hnb[hidden], .hnb__panel[hidden], .hnb__result[hidden] { display: none !important; }
+/* display:grid/flex on layout/steps overrides bare [hidden] — force hide */
+.hnb[hidden],
+.hnb__panel[hidden],
+.hnb__result[hidden],
+.hnb__layout[hidden],
+.hnb__steps[hidden],
+.hnb__sub[hidden] {
+  display: none !important;
+}
 
 @media (max-width: 720px) {
   .hnb { padding: 18px 14px 22px; border-radius: 18px; }

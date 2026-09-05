@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Seed + serve for Calendar-Cutover QA screenshots.
+ * Seed + serve for Calendar-Cutover QA screenshots on a real opted-in professionals site.
  * Run: node --experimental-sqlite scripts/_cutover-shot-server.js
  */
 if (!process.execArgv.includes('--experimental-sqlite')) {
@@ -37,13 +37,29 @@ const { openCalendarDb } = require('../bot/calendar-native/db');
 const engine = require('../bot/calendar-native/engine');
 const cutover = require('../bot/calendar-native/cutover');
 const publicApi = require('../bot/calendar-native/public-api');
+const email = require('../bot/calendar-native/email');
 const { zonedWallTimeToUtcMs, toIsoUtc } = require('../bot/calendar-native/time');
 const { createHandler } = require('../bot/server.js');
+const auth = require('../bot/auth');
+const registry = require('../bot/registry');
 
 publicApi.resetDbHandle();
 const db = openCalendarDb({ dataDir: tmp });
 
-const site = { userId: 'cust_cutover_shot', id: 'site_cutover_shot' };
+// Memory email transport so harness outbox is inspectable
+const mem = email.createMemoryTransport();
+email.setTransport(mem);
+
+// Real registry site (owner dashboard auth path) — not the widget demo tenant
+const ownerUser = registry.getOrCreateUserByEmail('owner.cutover@example.com');
+const siteRec = registry.createSite({
+    userId: ownerUser.id,
+    templateId: 'professionals',
+    templateVersion: 1,
+    slug: 'cutover-opted-in-cabinet',
+});
+const site = { userId: ownerUser.id, id: siteRec.id };
+
 const preset = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8')
 ).presets[0].config;
@@ -56,23 +72,39 @@ const legacyHtml = renderHtml(tpl, preset).replace(
     'href="/cutover-shot/styles.css"'
 );
 
-// Native opted-in HTML
+// Native opted-in HTML via preparePublishCutover (real seed + tenant ids + api base)
 const nativeCfg = JSON.parse(JSON.stringify(preset));
 nativeCfg.appointment.nativeBooking = 'da';
 const prepared = cutover.preparePublishCutover({ config: nativeCfg, site, db });
 let nativeHtml = renderHtml(tpl, prepared.config);
-nativeHtml = nativeHtml
-    .replace('href="styles.css"', 'href="/cutover-shot/styles.css"')
-    .replace(
-        'href="/calendar-native/widget/public-booking-widget.css"',
-        'href="/calendar-native/widget/public-booking-widget.css"'
-    )
-    .replace(
-        'src="/calendar-native/widget/public-booking-widget.js"',
-        'src="/calendar-native/widget/public-booking-widget.js"'
-    );
+nativeHtml = nativeHtml.replace('href="styles.css"', 'href="/cutover-shot/styles.css"');
 
-// Seed a confirmed booking + manage token for manage UI shots
+// Owner dashboard shell bound to this opted-in tenant
+const ownerHtml = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programări — owner cutover</title>
+  <link rel="stylesheet" href="/calendar-native/owner/owner-dashboard.css" />
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: #f3f6f4; color: #14201c; }
+  </style>
+</head>
+<body class="hod">
+  <div
+    id="hod-root"
+    data-hidook-cal-owner
+    data-customer-id="${site.userId}"
+    data-site-id="${site.id}"
+    data-api-base=""
+    data-brand="Cabinet Cutover QA"
+  ></div>
+  <script src="/calendar-native/owner/owner-dashboard.js"></script>
+</body>
+</html>`;
+
+// Seed a confirmed booking + manage token for manage UI shots (separate from live book walk)
 const services = engine.listServices(db, site.userId, site.id, { activeOnly: true });
 const nowMs = Date.UTC(2026, 0, 1);
 const startUtc = toIsoUtc(zonedWallTimeToUtcMs(2030, 1, 7, 10, 0, 'Europe/Bucharest'));
@@ -83,21 +115,72 @@ const booked = engine.createBooking(db, site.userId, site.id, {
     visitorEmail: 'maria.cutover@example.com',
     nowMs,
 });
+// Drain email for seed booking so outbox has rows before walk
+email.processOutbox(db, { nowMs, limit: 20 }).catch(() => {});
 
 const meta = {
     port: PORT,
     dataDir: tmp,
     manageToken: booked.manageToken,
     bookingStatus: booked.status,
+    bookingId: booked.booking && booked.booking.id,
     customerId: site.userId,
     siteId: site.id,
     serviceId: services[0].id,
+    nativeApiBase: prepared.config.appointment.nativeApiBase || '',
+    ownerSessionUserId: site.userId,
 };
 fs.mkdirSync(path.join(tmp, 'cutover-shot'), { recursive: true });
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'legacy.html'), legacyHtml);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'native.html'), nativeHtml);
+fs.writeFileSync(path.join(tmp, 'cutover-shot', 'owner.html'), ownerHtml);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'styles.css'), css);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'meta.json'), JSON.stringify(meta, null, 2));
+
+function outboxSnapshot() {
+    const rows = email.listOutbox(db, site.userId, site.id, { limit: 50, includeBodies: false });
+    const delivered = mem.sent ? mem.sent.slice() : [];
+    return {
+        ok: true,
+        count: rows.length,
+        rows: rows.map((r) => ({
+            id: r.id,
+            template_key: r.template_key,
+            status: r.status,
+            booking_id: r.booking_id,
+            booking_status_snapshot: r.booking_status_snapshot,
+            to_email: r.to_email,
+        })),
+        memoryDelivered: delivered.length,
+        memorySubjects: delivered.map((d) => d.subject || (d.message && d.message.subject) || '').slice(0, 20),
+    };
+}
+
+function outboxHtmlPage() {
+    const snap = outboxSnapshot();
+    const rows = snap.rows
+        .map(
+            (r) =>
+                `<tr><td>${r.template_key}</td><td>${r.status}</td><td>${r.booking_status_snapshot || ''}</td><td>${r.to_email || ''}</td></tr>`
+        )
+        .join('');
+    return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"/><title>Email outbox harness</title>
+<style>
+body{font-family:ui-sans-serif,system-ui,sans-serif;padding:24px;background:#f7faf8;color:#14201c}
+h1{font-size:1.25rem;margin:0 0 8px}
+p{color:#5c6d66;margin:0 0 16px}
+table{border-collapse:collapse;width:100%;max-width:900px;background:#fff;border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #e4ebe7;font-size:14px}
+th{background:#eef5f1;font-weight:600}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:#d8f3e4;color:#0b6b3a;font-weight:600;font-size:12px}
+</style></head><body>
+<p class="badge">harness local — fără sender producție</p>
+<h1>Email outbox (calendar nativ)</h1>
+<p>${snap.count} mesaje în coadă / livrate local · memoryDelivered=${snap.memoryDelivered}</p>
+<table><thead><tr><th>Template</th><th>Status</th><th>Stare booking</th><th>Către</th></tr></thead>
+<tbody>${rows || '<tr><td colspan="4">Gol</td></tr>'}</tbody></table>
+</body></html>`;
+}
 
 const baseHandler = createHandler({});
 const server = http.createServer((req, res) => {
@@ -107,6 +190,31 @@ const server = http.createServer((req, res) => {
         if (rel.includes('..')) {
             res.writeHead(403);
             return res.end('forbidden');
+        }
+        if (rel === 'outbox.json') {
+            const body = JSON.stringify(outboxSnapshot(), null, 2);
+            res.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-store',
+            });
+            return res.end(body);
+        }
+        if (rel === 'outbox.html') {
+            res.writeHead(200, {
+                'Content-Type': 'text/html; charset=utf-8',
+                'Cache-Control': 'no-store',
+            });
+            return res.end(outboxHtmlPage());
+        }
+        if (rel === 'owner-session' && req.method === 'POST') {
+            const cookieValue = auth.signSession(site.userId);
+            const cookie = auth.buildSessionCookie(cookieValue);
+            res.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Set-Cookie': cookie,
+                'Cache-Control': 'no-store',
+            });
+            return res.end(JSON.stringify({ ok: true, customerId: site.userId, siteId: site.id }));
         }
         const file = path.join(tmp, 'cutover-shot', rel);
         if (!fs.existsSync(file)) {

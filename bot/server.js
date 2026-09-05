@@ -255,8 +255,29 @@ async function parseJson(req, limit = MAX_BODY_BYTES) {
 
 function sendJson(res, status, obj) {
     const body = JSON.stringify(obj);
-    res.writeHead(status, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) });
+    const prior = typeof res.getHeaders === 'function' ? res.getHeaders() : {};
+    const headers = Object.assign({}, prior, {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+    });
+    res.writeHead(status, headers);
     res.end(body);
+}
+
+/**
+ * CORS for public calendar-native API so a static published origin
+ * (Cloudflare/Vercel/Netlify) can call the bot host via data-api-base.
+ * Reflect Origin when present; no credentials on public write-mostly surface.
+ */
+function applyPublicCalendarCors(req, res) {
+    const origin = req && req.headers && (req.headers.origin || req.headers.Origin);
+    if (!origin || typeof origin !== 'string' || origin.length > 200) return;
+    if (!/^https?:\/\//i.test(origin)) return;
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    res.setHeader('Access-Control-Max-Age', '86400');
 }
 
 function sendRedirect(res, location, status = 302) {
@@ -1199,6 +1220,7 @@ function maybeSeedDemoTenant(db, customerId, siteId) {
 }
 
 async function handleCalendarNativeServices(req, res, query) {
+    applyPublicCalendarCors(req, res);
     try {
         const api = getCalendarNativeApi();
         const { customerId, siteId } = api.parseTenant({
@@ -1217,6 +1239,7 @@ async function handleCalendarNativeServices(req, res, query) {
 }
 
 async function handleCalendarNativeSlots(req, res, query) {
+    applyPublicCalendarCors(req, res);
     try {
         const api = getCalendarNativeApi();
         const { customerId, siteId } = api.parseTenant({
@@ -1239,6 +1262,7 @@ async function handleCalendarNativeSlots(req, res, query) {
 }
 
 async function handleCalendarNativeBookings(req, res) {
+    applyPublicCalendarCors(req, res);
     let body;
     try {
         body = await parseJson(req, 64 * 1024);
@@ -2743,6 +2767,19 @@ function createHandler({ onStripeEvent } = {}) {
             }
 
             // Native calendar public widget API (not a cutover of /api/appointments)
+            // OPTIONS preflight for static-export hosts calling bot origin via data-api-base
+            if (
+                req.method === 'OPTIONS' &&
+                (url === '/api/calendar-native/services' ||
+                    url === '/api/calendar-native/slots' ||
+                    url === '/api/calendar-native/bookings' ||
+                    url === '/api/calendar-native/manage' ||
+                    url === '/api/calendar-native/manage/cancel')
+            ) {
+                applyPublicCalendarCors(req, res);
+                res.writeHead(204);
+                return res.end();
+            }
             if (req.method === 'GET' && url === '/api/calendar-native/services') {
                 return await handleCalendarNativeServices(req, res, query);
             }
@@ -2753,9 +2790,11 @@ function createHandler({ onStripeEvent } = {}) {
                 return await handleCalendarNativeBookings(req, res);
             }
             if (req.method === 'GET' && url === '/api/calendar-native/manage') {
+                applyPublicCalendarCors(req, res);
                 return await handleCalendarNativeManageGet(req, res, query);
             }
             if (req.method === 'POST' && url === '/api/calendar-native/manage/cancel') {
+                applyPublicCalendarCors(req, res);
                 return await handleCalendarNativeManageCancel(req, res);
             }
 

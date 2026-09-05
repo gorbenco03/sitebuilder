@@ -242,6 +242,8 @@ function normalizeConfigForRender(config) {
         if (cfg.appointment.nativeCustomerId == null) cfg.appointment.nativeCustomerId = '';
         if (cfg.appointment.nativeSiteId == null) cfg.appointment.nativeSiteId = '';
         if (cfg.appointment.nativeBooking == null) cfg.appointment.nativeBooking = '';
+        // Empty = same-origin; publish injects CALENDAR_PUBLIC_BASE_URL when set.
+        if (cfg.appointment.nativeApiBase == null) cfg.appointment.nativeApiBase = '';
     }
     // Social cards follow the customer's current site photography. Never rely on
     // the removed customer-facing seo.ogImage URL control or a stale saved value.
