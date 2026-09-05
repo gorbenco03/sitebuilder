@@ -2,6 +2,12 @@
 /**
  * Flow 2 regression oracle for connected Instafidget copy and language UI.
  *
+ * STALE ORACLE RECONCILE (S-legacy G1, 2026-09-05):
+ * buildDrawerField now calls isSiteLocalAssetField for URL field validation.
+ * The Detalii language select harness did not stub that helper, so the oracle
+ * crashed before asserting Română label / ro stored value — false product RED.
+ * Stub isSiteLocalAssetField (returns false for business.lang). Not a stranger defect.
+ *
  * Run: node bot/test/flow2-instafidget-language.test.js
  */
 const assert = require('assert');
@@ -135,6 +141,10 @@ check('Detalii select renders the Romanian label without changing the stored tag
     document: { createElement: (tag) => new FakeElement(tag) },
     draft: { config: { business: { lang: 'ro' } } },
     isHiddenDrawerField: () => false,
+    // Product helper used by URL fields inside buildDrawerField; language select path never needs true.
+    isSiteLocalAssetField: () => false,
+    isPlausibleHttpUrl: () => true,
+    isPlausibleSiteAssetPath: () => false,
     escHtml: (value) => String(value),
     getPath: (object, key) => key.split('.').reduce((value, part) => value && value[part], object),
     setPath() {},

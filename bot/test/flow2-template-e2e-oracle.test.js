@@ -2,6 +2,13 @@
 /**
  * Contract tests for the binding Flow 2 browser oracle.
  *
+ * STALE ORACLE RECONCILE (S-legacy G1, 2026-09-05):
+ * This file already encodes the current five-system binding contract
+ * (FIXTURES / ORACLE_STEPS / verifyEvidence). Failures on cc716ce lineage were
+ * environment-only (missing playwright devDependency / node_modules in the
+ * worktree), not assertion drift. No assertion change required once playwright
+ * is installed; comment documents classification. Not a stranger product defect.
+ *
  * Run: node bot/test/flow2-template-e2e-oracle.test.js
  */
 const assert = require('assert');
