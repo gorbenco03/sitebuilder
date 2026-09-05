@@ -76,3 +76,10 @@ Integrat local pe `main` (fast-forward + 7 merge-uri non-conflictuale, fără pu
 ## Neautorizat fără aprobare separată
 
 Push la producție dincolo de worktree-uri, deploy live, DNS, Stripe live product changes, credentials, modificare/integrare pilot Railway „Hidook Calendar” (cal.diy).
+
+## PRODUSUL declarat — 2026-09-05
+
+Owner a declarat Produsul la commit `884ce76` pe `main`. Calendar Professional nativ complet (pașii a–e din VISION §8): model de date izolat pe client, motor de rezervări (fără suprapuneri de sloturi), widget public de rezervare, dashboard owner (vezi/anulează/reprogramează + editor disponibilitate), email-uri de confirmare (harness local, fără trimitere reală/secrete), și trecere opt-in per site — verificat end-to-end ca vizitator real (inclusiv defectul „buton mincinos” găsit și reparat înainte de acceptare). Integrare finală review-uită independent — ACCEPT. `fullpass-63230d2.mjs`: defects=0/46. Formularul local de programare rămâne activ neschimbat pe site-urile neactivate pe fluxul nou.
+
+Push efectuat pe ambele remote (`origin`, `hidook`) pe `main` la cererea explicită a owner-ului.
+
