@@ -1,7 +1,14 @@
 'use strict';
 /**
- * S48: browser editor picker + schema labels are restaurant / salon / trade.
- * IDs stay product-menu | portfolio | local-service; human names must not sell bakery leftovers.
+ * S48: browser editor picker + schema labels match the current commercial catalog.
+ * IDs stay product-menu | portfolio | local-service (+ professionals, desserdirina);
+ * human names must not sell bakery leftovers on the restaurant system.
+ *
+ * STALE-ORACLE note (S-legacy G4 / t_96bf4c57): earlier asserts required English
+ * "trade" inside the local-service *registry* display name. Shipped picker copy is
+ * Romanian "Meserii" (schema.json still uses English "Trades"). Updated to pin the
+ * live RO registry names from templates/registry.json.
+ *
  * Run: node bot/test/s48-editor-vertical-labels.test.js
  */
 const assert = require('assert');
@@ -9,7 +16,27 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
+/** Core verticals exercised by S48 editor-label contract. */
 const IDS = ['product-menu', 'portfolio', 'local-service'];
+/** Full commercial catalog (registry order). */
+const ALL_IDS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
+
+/** Live registry display names (RO picker). */
+const REGISTRY_NAMES = {
+  'product-menu': 'Restaurant',
+  'local-service': 'Meserii',
+  portfolio: 'Salon',
+  professionals: 'Servicii profesionale',
+  desserdirina: 'Desserdirina',
+};
+
+/** Schema display names may differ slightly (EN schema title for trades). */
+const SCHEMA_NAME_RE = {
+  'product-menu': /restaurant/i,
+  portfolio: /salon/i,
+  // schema.json uses "Trades"; registry uses "Meserii"
+  'local-service': /trade|meserii|construction|renov/i,
+};
 
 /** Bakery/patisserie editor copy that must not appear in product-menu schema. */
 const BAKERY_FORBIDDEN = [
@@ -78,26 +105,21 @@ function hasGalleryField(schema) {
   return false;
 }
 
-check('registry keeps system ids and names restaurant / salon / trade', () => {
+check('registry keeps five commercial ids with live RO picker names', () => {
   const byId = registryById();
-  for (const id of IDS) {
+  const reg = readJson('templates/registry.json');
+  const ids = reg.templates.map((t) => t.id);
+  assert.deepStrictEqual(ids, ALL_IDS, `registry order/ids drifted: ${JSON.stringify(ids)}`);
+
+  for (const id of ALL_IDS) {
     assert.ok(byId[id], `missing registry id ${id}`);
+    const name = String(byId[id].name || '');
+    assert.strictEqual(
+      name,
+      REGISTRY_NAMES[id],
+      `${id} registry name expected ${JSON.stringify(REGISTRY_NAMES[id])}, got ${JSON.stringify(name)}`
+    );
   }
-  assert.strictEqual(byId['product-menu'].id, 'product-menu');
-  assert.strictEqual(byId['portfolio'].id, 'portfolio');
-  assert.strictEqual(byId['local-service'].id, 'local-service');
-
-  const pm = String(byId['product-menu'].name || '');
-  const pf = String(byId['portfolio'].name || '');
-  const ls = String(byId['local-service'].name || '');
-
-  assert.ok(!FORBIDDEN_DISPLAY.includes(pm), `product-menu still named ${JSON.stringify(pm)}`);
-  assert.ok(!FORBIDDEN_DISPLAY.includes(pf), `portfolio still named ${JSON.stringify(pf)}`);
-  assert.ok(!FORBIDDEN_DISPLAY.includes(ls), `local-service still named ${JSON.stringify(ls)}`);
-
-  assert.ok(/restaurant/i.test(pm), `product-menu name should read restaurant, got ${JSON.stringify(pm)}`);
-  assert.ok(/salon/i.test(pf), `portfolio name should read salon, got ${JSON.stringify(pf)}`);
-  assert.ok(/trade/i.test(ls), `local-service name should read trade/construction, got ${JSON.stringify(ls)}`);
 
   for (const t of Object.values(byId)) {
     for (const bad of FORBIDDEN_DISPLAY) {
@@ -107,17 +129,14 @@ check('registry keeps system ids and names restaurant / salon / trade', () => {
 });
 
 check('schema.json display names match verticals (not Meniu & magazin / Portofoliu / Servicii locale)', () => {
-  const pm = schemaName('product-menu');
-  const pf = schemaName('portfolio');
-  const ls = schemaName('local-service');
-
-  assert.ok(!FORBIDDEN_DISPLAY.includes(pm), `product-menu schema name still ${JSON.stringify(pm)}`);
-  assert.ok(!FORBIDDEN_DISPLAY.includes(pf), `portfolio schema name still ${JSON.stringify(pf)}`);
-  assert.ok(!FORBIDDEN_DISPLAY.includes(ls), `local-service schema name still ${JSON.stringify(ls)}`);
-
-  assert.ok(/restaurant/i.test(pm), `product-menu schema name needs restaurant, got ${JSON.stringify(pm)}`);
-  assert.ok(/salon/i.test(pf), `portfolio schema name needs salon, got ${JSON.stringify(pf)}`);
-  assert.ok(/trade/i.test(ls), `local-service schema name needs trade/construction, got ${JSON.stringify(ls)}`);
+  for (const id of IDS) {
+    const name = schemaName(id);
+    assert.ok(!FORBIDDEN_DISPLAY.includes(name), `${id} schema name still ${JSON.stringify(name)}`);
+    assert.ok(
+      SCHEMA_NAME_RE[id].test(name),
+      `${id} schema name needs ${SCHEMA_NAME_RE[id]}, got ${JSON.stringify(name)}`
+    );
+  }
 });
 
 check('product-menu schema editor copy is not bakery/patisserie/cofetărie', () => {
@@ -129,18 +148,16 @@ check('product-menu schema editor copy is not bakery/patisserie/cofetărie', () 
   assert.ok(!/cofetărie/i.test(raw), 'product-menu schema still mentions cofetărie');
   assert.ok(!/roz-cărămiziu/i.test(raw), 'product-menu schema still teaches roz-cărămiziu bakery accent');
   // Restaurant-facing examples should teach reservation / seasonal menu / kitchen Instagram language
-  const lower = raw.toLowerCase();
   const hasRestaurantCue =
     /rezerv/i.test(raw) ||
     /meniu de sezon/i.test(raw) ||
     /bucătărie/i.test(raw) ||
     /restaurant/i.test(raw);
   assert.ok(hasRestaurantCue, 'product-menu schema should teach restaurant language (rezervă / meniu / bucătărie)');
-  void lower;
 });
 
-check('instagram.embedUrl and instagram.gallery remain in all three schemas', () => {
-  for (const id of IDS) {
+check('instagram.embedUrl and instagram.gallery remain in commercial schemas', () => {
+  for (const id of ALL_IDS) {
     const schema = readJson(path.join('templates', id, 'schema.json'));
     assert.strictEqual(schema.templateId, id, `${id}: templateId must stay ${id}`);
     assert.ok(hasEmbedField(schema), `${id}: missing instagram.embedUrl field`);
@@ -149,7 +166,7 @@ check('instagram.embedUrl and instagram.gallery remain in all three schemas', ()
 });
 
 check('schema field contracts keep keys (spot-check required core keys)', () => {
-  for (const id of IDS) {
+  for (const id of ALL_IDS) {
     const schema = readJson(path.join('templates', id, 'schema.json'));
     const keys = new Set();
     for (const sec of schema.sections || []) {

@@ -1,6 +1,14 @@
 'use strict';
 /**
- * S3: commercial catalog is four art-directed systems (S70 added professionals).
+ * S3: commercial catalog is five art-directed systems.
+ * S70 added professionals; later product work added desserdirina (bakery remake)
+ * as the fifth commercial template — not the old five DESSERD verticals.
+ *
+ * STALE-ORACLE note (S-legacy G4 / t_96bf4c57): previous EXPECTED length=4 pinned
+ * S54–S80 four-system architecture. Current registry ships desserdirina as 5th.
+ * desserdirina is menu-first (empty services[] presets), so services.0.label is
+ * required only on the four service-grid systems.
+ *
  * Includes causal anti-clone checks vs pre-S3 DESSERD verticals on cdf1ba2.
  * Run: node bot/test/s3-design-systems.test.js
  */
@@ -10,7 +18,10 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const EXPECTED = ['product-menu', 'local-service', 'portfolio', 'professionals'];
+/** Current commercial catalog (ids + order match templates/registry.json). */
+const EXPECTED = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
+/** Service-grid systems that must expose services.0.label edit hooks. */
+const SERVICE_GRID = ['product-menu', 'local-service', 'portfolio', 'professionals'];
 const REJECTED = ['patiserie', 'constructii', 'servicii', 'beauty', 'evenimente'];
 
 /** Parent accepted before S3; DESSERD-era verticals live here for similarity baselines. */
@@ -75,7 +86,7 @@ function jaccard(a, b) {
     return uni === 0 ? 0 : inter / uni;
 }
 
-check('registry.templates maps to product-menu, local-service, portfolio, professionals', () => {
+check('registry.templates maps to five commercial systems incl. desserdirina', () => {
     const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'registry.json'), 'utf8'));
     assert.ok(Array.isArray(reg.templates), 'registry.templates must be an array');
     const ids = reg.templates.map((t) => t.id);
@@ -83,7 +94,7 @@ check('registry.templates maps to product-menu, local-service, portfolio, profes
     for (const bad of REJECTED) {
         assert.ok(!ids.includes(bad), `rejected id still listed: ${bad}`);
     }
-    assert.strictEqual(reg.templates.length, 4);
+    assert.strictEqual(reg.templates.length, 5);
 });
 
 check('each system folder renders via renderHtml (no unresolved {{, editMode fields)', () => {
@@ -104,7 +115,15 @@ check('each system folder renders via renderHtml (no unresolved {{, editMode fie
             `${tid}: business.name not in output`);
         const edit = renderHtml(tpl, cfg, { editMode: true });
         assert.ok(edit.includes('data-hb-edit="business.name"'), `${tid}: missing business.name edit hook`);
-        assert.ok(edit.includes('data-hb-edit="services.0.label"'), `${tid}: missing services.0.label edit hook`);
+        if (SERVICE_GRID.includes(tid)) {
+            assert.ok(edit.includes('data-hb-edit="services.0.label"'), `${tid}: missing services.0.label edit hook`);
+        } else {
+            // desserdirina: menu-first bakery remake — empty services[] is intentional.
+            assert.ok(
+                edit.includes('data-hb-edit="menu.title"') || edit.includes('data-hb-edit="business.about"'),
+                `${tid}: missing menu/about edit hook for bakery surface`
+            );
+        }
         for (const re of [/<style[^>]*>[\s\S]*?<\/style>/gi, /<script[^>]*>[\s\S]*?<\/script>/gi, /<title>[\s\S]*?<\/title>/gi]) {
             for (const block of edit.match(re) || []) {
                 assert.ok(!block.includes('data-hb-edit'), `${tid}: data-hb-edit inside raw block`);
@@ -198,7 +217,7 @@ check('S47: no MENU BOARD / chalkboard bakery identity copy', () => {
     }
 });
 
-check('S47: three systems do not share one identical Apple #f5f5f7 paper token', () => {
+check('S47: commercial systems do not share one identical Apple #f5f5f7 paper token', () => {
     function defaultPaperToken(css) {
         // Prefer --paper, then --color-cream, from the :root block defaults (not comments).
         const root = css.match(/:root\s*\{[\s\S]*?\}/);
@@ -218,12 +237,12 @@ check('S47: three systems do not share one identical Apple #f5f5f7 paper token',
     }
     const vals = Object.values(papers);
     const allSame = vals.every((v) => v === vals[0]);
-    assert.ok(!allSame, `all three systems share the same paper token ${vals[0]}`);
+    assert.ok(!allSame, `all systems share the same paper token ${vals[0]}`);
     const apple = '#f5f5f7';
     const appleCount = vals.filter((v) => v === apple).length;
     assert.ok(
-        appleCount < 3,
-        'all three systems still default to Apple paper #f5f5f7'
+        appleCount < EXPECTED.length,
+        `all ${EXPECTED.length} systems still default to Apple paper #f5f5f7`
     );
 });
 
