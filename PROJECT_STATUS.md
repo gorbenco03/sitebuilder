@@ -77,9 +77,20 @@ Integrat local pe `main` (fast-forward + 7 merge-uri non-conflictuale, fără pu
 
 Push la producție dincolo de worktree-uri, deploy live, DNS, Stripe live product changes, credentials, modificare/integrare pilot Railway „Hidook Calendar” (cal.diy).
 
-## PRODUSUL declarat — 2026-09-05
+## PRODUSUL declarat — 2026-09-05 — **RETRAS 2026-09-06**
 
-Owner a declarat Produsul la commit `884ce76` pe `main`. Calendar Professional nativ complet (pașii a–e din VISION §8): model de date izolat pe client, motor de rezervări (fără suprapuneri de sloturi), widget public de rezervare, dashboard owner (vezi/anulează/reprogramează + editor disponibilitate), email-uri de confirmare (harness local, fără trimitere reală/secrete), și trecere opt-in per site — verificat end-to-end ca vizitator real (inclusiv defectul „buton mincinos” găsit și reparat înainte de acceptare). Integrare finală review-uită independent — ACCEPT. `fullpass-63230d2.mjs`: defects=0/46. Formularul local de programare rămâne activ neschimbat pe site-urile neactivate pe fluxul nou.
+Owner a declarat Produsul la commit `884ce76` pe `main` (calendar nativ pașii a–e, ACCEPT chain, fullpass defects=0/46). Push efectuat pe ambele remote (`origin`, `hidook`) la cererea explicită a owner-ului.
 
-Push efectuat pe ambele remote (`origin`, `hidook`) pe `main` la cererea explicită a owner-ului.
+**Retras după auditul end-to-end comandat de owner (2026-09-06, HEAD 2225ca7):** 17 agenți paraleli au deschis produsul ca un străin (browser real, chei de test, nu doar `fullpass-63230d2.mjs`) pe toate cele 5 șabloane + chrome + backend + plăți + calendar + Telegram + a11y + docs. Scor global **4/10**. Raport complet: `04-QA-Evidence/Audit-2026-09-06-2225ca7/RAPORT.md` (+ `verdicts.json` per constatare). Defecte critice care invalidează declarația anterioară — fullpass-ul de 46 de pași NU acoperea aceste zone:
+
+1. **Cont oricui poate fi preluat** — fallback-ul de autentificare fără `RESEND_API_KEY` răspunde cu token-ul de login în clar oricărui apel `POST /api/auth/email`.
+2. **Facturare dublă orfană** — `paidUntil` nu e reîmprospătat la reînnoirea automată Stripe reală; clientul activ e etichetat "Expirat" și dashboard-ul îl împinge să deschidă un al doilea abonament peste primul.
+3. **Codul QR WhatsApp (funcția-vedetă) nu e un cod QR valid pe niciunul din cele 5 șabloane** — verificat independent cu decodare Apple Vision, eșuată pe toate 5.
+4. **Calendarul nativ nu pornește pe imaginea Docker documentată pentru producție** (Node 20, fără `node:sqlite`) — motorul de rezervări e cel mai bun cod din produs, dar mort la deploy real.
+5. **`/sterge` (GDPR) nu șterge site-ul plătit de pe disc** — botul confirmă "am șters", site-ul rămâne live.
+6. Plus: galerie foto ruptă pe 2/5 șabloane, hero dispare la orice editare pe desserdirina, "+ Adaugă" corupe DOM pe 2 șabloane, XSS stocat real în portfolio, zero rate-limiting/security headers/logout funcțional, 3/5 șabloane fără meniu mobil, monedă greșită dacă originea Railway nu stă în spatele Cloudflare.
+
+**Cauză reală:** `fullpass-63230d2.mjs` (46 de pași, oracle de regresie folosit la fiecare ACCEPT) verifică fluxul comercial happy-path pe pixeli fixați, nu interacțiuni reale de proprietar (adăugare item, editare fundal, reîncărcare pagină după logout, reînnoire reală Stripe, decodare QR fizică). Fiecare ACCEPT anterior a fost real față de propriul scope îngust — dar scope-ul îngust nu acoperea produsul întreg. Nota de metodologie a auditului: faza de verificare adversarială independentă a fost oprită de owner din motive de cost — doar 3 din 152 constatări au a doua confirmare independentă (QR, 2 teste flaky, murdărire git); restul au dovadă (cod/captură/output) dar dintr-un singur lens.
+
+**Acțiune:** Produsul rămâne **live** (nu s-a oprit/retras din producție — nicio acțiune destructivă), dar declarația de "gata" e retrasă până la un nou fullpass real care acoperă interacțiunile de mai sus. Remediere prioritizată: securitate + bani + funcția-vedetă (QR) + calendar Docker + GDPR delete întâi (0-4 săptămâni per foaia de parcurs din raport §9), apoi restul defectelor critice/high pe șabloane, apoi hardening. Fără Stripe live/DNS/secrete producție atinse de remediere.
 
