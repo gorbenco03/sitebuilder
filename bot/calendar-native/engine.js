@@ -16,6 +16,7 @@ const {
     isoWeekdayForDateLocal,
     minutesToHourMinute,
     toIsoUtc,
+    getZonedParts,
 } = require('./time');
 const { ACTIVE_BOOKING_STATUSES } = require('./schema');
 
@@ -378,8 +379,31 @@ function generateSlotsRange(db, customerId, siteId, opts) {
 }
 
 /**
+ * True when startMs..startMs+duration fits an open range on that civil date
+ * after weekly + blackout + special_hours rules (owner timezone).
+ */
+function slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs) {
+    const tz = settings.timezone;
+    const parts = getZonedParts(new Date(startMs), tz);
+    const dateLocal =
+        String(parts.year).padStart(4, '0') +
+        '-' +
+        String(parts.month).padStart(2, '0') +
+        '-' +
+        String(parts.day).padStart(2, '0');
+    const startMinute = parts.hour * 60 + parts.minute;
+    const endMinute = startMinute + service.duration_minutes;
+    if (endMinute > 24 * 60) return false;
+    const ranges = openRangesForDate(db, customerId, siteId, dateLocal);
+    return ranges.some(
+        (r) => startMinute >= r.start_minute && endMinute <= r.end_minute
+    );
+}
+
+/**
  * Create booking with race-safe lock.
  * Returns { booking, manageToken } — token only on create (hashed at rest).
+ * Rejects starts outside weekly availability / blackout (SLOT_OUTSIDE_AVAILABILITY).
  */
 function createBooking(db, customerId, siteId, input) {
     assertTenant(customerId, siteId);
@@ -419,6 +443,12 @@ function createBooking(db, customerId, siteId, input) {
         err.code = 'VALIDATION';
         throw err;
     }
+    const nowMs = input.nowMs != null ? Number(input.nowMs) : Date.now();
+    if (startMs < nowMs - 60 * 1000) {
+        const err = new Error('slot is in the past');
+        err.code = 'SLOT_IN_PAST';
+        throw err;
+    }
     const duration = service.duration_minutes;
     const buffer = service.buffer_minutes != null
         ? service.buffer_minutes
@@ -426,6 +456,15 @@ function createBooking(db, customerId, siteId, input) {
     const endMs = startMs + duration * 60000;
     const startIso = toIsoUtc(startMs);
     const endIso = toIsoUtc(endMs);
+
+    // HARD gate: never confirm (or accept) a start outside weekly + blackout walls.
+    // generateSlots already filters; createBooking must re-validate so a forged
+    // start_utc cannot land as confirmed outside open ranges.
+    if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
+        const err = new Error('slot outside weekly availability or blackout');
+        err.code = 'SLOT_OUTSIDE_AVAILABILITY';
+        throw err;
+    }
 
     const manageToken = mintManageToken();
     const tokenHash = hashToken(manageToken);
@@ -737,6 +776,7 @@ module.exports = {
     addDateOverride,
     listDateOverrides,
     openRangesForDate,
+    slotFitsOpenAvailability,
     listActiveBookings,
     generateSlots,
     generateSlotsRange,

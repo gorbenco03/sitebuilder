@@ -184,6 +184,42 @@ const idx = db.prepare(
 ).get();
 assert.ok(idx, 'unique active-slot index must exist');
 
+// Reject Sunday (no weekly window) — HIGH residual closed
+const sundayStart = toIsoUtc(zonedWallTimeToUtcMs(2030, 1, 13, 10, 0, 'Europe/Bucharest'));
+assert.strictEqual(require('../calendar-native/time').isoWeekdayForDateLocal('2030-01-13'), 7);
+let outsideErr = null;
+try {
+    engine.createBooking(db, C, S, {
+        serviceId: svc.id,
+        startUtc: sundayStart,
+        visitorName: 'Outside',
+        visitorEmail: 'out@example.com',
+        nowMs,
+    });
+} catch (e) {
+    outsideErr = e;
+}
+assert.ok(outsideErr, 'Sunday booking must throw');
+assert.strictEqual(outsideErr.code, 'SLOT_OUTSIDE_AVAILABILITY');
+
+// Reject blackout date even if wall clock looks like a weekday hour
+const blackoutDay = '2030-01-15'; // Tuesday
+engine.addDateOverride(db, C, S, { date_local: blackoutDay, kind: 'blackout' });
+const boStart = toIsoUtc(zonedWallTimeToUtcMs(2030, 1, 15, 11, 0, 'Europe/Bucharest'));
+outsideErr = null;
+try {
+    engine.createBooking(db, C, S, {
+        serviceId: svc.id,
+        startUtc: boStart,
+        visitorName: 'Outside',
+        visitorEmail: 'out2@example.com',
+        nowMs,
+    });
+} catch (e) {
+    outsideErr = e;
+}
+assert.ok(outsideErr && outsideErr.code === 'SLOT_OUTSIDE_AVAILABILITY', 'blackout must reject create');
+
 // PII minimization columns only
 const cols = db.prepare(`PRAGMA table_info(calendar_bookings)`).all().map((c) => c.name);
 for (const forbidden of ['address', 'cnp', 'ssn', 'file', 'password']) {

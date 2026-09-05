@@ -33,6 +33,10 @@
  *   GET  /api/export-zip    → paid/trial download of current draft as self-hostable static ZIP
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
  *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
+ *   GET  /api/calendar-native/services → public active services for one tenant (customerId+siteId)
+ *   GET  /api/calendar-native/slots    → public free slots for one tenant+service (aggregated only)
+ *   POST /api/calendar-native/bookings → public create booking via native engine (no email yet)
+ *   GET  /calendar-native/widget/*     → static public booking widget assets + preview (not cutover)
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  * Pricing amounts come only from ./pricing.js.
@@ -62,6 +66,7 @@ const MAX_BODY_BYTES   = 1024 * 1024;         // 1 MB default
 const PUBLISH_BODY_MAX = 16 * 1024 * 1024;    // 16 MB for /api/publish
 const BUILDER_DIR      = path.join(__dirname, '..', 'builder');
 const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
+const CAL_NATIVE_WIDGET_DIR = path.join(__dirname, 'calendar-native', 'widget');
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
@@ -1161,6 +1166,115 @@ async function handleListAppointments(req, res, query) {
         createdAt: r.createdAt,
     }));
     return sendJson(res, 200, { ok: true, slug, requests });
+}
+
+// ---------------------------------------------------------------------------
+// Native calendar public widget API (VISION §8 step c) — separate from /api/appointments
+// ---------------------------------------------------------------------------
+
+function getCalendarNativeApi() {
+    return require('./calendar-native/public-api.js');
+}
+
+function resolveCalendarNativeDb() {
+    const api = getCalendarNativeApi();
+    return api.getDb({});
+}
+
+/**
+ * Lazy-seed the design-canvas demo tenant so /calendar-native/widget/preview works offline.
+ */
+function maybeSeedDemoTenant(db, customerId, siteId) {
+    const api = getCalendarNativeApi();
+    if (customerId === api.DEMO.customerId && siteId === api.DEMO.siteId) {
+        api.ensureDemoTenant(db);
+    }
+}
+
+async function handleCalendarNativeServices(req, res, query) {
+    try {
+        const api = getCalendarNativeApi();
+        const { customerId, siteId } = api.parseTenant({
+            customerId: query.get('customerId') || query.get('customer_id'),
+            siteId: query.get('siteId') || query.get('site_id'),
+        });
+        const db = resolveCalendarNativeDb();
+        maybeSeedDemoTenant(db, customerId, siteId);
+        const out = api.listPublicServices(db, customerId, siteId);
+        if (out.error) return sendJson(res, out.status || 400, out);
+        return sendJson(res, 200, out);
+    } catch (e) {
+        const status = e.status || 400;
+        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+    }
+}
+
+async function handleCalendarNativeSlots(req, res, query) {
+    try {
+        const api = getCalendarNativeApi();
+        const { customerId, siteId } = api.parseTenant({
+            customerId: query.get('customerId') || query.get('customer_id'),
+            siteId: query.get('siteId') || query.get('site_id'),
+        });
+        const db = resolveCalendarNativeDb();
+        maybeSeedDemoTenant(db, customerId, siteId);
+        const out = api.listPublicSlots(db, customerId, siteId, {
+            serviceId: query.get('serviceId') || query.get('service_id'),
+            fromDateLocal: query.get('from') || query.get('fromDate'),
+            toDateLocal: query.get('to') || query.get('toDate'),
+        });
+        if (out.error) return sendJson(res, out.status || 400, out);
+        return sendJson(res, 200, out);
+    } catch (e) {
+        const status = e.status || 400;
+        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+    }
+}
+
+async function handleCalendarNativeBookings(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 64 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    try {
+        const api = getCalendarNativeApi();
+        const { customerId, siteId } = api.parseTenant(body || {});
+        const db = resolveCalendarNativeDb();
+        maybeSeedDemoTenant(db, customerId, siteId);
+        const out = api.createPublicBooking(db, customerId, siteId, body || {});
+        if (out.error) return sendJson(res, out.status || 400, out);
+        return sendJson(res, 200, out);
+    } catch (e) {
+        const status = e.status || 400;
+        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+    }
+}
+
+/**
+ * GET /calendar-native/widget/* — static public booking widget (preview + assets).
+ * Does not touch templates or the legacy appointment form.
+ */
+function serveCalendarNativeWidget(req, res, urlPath) {
+    let rel = urlPath.replace(/^\/calendar-native\/widget\/?/, '');
+    if (!rel || rel.endsWith('/')) rel = (rel || '') + 'preview.html';
+    // Strip query already removed by caller; block traversal
+    if (rel.includes('..') || path.isAbsolute(rel) || rel.includes('\0')) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    const target = path.resolve(path.join(CAL_NATIVE_WIDGET_DIR, rel));
+    if (!target.startsWith(CAL_NATIVE_WIDGET_DIR + path.sep) && target !== CAL_NATIVE_WIDGET_DIR) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    let st;
+    try {
+        st = fs.statSync(target);
+    } catch {
+        return sendNotFound(req, res, 'not found');
+    }
+    if (!st.isFile()) return sendNotFound(req, res, 'not found');
+    return sendCachedFile(req, res, target, st);
 }
 
 /**
@@ -2276,6 +2390,28 @@ function createHandler({ onStripeEvent } = {}) {
             }
             if (req.method === 'GET' && url === '/api/appointments') {
                 return await handleListAppointments(req, res, query);
+            }
+
+            // Native calendar public widget API (not a cutover of /api/appointments)
+            if (req.method === 'GET' && url === '/api/calendar-native/services') {
+                return await handleCalendarNativeServices(req, res, query);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/slots') {
+                return await handleCalendarNativeSlots(req, res, query);
+            }
+            if (req.method === 'POST' && url === '/api/calendar-native/bookings') {
+                return await handleCalendarNativeBookings(req, res);
+            }
+            if ((req.method === 'GET' || req.method === 'HEAD') && (
+                url === '/calendar-native/widget' ||
+                url === '/calendar-native/widget/' ||
+                url.startsWith('/calendar-native/widget/')
+            )) {
+                if (url === '/calendar-native/widget') {
+                    const q = qIdx >= 0 ? rawUrl.slice(qIdx) : '';
+                    return sendRedirect(res, '/calendar-native/widget/' + q);
+                }
+                return serveCalendarNativeWidget(req, res, url);
             }
 
             // Unknown route: browser document → short RO HTML; API → JSON

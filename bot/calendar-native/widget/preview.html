@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programare nativă — previzualizare</title>
+  <link rel="stylesheet" href="/calendar-native/widget/public-booking-widget.css" />
+  <style>
+    :root { --bg: #f3f6f4; --ink: #14201c; --muted: #5c6d66; --line: #d5e0da; --serif: Georgia, serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: var(--bg); color: var(--ink); }
+    .shell { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; width: 100%; min-width: 0; overflow-x: hidden; }
+    #hnb-root { width: 100%; max-width: 100%; min-width: 0; }
+    .chrome {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+      padding: 14px 4px 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px; font-size: 14px;
+    }
+    .chrome__brand { font-family: var(--serif); font-size: 1.15rem; font-weight: 600; }
+    .chrome__nav { color: var(--muted); }
+    .chrome__nav strong { color: var(--ink); }
+    .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 28px; }
+    .note {
+      font-size: 13px; color: var(--muted); margin: 0 0 16px; line-height: 1.45;
+      padding: 12px 14px; background: #fff; border: 1px dashed var(--line); border-radius: 12px;
+    }
+    @media (max-width: 420px) {
+      .shell { padding: 12px 10px 36px; }
+      .chrome { font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="chrome">
+      <div class="chrome__brand" id="brand">Cabinet Dr. Elena Pop</div>
+      <div class="chrome__nav">Despre · Servicii · <strong>Programare</strong> · Contact</div>
+    </div>
+    <p class="note">
+      Previzualizare programări online Hidook (cale nouă — formularul local de cerere rămâne neschimbat).
+      Demo izolat pe acest cabinet — vezi doar intervalele libere ale lui.
+    </p>
+    <div
+      id="hnb-root"
+      data-hidook-cal-native
+      data-customer-id="demo_customer_elena"
+      data-site-id="demo_site_cabinet"
+      data-api-base=""
+      data-brand="Cabinet Dr. Elena Pop"
+      data-contact-phone="0722 111 222"
+      data-contact-phone-tel="+40722111222"
+      data-contact-email="elena@cabinet.ro"
+      data-contact-whatsapp="https://wa.me/40722111222"
+      data-day-count="14"
+    ></div>
+    <p class="foot">Build by hidook.tech powered by hidook.agency</p>
+  </div>
+  <script src="/calendar-native/widget/public-booking-widget.js"></script>
+</body>
+</html>
