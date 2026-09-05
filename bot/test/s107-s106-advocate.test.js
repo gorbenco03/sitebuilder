@@ -2,6 +2,16 @@
 /**
  * bot/test/s107-s106-advocate.test.js — S107 remake of S106 ADVOCATE: STILL STANDING.
  *
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ * Detalii Instagram labels finished as full RO commercial copy after S107:
+ *   embedUrl  → "URL feed Instafidget (opțional)" (partner product name)
+ *   url (LS/PRO) → "Profil Instagram"
+ *   contact.instagram.url → "Instagram (secțiune contact)"
+ *   url (PM/PORT) → "URL Instagram (https://www.instagram.com/...)"
+ * Exact EN locks ("Instagram profile", "contact section", "Instagram URL …")
+ * were intermediate English-or-mixed oracles. Keep ban on English "Link" leftover
+ * and success-URL wrap-at-slash contract. Not a product regression.
+ *
  * Causal leftovers on parent a25b413 (S103 ACCEPT):
  *   1. Detalii Instagram feed/profil labels still ship English "Link"
  *      (Link feed Instagram (opțional) / Link profil Instagram)
@@ -30,10 +40,10 @@ const INDEX_HTML = 'builder/index.html';
 const BAD_EMBED = 'Link feed Instagram (opțional)';
 const BAD_PROFIL = 'Link profil Instagram';
 const GOOD_EMBED = 'URL feed Instafidget (opțional)';
-const GOOD_PROFIL = 'Instagram profile';
-const GOOD_CONTACT_IG = 'Instagram (contact section)';
-const GOOD_IG_URL_PM = 'Instagram URL (https://www.instagram.com/...)';
-const GOOD_IG_URL_PORT = 'Instagram URL (https://www.instagram.com/...)';
+const GOOD_PROFIL = 'Profil Instagram';
+const GOOD_CONTACT_IG = 'Instagram (secțiune contact)';
+const GOOD_IG_URL_PM = 'URL Instagram (https://www.instagram.com/...)';
+const GOOD_IG_URL_PORT = 'URL Instagram (https://www.instagram.com/...)';
 
 let failed = 0;
 function check(name, fn) {

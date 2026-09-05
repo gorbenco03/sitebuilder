@@ -2,6 +2,12 @@
 /**
  * bot/test/s69-s68-qa-fail.test.js — S69 remake of S68 QA FAIL leaks.
  *
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ * Phone-example lock required US "+1" on local-service Detalii. Product is now
+ * RO-first (+40 721 … examples across systems). Keep bans on embed/html lang/
+ * Schema.org/bot/+447 factory jargon; require RO international phone examples
+ * instead of +1. Not a stranger-facing regression.
+ *
  * Causal leftovers on parent 230fe4e (S67 ACCEPT):
  *   1. resumeLocalDraft / #edit route restore template+config only — never
  *      currentSiteId / currentSitePaid / currentSiteSlug. openPublishModal only
@@ -370,7 +376,7 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
             'openPublishModal would skip slug modal');
     });
 
-    await check('HEAD: Detalii labels commercial English only (no embed/html lang/Schema.org/bot/+447)', () => {
+    await check('HEAD: Detalii labels commercial RO (no embed/html lang/Schema.org/bot/+447)', () => {
         for (const rel of SCHEMA_PATHS) {
             const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
             const schema = JSON.parse(src);
@@ -383,9 +389,13 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
             assert.ok(!/Schema\.org/i.test(joined), rel + ' no Schema.org');
             assert.ok(!/\bbot\b/i.test(joined), rel + ' no bot jargon');
             assert.ok(!/\+447|447911|\+44\s*7911/i.test(joined), rel + ' no UK +447 examples');
-            // Must still have commercial Instagram / contact surface
+            // RO commercial phone examples (+40…), not US +1 factory leftovers
             if (rel.includes('local-service')) {
-                assert.ok(labels.some(l => /\+1\b/.test(l)), 'local-service has US +1 example');
+                assert.ok(
+                    labels.some((l) => /\+40\b/.test(l)),
+                    'local-service has RO +40 phone example'
+                );
+                assert.ok(!labels.some((l) => /\+1\b/.test(l)), 'local-service no US +1 example');
             }
         }
     });
