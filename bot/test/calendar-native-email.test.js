@@ -34,6 +34,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const { openCalendarDb } = require('../calendar-native/db');
 const engine = require('../calendar-native/engine');
 const email = require('../calendar-native/email');
+const manageApi = require('../calendar-native/manage-api');
 const { zonedWallTimeToUtcMs, toIsoUtc } = require('../calendar-native/time');
 const { SCHEMA_VERSION, EMAIL_DELIVERY_STATUSES } = require('../calendar-native/schema');
 
@@ -202,6 +203,13 @@ assert.ok(created.manageToken.length >= 24, 'unguessable manage token length');
     assert.strictEqual(cancelMail.booking_status_snapshot, 'cancelled');
     assert.ok(/anulat/i.test(cancelMail.subject));
     assert.ok(!/confirmată/i.test(cancelMail.subject));
+
+    // AC3: owner cancel must NOT rotate manage_token_hash — visitor link still resolves
+    const afterOwnerCancel = manageApi.getBookingByToken(db, b2.manageToken);
+    assert.ok(afterOwnerCancel && afterOwnerCancel.ok, 'visitor manage token still valid after owner cancel email');
+    assert.ok(afterOwnerCancel.booking, 'manage API returns booking card');
+    assert.strictEqual(afterOwnerCancel.booking.status, 'cancelled');
+    assert.strictEqual(afterOwnerCancel.booking.id, b2.booking.id);
 
     // --- 4. Retry → dead_letter (no silent drop) ---
     email.setTransport(email.createFailingTransport());

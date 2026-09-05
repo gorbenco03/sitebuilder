@@ -281,6 +281,9 @@ async function main() {
             if (!liveBook.status || !/^(confirmed|requested|reschedule_needed)$/.test(liveBook.status)) {
                 throw new Error('unexpected book status ' + liveBook.status);
             }
+            if (!liveBook.manageToken || String(liveBook.manageToken).length < 16) {
+                throw new Error('book response missing manageToken (needed for visitor manage-link shot)');
+            }
             await page.close();
         }
 
@@ -304,6 +307,9 @@ async function main() {
         }
 
         // 11 — owner dashboard sees booking for this tenant
+        // Owner cancel used to rotate manage_token_hash (email ensureRawManageToken).
+        // That product bug is fixed: lifecycle emails without raw token no longer rotate.
+        // Still act on Maria first so Ana stays cancellable for the visitor manage walk.
         {
             const context = await browser.newContext({ viewport: { width: 1200, height: 900 } });
             const page = await context.newPage();
@@ -324,76 +330,119 @@ async function main() {
             await page.waitForTimeout(900);
             await shot(page, '11-owner-dashboard.png');
             const dashText = await page.locator('body').innerText();
-            if (!/Programăr|confirm|aștept|Ana Cutover|Maria Popescu/i.test(dashText)) {
-                console.warn('WARN owner dash text preview:', dashText.slice(0, 400));
+            if (!/Ana Cutover/i.test(dashText)) {
+                throw new Error('owner dash missing live Ana booking: ' + dashText.slice(0, 400));
             }
             if (/worktree|kanban|SHA|factory/i.test(dashText)) {
                 throw new Error('factory jargon on owner dash');
             }
 
-            // 12 — owner acts (cancel first actionable booking that is not already cancelled)
+            // 12 — owner acts on a DIFFERENT booking (Maria seed), never Ana
             acceptDialogs(page);
-            const cancelBtn = page.locator('[data-hod-act="cancel"]').first();
-            const confirmBtn = page.locator('[data-hod-act="confirm"]').first();
-            if ((await cancelBtn.count()) > 0) {
-                await cancelBtn.click();
+            const mariaCancel = page
+                .locator('.hod-booking:has-text("Maria Popescu") [data-hod-act="cancel"]')
+                .first();
+            const mariaConfirm = page
+                .locator('.hod-booking:has-text("Maria Popescu") [data-hod-act="confirm"]')
+                .first();
+            const otherCancel = page
+                .locator('.hod-booking:not(:has-text("Ana Cutover")) [data-hod-act="cancel"]')
+                .first();
+            if ((await mariaCancel.count()) > 0) {
+                await mariaCancel.click();
                 await page.waitForTimeout(1200);
-            } else if ((await confirmBtn.count()) > 0) {
-                await confirmBtn.click();
+            } else if ((await mariaConfirm.count()) > 0) {
+                await mariaConfirm.click();
+                await page.waitForTimeout(1200);
+            } else if ((await otherCancel.count()) > 0) {
+                await otherCancel.click();
                 await page.waitForTimeout(1200);
             } else {
-                throw new Error('no owner action button on dashboard');
+                // Last resort: confirm Ana (does not rotate token / still leaves manage usable)
+                const anaConfirm = page
+                    .locator('.hod-booking:has-text("Ana Cutover") [data-hod-act="confirm"]')
+                    .first();
+                if ((await anaConfirm.count()) > 0) {
+                    await anaConfirm.click();
+                    await page.waitForTimeout(1200);
+                } else {
+                    // Dump for diagnosis
+                    const acts = await page.locator('[data-hod-act]').count();
+                    const bodyPreview = (await page.locator('body').innerText()).slice(0, 500);
+                    throw new Error(
+                        'no safe owner action button (must not cancel Ana before manage); acts=' +
+                            acts +
+                            ' body=' +
+                            bodyPreview
+                    );
+                }
             }
             await shot(page, '12-owner-action.png');
+            const afterOwner = await page.locator('body').innerText();
+            // Ana must still be present as an active (non-cancelled-only) row ideally;
+            // at minimum we did not require canceling her for this shot.
+            if (!/Ana Cutover/i.test(afterOwner)) {
+                console.warn('WARN Ana missing after owner action:', afterOwner.slice(0, 300));
+            }
             await context.close();
         }
 
-        // 13 — visitor manage-link token works (use seed manage token)
+        // 13 — visitor manage-link token works for the LIVE booked visitor (Ana)
         {
+            if (!liveBook.manageToken || String(liveBook.manageToken).length < 16) {
+                throw new Error('live book missing manageToken — cannot prove visitor manage-link');
+            }
             const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
             acceptDialogs(page);
-            const token = liveBook.manageToken || meta.manageToken;
+            const token = liveBook.manageToken;
             const url = `${BASE}/calendar-native/manage/?token=${encodeURIComponent(token)}`;
             await page.goto(url, { waitUntil: 'networkidle', timeout: 20000 });
-            await page.waitForSelector('#hm-body .hm__card, #hm-body .hm__alert', { timeout: 15000 });
+            // Require booking card only — never accept error alert as success (prior false green)
+            await page.waitForSelector('#hm-body .hm__card[data-hm-status]', { timeout: 15000 });
             await page.waitForTimeout(500);
-            await shot(page, '13-visitor-manage-link.png');
-            // also keep legacy-named 06 for continuity
-            await shot(page, '06-manage-token-view-390.png');
             const text = await page.locator('body').innerText();
-            if (!/Gestionează programarea|confirmat|Stare|anulat|aștept/i.test(text)) {
+            if (/Nu am găsit programarea|Link invalid|nu putem deschide/i.test(text)) {
+                throw new Error(
+                    'visitor manage-link is invalid-token UI, not a working booking card: ' +
+                        text.slice(0, 240)
+                );
+            }
+            if (!/Gestionează programarea/i.test(text)) {
                 throw new Error('manage UI missing RO chrome: ' + text.slice(0, 200));
             }
+            if (!/Ana Cutover/i.test(text)) {
+                throw new Error('manage UI missing live visitor name Ana Cutover: ' + text.slice(0, 240));
+            }
+            if (!/Stare/i.test(text) || !/confirmat|în așteptare|aștept/i.test(text)) {
+                throw new Error('manage UI missing live booking status details: ' + text.slice(0, 240));
+            }
+            // Must show a real card + cancel control — not only the shell heading
+            const hasCard = (await page.locator('#hm-body .hm__card').count()) > 0;
+            const hasCancel = (await page.locator('[data-hm-cancel]').count()) > 0;
+            if (!hasCard || !hasCancel) {
+                throw new Error('manage UI has no booking card or cancel control');
+            }
+            // Named shots only after success asserts
+            await shot(page, '13-visitor-manage-link.png');
+            // also keep legacy-named 06 for continuity (same working manage view)
+            await shot(page, '06-manage-token-view-390.png');
 
-            // 14 — cancel frees slot (if still cancellable)
+            // 14 — visitor cancels THIS live booking → slot frees (anulat)
             const cancelBtn = page.locator('[data-hm-cancel], button:has-text("Anulează")');
-            if ((await cancelBtn.count()) > 0) {
-                await cancelBtn.first().click();
-                await page.waitForTimeout(1200);
-                await page.waitForFunction(() => /anulat/i.test(document.body.innerText), null, {
-                    timeout: 10000,
-                });
-                await shot(page, '14-slot-freed.png');
-                await shot(page, '07-manage-cancel-confirmed-390.png');
-                const after = await page.locator('body').innerText();
-                if (!/anulat/i.test(after)) throw new Error('cancel did not show anulat state');
-            } else {
-                // Live book may already be owner-cancelled; fall back to seed token path
-                await page.goto(
-                    `${BASE}/calendar-native/manage/?token=${encodeURIComponent(meta.manageToken)}`,
-                    { waitUntil: 'networkidle', timeout: 20000 }
-                );
-                await page.waitForTimeout(600);
-                const c2 = page.locator('[data-hm-cancel], button:has-text("Anulează")');
-                if ((await c2.count()) > 0) {
-                    await c2.first().click();
-                    await page.waitForTimeout(1200);
-                    await page.waitForFunction(() => /anulat/i.test(document.body.innerText), null, {
-                        timeout: 10000,
-                    });
-                }
-                await shot(page, '14-slot-freed.png');
-                await shot(page, '07-manage-cancel-confirmed-390.png');
+            if ((await cancelBtn.count()) === 0) {
+                throw new Error('manage UI has no cancel control for live Ana booking');
+            }
+            await cancelBtn.first().click();
+            await page.waitForTimeout(1200);
+            await page.waitForFunction(() => /anulat/i.test(document.body.innerText), null, {
+                timeout: 10000,
+            });
+            await shot(page, '14-slot-freed.png');
+            await shot(page, '07-manage-cancel-confirmed-390.png');
+            const after = await page.locator('body').innerText();
+            if (!/anulat/i.test(after)) throw new Error('cancel did not show anulat state');
+            if (/Nu am găsit programarea/i.test(after)) {
+                throw new Error('slot-freed shot landed on invalid-token UI');
             }
             await page.close();
         }

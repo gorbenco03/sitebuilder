@@ -22,8 +22,8 @@
   "notPreviewOnly": true,
   "meta": {
     "bookingStatus": "confirmed",
-    "customerId": "4c5bb001-adec-44b8-a8d2-4869dcbd74f2",
-    "siteId": "c2c76d69-a2ce-4a4d-a20b-f49b1bab777e",
+    "customerId": "678a1e1c-c91f-4a07-95c8-3e0aa1b33400",
+    "siteId": "fd0b7446-3de6-4f48-935d-cde0511fc2db",
     "liveManageTokenPresent": true
   },
   "cutoverFlag": "appointment.nativeBooking",

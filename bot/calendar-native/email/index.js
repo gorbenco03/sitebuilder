@@ -66,27 +66,24 @@ function formatOwnerLocal(startUtc, timezone) {
 }
 
 /**
- * Ensure we have a raw manage token for the email. If caller did not pass one
- * (later lifecycle events), rotate: mint new token, update hash (old links die).
+ * Resolve raw manage token for email bodies.
+ *
+ * Only the create path holds the raw token (hashed at rest afterward). Later
+ * lifecycle events (owner cancel/confirm/reschedule) must NOT mint+rotate the
+ * hash — that invalidated the visitor's original manage-link (AC3 defect).
+ * When raw token is absent, return null and omit the manage URL from email.
  *
  * @param {import('node:sqlite').DatabaseSync} db
  * @param {object} booking
  * @param {string|null|undefined} rawToken
- * @returns {string}
+ * @returns {string|null}
  */
 function ensureRawManageToken(db, booking, rawToken) {
     if (rawToken && String(rawToken).length >= 16) {
         return String(rawToken);
     }
-    const next = mintManageToken();
-    const tokenHash = hashToken(next);
-    const ts = new Date().toISOString();
-    db.prepare(
-        `UPDATE calendar_bookings
-         SET manage_token_hash = ?, updated_at = ?
-         WHERE id = ? AND customer_id = ? AND site_id = ?`
-    ).run(tokenHash, ts, booking.id, booking.customer_id, booking.site_id);
-    return next;
+    // Do not rotate manage_token_hash. Old visitor links must keep working.
+    return null;
 }
 
 function loadServiceName(db, booking) {
@@ -137,8 +134,9 @@ function enqueueBookingEmail(db, input) {
     });
 
     const rawToken = ensureRawManageToken(db, booking, input.manageToken);
+    // Cancel emails omit manage link; other templates include it only when raw token known.
     const manageUrl =
-        templateKey === 'booking_cancelled' ? null : buildManageUrl(rawToken);
+        templateKey === 'booking_cancelled' || !rawToken ? null : buildManageUrl(rawToken);
 
     const serviceName = loadServiceName(db, booking);
     const tz = loadTimezone(db, booking);
