@@ -2,10 +2,18 @@
 /**
  * bot/test/s51-builder-renewal.test.js — S51 builder durable orders / renewal.
  *
- * Causal lock-in for /app/ commercial renewal loop after S50:
- *   - Paid live cards: hosting-until human date; no first-publish 100 CTA
+ * STALE ORACLE refresh (S-legacy G5, 2026-09): source lock-ins still asserted
+ * English pay-once chrome ("Renew hosting", "hosting 12 months", no-trial
+ * success). Current commercial contract (VISION): RO customer surfaces,
+ * Stripe 7-day trial live-on-card, renewal CTA «Reînnoiește hosting» + 29,
+ * success title «Site-ul tău e live — trial de 7 zile început». HTTP renewal
+ * journey (9900 → paidUntil → expire → 2900 durable pending) remains live.
+ *
+ * Causal lock-in for /app/ commercial renewal loop:
+ *   - Paid live cards: hosting-until human date; no always-on first-publish pay CTA
  *   - Expired / past paidUntil: Reînnoiește hosting (29), not Reactivează / Păstrează
- *   - HTTP: first publish 100 → paidUntil ~+12m → force past → checkout kind=renewal
+ *   - Live success: trial-de-7-zile chrome; pay CTA hidden when isLive
+ *   - HTTP: first publish 9900 → paidUntil ~+12m → force past → checkout kind=renewal
  *     amount 2900 → test-pay extends hosting; repeat checkout reuses pending row
  *
  * Env under test: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted
@@ -175,10 +183,11 @@ function readOrdersForSite(siteId) {
         );
     });
 
-    await check('expired / past paidUntil CTA is Renew hosting (not Reactivează / Păstrează)', () => {
+    await check('expired / past paidUntil CTA is Reînnoiește hosting (not Reactivează / Păstrează)', () => {
+        // RO product language — not legacy English "Renew hosting"
         assert.ok(
-            /Renew hosting/.test(buildSiteCardSrc),
-            'expired/past-paidUntil CTA must say Renew hosting'
+            /Reînnoiește hosting/.test(buildSiteCardSrc),
+            'expired/past-paidUntil CTA must say Reînnoiește hosting'
         );
         assert.ok(
             !/Reactivează/.test(buildSiteCardSrc),
@@ -219,11 +228,12 @@ function readOrdersForSite(siteId) {
         );
     });
 
-    await check('showSuccessScreen paid/live: hosting 12 months + pay CTA hidden', () => {
+    await check('showSuccessScreen paid/live: trial 7 zile chrome + pay CTA hidden', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
+        // Current contract: live success states trial de 7 zile (not pay-once "hosting 12 months")
         assert.ok(
-            /hosting\s*12\s*months|12\s*months\s*hosting/i.test(showSuccessSrc),
-            'live success title/copy must mention hosting 12 months'
+            /trial\s+de\s+7\s+zile|Site-ul tău e live/i.test(showSuccessSrc),
+            'live success title/copy must state trial de 7 zile / site live'
         );
         // When live, pay button must be hidden (not only when paymentUrl null)
         assert.ok(
@@ -233,7 +243,8 @@ function readOrdersForSite(siteId) {
         );
         assert.ok(!/\bDESSERD\b/i.test(showSuccessSrc), 'no DESSERD in success');
         assert.ok(!/\bbakery\b/i.test(showSuccessSrc), 'no bakery in success');
-        assert.ok(!/trial/i.test(showSuccessSrc) || /no.?trial|not.?trial/i.test(showSuccessSrc), 'no trial success chrome');
+        // Trial chrome is required on live success under current Stripe trial model
+        assert.ok(/trial/i.test(showSuccessSrc), 'live success must carry trial chrome');
     });
 
     await check('builder commercial chrome: no DESSERD / bakery / trial-time / slice IDs as customer address', () => {

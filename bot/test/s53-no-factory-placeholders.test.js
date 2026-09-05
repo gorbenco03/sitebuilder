@@ -1,6 +1,15 @@
 'use strict';
 /**
  * S53: opened default presets must not ship factory CDN photos or leftover English factory copy.
+ *
+ * STALE ORACLE refresh (S-legacy G5, 2026-09):
+ *   - Registry is five commercial systems (product-menu, portfolio, local-service,
+ *     professionals, desserdirina) — not the old four-system lock.
+ *   - Portfolio CTAs are Romanian booking copy («Programează o vizită» /
+ *     «Programează-te»), not English "Book …".
+ *   - Casa Nord is bilingual: RO categories must not be factory Starters/Mains;
+ *     EN menu may translate Aperitive → Starters.
+ *
  * Run: node bot/test/s53-no-factory-placeholders.test.js
  */
 const assert = require('assert');
@@ -119,33 +128,35 @@ check('salon (portfolio) presets have no Book now', () => {
     const cta = p.config && p.config.hero && p.config.hero.ctaLabel;
     assert.ok(cta, `${p.id}: missing hero.ctaLabel`);
     assert.ok(!/book\s*now/i.test(String(cta)), `${p.id}: cta still Book now`);
-    // Must still be a booking CTA — just never the generic factory "Book now".
+    // Booking CTA in RO or EN — never the generic factory "Book now".
     assert.ok(
-      /\bbook\b|\bappointment\b|\breserve\b/i.test(String(cta)),
+      /\bbook\b|\bappointment\b|\breserve\b|programeaz|vizită|vizita|programare/i.test(String(cta)),
       `${p.id}: salon CTA should be a booking CTA, got ${JSON.stringify(cta)}`
     );
   }
 });
 
-check('product-menu Romanian Casa Nord has no Starters/Mains category labels', () => {
+check('product-menu Romanian Casa Nord RO categories are not factory Starters/Mains', () => {
   const data = readPresets('product-menu');
   const casa = (data.presets || []).find((p) => p.id === 'casa-nord' || /casa\s*nord/i.test(p.name || ''));
   assert.ok(casa, 'casa-nord preset required');
   const menu = casa.config && casa.config.menu;
   assert.ok(menu, 'casa-nord menu required');
-  const cats = [];
-  for (const lang of ['ro', 'en']) {
-    const arr = menu[lang];
-    if (!Array.isArray(arr)) continue;
-    for (const block of arr) {
-      if (block && block.category) cats.push(String(block.category));
+  // RO surface must not ship English factory category labels.
+  const roCats = [];
+  const roArr = menu.ro;
+  if (Array.isArray(roArr)) {
+    for (const block of roArr) {
+      if (block && block.category) roCats.push(String(block.category));
     }
   }
-  assert.ok(cats.length > 0, 'casa-nord must have menu categories');
-  for (const c of cats) {
-    assert.ok(!/^starters$/i.test(c.trim()), `leftover category Starters: ${c}`);
-    assert.ok(!/^mains$/i.test(c.trim()), `leftover category Mains: ${c}`);
+  assert.ok(roCats.length > 0, 'casa-nord must have RO menu categories');
+  for (const c of roCats) {
+    assert.ok(!/^starters$/i.test(c.trim()), `RO leftover factory category Starters: ${c}`);
+    assert.ok(!/^mains$/i.test(c.trim()), `RO leftover factory category Mains: ${c}`);
   }
+  // EN may legitimately translate Aperitive → Starters; still require an EN menu.
+  assert.ok(Array.isArray(menu.en) && menu.en.length > 0, 'casa-nord bilingual EN menu required');
 });
 
 check('no DESSERD / bakery / chalkboard / MENU BOARD in three presets', () => {
@@ -157,7 +168,7 @@ check('no DESSERD / bakery / chalkboard / MENU BOARD in three presets', () => {
   }
 });
 
-check('system ids stay product-menu / portfolio / local-service with ≥2 presets each', () => {
+check('system ids stay product-menu / portfolio / local-service with ≥2 presets each; registry has 5 systems', () => {
   for (const id of SYSTEMS) {
     const data = readPresets(id);
     assert.ok(Array.isArray(data.presets) && data.presets.length >= 2, `${id} needs ≥2 presets`);
@@ -167,7 +178,10 @@ check('system ids stay product-menu / portfolio / local-service with ≥2 preset
   for (const id of SYSTEMS) {
     assert.ok(ids.includes(id), `registry missing ${id}`);
   }
-  assert.strictEqual(ids.length, 4, 'registry must stay four systems');
+  // Five commercial systems: three S53 targets + professionals + desserdirina remake
+  assert.strictEqual(ids.length, 5, 'registry must stay five systems');
+  assert.ok(ids.includes('professionals'), 'registry missing professionals');
+  assert.ok(ids.includes('desserdirina'), 'registry missing desserdirina');
 });
 
 check('instagram embed + gallery fallback still present on presets', () => {
