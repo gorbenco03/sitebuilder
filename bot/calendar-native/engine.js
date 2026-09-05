@@ -687,6 +687,19 @@ function cancelBookingAsOwner(db, customerId, siteId, bookingId) {
 }
 
 /**
+ * Resolve a booking by raw manage token (hashed at rest). Single-booking scope.
+ * Does not reveal other bookings. Returns null when token is unknown.
+ */
+function getBookingByManageToken(db, rawToken) {
+    const token = String(rawToken || '').trim();
+    if (!token || token.length < 16) return null;
+    const tokenHash = hashToken(token);
+    return db.prepare(
+        `SELECT * FROM calendar_bookings WHERE manage_token_hash = ?`
+    ).get(tokenHash) || null;
+}
+
+/**
  * Visitor cancel with manage token (hashed). Scoped to single booking.
  */
 function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
@@ -945,6 +958,7 @@ module.exports = {
     listBookings,
     getBooking,
     cancelBookingAsOwner,
+    getBookingByManageToken,
     cancelBookingWithToken,
     rescheduleBookingAsOwner,
     confirmBookingAsOwner,

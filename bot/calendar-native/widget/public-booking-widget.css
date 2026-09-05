@@ -307,7 +307,28 @@
   font-size: 14px;
   padding: 8px 0;
 }
-.hnb[hidden], .hnb__panel[hidden], .hnb__result[hidden] { display: none !important; }
+/* Force-hide chrome after success / outage — [hidden] alone is not enough when layout is grid/flex */
+.hnb[hidden],
+.hnb__panel[hidden],
+.hnb__result[hidden],
+.hnb__layout[hidden],
+.hnb__steps[hidden],
+.hnb__sub[hidden],
+.hnb__loading[hidden],
+.hnb__eyebrow[hidden],
+.hnb__title[hidden],
+.hnb__form[hidden],
+.hnb__cta[hidden],
+.hnb__days[hidden],
+.hnb__slots[hidden],
+.hnb__svcs[hidden],
+.hnb__slot-pane[hidden],
+.hnb__alt[hidden],
+.hnb__privacy[hidden],
+.hnb__label[hidden],
+.hnb__day-label[hidden] {
+  display: none !important;
+}
 
 @media (max-width: 720px) {
   .hnb { padding: 18px 14px 22px; border-radius: 18px; }

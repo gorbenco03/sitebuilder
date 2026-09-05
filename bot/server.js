@@ -36,9 +36,12 @@
  *   GET  /api/calendar-native/services → public active services for one tenant (customerId+siteId)
  *   GET  /api/calendar-native/slots    → public free slots for one tenant+service (aggregated only)
  *   POST /api/calendar-native/bookings → public create booking via native engine (+ local email outbox)
+ *   GET  /api/calendar-native/manage?token= → visitor booking summary (single-booking token)
+ *   POST /api/calendar-native/manage/cancel → visitor cancel via manage token (frees slot)
  *   GET  /api/calendar-native/owner/*  → authenticated owner dashboard API (tenant = session uid + site)
  *   GET  /calendar-native/widget/*     → static public booking widget assets + preview (not cutover)
  *   GET  /calendar-native/owner/*      → static owner dashboard assets + preview (not cutover)
+ *   GET  /calendar-native/manage/*     → visitor manage-link UI (token in query)
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  * Pricing amounts come only from ./pricing.js.
@@ -70,6 +73,7 @@ const BUILDER_DIR      = path.join(__dirname, '..', 'builder');
 const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
 const CAL_NATIVE_WIDGET_DIR = path.join(__dirname, 'calendar-native', 'widget');
 const CAL_NATIVE_OWNER_DIR = path.join(__dirname, 'calendar-native', 'owner');
+const CAL_NATIVE_MANAGE_DIR = path.join(__dirname, 'calendar-native', 'manage');
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
@@ -1255,6 +1259,38 @@ async function handleCalendarNativeBookings(req, res) {
     }
 }
 
+function getCalendarManageApi() {
+    return require('./calendar-native/manage-api.js');
+}
+
+/**
+ * GET /api/calendar-native/manage?token= — visitor single-booking summary.
+ */
+async function handleCalendarNativeManageGet(req, res, query) {
+    const token = String((query && query.get && query.get('token')) || '').trim();
+    const db = resolveCalendarNativeDb();
+    const out = getCalendarManageApi().getBookingByToken(db, token);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/**
+ * POST /api/calendar-native/manage/cancel — visitor cancel; frees slot.
+ */
+async function handleCalendarNativeManageCancel(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const token = String((body && body.token) || '').trim();
+    const db = resolveCalendarNativeDb();
+    const out = getCalendarManageApi().cancelByToken(db, token);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
 /**
  * GET /calendar-native/widget/* — static public booking widget (preview + assets).
  * Does not touch templates or the legacy appointment form.
@@ -1557,6 +1593,29 @@ function serveCalendarNativeOwner(req, res, urlPath) {
     }
     const target = path.resolve(path.join(CAL_NATIVE_OWNER_DIR, rel));
     if (!target.startsWith(CAL_NATIVE_OWNER_DIR + path.sep) && target !== CAL_NATIVE_OWNER_DIR) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    let st;
+    try {
+        st = fs.statSync(target);
+    } catch {
+        return sendNotFound(req, res, 'not found');
+    }
+    if (!st.isFile()) return sendNotFound(req, res, 'not found');
+    return sendCachedFile(req, res, target, st);
+}
+
+/**
+ * GET /calendar-native/manage/* — visitor manage-link UI (token in query string).
+ */
+function serveCalendarNativeManage(req, res, urlPath) {
+    let rel = urlPath.replace(/^\/calendar-native\/manage\/?/, '');
+    if (!rel || rel.endsWith('/')) rel = (rel || '') + 'index.html';
+    if (rel.includes('..') || path.isAbsolute(rel) || rel.includes('\0')) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    const target = path.resolve(path.join(CAL_NATIVE_MANAGE_DIR, rel));
+    if (!target.startsWith(CAL_NATIVE_MANAGE_DIR + path.sep) && target !== CAL_NATIVE_MANAGE_DIR) {
         return sendJson(res, 403, { error: 'Forbidden' });
     }
     let st;
@@ -2694,6 +2753,12 @@ function createHandler({ onStripeEvent } = {}) {
             if (req.method === 'POST' && url === '/api/calendar-native/bookings') {
                 return await handleCalendarNativeBookings(req, res);
             }
+            if (req.method === 'GET' && url === '/api/calendar-native/manage') {
+                return await handleCalendarNativeManageGet(req, res, query);
+            }
+            if (req.method === 'POST' && url === '/api/calendar-native/manage/cancel') {
+                return await handleCalendarNativeManageCancel(req, res);
+            }
 
             // Owner dashboard API (authenticated, tenant-scoped)
             if (req.method === 'POST' && url === '/api/calendar-native/owner/preview-session') {
@@ -2758,6 +2823,17 @@ function createHandler({ onStripeEvent } = {}) {
                     return sendRedirect(res, '/calendar-native/owner/' + q);
                 }
                 return serveCalendarNativeOwner(req, res, url);
+            }
+            if ((req.method === 'GET' || req.method === 'HEAD') && (
+                url === '/calendar-native/manage' ||
+                url === '/calendar-native/manage/' ||
+                url.startsWith('/calendar-native/manage/')
+            )) {
+                if (url === '/calendar-native/manage') {
+                    const q = qIdx >= 0 ? rawUrl.slice(qIdx) : '';
+                    return sendRedirect(res, '/calendar-native/manage/' + q);
+                }
+                return serveCalendarNativeManage(req, res, url);
             }
 
             // Unknown route: browser document → short RO HTML; API → JSON

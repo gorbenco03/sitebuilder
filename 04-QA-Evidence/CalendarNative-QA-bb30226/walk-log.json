@@ -1,0 +1,796 @@
+{
+  "sha": "bb30226",
+  "base": "http://127.0.0.1:18791",
+  "dataDir": "/tmp/hidook-cal-qa-bb30226",
+  "shots": [
+    {
+      "name": "01-opened-public-widget-desktop-loaded",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/01-opened-public-widget-desktop-loaded.png"
+    },
+    {
+      "name": "02-clicked-weekend-day-empty-or-slots",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/02-clicked-weekend-day-empty-or-slots.png"
+    },
+    {
+      "name": "03-clicked-weekday-slot-form-visible",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/03-clicked-weekday-slot-form-visible.png"
+    },
+    {
+      "name": "04-clicked-confirm-without-name-email-unhappy",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/04-clicked-confirm-without-name-email-unhappy.png"
+    },
+    {
+      "name": "05-filled-visitor-form-before-submit",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/05-filled-visitor-form-before-submit.png"
+    },
+    {
+      "name": "06-submitted-booking-result-state",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/06-submitted-booking-result-state.png"
+    },
+    {
+      "name": "07-second-booking-form-ready",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/07-second-booking-form-ready.png"
+    },
+    {
+      "name": "08-submitted-second-booking-result",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/08-submitted-second-booking-result.png"
+    },
+    {
+      "name": "09-opened-public-widget-390-loaded",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/09-opened-public-widget-390-loaded.png"
+    },
+    {
+      "name": "10-opened-owner-dashboard-desktop-bookings",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/10-opened-owner-dashboard-desktop-bookings.png"
+    },
+    {
+      "name": "11-opened-owner-dashboard-390-bookings",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/11-opened-owner-dashboard-390-bookings.png"
+    },
+    {
+      "name": "12-clicked-cancel-booking-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/12-clicked-cancel-booking-390.png"
+    },
+    {
+      "name": "13-opened-reschedule-modal-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/13-opened-reschedule-modal-390.png"
+    },
+    {
+      "name": "14-picked-reschedule-slot-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/14-picked-reschedule-slot-390.png"
+    },
+    {
+      "name": "15-saved-reschedule-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/15-saved-reschedule-390.png"
+    },
+    {
+      "name": "16-opened-owner-availability-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/16-opened-owner-availability-390.png"
+    },
+    {
+      "name": "17-clicked-save-weekly-availability-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/17-clicked-save-weekly-availability-390.png"
+    },
+    {
+      "name": "18-added-blackout-date-override-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/18-added-blackout-date-override-390.png"
+    },
+    {
+      "name": "19-opened-owner-services-390",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/19-opened-owner-services-390.png"
+    },
+    {
+      "name": "20-opened-widget-after-blackout-day",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/20-opened-widget-after-blackout-day.png"
+    },
+    {
+      "name": "21-opened-manage-link-from-email",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/21-opened-manage-link-from-email.png"
+    },
+    {
+      "name": "22-pointed-widget-api-at-dead-port-9",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/22-pointed-widget-api-at-dead-port-9.png"
+    },
+    {
+      "name": "23-opened-comparable-calendly-homepage",
+      "file": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/CalendarNative-QA-bb30226/screenshots/23-opened-comparable-calendly-homepage.png"
+    }
+  ],
+  "findings": [],
+  "notes": {
+    "widgetDesktop": {
+      "title": "Programare nativă — previzualizare",
+      "scrollWidth": 1280,
+      "bodyText": "Cabinet Dr. Elena Pop\nDespre · Servicii · Programare · Contact\n\nPrevizualizare programări online Hidook (cale nouă — formularul local de cerere rămâne neschimbat). Demo izolat pe acest cabinet — vezi doar intervalele libere ale lui.\n\nPROGRAMĂRI ONLINE\n\nAlege un interval\n\nConfirmarea este instant dacă intervalul e liber. Dacă e ocupat, cererea rămâne în așteptare — nu vei vedea niciodată „confirmat” pe un slot deja rezervat.\n\nServiciu\nDată & oră\nDatele tale\nGata\nConsultație inițială\n45 min\nControl\n25 min\nȘedință online\n40 min\n\nZIUA\n\nSâ\n\n5\nDu\n\n6\nLu\n\n7\nMa\n\n8\nMi\n\n9\nJo\n\n10\nVi\n\n11\nSâ\n\n12\nDu\n\n13\nLu\n\n14\nMa\n\n15\nMi\n\n16\nJo\n\n17\nVi\n\n18\n\nSâmbătă, 5 septembrie · Europe/Bucharest\n\nORA\n\nNu sunt intervale libere în această zi.\n\nNume\nEmail\nTelefon\n(opțional)\nNotă scurtă\n(opțional)\n\nPăstrăm doar nume, email, telefon (dacă îl lași) și nota. Fără CNP, fără fișiere.\n\nConfirmă programarea\n\nDacă programările online nu răspund: WhatsApp · 0722 111 222 · elena@cabinet.ro\n\nBuild by hidook.tech powered by hidook.agency",
+      "jargon": [
+        "\\bslot\\b"
+      ],
+      "secrets": [],
+      "telHrefs": [
+        {
+          "sel": "a[href^=\"tel:\"]",
+          "i": 0,
+          "text": "0722 111 222",
+          "href": "tel:+40722111222",
+          "x": 745,
+          "y": 865,
+          "w": 79,
+          "h": 16,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": false
+        }
+      ],
+      "waHrefs": [
+        {
+          "sel": "a[href*=\"wa.me\"]",
+          "i": 0,
+          "text": "WhatsApp",
+          "href": "https://wa.me/40722111222",
+          "x": 671,
+          "y": 865,
+          "w": 63,
+          "h": 16,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": false
+        }
+      ]
+    },
+    "weekend": {
+      "index": 0,
+      "label": "Sâ 5"
+    },
+    "weekendEmptyText": "",
+    "pickedDay": {
+      "index": 2,
+      "label": "Lu 7",
+      "slots": 30,
+      "empty": false
+    },
+    "unhappyInline": "Completează datele\n\nCompletează numele, emailul și un interval orar.",
+    "booking1": {
+      "successAttr": "confirmed",
+      "successText": "Programare confirmată\n\nluni, 7 septembrie la 09:00–09:45 · Consultație inițială\n\nVei primi email cu detaliile și un link de anulare / reprogramare (când livrarea email este activă).",
+      "errorText": null,
+      "body": "Cabinet Dr. Elena Pop\nDespre · Servicii · Programare · Contact\n\nPrevizualizare programări online Hidook (cale nouă — formularul local de cerere rămâne neschimbat). Demo izolat pe acest cabinet — vezi doar intervalele libere ale lui.\n\nPROGRAMĂRI ONLINE\n\nAlege un interval\nServiciu\nDată & oră\nDatele tale\nGata\nConsultație inițială\n45 min\nControl\n25 min\nȘedință online\n40 min\n\nZIUA\n\nSâ\n\n5\nDu\n\n6\nLu\n\n7\nMa\n\n8\nMi\n\n9\nJo\n\n10\nVi\n\n11\nSâ\n\n12\nDu\n\n13\nLu\n\n14\nMa\n\n15\nMi\n\n16\nJo\n\n17\nVi\n\n18\n\nLuni, 7 septembrie · Europe/Bucharest\n\nORA\n\n09:00\n09:15\n09:30\n09:45\n10:00\n10:15\n10:30\n10:45\n11:00\n11:15\n11:30\n11:45\n12:00\n12:15\n12:30\n12:45\n13:00\n13:15\n13:30\n13:45\n14:00\n14:15\n14:30\n14:45\n15:00\n15:15\n15:30\n15:45\n16:00\n16:15\nNume\nEmail\nTelefon\n(opțional)\nNotă scurtă\n(opțional)\n\nPăstrăm doar nume, email, telefon (dacă îl lași) și nota. Fără CNP, fără fișiere.\n\nSe trimite…\n\nDacă programările online nu răspund: WhatsApp · 0722 111 222 · elena@cabinet.ro\n\nProgramare confirmată\n\nluni, 7 septembrie la 09:00–09:45 · Consultație inițială\n\nVei primi email cu detaliile și un link de anulare / reprogramare (când livrarea email este activă).\n\nBuild by hidook.tech powered by hidook.agency"
+    },
+    "pickedDay2": {
+      "index": 2,
+      "label": "Lu 7",
+      "slots": 28,
+      "empty": false
+    },
+    "booking2": {
+      "successAttr": "confirmed",
+      "text": "Programare confirmată\n\nluni, 7 septembrie la 09:15–09:40 · Control\n\nVei primi email cu detaliile și un link de anulare / reprogramare (când livrarea email este activă)."
+    },
+    "widget390": {
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "viewport": 390,
+      "overflow": false,
+      "jargon": [
+        "\\bslot\\b"
+      ],
+      "telHrefs": [
+        {
+          "sel": "a[href^=\"tel:\"]",
+          "i": 0,
+          "text": "0722 111 222",
+          "href": "tel:+40722111222",
+          "x": 23,
+          "y": 1371,
+          "w": 335,
+          "h": 35,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": false
+        }
+      ],
+      "clipped": [],
+      "bodyText": "Cabinet Dr. Elena Pop\nDespre · Servicii · Programare · Contact\n\nPrevizualizare programări online Hidook (cale nouă — formularul local de cerere rămâne neschimbat). Demo izolat pe acest cabinet — vezi doar intervalele libere ale lui.\n\nPROGRAMĂRI ONLINE\n\nAlege un interval\n\nConfirmarea este instant dacă intervalul e liber. Dacă e ocupat, cererea rămâne în așteptare — nu vei vedea niciodată „confirmat” pe un slot deja rezervat.\n\nServiciu\nDată & oră\nDatele tale\nGata\nConsultație inițială\n45 min\nControl\n25 min\nȘedință online\n40 min\n\nZIUA\n\nSâ\n\n5\nDu\n\n6\nLu\n\n7\nMa\n\n8\nMi\n\n9\nJo\n\n10\nVi\n\n11\nSâ\n\n12\nDu\n\n13\nLu\n\n14\nMa\n\n15\nMi\n\n16\nJo\n\n17\nVi\n\n18\n\nSâmbătă, 5 septembrie · Europe/Bucharest\n\nORA\n\nNu sunt intervale libere în această zi.\n\nNume\nEmail\nTelefon\n(opțional)\nNotă scurtă\n(opțional)\n\nPăstrăm doar nume, email, telefon (dacă îl lași) și nota. Fără CNP, fără fișiere.\n\nConfirmă programarea\n\nDacă programările online nu răspund: WhatsApp · 0722 111 222 · elena@cabinet.ro\n\nBuild by hidook.tech powered by hidook.agency"
+    },
+    "ownerDesktop": {
+      "title": "Programări — dashboard owner",
+      "bodyText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nProgramări\nDisponibilitate\nServicii\n3\nconfirmate\n0\nîn așteptare\n0\nreprogramare\n1\nanulate\nToate statusurile\nConfirmate\nÎn așteptare\nReprogramare\nAnulate\nFiltrează\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:00 · 45 min\nconfirmată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nReprogramează\nAnulează\nlun., 7 sept., 09:15 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\nlun., 7 sept., 09:45 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\n\nBuild by hidook.tech powered by hidook.agency",
+      "jargon": [],
+      "secrets": []
+    },
+    "owner390bookings": {
+      "scrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "overflow": false,
+      "jargon": [],
+      "clipped": [
+        {
+          "sel": ".hod-btn",
+          "i": 7,
+          "text": "Salvează programul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 8,
+          "text": "Șterge",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 9,
+          "text": "+ Adaugă override",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 10,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 11,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 12,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        }
+      ],
+      "bodyText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nProgramări\nDisponibilitate\nServicii\n3\nconfirmate\n0\nîn așteptare\n0\nreprogramare\n1\nanulate\nToate statusurile\nConfirmate\nÎn așteptare\nReprogramare\nAnulate\nFiltrează\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:00 · 45 min\nconfirmată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nReprogramează\nAnulează\nlun., 7 sept., 09:15 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\nlun., 7 sept., 09:45 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\n\nBuild by hidook.tech powered by hidook.agency",
+      "bookingCount": 4
+    },
+    "hadCancel": true,
+    "cancelledId": "bk_d0499301305728b79acb57b0",
+    "afterCancelText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nProgramare anulată. Slotul este liber.\nProgramări\nDisponibilitate\nServicii\n2\nconfirmate\n0\nîn așteptare\n0\nreprogramare\n2\nanulate\nToate statusurile\nConfirmate\nÎn așteptare\nReprogramare\nAnulate\nFiltrează\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:15 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\nlun., 7 sept., 09:45 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\n\nBuild by hidook.tech powered by hidook.agency",
+    "hadReschedule": true,
+    "afterRescheduleText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nProgramare mutată. Slotul vechi e liber.\nProgramări\nDisponibilitate\nServicii\n2\nconfirmate\n0\nîn așteptare\n0\nreprogramare\n2\nanulate\nToate statusurile\nConfirmate\nÎn așteptare\nReprogramare\nAnulate\nFiltrează\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:00 · 45 min\nanulată\nAna Popescu · Consultație inițială\nana.popescu@example.com · 0722000111\nprima vizită QA\nlun., 7 sept., 09:45 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\nlun., 7 sept., 10:15 · 25 min\nconfirmată\nMihai Ionescu · Control\nmihai.ionescu@example.com\nReprogramează\nAnulează\n\nBuild by hidook.tech powered by hidook.agency",
+    "owner390avail": {
+      "scrollWidth": 390,
+      "overflow": false,
+      "jargon": [
+        "\\bblackout\\b",
+        "\\boverride\\b",
+        "\\bTimezone\\b"
+      ],
+      "clipped": [
+        {
+          "sel": ".hod-btn",
+          "i": 0,
+          "text": "Filtrează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 1,
+          "text": "Reprogramează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 2,
+          "text": "Anulează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 3,
+          "text": "Reprogramează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 4,
+          "text": "Anulează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 8,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 9,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": ".hod-btn",
+          "i": 10,
+          "text": "Salvează serviciul",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": "[data-hod-act]",
+          "i": 0,
+          "text": "Reprogramează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": "[data-hod-act]",
+          "i": 1,
+          "text": "Anulează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": "[data-hod-act]",
+          "i": 2,
+          "text": "Reprogramează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        },
+        {
+          "sel": "[data-hod-act]",
+          "i": 3,
+          "text": "Anulează",
+          "href": null,
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0,
+          "clippedRight": false,
+          "clippedLeft": false,
+          "zeroSize": true
+        }
+      ],
+      "bodyText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nProgramare mutată. Slotul vechi e liber.\nProgramări\nDisponibilitate\nServicii\nProgram săptămânal\n\nTimezone: Europe/Bucharest · stocare canonică UTC. Blackout-urile pe dată câștigă în fața acestui program.\n\nLuni\nDeschis\n–\nMarți\nDeschis\n–\nMiercuri\nDeschis\n–\nJoi\nDeschis\n–\nVineri\nDeschis\n–\nSâmbătă\nDeschis\n–\nDuminică\nDeschis\n–\nSalvează programul\nBlackout / ore speciale\n\nAdaugă o zi liberă sau ore speciale pe o dată. Ele înlocuiesc programul recurent în acea zi.\n\n2026-09-08 — zi liberă (blackout) · zi liberă QA\nȘterge\nDată\nTip\nZi liberă (blackout)\nOre speciale\nDe la\nPână la\nNotă (opțional)\n+ Adaugă override\n\nBuild by hidook.tech powered by hidook.agency"
+    },
+    "saturdayWasOpen": true,
+    "afterWeeklySave": "Programul săptămânal a fost salvat.",
+    "blackoutDate": "2026-09-08",
+    "afterBlackout": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nOverride adăugat.\nProgramări\nDisponibilitate\nServicii\nProgram săptămânal\n\nTimezone: Europe/Bucharest · stocare canonică UTC. Blackout-urile pe dată câștigă în fața acestui program.\n\nLuni\nDeschis\n–\nMarți\nDeschis\n–\nMiercuri\nDeschis\n–\nJoi\nDeschis\n–\nVineri\nDeschis\n–\nSâmbătă\nDeschis\n–\nDuminică\nDeschis\n–\nSalvează programul\nBlackout / ore speciale\n\nAdaugă o zi liberă sau ore speciale pe o dată. Ele înlocuiesc programul recurent în acea zi.\n\n2026-09-08 — zi liberă (blackout) · zi liberă QA\nȘterge\n2026-09-08 — zi liberă (blackout) · zi liberă QA\nȘterge\nDată\nTip\nZi liberă (blackout)\nOre speciale\nDe la\nPână la\nNotă (opțional)\n+ Adaugă override\n\nBuild by hidook.tech powered by hidook.agency",
+    "owner390services": {
+      "scrollWidth": 390,
+      "overflow": false,
+      "jargon": [
+        "\\boverride\\b",
+        "\\bbuffer\\b"
+      ],
+      "bodyText": "CABINET DR. ELENA POP\n\nProgramările tale\n\nDoar tu vezi aceste date — izolate pe site-ul tău.\n\nOverride adăugat.\nProgramări\nDisponibilitate\nServicii\nServicii\n\nDurata și buffer-ul se folosesc la generarea sloturilor libere pe site-ul public.\n\nConsultație inițială · 45 min · buffer 10 min\nNume\nDurată (min)\nBuffer (min)\nSalvează serviciul\nControl · 25 min · buffer 5 min\nNume\nDurată (min)\nBuffer (min)\nSalvează serviciul\nȘedință online · 40 min · buffer 10 min\nNume\nDurată (min)\nBuffer (min)\nSalvează serviciul\n\nBuild by hidook.tech powered by hidook.agency"
+    },
+    "blackoutDayHit": {
+      "date": "2026-09-08",
+      "empty": "Nu sunt intervale libere în această zi.",
+      "slots": 0
+    },
+    "outbox": {
+      "error": null,
+      "count": 8,
+      "rows": [
+        {
+          "id": "em_f2e7fe240902896b35a1ebe3",
+          "template_key": "booking_confirmed",
+          "recipient_email": "ana.popescu@example.com",
+          "subject": "Programare confirmată — Consultație inițială",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Ana Popescu.\n\nProgramarea ta la demo_site_cabinet pentru „Consultație inițială” a fost confirmată.\nData și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare confirmată — Consultație inițială</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea ta este confirmată</h1><p>Salut, Ana Popescu.</p><p>Programarea ta la demo_site_cabinet pentru „Consultație inițială” a fost confirmată. Data și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Consultație inițială<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:00 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_01d5174b03946f7d1936da8d",
+          "template_key": "booking_confirmed",
+          "recipient_email": "mihai.ionescu@example.com",
+          "subject": "Programare confirmată — Control",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Mihai Ionescu.\n\nProgramarea ta la demo_site_cabinet pentru „Control” a fost confirmată.\nData și ora (ora cabinetului): 2026-09-07 09:15 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=g5LUmDvVDr46ipyIEb9HsFbbfW0nYzGx\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare confirmată — Control</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea ta este confirmată</h1><p>Salut, Mihai Ionescu.</p><p>Programarea ta la demo_site_cabinet pentru „Control” a fost confirmată. Data și ora (ora cabinetului): 2026-09-07 09:15 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Control<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:15 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=g5LUmDvVDr46ipyIEb9HsFbbfW0nYzGx\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=g5LUmDvVDr46ipyIEb9HsFbbfW0nYzGx</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_baca5d75ec44bf5895a0aa66",
+          "template_key": "booking_cancelled",
+          "recipient_email": "ana.popescu@example.com",
+          "subject": "Programare anulată — Consultație inițială",
+          "booking_status_snapshot": "cancelled",
+          "manage_link_present": 0,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Ana Popescu.\n\nProgramarea ta pentru „Consultație inițială” la demo_site_cabinet a fost anulată.\nData și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest).\nStare: anulată.\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare anulată — Consultație inițială</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea a fost anulată</h1><p>Salut, Ana Popescu.</p><p>Programarea ta pentru „Consultație inițială” la demo_site_cabinet a fost anulată. Data și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest). Stare: anulată.</p><p><strong>Stare:</strong> anulată</p><p><strong>Serviciu:</strong> Consultație inițială<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:00 (Europe/Bucharest)</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_dd08b7e56522ea8c02c9c873",
+          "template_key": "booking_reschedule_confirmed",
+          "recipient_email": "mihai.ionescu@example.com",
+          "subject": "Programare reprogramată și confirmată — Control",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Mihai Ionescu.\n\nProgramarea ta pentru „Control” la demo_site_cabinet a fost reprogramată și confirmată.\nNoua dată și oră (ora cabinetului): 2026-09-07 09:45 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=bx1hHCDznOdMFfGJBfN3mfs34ZG43PI_\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare reprogramată și confirmată — Control</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Noul interval este confirmat</h1><p>Salut, Mihai Ionescu.</p><p>Programarea ta pentru „Control” la demo_site_cabinet a fost reprogramată și confirmată. Noua dată și oră (ora cabinetului): 2026-09-07 09:45 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Control<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:45 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=bx1hHCDznOdMFfGJBfN3mfs34ZG43PI_\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=bx1hHCDznOdMFfGJBfN3mfs34ZG43PI_</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_03d0a6ffa04f4b66ddca7105",
+          "template_key": "booking_confirmed",
+          "recipient_email": "ana.popescu@example.com",
+          "subject": "Programare confirmată — Consultație inițială",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Ana Popescu.\n\nProgramarea ta la demo_site_cabinet pentru „Consultație inițială” a fost confirmată.\nData și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=0g3-4TOMg2_Iz8n7NaO8y7bz5yShZ2YV\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare confirmată — Consultație inițială</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea ta este confirmată</h1><p>Salut, Ana Popescu.</p><p>Programarea ta la demo_site_cabinet pentru „Consultație inițială” a fost confirmată. Data și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Consultație inițială<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:00 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=0g3-4TOMg2_Iz8n7NaO8y7bz5yShZ2YV\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=0g3-4TOMg2_Iz8n7NaO8y7bz5yShZ2YV</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_af3f97b1f0449f44ba025146",
+          "template_key": "booking_confirmed",
+          "recipient_email": "mihai.ionescu@example.com",
+          "subject": "Programare confirmată — Control",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Mihai Ionescu.\n\nProgramarea ta la demo_site_cabinet pentru „Control” a fost confirmată.\nData și ora (ora cabinetului): 2026-09-07 09:15 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=YeyItCEIXTQxLIK4SMX_zdqKKl6-Q0jA\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare confirmată — Control</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea ta este confirmată</h1><p>Salut, Mihai Ionescu.</p><p>Programarea ta la demo_site_cabinet pentru „Control” a fost confirmată. Data și ora (ora cabinetului): 2026-09-07 09:15 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Control<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:15 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=YeyItCEIXTQxLIK4SMX_zdqKKl6-Q0jA\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=YeyItCEIXTQxLIK4SMX_zdqKKl6-Q0jA</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_2270308be563eadef2e2167c",
+          "template_key": "booking_cancelled",
+          "recipient_email": "ana.popescu@example.com",
+          "subject": "Programare anulată — Consultație inițială",
+          "booking_status_snapshot": "cancelled",
+          "manage_link_present": 0,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Ana Popescu.\n\nProgramarea ta pentru „Consultație inițială” la demo_site_cabinet a fost anulată.\nData și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest).\nStare: anulată.\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare anulată — Consultație inițială</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea a fost anulată</h1><p>Salut, Ana Popescu.</p><p>Programarea ta pentru „Consultație inițială” la demo_site_cabinet a fost anulată. Data și ora (ora cabinetului): 2026-09-07 09:00 (Europe/Bucharest). Stare: anulată.</p><p><strong>Stare:</strong> anulată</p><p><strong>Serviciu:</strong> Consultație inițială<br><strong>Data/ora (cabinet):</strong> 2026-09-07 09:00 (Europe/Bucharest)</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        },
+        {
+          "id": "em_66b4fdf48ed47893ddf12d86",
+          "template_key": "booking_reschedule_confirmed",
+          "recipient_email": "mihai.ionescu@example.com",
+          "subject": "Programare reprogramată și confirmată — Control",
+          "booking_status_snapshot": "confirmed",
+          "manage_link_present": 1,
+          "status": "sent",
+          "provider_name": "local-memory",
+          "last_error": null,
+          "body_text": "Salut, Mihai Ionescu.\n\nProgramarea ta pentru „Control” la demo_site_cabinet a fost reprogramată și confirmată.\nNoua dată și oră (ora cabinetului): 2026-09-07 10:15 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:18791/calendar-native/manage?token=Rg-wlHCT3-or0-JVvAU24seQpK2ctVyC\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+          "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare reprogramată și confirmată — Control</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Noul interval este confirmat</h1><p>Salut, Mihai Ionescu.</p><p>Programarea ta pentru „Control” la demo_site_cabinet a fost reprogramată și confirmată. Noua dată și oră (ora cabinetului): 2026-09-07 10:15 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Control<br><strong>Data/ora (cabinet):</strong> 2026-09-07 10:15 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:18791/calendar-native/manage?token=Rg-wlHCT3-or0-JVvAU24seQpK2ctVyC\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:18791/calendar-native/manage?token=Rg-wlHCT3-or0-JVvAU24seQpK2ctVyC</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+          "secretsText": []
+        }
+      ]
+    },
+    "manageUrls": [
+      "http://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE",
+      "http://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE</p><p",
+      "http://127.0.0.1:18791/calendar-native/manage?token=g5LUmDvVDr46ipyIEb9HsFbbfW0nYzGx",
+      "http://127.0.0.1:18791/calendar-native/manage?token=g5LUmDvVDr46ipyIEb9HsFbbfW0nYzGx</p><p",
+      "http://127.0.0.1:18791/calendar-native/manage?token=bx1hHCDznOdMFfGJBfN3mfs34ZG43PI_",
+      "http://127.0.0.1:18791/calendar-native/manage?token=bx1hHCDznOdMFfGJBfN3mfs34ZG43PI_</p><p",
+      "http://127.0.0.1:18791/calendar-native/manage?token=0g3-4TOMg2_Iz8n7NaO8y7bz5yShZ2YV",
+      "http://127.0.0.1:18791/calendar-native/manage?token=0g3-4TOMg2_Iz8n7NaO8y7bz5yShZ2YV</p><p",
+      "http://127.0.0.1:18791/calendar-native/manage?token=YeyItCEIXTQxLIK4SMX_zdqKKl6-Q0jA",
+      "http://127.0.0.1:18791/calendar-native/manage?token=YeyItCEIXTQxLIK4SMX_zdqKKl6-Q0jA</p><p",
+      "http://127.0.0.1:18791/calendar-native/manage?token=Rg-wlHCT3-or0-JVvAU24seQpK2ctVyC",
+      "http://127.0.0.1:18791/calendar-native/manage?token=Rg-wlHCT3-or0-JVvAU24seQpK2ctVyC</p><p"
+    ],
+    "managePage": {
+      "url": "http://127.0.0.1:18791/calendar-native/manage?token=_G3bBTy9rfFWJsD9gAckSp2aVUT_0FLE",
+      "status": 404,
+      "title": "Pagină negăsită — Hidook Site Builder",
+      "body": "Pagină negăsită\n\nLinkul pe care l-ai deschis nu există sau a fost mutat.\n\nDeschide Hidook Site Builder"
+    },
+    "outage": {
+      "errorText": "Programările online sunt temporar indisponibile\n\nConexiunea a eșuat sau a expirat. Nu am înregistrat nicio programare.\n\nDacă programările online nu răspund: WhatsApp · 0722 111 222 · elena@cabinet.ro",
+      "successText": null,
+      "hasWhatsapp": true,
+      "hasTel": true,
+      "body": "PROGRAMĂRI ONLINE\n\nAlege un interval\nServiciu\nDată & oră\nDatele tale\nGata\n\nSe încarcă programul…\n\nProgramările online sunt temporar indisponibile\n\nConexiunea a eșuat sau a expirat. Nu am înregistrat nicio programare.\n\nDacă programările online nu răspund: WhatsApp · 0722 111 222 · elena@cabinet.ro"
+    },
+    "isolation": {
+      "previewStatus": 200,
+      "previewBody": {
+        "ok": true,
+        "customerId": "demo_customer_elena",
+        "siteId": "demo_site_cabinet",
+        "brand": "Cabinet Dr. Elena Pop"
+      },
+      "cookieNames": [
+        "hb_session"
+      ],
+      "ownerA": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "timezone": "Europe/Bucharest",
+          "counts": {
+            "confirmed": 2,
+            "requested": 0,
+            "reschedule_needed": 0,
+            "cancelled": 2
+          },
+          "bookings": [
+            {
+              "id": "bk_5ae44f8bb41aeafcd81d405e",
+              "status": "cancelled",
+              "statusLabel": "anulată",
+              "startUtc": "2026-09-07T06:00:00.000Z",
+              "endUtc": "2026-09-07T06:45:00.000Z",
+              "serviceId": "svc_demo_consult",
+              "serviceName": "Consultație inițială",
+              "durationMinutes": 45,
+              "visitorName": "Ana Popescu",
+              "visitorEmail": "ana.popescu@example.com",
+              "visitorPhone": "0722000111",
+              "note": "prima vizită QA",
+              "createdAt": "2026-09-05T16:27:01.313Z",
+              "updatedAt": "2026-09-05T16:27:09.577Z",
+              "cancelledAt": "2026-09-05T16:27:09.577Z"
+            },
+            {
+              "id": "bk_d0499301305728b79acb57b0",
+              "status": "cancelled",
+              "statusLabel": "anulată",
+              "startUtc": "2026-09-07T06:00:00.000Z",
+              "endUtc": "2026-09-07T06:45:00.000Z",
+              "serviceId": "svc_demo_consult",
+              "serviceName": "Consultație inițială",
+              "durationMinutes": 45,
+              "visitorName": "Ana Popescu",
+              "visitorEmail": "ana.popescu@example.com",
+              "visitorPhone": "0722000111",
+              "note": "prima vizită QA",
+              "createdAt": "2026-09-05T16:27:51.881Z",
+              "updatedAt": "2026-09-05T16:28:00.120Z",
+              "cancelledAt": "2026-09-05T16:28:00.120Z"
+            },
+            {
+              "id": "bk_c41ce1075c62d63df27e83f0",
+              "status": "confirmed",
+              "statusLabel": "confirmată",
+              "startUtc": "2026-09-07T06:45:00.000Z",
+              "endUtc": "2026-09-07T07:10:00.000Z",
+              "serviceId": "svc_demo_control",
+              "serviceName": "Control",
+              "durationMinutes": 25,
+              "visitorName": "Mihai Ionescu",
+              "visitorEmail": "mihai.ionescu@example.com",
+              "visitorPhone": null,
+              "note": null,
+              "createdAt": "2026-09-05T16:27:04.707Z",
+              "updatedAt": "2026-09-05T16:27:12.284Z",
+              "cancelledAt": null
+            },
+            {
+              "id": "bk_8d8c5747aaa669a6f6c45b48",
+              "status": "confirmed",
+              "statusLabel": "confirmată",
+              "startUtc": "2026-09-07T07:15:00.000Z",
+              "endUtc": "2026-09-07T07:40:00.000Z",
+              "serviceId": "svc_demo_control",
+              "serviceName": "Control",
+              "durationMinutes": 25,
+              "visitorName": "Mihai Ionescu",
+              "visitorEmail": "mihai.ionescu@example.com",
+              "visitorPhone": null,
+              "note": null,
+              "createdAt": "2026-09-05T16:27:55.240Z",
+              "updatedAt": "2026-09-05T16:28:02.834Z",
+              "cancelledAt": null
+            }
+          ]
+        }
+      },
+      "ownerB": {
+        "status": 403,
+        "body": {
+          "error": "Acces interzis.",
+          "code": "FORBIDDEN"
+        }
+      },
+      "anonOwner": {
+        "status": 401,
+        "body": {
+          "error": "Sign-in required."
+        }
+      },
+      "pubA": {
+        "status": 200,
+        "body": {
+          "ok": true,
+          "timezone": "Europe/Bucharest",
+          "services": [
+            {
+              "id": "svc_demo_consult",
+              "name": "Consultație inițială",
+              "durationMinutes": 45,
+              "bufferMinutes": 10
+            },
+            {
+              "id": "svc_demo_control",
+              "name": "Control",
+              "durationMinutes": 25,
+              "bufferMinutes": 5
+            },
+            {
+              "id": "svc_demo_online",
+              "name": "Ședință online",
+              "durationMinutes": 40,
+              "bufferMinutes": 10
+            }
+          ]
+        }
+      },
+      "pubB": {
+        "status": 404,
+        "body": {
+          "error": "Calendar is not configured for this site.",
+          "code": "NOT_CONFIGURED",
+          "status": 404
+        }
+      },
+      "publicTryingOwnerList": {
+        "status": 401,
+        "body": {
+          "error": "Sign-in required."
+        }
+      },
+      "aBookingId": "bk_5ae44f8bb41aeafcd81d405e",
+      "anonCancel": {
+        "status": 401,
+        "body": {
+          "error": "Sign-in required."
+        }
+      },
+      "sessionACancelAsB": {
+        "status": 403,
+        "body": {
+          "error": "Acces interzis.",
+          "code": "FORBIDDEN"
+        }
+      },
+      "publicGetBookings": {
+        "status": 404,
+        "bodyText": "{\"error\":\"not found\"}"
+      }
+    },
+    "comparableCalendly": {
+      "title": "Meeting Scheduling Software and AI Meeting Tools | Calendly",
+      "body": "Introducing the new Calendly, built to handle all of the work around meetings.\n\nLearn more\nProduct\nSolutions\nResources\nPricing\nTalk to sales\nLog In\nGet started for free\nProduct\nSolutions\nResources\nPricing\nTalk to sales\nLog In\nGet started for free\nAll the work around meetings, handled.\n\nFrom AI-powered scheduling to automated meeting recaps and follow-ups, get the busywork done with fewer tools and less effort.\n\nSign up with Google\nSign up with Microsoft\n\nSign up with email • No credit card required\n\nScheduling\nBook meetings with the world’s #1 scheduling tool\n\nGiving you complete control and t"
+    }
+  }
+}

@@ -133,9 +133,13 @@ body.hod {
 }
 .hod-filters input[type="search"] { flex: 1 1 140px; }
 .hod-filters input[type="date"],
+.hod-filters input[data-hod-from],
+.hod-filters input[data-hod-to],
 .hod-filters select { flex: 1 1 140px; min-width: 9.5rem; }
-.hod-filters input[type="date"] {
-  /* Avoid clipped native mm/dd/yyyy chrome at ~390px */
+.hod-filters input[type="date"],
+.hod-filters input[data-hod-from],
+.hod-filters input[data-hod-to] {
+  /* RO zz.ll.aaaa text fields — avoid native mm/dd/yyyy chrome at ~390px */
   flex: 1 1 calc(50% - 8px);
   min-width: 10.5rem;
   box-sizing: border-box;

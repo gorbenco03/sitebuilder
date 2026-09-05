@@ -140,8 +140,10 @@
     root.appendChild(el('p', 'hnb__eyebrow', 'Programări online'));
     root.appendChild(el('h1', 'hnb__title', 'Alege un interval'));
     var sub = el('p', 'hnb__sub',
-      'Confirmarea este instant dacă intervalul e liber. Dacă e ocupat, cererea rămâne în așteptare — nu vei vedea niciodată „confirmat” pe un slot deja rezervat.');
+      'Confirmarea este instant dacă intervalul e liber. Dacă e ocupat, cererea rămâne în așteptare — nu vei vedea niciodată „confirmat” pe un interval deja rezervat.');
     root.appendChild(sub);
+    var eyebrow = root.querySelector('.hnb__eyebrow');
+    var title = root.querySelector('.hnb__title');
 
     var steps = el('ol', 'hnb__steps');
     steps.setAttribute('aria-label', 'Pași');
@@ -196,8 +198,32 @@
 
     function hideFlow() {
       layout.hidden = true;
+      layout.setAttribute('hidden', '');
+      layout.style.display = 'none';
       steps.hidden = true;
+      steps.setAttribute('hidden', '');
+      steps.style.display = 'none';
       sub.hidden = true;
+      sub.setAttribute('hidden', '');
+      sub.style.display = 'none';
+      if (eyebrow) {
+        eyebrow.hidden = true;
+        eyebrow.setAttribute('hidden', '');
+        eyebrow.style.display = 'none';
+      }
+      if (title) {
+        title.hidden = true;
+        title.setAttribute('hidden', '');
+        title.style.display = 'none';
+      }
+      // Drop any leftover loading / form chrome so only the result card remains
+      root.querySelectorAll('.hnb__loading').forEach(function (n) {
+        n.hidden = true;
+        n.setAttribute('hidden', '');
+        n.style.display = 'none';
+      });
+      try { slotPane.innerHTML = ''; } catch (_) { /* ignore */ }
+      try { svcCol.innerHTML = ''; } catch (_) { /* ignore */ }
     }
 
     function showSuccess(payload) {

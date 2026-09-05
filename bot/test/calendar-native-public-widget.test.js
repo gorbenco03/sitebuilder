@@ -242,17 +242,27 @@ for (const bad of ['Failed to fetch', 'Something went wrong', 'Please fill', 'Lo
 }
 assert.match(widgetJs, /Se trimite…/);
 assert.match(widgetJs, /Confirmă programarea/);
+assert.match(widgetJs, /interval deja rezervat/);
+assert.doesNotMatch(widgetJs, /pe un slot deja/);
+// Success/outage must force-hide layout + steps chrome
+assert.match(widgetCss, /\.hnb__layout\[hidden\]/);
+assert.match(widgetCss, /\.hnb__steps\[hidden\]/);
+assert.match(widgetCss, /\.hnb__loading\[hidden\]/);
 
 // 390: responsive slots / no huge fixed min-width on root
 assert.match(widgetCss, /@media \(max-width: 400px\)/);
 assert.match(widgetCss, /minmax\(0,\s*1fr\)/);
 assert.doesNotMatch(widgetCss, /\.hnb\s*\{[^}]*min-width:\s*[6-9]\d{2,}px/);
 
-// Preview mounts native widget with demo tenant + alt contacts
+// Preview mounts native widget with demo tenant + alt contacts — product page, not factory
 assert.match(previewHtml, /data-hidook-cal-native/);
 assert.match(previewHtml, /demo_customer_elena/);
 assert.match(previewHtml, /data-contact-whatsapp/);
 assert.match(previewHtml, /public-booking-widget\.js/);
+assert.doesNotMatch(previewHtml, /previzualizare/i);
+assert.doesNotMatch(previewHtml, /\+407\*{4}/);
+assert.match(previewHtml, /data-contact-phone-tel="\+40722111222"/);
+assert.match(previewHtml, /Programare — Cabinet Dr\. Elena Pop/);
 
 // --- 5. Legacy appointment form untouched ---
 const prScript = fs.readFileSync(path.join(ROOT, 'templates/professionals/script.js'), 'utf8');
@@ -341,10 +351,30 @@ const { createHandler } = require('../server.js');
     assert.strictEqual(prev.status, 200);
     const prevText = await prev.text();
     assert.match(prevText, /data-hidook-cal-native/);
+    assert.doesNotMatch(prevText, /previzualizare/i);
+    assert.match(prevText, /data-contact-phone-tel="\+40722111222"/);
     const css = await fetch(base + '/calendar-native/widget/public-booking-widget.css');
     assert.strictEqual(css.status, 200);
     const js = await fetch(base + '/calendar-native/widget/public-booking-widget.js');
     assert.strictEqual(js.status, 200);
+
+    // Manage-link UI + token API (D5) — must not 404
+    const managePage = await fetch(base + '/calendar-native/manage?token=' + book.body.manageToken, {
+        redirect: 'follow',
+    });
+    assert.strictEqual(managePage.status, 200, 'manage UI must resolve');
+    const manageHtml = await managePage.text();
+    assert.match(manageHtml, /Gestionează programarea|hm-root|Programare/i);
+    assert.doesNotMatch(manageHtml, /Pagină negăsită/i);
+    const manageApi = await jget(
+        '/api/calendar-native/manage?token=' + encodeURIComponent(book.body.manageToken)
+    );
+    assert.strictEqual(manageApi.status, 200, JSON.stringify(manageApi.body));
+    assert.ok(manageApi.body.ok);
+    assert.ok(manageApi.body.booking);
+    assert.strictEqual(manageApi.body.booking.id, book.body.bookingId || manageApi.body.booking.id);
+    const badTok = await jget('/api/calendar-native/manage?token=not-a-real-token-xxxxxx');
+    assert.ok(badTok.status === 400 || badTok.status === 404);
 
     // Cross-tenant HTTP: unknown tenant without seed → not configured
     const ghost = await jget(

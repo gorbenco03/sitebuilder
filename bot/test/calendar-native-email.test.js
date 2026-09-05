@@ -110,6 +110,25 @@ assert.ok(created.manageToken.length >= 24, 'unguessable manage token length');
     assert.ok(/confirmat/i.test(confMail.subject));
     assert.ok(/token=/i.test(confMail.text), 'manage link token in body');
     assert.ok(!/în așteptare/i.test(confMail.text));
+    // Manage URL path must match the served manage route (D5)
+    assert.match(confMail.text, /\/calendar-native\/manage\?token=/);
+    // Site label is human — never raw factory site id (D6)
+    assert.doesNotMatch(confMail.text, /\bsite_email_A\b/);
+    assert.doesNotMatch(confMail.text, /\bdemo_site_cabinet\b/);
+    assert.doesNotMatch(confMail.html || '', /\bdemo_site_cabinet\b/);
+
+    // Demo tenant emails name the cabinet brand, not the site id
+    engine.ensureSettings(db, 'demo_customer_elena', 'demo_site_cabinet', {
+        timezone: 'Europe/Bucharest',
+        default_buffer_minutes: 0,
+    });
+    // seed minimal weekly + service if needed via ensure — use engine helpers already in file scope below after first booking only assert label helper
+    const demoLabel = email.loadSiteLabel
+        ? email.loadSiteLabel({ customer_id: 'demo_customer_elena', site_id: 'demo_site_cabinet' })
+        : null;
+    if (demoLabel != null) {
+        assert.strictEqual(demoLabel, 'Cabinet Dr. Elena Pop');
+    }
 
     // Token scopes to exactly this booking
     const tokFromUrl = /token=([^&\s]+)/.exec(confMail.text);

@@ -91,12 +91,46 @@
   }
 
   function timeToMinutes(t) {
-    var p = String(t || '').split(':');
-    if (p.length < 2) return null;
-    var h = parseInt(p[0], 10);
-    var m = parseInt(p[1], 10);
-    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
-    return h * 60 + m;
+    var raw = String(t || '').trim();
+    // Accept 24h "09:00" and tolerate accidental AM/PM leftovers
+    var am = /\b(am|a\.m\.)\b/i.test(raw);
+    var pm = /\b(pm|p\.m\.)\b/i.test(raw);
+    var m = raw.match(/(\d{1,2})\s*[:.hH]\s*(\d{2})/);
+    if (!m) {
+      var p = raw.split(':');
+      if (p.length < 2) return null;
+      var h0 = parseInt(p[0], 10);
+      var m0 = parseInt(p[1], 10);
+      if (!Number.isFinite(h0) || !Number.isFinite(m0)) return null;
+      return h0 * 60 + m0;
+    }
+    var h = parseInt(m[1], 10);
+    var mm = parseInt(m[2], 10);
+    if (!Number.isFinite(h) || !Number.isFinite(mm)) return null;
+    if (pm && h < 12) h += 12;
+    if (am && h === 12) h = 0;
+    if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
+    return h * 60 + mm;
+  }
+
+  /** Parse RO dd.mm.yyyy (or yyyy-mm-dd) → yyyy-mm-dd for API filters. */
+  function parseRoDate(s) {
+    var v = String(s || '').trim();
+    if (!v) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+    var m = v.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/);
+    if (!m) return '';
+    var d = parseInt(m[1], 10);
+    var mo = parseInt(m[2], 10);
+    var y = parseInt(m[3], 10);
+    if (d < 1 || d > 31 || mo < 1 || mo > 12 || y < 2000) return '';
+    return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+
+  function formatRoDate(ymd) {
+    if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return ymd || '';
+    var p = ymd.split('-');
+    return p[2] + '.' + p[1] + '.' + p[0];
   }
 
   function badgeClass(status) {
@@ -198,8 +232,8 @@
       var params = {
         q: qEl ? qEl.value : '',
         status: stEl ? stEl.value : '',
-        fromDateLocal: fromEl ? fromEl.value : '',
-        toDateLocal: toEl ? toEl.value : '',
+        fromDateLocal: fromEl ? parseRoDate(fromEl.value) : '',
+        toDateLocal: toEl ? parseRoDate(toEl.value) : '',
       };
       var r = await api('GET', '/api/calendar-native/owner/bookings', null, params);
       if (r.status === 401) {
@@ -285,8 +319,10 @@
         '<option value="reschedule_needed">Reprogramare</option>' +
         '<option value="cancelled">Anulate</option>' +
         '</select>';
-      html += '<input type="date" data-hod-from aria-label="De la" />';
-      html += '<input type="date" data-hod-to aria-label="Până la" />';
+      html +=
+        '<input type="text" inputmode="numeric" data-hod-from placeholder="zz.ll.aaaa" aria-label="De la" maxlength="10" autocomplete="off" />';
+      html +=
+        '<input type="text" inputmode="numeric" data-hod-to placeholder="zz.ll.aaaa" aria-label="Până la" maxlength="10" autocomplete="off" />';
       html += '<button type="button" class="hod-btn hod-btn--ghost" data-hod-refresh>Filtrează</button>';
       html += '</div>';
 
@@ -377,9 +413,9 @@
       html += '<div class="hod-card">';
       html += '<h2>Program săptămânal</h2>';
       html +=
-        '<p class="hod-hint">Timezone: ' +
+        '<p class="hod-hint">Fus orar: ' +
         esc((state.settings && state.settings.timezone) || state.timezone) +
-        ' · stocare canonică UTC. Blackout-urile pe dată câștigă în fața acestui program.</p>';
+        '. Zilele libere și orele speciale pe o dată anume înlocuiesc programul săptămânal.</p>';
       html += '<ul class="hod-week">';
       WEEKDAYS.forEach(function (d) {
         var w = byDay[d.n];
@@ -394,18 +430,18 @@
           (open ? 'checked' : '') +
           ' /> Deschis</label>';
         html +=
-          '<input type="time" data-hod-start value="' +
+          '<input type="text" inputmode="numeric" data-hod-start placeholder="09:00" value="' +
           esc(start) +
           '" ' +
           (open ? '' : 'disabled') +
-          ' />';
+          ' aria-label="Ora de început" maxlength="5" />';
         html += '<span aria-hidden="true">–</span>';
         html +=
-          '<input type="time" data-hod-end value="' +
+          '<input type="text" inputmode="numeric" data-hod-end placeholder="17:00" value="' +
           esc(end) +
           '" ' +
           (open ? '' : 'disabled') +
-          ' />';
+          ' aria-label="Ora de sfârșit" maxlength="5" />';
         html += '</div></li>';
       });
       html += '</ul>';
@@ -414,17 +450,17 @@
       html += '</div>';
 
       html += '<div class="hod-card">';
-      html += '<h2>Blackout / ore speciale</h2>';
+      html += '<h2>Zile libere și ore speciale</h2>';
       html +=
         '<p class="hod-hint">Adaugă o zi liberă sau ore speciale pe o dată. Ele înlocuiesc programul recurent în acea zi.</p>';
       html += '<ul class="hod-ov-list">';
       if (!state.overrides.length) {
-        html += '<li class="hod-hint" style="border:0">Niciun override încă.</li>';
+        html += '<li class="hod-hint" style="border:0">Nicio excepție adăugată încă.</li>';
       }
       state.overrides.forEach(function (o) {
         var label =
           o.kind === 'blackout'
-            ? 'zi liberă (blackout)'
+            ? 'zi liberă'
             : 'ore speciale ' +
               minutesToTime(o.startMinute) +
               '–' +
@@ -432,7 +468,7 @@
         html += '<li>';
         html +=
           '<span><strong>' +
-          esc(o.dateLocal) +
+          esc(formatRoDate(o.dateLocal) || o.dateLocal) +
           '</strong> — ' +
           esc(label) +
           (o.note ? ' · ' + esc(o.note) : '') +
@@ -446,21 +482,21 @@
       html += '</ul>';
       html += '<div class="hod-ov-form">';
       html +=
-        '<div class="hod-field">Dată<input type="date" data-hod-ov-date /></div>';
+        '<div class="hod-field">Dată (zz.ll.aaaa)<input type="text" inputmode="numeric" data-hod-ov-date placeholder="zz.ll.aaaa" maxlength="10" autocomplete="off" /></div>';
       html +=
         '<div class="hod-field">Tip<select data-hod-ov-kind>' +
-        '<option value="blackout">Zi liberă (blackout)</option>' +
+        '<option value="blackout">Zi liberă</option>' +
         '<option value="special_hours">Ore speciale</option>' +
         '</select></div>';
       html +=
         '<div class="hod-row2 hod-ov-hours" hidden>' +
-        '<div class="hod-field">De la<input type="time" data-hod-ov-start value="10:00" /></div>' +
-        '<div class="hod-field">Până la<input type="time" data-hod-ov-end value="14:00" /></div>' +
+        '<div class="hod-field">De la<input type="text" inputmode="numeric" data-hod-ov-start placeholder="10:00" value="10:00" maxlength="5" /></div>' +
+        '<div class="hod-field">Până la<input type="text" inputmode="numeric" data-hod-ov-end placeholder="14:00" value="14:00" maxlength="5" /></div>' +
         '</div>';
       html +=
         '<div class="hod-field">Notă (opțional)<input type="text" data-hod-ov-note maxlength="120" placeholder="ex. sărbătoare" /></div>';
       html +=
-        '<button type="button" class="hod-btn hod-btn--ghost" data-hod-add-ov>+ Adaugă override</button>';
+        '<button type="button" class="hod-btn hod-btn--ghost" data-hod-add-ov>+ Adaugă excepție</button>';
       html += '</div></div>';
 
       panel.innerHTML = html;
@@ -468,7 +504,7 @@
       $all('[data-hod-open]', panel).forEach(function (cb) {
         cb.addEventListener('change', function () {
           var li = cb.closest('li');
-          $all('input[type="time"]', li).forEach(function (inp) {
+          $all('input[data-hod-start], input[data-hod-end]', li).forEach(function (inp) {
             inp.disabled = !cb.checked;
           });
         });
@@ -500,7 +536,7 @@
       }
       var html = '<div class="hod-card"><h2>Servicii</h2>';
       html +=
-        '<p class="hod-hint">Durata și buffer-ul se folosesc la generarea sloturilor libere pe site-ul public.</p>';
+        '<p class="hod-hint">Durata și pauza dintre programări se folosesc la generarea intervalelor libere pe site-ul public.</p>';
       html += '<ul class="hod-svc-list">';
       if (!state.services.length) {
         html += '<li class="hod-hint">Niciun serviciu configurat.</li>';
@@ -512,7 +548,7 @@
           esc(s.name) +
           '</strong> · ' +
           esc(s.durationMinutes) +
-          ' min · buffer ' +
+          ' min · pauză ' +
           esc(s.bufferMinutes != null ? s.bufferMinutes : '—') +
           ' min</div>';
         html += '<div class="hod-svc-edit">';
@@ -526,7 +562,7 @@
           esc(s.durationMinutes) +
           '" /></div>';
         html +=
-          '<div class="hod-field">Buffer (min)<input type="number" min="0" max="240" data-hod-svc-buf value="' +
+          '<div class="hod-field">Pauză după (min)<input type="number" min="0" max="240" data-hod-svc-buf value="' +
           esc(s.bufferMinutes != null ? s.bufferMinutes : 0) +
           '" /></div>';
         html += '</div>';
@@ -591,7 +627,11 @@
 
     async function addOverride() {
       var panel = $('[data-hod-panel="avail"]', root);
-      var dateLocal = $('[data-hod-ov-date]', panel).value;
+      var dateLocal = parseRoDate($('[data-hod-ov-date]', panel).value);
+      if (!dateLocal) {
+        setMsg('Completează data în format zz.ll.aaaa.', 'err');
+        return;
+      }
       var kind = $('[data-hod-ov-kind]', panel).value;
       var note = $('[data-hod-ov-note]', panel).value;
       var body = { dateLocal: dateLocal, kind: kind, note: note || null };
@@ -601,10 +641,10 @@
       }
       var r = await api('POST', '/api/calendar-native/owner/availability/overrides', body);
       if (!r.data || !r.data.ok) {
-        setMsg((r.data && r.data.error) || 'Nu am putut adăuga override-ul.', 'err');
+        setMsg((r.data && r.data.error) || 'Nu am putut adăuga excepția.', 'err');
         return;
       }
-      setMsg('Override adăugat.', 'ok');
+      setMsg('Excepție adăugată.', 'ok');
       await loadAvailability();
     }
 
@@ -615,11 +655,11 @@
         '/api/calendar-native/owner/availability/overrides/' + encodeURIComponent(id)
       );
       if (!r.data || !r.data.ok) {
-        setMsg((r.data && r.data.error) || 'Nu am putut șterge override-ul.', 'err');
+        setMsg((r.data && r.data.error) || 'Nu am putut șterge excepția.', 'err');
         if (btn) btn.disabled = false;
         return;
       }
-      setMsg('Override șters.', 'ok');
+      setMsg('Excepție ștearsă.', 'ok');
       await loadAvailability();
     }
 
@@ -646,7 +686,7 @@
     }
 
     async function onCancel(id, btn) {
-      if (!window.confirm('Anulezi această programare? Slotul se eliberează imediat.')) return;
+      if (!window.confirm('Anulezi această programare? Intervalul se eliberează imediat.')) return;
       btn.disabled = true;
       var r = await api(
         'POST',
@@ -658,7 +698,7 @@
         setMsg((r.data && r.data.error) || 'Nu am putut anula.', 'err');
         return;
       }
-      setMsg('Programare anulată. Slotul este liber.', 'ok');
+      setMsg('Programare anulată. Intervalul este din nou liber.', 'ok');
       await loadBookings();
     }
 
@@ -700,7 +740,7 @@
         to: ymd(to),
       });
       if (!r.data || !r.data.ok) {
-        setMsg((r.data && r.data.error) || 'Nu am putut încărca sloturile.', 'err');
+        setMsg((r.data && r.data.error) || 'Nu am putut încărca intervalele libere.', 'err');
         closeModal();
         return;
       }
@@ -727,9 +767,9 @@
         '<div class="hod-modal-bg" data-hod-modal-bg><div class="hod-modal" role="dialog" aria-modal="true">';
       html += '<h3>Reprogramează</h3>';
       html +=
-        '<p class="hod-hint">Alege un interval liber. Slotul vechi se eliberează imediat; istoricul rămâne pe aceeași programare.</p>';
+        '<p class="hod-hint">Alege un interval liber. Intervalul vechi se eliberează imediat; istoricul rămâne pe aceeași programare.</p>';
       if (!state.slots.length) {
-        html += '<div class="hod-empty">Nu sunt sloturi libere în următoarele 14 zile.</div>';
+        html += '<div class="hod-empty">Nu sunt intervale libere în următoarele 14 zile.</div>';
       } else {
         html += '<div class="hod-slots">';
         state.slots.slice(0, 36).forEach(function (s) {
@@ -787,7 +827,7 @@
             setMsg((r.data && r.data.error) || 'Nu am putut reprograma.', 'err');
             return;
           }
-          setMsg('Programare mutată. Slotul vechi e liber.', 'ok');
+          setMsg('Programare mutată. Intervalul vechi este din nou liber.', 'ok');
           closeModal();
           await loadBookings();
         });

@@ -114,6 +114,39 @@ function loadTimezone(db, booking) {
 }
 
 /**
+ * Human cabinet/site name for email copy — never the internal site id.
+ * Demo tenant uses the public brand; registry name when present; else "cabinet".
+ */
+function loadSiteLabel(booking, explicit) {
+    if (explicit && String(explicit).trim()) {
+        const e = String(explicit).trim();
+        // Reject factory ids that leaked as labels
+        if (!/^demo_site_/i.test(e) && !/^site_/i.test(e)) return e;
+    }
+    const customerId = booking && booking.customer_id;
+    const siteId = booking && booking.site_id;
+    if (customerId === 'demo_customer_elena' && siteId === 'demo_site_cabinet') {
+        return 'Cabinet Dr. Elena Pop';
+    }
+    try {
+        const site = require('../../registry').getSite(siteId);
+        if (site) {
+            const name =
+                site.businessName ||
+                site.brand ||
+                site.name ||
+                site.title ||
+                (site.draft && (site.draft.businessName || site.draft.name)) ||
+                null;
+            if (name && String(name).trim()) return String(name).trim();
+        }
+    } catch (_) {
+        /* registry optional in pure unit harness */
+    }
+    return 'cabinet';
+}
+
+/**
  * Synchronous enqueue only (engine hooks). Does not open sockets.
  *
  * @param {import('node:sqlite').DatabaseSync} db
@@ -152,7 +185,7 @@ function enqueueBookingEmail(db, input) {
         startUtc: booking.start_utc,
         bookingStatus: status,
         manageUrl,
-        siteLabel: input.siteLabel || booking.site_id,
+        siteLabel: loadSiteLabel(booking, input.siteLabel),
     });
 
     // Idempotency: one email per booking + template + status + updated_at slice
@@ -256,6 +289,7 @@ module.exports = {
     manageBaseUrl,
     ensureRawManageToken,
     formatOwnerLocal,
+    loadSiteLabel,
     hashToken,
     mintManageToken,
     outbox,
