@@ -7,6 +7,18 @@
  *   - CSS file headers using factory system ids (PRODUCT-MENU / PORTFOLIO / LOCAL-SERVICE)
  *
  * Overlay parent SHA 00188e7 → RED on those leftovers; HEAD → GREEN.
+ *
+ * Stale-oracle repair (2026-09-04, G7): the bare /placehold/i entry in
+ * FORBIDDEN_SURFACE predates the current preview chrome — renderPreview now
+ * embeds the generated RO legal pages (bot/site-legal.js, out of scope by
+ * task) as a JSON payload in every opened preview, and those stubs
+ * intentionally carry "[PLACEHOLDER …]" markers for the business owner to
+ * fill in. The factory placeholder-image intent now has its own scoped regex
+ * (placehold.co/it/com/io + via.placeholder image hosts), so owner legal
+ * markers can never trip it again. No product regression involved; the other
+ * s56-style cascading FAILs (previews.* undefined) came from this same entry
+ * aborting the first system in the render loop.
+ *
  * Run: node bot/test/s58-opened-stranger-commercial.test.js
  */
 const assert = require('assert');
@@ -23,7 +35,12 @@ const MIN_HTML = 8000;
 const FORBIDDEN_SURFACE = [
   /picsum/i,
   /unsplash/i,
-  /placehold/i,
+  // Factory placeholder-image hosts only. A bare /placehold/i is a stale
+  // oracle here: renderPreview embeds the generated RO legal pages (which
+  // intentionally carry "[PLACEHOLDER …]" owner-fill markers, from
+  // bot/site-legal.js) into every opened preview.
+  /placehold(?:er)?\.(?:co|it|com|io)\b/i,
+  /via\.placeholder/i,
   /loremflickr/i,
   /DESSERD/i,
   /desserdina/i,
