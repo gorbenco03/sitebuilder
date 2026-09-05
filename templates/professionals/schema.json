@@ -459,6 +459,15 @@
           "maxLen": 300
         },
         {
+          "key": "appointment.nativeBooking",
+          "type": "text",
+          "label": "Programări native Hidook (da / nu) — opțional, reversibil",
+          "hint": "Scrie „da” ca să înlocuiești formularul local de cerere cu calendarul nativ Hidook pe site-ul public. Scrie „nu” (sau lasă gol) ca să păstrezi formularul local. Nu șterge rezervările existente; poți reveni oricând. La publicare se leagă automat de contul tău.",
+          "required": false,
+          "previewRefresh": "full",
+          "maxLen": 8
+        },
+        {
           "key": "appointment.enabled",
           "type": "text",
           "label": "Activează secțiunea programări (da / nu)",

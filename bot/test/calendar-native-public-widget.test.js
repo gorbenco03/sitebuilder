@@ -264,13 +264,22 @@ assert.doesNotMatch(previewHtml, /\+407\*{4}/);
 assert.match(previewHtml, /data-contact-phone-tel="\+40722111222"/);
 assert.match(previewHtml, /Programare — Cabinet Dr\. Elena Pop/);
 
-// --- 5. Legacy appointment form untouched ---
+// --- 5. Legacy appointment form remains default; cutover is opt-in only ---
 const prScript = fs.readFileSync(path.join(ROOT, 'templates/professionals/script.js'), 'utf8');
 assert.match(prScript, /\/api\/appointments/);
 assert.doesNotMatch(prScript, /calendar-native/);
 const prTpl = fs.readFileSync(path.join(ROOT, 'templates/professionals/template.html'), 'utf8');
 assert.match(prTpl, /id="pr-appt-form"/);
-assert.doesNotMatch(prTpl, /data-hidook-cal-native/);
+assert.match(prTpl, /appointment\.nativeBooking/, 'cutover gate present');
+assert.match(prTpl, /data-hidook-cal-native/, 'native mount behind opt-in');
+// Default preset must NOT render the native mount (no forced migration)
+const { renderHtml } = require('../../build.js');
+const prPreset = JSON.parse(
+    fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8')
+).presets[0].config;
+const defaultPrHtml = renderHtml(prTpl, prPreset);
+assert.match(defaultPrHtml, /id="pr-appt-form"/);
+assert.doesNotMatch(defaultPrHtml, /data-hidook-cal-native/);
 
 // --- HTTP surface: services/slots/bookings + widget static + no appointments regression ---
 publicApi.resetDbHandle();

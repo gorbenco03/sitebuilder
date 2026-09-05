@@ -614,6 +614,42 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         const cfgCopy = JSON.parse(JSON.stringify(config || {}));
         const imageBuffers = materializeImages(cfgCopy, imagesDir, images);
 
+        // 2b. Calendar native staged cutover (VISION §8 e): when
+        // appointment.nativeBooking is opted in, inject tenant ids from the
+        // Site Builder site record and seed the native engine. Opt-out clears
+        // injected ids only — engine history is retained (non-destructive).
+        try {
+            const cutover = require('./calendar-native/cutover');
+            if (cutover.configHasNativeBooking(cfgCopy) || (cfgCopy.appointment && cfgCopy.appointment.nativeCustomerId)) {
+                const { openCalendarDb } = require('./calendar-native/db');
+                const calDb = openCalendarDb({});
+                const prepared = cutover.preparePublishCutover({
+                    config: cfgCopy,
+                    site,
+                    db: calDb,
+                });
+                // Replace cfgCopy keys in place so later write uses cutover config
+                Object.keys(cfgCopy).forEach((k) => { delete cfgCopy[k]; });
+                Object.assign(cfgCopy, prepared.config);
+                if (prepared.optedIn) {
+                    log('calendar.cutover.seeded', {
+                        siteId: site.id,
+                        customerId: prepared.customerId,
+                        services: prepared.seed && prepared.seed.services,
+                    });
+                } else {
+                    log('calendar.cutover.opt_out', { siteId: site.id });
+                }
+            }
+        } catch (e) {
+            log('calendar.cutover.error', { err: e.message, siteId: site && site.id }, 'error');
+            if (e && e.code === 'CUTOVER_TENANT') throw e;
+            // Soft-fail seed errors should not block publish of non-native sites;
+            // if opted in and seed failed hard, surface.
+            const cutover = require('./calendar-native/cutover');
+            if (cutover.configHasNativeBooking(config)) throw e;
+        }
+
         // 3. Image moderation (if configured)
         if (typeof ai.moderateImages === 'function' && imageBuffers.length > 0) {
             let verdict;
