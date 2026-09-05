@@ -3,6 +3,12 @@
  * S55: opened default photos must be subject-accurate commercial subjects
  * (restaurant / salon / trade), not abstract textures — and larger than S54 floors.
  * Run: node bot/test/s55-subject-photos.test.js
+ *
+ * STALE ORACLE (S-legacy G6): original lock asserted registry length === 4 from the
+ * S54–S80 three-commercial + one-extra era. Current product catalog is five systems
+ * (product-menu, portfolio, local-service, professionals, desserdirina). Subject-photo
+ * floors and parent-S54 blob divergence remain live product contract for the three
+ * original commercial seeds; only the registry count was rewritten to five systems.
  */
 const assert = require('assert');
 const crypto = require('crypto');
@@ -11,7 +17,16 @@ const path = require('path');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
+/** Original S55 commercial seed systems (subject/size floors still apply). */
 const SYSTEMS = ['product-menu', 'portfolio', 'local-service'];
+/** Current launch catalog (VISION / flow2 five-system architecture). */
+const REGISTRY_IDS = [
+  'product-menu',
+  'portfolio',
+  'local-service',
+  'professionals',
+  'desserdirina',
+];
 const MIN_W = 960;
 const MIN_H = 640;
 const MIN_BYTES = 120 * 1024;
@@ -220,13 +235,13 @@ check('every image file SHA-256 differs from parent S54 commit (no kept texture 
   assert.ok(compared >= 90, `expected ~97 comparisons, got ${compared}`);
 });
 
-check('system ids stay product-menu / portfolio / local-service', () => {
+check('registry keeps five launch systems incl. original commercial three', () => {
   const reg = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates', 'registry.json'), 'utf8'));
   const ids = (reg.templates || []).map((t) => t.id);
-  for (const id of SYSTEMS) {
+  for (const id of REGISTRY_IDS) {
     assert.ok(ids.includes(id), `registry missing ${id}`);
   }
-  assert.strictEqual(ids.length, 4, 'registry must stay four systems');
+  assert.strictEqual(ids.length, 5, 'registry must stay five systems');
 });
 
 if (failed) {
