@@ -36,7 +36,9 @@
  *   GET  /api/calendar-native/services → public active services for one tenant (customerId+siteId)
  *   GET  /api/calendar-native/slots    → public free slots for one tenant+service (aggregated only)
  *   POST /api/calendar-native/bookings → public create booking via native engine (no email yet)
+ *   GET  /api/calendar-native/owner/*  → authenticated owner dashboard API (tenant = session uid + site)
  *   GET  /calendar-native/widget/*     → static public booking widget assets + preview (not cutover)
+ *   GET  /calendar-native/owner/*      → static owner dashboard assets + preview (not cutover)
  *
  * Zero dependencies (Node 18+ built-ins only). CommonJS.
  * Pricing amounts come only from ./pricing.js.
@@ -67,6 +69,7 @@ const PUBLISH_BODY_MAX = 16 * 1024 * 1024;    // 16 MB for /api/publish
 const BUILDER_DIR      = path.join(__dirname, '..', 'builder');
 const TEMPLATES_DIR    = path.join(__dirname, '..', 'templates');
 const CAL_NATIVE_WIDGET_DIR = path.join(__dirname, 'calendar-native', 'widget');
+const CAL_NATIVE_OWNER_DIR = path.join(__dirname, 'calendar-native', 'owner');
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
 
@@ -1277,6 +1280,295 @@ function serveCalendarNativeWidget(req, res, urlPath) {
     return sendCachedFile(req, res, target, st);
 }
 
+// ---------------------------------------------------------------------------
+// Native calendar OWNER dashboard API (VISION §8 step c part 2)
+// Auth: hb_session required. customerId must equal session userId.
+// siteId must be owned by that user (registry), or DEMO pair for local preview.
+// ---------------------------------------------------------------------------
+
+function getCalendarOwnerApi() {
+    return require('./calendar-native/owner-api.js');
+}
+
+function ownerRegistryGetSite(siteId) {
+    try {
+        return getRegistry().getSite(siteId);
+    } catch (_) {
+        return null;
+    }
+}
+
+/**
+ * Resolve + authorize owner tenant from query or body.
+ * @returns {{ userId: string, customerId: string, siteId: string }|null}
+ */
+function resolveOwnerTenantOrReject(req, res, source) {
+    const userId = requireAuth(req, res);
+    if (!userId) return null;
+    const ownerApi = getCalendarOwnerApi();
+    let customerId;
+    let siteId;
+    try {
+        const t = ownerApi.parseTenant(source || {});
+        customerId = t.customerId;
+        siteId = t.siteId;
+    } catch (e) {
+        sendJson(res, e.status || 400, {
+            error: e.message || 'customerId și siteId sunt obligatorii.',
+            code: e.code || 'TENANT',
+        });
+        return null;
+    }
+    const authz = ownerApi.authorizeOwnerTenant(userId, customerId, siteId, {
+        getSite: ownerRegistryGetSite,
+    });
+    if (!authz.ok) {
+        sendJson(res, authz.status || 403, {
+            error: authz.error || 'Acces interzis.',
+            code: authz.code || 'FORBIDDEN',
+        });
+        return null;
+    }
+    return { userId, customerId, siteId, demo: !!authz.demo };
+}
+
+/**
+ * Non-production only: seed DEMO tenant + set session cookie as DEMO.customerId
+ * so /calendar-native/owner/preview is usable offline without a full login flow.
+ */
+function handleOwnerPreviewSession(req, res) {
+    if (process.env.NODE_ENV === 'production') {
+        return sendJson(res, 404, { error: 'not found' });
+    }
+    try {
+        const api = getCalendarNativeApi();
+        const db = resolveCalendarNativeDb();
+        api.ensureDemoTenant(db);
+        const auth = getAuth();
+        const cookieValue = auth.signSession(api.DEMO.customerId);
+        const cookie = auth.buildSessionCookie(cookieValue);
+        res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Set-Cookie': cookie,
+            'Cache-Control': 'no-store',
+            'X-Robots-Tag': 'noindex, nofollow',
+        });
+        res.end(JSON.stringify({
+            ok: true,
+            customerId: api.DEMO.customerId,
+            siteId: api.DEMO.siteId,
+            brand: api.DEMO.brand,
+        }));
+    } catch (e) {
+        return sendJson(res, 500, { error: 'Nu am putut deschide sesiunea demo.' });
+    }
+}
+
+async function handleOwnerListBookings(req, res, query) {
+    const src = {
+        customerId: query.get('customerId') || query.get('customer_id'),
+        siteId: query.get('siteId') || query.get('site_id'),
+    };
+    const tenant = resolveOwnerTenantOrReject(req, res, src);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.listOwnerBookings(db, tenant.customerId, tenant.siteId, {
+        status: query.get('status') || undefined,
+        fromUtc: query.get('fromUtc') || undefined,
+        toUtc: query.get('toUtc') || undefined,
+        fromDateLocal: query.get('fromDateLocal') || query.get('from') || undefined,
+        toDateLocal: query.get('toDateLocal') || query.get('to') || undefined,
+        q: query.get('q') || undefined,
+    });
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerCancelBooking(req, res, bookingId) {
+    let body = {};
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (_) {
+        body = {};
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.cancelOwnerBooking(db, tenant.customerId, tenant.siteId, bookingId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerRescheduleBooking(req, res, bookingId) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.rescheduleOwnerBooking(db, tenant.customerId, tenant.siteId, bookingId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerConfirmBooking(req, res, bookingId) {
+    let body = {};
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (_) {
+        body = {};
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.confirmOwnerBooking(db, tenant.customerId, tenant.siteId, bookingId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerGetAvailability(req, res, query) {
+    const src = {
+        customerId: query.get('customerId') || query.get('customer_id'),
+        siteId: query.get('siteId') || query.get('site_id'),
+    };
+    const tenant = resolveOwnerTenantOrReject(req, res, src);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.getOwnerAvailability(db, tenant.customerId, tenant.siteId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerPutWeekly(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 32 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.putOwnerWeekly(db, tenant.customerId, tenant.siteId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerAddOverride(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.addOwnerOverride(db, tenant.customerId, tenant.siteId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerRemoveOverride(req, res, overrideId) {
+    let body = {};
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (_) {
+        // DELETE may have empty body — tenant from query fallback
+        body = {};
+    }
+    // Allow tenant on query for DELETE without body
+    if (!body.customerId && !body.customer_id) {
+        const u = new URL(req.url || '/', 'http://local');
+        body.customerId = u.searchParams.get('customerId') || u.searchParams.get('customer_id');
+        body.siteId = u.searchParams.get('siteId') || u.searchParams.get('site_id');
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.removeOwnerOverride(db, tenant.customerId, tenant.siteId, overrideId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerPutService(req, res, serviceId) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.putOwnerService(db, tenant.customerId, tenant.siteId, serviceId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerListSlots(req, res, query) {
+    const src = {
+        customerId: query.get('customerId') || query.get('customer_id'),
+        siteId: query.get('siteId') || query.get('site_id'),
+    };
+    const tenant = resolveOwnerTenantOrReject(req, res, src);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.listOwnerSlots(db, tenant.customerId, tenant.siteId, {
+        serviceId: query.get('serviceId') || query.get('service_id'),
+        fromDateLocal: query.get('from') || query.get('fromDate'),
+        toDateLocal: query.get('to') || query.get('toDate'),
+    });
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/**
+ * GET /calendar-native/owner/* — static owner dashboard (preview + assets).
+ */
+function serveCalendarNativeOwner(req, res, urlPath) {
+    let rel = urlPath.replace(/^\/calendar-native\/owner\/?/, '');
+    if (!rel || rel.endsWith('/')) rel = (rel || '') + 'preview.html';
+    if (rel.includes('..') || path.isAbsolute(rel) || rel.includes('\0')) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    const target = path.resolve(path.join(CAL_NATIVE_OWNER_DIR, rel));
+    if (!target.startsWith(CAL_NATIVE_OWNER_DIR + path.sep) && target !== CAL_NATIVE_OWNER_DIR) {
+        return sendJson(res, 403, { error: 'Forbidden' });
+    }
+    let st;
+    try {
+        st = fs.statSync(target);
+    } catch {
+        return sendNotFound(req, res, 'not found');
+    }
+    if (!st.isFile()) return sendNotFound(req, res, 'not found');
+    return sendCachedFile(req, res, target, st);
+}
+
 /**
  * HIDOOK_TEST_PAY only (non-production): complete an offline #test-checkout=cs_test_* return
  * with the same paid transition as the unsigned Stripe test webhook.
@@ -2402,6 +2694,49 @@ function createHandler({ onStripeEvent } = {}) {
             if (req.method === 'POST' && url === '/api/calendar-native/bookings') {
                 return await handleCalendarNativeBookings(req, res);
             }
+
+            // Owner dashboard API (authenticated, tenant-scoped)
+            if (req.method === 'POST' && url === '/api/calendar-native/owner/preview-session') {
+                return handleOwnerPreviewSession(req, res);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/owner/bookings') {
+                return await handleOwnerListBookings(req, res, query);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/owner/availability') {
+                return await handleOwnerGetAvailability(req, res, query);
+            }
+            if (req.method === 'PUT' && url === '/api/calendar-native/owner/availability/weekly') {
+                return await handleOwnerPutWeekly(req, res);
+            }
+            if (req.method === 'POST' && url === '/api/calendar-native/owner/availability/overrides') {
+                return await handleOwnerAddOverride(req, res);
+            }
+            if (req.method === 'DELETE' && url.startsWith('/api/calendar-native/owner/availability/overrides/')) {
+                const oid = decodeURIComponent(url.slice('/api/calendar-native/owner/availability/overrides/'.length).split('/')[0] || '');
+                return await handleOwnerRemoveOverride(req, res, oid);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/owner/slots') {
+                return await handleOwnerListSlots(req, res, query);
+            }
+            {
+                const mCancel = /^\/api\/calendar-native\/owner\/bookings\/([^/]+)\/cancel$/.exec(url);
+                if (req.method === 'POST' && mCancel) {
+                    return await handleOwnerCancelBooking(req, res, decodeURIComponent(mCancel[1]));
+                }
+                const mResched = /^\/api\/calendar-native\/owner\/bookings\/([^/]+)\/reschedule$/.exec(url);
+                if (req.method === 'POST' && mResched) {
+                    return await handleOwnerRescheduleBooking(req, res, decodeURIComponent(mResched[1]));
+                }
+                const mConfirm = /^\/api\/calendar-native\/owner\/bookings\/([^/]+)\/confirm$/.exec(url);
+                if (req.method === 'POST' && mConfirm) {
+                    return await handleOwnerConfirmBooking(req, res, decodeURIComponent(mConfirm[1]));
+                }
+                const mSvc = /^\/api\/calendar-native\/owner\/services\/([^/]+)$/.exec(url);
+                if (req.method === 'PUT' && mSvc) {
+                    return await handleOwnerPutService(req, res, decodeURIComponent(mSvc[1]));
+                }
+            }
+
             if ((req.method === 'GET' || req.method === 'HEAD') && (
                 url === '/calendar-native/widget' ||
                 url === '/calendar-native/widget/' ||
@@ -2412,6 +2747,17 @@ function createHandler({ onStripeEvent } = {}) {
                     return sendRedirect(res, '/calendar-native/widget/' + q);
                 }
                 return serveCalendarNativeWidget(req, res, url);
+            }
+            if ((req.method === 'GET' || req.method === 'HEAD') && (
+                url === '/calendar-native/owner' ||
+                url === '/calendar-native/owner/' ||
+                url.startsWith('/calendar-native/owner/')
+            )) {
+                if (url === '/calendar-native/owner') {
+                    const q = qIdx >= 0 ? rawUrl.slice(qIdx) : '';
+                    return sendRedirect(res, '/calendar-native/owner/' + q);
+                }
+                return serveCalendarNativeOwner(req, res, url);
             }
 
             // Unknown route: browser document → short RO HTML; API → JSON

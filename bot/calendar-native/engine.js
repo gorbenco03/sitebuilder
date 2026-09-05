@@ -222,6 +222,19 @@ function addDateOverride(db, customerId, siteId, override) {
     ).get(id, customerId, siteId);
 }
 
+/**
+ * Remove a date override for this tenant only. Returns true if a row was deleted.
+ */
+function removeDateOverride(db, customerId, siteId, overrideId) {
+    assertTenant(customerId, siteId);
+    if (!overrideId) return false;
+    const r = db.prepare(
+        `DELETE FROM calendar_date_overrides
+         WHERE id = ? AND customer_id = ? AND site_id = ?`
+    ).run(overrideId, customerId, siteId);
+    return r.changes > 0;
+}
+
 function listDateOverrides(db, customerId, siteId, { fromDate, toDate } = {}) {
     assertTenant(customerId, siteId);
     if (fromDate && toDate) {
@@ -697,6 +710,116 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
 }
 
 /**
+ * Owner reschedule — moves start/end on the same booking row (history kept).
+ * Old slot frees immediately via UNIQUE active-slot index + transactional update.
+ * Instant confirm only when the new slot is free and inside availability.
+ */
+function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {}) {
+    assertTenant(customerId, siteId);
+    const startMs = Date.parse(input.startUtc);
+    if (!Number.isFinite(startMs)) {
+        const err = new Error('invalid start_utc');
+        err.code = 'VALIDATION';
+        throw err;
+    }
+    const nowMs = input.nowMs != null ? Number(input.nowMs) : Date.now();
+    if (startMs < nowMs - 60 * 1000) {
+        const err = new Error('slot is in the past');
+        err.code = 'SLOT_IN_PAST';
+        throw err;
+    }
+
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const row = getBooking(db, customerId, siteId, bookingId);
+        if (!row) {
+            db.exec('ROLLBACK;');
+            return null;
+        }
+        if (row.status === STATUSES.CANCELLED) {
+            db.exec('ROLLBACK;');
+            const err = new Error('cannot reschedule cancelled booking');
+            err.code = 'STATE';
+            throw err;
+        }
+
+        const service = getService(db, customerId, siteId, row.service_id);
+        if (!service || !service.active) {
+            db.exec('ROLLBACK;');
+            const err = new Error('service not found');
+            err.code = 'SERVICE_NOT_FOUND';
+            throw err;
+        }
+        const settings = getSettings(db, customerId, siteId);
+        if (!settings) {
+            db.exec('ROLLBACK;');
+            const err = new Error('calendar settings missing');
+            err.code = 'SETTINGS_MISSING';
+            throw err;
+        }
+
+        if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
+            db.exec('ROLLBACK;');
+            const err = new Error('slot outside weekly availability or blackout');
+            err.code = 'SLOT_OUTSIDE_AVAILABILITY';
+            throw err;
+        }
+
+        const buffer = service.buffer_minutes != null
+            ? service.buffer_minutes
+            : settings.default_buffer_minutes;
+        const duration = service.duration_minutes;
+        const endMs = startMs + duration * 60000;
+        const startIso = toIsoUtc(startMs);
+        const endIso = toIsoUtc(endMs);
+
+        const overlap = listActiveBookings(db, customerId, siteId, {
+            serviceId: service.id,
+            fromUtc: startIso,
+            toUtc: toIsoUtc(endMs + buffer * 60000),
+        }).filter((b) => b.id !== row.id).filter((b) => {
+            const bStart = Date.parse(b.start_utc);
+            const bEnd = Date.parse(b.end_utc) + buffer * 60000;
+            return startMs < bEnd && (endMs + buffer * 60000) > bStart;
+        });
+
+        let status = STATUSES.CONFIRMED;
+        if (overlap.length) {
+            status = STATUSES.RESCHEDULE_NEEDED;
+        }
+
+        const ts = nowIso();
+        try {
+            db.prepare(
+                `UPDATE calendar_bookings
+                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+                 WHERE id = ? AND customer_id = ? AND site_id = ?`
+            ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+        } catch (e) {
+            const msg = String(e && e.message || e);
+            if (/UNIQUE|unique/i.test(msg)) {
+                status = STATUSES.RESCHEDULE_NEEDED;
+                // Keep the desired wall time; unique only covers requested+confirmed.
+                db.prepare(
+                    `UPDATE calendar_bookings
+                     SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+                     WHERE id = ? AND customer_id = ? AND site_id = ?`
+                ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+            } else {
+                throw e;
+            }
+        }
+
+        const updated = getBooking(db, customerId, siteId, bookingId);
+        db.exec('COMMIT;');
+        return updated;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+/**
  * Owner confirm a requested booking if still free.
  */
 function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
@@ -774,6 +897,7 @@ module.exports = {
     setWeeklyAvailability,
     listWeeklyAvailability,
     addDateOverride,
+    removeDateOverride,
     listDateOverrides,
     openRangesForDate,
     slotFitsOpenAvailability,
@@ -785,6 +909,7 @@ module.exports = {
     getBooking,
     cancelBookingAsOwner,
     cancelBookingWithToken,
+    rescheduleBookingAsOwner,
     confirmBookingAsOwner,
     hashToken,
     unsafeGetBookingByIdOnly,

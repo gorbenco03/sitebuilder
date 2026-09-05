@@ -1,0 +1,421 @@
+/* Owner dashboard — native calendar (VISION §8 step c part 2). Romanian product UI. */
+:root {
+  --ink: #14201c;
+  --muted: #5c6d66;
+  --line: #d5e0da;
+  --bg: #f3f6f4;
+  --card: #fff;
+  --accent: #0f6b4c;
+  --accent-2: #0b4f39;
+  --accent-soft: #e5f3ec;
+  --danger: #9b2c2c;
+  --danger-soft: #fdecec;
+  --wait: #8a5a12;
+  --wait-soft: #fff4df;
+  --resched: #5b4a9a;
+  --resched-soft: #efeafc;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body.hod {
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--bg);
+  min-height: 100vh;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.hod-shell {
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 14px 48px;
+  min-width: 0;
+}
+
+.hod-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.hod-top h1 {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  margin: 0 0 4px;
+  letter-spacing: -0.02em;
+}
+.hod-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.hod-sub { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; max-width: 36rem; }
+
+.hod-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+.hod-tab {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.hod-tab.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+.hod-panel { display: none; min-width: 0; }
+.hod-panel.is-on { display: block; }
+
+.hod-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.hod-stat {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 10px;
+  min-width: 0;
+}
+.hod-stat strong {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+}
+.hod-stat span {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hod-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: stretch;
+}
+.hod-filters input,
+.hod-filters select,
+.hod-field input,
+.hod-field select {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.hod-filters input[type="search"] { flex: 1 1 140px; }
+.hod-filters input[type="date"],
+.hod-filters select { flex: 1 1 140px; min-width: 9.5rem; }
+.hod-filters input[type="date"] {
+  /* Avoid clipped native mm/dd/yyyy chrome at ~390px */
+  flex: 1 1 calc(50% - 8px);
+  min-width: 10.5rem;
+  box-sizing: border-box;
+}
+.hod-filters .hod-btn { flex: 0 0 auto; }
+
+.hod-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hod-btn:disabled { opacity: 0.55; cursor: wait; }
+.hod-btn--ghost {
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.hod-btn--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.hod-btn--small { padding: 8px 12px; font-size: 12px; }
+.hod-btn--block { width: 100%; }
+
+.hod-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hod-booking {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.hod-booking__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.hod-booking__time { font-weight: 750; font-size: 14px; }
+.hod-booking__meta { font-size: 13px; color: var(--muted); word-break: break-word; }
+.hod-booking__note { font-size: 12px; color: var(--wait); }
+.hod-booking__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hod-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 3px 8px;
+}
+.hod-badge--ok { background: var(--accent-soft); color: var(--accent-2); }
+.hod-badge--wait { background: var(--wait-soft); color: var(--wait); }
+.hod-badge--resched { background: var(--resched-soft); color: var(--resched); }
+.hod-badge--cancelled { background: #eef1ef; color: var(--muted); }
+
+.hod-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  min-width: 0;
+}
+.hod-card h2 {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  margin: 0 0 8px;
+}
+.hod-hint { color: var(--muted); font-size: 13px; margin: 0 0 12px; line-height: 1.4; }
+
+.hod-week {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.hod-week li {
+  display: grid;
+  grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.hod-week__day { font-weight: 650; }
+.hod-week__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+.hod-week__row input[type="time"] {
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px;
+  width: auto;
+  max-width: 7.5rem;
+}
+.hod-week__row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.hod-ov-list { list-style: none; margin: 0 0 12px; padding: 0; }
+.hod-ov-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.hod-ov-form {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+}
+.hod-ov-form .hod-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.hod-svc-list { list-style: none; margin: 0; padding: 0; }
+.hod-svc-list li {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+.hod-svc-list .hod-svc-edit {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+.hod-svc-edit .hod-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+.hod-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  min-width: 0;
+}
+
+.hod-empty, .hod-msg {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  background: #fff;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.hod-msg--err {
+  border-style: solid;
+  border-color: #f0c4c4;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.hod-msg--ok {
+  border-style: solid;
+  border-color: #b7d9c8;
+  background: var(--accent-soft);
+  color: var(--accent-2);
+}
+.hod-auth {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 24px 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  text-align: center;
+}
+.hod-auth p { color: var(--muted); font-size: 14px; line-height: 1.45; }
+
+.hod-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 32, 28, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  z-index: 40;
+}
+.hod-modal {
+  background: #fff;
+  border-radius: 18px 18px 14px 14px;
+  width: 100%;
+  max-width: 440px;
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  padding: 18px 16px 20px;
+  min-width: 0;
+}
+.hod-modal h3 {
+  font-family: var(--serif);
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+.hod-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 10px 0 14px;
+}
+.hod-slot {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 10px 6px;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.hod-slot.is-on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.hod-foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 28px;
+}
+
+@media (max-width: 400px) {
+  .hod-shell { padding: 12px 10px 40px; }
+  .hod-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hod-week li { grid-template-columns: 1fr; }
+  .hod-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hod-ov-form .hod-row2,
+  .hod-svc-edit .hod-row2 { grid-template-columns: 1fr; }
+  .hod-tab { padding: 8px 12px; font-size: 12px; }
+}
+
+@media (min-width: 720px) {
+  .hod-booking {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+  .hod-booking__acts { flex-direction: column; align-items: stretch; }
+  .hod-modal-bg { align-items: center; }
+  .hod-modal { border-radius: 18px; }
+}

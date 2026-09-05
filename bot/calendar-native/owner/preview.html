@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Programări — dashboard owner</title>
+  <link rel="stylesheet" href="/calendar-native/owner/owner-dashboard.css" />
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, sans-serif; background: #f3f6f4; color: #14201c; }
+    .hod-boot { max-width: 420px; margin: 48px auto; padding: 24px; text-align: center; color: #5c6d66; font-size: 14px; }
+  </style>
+</head>
+<body class="hod">
+  <div id="hod-boot" class="hod-boot">Se deschide dashboard-ul…</div>
+  <div
+    id="hod-root"
+    data-hidook-cal-owner
+    data-customer-id="demo_customer_elena"
+    data-site-id="demo_site_cabinet"
+    data-api-base=""
+    data-brand="Cabinet Dr. Elena Pop"
+    hidden
+  ></div>
+  <script>
+    (function () {
+      // Local/non-prod preview: mint a demo owner session, then mount the dashboard.
+      fetch('/api/calendar-native/owner/preview-session', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+          var boot = document.getElementById('hod-boot');
+          var root = document.getElementById('hod-root');
+          if (!res.ok || !res.body || !res.body.ok) {
+            if (boot) {
+              boot.textContent =
+                (res.body && res.body.error) ||
+                'Autentificare necesară pentru dashboard-ul owner.';
+            }
+            return;
+          }
+          if (boot) boot.remove();
+          if (root) {
+            root.hidden = false;
+            if (res.body.brand) root.setAttribute('data-brand', res.body.brand);
+          }
+          var s = document.createElement('script');
+          s.src = '/calendar-native/owner/owner-dashboard.js';
+          document.body.appendChild(s);
+        })
+        .catch(function () {
+          var boot = document.getElementById('hod-boot');
+          if (boot) boot.textContent = 'Nu am putut deschide sesiunea demo.';
+        });
+    })();
+  </script>
+</body>
+</html>
