@@ -66,10 +66,28 @@ const preset = JSON.parse(
 const tpl = fs.readFileSync(path.join(ROOT, 'templates/professionals/template.html'), 'utf8');
 const css = fs.readFileSync(path.join(ROOT, 'templates/professionals/styles.css'), 'utf8');
 
-// Legacy default HTML (native off)
+// Legacy default HTML (native off) — also published under /live/<slug>/ so
+// detectLiveSlug() + POST /api/appointments work for real in-browser submit.
+const legacySiteRec = registry.createSite({
+    userId: ownerUser.id,
+    templateId: 'professionals',
+    templateVersion: 1,
+    slug: 'cutover-legacy-cabinet',
+});
 const legacyHtml = renderHtml(tpl, preset).replace(
     'href="styles.css"',
-    'href="/cutover-shot/styles.css"'
+    'href="./styles.css"'
+);
+const legacyPublishDir = path.join(tmp, 'published', legacySiteRec.slug);
+fs.mkdirSync(legacyPublishDir, { recursive: true });
+fs.writeFileSync(path.join(legacyPublishDir, 'index.html'), legacyHtml);
+fs.writeFileSync(
+    path.join(legacyPublishDir, 'styles.css'),
+    fs.readFileSync(path.join(ROOT, 'templates/professionals/styles.css'), 'utf8')
+);
+fs.writeFileSync(
+    path.join(legacyPublishDir, 'script.js'),
+    fs.readFileSync(path.join(ROOT, 'templates/professionals/script.js'), 'utf8')
 );
 
 // Native opted-in HTML via preparePublishCutover (real seed + tenant ids + api base)
@@ -78,6 +96,22 @@ nativeCfg.appointment.nativeBooking = 'da';
 const prepared = cutover.preparePublishCutover({ config: nativeCfg, site, db });
 let nativeHtml = renderHtml(tpl, prepared.config);
 nativeHtml = nativeHtml.replace('href="styles.css"', 'href="/cutover-shot/styles.css"');
+// Also publish opted-in site under /live/<slug>/ for stranger-path authenticity
+const nativePublishDir = path.join(tmp, 'published', siteRec.slug);
+fs.mkdirSync(nativePublishDir, { recursive: true });
+const nativeLiveHtml = renderHtml(tpl, prepared.config).replace(
+    'href="styles.css"',
+    'href="./styles.css"'
+);
+fs.writeFileSync(path.join(nativePublishDir, 'index.html'), nativeLiveHtml);
+fs.writeFileSync(
+    path.join(nativePublishDir, 'styles.css'),
+    fs.readFileSync(path.join(ROOT, 'templates/professionals/styles.css'), 'utf8')
+);
+fs.writeFileSync(
+    path.join(nativePublishDir, 'script.js'),
+    fs.readFileSync(path.join(ROOT, 'templates/professionals/script.js'), 'utf8')
+);
 
 // Owner dashboard shell bound to this opted-in tenant
 const ownerHtml = `<!DOCTYPE html>
@@ -129,9 +163,16 @@ const meta = {
     serviceId: services[0].id,
     nativeApiBase: prepared.config.appointment.nativeApiBase || '',
     ownerSessionUserId: site.userId,
+    // Real live paths (not cutover-shot shim alone)
+    legacyLivePath: '/live/' + legacySiteRec.slug + '/',
+    nativeLivePath: '/live/' + siteRec.slug + '/',
+    legacySlug: legacySiteRec.slug,
+    nativeSlug: siteRec.slug,
 };
 fs.mkdirSync(path.join(tmp, 'cutover-shot'), { recursive: true });
-fs.writeFileSync(path.join(tmp, 'cutover-shot', 'legacy.html'), legacyHtml);
+// Keep cutover-shot mirrors (styles via absolute /cutover-shot/styles.css for older shots)
+const legacyCutoverHtml = legacyHtml.replace('href="./styles.css"', 'href="/cutover-shot/styles.css"');
+fs.writeFileSync(path.join(tmp, 'cutover-shot', 'legacy.html'), legacyCutoverHtml);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'native.html'), nativeHtml);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'owner.html'), ownerHtml);
 fs.writeFileSync(path.join(tmp, 'cutover-shot', 'styles.css'), css);

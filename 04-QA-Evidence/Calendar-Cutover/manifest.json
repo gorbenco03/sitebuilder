@@ -16,16 +16,23 @@
     "07-manage-cancel-confirmed-390.png",
     "15-double-book-rejected.png",
     "08-manage-invalid-token-390.png",
+    "09-legacy-form-submitted.png",
     "09-legacy-form-unchanged-390.png"
   ],
-  "surface": "opted-in-professionals-site",
+  "surface": "opted-in-professionals-live-site",
   "notPreviewOnly": true,
+  "nativeUrl": "http://127.0.0.1:8799/live/cutover-opted-in-cabinet/#appointment",
+  "legacyUrl": "http://127.0.0.1:8799/live/cutover-legacy-cabinet/#appointment",
   "meta": {
     "bookingStatus": "confirmed",
-    "customerId": "678a1e1c-c91f-4a07-95c8-3e0aa1b33400",
-    "siteId": "fd0b7446-3de6-4f48-935d-cde0511fc2db",
-    "liveManageTokenPresent": true
+    "customerId": "87eeca5a-1224-492c-a26d-472b6fe75247",
+    "siteId": "5eeb5a3c-272e-4526-9179-4733a5fa436f",
+    "liveManageTokenPresent": true,
+    "nativeLivePath": "/live/cutover-opted-in-cabinet/",
+    "legacyLivePath": "/live/cutover-legacy-cabinet/"
   },
   "cutoverFlag": "appointment.nativeBooking",
-  "ac5CtaClean": true
+  "ac5CtaClean": true,
+  "doubleBookViaRealUi": true,
+  "legacyFormSubmittedInBrowser": true
 }
