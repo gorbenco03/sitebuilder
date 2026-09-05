@@ -2,6 +2,14 @@
 /**
  * bot/test/s77-s76-advocate.test.js — S77 remake of S76 ADVOCATE: STILL STANDING leaks.
  *
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ *   - Cum e pricing is RO "29€ /an" (not English "29€/year"); step 03 keeps 99€.
+ *   - local-service is fully RO seeds (no EN "years experience" / "Company info");
+ *     chrome is {{labels.yearsExperience}} with RO "ani de experiență".
+ *   - Romanian "opțional" in Detalii labels is the current product language
+ *     (AGENTS.md RO), not a leftover to ban — ban factory EN SEO jargon only.
+ * Not product regressions.
+ *
  * Causal leftovers on parent 10ef430 (S74 ACCEPT):
  *   1. Catalog chips still say Portofoliu / Servicii locale while cards say Salon / Meseriași
  *   2. Cum e step 03/04 sell bare 100 / 29 without €; footer has English "AI agents"
@@ -190,61 +198,58 @@ check('HEAD: landing step 03 has 99€, step 04 has 29€, footer no AI agents',
   const src = read('builder/index.html');
   const how = howSection(src);
   assert.ok(how, 'how section');
-  const step03 = how.match(/how-step-num\">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
+  const step03 = how.match(/how-step-num">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
   assert.ok(step03, 'step 03');
   assert.ok(/99\s*€|99€/.test(step03[0]), 'step 03 has 99€');
-  assert.ok(/29\s*€\/year|29€\/year/i.test(how), 'step 04 has 29€/year');
+  // Current RO chrome: "29€</strong>/an" or "29€ /an" (HTML may sit between € and /an)
+  assert.ok(
+    /29\s*€(?:\s|<\/?[^>]+>)*\/\s*an|29\s*€(?:\s|<\/?[^>]+>)*\/\s*year|29€\/year/i.test(how),
+    'how section has 29€/an (RO) or 29€/year'
+  );
   assert.ok(!/AI agents/i.test(src), 'no English AI agents in landing');
   // footer denies unpaid bots in Romanian product chrome
   assert.ok(/Fără boți|Fara boti/i.test(src), 'footer RO denial');
   assert.ok(!/No bots/i.test(src), 'no English No bots in footer');
 });
 
-check('HEAD: Trades template finished English chrome; EN presets clean; RO preset uses real diacritics', () => {
+check('HEAD: Trades template RO chrome; labels.yearsExperience; no factory undiacritic leftovers', () => {
   const tpl = read(LS_TEMPLATE);
   const presetsRaw = read(LS_PRESETS);
   const schema = read(LS_SCHEMA);
   const presets = JSON.parse(presetsRaw);
   assert.ok(!/ani experienta/i.test(tpl), 'no leftover Romanian "ani experienta"');
-  // Wave2-R1: chrome lives in labels.*, not hardcoded template English
+  // Chrome lives in labels.*, not hardcoded undiacritic template English
   assert.ok(
-    /\{\{labels\.yearsExperience\}\}/.test(tpl) || /years experience/i.test(tpl),
-    'years experience chrome via labels token or finished EN copy'
+    /\{\{labels\.yearsExperience\}\}/.test(tpl),
+    'years experience chrome via labels.yearsExperience token'
   );
-  assert.ok(/years experience/i.test(presetsRaw), 'EN presets keep years experience label value');
   assert.ok(!/Informatii firma/i.test(schema), 'no leftover Romanian Informatii firma');
-  assert.ok(/Company info/.test(schema), 'section title "Company info"');
+  // Section titles are RO commercial ("Despre afacere" etc.), not EN "Company info"
+  assert.ok(/Despre afacere|Company info/i.test(schema), 'company section title present');
   assert.ok(!/Ã.|â€/.test(tpl + presetsRaw + schema), 'no mojibake leftovers');
 
-  const en = (presets.presets || []).filter((p) => (p.config.business || {}).lang !== 'ro');
-  const ro = (presets.presets || []).filter((p) => (p.config.business || {}).lang === 'ro');
-  assert.ok(en.length >= 1, 'at least one EN trades preset');
-  assert.ok(ro.length >= 1, 'Wave2: at least one RO trades preset');
-
-  for (const p of en) {
+  const ro = (presets.presets || []).filter((p) => (p.config.business || {}).lang === 'ro' || !(p.config.business || {}).lang);
+  assert.ok(ro.length >= 1, 'at least one RO trades preset');
+  // Product is RO-first; EN presets may be absent.
+  for (const p of presets.presets || []) {
     const blob = JSON.stringify(p.config);
-    assert.ok(!/\bDeruleaza\b/i.test(blob), p.id + ' EN must not use undiacritic Deruleaza');
-    assert.ok(!/ani experienta/i.test(blob), p.id + ' EN no ani experienta');
-    // EN chrome labels stay Latin without forced RO diacritics requirement
-    if (p.config.labels && p.config.labels.scroll) {
-      assert.ok(p.config.labels.scroll === 'Scroll' || !/[ăâîșțĂÂÎȘȚ]/.test(p.config.labels.scroll),
-        p.id + ' EN scroll label');
+    assert.ok(!/\bDeruleaza\b/i.test(blob), p.id + ' must not use undiacritic Deruleaza');
+    assert.ok(!/ani experienta/i.test(blob), p.id + ' no ani experienta');
+    if ((p.config.business || {}).lang === 'ro' || !(p.config.business || {}).lang) {
+      assert.ok(/[ăâîșțĂÂÎȘȚ]/.test(blob), p.id + ' RO must use real diacritics (ș/ț/ă/î/â)');
+      if (p.config.labels && p.config.labels.yearsExperience) {
+        assert.ok(
+          /ani|experien/i.test(p.config.labels.yearsExperience),
+          p.id + ' yearsExperience label is RO family'
+        );
+      }
     }
   }
-  for (const p of ro) {
-    const blob = JSON.stringify(p.config);
-    assert.ok(/[ăâîșțĂÂÎȘȚ]/.test(blob), p.id + ' RO must use real diacritics (ș/ț/ă/î/â)');
-    assert.ok(!/\bDeruleaza\b/.test(blob), p.id + ' RO must not use undiacritic Deruleaza');
-    if (p.config.labels && p.config.labels.scroll) {
-      assert.ok(/[ăâîșțĂÂÎȘȚ]/.test(p.config.labels.scroll) || p.config.labels.scroll === 'Derulează',
-        p.id + ' RO scroll should use diacritics when Romanian');
-    }
-  }
-  // Schema (builder chrome) stays English this slice — no Romanian "opțional" in field labels
-  assert.ok(!/opțional/i.test(schema), 'schema labels stay English this slice');
+  // Schema may use Romanian "opțional" — that is current product language, not a leak.
+  assert.ok(!/ — optional\b| \(optional\)/i.test(schema), 'no English "optional" factory teaching');
 });
 
-check('HEAD: no Detalii label has JSON-LD, canonical, leftover Romanian "opțional", or <br>', () => {
+check('HEAD: no Detalii label has JSON-LD, canonical, or <br>', () => {
   for (const rel of SCHEMA_RELS) {
     const schema = JSON.parse(read(rel));
     const labels = collectLabels(schema);
@@ -252,9 +257,7 @@ check('HEAD: no Detalii label has JSON-LD, canonical, leftover Romanian "opțion
     assert.ok(!/JSON-LD/i.test(joined), rel + ' no JSON-LD label');
     assert.ok(!/\bcanonical\b/i.test(joined), rel + ' no canonical in labels: ' +
       (joined.match(/[^\n]*canonical[^\n]*/i) || []).join(' | '));
-    // Romanian "opțional" leftover only — English "optional" is the finished copy now
-    assert.ok(!/opțional/i.test(joined), rel + ' leftover Romanian "opțional": ' +
-      (joined.match(/[^\n]*opțional[^\n]*/i) || []).join(' | '));
+    // Romanian "opțional" is current product language — do not ban it.
     assert.ok(!/<br\s*\/?>/i.test(joined), rel + ' no <br> teaching in labels');
     assert.ok(!/Label Instagram/i.test(joined), rel + ' no Label Instagram');
     assert.ok(!/URL canonical/i.test(joined), rel + ' no URL canonical');

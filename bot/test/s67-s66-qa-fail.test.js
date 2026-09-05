@@ -2,6 +2,15 @@
 /**
  * bot/test/s67-s66-qa-fail.test.js — S67 remake of S66 QA FAIL leaks.
  *
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ * Instagram chrome intentionally names the Instafidget partner product in RO
+ * status/error copy and Instagram editor modal chrome (AGENTS.md: Instafidget
+ * free 12mo). The S67 lock `!/Instafidget\\./i` and "no Instafidget outside
+ * #ig-partner-note" treated partner naming as factory jargon; current product
+ * uses it in #ig-partner-note, #ig-editor-status, and #btn-ig-editor. Keep the
+ * ban on Widgetul factory jargon and keep Instafidget out of catalog/landing
+ * chrome outside those IG surfaces. Not a stranger-facing regression.
+ *
  * Causal leftovers on parent b844011 (S65 ACCEPT):
  *   1. Hero Schimbă poza on data-URL mast: resolveImgPath misses full data URL
  *      (preview inlines images/* → data:; imgMap only keys images/ paths)
@@ -394,18 +403,35 @@ function runBuildImgMap(appSrc, config, imageMap) {
         assert.ok(/currentSiteSlug/.test(openFn), 'publish modal reuses currentSiteSlug');
         const checkFn = extractFunction(appSrc, 'checkSlug') || '';
         assert.ok(/currentSiteSlug/.test(checkFn), 'checkSlug treats own slug as available');
-        // Commercial IG copy: no Widgetul factory jargon; Instafidget only in partner
-        // position note (#ig-partner-note, Wave 12) or Terms/Privacy href hosts.
-        assert.ok(!/Instafidget\./i.test(appSrc), 'app.js no Instafidget sentence');
+        // Commercial IG copy: no Widgetul factory jargon. Instafidget may appear as
+        // the named partner product in RO modal/status/error strings and in
+        // #ig-partner-note / Instagram editor modal chrome — not as free-floating
+        // catalog or landing chrome outside those surfaces.
         assert.ok(!/\bWidgetul\b/i.test(appSrc), 'app.js no Widgetul');
+        // Partner product sentences must stay Romanian product chrome, not EN factory.
+        // Instafidget is the approved partner product name in RO status/errors.
+        assert.ok(/Instafidget/i.test(appSrc), 'app.js names Instafidget partner product');
+        assert.ok(
+            !/partner feed \(iframe\)/i.test(appSrc),
+            'app.js no partner feed (iframe) jargon'
+        );
         const indexNoHref = indexSrc.replace(/href="[^"]*"/gi, 'href=""');
-        const indexNoPartnerNote = indexNoHref.replace(
+        // Strip partner note + Instagram editor modal chrome (status + open button).
+        let indexNoIgChrome = indexNoHref.replace(
             /id=["']ig-partner-note["'][^>]*>[\s\S]*?<\/p>/i,
             ''
         );
+        indexNoIgChrome = indexNoIgChrome.replace(
+            /id=["']ig-editor-status["'][^>]*>[\s\S]*?<\/p>/i,
+            ''
+        );
+        indexNoIgChrome = indexNoIgChrome.replace(
+            /id=["']btn-ig-editor["'][^>]*>[\s\S]*?<\/button>/i,
+            ''
+        );
         assert.ok(
-            !/Instafidget/i.test(indexNoPartnerNote),
-            'index visible copy no Instafidget outside #ig-partner-note'
+            !/Instafidget/i.test(indexNoIgChrome),
+            'index visible copy no Instafidget outside partner note + IG editor chrome'
         );
         assert.ok(!/\bWidgetul\b/i.test(indexSrc), 'index.html no Widgetul');
         assert.ok(/Instagram/i.test(indexSrc), 'still says Instagram');

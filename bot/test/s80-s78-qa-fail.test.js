@@ -2,17 +2,22 @@
 /**
  * bot/test/s80-s78-qa-fail.test.js — S80 remake of S78 QA FAIL leaks.
  *
- * Causal leftovers on parent b1e5042 (S77 ACCEPT):
- *   1. After a paid restaurant bind, startWithTemplate('professionals') still
- *      leaves draft/bind path able to re-attach that paid siteId; bindSignedInPaidSiteForEdit
- *      falls back to the single paid site even when draft.templateId differs →
- *      Publică overwrites the restaurant live URL with a hybrid.
- *   2. renderHtml leaves unresolved {{labels.about}} / {{LABELS.ABOUT}} in HTML
- *      when config lacks the key (professionals config through product-menu).
- *   3. Professionals live must keep appointment markup when published on its own
- *      template (not a restaurant hybrid).
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ * startWithTemplate became async and awaits ensureTemplateLoaded before clearing
+ * the paid-site bind. The S80 harness called it synchronously without stubbing
+ * ensureTemplateLoaded, so the Promise rejected before currentSiteId=null and
+ * the oracle falsely reported a product regression. Product still clears bind
+ * after a successful catalog start (and bind still refuses cross-template paid
+ * sites). Harness updated to async + ensureTemplateLoaded stub. Not a stranger
+ * defect.
  *
- * Overlay RED on parent, GREEN on HEAD. Do not invent fake RED.
+ * Causal leftovers on parent b1e5042 / related S78 path:
+ *   1. bindSignedInPaidSiteForEdit attaches any single paid site regardless of
+ *      draft.templateId (restaurant bind onto professionals).
+ *   2. startWithTemplate(different) can leave paid siteId in draft/localStorage.
+ *   3. renderHtml leaves factory {{labels.about}} when key missing.
+ *
+ * GREEN on HEAD for each. Isolated adapters only.
  * Run: node bot/test/s80-s78-qa-fail.test.js
  */
 const assert = require('assert');
@@ -151,9 +156,10 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft, current }) {
 
 /**
  * Simulate startWithTemplate clearing + draft persistence for a template switch.
- * Uses extracted startWithTemplate + saveDraft/loadDraft helpers.
+ * Uses extracted startWithTemplate + saveDraft helpers.
+ * startWithTemplate is async and awaits ensureTemplateLoaded before bind clear.
  */
-function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDataById }) {
+async function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDataById }) {
   const startFn = extractFunction(appSrc, 'startWithTemplate');
   const saveFn = extractFunction(appSrc, 'saveDraft');
   assert.ok(startFn && startFn.length > 40, 'startWithTemplate must exist');
@@ -175,6 +181,7 @@ function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDataById
     _tplDataById: tplDataById || {},
     window: { location: { hash: '' } },
     console,
+    Promise,
   };
 
   const prelude = `
@@ -187,14 +194,22 @@ function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDataById
     function getTemplateList() {
       return Object.keys(_tplDataById).map(id => ({ id, name: id }));
     }
+    async function ensureTemplateLoaded(id) {
+      const data = _tplDataById[id];
+      if (!data) throw new Error('missing template ' + id);
+      return data;
+    }
     function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
     function showToast() {}
+    function hideToast() {}
+    function prepareDrawerForNewDesign() {}
+    function deriveWaHref() {}
     function $(id) { return null; }
   `;
 
   vm.runInNewContext(
     prelude + '\n' + startFn + '\n' +
-      'this.__run = function(tid) { startWithTemplate(tid); return {' +
+      'this.__run = async function(tid) { await startWithTemplate(tid); return {' +
       ' currentSiteId, currentSitePaid, currentSiteSlug, publishedSiteId,' +
       ' draft: JSON.parse(JSON.stringify(draft)), saved: _saved ? JSON.parse(JSON.stringify(_saved)) : null }; };',
     sandbox
@@ -249,9 +264,9 @@ function hasFactoryMustache(html) {
     assert.strictEqual(result.currentSiteSlug, restaurantSite.slug);
   });
 
-  await check('causal RED: parent startWithTemplate(different) can leave paid siteId in draft', () => {
+  await check('causal RED: parent startWithTemplate(different) can leave paid siteId in draft', async () => {
     const proPreset = { presets: [{ id: 'p', config: { business: { name: 'Cabinet' }, labels: {} } }] };
-    const out = simulateStartWithTemplate(parentApp, {
+    const out = await simulateStartWithTemplate(parentApp, {
       templateId: 'professionals',
       savedDraft: {
         templateId: 'product-menu',
@@ -265,20 +280,10 @@ function hasFactoryMustache(html) {
         'product-menu': { presets: [{ id: 'r', config: { business: { name: 'R' } } }] },
       },
     });
-    // Parent clears in-memory currentSite* but when same-template branch is N/A
-    // it does saveDraft without siteId — OR when it does, we still need to prove
-    // leftover risk. Parent: different template → else branch → saveDraft w/o siteId.
-    // The real leftover is bind fallback (above). Also prove: if draft still had
-    // siteId after a same-template resume path, bind would keep it.
-    // Parent startWithTemplate for DIFFERENT tpl does call saveDraft after clear —
-    // so saved should lose siteId. If parent already clears draft siteId, this
-    // assertion documents that; the bind RED is the smoking gun.
     // Soft: in-memory must be cleared on parent (it is). Draft must not keep siteId after different start.
     assert.strictEqual(out.currentSiteId, null, 'parent clears in-memory currentSiteId');
-    // Parent bug variant: early bind from saved.siteId when start did not save.
-    // Simulate same-template resume leaving siteId, then user... actually different.
     // Prove parent bind from saved restaurant siteId ignores professionals draft.templateId:
-    return simulateBindPaid(parentApp, {
+    const bound = await simulateBindPaid(parentApp, {
       draft: { templateId: 'professionals', config: { business: { name: 'Cabinet' } } },
       savedDraft: {
         templateId: 'professionals',
@@ -288,13 +293,12 @@ function hasFactoryMustache(html) {
         slug: restaurantSite.slug,
       },
       sites: [restaurantSite],
-    }).then((bound) => {
-      assert.strictEqual(
-        bound.currentSiteId,
-        restaurantSite.id,
-        'parent bind restores paid restaurant from draft.siteId even when draft is professionals'
-      );
     });
+    assert.strictEqual(
+      bound.currentSiteId,
+      restaurantSite.id,
+      'parent bind restores paid restaurant from draft.siteId even when draft is professionals'
+    );
   });
 
   await check('causal RED: parent renderHtml leaves {{labels.about}} when key missing', () => {
@@ -329,11 +333,11 @@ function hasFactoryMustache(html) {
   });
 
   // ── HEAD GREEN ─────────────────────────────────────────────────────────
-  await check('HEAD: startWithTemplate(professionals) after paid restaurant clears site bind from draft', () => {
+  await check('HEAD: startWithTemplate(professionals) after paid restaurant clears site bind from draft', async () => {
     const proPreset = {
       presets: [{ id: 'p', config: { business: { name: 'Cabinet S80' }, labels: { aboutEyebrow: 'Despre' } } }],
     };
-    const out = simulateStartWithTemplate(appSrc, {
+    const out = await simulateStartWithTemplate(appSrc, {
       templateId: 'professionals',
       savedDraft: {
         templateId: 'product-menu',

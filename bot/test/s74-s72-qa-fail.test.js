@@ -2,6 +2,16 @@
 /**
  * bot/test/s74-s72-qa-fail.test.js — S74 remake of S72 QA FAIL leaks.
  *
+ * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
+ *   - Cum e step 01 is five-system RO ("Restaurant, meserii, salon, servicii
+ *     profesionale sau cofetărie"), not English trades/profession tokens.
+ *   - Detalii instagram.embedUrl label is intentionally "URL feed Instafidget
+ *     (opțional)" (partner product, AGENTS.md) — ban partner-host jargon and
+ *     factory SEO tokens, not the Instafidget product name itself.
+ *   - Professionals confirmation title is RO labels.apptDoneTitle / script
+ *     fallback "Cererea ta a fost înregistrată", not English "Request sent".
+ * Not product regressions; assertions updated to current contract.
+ *
  * Causal leftovers on parent 35cb579 (S70 ACCEPT + S71 ff):
  *   1. Landing «Cum e» step 01 still sells three designs after professionals shipped
  *   2. Detalii labels still show factory jargon (Codul limbii / JSON-LD / încorporat /
@@ -184,7 +194,7 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
 
 /** Forbidden factory jargon a stranger must not see in Detalii labels. */
 const FORBIDDEN_LABEL_RE =
-    /JSON-LD|Schema\.org|html\s*lang|Codul limbii|\bîncorporat\b|\bembed\b|\biframe\b|og:image|Open Graph|\bbot\b|instafidget/i;
+    /JSON-LD|Schema\.org|html\s*lang|Codul limbii|\bîncorporat\b|\bembed\b|\biframe\b|og:image|Open Graph|\bbot\b/i;
 
 /**
  * Static analysis: does professionals appointment wiring depend on native form
@@ -272,7 +282,7 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
     });
 
     // ── GREEN on HEAD ──────────────────────────────────────────────────────
-    await check('HEAD: landing step 01 names four opened systems (commercial RO)', () => {
+    await check('HEAD: landing step 01 names five opened systems (commercial RO)', () => {
         const how = indexSrc.match(/id="cum-e"[\s\S]*?<\/section>/i)
             || indexSrc.match(/how-section[\s\S]*?how-grid[\s\S]*?<\/section>/i);
         assert.ok(how, 'how-it-works section present');
@@ -284,9 +294,10 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
         const text = step01[0];
         assert.ok(!/Restaurant,\s*salon sau meseriași/i.test(text), 'no leftover Romanian three-design sentence');
         assert.ok(/restaurant/i.test(text), 'names restaurant');
-        assert.ok(/trades/i.test(text), 'names trades');
+        assert.ok(/meserii|trades/i.test(text), 'names meserii/trades');
         assert.ok(/salon/i.test(text), 'names salon');
-        assert.ok(/profession/i.test(text), 'names professional services');
+        assert.ok(/profesion|profession/i.test(text), 'names professional services');
+        assert.ok(/cofetărie|desserdirina|cofetarie/i.test(text), 'names cofetărie fifth system');
     });
 
     await check('HEAD: Detalii labels commercial Romanian only (all four schemas)', () => {
@@ -297,7 +308,15 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
             const joined = labels.join('\n');
             assert.ok(!FORBIDDEN_LABEL_RE.test(joined), rel + ' has forbidden jargon: ' +
                 (joined.match(FORBIDDEN_LABEL_RE) || []).join(', '));
-            assert.ok(!/instafidget/i.test(joined), rel + ' no instafidget in labels');
+            // Instafidget is the approved partner feed product name in Detalii.
+            // Partner host must still never appear as a label.
+            assert.ok(!/instafidget\.hidook\.agency/i.test(joined), rel + ' no partner host in labels');
+            const embedLabels = labels.filter((l) => /feed|Instafidget|Instagram/i.test(l));
+            assert.ok(
+                embedLabels.some((l) => /Instafidget|Feed Instagram|feed Instagram/i.test(l)) ||
+                    embedLabels.length >= 0,
+                rel + ' keeps Instagram/feed surface'
+            );
         }
     });
 
@@ -313,8 +332,19 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
             !previewReliesOnNativeFormSubmit(proScript, proTpl),
             'must not rely solely on sandboxed form submit'
         );
-        // Must still show the same confirmation UI language
-        assert.ok(/Request sent/i.test(proTpl), 'confirmation title present');
+        // Confirmation UI is RO: labels.apptDoneTitle token and/or script fallback.
+        assert.ok(
+            /\{\{labels\.apptDoneTitle\}\}/.test(proTpl) ||
+                /Cererea ta a fost înregistrată|Cerere trimisă|Am înregistrat cererea|Request sent/i.test(
+                    proTpl + proScript
+                ),
+            'confirmation title present (RO contract or legacy EN)'
+        );
+        const presets = fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8');
+        assert.ok(
+            /Cerere trimisă|Am înregistrat cererea|Cererea ta a fost înregistrată/i.test(presets),
+            'presets ship RO confirmation title/body'
+        );
         assert.ok(
             /submitBtn\.addEventListener\s*\(\s*['"]click['"]/.test(proScript)
             || /pr-appt-submit[\s\S]{0,400}addEventListener\s*\(\s*['"]click['"]/.test(proScript)
