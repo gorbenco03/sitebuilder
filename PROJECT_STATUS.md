@@ -1,6 +1,6 @@
 # Hidook Site Builder — PROJECT_STATUS
 
-Actualizat: 2026-09-05 (calendar nativ Hidook step (c) part 2 pe branch wt/calendar-v2-owner-dashboard — owner dashboard + availability editor; part 1 integrat pe main la 92409d5)
+Actualizat: 2026-09-05 (calendar nativ Hidook step (c) part 2 integrat pe main la 5516dae — owner dashboard + availability editor, ACCEPT critic-gpt t_204a869a; S-legacy micro-slice G1/G3 redispatch-ate după reclaim pe worker căzut)
 
 ## Status authority
 
@@ -16,7 +16,7 @@ Acest fișier e registrul canonic "unde suntem acum" pentru Site Builder. Se act
 
 ## Fază curentă
 
-Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, renewal 29/an) e activ. Nu mai e în faza de Define/Design — produsul e deja construit și livrat, lucrul curent e pe flows incrementale (Flow 2/3/4, OF-1..OF-4) văzute în Kanban. Calendar Professional: **țintă** modul nativ Hidook în Site Builder (override owner 2026-09-04). **Implementat pe branch calendar-v2:** (a)+(b) pe main (c4406d5 lineage); **(c) part 1** widget public pe main (92409d5); **(c) part 2** owner dashboard + availability editor pe `wt/calendar-v2-owner-dashboard` (t_2a215ec5, pending independent review) — cale **separată**, nu cutover. **Comportament ship-uit pe main/live** rămâne formularul local de cerere (+ link Cal.com opțional). Lipsesc: email harness (d), cutover staged (e). Pilotul Railway „Hidook Calendar” (cal.diy) rămâne netulburat/nelegat.
+Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, renewal 29/an) e activ. Nu mai e în faza de Define/Design — produsul e deja construit și livrat, lucrul curent e pe flows incrementale (Flow 2/3/4, OF-1..OF-4) văzute în Kanban. Calendar Professional: **țintă** modul nativ Hidook în Site Builder (override owner 2026-09-04). **Implementat pe branch calendar-v2, acum toate integrate pe main:** (a)+(b) (c4406d5 lineage); **(c) part 1** widget public (92409d5); **(c) part 2** owner dashboard + availability editor (5516dae, ACCEPT critic-gpt t_204a869a, fast-forward local pe main) — cale **separată**, nu cutover. **Comportament ship-uit pe main/live** rămâne formularul local de cerere (+ link Cal.com opțional). Lipsesc: email harness (d), cutover staged (e). Pilotul Railway „Hidook Calendar” (cal.diy) rămâne netulburat/nelegat.
 
 ## Ultimele evenimente (din Kanban, cele mai recente `done`)
 
@@ -38,7 +38,7 @@ Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, r
 
 ## Ultimul eveniment integrat (2026-09-05, HQ)
 
-Calendar v2 step (c) part 1 (public native booking widget, t_03810a59 / review ACCEPT t_19776a74, SHA 92409d5) fast-forward-echivalent integrat pe `main` local la `9a7afb4` (merge commit, fără push). Verificat independent post-merge pe main integrat: `calendar-native-engine.test.js` + `calendar-native-public-widget.test.js` pass 2/2; `fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`. Widget-ul rămâne o cale separată/nouă — formularul local de appointment-request (s70) e neschimbat și încă live. Fără Stripe/DNS/secrete/cal.diy atins.
+Calendar v2 step (c) part 2 (owner bookings dashboard + availability editor, t_2a215ec5 / review ACCEPT t_204a869a, SHA 5516dae) fast-forward integrat pe `main` local (main ahead 8, fără push). Verificat independent post-merge pe main integrat: `calendar-native-owner-dashboard.test.js` + `calendar-native-public-widget.test.js` + `calendar-native-tenant-isolation.test.js` pass 4/4; `fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`. Dashboard-ul owner rămâne o cale separată/nouă — formularul local de appointment-request (s70) e neschimbat și încă live. Fără Stripe/DNS/secrete/cal.diy atins. În paralel: worker `builder-spark` pe cardul S-legacy G3 a rămas blocat >20 min fără heartbeat de progres real (doar heartbeat-uri fără note) — reclaim manual + redispatch, run nou pornit. Worker `builder-backend` pe G1 a crash-uit de 2 ori consecutiv (`pid not alive`) fără nicio schimbare pe worktree — reassign + redispatch, run nou pornit.
 
 ## Cron activ
 
