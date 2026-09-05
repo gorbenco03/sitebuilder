@@ -223,6 +223,7 @@ function listPublicSlots(db, customerId, siteId, {
 
 /**
  * POST create booking for one tenant. Never confirms outside availability.
+ * Engine enqueues visitor email; this path kicks the local outbox drain (no wire send).
  */
 function createPublicBooking(db, customerId, siteId, body, { nowMs = Date.now() } = {}) {
     const serviceId = String((body && (body.serviceId || body.service_id)) || '').trim();
@@ -243,6 +244,16 @@ function createPublicBooking(db, customerId, siteId, body, { nowMs = Date.now() 
         });
         const b = result.booking;
         const service = engine.getService(db, customerId, siteId, b.service_id);
+
+        // Drain local/test outbox without blocking the HTTP shape (memory transport only).
+        try {
+            const email = require('./email');
+            const p = email.processOutbox(db, { nowMs, limit: 10 });
+            if (p && typeof p.then === 'function') p.catch(() => {});
+        } catch (_) {
+            /* booking already committed; delivery audit retains queued/failed */
+        }
+
         return {
             ok: true,
             id: b.id,

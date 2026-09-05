@@ -20,6 +20,20 @@ const {
 } = require('./time');
 const { ACTIVE_BOOKING_STATUSES } = require('./schema');
 
+/**
+ * VISION §8 step (d): enqueue transactional email on booking state changes.
+ * Sync, local harness only — never opens a wire socket from the engine.
+ * Failures must not roll back the booking write.
+ */
+function emitBookingEmail(db, payload) {
+    try {
+        const email = require('./email');
+        email.enqueueBookingEmailSafe(db, payload);
+    } catch (_) {
+        /* ignore — booking path stays authoritative */
+    }
+}
+
 const STATUSES = Object.freeze({
     REQUESTED: 'requested',
     CONFIRMED: 'confirmed',
@@ -601,6 +615,12 @@ function createBooking(db, customerId, siteId, input) {
         throw e;
     }
 
+    emitBookingEmail(db, {
+        booking,
+        manageToken,
+        kind: 'created',
+    });
+
     return { booking, manageToken, status: booking.status };
 }
 
@@ -658,6 +678,7 @@ function cancelBookingAsOwner(db, customerId, siteId, bookingId) {
         ).run(STATUSES.CANCELLED, ts, ts, bookingId, customerId, siteId);
         const updated = getBooking(db, customerId, siteId, bookingId);
         db.exec('COMMIT;');
+        emitBookingEmail(db, { booking: updated, kind: 'cancelled' });
         return updated;
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
@@ -702,6 +723,7 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
         ).run(STATUSES.CANCELLED, ts, ts, row.id, row.customer_id, row.site_id);
         const updated = getBooking(db, row.customer_id, row.site_id, row.id);
         db.exec('COMMIT;');
+        emitBookingEmail(db, { booking: updated, kind: 'cancelled' });
         return { booking: updated, already: false };
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
@@ -812,6 +834,11 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
 
         const updated = getBooking(db, customerId, siteId, bookingId);
         db.exec('COMMIT;');
+        emitBookingEmail(db, {
+            booking: updated,
+            kind: updated.status === STATUSES.CONFIRMED ? 'reschedule_confirmed' : 'rescheduled',
+            previousStatus: row.status,
+        });
         return updated;
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
@@ -864,6 +891,11 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
             ).run(STATUSES.RESCHEDULE_NEEDED, nowIso(), bookingId, customerId, siteId);
             const updated = getBooking(db, customerId, siteId, bookingId);
             db.exec('COMMIT;');
+            emitBookingEmail(db, {
+                booking: updated,
+                kind: 'reschedule_needed',
+                previousStatus: row.status,
+            });
             return updated;
         }
         db.prepare(
@@ -872,6 +904,11 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
         ).run(STATUSES.CONFIRMED, nowIso(), bookingId, customerId, siteId);
         const updated = getBooking(db, customerId, siteId, bookingId);
         db.exec('COMMIT;');
+        emitBookingEmail(db, {
+            booking: updated,
+            kind: 'confirmed',
+            previousStatus: row.status,
+        });
         return updated;
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }

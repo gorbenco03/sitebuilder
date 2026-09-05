@@ -8,7 +8,8 @@
  * - cancel / reschedule (slot frees immediately; history audited, not deleted)
  * - reachable only by the authenticated owner of that exact site/tenant
  *
- * Same SQLite schema as step (a)+(b). No parallel store. No email delivery.
+ * Same SQLite schema as step (a)+(b). No parallel store.
+ * Step (d): owner mutations drain the local email outbox (no production sender).
  */
 
 const engine = require('./engine');
@@ -18,6 +19,20 @@ const { addDaysLocal } = require('./time');
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BOOKING_ID_RE = /^[a-zA-Z0-9_-]{4,80}$/;
 const STATUS_SET = new Set(['requested', 'confirmed', 'cancelled', 'reschedule_needed']);
+
+/** Drain local email outbox after owner mutations (no wire send). */
+function kickEmailOutbox(db, nowMs) {
+    try {
+        const email = require('./email');
+        const p = email.processOutbox(db, {
+            nowMs: nowMs != null ? nowMs : Date.now(),
+            limit: 20,
+        });
+        if (p && typeof p.then === 'function') p.catch(() => {});
+    } catch (_) {
+        /* ignore */
+    }
+}
 
 const STATUS_RO = Object.freeze({
     requested: 'în așteptare',
@@ -233,6 +248,7 @@ function cancelOwnerBooking(db, customerId, siteId, bookingId) {
     if (!updated) {
         return { error: 'Programarea nu a fost găsită.', code: 'NOT_FOUND', status: 404 };
     }
+    kickEmailOutbox(db);
     const sm = serviceMapFor(db, customerId, siteId);
     return { ok: true, booking: publicOwnerBooking(updated, sm) };
 }
@@ -253,6 +269,7 @@ function rescheduleOwnerBooking(db, customerId, siteId, bookingId, body, { nowMs
         if (!updated) {
             return { error: 'Programarea nu a fost găsită.', code: 'NOT_FOUND', status: 404 };
         }
+        kickEmailOutbox(db, nowMs);
         const sm = serviceMapFor(db, customerId, siteId);
         return { ok: true, booking: publicOwnerBooking(updated, sm) };
     } catch (e) {
@@ -269,6 +286,7 @@ function confirmOwnerBooking(db, customerId, siteId, bookingId) {
         if (!updated) {
             return { error: 'Programarea nu a fost găsită.', code: 'NOT_FOUND', status: 404 };
         }
+        kickEmailOutbox(db);
         const sm = serviceMapFor(db, customerId, siteId);
         return { ok: true, booking: publicOwnerBooking(updated, sm) };
     } catch (e) {

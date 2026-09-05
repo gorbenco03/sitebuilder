@@ -10,7 +10,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const { SCHEMA_SQL, SCHEMA_VERSION } = require('./schema');
+const {
+    SCHEMA_SQL,
+    SCHEMA_SQL_V1,
+    SCHEMA_SQL_V2,
+    SCHEMA_VERSION,
+} = require('./schema');
 
 function loadSqlite() {
     try {
@@ -55,14 +60,47 @@ function migrate(db) {
         );
     `);
     const row = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-    const current = row && row.v != null ? Number(row.v) : 0;
+    let current = row && row.v != null ? Number(row.v) : 0;
+    const ts = new Date().toISOString();
+
+    if (current < 1) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V1);
+            db.prepare(
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(1, ts);
+            db.exec('COMMIT;');
+            current = 1;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    if (current < 2) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V2);
+            db.prepare(
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(2, ts);
+            db.exec('COMMIT;');
+            current = 2;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    // Safety: brand-new paths that somehow skipped stepwise still get full schema.
     if (current < SCHEMA_VERSION) {
         db.exec('BEGIN IMMEDIATE;');
         try {
             db.exec(SCHEMA_SQL);
             db.prepare(
-                'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)'
-            ).run(SCHEMA_VERSION, new Date().toISOString());
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(SCHEMA_VERSION, ts);
             db.exec('COMMIT;');
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
@@ -75,4 +113,5 @@ module.exports = {
     openCalendarDb,
     loadSqlite,
     SCHEMA_VERSION,
+    migrate,
 };

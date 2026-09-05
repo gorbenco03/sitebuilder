@@ -35,7 +35,7 @@
  *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
  *   GET  /api/calendar-native/services → public active services for one tenant (customerId+siteId)
  *   GET  /api/calendar-native/slots    → public free slots for one tenant+service (aggregated only)
- *   POST /api/calendar-native/bookings → public create booking via native engine (no email yet)
+ *   POST /api/calendar-native/bookings → public create booking via native engine (+ local email outbox)
  *   GET  /api/calendar-native/owner/*  → authenticated owner dashboard API (tenant = session uid + site)
  *   GET  /calendar-native/widget/*     → static public booking widget assets + preview (not cutover)
  *   GET  /calendar-native/owner/*      → static owner dashboard assets + preview (not cutover)

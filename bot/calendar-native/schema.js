@@ -7,9 +7,12 @@
  * (customer_id, site_id, service_id, start_utc) WHERE status IN
  * ('requested','confirmed') — optimistic-only check-then-write is forbidden
  * (VISION.md §8). Engine also uses BEGIN IMMEDIATE + overlap checks.
+ *
+ * v2: transactional booking email outbox + delivery audit (VISION §8 step d).
+ * Secrets (API keys, SMTP passwords) are NEVER stored in these tables.
  */
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const BOOKING_STATUSES = Object.freeze([
     'requested',
@@ -20,7 +23,28 @@ const BOOKING_STATUSES = Object.freeze([
 
 const ACTIVE_BOOKING_STATUSES = Object.freeze(['requested', 'confirmed']);
 
-const SCHEMA_SQL = `
+/** Delivery lifecycle for calendar transactional email (VISION §8). */
+const EMAIL_DELIVERY_STATUSES = Object.freeze([
+    'queued',
+    'sent',
+    'failed',
+    'suppressed',
+    'dead_letter',
+]);
+
+/**
+ * Template keys map 1:1 to booking lifecycle honesty.
+ * Never use booking_confirmed copy for requested/conflicted rows.
+ */
+const EMAIL_TEMPLATE_KEYS = Object.freeze([
+    'booking_requested',
+    'booking_confirmed',
+    'booking_cancelled',
+    'booking_reschedule_needed',
+    'booking_reschedule_confirmed',
+]);
+
+const SCHEMA_SQL_V1 = `
 CREATE TABLE IF NOT EXISTS calendar_settings (
     customer_id TEXT NOT NULL,
     site_id TEXT NOT NULL,
@@ -114,9 +138,70 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_calendar_bookings_active_slot
     WHERE status IN ('requested', 'confirmed');
 `;
 
+/**
+ * v2 email outbox — delivery status auditable; no API keys / SMTP passwords.
+ * body_text holds the rendered visitor email for the local/test harness only
+ * (short transactional copy). Production providers must not log secrets here.
+ */
+const SCHEMA_SQL_V2 = `
+CREATE TABLE IF NOT EXISTS calendar_email_outbox (
+    id TEXT NOT NULL PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    site_id TEXT NOT NULL,
+    booking_id TEXT NOT NULL,
+    template_key TEXT NOT NULL,
+    recipient_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body_text TEXT NOT NULL,
+    body_html TEXT NOT NULL,
+    booking_status_snapshot TEXT NOT NULL,
+    manage_link_present INTEGER NOT NULL DEFAULT 0 CHECK (manage_link_present IN (0, 1)),
+    status TEXT NOT NULL CHECK (status IN ('queued', 'sent', 'failed', 'suppressed', 'dead_letter')),
+    attempt_count INTEGER NOT NULL DEFAULT 0 CHECK (attempt_count >= 0),
+    max_attempts INTEGER NOT NULL CHECK (max_attempts > 0),
+    next_attempt_at TEXT,
+    last_error TEXT,
+    provider_name TEXT NOT NULL,
+    provider_message_id TEXT,
+    idempotency_key TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    sent_at TEXT,
+    UNIQUE (idempotency_key)
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_email_outbox_tenant
+    ON calendar_email_outbox (customer_id, site_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_calendar_email_outbox_booking
+    ON calendar_email_outbox (booking_id);
+CREATE INDEX IF NOT EXISTS idx_calendar_email_outbox_status_next
+    ON calendar_email_outbox (status, next_attempt_at);
+
+CREATE TABLE IF NOT EXISTS calendar_email_audit (
+    id TEXT NOT NULL PRIMARY KEY,
+    outbox_id TEXT NOT NULL,
+    customer_id TEXT NOT NULL,
+    site_id TEXT NOT NULL,
+    booking_id TEXT NOT NULL,
+    event TEXT NOT NULL,
+    detail_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_calendar_email_audit_outbox
+    ON calendar_email_audit (outbox_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_calendar_email_audit_tenant
+    ON calendar_email_audit (customer_id, site_id, created_at);
+`;
+
+/** Full schema for brand-new databases. */
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2;
+
 module.exports = {
     SCHEMA_VERSION,
     SCHEMA_SQL,
+    SCHEMA_SQL_V1,
+    SCHEMA_SQL_V2,
     BOOKING_STATUSES,
     ACTIVE_BOOKING_STATUSES,
+    EMAIL_DELIVERY_STATUSES,
+    EMAIL_TEMPLATE_KEYS,
 };

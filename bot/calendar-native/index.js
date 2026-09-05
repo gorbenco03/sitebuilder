@@ -5,6 +5,7 @@
  * Step (a)+(b): relational model + booking engine.
  * Step (c) part 1: public booking widget + write-mostly public API.
  * Step (c) part 2: owner dashboard + availability editor (authenticated).
+ * Step (d): transactional email boundary + local/test harness + retry/audit.
  * Legacy POST /api/appointments local-request path stays untouched.
  */
 
@@ -14,6 +15,7 @@ const engine = require('./engine');
 const time = require('./time');
 const publicApi = require('./public-api');
 const ownerApi = require('./owner-api');
+const email = require('./email');
 
 module.exports = {
     openCalendarDb,
@@ -23,4 +25,5 @@ module.exports = {
     time,
     publicApi,
     ownerApi,
+    email,
 };
