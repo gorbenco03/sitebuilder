@@ -41,6 +41,10 @@ Live / în producție. Modelul comercial (Stripe trial 7 zile, 99 EUR/GBP/USD, r
 
 Calendar v2 step (c) part 2 (owner bookings dashboard + availability editor, t_2a215ec5 / review ACCEPT t_204a869a, SHA 5516dae) fast-forward integrat pe `main` local (main ahead 8, fără push). Verificat independent post-merge pe main integrat: `calendar-native-owner-dashboard.test.js` + `calendar-native-public-widget.test.js` + `calendar-native-tenant-isolation.test.js` pass 4/4; `fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`. Dashboard-ul owner rămâne o cale separată/nouă — formularul local de appointment-request (s70) e neschimbat și încă live. Fără Stripe/DNS/secrete/cal.diy atins. În paralel: worker `builder-spark` pe cardul S-legacy G3 a rămas blocat >20 min fără heartbeat de progres real (doar heartbeat-uri fără note) — reclaim manual + redispatch, run nou pornit. Worker `builder-backend` pe G1 a crash-uit de 2 ori consecutiv (`pid not alive`) fără nicio schimbare pe worktree — reassign + redispatch, run nou pornit.
 
+## Notă operațională 2026-09-05 11:02 (HQ, fără impact produs)
+
+`t_d240c9be` (S-legacy G3) rămăsese blocat pe `builder-spark` după 4 protocol_violation-uri consecutive (rc=0 fără kanban_complete/kanban_block) — reasignat pe `builder-grok`, dispatch manual, run nou confirmat activ (pid live) fără protocol_violation nou. `t_a8a026c4` (S-legacy G1) continuă pe `builder-backend`, al 8-lea run activ (anterioarele: 3× crash pid-not-alive, 3× protocol_violation rc=0 — cauză probabilă rate-limit HTTP 429 pe openai-codex, profilul `builder-backend` rulează concurent și pe boardul LMS separat consumând aceeași cotă); run curent confirmat activ, fără artefact nou de produs comis încă. Ambele worktree-uri conțin doar bytes din HEAD `cc716ce`/`3a6d92f`/`d64533f` (docs) — niciun defect de produs, doar reconciliere de oracle-uri legacy stale.
+
 ## Cron activ
 
 - `Hidook Site Builder agency supervisor` (`0fa668624ebb`) — every 30m, deliver origin
@@ -56,6 +60,14 @@ După step (d) email harness pe `wt/calendar-v2-email` + review ACCEPT: pasul (e
 
 - Continuă și cu următorul flow/task ready pe boardul `sitebuilder`, conform proces din `AGENTS.md`.
 - `t_fdd0c989` (builder-backend): reconciliere oracle-uri legacy per-wave (inclusiv `templates-readme-commercial` vs Desserdirina aprobată în VISION §3) — track separat; nu atinge `bot/site-legal.js` sau `fullpass-63230d2.mjs`.
+
+## Notă operațională 2026-09-05 12:05 (HQ, fără impact produs)
+
+`t_a8a026c4` (S-legacy G1) a acumulat 7 run-uri eșuate consecutive pe `builder-backend` (crash pid-not-alive de 4 ori, protocol_violation rc=0 de 3 ori) — worktree conținea doar bytes din HEAD-ul de bază, niciun defect de produs, cauză operațională (probabil rate-limit openai-codex, profil partajat cu boardul LMS). Reasignat pe `builder-grok`, dispatch confirmat, run nou activ. `t_ebd5150d` (Calendar v2 step (d): email delivery boundary) rulează normal pe `builder-frontend` de la 11:57, heartbeat-uri regulate, review-ul `t_4adbbf5d` (critic-gpt) așteaptă în coadă.
+
+## Ultimul eveniment integrat (2026-09-05 12:30, HQ)
+
+Integrat local pe `main` (fast-forward + 7 merge-uri non-conflictuale, fără push): **Calendar v2 step (d) email delivery** (t_ebd5150d/t_4adbbf5d, ACCEPT, SHA 249038f — generic `EmailTransport` + harness local, copy RO honest pe stare, outbox cu retry/dead-letter, token vizitator single-booking-scoped) și cele **7 carduri S-legacy oracle reconcile G1–G7** (toate ACCEPT independent, fiecare scope exact pe fișiere de test disjuncte, `bot/site-legal.js`/`fullpass-63230d2.mjs` neatinse în toate): G1 flow2 (371f1ae), G2 flow4 (5a7474e), G3 sNN advocate/qa-fail (4afa3dd), G4 s3/s48 design-editor (3d5b921), G5 s51/s53 renewal/placeholders (384988f), G6 s54/s55 photos (d6b1e7c), G7 s56/s58/builder-editor (e6eb576). Re-verificat independent pe main integrat: `node --test bot/test/*.test.js` → 141 teste, 140 pass / 1 fail (singurul fail e `flow2-template-e2e-oracle.test.js`, gol de mediu preexistent — lipsește pachetul `playwright`, confirmat că lipsea și la părintele 4c920c4, nicio regresie de la merge); `node bot/test/fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`; `calendar-native-*.test.js` 5/5 pass. `git diff --check` curat pe range. `main` ahead 24, fără push. Boardul `sitebuilder` e acum gol (0 ready/running/blocked reale, doar `t_a1fa2f82` blocat superseded fără candidat de revizuit). **Restant identificat pentru infra:** `playwright` lipsește din mediul local — necesar pentru a rula complet suita de teste E2E de produs; de instalat o singură dată (npm install, fără cost/secret), nu e blocaj de produs.
 
 ## Neautorizat fără aprobare separată
 
