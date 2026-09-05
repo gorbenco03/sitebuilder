@@ -2,6 +2,11 @@
 /**
  * Flow 2 Romanian unhappy-path and Salon Detalii photo regression oracle.
  *
+ * STALE ORACLE RECONCILE (S-legacy G1, 2026-09-05):
+ * HTML export 401 toast evolved from "Intră în cont ca să descarci ciorna ca HTML."
+ * to shipped "Intră în cont ca să descarci HTML-ul." (ZIP still uses Autentifică-te…).
+ * Oracle expected the older ciorna wording — copy drift, not a product EN leak.
+ *
  * Run: node bot/test/flow2-unhappy-ro-and-salon-details-photo.test.js
  */
 const assert = require('assert');
@@ -138,7 +143,7 @@ async function proveExportErrorsStayRomanian() {
   );
   assert.strictEqual(
     await runExportFailure(downloadDraftHtml, { ...backendFailure, status: 401 }),
-    'Intră în cont ca să descarci ciorna ca HTML.',
+    'Intră în cont ca să descarci HTML-ul.',
     'HTML export keeps its Romanian sign-in guidance'
   );
   assert.strictEqual(

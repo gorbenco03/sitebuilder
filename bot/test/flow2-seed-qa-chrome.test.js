@@ -5,6 +5,13 @@
  * Locks Romanian customer-visible builder chrome and verifies that every catalog
  * preview renders its first preset with recognisable seed content and photos.
  *
+ * STALE ORACLE RECONCILE (S-legacy G1, 2026-09-05):
+ * Instagram connected-panel selection moved from an inline draft.config.instagram.embedUrl
+ * probe next to ig-connected-panel into connectedInstagramEmbedUrl() used by
+ * syncInstagramModalPanels. The old 800-char proximity lock between the string
+ * "instagram.embedUrl" and "ig-connected-panel" is no longer a valid contract signal.
+ * Assertion now requires the helper + panel wiring. Not a stranger product defect.
+ *
  * Run: node bot/test/flow2-seed-qa-chrome.test.js
  */
 const assert = require('assert');
@@ -512,10 +519,20 @@ check('publish address validation is Romanian', () => {
 check('Instagram reconnect opens a persisted connected panel and Romanian statuses', () => {
     assert.ok(indexHtml.includes('id="ig-connected-panel"'), 'connected Instagram panel is missing');
     assert.ok(indexHtml.includes('id="btn-ig-editor"'), 'Instafidget editor control is missing');
-    assert.ok(
-        /instagram\.embedUrl[\s\S]{0,800}ig-connected-panel/.test(appSrc) ||
-        /ig-connected-panel[\s\S]{0,800}instagram\.embedUrl/.test(appSrc),
-        'persisted Instagram embed is not used to select the connected panel'
+    const connectedUrl = extractFunction(appSrc, 'connectedInstagramEmbedUrl');
+    const syncPanels = extractFunction(appSrc, 'syncInstagramModalPanels');
+    assert.ok(connectedUrl, 'connectedInstagramEmbedUrl exists');
+    assert.ok(syncPanels, 'syncInstagramModalPanels exists');
+    assert.match(
+        connectedUrl,
+        /draft[\s\S]{0,80}config[\s\S]{0,80}instagram[\s\S]{0,80}embedUrl/,
+        'persisted embed URL is read from draft.config.instagram.embedUrl'
+    );
+    assert.match(syncPanels, /ig-connected-panel/, 'sync toggles the connected panel');
+    assert.match(
+        syncPanels,
+        /connectedInstagramEmbedUrl\s*\(/,
+        'connected panel selection uses the persisted embed helper'
     );
     const editorOpens = [
         ['openInstagramEditor', 'instagramEditorUrl'],
