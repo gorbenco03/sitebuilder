@@ -402,7 +402,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
    masthead and the consent card — measured, the meta strip ran 16px under it.
    Width-scoped density does not help: 720px is a wide viewport by every
    breakpoint here. This is the height talking, so key off the height. */
-@media (max-height: 560px) {
+/* 660px, not 560: the editor's own preview canvas on a phone is about 626px
+   tall once the toolbar takes two rows, and the hero has to survive being
+   previewed as well as being visited. */
+@media (max-height: 660px) {
     .pr-hero { padding-top: 1.25rem; padding-bottom: 1.5rem; }
     .pr-hero__card { padding: 1rem 1.25rem 1rem; }
     .pr-kicker { margin-bottom: 0.35rem; }

@@ -110,13 +110,13 @@
         <span id="save-status-text">Salvat</span>
         <button type="button" id="btn-save-retry" class="save-status-retry" style="display:none">Reîncearcă</button>
       </div>
-      <div id="checklist-indicator" class="checklist-indicator" title="Câmpuri obligatorii completate" aria-label="Câmpuri completate">
+      <button type="button" id="checklist-indicator" class="checklist-indicator" title="Câmpuri completate cu conținutul tău — click pentru a completa rapid numele, telefonul și localitatea" aria-label="Câmpuri completate cu conținutul tău — deschide completarea rapidă">
         <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
           <path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span id="checklist-text">...</span>
-      </div>
+      </button>
       <button id="btn-add-instagram" class="btn-topbar" type="button" aria-label="Adaugă Instagram">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
           <rect x="2" y="2" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.4"/>
@@ -322,11 +322,22 @@
   <section id="screen-edit" class="screen screen-edit" role="main" aria-label="Editează site-ul" style="display:none">
     <!-- Fresh preset content looks like a finished, real business site (real-looking
          phone numbers, testimonials, photos) — nothing on the canvas itself says
-         "replace me". This banner is the one persistent (not hover-only, not a
-         3.5s toast) signal that a brand-new draft is still demo content. -->
+         "replace me". This bar is the one persistent (not hover-only, not a
+         3.5s toast) signal that a brand-new draft is still demo content — and,
+         since a name/phone/town field is right here, the fastest way off it.
+         Wave 11: three fields, not a modal — fill any subset and hit "Aplică"
+         to stamp them everywhere they belong (title, meta description,
+         structured data, WhatsApp message, footer…), or "Nu acum" to skip.
+         Reopenable any time via the checklist pill in the topbar. -->
     <div id="demo-content-banner" class="demo-content-banner" role="status" aria-live="polite" style="display:none">
-      <span class="demo-content-banner-text"><strong>Acesta e conținutul demo al designului.</strong> Texte, poze și date de contact fictive — înlocuiește-le cu ale afacerii tale înainte să publici.</span>
-      <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-demo-banner" aria-label="Închide">&times;</button>
+      <form id="quickstart-form" class="quickstart-form" autocomplete="off">
+        <span class="quickstart-form-label">Fă site-ul al tău în 20 de secunde:</span>
+        <input type="text" id="quickstart-name" class="quickstart-input" placeholder="Numele afacerii" maxlength="60" aria-label="Numele afacerii" />
+        <input type="tel" id="quickstart-phone" class="quickstart-input" placeholder="Telefon" maxlength="24" aria-label="Telefon" />
+        <input type="text" id="quickstart-town" class="quickstart-input" placeholder="Localitate" maxlength="40" aria-label="Localitate" />
+        <button type="submit" class="quickstart-submit" id="btn-quickstart-apply">Aplică</button>
+      </form>
+      <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-demo-banner" aria-label="Nu acum">Nu acum</button>
     </div>
     <div class="editor-canvas-wrap" id="editor-canvas-wrap">
       <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">

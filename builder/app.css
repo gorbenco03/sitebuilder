@@ -304,6 +304,8 @@ input, textarea, select {
 .editor-topbar {
   position: sticky;
   top: 0;
+  /* Containing block for the phone-width pinned Publish button. */
+  isolation: isolate;
   height: var(--topbar-h);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -471,8 +473,45 @@ body.details-drawer-open .editor-tpl-name {
   .editor-tpl-name {
     max-width: 84px;
   }
+  /* The tool rail gets its own row.
+     One row could not work here: .editor-topbar-left is pinned to its content
+     and .editor-topbar-center has flex-shrink:0 (undo, redo and the device
+     toggle, all of which the tests require to stay tappable at 390px), so at
+     390 the rail was left with THREE pixels. Measured: rail x=312 w=3, its
+     children laid out from x=153 to x=573 and clipped by overflow-x to
+     nothing. Instagram, colour, photos, Detalii and both downloads were
+     present in the DOM, sized 44x44, and invisible — there was not even enough
+     rail to grab and scroll. Half the editor's tools were unreachable on a
+     phone.
+     Two rows instead: chrome and Publish on top, the tool rail full-width
+     underneath where it has 390px to scroll through. --topbar-h grows to match
+     so the canvas height calculation below stays correct. */
+  :root {
+    --topbar-h: 104px;
+  }
+  .editor-topbar {
+    height: var(--topbar-h);
+    flex-wrap: wrap;
+    align-content: flex-start;
+    row-gap: 0.25rem;
+  }
   .editor-topbar-right {
     overflow: visible;
+    flex: 1 0 100%;
+    order: 3;
+    justify-content: flex-start;
+    /* Room for the pinned Publish button on the row above. */
+    padding-right: 3.25rem;
+  }
+  /* Publish is the one control that must never require a scroll or a second
+     glance, so it stays on the top row even though its markup lives beside the
+     rail. Absolute against the sticky topbar rather than restructured, because
+     the markup order is what keyboard and screen-reader users traverse and it
+     is correct as it stands. */
+  #btn-publish {
+    position: absolute;
+    top: 4px;
+    right: 0.75rem;
   }
   .editor-topbar-scroll {
     display: flex;
@@ -734,14 +773,60 @@ body.details-drawer-open .editor-tpl-name {
 
 .demo-content-banner-dismiss {
   background: none;
-  border: none;
-  font-size: 1.1rem;
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
   line-height: 1;
   color: inherit;
   cursor: pointer;
-  padding: 0.15rem 0.4rem;
+  padding: 0.4rem 0.65rem;
   flex-shrink: 0;
 }
+
+/* ---------- Quick-start form (Wave 11) — name/phone/town, one sitting ---------- */
+.quickstart-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+.quickstart-form-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.quickstart-input {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  width: 9.5rem;
+  max-width: 40vw;
+}
+.quickstart-input:focus {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 1px;
+}
+.quickstart-submit {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.quickstart-submit:hover { opacity: 0.88; }
 
 /* Checklist indicator */
 .checklist-indicator {
@@ -755,8 +840,18 @@ body.details-drawer-open .editor-tpl-name {
   border-radius: var(--radius-sm);
   background: var(--bg);
   border: 1px solid var(--border);
-  cursor: default;
+  /* It used to be a <div> that only reported a count. It is now a <button>
+     that reopens the quick-start, so it is a tap target and carries the same
+     44px floor as every other control in this bar — which is what
+     wave11-mobile-editor-touch checks, and what it caught the moment the tag
+     changed. */
+  min-height: 44px;
+  cursor: pointer;
   flex-shrink: 0;
+}
+.checklist-indicator:focus-visible {
+  outline: 2px solid var(--focus, #2563EB);
+  outline-offset: 2px;
 }
 .checklist-indicator.checklist-ok { color: var(--success); border-color: var(--success-bg); background: var(--success-bg); }
 .checklist-indicator.checklist-warn { color: var(--warning); border-color: #FDE68A; background: var(--warning-bg); }

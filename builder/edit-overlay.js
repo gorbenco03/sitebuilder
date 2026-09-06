@@ -33,6 +33,39 @@
  *     {hb:'set', path, value}               — surgical text update (no re-render)
  *     {hb:'highlight', path}                — flash outline on element
  *     {hb:'imgmap', map}                    — {src→path} reverse-lookup map
+ *     {hb:'demoText', paths}                — identity-field paths still at
+ *                                              the demo preset's own value —
+ *                                              paints the provisional marker
+ *                                              (see "Provisional demo content"
+ *                                              below). Never present on a
+ *                                              published site or export: this
+ *                                              whole overlay script only ever
+ *                                              runs inside the builder's own
+ *                                              editMode srcdoc (see
+ *                                              renderHtml()'s editMode flag in
+ *                                              build.js — export calls it with
+ *                                              no opts at all).
+ *
+ * Provisional demo content (Wave 11):
+ *   A fresh draft is seeded from the template's own demo preset — a
+ *   plausible name, phone, address and photos that read as a finished real
+ *   site (see builder/app.js's IDENTITY_FIELD_KEYS doc comment). Nothing on
+ *   the rendered canvas said "this is still the template's" — this overlay
+ *   paints two purely-visual, purely-in-editor markers so a glance at the
+ *   canvas answers that at once:
+ *     - .hb-demo-text on an identity [data-hb-edit] span still at its demo
+ *       value (parent-driven, see {hb:'demoText'} above) — a soft highlight,
+ *       not an error state. Dropped the instant the field is edited (see
+ *       setupTextFields()'s input handler) — no round trip needed, since
+ *       touching it is definitionally "no longer the demo's".
+ *     - .hb-demo-photo (a CSS-only ::after corner badge) on any photo
+ *       (<img> or CSS background) whose src is
+ *       not a data: URI — an owner's own upload is always inlined as one
+ *       (see the resize/upload pipeline in app.js), so anything else is
+ *       still the template's bundled asset. Detected locally, no message
+ *       needed: a photo only ever changes via a full re-render (new srcdoc,
+ *       this script re-runs from scratch), so there is nothing to keep in
+ *       sync between renders.
  */
 
 (function () {
@@ -191,6 +224,52 @@
       '.hb-highlight {',
       '  animation: hb-flash 0.9s ease-out forwards;',
       '}',
+
+      /* Provisional demo content (Wave 11) — editor-only, see file header.
+         Deliberately a different colour (warm amber) from the blue
+         hover/focus cue above: blue means "you can edit this", amber means
+         "this is still the template's, not yours yet". A soft highlighter
+         wash + dashed underline reads as "draft", not as an error. */
+      '[data-hb-edit].hb-demo-text {',
+      '  background-image: linear-gradient(rgba(217,119,6,0.16), rgba(217,119,6,0.16));',
+      '  background-repeat: no-repeat;',
+      '  background-size: 100% 100%;',
+      '  box-shadow: inset 0 -2px 0 0 rgba(217,119,6,0.55);',
+      '  border-radius: 2px;',
+      '}',
+      /* A CSS-only ::after badge, not an appended DOM node: setupImages()
+         already alternates DOM writes with forced-synchronous-layout reads
+         (getComputedStyle()) over every image/background element on the
+         page, and adding a real appendChild() (plus, in an earlier version
+         of this fix, a querySelector() guard) to that same hot loop
+         measurably slowed every full re-render — reproduced as a real
+         regression in bot/test/fullpass-63230d2.mjs's professionals
+         Cal.com-booking-link timing check during this wave's own
+         development (a slower render pipeline made it more likely to still
+         be in flight when the next scheduled re-render came due — see
+         fullRerender()\'s renderInFlight guard in app.js). Toggling one class
+         (see addDemoBadge() below) costs nothing comparable. */
+      /* No position rule on .hb-demo-photo itself: both call sites below
+         only ever add it to a host that setupImages() has already made (or
+         confirmed) non-static — forcing position:relative here too could
+         fight an inline position:absolute/fixed a template sets for a
+         parallax hero, since a stylesheet rule injected after the page's
+         own <style> can out-order an equal-specificity class selector. */
+      '.hb-demo-photo::after {',
+      '  content: "demo";',
+      '  position: absolute;',
+      '  top: 6px;',
+      '  left: 6px;',
+      '  background: rgba(180,83,9,0.92);',
+      '  color: #fff;',
+      '  font: 700 10px/1 system-ui, sans-serif;',
+      '  letter-spacing: 0.04em;',
+      '  text-transform: uppercase;',
+      '  padding: 3px 7px;',
+      '  border-radius: 4px;',
+      '  pointer-events: none;',
+      '  z-index: 2147483646;',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
   }());
@@ -235,6 +314,26 @@
     return Array.prototype.slice.call(
       document.querySelectorAll('[data-hb-edit="' + CSS.escape(path) + '"]')
     );
+  }
+
+  /**
+   * Paint (or repaint) the provisional "still demo" marker on exactly the
+   * given identity-field paths. Called on every {hb:'demoText'} — i.e. after
+   * every render and after every committed edit anywhere in draft.config
+   * (see sendDemoTextMarks()'s doc comment in app.js) — so this always
+   * clears the previous set first rather than only adding: a field that just
+   * stopped matching the demo default (edited via the DRAWER, not this
+   * field's own contenteditable — so nothing local already dropped its
+   * class) must lose the marker too.
+   */
+  function markDemoTextPaths(paths) {
+    var wanted = {};
+    paths.forEach(function (p) { wanted[p] = true; });
+    var all = Array.prototype.slice.call(document.querySelectorAll('[data-hb-edit][data-hb-kind="text"]'));
+    all.forEach(function (el) {
+      var path = el.getAttribute('data-hb-edit');
+      el.classList.toggle('hb-demo-text', !!wanted[path]);
+    });
   }
 
   /** Debounce helper — resets per-path timer. */
@@ -491,6 +590,12 @@
        * costs nothing the 300ms debounce below still exists to avoid. */
       el.addEventListener('input', function () {
         var value = el.textContent;
+        // The moment the owner touches a "still demo" field it stops being
+        // the demo's — drop the marker immediately rather than waiting for
+        // the debounced commit + a round trip back from the parent (see
+        // markDemoTextPaths()'s doc comment; the parent will confirm/repaint
+        // the full set once the debounced {hb:'text'} below lands anyway).
+        el.classList.remove('hb-demo-text');
         toParent({ hb: 'text-live', path: path, value: value });
         debounce(path, function () {
           toParent({ hb: 'text', path: path, value: value });
@@ -562,6 +667,55 @@
     return bgPaths[0] || null;
   }
 
+  /** Is `src` still the template's own bundled asset (not an owner upload)?
+   * Owner uploads are always inlined as data: URIs by the resize/upload
+   * pipeline in app.js — anything else (a bare "images/x.jpg", or that same
+   * path wrapped in a CSS url(...)) is still the demo photo. Mirrors
+   * isDemoPhotoValue() in app.js; kept as its own copy here since this
+   * script runs in a separate sandboxed document with no shared scope. */
+  function isDemoSrcValue(src) {
+    return typeof src === 'string' && src.length > 0 && src.indexOf('data:image/') === -1;
+  }
+
+  /** Hosts queued for the "demo" corner badge — populated during
+   * setupImages(), applied afterward (see applyPendingDemoBadges()). */
+  var pendingDemoBadgeHosts = [];
+
+  /** Queue a wrapper element for the small "demo" corner badge, applied only
+   * once the {hb:'ready'} handshake has already been sent (see mount()).
+   *
+   * Not applied inline here on purpose: this is called from inside
+   * setupImages()'s per-element loop, which the parent's fullRerender() /
+   * waitForInteractivePreview() treats as part of the CRITICAL, synchronous
+   * path that gates when the render is considered "settled" (the injected
+   * ready-script's readiness poll runs its first check immediately after
+   * this same DOMContentLoaded dispatch finishes — see
+   * prepareInteractivePreviewDocument() in app.js). Any extra synchronous
+   * work added to that path — even a cheap classList.add() — measurably
+   * raised the odds of the parent's render-serialization guard
+   * (fullRerender()'s renderInFlight) still being busy when the next
+   * scheduled re-render came due, reproduced as a real regression in
+   * bot/test/fullpass-63230d2.mjs's professionals Cal.com-booking-link
+   * timing check during this wave's own development. The badge is purely
+   * cosmetic (unlike text/image editability, nothing depends on it being
+   * present at "ready" time), so it is deferred one tick past the ready
+   * handshake instead — imperceptible to a human, off the critical path
+   * entirely. */
+  function addDemoBadge(host) {
+    if (!host) return;
+    pendingDemoBadgeHosts.push(host);
+  }
+
+  /** Paint every queued demo-photo badge — called once, shortly after
+   * {hb:'ready'} (see addDemoBadge()'s doc comment). */
+  function applyPendingDemoBadges() {
+    var hosts = pendingDemoBadgeHosts;
+    pendingDemoBadgeHosts = [];
+    for (var i = 0; i < hosts.length; i++) {
+      hosts[i].classList.add('hb-demo-photo');
+    }
+  }
+
   /** Create an "Înlocuiește fotografia" button and attach it to a wrapper element. */
   function makeChangeBtn(path) {
     var btn = document.createElement('button');
@@ -598,6 +752,7 @@
 
       img.parentNode.insertBefore(wrap, img);
       wrap.appendChild(img);
+      if (isDemoSrcValue(src)) addDemoBadge(wrap);
 
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -742,6 +897,7 @@
         }
       }
       buttonHost.appendChild(btn);
+      if (isDemoSrcValue(bgUrl)) addDemoBadge(buttonHost);
     });
   }
 
@@ -1083,6 +1239,11 @@
         break;
       }
 
+      case 'demoText': {
+        markDemoTextPaths(Array.isArray(msg.paths) ? msg.paths : []);
+        break;
+      }
+
       default:
         /* Unknown messages are silently ignored. */
         break;
@@ -1100,6 +1261,12 @@
 
     // Announce readiness to parent.
     toParent({ hb: 'ready' });
+
+    // Cosmetic-only work that must never delay the ready handshake above —
+    // see addDemoBadge()'s doc comment.
+    setTimeout(function () {
+      try { applyPendingDemoBadges(); } catch (e) { console.warn('[hb-overlay] applyPendingDemoBadges:', e); }
+    }, 0);
   }
 
   if (document.readyState === 'loading') {

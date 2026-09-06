@@ -65,16 +65,33 @@ let colorPopoverOpen = false;
 // set this — that content is the owner's own, not a demo.
 let isFreshDemoDraft = false;
 let demoBannerDismissed = false;
+// Wave 11: the same bar now hosts the name/phone/town quick-start form, so it
+// must also open on demand — from the checklist pill — for a draft that is
+// no longer "fresh" (isFreshDemoDraft went false on the very first edit) but
+// still hasn't had its identity fields filled in. Session-only: reopening it
+// is a deliberate action, never persisted across a reload.
+let quickstartForceOpen = false;
 function syncDemoBanner() {
   const el = $('demo-content-banner');
-  if (el) el.style.display = (isFreshDemoDraft && !demoBannerDismissed) ? '' : 'none';
+  if (el) el.style.display = ((isFreshDemoDraft && !demoBannerDismissed) || quickstartForceOpen) ? '' : 'none';
 }
 
 // Drawer state
 let drawerOpen = false;
 /** localStorage key for Details drawer open/closed preference (VISION Flow 2). */
 const DRAWER_PREF_KEY = 'hb-details-drawer-pref';
-let drawerSaveTimer = null;
+// Wave 11: was a drawer field edited since the drawer was last opened, in a
+// way that still needs a full re-render (not just the surgical {hb:'set'}
+// every drawer keystroke already sends) once the drawer closes? Used to be a
+// self-expiring 2-second timer (drawerSaveTimer) instead of a plain flag —
+// which meant an edit whose visible effect can ONLY come from a full
+// re-render (e.g. appointment.bookingUrl: emptying it must remove the
+// Cal.com <a> and bring back the local request <form>, a structural change
+// no surgical text-content update can make) silently never reappeared if the
+// owner took more than two seconds to close the drawer after editing. A
+// plain flag has no such window — correct regardless of how long the drawer
+// stays open, and regardless of how fast any given render happens to be.
+let drawerNeedsRerenderOnClose = false;
 
 // Device mode
 let deviceMode = 'desktop'; // 'desktop' | 'mobile'
@@ -437,6 +454,114 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
   cascadeJsonLdPath('seo.jsonLd');
 }
 
+/**
+ * Wave 11 quick-start — the demo town (every shipped preset places it as the
+ * last word of business.title: "Name | Description | Town", or, for
+ * local-service's single-"|" title, the last word of the description tail).
+ * Derived rather than hardcoded so this keeps working if a future template's
+ * preset uses a different demo town than "București".
+ */
+function deriveDemoTown(config) {
+  const title = config && config.business && typeof config.business.title === 'string'
+    ? config.business.title : '';
+  const tail = title.split('|').pop().trim();
+  const words = tail.split(/\s+/).filter(Boolean);
+  if (!words.length) return '';
+  return words[words.length - 1].replace(/[.,;:]+$/, '');
+}
+
+/**
+ * Same idea as cascadeBusinessNameIdentity, but for the town: rewrite every
+ * identity field that still carries the OLD town literal (title, meta
+ * description, the story, the served zone, both addresses, and inside
+ * seo.jsonLd's structured address/description) to the new one. A plain
+ * split/join is enough here (same approach cascadeBusinessNameIdentity's own
+ * rewriteIdentityString uses for the business name) — town names in this
+ * product's presets are short proper nouns, not substrings that plausibly
+ * collide with unrelated words in Romanian business copy.
+ */
+function cascadeTownIdentity(config, oldTown, newTown) {
+  if (!config || !oldTown || !newTown || oldTown === newTown) return;
+
+  function rewrite(val) {
+    if (typeof val !== 'string' || !val || val.indexOf(oldTown) === -1) return val;
+    return val.split(oldTown).join(newTown);
+  }
+
+  ['business.title', 'business.metaDescription', 'business.about', 'business.zone',
+   'contact.address', 'footer.address'].forEach((path) => {
+    const cur = getPath(config, path);
+    const next = rewrite(cur);
+    if (next !== cur) setPath(config, path, next);
+  });
+
+  const jsonLd = getPath(config, 'seo.jsonLd');
+  if (typeof jsonLd === 'string' && jsonLd) {
+    try {
+      const parsed = JSON.parse(jsonLd);
+      const walk = (node) => {
+        if (typeof node === 'string') return rewrite(node);
+        if (Array.isArray(node)) return node.map(walk);
+        if (node && typeof node === 'object') {
+          const out = {};
+          Object.keys(node).forEach((k) => { out[k] = walk(node[k]); });
+          return out;
+        }
+        return node;
+      };
+      const nextStr = JSON.stringify(walk(parsed));
+      if (nextStr !== jsonLd) setPath(config, 'seo.jsonLd', nextStr);
+    } catch (_) { /* not parseable JSON — leave untouched rather than risk corrupting it */ }
+  }
+}
+
+/**
+ * Wave 11 quick-start phone: this product's every shipped demo phone is a
+ * +40 (Romania) mobile number, so a bare local-style entry ("07XX XXX XXX")
+ * is normalized to +40 the same way — matching what the owner would already
+ * see if they never touched the field. An entry that already carries a
+ * country code (leading "+" or "00") is respected as-is.
+ */
+function normalizePhoneForConfig(raw) {
+  const display = String(raw || '').trim();
+  let e164 = display.replace(/[^\d+]/g, '');
+  if (e164.indexOf('00') === 0) e164 = '+' + e164.slice(2);
+  if (e164 && e164[0] !== '+') {
+    e164 = '+40' + (e164[0] === '0' ? e164.slice(1) : e164);
+  }
+  const waDigits = e164.replace(/\D/g, '');
+  return { e164, waDigits, display };
+}
+
+/**
+ * The demo phone also lives inside seo.jsonLd's "telephone" field — a place
+ * nobody thinks to check, and exactly the kind of leftover-demo-data this
+ * wave exists to close. contact.phone/whatsapp/phoneDisplay/waHref are
+ * ordinary config paths the drawer already owns directly (set in
+ * applyQuickstart()); jsonLd is serialized JSON, so it needs the same
+ * structural rewrite cascadeTownIdentity() uses for the town.
+ */
+function cascadePhoneIdentity(config, oldE164, newE164) {
+  if (!config || !oldE164 || !newE164 || oldE164 === newE164) return;
+  const jsonLd = getPath(config, 'seo.jsonLd');
+  if (typeof jsonLd !== 'string' || !jsonLd) return;
+  try {
+    const parsed = JSON.parse(jsonLd);
+    const walk = (node) => {
+      if (typeof node === 'string') return node.indexOf(oldE164) === -1 ? node : node.split(oldE164).join(newE164);
+      if (Array.isArray(node)) return node.map(walk);
+      if (node && typeof node === 'object') {
+        const out = {};
+        Object.keys(node).forEach((k) => { out[k] = walk(node[k]); });
+        return out;
+      }
+      return node;
+    };
+    const nextStr = JSON.stringify(walk(parsed));
+    if (nextStr !== jsonLd) setPath(config, 'seo.jsonLd', nextStr);
+  } catch (_) { /* not parseable JSON — leave untouched rather than risk corrupting it */ }
+}
+
 function isPlausibleHttpUrl(value) {
   const str = typeof value === 'string' ? value.trim() : '';
   if (!/^https?:\/\//i.test(str)) return false;
@@ -683,11 +808,280 @@ function getRequiredFields(schema) {
   return getAllSchemaFields(schema).filter(f => f.required !== false);
 }
 
+// ---------------------------------------------------------------------------
+// 6b. Honest completion — "done" means the OWNER made it theirs, not that a
+// fresh demo preset happened to fill the field in already.
+// ---------------------------------------------------------------------------
+//
+// A brand-new draft is seeded from currentTemplate.data.presets[0].config (see
+// startTemplate() / chooseDesign()) — a plausible business name, phone,
+// address and photos that read as a finished, real site. The old checklist
+// only asked "is this field non-empty?", so that demo content counted as
+// 22/22 done before the owner had touched anything — the exact failure this
+// wave exists to fix (see task brief).
+//
+// Fix: for the handful of fields that actually carry the OWNER's identity —
+// name, tagline, page title, meta description, the story, phone/address, the
+// footer — "done" additionally requires the current value to differ from
+// that same preset's starting value. Every other required field (button
+// labels, section titles, the language picker…) keeps the old non-empty
+// check: their demo default is a perfectly fine, finished value for a real
+// owner too, so flagging them would just make the checklist impossible to
+// satisfy honestly.
+//
+// Same idea for photos: a template asset path ("images/hero.jpg", or a CSS
+// background wrapping one) is still the demo's photo. An owner's own upload
+// is always inlined as a data: URI (see isDemoPhotoSrc / the upload pipeline
+// above) — that is the one reliable signal that a real photo replaced it.
+
+/** Keys whose preset default reads as a real (fake) business — must be
+ * genuinely changed, not merely present, to count as "done". Shared verbatim
+ * across all five templates' schemas. */
+const IDENTITY_FIELD_KEYS = new Set([
+  'business.name',
+  'business.tagline',
+  'business.title',
+  'business.metaDescription',
+  'business.about',
+  'business.zone',
+  'business.profession',
+  'contact.phoneDisplay',
+  'contact.address',
+  'footer.address',
+]);
+
+/** Schema field types that render a photo — logo/hero (single image or CSS
+ * background) and photo galleries. */
+const PHOTO_FIELD_TYPES = new Set(['image', 'background', 'photos']);
+
+/** The demo baseline a fresh draft started from — currentTemplate.data's
+ * first preset config, the same object startTemplate() seeds draft.config
+ * from. Returns null when unavailable (isolated tests, template not loaded
+ * yet) so callers can fall back to the old non-empty check. */
+function getDemoPresetConfig() {
+  const tpl = typeof currentTemplate !== 'undefined' ? currentTemplate : null;
+  const data = tpl && tpl.data;
+  const presets = data && Array.isArray(data.presets) ? data.presets : null;
+  return (presets && presets[0] && presets[0].config) || null;
+}
+
+/** Does `val` (a single photo-bearing config value — <img> src, or a CSS
+ * background string that may wrap one) still point at the template's own
+ * bundled asset rather than an owner upload? Owner uploads are always
+ * inlined as data: URIs (see the resize/upload pipeline); a bare or
+ * url()-wrapped "images/xxx.jpg" is the untouched demo photo. */
+function isDemoPhotoValue(val) {
+  if (typeof val !== 'string' || !val) return true;
+  return val.indexOf('data:image/') === -1;
+}
+
+/** Completion check for a 'photos' gallery array: at least one item's photo
+ * must be a genuine owner upload. An empty gallery (required:false in every
+ * shipped schema today) is handled by the generic empty-array check before
+ * this is ever called. */
+function galleryHasRealPhoto(list) {
+  if (!Array.isArray(list) || list.length === 0) return false;
+  return list.some((item) => {
+    const src = typeof item === 'string' ? item : (item && (item.src || item.url));
+    return !isDemoPhotoValue(src);
+  });
+}
+
+/**
+ * The ORIGINAL, structural completeness check: does this required field have
+ * ANY value at all? Used only to gate publishing (openPublishModal) — a hard
+ * rule that exists to stop a site going live with e.g. a blank business name
+ * breaking the page <title>, not a judgement about whose content it is. Left
+ * unchanged on purpose: whether to let a demo-content draft publish is a
+ * separate, much bigger product decision than "does the checklist lie about
+ * it", and this wave was not asked to make that call — see
+ * isFieldGenuinelyMade() below for the honest "did the OWNER do this" check
+ * the checklist pill now uses instead.
+ */
 function isFieldComplete(field) {
   const val = getPath(draft.config, field.key);
   if (val == null || val === '') return false;
   if (Array.isArray(val) && val.length === 0) return false;
   return true;
+}
+
+/**
+ * The HONEST completeness check the checklist pill uses (see the "Honest
+ * completion" doc comment above IDENTITY_FIELD_KEYS): on top of
+ * isFieldComplete()'s structural check, an identity field must also differ
+ * from the demo preset's own value, and a photo field must be a genuine
+ * owner upload. Never used to gate publishing — see isFieldComplete().
+ */
+function isFieldGenuinelyMade(field) {
+  if (!isFieldComplete(field)) return false;
+  const val = getPath(draft.config, field.key);
+
+  if (PHOTO_FIELD_TYPES.has(field.type)) {
+    if (field.type === 'photos') return galleryHasRealPhoto(val);
+    return !isDemoPhotoValue(val);
+  }
+
+  if (IDENTITY_FIELD_KEYS.has(field.key)) {
+    const preset = getDemoPresetConfig();
+    if (preset) {
+      const demoVal = getPath(preset, field.key);
+      if (typeof val === 'string' && typeof demoVal === 'string' && val.trim() === demoVal.trim()) {
+        return false; // still exactly the demo's own value
+      }
+    }
+  }
+
+  return true;
+}
+
+/** Identity-key paths whose current value is STILL the demo preset's own
+ * value — used to mark provisional/untouched content on the canvas (see
+ * edit-overlay.js's {hb:'demoText'} handler). Unlike isFieldGenuinelyMade()
+ * this ignores field.required — a not-required identity field left at its
+ * demo value (e.g. business.zone) should still read as provisional on
+ * canvas. */
+function computeDemoTextPaths() {
+  const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
+  const preset = getDemoPresetConfig();
+  if (!schema || !preset || !draft.config) return [];
+  const out = [];
+  getAllSchemaFields(schema).forEach((f) => {
+    if (!IDENTITY_FIELD_KEYS.has(f.key)) return;
+    const val = getPath(draft.config, f.key);
+    const demoVal = getPath(preset, f.key);
+    if (typeof val === 'string' && typeof demoVal === 'string' &&
+        val.trim() !== '' && val.trim() === demoVal.trim()) {
+      out.push(f.key);
+    }
+  });
+  return out;
+}
+
+/** Push the current provisional-content set into the preview iframe. */
+function sendDemoTextMarks() {
+  const iframe = typeof getPreviewIframe === 'function' ? getPreviewIframe() : null;
+  if (!iframe || !iframe.contentWindow || !iframeReady) return;
+  try {
+    iframe.contentWindow.postMessage({ hb: 'demoText', paths: computeDemoTextPaths() }, '*');
+  } catch (_) { /* best-effort visual cue only */ }
+}
+
+let demoTextMarksTimer = null;
+/** Debounced entry point for sendDemoTextMarks(), called only from
+ * onIframeReady() — i.e. once per full re-render, which every identity-field
+ * change already triggers or will trigger once the drawer closes (see the
+ * drawer field handler's own deferred-rerender-on-close, drawerNeedsRerenderOnClose). A
+ * canvas text edit's own mark drop is instant regardless of any of this —
+ * edit-overlay.js clears it locally the moment the field is touched.
+ *
+ * Earlier versions of this fix also called this (undebounced) from
+ * updateChecklist(), which fires on every keystroke in ANY drawer field —
+ * including ones with nothing to do with identity text (e.g.
+ * appointment.bookingUrl). Sending a postMessage into the preview iframe
+ * from that same hot path measurably raised the odds of fullRerender()'s
+ * renderInFlight guard still being busy when the next scheduled re-render
+ * came due, coalescing it later than a fixed-wait caller expected —
+ * reproduced as a real regression in bot/test/fullpass-63230d2.mjs's
+ * professionals Cal.com-booking-link timing check during this wave's own
+ * development. Debounced and kept to the single onIframeReady() call site
+ * so this can never happen again. */
+function scheduleDemoTextMarks() {
+  if (demoTextMarksTimer) clearTimeout(demoTextMarksTimer);
+  demoTextMarksTimer = setTimeout(() => {
+    demoTextMarksTimer = null;
+    sendDemoTextMarks();
+  }, 200);
+}
+
+// ---------------------------------------------------------------------------
+// 7b. Quick-start — name/phone/town, everywhere, in one sitting
+// ---------------------------------------------------------------------------
+//
+// Not a tour with arrows and tooltips: three fields, on the same bar that
+// already told the owner "this is demo content", any subset of which gets
+// stamped across every place that content actually appears — including the
+// places a person would never think to check (browser tab title, Google's
+// snippet, the structured data search engines read, the WhatsApp message a
+// customer's tap opens, the footer). Skippable ("Nu acum" — same dismissal
+// as before), and repeatable any time via the checklist pill in the topbar.
+
+/** Open the quick-start bar on demand (checklist pill), independent of
+ * isFreshDemoDraft — a resumed draft that still hasn't had its identity
+ * fields filled in deserves the same one-minute fix. */
+function openQuickstart() {
+  quickstartForceOpen = true;
+  syncDemoBanner();
+  const nameEl = $('quickstart-name');
+  if (nameEl) nameEl.focus();
+}
+
+/** Close the bar. Marks it dismissed so an auto-shown fresh-draft bar does
+ * not immediately reappear on the next render — same persisted semantics the
+ * plain-text banner already had. */
+function closeQuickstart() {
+  quickstartForceOpen = false;
+  demoBannerDismissed = true;
+  syncDemoBanner();
+  saveDraft();
+}
+
+/** Apply whichever of the three fields the owner actually filled in. Empty
+ * fields are left alone — this is a quick stamp, not a form that must be
+ * fully completed to submit. */
+function applyQuickstart() {
+  if (!draft.config) return;
+  const nameEl = $('quickstart-name');
+  const phoneEl = $('quickstart-phone');
+  const townEl = $('quickstart-town');
+  const name = nameEl ? nameEl.value.trim() : '';
+  const phone = phoneEl ? phoneEl.value.trim() : '';
+  const town = townEl ? townEl.value.trim() : '';
+
+  if (!name && !phone && !town) {
+    closeQuickstart();
+    return;
+  }
+
+  // Read the demo town BEFORE any mutation — cascadeBusinessNameIdentity's
+  // own title rewrite only ever touches the name prefix of business.title,
+  // never the town tail, but reading it first removes any doubt either way.
+  const prevTown = town ? deriveDemoTown(draft.config) : '';
+
+  if (name) {
+    const prevName = getPath(draft.config, 'business.name');
+    setPath(draft.config, 'business.name', name);
+    if (prevName != null && prevName !== name) {
+      cascadeBusinessNameIdentity(draft.config, prevName, name);
+    }
+  }
+
+  if (town && prevTown && prevTown !== town) {
+    cascadeTownIdentity(draft.config, prevTown, town);
+  }
+
+  if (phone) {
+    const prevPhoneE164 = getPath(draft.config, 'contact.phone');
+    const norm = normalizePhoneForConfig(phone);
+    setPath(draft.config, 'contact.whatsapp', norm.waDigits);
+    setPath(draft.config, 'contact.phone', norm.e164);
+    setPath(draft.config, 'contact.phoneDisplay', norm.display);
+    deriveWaHref(draft.config);
+    if (prevPhoneE164) cascadePhoneIdentity(draft.config, prevPhoneE164, norm.e164);
+  }
+
+  // A deliberate, discrete action — its own undo step, never coalesced with
+  // an unrelated in-flight text edit.
+  pendingHistoryCoalesceKey = null;
+  saveDraft();
+  updateChecklist();
+  scheduleRerender(true);
+  if (typeof showToast === 'function') {
+    showToast('Site-ul tău are acum datele tale — verifică pe canvas.', 'success', 4000);
+  }
+  if (nameEl) nameEl.value = '';
+  if (phoneEl) phoneEl.value = '';
+  if (townEl) townEl.value = '';
+  closeQuickstart();
 }
 
 // ---------------------------------------------------------------------------
@@ -697,7 +1091,7 @@ function isFieldComplete(field) {
 function updateChecklist() {
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) return;
   const required = getRequiredFields(currentTemplate.data.schema);
-  const done = required.filter(isFieldComplete).length;
+  const done = required.filter(isFieldGenuinelyMade).length;
   const total = required.length;
   const el = $('checklist-text');
   const ind = $('checklist-indicator');
@@ -706,6 +1100,24 @@ function updateChecklist() {
     ind.classList.toggle('checklist-ok', done === total);
     ind.classList.toggle('checklist-warn', done < total);
   }
+  // NOT wired to sendDemoTextMarks()/scheduleDemoTextMarks() here on purpose,
+  // even though updateChecklist() already runs on every identity-field
+  // change: this function is also called from the general DRAWER field
+  // handler on every keystroke in ANY field, including ones with nothing to
+  // do with identity text (e.g. appointment.bookingUrl) — sending a message
+  // into the preview iframe from that same hot path added real, measurable
+  // main-thread contention (the iframe processing the message right as the
+  // parent's own closeDrawer()-triggered fullRerender() needs the thread)
+  // and raised the odds of fullRerender()'s renderInFlight guard still being
+  // busy when the next scheduled re-render came due — reproduced as a real
+  // regression in bot/test/fullpass-63230d2.mjs's professionals
+  // Cal.com-booking-link timing check during this wave's own development.
+  // onIframeReady() (below) already repaints the provisional-content marks
+  // on every full re-render, which every identity-field change already
+  // triggers or will trigger once the drawer closes (see the drawer field
+  // handler's own deferred-rerender-on-close, drawerNeedsRerenderOnClose) — a canvas
+  // text edit's own mark drop is instant regardless (edit-overlay.js clears
+  // it locally the moment the field is touched, no round trip needed).
 }
 
 // ---------------------------------------------------------------------------
@@ -1810,6 +2222,11 @@ function onIframeReady() {
     if (imageMap) map = mergePreviewImageMap(map, imageMap);
     iframe.contentWindow.postMessage({ hb: 'imgmap', map }, '*');
   }
+  // Fresh srcdoc = fresh DOM = the overlay's own demo-photo scan already ran
+  // during mount(), but the identity-text marks need this explicit push
+  // (see scheduleDemoTextMarks()'s doc comment for why this is debounced off
+  // the 'ready' handler's own synchronous call stack).
+  scheduleDemoTextMarks();
 }
 
 function onInlineTextEdit(path, value) {
@@ -2333,10 +2750,11 @@ function closeDrawer() {
   document.body.classList.remove('details-drawer-open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'false');
-  // Re-render if any drawer field was edited (deferred)
-  if (drawerSaveTimer) {
-    clearTimeout(drawerSaveTimer);
-    drawerSaveTimer = null;
+  // Re-render if any drawer field was edited (deferred) — see
+  // drawerNeedsRerenderOnClose's doc comment for why this is a plain flag,
+  // not a self-expiring timer.
+  if (drawerNeedsRerenderOnClose) {
+    drawerNeedsRerenderOnClose = false;
     fullRerender();
   }
 }
@@ -2898,12 +3316,15 @@ function buildDrawerField(field) {
     updateChecklist();
     // Try chirurgical update if field has a visible representation
     sendSetToIframe(key, nextValue);
-    // Schedule re-render on drawer close
-    if (drawerSaveTimer) clearTimeout(drawerSaveTimer);
-    drawerSaveTimer = setTimeout(() => {
-      drawerSaveTimer = null;
-      // Re-render if drawer is still open (lazy)
-    }, 2000);
+    // Re-render on drawer close — see drawerNeedsRerenderOnClose's doc
+    // comment for why this never expires on its own. Set unconditionally,
+    // even for a field that already forced an immediate scheduleRerender(true)
+    // above: that immediate call can itself be coalesced away (see
+    // fullRerender()'s renderInFlight guard) if another render was already
+    // in flight the instant this input event fired, and this is the one
+    // remaining guarantee that the drawer closing still forces a final,
+    // up-to-date render.
+    drawerNeedsRerenderOnClose = true;
   });
 
   wrap.appendChild(input);
@@ -6780,11 +7201,14 @@ function wireStaticButtons() {
   initSaveGuard();
   initRecoveryBanner();
   const demoBannerDismissBtn = $('btn-dismiss-demo-banner');
-  if (demoBannerDismissBtn) demoBannerDismissBtn.addEventListener('click', () => {
-    demoBannerDismissed = true;
-    syncDemoBanner();
-    saveDraft(); // persist the dismissal so a reload does not bring the banner back
+  if (demoBannerDismissBtn) demoBannerDismissBtn.addEventListener('click', () => closeQuickstart());
+  const quickstartForm = $('quickstart-form');
+  if (quickstartForm) quickstartForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    applyQuickstart();
   });
+  const checklistBtn = $('checklist-indicator');
+  if (checklistBtn) checklistBtn.addEventListener('click', () => openQuickstart());
 
   // Undo / redo toolbar buttons
   const undoBtn = $('btn-undo');
