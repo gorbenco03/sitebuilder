@@ -537,9 +537,30 @@ body.details-drawer-open .editor-tpl-name {
   justify-content: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+  flex-shrink: 0;
   padding: 0.5rem 1rem;
   background: var(--accent-light);
   color: var(--accent-hover);
+  border-bottom: 1px solid var(--accent-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* ---------- Fresh-demo-content banner (first sixty seconds) ---------- */
+.demo-content-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  /* flex-shrink:0 matters: these banners sit in the editor's flex column above
+     the canvas. Without it the banner is allowed to collapse and the browser
+     lays it over the preview instead of pushing it down, which blocks clicks
+     on exactly the text it is telling the owner to replace. */
+  flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  background: var(--accent-light);
+  color: var(--text);
   border-bottom: 1px solid var(--accent-muted);
   font-size: 0.82rem;
   text-align: center;
@@ -591,6 +612,17 @@ body.details-drawer-open .editor-tpl-name {
   color: inherit;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.demo-content-banner-dismiss {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  flex-shrink: 0;
 }
 
 /* Checklist indicator */
@@ -1491,7 +1523,7 @@ body.details-drawer-open .editor-tpl-name {
    ============================================================ */
 
 .modal-box--gallery {
-  max-width: 520px;
+  max-width: 620px;
 }
 
 .gallery-modal-body {
@@ -2163,9 +2195,17 @@ body.details-drawer-open .editor-tpl-name {
 /* Photos */
 .photos-thumbs {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.65rem;
 }
+.photos-thumbs--single { grid-template-columns: minmax(120px, 160px) 1fr; align-items: center; gap: 0.75rem; }
+
+.photo-thumb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 .photo-thumb {
   position: relative;
   aspect-ratio: 1;
@@ -2173,8 +2213,20 @@ body.details-drawer-open .editor-tpl-name {
   overflow: hidden;
   border: 1.5px solid var(--border);
   transition: transform var(--transition), border-color var(--transition);
+  background: var(--surface);
 }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb--single { width: 100%; }
+.photo-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0.5rem;
+  border-style: dashed;
+}
 .photo-thumb-del {
   position: absolute;
   top: 3px; right: 3px;
@@ -2196,6 +2248,57 @@ body.details-drawer-open .editor-tpl-name {
 .photo-thumb:hover .photo-thumb-del { opacity: 1; }
 .photo-thumb-del:hover { background: var(--error); opacity: 1; }
 
+.photo-thumb-badge {
+  position: absolute;
+  bottom: 3px; left: 3px;
+  background: rgba(17,24,39,.7);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  border-radius: 3px;
+  padding: 1px 5px;
+  pointer-events: none;
+}
+
+.photo-thumb-alt {
+  width: 100%;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+.photo-thumb-alt:focus { outline: none; border-color: var(--border-focus); }
+.photo-thumb-alt::placeholder { color: var(--text-light); }
+
+.photo-thumb-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+.photo-thumb-actions--inline { justify-content: flex-start; margin-top: 0.35rem; }
+
+.photo-thumb-mini-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 11px;
+  width: 22px; height: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+.photo-thumb-mini-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.photo-thumb-mini-btn:disabled { opacity: 0.3; cursor: default; }
+
 .photos-dropzone {
   border: 2px dashed var(--border);
   border-radius: var(--radius-sm);
@@ -2210,6 +2313,7 @@ body.details-drawer-open .editor-tpl-name {
 .photos-dropzone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
 .photos-dropzone input[type=file] { display: none; }
 .photos-dropzone-icon { font-size: 1.25rem; margin-bottom: 0.2rem; }
+.photos-dropzone--busy { opacity: 0.65; pointer-events: none; }
 
 /* ============================================================
    TOAST
