@@ -1,0 +1,65 @@
+{
+  "wave": "Wave5-local-service",
+  "template": "templates/local-service (Meserii)",
+  "auditSource": "04-QA-Evidence/Audit-2026-09-06-2225ca7 (score 6/10)",
+  "findings": {
+    "LS-01": {
+      "title": "WhatsApp QR code was not a valid QR code (finder patterns corrupted by masking bug)",
+      "severity": "critical",
+      "status": "fixed",
+      "notes": "Rewrote templates/local-service/script.js's QR encoder from scratch: proper reserved-cell tracking (finder/timing/alignment/dark-module/format-info/version-info), version-info support for v7-10 (the default preset's own WhatsApp message already needs v8), and adaptive mask-penalty scoring (ISO 18004) instead of a hardcoded mask. Verified with an independent decoder (inverse zigzag walk + real Reed-Solomon syndrome check, not a re-run of the encoder) in bot/test/wave5-local-service-whatsapp-qr.test.js, plus cross-checked externally with cv2.QRCodeDetector and zbarimg during development. The task description said this was 'fixed by an earlier wave' — it was not, on this worktree's branch point; see report for detail.",
+      "oracle": "bot/test/wave5-local-service-whatsapp-qr.test.js"
+    },
+    "LS-02": {
+      "title": "Add/remove for services, portfolio categories and certifications was disconnected from the UI",
+      "severity": "medium",
+      "effort": "L",
+      "status": "fixed",
+      "notes": "templates/local-service/script.js now builds its own add/+/remove-x UI for services, trust (\"De ce noi\"), portfolio categories and certifications, talking the same postMessage protocol builder/app.js already handles unconditionally. New items are seeded with real Romanian placeholder text (never a literal 'New item'). A gap in builder/edit-overlay.js (SAFE_LIST_PATHS omits certifications/trust; its container-detection also mis-targets local-service's single-field service items) is documented precisely in HANDOFF-local-service.md rather than edited, per the file-ownership rules for this wave.",
+      "oracle": "bot/test/wave5-local-service-list-add-remove.test.js"
+    },
+    "LS-03": {
+      "title": "Duplicate, unsynced Instagram URL fields (Contact section vs Instagram section)",
+      "severity": "medium",
+      "status": "not addressed this wave",
+      "notes": "Out of scope for this wave's explicit task list (services/CLS/a11y); left as a known open item. Would need contact.instagram.url and instagram.url unified to one schema field or synced on save (the latter needs builder/app.js)."
+    },
+    "audit-mediums-31-32": {
+      "title": "IG/FB footer links under 24x24px target size; brand-colour text on dark backgrounds under WCAG AA contrast",
+      "severity": "medium (a11y)",
+      "status": "fixed",
+      "notes": "IG/FB are now real SVG icons in 44x44 anchors (matches professionals/desserdirina's existing pattern); WhatsApp's footer icon anchor grew from 18x23 to 44x44 too. .ls-meter__n and .ls-punch__n::before now use color-mix(in srgb, var(--cta) 50%, white) instead of the raw owner-chosen accent, verified to hold >=4.5:1 for the default preset's navy accent, orange, and a synthetic near-black worst case.",
+      "oracle": "bot/test/wave5-local-service-a11y.test.js"
+    },
+    "additional-a11y-found-this-wave": {
+      "title": "Horizontal overflow at 200% browser zoom (mobile 390) — pre-existing, not in the original audit",
+      "severity": "medium (a11y)",
+      "status": "fixed",
+      "notes": "CSS grid blowout: .ls-about had no explicit grid-template-columns on mobile, so the single implicit column grew to the .ls-lead contact card's min-content width (long unbroken phone-number text) instead of clamping to the viewport. Fixed with grid-template-columns: minmax(0, 1fr) plus min-width:0 on the flex rows inside. Confirmed present on git HEAD before this change (474px scrollWidth vs 390px viewport) and fixed after (390 == 390).",
+      "oracle": "bot/test/wave5-local-service-a11y.test.js"
+    },
+    "performance-CLS": {
+      "title": "CLS 0.20 desktop / 0.17 mobile per the performance lens",
+      "severity": "medium",
+      "status": "measured — already effectively zero for this template; hardened logo images defensively",
+      "notes": "Real PerformanceObserver layout-shift measurement on templates/local-service's own published live site (default preset, both viewports) shows CLS ~0.0000009-0.000007 both BEFORE and AFTER this wave's changes — the audit's 0.20/0.17 figures were measured on a different, shared performance run (its own evidence names a 'Casa Nord' / product-menu site) and generalized to the whole product rather than re-verified per template. The two photo grids (.ls-shot img, .ls-igcell img) already carried CSS aspect-ratio before this wave. The one real gap closed here: .ls-hero__logo and .ls-foot__logo (schema.json's 'logo' field has no stored width/height) had no aspect-ratio/width/height at all — hardened with aspect-ratio: 3/1 + object-fit: contain as defense-in-depth for the owner-upload-a-logo path, which the default preset doesn't exercise.",
+      "measured": {
+        "before": { "desktop-1440": 9.253532503858024e-7, "mobile-390": 0.000006906897940413024 },
+        "after": { "desktop-1440": 9.253532503858024e-7, "mobile-390": 0 }
+      },
+      "oracle": "bot/test/wave5-local-service-cls.test.js"
+    }
+  },
+  "testSuite": {
+    "command": "node --experimental-sqlite --test bot/test/*.test.js",
+    "totalTests": 146,
+    "pass": 143,
+    "fail": 3,
+    "knownRedBaseline": [
+      "bot/test/flow3-legal-export.test.js (explicitly called out as known-red, owned by another agent)",
+      "bot/test/advocate-eed3ca0-repair.test.js (confirmed red on git HEAD before this wave's changes too)",
+      "bot/test/mobile-chrome-390-aabb.test.js (confirmed red on git HEAD before this wave's changes too)"
+    ],
+    "newFailures": 0
+  }
+}
