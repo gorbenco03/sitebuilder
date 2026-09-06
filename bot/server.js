@@ -1919,6 +1919,26 @@ async function handleOwnerPutWeekly(req, res) {
     return sendJson(res, 200, out);
 }
 
+async function handleOwnerPutSettings(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    // putOwnerSettings validates every field itself (Romanian messages, 400
+    // on out-of-range) and calls engine.ensureSettings, like every other
+    // owner-settings write path.
+    const out = ownerApi.putOwnerSettings(db, tenant.customerId, tenant.siteId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
 async function handleOwnerAddOverride(req, res) {
     let body;
     try {
@@ -3221,6 +3241,9 @@ function createHandler({ onStripeEvent } = {}) {
             }
             if (req.method === 'PUT' && url === '/api/calendar-native/owner/availability/weekly') {
                 return await handleOwnerPutWeekly(req, res);
+            }
+            if (req.method === 'PUT' && url === '/api/calendar-native/owner/settings') {
+                return await handleOwnerPutSettings(req, res);
             }
             if (req.method === 'POST' && url === '/api/calendar-native/owner/availability/overrides') {
                 return await handleOwnerAddOverride(req, res);

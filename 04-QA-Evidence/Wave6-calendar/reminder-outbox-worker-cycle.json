@@ -4,14 +4,14 @@
       "label": "hazard1-cancelled-booking-swept",
       "outbox": [
         {
-          "id": "em_8a0b2280de8caf3babb270ff",
+          "id": "em_4ae62b1636413ddc089f8400",
           "templateKey": "booking_confirmed",
           "recipientEmail": "va.anula@example.com",
           "status": "queued",
           "hasIcs": true
         },
         {
-          "id": "em_8cf6bb70edf03caa5ad12e89",
+          "id": "em_0130de539d60e803bc452d6b",
           "templateKey": "booking_cancelled",
           "recipientEmail": "va.anula@example.com",
           "status": "queued",
@@ -23,14 +23,14 @@
       "label": "hazard2-first-run",
       "outbox": [
         {
-          "id": "em_011c8352ca964c23778cae26",
+          "id": "em_c8384bd6239704ac46e27a62",
           "templateKey": "booking_confirmed",
           "recipientEmail": "dubla@example.com",
           "status": "sent",
           "hasIcs": true
         },
         {
-          "id": "em_8555f14fd86bfbf3ee69a2b5",
+          "id": "em_c0c59b92af4d138065eadc4c",
           "templateKey": "booking_reminder",
           "recipientEmail": "dubla@example.com",
           "status": "sent",
@@ -42,14 +42,14 @@
       "label": "hazard2-second-run",
       "outbox": [
         {
-          "id": "em_011c8352ca964c23778cae26",
+          "id": "em_c8384bd6239704ac46e27a62",
           "templateKey": "booking_confirmed",
           "recipientEmail": "dubla@example.com",
           "status": "sent",
           "hasIcs": true
         },
         {
-          "id": "em_8555f14fd86bfbf3ee69a2b5",
+          "id": "em_c0c59b92af4d138065eadc4c",
           "templateKey": "booking_reminder",
           "recipientEmail": "dubla@example.com",
           "status": "sent",
@@ -61,7 +61,7 @@
       "label": "hazard3-worker-back-after-outage",
       "outbox": [
         {
-          "id": "em_e52f715431b94682b49a72cb",
+          "id": "em_585b143bcef8c1f5e673e791",
           "templateKey": "booking_confirmed",
           "recipientEmail": "trecuta@example.com",
           "status": "queued",
@@ -73,21 +73,21 @@
       "label": "owner-reminder-demo-tenant",
       "outbox": [
         {
-          "id": "em_11f0706b44d4b689fa9dd8f3",
+          "id": "em_501641c20ffe09f879d53c06",
           "templateKey": "booking_confirmed",
           "recipientEmail": "client.cabinet@example.com",
           "status": "sent",
           "hasIcs": true
         },
         {
-          "id": "em_d409828fbac0aa6e1d7769d0",
+          "id": "em_c521a85f087760cf6b9e032f",
           "templateKey": "booking_reminder",
           "recipientEmail": "client.cabinet@example.com",
           "status": "sent",
           "hasIcs": false
         },
         {
-          "id": "em_990368052400f98e7e78e0aa",
+          "id": "em_e7ed0c34504326fa686eb5d4",
           "templateKey": "booking_reminder_owner",
           "recipientEmail": "elena@cabinet.ro",
           "status": "sent",
