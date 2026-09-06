@@ -133,7 +133,12 @@ const dbPath = path.join(tmp, 'old-install.sqlite');
 const db = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 
 const migRow = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow.v), 4, 'schema_migrations must advance to 4');
+// Wave 7 (audit #25, resources/staff) added a v5 migration on top of this
+// v4 wave — opening any pre-v5 database now advances all the way to 5.
+// Every assertion below still targets the exact v4 columns/defaults this
+// oracle was written to guard; only the final schema_migrations version
+// number changed as a mechanical consequence of a later wave existing.
+assert.strictEqual(Number(migRow.v), 5, 'schema_migrations must advance to the latest version (5)');
 
 // --- Step 3: the live booking survives, byte-identical on every pre-existing field ---
 const booking = db.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
@@ -181,7 +186,7 @@ assert.strictEqual(Number(settings.reminder_owner_enabled), 0, 'owner reminder d
 db.close();
 const db2 = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 const migRow2 = db2.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow2.v), 4, 'second open must not re-run migrations or fail');
+assert.strictEqual(Number(migRow2.v), 5, 'second open must not re-run migrations or fail');
 const booking2 = db2.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
 assert.strictEqual(booking2.status, 'confirmed', 'booking still intact after a second open');
 

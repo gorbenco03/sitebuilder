@@ -106,6 +106,33 @@ function loadServiceName(db, booking) {
     }
 }
 
+/**
+ * Wave 7 (audit #25) — who the appointment is with. Returns null (never a
+ * placeholder string, and never the copy-visible "cu <nume>" line) when:
+ *   - the booking has no resource yet (still-unresolved "any available"
+ *     request), or
+ *   - the tenant has only ONE resource — every pre-Wave-7 tenant and every
+ *     tenant that never adds a second stylist/room. Naming a single
+ *     implicit resource in visitor email would be a purely internal detail
+ *     ("cu Personal implicit") leaking into copy that read fine before this
+ *     wave — so email/. ics text only ever mentions who it's with once that
+ *     information is actually meaningful (2+ resources exist).
+ */
+function loadResourceName(db, booking) {
+    if (!booking || !booking.resource_id) return null;
+    try {
+        const engine = require('../engine');
+        if (!engine.hasMultipleResources(db, booking.customer_id, booking.site_id)) return null;
+        const row = db.prepare(
+            `SELECT name FROM calendar_resources
+             WHERE id = ? AND customer_id = ? AND site_id = ?`
+        ).get(booking.resource_id, booking.customer_id, booking.site_id);
+        return row && row.name ? row.name : null;
+    } catch (_) {
+        return null;
+    }
+}
+
 function loadTimezone(db, booking) {
     try {
         const row = db.prepare(
@@ -195,6 +222,7 @@ function buildIcsForEvent(db, booking, templateKey) {
     const serviceName = loadServiceName(db, booking);
     const siteLabel = loadSiteLabel(booking);
     const organizerEmail = loadOrganizerEmail(booking) || 'no-reply@hidook.invalid';
+    const resourceName = loadResourceName(db, booking);
 
     const content = ics.buildBookingIcs({
         booking,
@@ -203,6 +231,7 @@ function buildIcsForEvent(db, booking, templateKey) {
         organizerEmail,
         method,
         sequence,
+        resourceName,
     });
 
     try {
@@ -244,6 +273,7 @@ function enqueueBookingEmail(db, input) {
         templateKey === 'booking_cancelled' || !rawToken ? null : buildManageUrl(rawToken);
 
     const serviceName = loadServiceName(db, booking);
+    const resourceName = loadResourceName(db, booking);
     const tz = loadTimezone(db, booking);
     const startOwnerLocal = formatOwnerLocal(booking.start_utc, tz);
 
@@ -251,6 +281,7 @@ function enqueueBookingEmail(db, input) {
         templateKey,
         visitorName: booking.visitor_name,
         serviceName,
+        resourceName,
         startOwnerLocal,
         startUtc: booking.start_utc,
         bookingStatus: status,
@@ -332,6 +363,7 @@ function enqueueReminderEmail(db, input) {
 
     const templateKey = kind === 'owner' ? 'booking_reminder_owner' : 'booking_reminder';
     const serviceName = loadServiceName(db, booking);
+    const resourceName = loadResourceName(db, booking);
     const tz = loadTimezone(db, booking);
     const startOwnerLocal = formatOwnerLocal(booking.start_utc, tz);
     const siteLabel = loadSiteLabel(booking);
@@ -350,6 +382,7 @@ function enqueueReminderEmail(db, input) {
         visitorEmail: booking.visitor_email,
         visitorPhone: booking.visitor_phone,
         serviceName,
+        resourceName,
         startOwnerLocal,
         startUtc: booking.start_utc,
         bookingStatus: booking.status,
@@ -433,6 +466,7 @@ module.exports = {
     formatOwnerLocal,
     loadSiteLabel,
     loadOrganizerEmail,
+    loadResourceName,
     buildIcsForEvent,
     hashToken,
     mintManageToken,

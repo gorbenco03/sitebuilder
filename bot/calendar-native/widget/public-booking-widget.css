@@ -168,6 +168,41 @@
   margin: 0 0 14px;
 }
 
+/* Wave 7 (audit #25): "pick a person or accept any available" chip row.
+   Same visual language as .hnb__day — horizontally scrollable, no wrapping,
+   so it degrades gracefully at 390px without needing its own breakpoint. */
+.hnb__resources {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+  margin-bottom: 14px;
+  scrollbar-width: thin;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.hnb__resource {
+  flex: 0 0 auto;
+  border: 1px solid var(--hnb-line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--hnb-muted);
+  white-space: nowrap;
+}
+.hnb__resource.is-selected {
+  background: var(--hnb-ink);
+  color: #fff;
+  border-color: var(--hnb-ink);
+}
+
 .hnb__slots {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

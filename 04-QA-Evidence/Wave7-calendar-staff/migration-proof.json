@@ -1,0 +1,16 @@
+{
+  "scenario": "raw pre-Wave-7 (v1..v4) database with a live confirmed booking, migrated through current db.js",
+  "schemaVersionBefore": 4,
+  "schemaVersionAfter": 5,
+  "implicitResourceCreated": 1,
+  "implicitResourceName": "Personal implicit",
+  "preExistingBookingIntact": true,
+  "preExistingBookingBackfilledResourceId": true,
+  "preExistingOverrideIntact": true,
+  "preExistingWeeklyRowsBackfilled": 5,
+  "preExistingServiceExplicitlyAssignedToImplicitResource": true,
+  "oldStyleSlotGenerationStillWorks": true,
+  "oldStyleFreshBookingStillConfirms": true,
+  "idempotentOnSecondOpen": true,
+  "generatedAt": "2026-09-06T13:37:13.590Z"
+}

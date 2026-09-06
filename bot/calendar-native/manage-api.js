@@ -6,6 +6,19 @@
 
 const engine = require('./engine');
 
+/**
+ * Wave 7 (audit #25) — resolve the resource to show the visitor, applying
+ * the same "only when meaningful" guard as email/index.js loadResourceName:
+ * a single-resource tenant (every pre-Wave-7 tenant) never surfaces its one
+ * implicit resource's name, so the manage page's "Cu cine" row stays absent
+ * exactly like it always was before this wave.
+ */
+function resolveVisibleResource(db, row) {
+    if (!row || !row.resource_id) return null;
+    if (!engine.hasMultipleResources(db, row.customer_id, row.site_id)) return null;
+    return engine.getResource(db, row.customer_id, row.site_id, row.resource_id);
+}
+
 const STATUS_LABEL_RO = Object.freeze({
     requested: 'în așteptare',
     confirmed: 'confirmată',
@@ -17,8 +30,12 @@ const STATUS_LABEL_RO = Object.freeze({
  * Public-safe booking summary for the token holder only.
  * @param {object} row
  * @param {object|null} service
+ * @param {object|null} [resource] Wave 7 (audit #25) — who the appointment
+ *   is with. Omitted/null for a still-unresolved "any available" request
+ *   that has no resource yet — the manage page shows nothing rather than a
+ *   misleading name (see manage/manage.js renderBooking).
  */
-function publicBookingView(row, service) {
+function publicBookingView(row, service, resource) {
     if (!row) return null;
     const status = String(row.status || '');
     return {
@@ -28,6 +45,7 @@ function publicBookingView(row, service) {
         startUtc: row.start_utc,
         endUtc: row.end_utc,
         serviceName: service ? service.name : null,
+        resourceName: resource ? resource.name : null,
         visitorName: row.visitor_name,
         // email shown so visitor recognizes their booking; not other visitors
         visitorEmail: row.visitor_email,
@@ -49,8 +67,9 @@ function getBookingByToken(db, rawToken) {
         return { error: 'Nu am găsit programarea pentru acest link.', code: 'NOT_FOUND', status: 404 };
     }
     const service = engine.getService(db, row.customer_id, row.site_id, row.service_id);
+    const resource = resolveVisibleResource(db, row);
     const settings = engine.getSettings(db, row.customer_id, row.site_id);
-    const booking = publicBookingView(row, service);
+    const booking = publicBookingView(row, service, resource);
     if (settings) booking.timezone = settings.timezone;
     booking.minCancelHours = settings ? settings.min_cancel_hours : 24;
     return { ok: true, booking };
@@ -68,8 +87,9 @@ function cancelByToken(db, rawToken, { nowMs = Date.now() } = {}) {
         const result = engine.cancelBookingWithToken(db, token, { nowMs });
         const row = result.booking;
         const service = engine.getService(db, row.customer_id, row.site_id, row.service_id);
+        const resource = resolveVisibleResource(db, row);
         const settings = engine.getSettings(db, row.customer_id, row.site_id);
-        const booking = publicBookingView(row, service);
+        const booking = publicBookingView(row, service, resource);
         if (settings) booking.timezone = settings.timezone;
         return {
             ok: true,
@@ -118,6 +138,12 @@ function getSlotsForToken(db, rawToken, { fromDateLocal, toDateLocal, nowMs = Da
     const { listPublicSlots } = require('./public-api');
     const out = listPublicSlots(db, row.customer_id, row.site_id, {
         serviceId: row.service_id,
+        // Keep reschedule scoped to the SAME resource this booking already
+        // has (Wave 7, audit #25) — visitor self-service reschedule moves
+        // the time, never silently swaps who the appointment is with. A
+        // still-unresolved booking (resource_id NULL) falls back to "any
+        // available" here, same as its original creation did.
+        resourceId: row.resource_id || undefined,
         fromDateLocal,
         toDateLocal,
         nowMs,
@@ -151,8 +177,9 @@ function rescheduleByToken(db, rawToken, { startUtc, nowMs = Date.now() } = {}) 
         const result = engine.rescheduleBookingWithToken(db, token, { startUtc: start, nowMs });
         const row = result.booking;
         const service = engine.getService(db, row.customer_id, row.site_id, row.service_id);
+        const resource = resolveVisibleResource(db, row);
         const settings = engine.getSettings(db, row.customer_id, row.site_id);
-        const booking = publicBookingView(row, service);
+        const booking = publicBookingView(row, service, resource);
         if (settings) booking.timezone = settings.timezone;
         booking.minCancelHours = settings ? settings.min_cancel_hours : 24;
         return { ok: true, booking };

@@ -173,7 +173,12 @@
       slotsByDate: {},
       selectedStart: null,
       selectedEnd: null,
-      busy: false
+      busy: false,
+      // Wave 7 (audit #25) — "pick a person or accept any available".
+      // resources stays a single-item (or empty) list for a legacy tenant,
+      // in which case the picker row never renders — zero visual change.
+      resources: [],
+      resourceId: null // null = "Oricine disponibil"
     };
 
     function setStep(idx) {
@@ -234,6 +239,10 @@
       box.appendChild(el('h2', '', ok ? 'Programare confirmată' : 'Cerere înregistrată'));
       var when = formatRangeRo(payload.startUtc, payload.endUtc, state.timezone);
       var line = when + (payload.serviceName ? ' · ' + payload.serviceName : '');
+      // Wave 7 (audit #25): only surfaced once meaningful (2+ resources) —
+      // public-api.createPublicBooking already applies that guard, so
+      // payload.resourceName is simply absent for a single-resource tenant.
+      if (payload.resourceName) line += ' · cu ' + payload.resourceName;
       box.appendChild(el('p', '', line));
       if (ok) {
         box.appendChild(el('p', 'hnb__result-hint',
@@ -313,6 +322,43 @@
       return row;
     }
 
+    /**
+     * Wave 7 (audit #25) — resource picker chips: "Oricine disponibil" plus
+     * one chip per named resource eligible for the selected service. Hidden
+     * entirely when there's nothing to choose between (0 or 1 resource),
+     * which is exactly every pre-Wave-7 tenant.
+     */
+    function renderResourcePicker() {
+      if (state.resources.length < 2) return null;
+      var row = el('div', 'hnb__resources');
+      row.setAttribute('role', 'tablist');
+      row.setAttribute('aria-label', 'Cu cine');
+      var anyBtn = el('button', 'hnb__resource' + (state.resourceId ? '' : ' is-selected'), 'Oricine disponibil');
+      anyBtn.type = 'button';
+      anyBtn.addEventListener('click', function () {
+        if (!state.resourceId) return;
+        state.resourceId = null;
+        state.selectedStart = null;
+        state.selectedEnd = null;
+        loadSlots();
+      });
+      row.appendChild(anyBtn);
+      state.resources.forEach(function (r) {
+        var btn = el('button', 'hnb__resource' + (state.resourceId === r.id ? ' is-selected' : ''), r.name);
+        btn.type = 'button';
+        btn.setAttribute('data-resource-id', r.id);
+        btn.addEventListener('click', function () {
+          if (state.resourceId === r.id) return;
+          state.resourceId = r.id;
+          state.selectedStart = null;
+          state.selectedEnd = null;
+          loadSlots();
+        });
+        row.appendChild(btn);
+      });
+      return row;
+    }
+
     function renderSlotPane() {
       slotPane.innerHTML = '';
       if (!state.serviceId) {
@@ -328,6 +374,12 @@
       };
       var todayYmd = get('year') + '-' + get('month') + '-' + get('day');
       if (!state.dateLocal) state.dateLocal = todayYmd;
+
+      var resourceRow = renderResourcePicker();
+      if (resourceRow) {
+        slotPane.appendChild(el('p', 'hnb__label', 'Cu cine'));
+        slotPane.appendChild(resourceRow);
+      }
 
       slotPane.appendChild(el('p', 'hnb__label', 'Ziua'));
       slotPane.appendChild(dayButtons(todayYmd));
@@ -403,10 +455,20 @@
         customerId: cfg.customerId,
         siteId: cfg.siteId,
         serviceId: state.serviceId,
+        resourceId: state.resourceId || undefined,
         from: from,
         to: to
       });
-      fetchJson(url).then(function (pack) {
+      // Wave 7 (audit #25): resources eligible for THIS service — refetched
+      // whenever the service changes since eligibility is per-service.
+      var resUrl = apiUrl(cfg.apiBase, '/api/calendar-native/resources', {
+        customerId: cfg.customerId,
+        siteId: cfg.siteId,
+        serviceId: state.serviceId
+      });
+      Promise.all([fetchJson(url), fetchJson(resUrl)]).then(function (packs) {
+        var pack = packs[0];
+        var resPack = packs[1];
         if (!pack.res.ok || !pack.body || !pack.body.ok) {
           showError(
             'Programările online sunt temporar indisponibile',
@@ -415,6 +477,13 @@
           return;
         }
         state.timezone = pack.body.timezone || state.timezone;
+        state.resources = (resPack.res.ok && resPack.body && resPack.body.ok) ? (resPack.body.resources || []) : [];
+        // The service just changed and no longer offers the previously
+        // selected resource (or the picker is being hidden) — fall back to
+        // "any available" rather than silently keeping a stale filter.
+        if (state.resourceId && !state.resources.some(function (r) { return r.id === state.resourceId; })) {
+          state.resourceId = null;
+        }
         state.slotsByDate = {};
         (pack.body.slots || []).forEach(function (s) {
           var d = s.dateLocal || String(s.startUtc || '').slice(0, 10);
@@ -460,6 +529,7 @@
           customerId: cfg.customerId,
           siteId: cfg.siteId,
           serviceId: state.serviceId,
+          resourceId: state.resourceId || undefined,
           startUtc: state.selectedStart,
           visitorName: name,
           visitorEmail: email,
