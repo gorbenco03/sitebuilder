@@ -55,8 +55,17 @@ const siteExport = require(path.join(ROOT, 'bot', 'site-export.js'));
 
 const TEMPLATES_DIR = path.join(ROOT, 'templates');
 
+// The last commit before the sections wave touched any template. This used to
+// read `HEAD:`, which is correct exactly once — while the work is still
+// uncommitted in the author's worktree. The moment it was committed, HEAD
+// became the NEW template and the built-in RED check started failing on every
+// one of the four templates it was meant to protect: the oracle could only
+// ever have been green in the tree it was written in. Pinned to a SHA instead,
+// the way s56 pins its own parent, so the RED half keeps meaning what it says.
+const PRE_SECTIONS_SHA = '5764e8f520ed5c438d38c4059b52a6a63a538262';
+
 function oldTemplateHtml(templateId) {
-  return execFileSync('git', ['-C', ROOT, 'show', `HEAD:templates/${templateId}/template.html`], {
+  return execFileSync('git', ['-C', ROOT, 'show', `${PRE_SECTIONS_SHA}:templates/${templateId}/template.html`], {
     encoding: 'utf8',
     maxBuffer: 8 * 1024 * 1024,
   });
