@@ -151,3 +151,84 @@ Rămân netratate din audit (ordine sugerată din §9): #14b security headers, #
 **Neatins deliberat:** cele 3 branch-uri deja în zbor pe board (`xss-01-portfolio-icon`, `audit-06-desserdirina-hero-bg`, `audit-07-logout-invalidate`) — nu s-a lucrat pe fișierele lor, ca să nu apară conflicte de integrare. **Telegram (`bot/bot.js`, `bot/flow.js`, `bot/ai.js`, `bot/template-steps.js`) e înghețat prin decizie explicită a owner-ului din 2026-09-06** — canalul urmează să iasă din produs, deci constatările de audit pe Telegram rămân amânate, nu rezolvate.
 
 **Rămân netratate din audit, în ordinea recomandată:** calendarul nativ care nu pornește pe imaginea Docker de producție (Node 20 fără `node:sqlite`); primul load al unui șablon la 8-12s față de ținta de 3s; fonturile Google încărcate fără consimțământ pe desserdirina (expunere GDPR reală în UE); emailul scris în clar în loguri la fiecare autentificare; CORS deschis fără rate-limit pe `/api/calendar-native/*`; `invoice.payment_failed` netratat; etichetele greșite din `/admin` pentru `past_due`/`unpaid` (descrise exact în raportul agentului comercial, în `bot/server.js:423-486`); registry-ul pe un singur fișier JSON; 358MB de capturi QA comise în git.
+
+## Ultimul eveniment integrat (2026-09-06, valul 2 de remediere audit + reconciliere)
+
+**5 branch-uri de val 2 + plasa de siguranță pentru stocare, integrate local pe `main`** (fără push).
+Aceeași metodă ca la valul 1: agenți Sonnet în worktree-uri separate, proprietate exclusivă pe
+fișiere, oracle propriu per fix verificat roșu-înainte / verde-după. De data asta li s-a interzis
+explicit `git stash`, după coliziunile din valul 1.
+
+**Ce s-a închis:**
+- **CAL-001 (critical):** calendarul nativ nu putea porni pe imaginea de producție. `node:sqlite`
+  lipsește pe Node 20 și pe 22.11, e disponibil nativ pe 22.20. Dockerfile pinuit pe
+  `node:22.20.0-alpine` cu `NODE_OPTIONS=--experimental-sqlite` ca plasă. Dovedit rulând serverul
+  real pe binarul respectiv, nu prin presupunere.
+- **DI-01 / DI-03:** contextul de build scăzut cu 423 de fișiere și 138MB (dovezi QA, guvernanță,
+  deliverables, `.worktrees`); `healthcheckPath` în railway.json; workflow GitHub Actions care
+  rulează suita, fără `|| true` global.
+- **CAL-002 / CAL-003:** vizitatorul poate reprograma prin linkul din email, cu aceleași garanții
+  de slot ca la rezervare (refuz înainte de orice scriere dacă slotul e prins, rezervarea existentă
+  dovedit neatinsă); retenție PII la 24 de luni, idempotentă, plus ștergere anticipată la cererea
+  proprietarului. Cele două rute au fost montate ulterior în `bot/server.js` de integrator.
+- **SEC-05 / BE-11 / BE-07 / BE-09 / BE-10 / PC-03(admin) / PERF-05:** CORS restrâns pe endpoint-urile
+  publice de calendar plus rate-limit real; email mascat în loguri (prefix + domeniu + hash pentru
+  corelare); coduri HTTP corecte pe „nu e situl tău”; funcție duplicată eliminată; etichete oneste
+  în `/admin`; ETag + revalidare pe `/api/templates`.
+- **DSD-02 (critical):** cauza rădăcină era un nume de cheie divergent — `templates/desserdirina/schema.json`
+  folosește `itemSchema`, celelalte patru `itemShape`. `onListAdd` citea doar `itemShape`, deci
+  elementul nou se crea ca string gol, nu primea `data-hb-edit`, iar butonul „×" rămânea legat de
+  categoria 0. Clientul credea că șterge cardul gol și ștergea categoria reală cu pozele ei.
+  **De curățat separat:** normalizarea cheii în schema desserdirina, ținută atunci de alt branch.
+- **Banner cookie în canvas + PORT-05:** consimțământul din previzualizare se ține acum între
+  re-renderuri prin postMessage (iframe-ul e sandbox fără `allow-same-origin`, deci `localStorage`
+  eșua tăcut la fiecare `srcdoc` nou); randările se serializează, eliminând cursa dintre schimbarea
+  de poză și cea de culoare (`overlapCount` 2 → 0).
+- **Documentație:** comanda de test corectată în 3 locuri + script `npm test`; VISION.md adăugat ca
+  sursă de adevăr în README și în docs-urile operaționale; PRODUCT.md descrie calendarul nativ;
+  OWNER-CALENDAR-CAL-DIY.md marcat SUPERSEDAT; pasul lipsă `npm run build:app` adăugat în onboarding
+  — fără el serverul răspunde 200 cu shell-ul SPA și catalogul eșuează tăcut, blocajul real pe care
+  îl lovea oricine urma documentația.
+- **Finding #2 din audit (infrastructură de test):** șase oracle-uri hardcodau calea Brave a acestei
+  mașini. Pinuite pe Chromium-ul din `node_modules`, Brave devine opt-in prin `HIDOOK_BROWSER_PATH`.
+  Două teste purtate ca „fragile cunoscute” trec acum curat.
+
+**Coliziuni de comportament prinse doar la integrare** (fiecare agent avea dreptate separat):
+- Runda 2 a dat `/api/templates` un flux ETag care scria răspunsul singur și ocolea compresia
+  adăugată de runda 1 — cel mai mare JSON al produsului rămânea singurul necomprimat. Reunificat.
+- Cele două runde au citit PC-03 diferit: una „zero aplicare” (a făcut `unpaid` să dezaboneze),
+  cealaltă „zero vizibilitate” (a reparat etichetele `/admin`, cu test care cerea ca `unpaid` să
+  rămână live). **Comportament stabilit:** `past_due` ține site-ul live cât Stripe reîncearcă;
+  `unpaid` și `incomplete_expired` sunt terminale și dezabonează. Scenariul rundei 2 folosește acum
+  `past_due`; aplicarea pentru `unpaid` rămâne acoperită de `audit-payments-publish.test.js`.
+
+**Verificat independent post-merge pe `main` integrat** (worktree curat): `node --test bot/test/*.test.js`
+→ **168 teste, 167 pass, 1 fail**; `node bot/test/fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`.
+Singurul eșec e `flow3-legal-export.test.js`, oracle **intenționat** specific Brave (verifică
+`data:text/html target=_blank`): 2 din 4 verificări Brave pică așteptând bannerul de consimțământ,
+pe care Brave 150 îl randează intermitent la 0x0 pe al doilea șablon deschis într-o sesiune.
+Reprodus identic la `2225ca7`, deci preexistent. Afectează previzualizarea din editor, nu
+site-urile publicate. Evoluție: 140/142 la audit → 152/154 după valul 1 → **167/168** acum.
+
+**Corecție la raportul de audit:** constatarea **PS-01 (critical)** — „editorul nu are model de
+document, inline-edit prin regex" — a fost **INFIRMATĂ**. `injectDataHb()` e cod mort, neapelat
+nicăieri; calea vie e `renderPreview(..., {editMode:true})`, care emite `data-hb-edit` la randare,
+din token, cu calea exactă. Probă empirică: 99 de noduri editabile pe professionals, inclusiv valori
+sub 3 caractere și pur numerice (pe care regex-ul le sărea explicit) și toate aparițiile textelor
+duplicate. Agentul confirmase încrucișat cu VISION §4.6, care era stale — două surse învechite care
+se confirmă reciproc produc încredere falsă. Detalii în `04-QA-Evidence/Audit-2026-09-06-2225ca7/CORECTII.md`.
+Consecință: nu se reconstruiește editorul; se construiesc funcționalitățile care chiar lipsesc
+(undo/redo, secțiuni adăugabile/ștergibile/reordonabile). Decizie owner 2026-09-06.
+
+**Defecte latente descoperite de plasa de siguranță**, absente din audit, reproduse independent:
+- `createSite` cu slug explicit **nu verifică unicitatea** — două site-uri pot lua aceeași adresă
+  publică. Azi apărat doar de apelanții din `bot/server.js`; `bot/flow.js` nu verifică.
+- `addMonthsIso` pe o dată neparsabilă **cade tăcut pe „acum"** și acordă un an de drept comercial,
+  în loc să refuze.
+- `claimStripeEvent` cu id gol sau absent **întoarce mereu `true`** și nu înregistrează nimic, deci
+  idempotența webhook-urilor se dezactivează tăcut pentru evenimente malformate.
+Plus: `updateSite` acceptă și persistă orice cheie străină; `kind` necunoscut la comandă devine tăcut
+`publish`. Toate fixate ca atare în `bot/test/registry-characterization.test.js` (158 aserțiuni,
+9/10 mutanți prinși) și de reparat în etapa 2 a stocării, ca schimbări explicite de comportament.
+
+**Telegram rămâne înghețat** prin decizia owner-ului din 2026-09-06 — niciun fișier atins în acest val.
