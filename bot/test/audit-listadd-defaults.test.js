@@ -91,12 +91,12 @@ test('new list items get real Romanian text and stay editable', async () => {
     await new Promise(r => server.close(r));
   }
 
-  // Secondary, after the behavioural proof: the banned factory literals the
-  // product full-pass oracle rejects must not be seeded by the editor either.
+  // Secondary, after the behavioural proof: the Romanian half of the bilingual
+  // restaurant menu must be seeded in Romanian. The English half keeps English
+  // defaults on purpose, which bot/test/s63-owner-builder-gaps.test.js locks in.
   const appSrc = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
   const seedStart = appSrc.indexOf('function onListAdd');
   const seedRegion = appSrc.slice(seedStart, seedStart + 2600);
-  for (const re of [/'New section'/, /'New item'/]) {
-    assert.ok(!re.test(seedRegion), 'onListAdd must not seed the banned literal ' + re);
-  }
+  assert.match(seedRegion, /'Categorie nouă'/, 'menu.ro must seed a Romanian section name');
+  assert.match(seedRegion, /'Preparat nou'/, 'menu.ro must seed a Romanian dish name');
 });

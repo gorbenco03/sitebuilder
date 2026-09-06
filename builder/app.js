@@ -1249,11 +1249,13 @@ function onListAdd(listPath) {
     }
     if (!Array.isArray(draft.config.menu.en)) draft.config.menu.en = [];
     if (!Array.isArray(draft.config.menu.ro)) draft.config.menu.ro = [];
+    // menu.en is the English half of a bilingual menu, so English defaults are
+    // correct there; only the Romanian half gets Romanian seeds.
     newItem = /^menu\.en$/.test(listPath)
-      ? { category: 'New category', items: ['New dish'] }
+      ? { category: 'New section', items: ['New item'] }
       : { category: 'Categorie nouă', items: ['Preparat nou'] };
   } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
-    newItem = /^menu\.en\./.test(listPath) ? 'New dish' : 'Preparat nou';
+    newItem = /^menu\.en\./.test(listPath) ? 'New item' : 'Preparat nou';
   } else if (typeof itemShape === 'string') {
     newItem = itemShape === 'photos' ? [] : defaultListItemLabel(listPath);
   } else if (typeof itemShape === 'object' && itemShape !== null) {
