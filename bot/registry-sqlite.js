@@ -370,6 +370,54 @@ function listAllOrders() {
 }
 
 // ---------------------------------------------------------------------------
+// Sessions (Wave 8 / AUDIT-07 re-audit: server-side logout revocation)
+//
+// See bot/registry-schema.js#SCHEMA_SQL_V2 for the design rationale. In
+// short: an "allow list" of issued sessions, keyed by the random `sid`
+// bot/auth.js#signSession now embeds in the cookie payload. Logout marks one
+// row revoked; "log out everywhere" marks every row for a user_id revoked.
+// ---------------------------------------------------------------------------
+
+function createSession(sid, userId, exp) {
+    if (!sid || typeof sid !== 'string') throw new Error('sid is required');
+    if (userId == null) throw new Error('userId is required'); // node:sqlite cannot bind undefined
+    const createdAt = new Date().toISOString();
+    db.prepare('INSERT INTO sessions (sid, user_id, created_at, exp, revoked_at) VALUES (?, ?, ?, ?, NULL)')
+        .run(sid, userId, createdAt, exp);
+    // Bound growth: opportunistically sweep rows past their own natural expiry
+    // on every new sign-in, so the table never holds more than the currently
+    // "live" (unexpired) sessions plus whatever was created since the last sweep.
+    db.prepare('DELETE FROM sessions WHERE exp < ?').run(Math.floor(Date.now() / 1000));
+}
+
+function isSessionValid(sid) {
+    if (!sid || typeof sid !== 'string') return false;
+    const row = db.prepare('SELECT exp, revoked_at FROM sessions WHERE sid = ?').get(sid);
+    if (!row) return false;
+    if (row.revoked_at) return false;
+    if (Number(row.exp) < Math.floor(Date.now() / 1000)) return false;
+    return true;
+}
+
+/** Revoke one session by sid. Returns true iff a live row was revoked. */
+function revokeSession(sid) {
+    if (!sid || typeof sid !== 'string') return false;
+    const revokedAt = new Date().toISOString();
+    const result = db.prepare('UPDATE sessions SET revoked_at = ? WHERE sid = ? AND revoked_at IS NULL')
+        .run(revokedAt, sid);
+    return result.changes > 0;
+}
+
+/** Revoke every live session for a user ("log out everywhere"). Returns the count revoked. */
+function revokeAllSessionsForUser(userId) {
+    if (userId == null) return 0; // node:sqlite cannot bind undefined
+    const revokedAt = new Date().toISOString();
+    const result = db.prepare('UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL')
+        .run(revokedAt, userId);
+    return result.changes;
+}
+
+// ---------------------------------------------------------------------------
 // Stripe event idempotency
 // ---------------------------------------------------------------------------
 
@@ -425,4 +473,8 @@ module.exports = {
     listAllOrders,
     claimStripeEvent,
     addMonthsIso,
+    createSession,
+    isSessionValid,
+    revokeSession,
+    revokeAllSessionsForUser,
 };

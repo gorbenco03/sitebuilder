@@ -1,0 +1,15 @@
+(node:48163) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:12:52.306Z","event":"server.started","port":64720}
+🌐 HTTP server on :64720 (health + webhooks + API)
+PASS both device sessions authenticate before logout-everywhere
+PASS unauthenticated logout-everywhere is rejected (401)
+PASS POST /api/auth/logout-everywhere from device A succeeds
+PASS device A (the caller) is now rejected too
+PASS device B (never called logout) is ALSO rejected
+PASS an unrelated user's session is untouched
+PASS a brand-new sign-in for the affected user works again after logout-everywhere
+PASS calling logout-everywhere again only revokes sessions issued since the last call
+
+wave8-logout-everywhere.test.js: toate testele au trecut
+exit=0

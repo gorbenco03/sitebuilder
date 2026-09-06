@@ -1,0 +1,16 @@
+(node:48093) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:12:46.376Z","event":"server.started","port":64611}
+🌐 HTTP server on :64611 (health + webhooks + API)
+PASS captured cookie authenticates before logout
+PASS POST /api/auth/logout returns 200 and clears the cookie
+PASS replay OLD cookie after logout → GET /api/me 401
+PASS auth.verifySession rejects the revoked cookie directly
+PASS adjacent surface: calendar-native owner dashboard rejects the same revoked cookie
+PASS a brand-new session for the same user still authenticates (logout is scoped)
+PASS logout with no cookie at all still returns 200 (idempotent, not an error)
+PASS logout with garbage cookie value still returns 200 and clears it
+PASS replaying a garbage/tampered cookie was already rejected before logout too (sanity)
+
+wave8-logout-invalidate.test.js: toate testele au trecut
+exit=0

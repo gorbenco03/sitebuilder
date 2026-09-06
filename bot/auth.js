@@ -3,13 +3,29 @@
  * bot/auth.js — web sessions + Telegram Mini Apps verification.
  *
  * Exports:
- *   signSession, verifySession, buildSessionCookie,
- *   getSessionUserId, verifyTelegramInitData
+ *   signSession, verifySession, buildSessionCookie, buildClearSessionCookie,
+ *   getSessionCookieValue, getSessionUserId, revokeSession,
+ *   revokeAllSessionsForUser, verifyTelegramInitData
+ *
+ * Session revocation (Wave 8 / AUDIT-07 re-audit): a signed hb_session
+ * cookie is a stateless 30-day HMAC token — there is nothing to invalidate
+ * about the token itself, so signSession() now also records a row in the
+ * registry's `sessions` table (bot/registry-schema.js#SCHEMA_SQL_V2) keyed
+ * by a random `sid` carried in the payload, and verifySession() additionally
+ * requires that row to be present, unexpired and unrevoked. See that
+ * schema's doc comment for the full design rationale and trade-offs.
  *
  * Zero npm dependencies. Node 18+ CommonJS.
  */
 
 const crypto = require('crypto');
+
+/**
+ * Lazy require — mirrors bot/server.js's getAuth()/getRegistry() pattern so
+ * merely requiring bot/auth.js (e.g. from a test that only needs
+ * verifyTelegramInitData) doesn't force-open the registry's SQLite file.
+ */
+function _registry() { return require('./registry.js'); }
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -81,6 +97,7 @@ function _hasSecret() {
  * Sign a session for `userId`.
  *
  * Token format:  v1.<b64url(JSON payload)>.<b64url(HMAC-SHA256)>
+ * Payload:       { uid, exp, sid } — sid is the server-side revocation key.
  *
  * @param {string} userId
  * @param {{ days?: number }} [opts]
@@ -90,8 +107,19 @@ function signSession(userId, { days = 30 } = {}) {
     const secret = _resolveSecret();
     // Human-readable message only — never name env vars (browser/JSON must not see them).
     if (!secret) throw new Error("Sessions can't be signed right now. Please try again shortly.");
-    const exp     = Math.floor(Date.now() / 1000) + days * 86400;
-    const payload = b64url(Buffer.from(JSON.stringify({ uid: userId, exp })));
+    const exp = Math.floor(Date.now() / 1000) + days * 86400;
+    const sid = crypto.randomBytes(16).toString('hex');
+
+    // Record the session so it can be revoked later. If the registry write
+    // fails, fail closed — an unrecorded session would be a cookie nothing
+    // can ever revoke, which is exactly the bug this exists to fix.
+    try {
+        _registry().createSession(sid, userId, exp);
+    } catch (e) {
+        throw new Error("Sessions can't be signed right now. Please try again shortly.");
+    }
+
+    const payload = b64url(Buffer.from(JSON.stringify({ uid: userId, exp, sid })));
     const sig     = b64url(
         crypto.createHmac('sha256', secret)
             .update(`v1.${payload}`)
@@ -101,12 +129,14 @@ function signSession(userId, { days = 30 } = {}) {
 }
 
 /**
- * Verify a session cookie value.
+ * HMAC-verify + decode a cookie value's payload. Does NOT check expiry or
+ * revocation — shared by verifySession() (which checks both) and
+ * revokeSession() (which needs the sid regardless of expiry).
  *
  * @param {string} cookieValue
- * @returns {string|null} userId or null
+ * @returns {{ uid: string, exp: number, sid?: string }|null}
  */
-function verifySession(cookieValue) {
+function _decodeSessionPayload(cookieValue) {
     const secret = _resolveSecret();
     if (!secret) return null;
     if (!cookieValue || typeof cookieValue !== 'string') return null;
@@ -134,7 +164,35 @@ function verifySession(cookieValue) {
     }
 
     if (!payload || typeof payload.uid !== 'string') return null;
+    return payload;
+}
+
+/**
+ * Verify a session cookie value: valid signature, unexpired, and — the
+ * server-side check a stateless HMAC token cannot do on its own — not
+ * revoked (logout) or superseded by "log out everywhere".
+ *
+ * A cookie with no `sid` claim (signed before this migration shipped) is
+ * treated as invalid: there is no session row to check revocation against,
+ * so trusting it would silently reintroduce the un-revocable-cookie bug this
+ * fixes. This forces one re-login per already-open session at deploy time.
+ *
+ * @param {string} cookieValue
+ * @returns {string|null} userId or null
+ */
+function verifySession(cookieValue) {
+    const payload = _decodeSessionPayload(cookieValue);
+    if (!payload) return null;
     if (!payload.exp || Math.floor(Date.now() / 1000) > payload.exp) return null;
+    if (typeof payload.sid !== 'string' || !payload.sid) return null;
+
+    let active;
+    try {
+        active = _registry().isSessionValid(payload.sid);
+    } catch {
+        active = false; // fail closed: can't confirm it's live → treat as revoked.
+    }
+    if (!active) return null;
 
     return payload.uid;
 }
@@ -155,12 +213,31 @@ function buildSessionCookie(value) {
 }
 
 /**
- * Extract the userId from the Cookie header of an incoming request.
+ * Build a Set-Cookie header value that clears hb_session in the browser.
+ * Clearing the cookie alone is necessary but not sufficient for logout — a
+ * copy of the old cookie value captured elsewhere must also stop working;
+ * that half is revokeSession() below, keyed by the sid inside the cookie.
+ *
+ * @returns {string}
+ */
+function buildClearSessionCookie() {
+    const base = 'hb_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0';
+    const publicUrl = (process.env.PUBLIC_URL || '').trim();
+    const secure =
+        process.env.NODE_ENV === 'production' ||
+        publicUrl.startsWith('https');
+    return secure ? `${base}; Secure` : base;
+}
+
+/**
+ * Extract the raw hb_session cookie value from a request, unverified.
+ * Used by the logout route to find the sid to revoke even when the cookie
+ * itself is otherwise about to be treated as invalid.
  *
  * @param {import('http').IncomingMessage} req
  * @returns {string|null}
  */
-function getSessionUserId(req) {
+function getSessionCookieValue(req) {
     const cookieHeader = (req.headers && req.headers['cookie']) || '';
     if (!cookieHeader) return null;
     // Parse simple Cookie: key=val; key=val
@@ -169,9 +246,56 @@ function getSessionUserId(req) {
         if (eq < 0) continue;
         const k = part.slice(0, eq).trim();
         const v = part.slice(eq + 1).trim();
-        if (k === 'hb_session') return verifySession(v);
+        if (k === 'hb_session') return v || null;
     }
     return null;
+}
+
+/**
+ * Extract the userId from the Cookie header of an incoming request.
+ *
+ * @param {import('http').IncomingMessage} req
+ * @returns {string|null}
+ */
+function getSessionUserId(req) {
+    const v = getSessionCookieValue(req);
+    if (!v) return null;
+    return verifySession(v);
+}
+
+/**
+ * Logout: revoke the one session this cookie names. Safe to call with an
+ * already-invalid, already-revoked, or garbage cookie value (returns false).
+ *
+ * @param {string} cookieValue
+ * @returns {boolean} true iff a live session was revoked
+ */
+function revokeSession(cookieValue) {
+    const payload = _decodeSessionPayload(cookieValue);
+    if (!payload || typeof payload.sid !== 'string' || !payload.sid) return false;
+    try {
+        return !!_registry().revokeSession(payload.sid);
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * "Log out everywhere": revoke every live session belonging to `userId`.
+ * Intended for the emailed-magic-link recovery flow — if a user suspects
+ * their inbox was read, this ends every session, not just the one that
+ * asked for it.
+ *
+ * @param {string} userId
+ * @returns {number} count of sessions revoked
+ */
+function revokeAllSessionsForUser(userId) {
+    if (!userId) return 0;
+    try {
+        return _registry().revokeAllSessionsForUser(userId);
+    } catch {
+        return 0;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -261,6 +385,10 @@ module.exports = {
     signSession,
     verifySession,
     buildSessionCookie,
+    buildClearSessionCookie,
+    getSessionCookieValue,
     getSessionUserId,
+    revokeSession,
+    revokeAllSessionsForUser,
     verifyTelegramInitData,
 };

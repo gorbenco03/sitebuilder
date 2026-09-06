@@ -32,7 +32,7 @@
  * Object.values() gave the JSON backend for free.
  */
 
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const SCHEMA_SQL_V1 = `
 CREATE TABLE IF NOT EXISTS users (
@@ -108,14 +108,62 @@ CREATE TABLE IF NOT EXISTS registry_meta (
 );
 `;
 
-// Only one schema generation exists so far; SCHEMA_SQL is the union applied
-// to a brand-new database. Kept as a separate name (matching the
-// bot/calendar-native/db.js migration pattern) so a v2 can be added later
-// without changing the shape of migrate().
-const SCHEMA_SQL = SCHEMA_SQL_V1;
+/**
+ * Wave 8 (AUDIT-07 re-audit): session revocation, so logout can make an
+ * already-issued cookie stop working instead of only clearing it client-side.
+ *
+ * Design chosen: a server-side session table (an "allow list", not a deny
+ * list). signSession() now mints a random `sid` and INSERTs a row here;
+ * verifySession() additionally requires that row to exist, be unexpired, and
+ * be unrevoked. Logout UPDATEs revoked_at for one sid; "log out everywhere"
+ * UPDATEs revoked_at for every row belonging to a user_id in one statement.
+ *
+ * Why this over the alternatives named in the brief:
+ *   - A per-user token-generation counter is cheaper (one integer column,
+ *     O(1) storage) but conflates the two features this product needs to
+ *     keep distinct: "sign out this browser" vs. "sign out everywhere" — a
+ *     counter bump is inherently global, so an ordinary Deconectare click
+ *     would silently end every other device's session too.
+ *   - A deny list of only-revoked tokens is smaller in the common case (most
+ *     sessions expire naturally and are never revoked) but still needs a
+ *     sweep to bound growth, and "log out everywhere" over a deny list means
+ *     denying tokens the server was never shown — undoable only by also
+ *     keeping a per-user list of issued sids, i.e. this same table.
+ *   - This table costs one row per issued session (bounded: idx_sessions_exp
+ *     lets expired rows be swept opportunistically — see
+ *     registry-sqlite.js#createSession/registry-json.js's session helpers)
+ *     and gives both features from one mechanism with one indexed lookup
+ *     per request.
+ *
+ * What it does NOT protect against: a cookie replayed within its own
+ * still-valid, not-yet-revoked window (there is nothing to detect "two
+ * different machines are presenting the same sid concurrently" without
+ * device fingerprints this product doesn't collect); and it cannot revoke a
+ * session signed before this migration shipped, because such a cookie has no
+ * `sid` claim to look up — auth.js treats a `sid`-less cookie as invalid
+ * (forces one re-login per active session, once, at deploy time) rather than
+ * silently trusting an unrevocable token forever.
+ */
+const SCHEMA_SQL_V2 = `
+CREATE TABLE IF NOT EXISTS sessions (
+    sid TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    exp INTEGER NOT NULL,
+    revoked_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(exp);
+`;
+
+// SCHEMA_SQL is the union applied to a brand-new database. Kept as a
+// separate name (matching the bot/calendar-native/db.js migration pattern)
+// so a v3 can be added later without changing the shape of migrate().
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2;
 
 module.exports = {
     SCHEMA_VERSION,
     SCHEMA_SQL,
     SCHEMA_SQL_V1,
+    SCHEMA_SQL_V2,
 };

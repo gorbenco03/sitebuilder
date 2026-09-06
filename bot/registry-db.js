@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_VERSION } = require('./registry-schema');
+const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_SQL_V2, SCHEMA_VERSION } = require('./registry-schema');
 
 function loadSqlite() {
     try {
@@ -68,6 +68,26 @@ function migrateSchema(db) {
             ).run(1, ts);
             db.exec('COMMIT;');
             current = 1;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    // v2 (Wave 8 / AUDIT-07 re-audit): adds the `sessions` table so logout
+    // can revoke an already-issued cookie server-side. Purely additive
+    // (CREATE TABLE/INDEX IF NOT EXISTS) — every v1 table and row is left
+    // untouched. See bot/registry-schema.js#SCHEMA_SQL_V2 for the design
+    // rationale.
+    if (current < 2) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V2);
+            db.prepare(
+                'INSERT OR IGNORE INTO registry_schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(2, ts);
+            db.exec('COMMIT;');
+            current = 2;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

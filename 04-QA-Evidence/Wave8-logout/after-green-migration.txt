@@ -1,0 +1,17 @@
+PASS pre-migration: seeded DB really is at schema version 1
+PASS migration ran: schema version is now 2
+PASS migration is additive: sessions table now exists
+PASS pre-existing user row survived the migration unchanged
+PASS pre-existing site row survived the migration unchanged
+PASS new session functions work against the migrated database
+PASS re-running the migration path (server restart) is a no-op, not an error
+PASS JSON backend: old file has no "sessions" key (test setup sanity)
+PASS JSON backend: pre-existing user survives once session functions run
+PASS JSON backend: pre-existing site survives
+PASS JSON backend: session functions work against a file with no prior "sessions" key
+PASS JSON backend: user/site data still intact after the sessions key was created
+
+wave8-logout-migration.test.js: toate testele au trecut
+(node:48325) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+exit=0

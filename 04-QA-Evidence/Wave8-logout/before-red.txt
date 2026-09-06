@@ -1,0 +1,36 @@
+(node:45728) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:12:06.491Z","event":"server.started","port":64061}
+🌐 HTTP server on :64061 (health + webhooks + API)
+PASS captured cookie authenticates before logout
+FAIL POST /api/auth/logout returns 200 and clears the cookie - Expected values to be strictly equal:
+
+404 !== 200
+
+FAIL replay OLD cookie after logout → GET /api/me 401 - old cookie must be rejected after logout; got 200 body={"user":{"id":"63ea585d-a456-4077-8fca-e3125d41d53d","createdAt":"2026-09-06T16:12:06.491Z","email":"wave8-logout@test.com"}}
+
+200 !== 401
+
+FAIL auth.verifySession rejects the revoked cookie directly - Expected values to be strictly equal:
++ actual - expected
+
++ '63ea585d-a456-4077-8fca-e3125d41d53d'
+- null
+
+FAIL adjacent surface: calendar-native owner dashboard rejects the same revoked cookie - owner dashboard must reject a revoked session; got 400
+
+400 !== 401
+
+PASS a brand-new session for the same user still authenticates (logout is scoped)
+FAIL logout with no cookie at all still returns 200 (idempotent, not an error) - Expected values to be strictly equal:
+
+404 !== 200
+
+FAIL logout with garbage cookie value still returns 200 and clears it - Expected values to be strictly equal:
+
+404 !== 200
+
+PASS replaying a garbage/tampered cookie was already rejected before logout too (sanity)
+
+wave8-logout-invalidate.test.js: 6 FAILED
+exit=1
