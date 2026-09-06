@@ -15,6 +15,7 @@ const {
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
     SCHEMA_SQL_V3,
+    SCHEMA_SQL_V4,
     SCHEMA_VERSION,
 } = require('./schema');
 
@@ -61,6 +62,22 @@ function openCalendarDb(opts = {}) {
             retention.startRetentionScheduler(db);
         } catch (_) {
             /* PII retention is best-effort housekeeping, not a startup gate */
+        }
+    }
+
+    // Wave 6 — appointment reminders (audit finding #26): same lifecycle as
+    // PII retention above. The initial sweep runs synchronously against the
+    // real clock, which is harmless at process start (no confirmed booking
+    // is ever due for a reminder in the same instant its own tenant row is
+    // first created), then an unref'd periodic re-sweep keeps firing while
+    // the process is up. Never a startup gate — never take the server down.
+    if (opts.skipReminderSweep !== true) {
+        try {
+            const reminders = require('./reminders');
+            reminders.runReminderSweep(db).catch(() => { /* see policy above */ });
+            reminders.startReminderScheduler(db);
+        } catch (_) {
+            /* reminder scheduling is best-effort housekeeping, not a startup gate */
         }
     }
 
@@ -118,6 +135,21 @@ function migrate(db) {
             ).run(3, ts);
             db.exec('COMMIT;');
             current = 3;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    if (current < 4) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V4);
+            db.prepare(
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(4, ts);
+            db.exec('COMMIT;');
+            current = 4;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

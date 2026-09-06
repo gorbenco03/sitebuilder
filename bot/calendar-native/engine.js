@@ -57,6 +57,27 @@ function mintManageToken() {
     return crypto.randomBytes(24).toString('base64url');
 }
 
+/**
+ * Owner-configurable booking-window policy (audit #26): minimum notice and
+ * maximum advance horizon, enforced server-side wherever a start_utc is
+ * accepted (createBooking, both reschedule paths) — not only in slot
+ * generation, so a crafted request with a forged start_utc cannot bypass it.
+ * Defaults (0 / NULL) are permissive — this never rejects a tenant that has
+ * not configured the policy.
+ */
+function assertBookingWindow(settings, startMs, nowMs) {
+    if (settings.min_notice_minutes && (startMs - nowMs) < settings.min_notice_minutes * 60000) {
+        const err = new Error('slot violates minimum notice window');
+        err.code = 'MIN_NOTICE';
+        throw err;
+    }
+    if (settings.max_advance_days != null && (startMs - nowMs) > settings.max_advance_days * 86400000) {
+        const err = new Error('slot beyond maximum advance window');
+        err.code = 'MAX_ADVANCE';
+        throw err;
+    }
+}
+
 function assertTenant(customerId, siteId) {
     if (!customerId || typeof customerId !== 'string') throw new Error('customer_id required');
     if (!siteId || typeof siteId !== 'string') throw new Error('site_id required');
@@ -82,8 +103,11 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
         db.prepare(
             `INSERT INTO calendar_settings (
                 customer_id, site_id, timezone, default_buffer_minutes,
-                min_cancel_hours, slot_interval_minutes, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+                min_cancel_hours, slot_interval_minutes,
+                min_notice_minutes, max_advance_days,
+                reminder_hours_before, reminder_visitor_enabled, reminder_owner_enabled,
+                created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).run(
             customerId,
             siteId,
@@ -91,6 +115,11 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
             patch.default_buffer_minutes != null ? patch.default_buffer_minutes : 0,
             patch.min_cancel_hours != null ? patch.min_cancel_hours : 24,
             patch.slot_interval_minutes != null ? patch.slot_interval_minutes : 15,
+            patch.min_notice_minutes != null ? patch.min_notice_minutes : 0,
+            patch.max_advance_days !== undefined ? patch.max_advance_days : null,
+            patch.reminder_hours_before != null ? patch.reminder_hours_before : 24,
+            patch.reminder_visitor_enabled != null ? (patch.reminder_visitor_enabled ? 1 : 0) : 1,
+            patch.reminder_owner_enabled != null ? (patch.reminder_owner_enabled ? 1 : 0) : 0,
             ts,
             ts
         );
@@ -103,6 +132,11 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
                 default_buffer_minutes = COALESCE(?, default_buffer_minutes),
                 min_cancel_hours = COALESCE(?, min_cancel_hours),
                 slot_interval_minutes = COALESCE(?, slot_interval_minutes),
+                min_notice_minutes = COALESCE(?, min_notice_minutes),
+                max_advance_days = CASE WHEN ? THEN ? ELSE max_advance_days END,
+                reminder_hours_before = COALESCE(?, reminder_hours_before),
+                reminder_visitor_enabled = COALESCE(?, reminder_visitor_enabled),
+                reminder_owner_enabled = COALESCE(?, reminder_owner_enabled),
                 updated_at = ?
              WHERE customer_id = ? AND site_id = ?`
         ).run(
@@ -110,6 +144,12 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
             patch.default_buffer_minutes != null ? patch.default_buffer_minutes : null,
             patch.min_cancel_hours != null ? patch.min_cancel_hours : null,
             patch.slot_interval_minutes != null ? patch.slot_interval_minutes : null,
+            patch.min_notice_minutes != null ? patch.min_notice_minutes : null,
+            patch.max_advance_days !== undefined ? 1 : 0,
+            patch.max_advance_days !== undefined ? patch.max_advance_days : null,
+            patch.reminder_hours_before != null ? patch.reminder_hours_before : null,
+            patch.reminder_visitor_enabled != null ? (patch.reminder_visitor_enabled ? 1 : 0) : null,
+            patch.reminder_owner_enabled != null ? (patch.reminder_owner_enabled ? 1 : 0) : null,
             ts,
             customerId,
             siteId
@@ -343,6 +383,19 @@ function generateSlots(db, customerId, siteId, {
         ? service.buffer_minutes
         : settings.default_buffer_minutes;
     const duration = service.duration_minutes;
+
+    // Booking-window policy (owner-configurable, VISION §8 / audit #26):
+    // enforced here too (defense in depth) so any caller of generateSlots —
+    // not just public-api's listPublicSlots — stays inside the window.
+    if (settings.max_advance_days != null) {
+        const capParts = getZonedParts(new Date(nowMs + settings.max_advance_days * 86400000), tz);
+        const capDateLocal =
+            String(capParts.year).padStart(4, '0') + '-' +
+            String(capParts.month).padStart(2, '0') + '-' +
+            String(capParts.day).padStart(2, '0');
+        if (dateLocal > capDateLocal) return [];
+    }
+
     const ranges = openRangesForDate(db, customerId, siteId, dateLocal);
     if (!ranges.length) return [];
 
@@ -357,7 +410,8 @@ function generateSlots(db, customerId, siteId, {
     });
 
     const slots = [];
-    const earliest = nowMs + minLeadMinutes * 60000;
+    const effectiveMinLeadMinutes = Math.max(minLeadMinutes, settings.min_notice_minutes || 0);
+    const earliest = nowMs + effectiveMinLeadMinutes * 60000;
 
     for (const range of ranges) {
         for (let startMin = range.start_minute; startMin + duration <= range.end_minute; startMin += interval) {
@@ -476,6 +530,7 @@ function createBooking(db, customerId, siteId, input) {
         err.code = 'SLOT_IN_PAST';
         throw err;
     }
+    assertBookingWindow(settings, startMs, nowMs);
     const duration = service.duration_minutes;
     const buffer = service.buffer_minutes != null
         ? service.buffer_minutes
@@ -760,7 +815,7 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
  *
  * @returns {object} updated booking row
  */
-function applyReschedule(db, row, startMs, { onConflict = 'demote' } = {}) {
+function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date.now() } = {}) {
     const customerId = row.customer_id;
     const siteId = row.site_id;
     const bookingId = row.id;
@@ -782,6 +837,7 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote' } = {}) {
         err.code = 'SLOT_OUTSIDE_AVAILABILITY';
         throw err;
     }
+    assertBookingWindow(settings, startMs, nowMs);
 
     const buffer = service.buffer_minutes != null
         ? service.buffer_minutes
@@ -815,7 +871,8 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote' } = {}) {
     try {
         db.prepare(
             `UPDATE calendar_bookings
-             SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+             SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL,
+                 visitor_reminder_sent_at = NULL, owner_reminder_sent_at = NULL
              WHERE id = ? AND customer_id = ? AND site_id = ?`
         ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
     } catch (e) {
@@ -832,7 +889,8 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote' } = {}) {
             // Keep the desired wall time; unique only covers requested+confirmed.
             db.prepare(
                 `UPDATE calendar_bookings
-                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL,
+                     visitor_reminder_sent_at = NULL, owner_reminder_sent_at = NULL
                  WHERE id = ? AND customer_id = ? AND site_id = ?`
             ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
         } else {
@@ -878,7 +936,7 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
         }
 
         const previousStatus = row.status;
-        const updated = applyReschedule(db, row, startMs, { onConflict: 'demote' });
+        const updated = applyReschedule(db, row, startMs, { onConflict: 'demote', nowMs });
         db.exec('COMMIT;');
         emitBookingEmail(db, {
             booking: updated,
@@ -941,7 +999,7 @@ function rescheduleBookingWithToken(db, rawToken, { startUtc, nowMs = Date.now()
         }
 
         const previousStatus = row.status;
-        const updated = applyReschedule(db, row, startMs, { onConflict: 'reject' });
+        const updated = applyReschedule(db, row, startMs, { onConflict: 'reject', nowMs });
         db.exec('COMMIT;');
         emitBookingEmail(db, {
             booking: updated,

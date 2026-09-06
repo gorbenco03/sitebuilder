@@ -78,6 +78,8 @@ function createMemoryTransport(opts = {}) {
                 subject: String(message.subject || ''),
                 text: String(message.text || ''),
                 html: String(message.html || ''),
+                icsContent: message.icsContent || null,
+                icsFilename: message.icsFilename || null,
                 templateKey: message.meta && message.meta.templateKey,
                 bookingId: message.meta && message.meta.bookingId,
                 outboxId: message.meta && message.meta.outboxId,

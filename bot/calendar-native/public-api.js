@@ -13,7 +13,17 @@
 const path = require('path');
 const { openCalendarDb } = require('./db');
 const engine = require('./engine');
-const { addDaysLocal } = require('./time');
+const { addDaysLocal, getZonedParts } = require('./time');
+
+/** "today" (server clock) + N days as a YYYY-MM-DD in the tenant's timezone. */
+function localDatePlusDays(nowMs, timezone, days) {
+    const parts = getZonedParts(new Date(nowMs), timezone);
+    const base =
+        String(parts.year).padStart(4, '0') + '-' +
+        String(parts.month).padStart(2, '0') + '-' +
+        String(parts.day).padStart(2, '0');
+    return addDaysLocal(base, days);
+}
 
 const TENANT_RE = /^[a-zA-Z0-9_-]{2,80}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -198,6 +208,26 @@ function listPublicSlots(db, customerId, siteId, {
         return { error: 'Service not found.', code: 'SERVICE_NOT_FOUND', status: 404 };
     }
 
+    // Booking-window policy (owner-configurable, audit #26): enforced here in
+    // the slot listing (and again inside engine.generateSlots / createBooking
+    // as defense in depth) — a visitor never even sees a slot the policy
+    // would reject at booking time.
+    const effectiveMinLead = Math.max(minLeadMinutes, settings.min_notice_minutes || 0);
+    if (settings.max_advance_days != null) {
+        const capDateLocal = localDatePlusDays(nowMs, settings.timezone, settings.max_advance_days);
+        if (fromDateLocal > capDateLocal) {
+            return {
+                ok: true,
+                timezone: settings.timezone,
+                serviceId,
+                fromDateLocal,
+                toDateLocal: fromDateLocal,
+                slots: [],
+            };
+        }
+        if (end > capDateLocal) end = capDateLocal;
+    }
+
     let slots;
     try {
         slots = engine.generateSlotsRange(db, customerId, siteId, {
@@ -205,7 +235,7 @@ function listPublicSlots(db, customerId, siteId, {
             fromDateLocal,
             toDateLocal: end,
             nowMs,
-            minLeadMinutes,
+            minLeadMinutes: effectiveMinLead,
         });
     } catch (e) {
         return { error: 'Could not load free slots.', code: 'SLOTS_ERROR', status: 500, detail: e.message };
@@ -268,7 +298,8 @@ function createPublicBooking(db, customerId, siteId, body, { nowMs = Date.now() 
     } catch (e) {
         const code = e && e.code ? String(e.code) : 'BOOKING_ERROR';
         const status =
-            code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST'
+            code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST' ||
+                code === 'MIN_NOTICE' || code === 'MAX_ADVANCE'
                 ? 400
                 : code === 'SERVICE_NOT_FOUND' || code === 'SETTINGS_MISSING'
                     ? 404
@@ -278,11 +309,15 @@ function createPublicBooking(db, customerId, siteId, body, { nowMs = Date.now() 
                 ? 'Intervalul ales nu este disponibil (în afara programului sau zi liberă).'
                 : code === 'SLOT_IN_PAST'
                     ? 'Intervalul ales a trecut deja.'
-                    : code === 'VALIDATION'
-                        ? 'Verifică numele, emailul și intervalul ales.'
-                        : code === 'SERVICE_NOT_FOUND'
-                            ? 'Serviciul nu mai este disponibil.'
-                            : 'Nu am putut înregistra programarea. Încearcă din nou.';
+                    : code === 'MIN_NOTICE'
+                        ? 'Această programare trebuie făcută cu mai mult timp înainte.'
+                        : code === 'MAX_ADVANCE'
+                            ? 'Această dată este prea departe în viitor pentru o programare.'
+                            : code === 'VALIDATION'
+                                ? 'Verifică numele, emailul și intervalul ales.'
+                                : code === 'SERVICE_NOT_FOUND'
+                                    ? 'Serviciul nu mai este disponibil.'
+                                    : 'Nu am putut înregistra programarea. Încearcă din nou.';
         return { error: ro, code, status };
     }
 }

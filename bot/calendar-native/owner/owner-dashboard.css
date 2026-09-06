@@ -318,6 +318,13 @@ body.hod {
   min-width: 0;
 }
 
+/* Generic two-column row (settings tab: booking window, reminders). */
+.hod-row2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
 .hod-empty, .hod-msg {
   padding: 16px;
   border-radius: 14px;
@@ -409,7 +416,8 @@ body.hod {
   .hod-week li { grid-template-columns: 1fr; }
   .hod-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hod-ov-form .hod-row2,
-  .hod-svc-edit .hod-row2 { grid-template-columns: 1fr; }
+  .hod-svc-edit .hod-row2,
+  .hod-row2 { grid-template-columns: 1fr; }
   .hod-tab { padding: 8px 12px; font-size: 12px; }
 }
 

@@ -172,10 +172,12 @@
       '    <button type="button" class="hod-tab is-on" data-hod-tab="bookings">Programări</button>' +
       '    <button type="button" class="hod-tab" data-hod-tab="avail">Disponibilitate</button>' +
       '    <button type="button" class="hod-tab" data-hod-tab="services">Servicii</button>' +
+      '    <button type="button" class="hod-tab" data-hod-tab="settings">Setări</button>' +
       '  </div>' +
       '  <div class="hod-panel is-on" data-hod-panel="bookings"></div>' +
       '  <div class="hod-panel" data-hod-panel="avail"></div>' +
       '  <div class="hod-panel" data-hod-panel="services"></div>' +
+      '  <div class="hod-panel" data-hod-panel="settings"></div>' +
       '  <div data-hod-modal-host></div>' +
       '  <p class="hod-foot">Build by hidook.tech powered by hidook.agency</p>' +
       '</div>';
@@ -276,6 +278,7 @@
       state.services = r.data.services || [];
       paintAvail();
       paintServices();
+      paintSettings();
     }
 
     function paintBookings() {
@@ -581,6 +584,99 @@
       });
     }
 
+    function paintSettings() {
+      var panel = $('[data-hod-panel="settings"]', root);
+      if (!panel) return;
+      if (state.authBlocked) {
+        panel.innerHTML = '';
+        return;
+      }
+      var s = state.settings || {};
+      var html = '';
+
+      html += '<div class="hod-card">';
+      html += '<h2>Fereastră de rezervare</h2>';
+      html +=
+        '<p class="hod-hint">Controlează cu cât timp înainte poate rezerva un client și cât de departe în viitor. Se aplică pe site-ul public și la confirmarea programării, nu doar vizual.</p>';
+      html += '<div class="hod-row2">';
+      html +=
+        '<div class="hod-field">Notificare minimă (minute)<input type="number" min="0" max="20160" step="15" data-hod-set-min-notice value="' +
+        esc(s.minNoticeMinutes != null ? s.minNoticeMinutes : 0) +
+        '" /></div>';
+      html +=
+        '<div class="hod-field">Orizont maxim (zile, gol = fără limită)<input type="number" min="1" max="730" data-hod-set-max-advance value="' +
+        esc(s.maxAdvanceDays != null ? s.maxAdvanceDays : '') +
+        '" placeholder="fără limită" /></div>';
+      html += '</div>';
+      html +=
+        '<button type="button" class="hod-btn" data-hod-save-window style="margin-top:10px">Salvează fereastra de rezervare</button>';
+      html += '</div>';
+
+      html += '<div class="hod-card">';
+      html += '<h2>Reamintiri programare</h2>';
+      html +=
+        '<p class="hod-hint">Trimitem automat un email de reamintire înainte de programare — reduce absențele. Reamintirea nu se trimite niciodată pentru o programare anulată și nu se trimite de două ori.</p>';
+      html +=
+        '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:10px">' +
+        '<input type="checkbox" data-hod-set-reminder-visitor ' +
+        (s.reminderVisitorEnabled ? 'checked' : '') +
+        ' /> Trimite reamintire clientului</label>';
+      html += '<div class="hod-field" style="margin-bottom:10px">Cu cât timp înainte (ore)' +
+        '<input type="number" min="0" max="336" data-hod-set-reminder-hours value="' +
+        esc(s.reminderHoursBefore != null ? s.reminderHoursBefore : 24) +
+        '" /></div>';
+      html +=
+        '<label style="display:flex;align-items:center;gap:8px;font-size:14px">' +
+        '<input type="checkbox" data-hod-set-reminder-owner ' +
+        (s.reminderOwnerEnabled ? 'checked' : '') +
+        ' /> Trimite-mi și mie o reamintire (proprietar)</label>';
+      html +=
+        '<button type="button" class="hod-btn" data-hod-save-reminders style="margin-top:10px">Salvează reamintirile</button>';
+      html += '</div>';
+
+      panel.innerHTML = html;
+
+      var saveWindow = $('[data-hod-save-window]', panel);
+      if (saveWindow) saveWindow.addEventListener('click', saveBookingWindow);
+      var saveReminders = $('[data-hod-save-reminders]', panel);
+      if (saveReminders) saveReminders.addEventListener('click', saveReminderSettings);
+    }
+
+    async function saveBookingWindow() {
+      var panel = $('[data-hod-panel="settings"]', root);
+      var minNotice = Number($('[data-hod-set-min-notice]', panel).value);
+      var maxAdvRaw = $('[data-hod-set-max-advance]', panel).value;
+      var body = {
+        minNoticeMinutes: Number.isFinite(minNotice) ? minNotice : 0,
+        maxAdvanceDays: maxAdvRaw === '' ? null : Number(maxAdvRaw),
+      };
+      var r = await api('PUT', '/api/calendar-native/owner/settings', body);
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut salva fereastra de rezervare.', 'err');
+        return;
+      }
+      state.settings = r.data.settings;
+      setMsg('Fereastra de rezervare a fost salvată.', 'ok');
+      paintSettings();
+    }
+
+    async function saveReminderSettings() {
+      var panel = $('[data-hod-panel="settings"]', root);
+      var body = {
+        reminderVisitorEnabled: $('[data-hod-set-reminder-visitor]', panel).checked,
+        reminderOwnerEnabled: $('[data-hod-set-reminder-owner]', panel).checked,
+        reminderHoursBefore: Number($('[data-hod-set-reminder-hours]', panel).value),
+      };
+      var r = await api('PUT', '/api/calendar-native/owner/settings', body);
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut salva reamintirile.', 'err');
+        return;
+      }
+      state.settings = r.data.settings;
+      setMsg('Reamintirile au fost salvate.', 'ok');
+      paintSettings();
+    }
+
     function paintTabs() {
       $all('[data-hod-tab]', root).forEach(function (t) {
         t.classList.toggle('is-on', t.getAttribute('data-hod-tab') === state.tab);
@@ -596,6 +692,7 @@
       paintBookings();
       paintAvail();
       paintServices();
+      paintSettings();
     }
 
     async function saveWeekly() {

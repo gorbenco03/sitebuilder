@@ -184,6 +184,12 @@ function rescheduleByToken(db, rawToken, { startUtc, nowMs = Date.now() } = {}) 
         if (code === 'SLOT_IN_PAST') {
             return { error: 'Intervalul ales a trecut deja.', code, status: 400 };
         }
+        if (code === 'MIN_NOTICE') {
+            return { error: 'Această programare trebuie făcută cu mai mult timp înainte.', code, status: 400 };
+        }
+        if (code === 'MAX_ADVANCE') {
+            return { error: 'Această dată este prea departe în viitor pentru o programare.', code, status: 400 };
+        }
         if (code === 'VALIDATION') {
             return { error: 'Interval invalid.', code, status: 400 };
         }
