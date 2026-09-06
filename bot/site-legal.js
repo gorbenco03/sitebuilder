@@ -227,7 +227,7 @@ function cookiesHtml(config) {
  * page. This is the single most prominent control on the first screen of
  * EVERY site this product generates, so it painted the same neon green over
  * an advocate's paper-and-brass palette, a dessert brand's pinks and a
- * monochrome salon alike. Paper-on-ink instead (#f5f5f5 on #111, 20.4:1): it
+ * monochrome salon alike. Paper-on-ink instead (#f5f5f5 on #111, 17.32:1): it
  * reads as belonging to the dark consent card rather than to some other
  * product's brand, on all five templates.
  *

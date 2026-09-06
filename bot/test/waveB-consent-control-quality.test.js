@@ -5,9 +5,11 @@
  * The consent card is the first interactive thing a stranger meets on every
  * site this product generates. Two defects shipped on all of them:
  *
- *   1. The accept button rendered 35px tall — under the 44px minimum target
- *      size in WCAG 2.5.8. Every template's own buttons honour 48px; this one
- *      control, injected as shared chrome, did not.
+ *   1. The accept button rendered 35px tall on desktop and 33px on a phone.
+ *      Every template's own buttons honour 48px; this one control, injected as
+ *      shared chrome, did not. That clears WCAG 2.5.8 (Level AA, 24x24) and
+ *      falls short of 2.5.5 (Level AAA, 44x44) and of the 44px both platform
+ *      guidelines ask — a thumb-sized problem rather than a conformance one.
  *   2. It was painted #25d366 on #06210f — WhatsApp green, borrowed from the
  *      chat FAB in the opposite corner — so an advocate's paper-and-brass
  *      hero, a patisserie's pinks and a monochrome portfolio all carried the
@@ -31,7 +33,12 @@ const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
 const siteExport = require(path.join(ROOT, 'bot', 'site-export.js'));
 
 const TEMPLATES_DIR = path.join(ROOT, 'templates');
-const MIN_TARGET_PX = 44;   // WCAG 2.5.8 AA
+// WCAG 2.5.5 Target Size (Enhanced), Level AAA — and the figure both the iOS
+// and Android platform guidelines give for a touch target. NOT 2.5.8, which is
+// the Level AA criterion and asks only 24x24; an earlier version of this file
+// cited 2.5.8 for 44px, which is wrong. The pre-fix 33px button cleared AA and
+// was still too small for a thumb.
+const MIN_TARGET_PX = 44;
 const MIN_CONTRAST = 4.5;   // WCAG 1.4.3 AA for the button label
 
 // The chat FAB's green. Reserved for the chat FAB.
@@ -101,7 +108,7 @@ test('consent accept button meets the 44px target size on every template', async
                 if (m.h < MIN_TARGET_PX - 0.5 || m.w < MIN_TARGET_PX - 0.5) {
                     small.push(
                         `${tpl} @${viewport.width}: accept button renders ` +
-                        `${Math.round(m.w)}x${Math.round(m.h)}, under the ${MIN_TARGET_PX}px WCAG 2.5.8 minimum`
+                        `${Math.round(m.w)}x${Math.round(m.h)}, under the ${MIN_TARGET_PX}px platform/WCAG 2.5.5 touch-target minimum`
                     );
                 }
             }
