@@ -1,0 +1,35 @@
+Copyright (c) 2026 Hidook. All rights reserved.
+
+This repository (source code, templates, documentation, and assets) is the
+proprietary property of Hidook and is provided for internal development and
+authorized use only.
+
+No license, express or implied, is granted to any person to reproduce,
+distribute, publish, sublicense, modify, create derivative works from, or
+otherwise use this software or any part of it outside of authorized company
+work, without prior written permission from Hidook.
+
+This default was chosen because Hidook Site Builder is `"private": true`
+commercial software (see `package.json`) sold as a hosted product, not a
+published open-source project — a proprietary "all rights reserved" notice is
+the standard default for a private commercial codebase absent an explicit
+owner decision to open-source some or all of it. It has not been confirmed
+by the product owner and does not itself determine the license terms under
+which a *customer's own generated site* (the HTML/CSS/JS a customer
+downloads via Export ZIP/HTML, built from their own content) may be used —
+that is a separate product/legal decision the owner has not made either; see
+`HANDOFF-docs.md`.
+
+Third-party dependencies retain their own licenses:
+
+- `bot/` — `grammy` (MIT) — see `bot/package-lock.json` for the resolved
+  version and `node_modules/grammy/LICENSE` after `npm install`.
+- Root — `playwright` (Apache-2.0), a devDependency used only for test/QA
+  tooling, not shipped to customers.
+
+The exact legal entity name, jurisdiction, and whether any part of this
+codebase should be dual-licensed or open-sourced are owner decisions per
+`VISION.md` §10 (Owner gates) and have not been made as of this writing —
+do not treat the "Hidook" name above as a confirmed legal entity name; it is
+the product's public brand name used elsewhere in this repository
+(`README.md`, `PRODUCT.md`).

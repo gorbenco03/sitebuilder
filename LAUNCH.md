@@ -39,8 +39,10 @@ Happy path a stranger can complete (team verifies end-to-end; client does not QA
 
 - Local bot + builder API with **test** Stripe keys (`sk_test_…`) and webhook signing secrets for staging.
 - Fake-or-isolated deploy (`HIDOOK_FAKE_DEPLOY=1`) for automated tests — **refused in production**; not the client journey.
-- Running `npm test` (`node --test bot/test/*.test.js` — the `--test` flag is
-  required, plain `node` on that glob only runs the first file) and fixing regressions.
+- Running `npm test` (`node --experimental-sqlite --test bot/test/*.test.js` —
+  the `--test` flag is required, plain `node` on that glob only runs the
+  first file; `--experimental-sqlite` is required on Node < 22.5 for the
+  registry/native-calendar tests) and fixing regressions.
 - Ops docs: `bot/README.md`, `bot/DEPLOY.md`.
 
 See `bot/DEPLOY.md` for env tables. Commercial amounts always come from `bot/pricing.js`.

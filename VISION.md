@@ -346,14 +346,43 @@ Acceptare:
 
 ### Flow 4 — Commercial E2E + calendar/LP readiness
 
-Include: trial/card/live/cancel/renew, linkul Cal.com deținut de client pentru Professional, LP hidook.agency când există brand tokens.
+Include: trial/card/live/cancel/renew; calendarul Professional per decizia owner-locked din §8 (modul nativ Hidook, opt-in per site); LP hidook.agency când există brand tokens.
+
+> **Corecție 2026-09-06 (audit medium #20 — VISION se contrazice intern):**
+> versiunea inițială a acestei secțiuni ("Include: ... linkul Cal.com deținut
+> de client pentru Professional...") trata Cal.com ca o a doua opțiune
+> co-egală de arhitectură de calendar, scrisă înainte de override-ul owner
+> din §8 (2026-09-04, LOCKED: modul **nativ** Hidook — **nu** cal.diy, **nu**
+> Cal.com Platform, **nu** embed/integrare third-party). Citită separat de
+> §8, acea formulare contrazicea decizia mai nouă. Rezolvat în favoarea §8,
+> care e decizia owner-locked ulterioară: acceptance criteria de mai jos
+> descrie arhitectura curentă corect. Textul vechi nu se șterge silențios —
+> rămâne mai jos, marcat explicit **SUPERSEDAT**, pentru că (verificat în cod,
+> `templates/professionals/schema.json:455-456` și
+> `bot/calendar-native/cutover.js:126`) produsul chiar păstrează un câmp real
+> "link Cal.com de programări (opțional)" pentru site-urile care nu optează
+> în calendarul nativ — dar acela e un simplu link extern ales și găzduit de
+> client, afișat de Hidook la fel ca un număr de telefon, **nu** o
+> integrare/arhitectură de calendar construită de Hidook. Nu contravine §8.
 
 Acceptare:
 
 - card test → trial live imediat;
 - cancel trial → comportament clar;
 - renewal 29/an reflectat corect;
-- clientul Professional fie optează în calendarul nativ Hidook (`appointment.nativeBooking`, §8) și booking-ul se face direct pe site-ul public, fie — dacă nu optează — poate lipi un link Cal.com valid, iar site-ul public deschide rezervarea în tab nou; formularul local de cerere rămâne fallback-ul când niciuna nu e configurată;
+- clientul Professional fie optează în calendarul nativ Hidook
+  (`appointment.nativeBooking`, §8) și booking-ul se face direct pe site-ul
+  public — aceasta e arhitectura de calendar a produsului, per decizia
+  owner-locked §8 — fie, dacă nu optează, formularul local de cerere rămâne
+  fallback-ul default; owner-ul poate opțional adăuga în Detalii un link
+  Cal.com propriu (link extern simplu, ales/găzduit de client) ca alternativă
+  suplimentară de contact, nu ca arhitectură de calendar a produsului
+  *(text original SUPERSEDAT, păstrat pentru istoric: "fie — dacă nu
+  optează — poate lipi un link Cal.com valid, iar site-ul public deschide
+  rezervarea în tab nou; formularul local de cerere rămâne fallback-ul când
+  niciuna nu e configurată" — formularea trata Cal.com ca opțiune co-egală de
+  arhitectură, ceea ce contrazicea §8; comportamentul real al linkului nu
+  s-a schimbat, doar cadrul în care e descris)*;
 - LP nu intră până nu există brand tokens.
 
 ## 12. Reguli pentru studio

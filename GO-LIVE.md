@@ -6,8 +6,10 @@ Scope: the **web application** (browser builder + its backend). The Telegram bot
 optional and is not required for any step here.
 
 Related docs: [`VISION.md`](VISION.md) (source of truth — wins over everything below
-on conflict), [`PRODUCT.md`](PRODUCT.md) (product contract), [`LAUNCH.md`](LAUNCH.md)
-(positioning), [`bot/DEPLOY.md`](bot/DEPLOY.md) (Railway specifics).
+on conflict), [`PRODUCT.md`](PRODUCT.md) (product contract), [`ARCHITECTURE.md`](ARCHITECTURE.md)
+(how the system is built), [`LAUNCH.md`](LAUNCH.md) (positioning),
+[`bot/DEPLOY.md`](bot/DEPLOY.md) (Railway specifics), [`BACKUP-RESTORE.md`](BACKUP-RESTORE.md)
+(the volume this whole checklist depends on).
 
 ---
 
@@ -151,23 +153,25 @@ If none of Cloudflare / Vercel / Netlify is configured, `deployBuiltSite` return
 
 Mount a real volume. This is the single most destructive misconfiguration here.
 
-Everything the product owns lives under that one volume, as plain files — there is
-**no backup tooling in this repo**, so back up the volume itself (host/provider
-snapshot, or a periodic `rsync`/`tar` of the whole directory) on whatever schedule
-your host supports, and test a restore at least once before taking real payments:
+Everything the product owns lives under that one volume, as plain files and two
+SQLite databases. Full backup/restore procedure, including why a plain `cp` of
+a live SQLite file is not safe (WAL mode): **[`BACKUP-RESTORE.md`](BACKUP-RESTORE.md)**.
+Summary of what is under `DATA_DIR` (verified against `bot/registry-db.js` and
+`bot/calendar-native/db.js`):
 
 | Path under `DATA_DIR` | Contents |
 |---|---|
-| `.registry.json` | Every account and site record (draft/paid/live status) |
+| `registry.sqlite` (+ `-wal`/`-shm`) | Every account and site record (draft/paid/live status), version history — the SQLite registry, not the legacy `.registry.json` file this table used to name |
+| `calendar-native.sqlite` (+ `-wal`/`-shm`) | Native calendar bookings/availability (opt-in sites only) |
 | `.sessions.json` | Builder login sessions |
 | `.ledger.jsonl` | Append-only payment/audit ledger |
 | `.ratelimit.json` | Rate-limit counters (safe to lose) |
-| `calendar-native.sqlite` | Native calendar bookings/availability (opt-in sites only) |
 | `published/<slug>/` | The static files each live customer site actually serves |
 
 Losing this volume with no backup means losing every paying customer's site and
 billing history at once — treat the backup schedule as a launch blocker, not a
-later nice-to-have.
+later nice-to-have. `BACKUP-RESTORE.md` §5 has a pre-launch restore drill;
+run it before you add it to the checklist in §6 below.
 
 ### 3.4 Webhook not configured → trial/card never flips live; charges may not settle cleanly
 
@@ -241,6 +245,7 @@ failure above.
 - [ ] Editing and republishing updates the live site
 - [ ] Cancel during trial unpublishes the live site (no charge)
 - [ ] Restart/redeploy the app, then confirm the customer's site and account still exist
+- [ ] Take a backup of `registry.sqlite` (`BACKUP-RESTORE.md` §2a), restore it into a **different** `DATA_DIR`, and confirm the test site round-trips — an untested backup is not a backup
 - [ ] Switch to `sk_live_…`, then do one **real** card run and refund yourself via Dashboard/Portal
 
 ---
