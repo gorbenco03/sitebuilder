@@ -241,6 +241,25 @@ function setPath(obj, path, value) {
 }
 
 /**
+ * Mirrors bot/calendar-native/cutover.js#isNativeBookingEnabled — kept as a
+ * small standalone copy because the builder is a browser bundle that cannot
+ * require() server modules. appointment.nativeBooking is a schema type:"text"
+ * field (like appointment.enabled), not a real boolean, so both sides must
+ * agree on the same truthy/falsy string rules or a toggle here could silently
+ * disagree with what publish actually turns on.
+ */
+function isNativeBookingOn(value) {
+  if (value === true || value === 1) return true;
+  if (value == null) return false;
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase();
+    if (!s || /^(false|0|no|nu|off|n)$/i.test(s)) return false;
+    return /^(true|1|yes|da|on|y)$/i.test(s) || s === 'enabled';
+  }
+  return Boolean(value);
+}
+
+/**
  * When a stranger changes business.name, keep live identity fields in sync if they
  * still mirror the previous name or its slug tokens (casa-nord / casa.nord / casanord,
  * cabinet-marin, …): title, about, facebook label/url, instagram handle/urls/labels,
@@ -2100,6 +2119,101 @@ function buildPageSectionsPanel(body, schema) {
   body.appendChild(group);
 }
 
+/**
+ * Native Hidook booking calendar opt-in (VISION §8 e / Wave 8 reachability fix).
+ *
+ * appointment.nativeBooking exists on the professionals schema but is a plain
+ * type:"text" field ("da"/"nu"), so the generic drawer field loop skips it
+ * (isDrawerField only auto-renders phone/url/color/background + a short
+ * partial-key list) and it is never interpolated as visible text in the
+ * template, so there is also no inline-editable spot for it in the preview.
+ * Without this dedicated panel nothing in the builder can ever set it, and a
+ * paying owner has no way to turn on the calendar they are paying for.
+ *
+ * Only rendered when the current template's schema actually declares the
+ * field (only templates/professionals does today) — templates without an
+ * appointment section (e.g. local-service) get no panel at all.
+ *
+ * Writes straight through draft.config + saveDraft(), so undo/redo, the
+ * autosave, and the paid-site publish payload all cover this exactly like
+ * every other field.
+ */
+function buildNativeBookingPanel(body, schema) {
+  const hasField = getAllSchemaFields(schema).some(f => f && f.key === 'appointment.nativeBooking');
+  if (!hasField) return;
+
+  const on = isNativeBookingOn(getPath(draft.config, 'appointment.nativeBooking'));
+
+  const group = document.createElement('div');
+  group.className = 'drawer-section';
+
+  const title = document.createElement('div');
+  title.className = 'drawer-section-title';
+  title.textContent = 'Programări native Hidook';
+  group.appendChild(title);
+
+  const hint = document.createElement('p');
+  hint.className = 'field-hint';
+  hint.textContent = on
+    ? 'Activ: pe site-ul public, formularul local de cerere e înlocuit de calendarul nativ Hidook — vizitatorii văd sloturi reale, rezervă direct, primesc confirmare pe email și un memento automat (fișier .ics). La publicare se leagă automat de contul tău. Reversibil oricând — programările existente nu se șterg dacă dezactivezi.'
+    : 'Dezactivat: site-ul public arată formularul local de cerere (sau linkul Cal.com, dacă ai unul). Activează ca să înlocuiești formularul cu un calendar real: sloturi live, confirmare automată pe email și memento cu fișier .ics. Reversibil oricând.';
+  group.appendChild(hint);
+
+  const row = document.createElement('div');
+  row.className = 'hb-secrow';
+
+  const label = document.createElement('span');
+  label.className = 'hb-secrow__label';
+  label.textContent = on ? 'Activ pe site-ul public' : 'Momentan dezactivat';
+  row.appendChild(label);
+
+  const actions = document.createElement('div');
+  actions.className = 'hb-secrow__actions';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.className = 'hb-secrow__btn hb-secrow__btn--wide';
+  toggleBtn.textContent = on ? 'Dezactivează' : 'Activează';
+  toggleBtn.setAttribute('aria-pressed', String(on));
+  toggleBtn.setAttribute(
+    'aria-label',
+    (on ? 'Dezactivează' : 'Activează') + ' calendarul nativ de programări Hidook'
+  );
+  toggleBtn.addEventListener('click', () => {
+    setPath(draft.config, 'appointment.nativeBooking', on ? '' : 'da');
+    saveDraft();
+    updateChecklist();
+    scheduleRerender(true);
+    buildDrawer();
+  });
+  actions.appendChild(toggleBtn);
+  row.appendChild(actions);
+  group.appendChild(row);
+
+  // Once active on a published, paid site, link straight to the owner's own
+  // bookings dashboard — the same link the dashboard site card offers, but
+  // reachable right where the owner just turned the feature on. Not shown for
+  // an unpublished/unpaid draft: the publish-time cutover (bot/calendar-
+  // native/cutover.js) hasn't run yet, so there is nothing tenant-seeded to see.
+  if (on && currentSiteId && currentSitePaid && currentUser && currentUser.id) {
+    const openBtn = document.createElement('a');
+    openBtn.className = 'btn-ghost btn-sm';
+    openBtn.style.marginTop = '.35rem';
+    openBtn.textContent = 'Deschide programările';
+    openBtn.target = '_blank';
+    openBtn.rel = 'noopener noreferrer';
+    const qs = new URLSearchParams({
+      customerId: currentUser.id,
+      siteId: currentSiteId,
+      brand: (draft.config && draft.config.business && draft.config.business.name) || '',
+    });
+    openBtn.href = '/calendar-native/owner/?' + qs.toString();
+    group.appendChild(openBtn);
+  }
+
+  body.appendChild(group);
+}
+
 function buildDrawer() {
   const body = $('drawer-body');
   if (!body) return;
@@ -2112,6 +2226,7 @@ function buildDrawer() {
 
   const schema = currentTemplate.data.schema;
   buildPageSectionsPanel(body, schema);
+  buildNativeBookingPanel(body, schema);
   const allFields = getAllSchemaFields(schema);
 
   // Group drawer fields by section
@@ -4800,6 +4915,42 @@ function buildSiteCard(site) {
   versBtn.setAttribute('aria-label', 'Istoric versiuni pentru ' + (site.projectName || site.slug || ''));
   versBtn.addEventListener('click', () => loadVersions(site.id));
   actions.appendChild(versBtn);
+
+  // Native Hidook booking dashboard link (Wave 8 reachability fix): the owner
+  // dashboard exists and its API is fully authenticated + tenant-isolated
+  // (bot/server.js#resolveOwnerTenantOrReject), but nothing in the product
+  // ever linked to it with a real site's ids — only a hardcoded demo page did.
+  // Only professionals sites can opt into native booking (schema check), and
+  // only a published (paid + live/active) site has gone through the publish
+  // cutover that actually seeds the calendar engine (bot/calendar-native/
+  // cutover.js), so check the site's last-published config before showing
+  // this — a fetch per professionals card, not per every site.
+  if (site.paid && (site.status === 'live' || site.status === 'active') && site.templateId === 'professionals') {
+    apiGet('/api/sites/' + encodeURIComponent(site.id))
+      .then((data) => {
+        const cfg = data && data.config;
+        const nativeOn = isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking);
+        if (!nativeOn) return;
+        const bookBtn = document.createElement('a');
+        bookBtn.className = 'btn-ghost btn-sm';
+        bookBtn.textContent = 'Programări';
+        bookBtn.target = '_blank';
+        bookBtn.rel = 'noopener noreferrer';
+        bookBtn.setAttribute(
+          'aria-label',
+          'Deschide programările pentru ' + (site.projectName || site.slug || 'acest site')
+        );
+        const qs = new URLSearchParams({
+          customerId: site.userId,
+          siteId: site.id,
+          brand: site.projectName || site.slug || '',
+        });
+        bookBtn.href = '/calendar-native/owner/?' + qs.toString();
+        bookBtn.addEventListener('click', e => e.stopPropagation());
+        actions.appendChild(bookBtn);
+      })
+      .catch(() => { /* dashboard link is a bonus — never block the sites list on it */ });
+  }
 
   card.appendChild(thumbWrap);
   card.appendChild(info);

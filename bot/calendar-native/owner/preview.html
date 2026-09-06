@@ -23,7 +23,48 @@
   ></div>
   <script>
     (function () {
-      // Local/non-prod preview: mint a demo owner session, then mount the dashboard.
+      function mountDashboard() {
+        var s = document.createElement('script');
+        s.src = '/calendar-native/owner/owner-dashboard.js';
+        document.body.appendChild(s);
+      }
+
+      var params = new URLSearchParams(window.location.search);
+      var qCustomerId = (params.get('customerId') || '').trim();
+      var qSiteId = (params.get('siteId') || '').trim();
+
+      if (qCustomerId && qSiteId) {
+        // Real owner mode (Wave 8 reachability fix): the builder's dashboard
+        // links here with the signed-in owner's own userId + their real
+        // siteId (see builder/app.js buildSiteCard). This page must NOT mint
+        // a demo session in that case — that would sign the browser in as
+        // DEMO.customerId and silently replace whatever real hb_session
+        // cookie the owner already has from a normal login. Every API call
+        // owner-dashboard.js makes is still authenticated + tenant-checked
+        // server-side (resolveOwnerTenantOrReject requires customerId ===
+        // the session's own userId), so a wrong/forged id here simply gets a
+        // 403/401 from the API, same as any other tampered request.
+        var root = document.getElementById('hod-root');
+        var boot = document.getElementById('hod-boot');
+        if (root) {
+          root.setAttribute('data-customer-id', qCustomerId);
+          root.setAttribute('data-site-id', qSiteId);
+          // Drop the hardcoded demo brand — an optional ?brand= from the
+          // builder (site.projectName) names the real business; otherwise
+          // owner-dashboard.js's own default ("Calendar") applies.
+          var qBrand = (params.get('brand') || '').trim();
+          if (qBrand) root.setAttribute('data-brand', qBrand);
+          else root.removeAttribute('data-brand');
+          root.hidden = false;
+        }
+        if (boot) boot.remove();
+        mountDashboard();
+        return;
+      }
+
+      // No query params: local/non-prod preview — mint a demo owner session,
+      // then mount the dashboard. Unchanged from before; screenshot tooling
+      // and any bare /calendar-native/owner/ visit still lands here.
       fetch('/api/calendar-native/owner/preview-session', {
         method: 'POST',
         credentials: 'same-origin',
@@ -46,9 +87,7 @@
             root.hidden = false;
             if (res.body.brand) root.setAttribute('data-brand', res.body.brand);
           }
-          var s = document.createElement('script');
-          s.src = '/calendar-native/owner/owner-dashboard.js';
-          document.body.appendChild(s);
+          mountDashboard();
         })
         .catch(function () {
           var boot = document.getElementById('hod-boot');
