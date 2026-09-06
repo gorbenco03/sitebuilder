@@ -1,0 +1,32 @@
+{"ts":"2026-09-06T17:24:47.854Z","event":"server.started","port":63195}
+🌐 HTTP server on :63195 (health + webhooks + API)
+✔ wave8 portfolio pricing "+ Adaugă": adds a real row, never corrupts a sibling (4430.328875ms)
+{"ts":"2026-09-06T17:24:47.855Z","event":"server.started","port":63197}
+🌐 HTTP server on :63197 (health + webhooks + API)
+(node:4755) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T17:24:51.530Z","event":"email.magic_link.dev","email":"w***@example.com#43133d08","devLink":"/auth/verify?token=5a99d647856082ba39845ce5ba19a08674b9803abc03eab429984fe5531cf44f"}
+{"ts":"2026-09-06T17:24:53.093Z","event":"webpublish.stripe_paid.published","siteId":"1d3d33e2-b2c6-4bbb-b2ca-5435ebb9d09d","orderId":"0ee6027b-16c0-4478-8b9c-70de401e5c7d","url":"/live/wave8-pr-wa-1788715490972/","source":"pending-draft"}
+✔ wave8 professionals WhatsApp float: stays genuinely hittable with a long business name on short viewports (10290.851125ms)
+{"ts":"2026-09-06T17:24:47.856Z","event":"server.started","port":63196}
+🌐 HTTP server on :63196 (health + webhooks + API)
+(node:4756) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T17:24:51.530Z","event":"email.magic_link.dev","email":"w***@example.com#507ea6e2","devLink":"/auth/verify?token=d1fd999f1a03b15e8c28ab3b8bae1a2c04578f41c0e29a4e10866fdbee058a13"}
+{"ts":"2026-09-06T17:24:53.093Z","event":"webpublish.stripe_paid.published","siteId":"3b1782fe-3a0f-42b4-81dd-b451c7d7e3b7","orderId":"9334c520-d422-4ac4-81fa-26816d208fef","url":"/live/wave8-zoom-professionals-1788715490972/","source":"pending-draft"}
+{"ts":"2026-09-06T17:24:55.977Z","event":"server.started","port":63242}
+🌐 HTTP server on :63242 (health + webhooks + API)
+✔ wave8 zoom overflow: professionals stays scroll-free at 200% zoom / 390px with a long business name (8291.854042ms)
+{"ts":"2026-09-06T17:24:59.449Z","event":"email.magic_link.dev","email":"w***@example.com#7a110227","devLink":"/auth/verify?token=fe8e9b0950eca4004a65de3917c5c2639bc183ea5929b3836595fdc288c6031f"}
+[ratelimit] save failed: ENOENT: no such file or directory, open '/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave8-zoom-pr-hIM07G/.ratelimit.json'
+{"ts":"2026-09-06T17:25:01.073Z","event":"webpublish.stripe_paid.published","siteId":"af562786-370b-442e-91e8-0c78bff9bf39","orderId":"67c66037-7208-4258-9091-f158c7152614","url":"/live/wave8-zoom-portfolio-1788715498895/","source":"pending-draft"}
+✔ wave8 zoom overflow: portfolio stays scroll-free at 200% zoom / 390px with a long business name (7932.790875ms)
+✔ wave8 zoom overflow: product-menu contact chips carry the same defensive overflow-wrap as the other two templates (0.352709ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16292.219667

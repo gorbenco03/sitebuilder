@@ -1,0 +1,192 @@
+{"ts":"2026-09-06T17:02:37.730Z","event":"server.started","port":58726}
+🌐 HTTP server on :58726 (health + webhooks + API)
+{"ts":"2026-09-06T17:02:42.190Z","event":"email.magic_link.dev","email":"z***@example.com#3079d515","devLink":"/auth/verify?token=4eeebbb6a38a2133836a340fce28905dd25e26edaf97095ad7fb4605f8524050"}
+{"ts":"2026-09-06T17:02:43.766Z","event":"webpublish.stripe_paid.published","siteId":"19cebfbe-0872-432a-831a-dc4b76d9cf00","orderId":"00ba032d-ed0f-4bbd-8cce-7b081ed1c309","url":"/live/zoom-diag2-professionals-1788714161627/","source":"pending-draft"}
+=== professionals @ zoom 200%, 390 viewport ===
+LIVE URL: http://127.0.0.1:58726/live/zoom-diag2-professionals-1788714161627/
+{
+  "clientWidth": 390,
+  "scrollWidth": 622,
+  "topOffenders": [
+    {
+      "tag": "DIV",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "P",
+      "cls": "pr-kicker",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "H2",
+      "cls": "pr-display pr-display--sec",
+      "id": "contact-heading",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "P",
+      "cls": "pr-copy pr-copy--lg",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "P",
+      "cls": "pr-copy pr-copy--sm",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "UL",
+      "cls": "pr-contact__list",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "LI",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "A",
+      "cls": "pr-contact__row",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "LI",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "A",
+      "cls": "pr-contact__row",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "LI",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "A",
+      "cls": "pr-contact__row",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "LI",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "SPAN",
+      "cls": "pr-contact__row pr-contact__row--static",
+      "id": "",
+      "left": 40,
+      "right": 622,
+      "width": 582,
+      "overflow": 232
+    },
+    {
+      "tag": "BR",
+      "cls": "",
+      "id": "",
+      "left": 529,
+      "right": 529,
+      "width": 0,
+      "overflow": 139
+    },
+    {
+      "tag": "A",
+      "cls": "",
+      "id": "",
+      "left": 40,
+      "right": 468,
+      "width": 428,
+      "overflow": 78
+    },
+    {
+      "tag": "DIV",
+      "cls": "pr-nav__actions",
+      "id": "",
+      "left": 64,
+      "right": 426,
+      "width": 362,
+      "overflow": 36
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "pr-nav__toggle",
+      "id": "pr-nav-toggle",
+      "left": 338,
+      "right": 426,
+      "width": 88,
+      "overflow": 36
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "pr-btn pr-btn--primary pr-appt__submit",
+      "id": "pr-appt-submit",
+      "left": 40,
+      "right": 424,
+      "width": 384,
+      "overflow": 34
+    },
+    {
+      "tag": "SPAN",
+      "cls": "pr-nav__toggle-bars",
+      "id": "",
+      "left": 364,
+      "right": 400,
+      "width": 36,
+      "overflow": 10
+    }
+  ]
+}
