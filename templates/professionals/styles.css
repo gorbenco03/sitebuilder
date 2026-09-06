@@ -314,12 +314,36 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pr-hero__veil {
     position: absolute;
     inset: 0;
+    /* Purely atmospheric now — WCAG contrast for the hero text no longer
+       depends on this gradient at all (see .pr-hero__card, which carries
+       that job on its own near-opaque surface). This just keeps the photo's
+       far edges from fighting the sticky header/scroll hint visually. */
     background:
-        linear-gradient(180deg, transparent 40%, color-mix(in srgb, var(--paper) 70%, transparent) 100%),
+        linear-gradient(180deg, color-mix(in srgb, var(--paper) 22%, transparent) 0%, transparent 22%, transparent 78%, color-mix(in srgb, var(--paper) 30%, transparent) 100%),
         radial-gradient(ellipse 70% 50% at 80% 20%, color-mix(in srgb, var(--brass) 18%, transparent), transparent 60%);
     pointer-events: none;
 }
 .pr-hero__copy { position: relative; z-index: 1; padding-bottom: 1rem; }
+/* The "paper on the desk" card: a near-opaque surface so hero text keeps a
+   safe WCAG AA contrast against ANY photo an owner uploads (a busy, bright
+   or low-contrast image no longer risks the headline/lede/meta text — see
+   wave10-professionals-hero-contrast.test.js, which measures this on real
+   rendered pixels, not the source colour values). Sized to content, not the
+   full hero width, so it still reads as a considered object placed on the
+   photo rather than a full-bleed panel. */
+.pr-hero__card {
+    max-width: 34rem;
+    padding: 2rem 2.25rem;
+    background: color-mix(in srgb, var(--paper) 90%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid color-mix(in srgb, var(--paper) 60%, transparent);
+    border-radius: 6px;
+    box-shadow: 0 30px 70px rgba(20, 18, 15, 0.22);
+}
+@media (max-width: 560px) {
+    .pr-hero__card { max-width: none; padding: 1.5rem 1.35rem; }
+}
 .pr-hero__actions {
     display: flex;
     flex-wrap: wrap;
@@ -481,18 +505,39 @@ button, input, select, textarea { font: inherit; color: inherit; }
     display: grid;
     gap: 1rem;
     margin-top: 0.5rem;
+    counter-reset: prsvc;
 }
 @media (min-width: 720px) {
     .pr-svc { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
 }
 .pr-svc__card {
-    padding: 1.35rem 1.25rem;
+    padding: 1.6rem 1.5rem 1.5rem;
     border: 1px solid var(--line);
     border-radius: var(--r);
     background: var(--snow);
-    transition: border-color 160ms var(--ease);
+    counter-increment: prsvc;
+    transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
 }
-.pr-svc__card:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.pr-svc__card:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+    box-shadow: 0 12px 28px rgba(20, 18, 15, 0.06);
+}
+/* A quiet case-file numeral rather than an icon — keeps the calm editorial
+   register (no icon set exists for this vertical) while giving each card a
+   distinct anchor point, echoing the numbered steps below it. */
+.pr-svc__card::before {
+    content: counter(prsvc, decimal-leading-zero);
+    display: block;
+    font-family: var(--display);
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    /* --brass alone measures ~2.2:1 on --snow — nowhere near WCAG AA.
+       Mixing it toward --ink keeps the warm accent hue while clearing 4.5:1
+       (measured ~5.4:1) on real rendered pixels. */
+    color: color-mix(in srgb, var(--brass) 55%, var(--ink));
+    margin-bottom: 0.6rem;
+}
 .pr-svc__title {
     font-family: var(--display);
     font-size: 1.25rem;
@@ -544,10 +589,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
     .pr-about { grid-template-columns: 1.3fr 0.9fr; gap: 3rem; align-items: start; }
 }
 .pr-cred {
-    padding: 1.5rem;
+    padding: 1.75rem 1.5rem 1.5rem;
     border: 1px solid var(--line);
+    /* A thin accent rule along the top — the one deliberate spot of colour
+       in an otherwise quiet card — reads as "this is the proof, look here"
+       without turning the card into a loud call-to-action box. */
+    border-top: 3px solid var(--accent);
     background: var(--snow);
     border-radius: var(--r);
+    box-shadow: 0 20px 45px rgba(20, 18, 15, 0.07);
 }
 .pr-cred__title {
     font-family: var(--display);

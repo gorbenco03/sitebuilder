@@ -96,20 +96,25 @@
         <div class="pr-hero__bg" style="background: {{& hero.background}}" aria-hidden="true"></div>
         <div class="pr-hero__veil" aria-hidden="true"></div>
         <div class="pr-shell pr-hero__copy">
-            <!-- @if business.profession -->
-            <p class="pr-kicker">{{business.profession}}</p>
-            <!-- @endif -->
-            <h1 class="pr-display" id="hero-heading">{{business.tagline}}</h1>
-            <!-- @if hero.qualifier -->
-            <p class="pr-lede">{{hero.qualifier}}</p>
-            <!-- @endif -->
-            <div class="pr-hero__actions">
-                <a href="#appointment" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
-                <a href="#services" class="pr-btn pr-btn--ghost">{{labels.secondaryCta}}</a>
+            <!-- Near-opaque "paper on the desk" card: keeps hero text at safe
+                 WCAG AA contrast regardless of the uploaded photo — see
+                 wave10-professionals-hero-contrast.test.js and .pr-hero__card. -->
+            <div class="pr-hero__card">
+                <!-- @if business.profession -->
+                <p class="pr-kicker">{{business.profession}}</p>
+                <!-- @endif -->
+                <h1 class="pr-display" id="hero-heading">{{business.tagline}}</h1>
+                <!-- @if hero.qualifier -->
+                <p class="pr-lede">{{hero.qualifier}}</p>
+                <!-- @endif -->
+                <div class="pr-hero__actions">
+                    <a href="#appointment" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
+                    <a href="#services" class="pr-btn pr-btn--ghost">{{labels.secondaryCta}}</a>
+                </div>
+                <!-- @if business.modes -->
+                <p class="pr-hero__meta">{{business.modes}}<!-- @if business.languages --> · {{business.languages}}<!-- @endif --></p>
+                <!-- @endif -->
             </div>
-            <!-- @if business.modes -->
-            <p class="pr-hero__meta">{{business.modes}}<!-- @if business.languages --> · {{business.languages}}<!-- @endif --></p>
-            <!-- @endif -->
         </div>
         <a href="#services" class="pr-scroll" aria-label="{{labels.scroll}}">
             <span>{{labels.scroll}}</span>
