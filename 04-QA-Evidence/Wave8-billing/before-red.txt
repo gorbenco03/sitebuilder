@@ -1,0 +1,31 @@
+(node:45751) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:12:12.825Z","event":"server.started","port":64068}
+🌐 HTTP server on :64068 (health + webhooks + API)
+{"ts":"2026-09-06T16:12:12.840Z","event":"email.magic_link.dev","email":"w***@example.com#11b53300","devLink":"http://127.0.0.1:64068/auth/verify?token=6a4dde12ff611d8f1014758990fc4be706ea97b30a81f23d1f5d644e1129ab31"}
+{"ts":"2026-09-06T16:12:12.853Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_736fc47a","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:12.891Z","event":"webpublish.stripe_paid.published","siteId":"0a0fb612-7de7-414b-b6a6-5b4461a79b67","orderId":"d8c5049a-23d4-4a50-889b-cbc8a2064f4f","url":"http://127.0.0.1:64068/live/w8-3ece1a63/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:12.893Z","event":"webpublish.subscription.status_updated","siteId":"0a0fb612-7de7-414b-b6a6-5b4461a79b67","status":"active","subscriptionId":"sub_w8_0a0fb612"}
+FAIL re-audit repro: stale paidUntil + Stripe-active subscription + republish must not open a duplicate Checkout Session or downgrade the site - republish while Stripe subscription is active must not return a new Checkout Session URL
++ actual - expected
+
++ 'http://127.0.0.1:64068/app/#test-checkout=cs_test_6f7ad56bbfb1183aaec12176'
+- null
+
+{"ts":"2026-09-06T16:12:12.897Z","event":"email.magic_link.dev","email":"w***@example.com#13a80b5c","devLink":"http://127.0.0.1:64068/auth/verify?token=9f96db374c160d98fcdd085c3b2407a540c7706618a19ff26d6e2e98b2878ccc"}
+PASS control: a genuinely unpaid new site still goes through the normal paid Checkout Session flow
+{"ts":"2026-09-06T16:12:12.901Z","event":"email.magic_link.dev","email":"w***@example.com#8346a998","devLink":"http://127.0.0.1:64068/auth/verify?token=dead3c2ed6a6a526a50006e9ad7f081a667496631fd1e880e8bc77599974e503"}
+{"ts":"2026-09-06T16:12:12.905Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_1c674e35","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:12.937Z","event":"webpublish.stripe_paid.published","siteId":"5cf600d4-c4ac-4c1a-8be1-de02666024a0","orderId":"be076c34-542b-4488-bf44-957abce7b1c1","url":"http://127.0.0.1:64068/live/w8-73aa849c/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:12.939Z","event":"webpublish.subscription.status_updated","siteId":"5cf600d4-c4ac-4c1a-8be1-de02666024a0","status":"past_due","subscriptionId":"sub_w8dun_5cf600d4"}
+{"ts":"2026-09-06T16:12:12.939Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"5cf600d4-c4ac-4c1a-8be1-de02666024a0","slug":"w8-73aa849c","subscriptionId":"sub_w8dun_5cf600d4","invoiceId":null,"attemptCount":2,"nextPaymentAttempt":"2026-09-11T16:12:12.000Z"}
+FAIL GET /api/sites and GET /api/sites/:id attach getDunningState for a past_due retry - GET /api/sites must attach a dunning object for a past_due site with a recorded failure
+{"ts":"2026-09-06T16:12:12.940Z","event":"email.magic_link.dev","email":"w***@example.com#6eae7f34","devLink":"http://127.0.0.1:64068/auth/verify?token=64538b984df63f1bd9bee7c29f6035a040e02dc9d7790b208069d41933fc1c60"}
+{"ts":"2026-09-06T16:12:12.943Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_7ff45fc0","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:12.974Z","event":"webpublish.stripe_paid.published","siteId":"5f19f5fe-1371-46ef-9848-b74f79ab6500","orderId":"05647cac-a4e1-4882-8c74-a9abaf22a2ca","url":"http://127.0.0.1:64068/live/w8-ebb2f04d/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:12.979Z","event":"webpublish.unpublish.done","siteId":"5f19f5fe-1371-46ef-9848-b74f79ab6500","slug":"w8-ebb2f04d","alreadyDown":false,"subscriptionId":"sub_w8term_5f19f5fe"}
+FAIL GET /api/sites reports the terminal dunning state after Stripe exhausts retries and unpublishes - terminal state must surface a dunning object
+FAIL buildSiteCard reads site.dunning and distinguishes unpublished/retrying from a healthy paid site - buildSiteCard must read site.dunning
+PASS control: HIDOOK_FAKE_DEPLOY not set; test-pay + isolated ready
+
+4 test(s) failed.

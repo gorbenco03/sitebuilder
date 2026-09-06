@@ -1536,6 +1536,17 @@ body.details-drawer-open .editor-tpl-name {
   hyphens: none;
   white-space: normal;
 }
+/* Wave8 audit: dunning state (webpublish.getDunningState) surfaced on the
+   owner dashboard — a failed/retrying charge or a Stripe-forced unpublish
+   must read as a warning/problem line, never as plain neutral card text. */
+.site-dunning-line {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  max-width: 100%;
+}
+.site-dunning-warning { color: #A16207; }
+.site-dunning-critical { color: var(--error); font-weight: 600; }
 
 .site-card-meta {
   font-size: 0.8rem;
