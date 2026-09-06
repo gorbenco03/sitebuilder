@@ -1,0 +1,92 @@
+[
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-publish",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-slug",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-publish",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-slug",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-publish",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-slug",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-publish",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-slug",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-publish",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-slug",
+    "cls": "field-input"
+  }
+]

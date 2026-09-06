@@ -1,0 +1,92 @@
+[
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-ig-email",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-ig-send-magic",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-instagram",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-ig-email",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-ig-send-magic",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-instagram",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-ig-email",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-ig-send-magic",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-instagram",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-ig-email",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-ig-send-magic",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-instagram",
+    "cls": "modal-close"
+  },
+  {
+    "inside": true,
+    "tag": "INPUT",
+    "id": "input-ig-email",
+    "cls": "field-input"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-ig-send-magic",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-close-instagram",
+    "cls": "modal-close"
+  }
+]

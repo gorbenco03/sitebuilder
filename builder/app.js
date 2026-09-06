@@ -100,10 +100,53 @@ function hideToast() {
   if (t) t.style.display = 'none';
 }
 
+// Focus trap: keep Tab/Shift+Tab cycling inside the open modal instead of
+// leaking into the editor topbar/iframe hidden behind the overlay. ARIA APG
+// "Modal Dialog" pattern, no library. One handler + one "opener" element is
+// tracked per modal id so repeated open/close cycles stay clean.
+const modalFocusState = Object.create(null);
+
+function getFocusableEls(container) {
+  if (!container) return [];
+  const nodes = container.querySelectorAll(
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe,[tabindex]:not([tabindex="-1"])'
+  );
+  return Array.prototype.filter.call(nodes, (el) => {
+    // Skip anything hidden (display:none ancestor, e.g. an inactive publish step).
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  });
+}
+
+function trapModalTab(e, container) {
+  if (e.key !== 'Tab') return;
+  const focusable = getFocusableEls(container);
+  if (!focusable.length) { e.preventDefault(); return; }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  if (e.shiftKey) {
+    if (active === first || !container.contains(active)) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (active === last || !container.contains(active)) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+}
+
 function openModal(id) {
   const el = $(id);
   if (!el) return;
   el.style.display = '';
+  const state = modalFocusState[id] || (modalFocusState[id] = {});
+  state.opener = document.activeElement;
+  if (!state.handler) {
+    state.handler = (e) => trapModalTab(e, el);
+    el.addEventListener('keydown', state.handler);
+  }
   requestAnimationFrame(() => {
     const first = el.querySelector('button,input,a,[tabindex]:not([tabindex="-1"])');
     if (first) first.focus();
@@ -113,6 +156,11 @@ function closeModal(id) {
   const el = $(id);
   if (el) el.style.display = 'none';
   if (id === 'modal-preview') document.body.classList.remove('preview-cookie-isolated');
+  const state = modalFocusState[id];
+  if (state && state.opener && typeof state.opener.focus === 'function' && document.contains(state.opener)) {
+    state.opener.focus();
+  }
+  if (state) state.opener = null;
 }
 
 function setBtnLoading(btn, loading, originalText) {
@@ -246,6 +294,39 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     if (next !== cur) setPath(config, path, next);
   }
 
+  // seo.jsonLd holds serialized JSON, not plain text: a raw split/join over the
+  // string (like cascadeStringPath does) can corrupt the JSON when newN carries a
+  // quote or backslash, silently zeroing out the site's structured data at publish
+  // time. Parse it, rewrite string values as an object, then re-serialize. If it
+  // doesn't parse as JSON, leave it untouched rather than risk breaking it further.
+  function cascadeJsonLdPath(path) {
+    const cur = getPath(config, path);
+    if (typeof cur !== 'string' || !cur) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(cur);
+    } catch (_) {
+      return;
+    }
+    function walk(node) {
+      if (typeof node === 'string') return rewriteIdentityString(node);
+      if (Array.isArray(node)) return node.map(walk);
+      if (node && typeof node === 'object') {
+        const out = {};
+        Object.keys(node).forEach((k) => { out[k] = walk(node[k]); });
+        return out;
+      }
+      return node;
+    }
+    let nextStr;
+    try {
+      nextStr = JSON.stringify(walk(parsed));
+    } catch (_) {
+      return;
+    }
+    if (nextStr !== cur) setPath(config, path, nextStr);
+  }
+
   const title = getPath(config, 'business.title');
   if (typeof title === 'string' && title.length) {
     if (title === oldN) {
@@ -284,8 +365,11 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     'contact.email',
     'business.metaDescription',
     'business.tagline',
-    'seo.jsonLd',
+    'team.title',
   ].forEach(cascadeStringPath);
+
+  // seo.jsonLd is serialized JSON — cascade it structurally, not as plain text.
+  cascadeJsonLdPath('seo.jsonLd');
 }
 
 function isPlausibleHttpUrl(value) {
@@ -4512,7 +4596,7 @@ function wireStaticButtons() {
   // Escape closes everything
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery'].forEach(id => {
+      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery','modal-instagram'].forEach(id => {
         const el = $(id);
         if (el && el.style.display !== 'none') closeModal(id);
       });

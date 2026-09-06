@@ -1,0 +1,92 @@
+[
+  {
+    "inside": true,
+    "tag": "BUTTON",
+    "id": "btn-publish-continue",
+    "cls": "btn-primary btn-full"
+  },
+  {
+    "inside": false,
+    "tag": "BODY",
+    "id": null,
+    "cls": "editor-preview-cookie-isolated"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-back-templates",
+    "cls": "btn-icon-back"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-preview-desktop",
+    "cls": "device-btn active"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-preview-mobile",
+    "cls": "device-btn"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-add-instagram",
+    "cls": "btn-topbar"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-color-picker",
+    "cls": "btn-topbar"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-open-drawer",
+    "cls": "btn-topbar"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-download-html",
+    "cls": "btn-topbar"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-download-zip",
+    "cls": "btn-topbar"
+  },
+  {
+    "inside": false,
+    "tag": "BUTTON",
+    "id": "btn-publish",
+    "cls": "btn-primary btn-publish-top"
+  },
+  {
+    "inside": false,
+    "tag": "IFRAME",
+    "id": "preview-iframe",
+    "cls": "preview-iframe preview-iframe--edit"
+  },
+  {
+    "inside": false,
+    "tag": "IFRAME",
+    "id": "preview-iframe",
+    "cls": "preview-iframe preview-iframe--edit"
+  },
+  {
+    "inside": false,
+    "tag": "IFRAME",
+    "id": "preview-iframe",
+    "cls": "preview-iframe preview-iframe--edit"
+  },
+  {
+    "inside": false,
+    "tag": "IFRAME",
+    "id": "preview-iframe",
+    "cls": "preview-iframe preview-iframe--edit"
+  }
+]
