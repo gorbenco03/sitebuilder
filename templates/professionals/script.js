@@ -5,9 +5,77 @@
 document.addEventListener('DOMContentLoaded', () => {
     initReveal();
     initSmoothScroll();
+    initMobileNav();
     initAppointment();
     initWhatsAppQR();
 });
+
+function initMobileNav() {
+    const toggle = document.getElementById('pr-nav-toggle');
+    const menu = document.getElementById('pr-nav-mobile');
+    if (!toggle || !menu) return;
+
+    function focusables() {
+        return Array.from(menu.querySelectorAll('a[href]'));
+    }
+
+    function openMenu() {
+        menu.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+        const first = focusables()[0];
+        if (first) first.focus();
+    }
+
+    function closeMenu(returnFocus) {
+        if (menu.hidden) return;
+        menu.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        if (returnFocus !== false) toggle.focus();
+    }
+
+    toggle.addEventListener('click', () => {
+        if (toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+        else openMenu();
+    });
+
+    menu.querySelectorAll('a').forEach((a) => {
+        a.addEventListener('click', () => closeMenu(false));
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (menu.hidden) return;
+        if (e.key === 'Escape') {
+            closeMenu();
+            return;
+        }
+        if (e.key === 'Tab') {
+            const items = focusables();
+            if (!items.length) return;
+            const firstEl = items[0];
+            const lastEl = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === firstEl) {
+                e.preventDefault();
+                lastEl.focus();
+            } else if (!e.shiftKey && document.activeElement === lastEl) {
+                e.preventDefault();
+                firstEl.focus();
+            }
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (menu.hidden) return;
+        if (menu.contains(e.target) || toggle.contains(e.target)) return;
+        closeMenu(false);
+    });
+
+    try {
+        const mq = window.matchMedia('(min-width: 820px)');
+        const onChange = (e) => { if (e.matches) closeMenu(false); };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else if (mq.addListener) mq.addListener(onChange);
+    } catch (_) { /* matchMedia unavailable — ignore */ }
+}
 
 function initReveal() {
     const nodes = document.querySelectorAll('.pr-reveal');
@@ -148,6 +216,7 @@ function initAppointment() {
     const done = document.getElementById('pr-appt-done');
     const doneBody = document.getElementById('pr-appt-done-body');
     const doneConfirm = document.getElementById('pr-appt-done-confirm');
+    const fail = document.getElementById('pr-appt-fail');
     const weekly = loadWeekly();
 
     const typeInputs = () => Array.from(form.querySelectorAll('input[name="appt-type"]'));
@@ -304,6 +373,7 @@ function initAppointment() {
     async function sendRequest(e) {
         if (e) e.preventDefault();
         if (submitBtn && submitBtn.disabled) return;
+        if (fail) fail.hidden = true;
 
         const type = selectedType();
         const name = (form.querySelector('#pr-name') || {}).value || '';
@@ -345,7 +415,15 @@ function initAppointment() {
         let result = null;
         let localOnly = false;
 
-        if (payload.slug && /^https?:/i.test(location.origin || '')) {
+        // A real page (http/https origin) always tries the live backend first —
+        // whether it's /live/<slug>/ on Hidook or a self-hosted export with no
+        // backend at all. Only a sandboxed builder-preview document (opaque
+        // "null" origin from srcdoc) skips straight to the local-preview branch.
+        // This is what lets a self-hosted export be told apart from a real
+        // submission: if the fetch fails (404, network error, non-ok response —
+        // exactly what a static host with no /api/appointments route returns),
+        // we show an honest failure state instead of a fake success.
+        if (/^https?:/i.test(location.origin || '')) {
             try {
                 const res = await fetch(location.origin + '/api/appointments', {
                     method: 'POST',
@@ -361,8 +439,9 @@ function initAppointment() {
             } catch (err) {
                 if (hint) {
                     hint.hidden = false;
-                    hint.textContent = 'Nu am putut trimite cererea. Încearcă din nou sau folosește emailul de contact.';
+                    hint.textContent = 'Cererea NU a fost trimisă. Formularul rămâne completat — încearcă din nou sau folosește telefonul ori WhatsApp de mai jos.';
                 }
+                if (fail) fail.hidden = false;
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     const span = submitBtn.querySelector('span');

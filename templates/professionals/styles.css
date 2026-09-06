@@ -133,6 +133,101 @@ button, input, select, textarea { font: inherit; color: inherit; }
     transition: transform 140ms var(--ease), opacity 140ms var(--ease);
 }
 .pr-nav__cta:active { transform: scale(0.98); }
+.pr-nav__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex: 0 0 auto;
+}
+
+/* Mobile nav toggle (hamburger) */
+.pr-nav__toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+.pr-nav__toggle:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+}
+.pr-nav__toggle-bars,
+.pr-nav__toggle-bars::before,
+.pr-nav__toggle-bars::after {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: transform 160ms var(--ease), opacity 160ms var(--ease), background 160ms var(--ease);
+}
+.pr-nav__toggle-bars {
+    position: relative;
+}
+.pr-nav__toggle-bars::before,
+.pr-nav__toggle-bars::after {
+    content: "";
+    position: absolute;
+    left: 0;
+}
+.pr-nav__toggle-bars::before { top: -6px; }
+.pr-nav__toggle-bars::after { top: 6px; }
+.pr-nav__toggle[aria-expanded="true"] .pr-nav__toggle-bars {
+    background: transparent;
+}
+.pr-nav__toggle[aria-expanded="true"] .pr-nav__toggle-bars::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+.pr-nav__toggle[aria-expanded="true"] .pr-nav__toggle-bars::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+@media (max-width: 819.98px) {
+    .pr-nav__toggle { display: inline-flex; }
+}
+
+.pr-nav__mobile {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 18px 40px rgba(20, 18, 15, 0.18);
+    z-index: 39;
+}
+.pr-nav__mobile[hidden] { display: none !important; }
+.pr-nav__mobile a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--soft);
+    border-top: 1px solid var(--line);
+}
+.pr-nav__mobile a:first-child { border-top: 0; }
+.pr-nav__mobile a:hover,
+.pr-nav__mobile a:focus-visible {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.pr-nav__mobile-cta { color: var(--accent); }
+@media (min-width: 820px) {
+    .pr-nav__mobile { display: none !important; }
+}
 
 /* Hero */
 .pr-hero {
@@ -276,6 +371,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
     border-color: var(--brass);
     color: var(--ink);
 }
+.pr-sec--book .pr-btn--ghost {
+    color: var(--paper);
+    border-color: rgba(243, 239, 232, 0.32);
+}
+.pr-sec--book .pr-btn--ghost:hover { border-color: var(--paper); }
 .pr-sec--book .pr-appt-done {
     border-color: rgba(243, 239, 232, 0.22);
     background: rgba(243, 239, 232, 0.06);
@@ -444,6 +544,30 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pr-privacy { font-size: 0.85rem; margin: 0.75rem 0 1rem; max-width: 40rem; }
 .pr-appt__submit { margin-top: 0.25rem; min-width: 12rem; }
 .pr-appt__fallback { margin-top: 1rem; font-size: 0.88rem; }
+.pr-appt__fail {
+    margin-top: 1.5rem;
+    padding: 1.35rem 1.25rem;
+    border: 1px solid rgba(243, 239, 232, 0.22);
+    border-radius: var(--r);
+    max-width: 42rem;
+    background: rgba(243, 239, 232, 0.06);
+}
+.pr-appt__fail[hidden] { display: none !important; }
+.pr-appt__fail-title {
+    font-family: var(--display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--brass);
+}
+.pr-appt__fail .pr-copy { color: rgba(243, 239, 232, 0.82); }
+.pr-appt__fail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+.pr-appt__fail-actions .pr-btn { text-decoration: none !important; }
 .pr-appt-done {
     margin-top: 1.5rem;
     padding: 1.35rem 1.25rem;
