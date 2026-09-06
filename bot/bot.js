@@ -96,6 +96,7 @@ setMessenger((chatId, text, opts) =>
  * Dispatcher: subscription lifecycle events are handled before metadata routing.
  * Remaining Stripe events are routed by metadata.platform.
  *   customer.subscription.updated/deleted → persist entitlement / unpublish
+ *   invoice.payment_succeeded/invoice.paid → extend automatic renewal entitlement
  *   platform === 'web'  → webpublish.handleStripePaid (builder web flow)
  *   otherwise           → flow.handleStripeWebhookEvent (Telegram bot flow)
  */
@@ -113,6 +114,16 @@ async function onStripeEvent(event) {
             log('webhook.stripe.subscription.handled', { type });
         } catch (e) {
             log('webhook.stripe.subscription.error', { err: e.message, type }, 'error');
+        }
+        return;
+    }
+
+    if (type === 'invoice.payment_succeeded' || type === 'invoice.paid') {
+        try {
+            await webpublish.handleStripeInvoicePaid(event);
+            log('webhook.stripe.invoice.handled', { type });
+        } catch (e) {
+            log('webhook.stripe.invoice.error', { err: e.message, type }, 'error');
         }
         return;
     }
