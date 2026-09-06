@@ -3,6 +3,7 @@
 // Zero external dependencies — QR codes generated locally via inline algorithm.
 
 document.addEventListener('DOMContentLoaded', () => {
+    sanitizeIconHrefs();
     initScrollAnimations();
     initParallax();
     initSmoothScrolling();
@@ -10,6 +11,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initWhatsAppQR();
     initMobileNav();
 });
+
+function sanitizeIconHrefs() {
+    var OK = ['http:', 'https:', 'tel:', 'mailto:'];
+    document.querySelectorAll('.pf-chip__icon [href]').forEach(function (el) {
+        try { if (OK.indexOf(new URL(el.getAttribute('href'), location.href).protocol) < 0) el.setAttribute('href', '#'); }
+        catch (e) { el.setAttribute('href', '#'); }
+    });
+}
 
 /**
  * Mobile navigation — hamburger toggle for the chrome nav below 720px.

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "tab",
+    "label": "TAB inside the scheme word (jav<TAB>ascript:)",
+    "renderedHref": "#",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  },
+  {
+    "id": "cr",
+    "label": "CR inside the scheme word (jav<CR>ascript:)",
+    "renderedHref": "#",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  },
+  {
+    "id": "lf",
+    "label": "LF inside the scheme word (jav<LF>ascript:)",
+    "renderedHref": "#",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  },
+  {
+    "id": "entity-decimal",
+    "label": "HTML decimal entity for \"j\" (&#106;avascript:)",
+    "renderedHref": "#",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  },
+  {
+    "id": "entity-hex",
+    "label": "HTML hex entity for \"j\" (&#x6a;avascript:)",
+    "renderedHref": "#",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  },
+  {
+    "id": "plain-control",
+    "label": "sanity: plain javascript: with no obfuscation (must already be blocked)",
+    "renderedHref": "# = (window.__xssFired||0) + 1;",
+    "xssFired": false,
+    "navigationError": null,
+    "verdict": "safe — neutralised"
+  }
+]

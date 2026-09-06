@@ -1,0 +1,108 @@
+{
+  "before": [
+    {
+      "name": "contrast >= 4.5:1 — section kicker label on light background (.pf-kicker)",
+      "ok": false,
+      "detail": "section kicker label on light background measured 2.61:1, need >= 4.5:1"
+    },
+    {
+      "name": "contrast >= 4.5:1 — service chip price on white chip (.pf-chip__price)",
+      "ok": false,
+      "detail": "service chip price on white chip measured 2.71:1, need >= 4.5:1"
+    },
+    {
+      "name": "contrast >= 4.5:1 — detailed price value on paper (.pf-price__val)",
+      "ok": false,
+      "detail": "detailed price value on paper measured 2.61:1, need >= 4.5:1"
+    },
+    {
+      "name": "contrast >= 4.5:1 — footer text on paper (.pf-foot)",
+      "ok": false,
+      "detail": "footer text on paper measured 2.61:1, need >= 4.5:1"
+    },
+    {
+      "name": "contrast >= 4.5:1 — sticky-nav CTA button text on brand primary (.pf-chrome__cta)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — hero CTA button text on brand primary (.hero-cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — mobile nav hamburger (.pf-chrome__toggle)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — sticky-nav booking CTA (.pf-chrome__cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — hero CTA (.hero-cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — footer social link (.pf-foot__soc a)",
+      "ok": false,
+      "detail": "footer social link measured 13.0x18.0, need >= 24x24"
+    },
+    {
+      "name": "no horizontal overflow at simulated 200% zoom (desktop-zoom200, 720x450)",
+      "ok": true
+    },
+    {
+      "name": "no horizontal overflow at simulated 200% zoom (mobile-zoom200, 195x422)",
+      "ok": false,
+      "detail": "mobile-zoom200: scrollWidth=352 > clientWidth=195 (horizontal scroll present)"
+    }
+  ],
+  "after": [
+    {
+      "name": "contrast >= 4.5:1 — section kicker label on light background (.pf-kicker)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — service chip price on white chip (.pf-chip__price)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — detailed price value on paper (.pf-price__val)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — footer text on paper (.pf-foot)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — sticky-nav CTA button text on brand primary (.pf-chrome__cta)",
+      "ok": true
+    },
+    {
+      "name": "contrast >= 4.5:1 — hero CTA button text on brand primary (.hero-cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — mobile nav hamburger (.pf-chrome__toggle)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — sticky-nav booking CTA (.pf-chrome__cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — hero CTA (.hero-cta)",
+      "ok": true
+    },
+    {
+      "name": "touch target >= 24x24 — footer social link (.pf-foot__soc a)",
+      "ok": true
+    },
+    {
+      "name": "no horizontal overflow at simulated 200% zoom (desktop-zoom200, 720x450)",
+      "ok": true
+    },
+    {
+      "name": "no horizontal overflow at simulated 200% zoom (mobile-zoom200, 195x422)",
+      "ok": true
+    }
+  ]
+}
