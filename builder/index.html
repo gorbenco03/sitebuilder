@@ -92,6 +92,11 @@
     </div>
   </div>
   <div class="editor-topbar-right">
+    <div id="save-status" class="save-status" data-state="idle" style="display:none" aria-live="polite">
+      <span class="save-status-dot" aria-hidden="true"></span>
+      <span id="save-status-text">Salvat</span>
+      <button type="button" id="btn-save-retry" class="save-status-retry" style="display:none">Reîncearcă</button>
+    </div>
     <div id="checklist-indicator" class="checklist-indicator" title="Câmpuri obligatorii completate" aria-label="Câmpuri completate">
       <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
         <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
@@ -153,6 +158,19 @@
   <span class="tab-conflict-actions">
     <button type="button" class="btn-ghost btn-sm" id="btn-tab-conflict-reload">Reîncarcă pagina</button>
     <button type="button" class="tab-conflict-dismiss" id="btn-tab-conflict-dismiss" aria-label="Închide avertismentul">&times;</button>
+  </span>
+</div>
+
+<!-- ===== RECOVERY BANNER (Wave 9 — shown outside #edit when a local draft was
+     never cleanly finished: browser crash, accidental close). Mutually
+     exclusive with the tab-conflict banner above by construction — that one
+     is #edit-only, this one hides itself the moment #edit opens (see
+     showScreen()), so they never overlap or double-warn. ===== -->
+<div id="recovery-banner" class="recovery-banner" role="status" aria-live="polite" aria-hidden="true" style="display:none">
+  <span class="recovery-banner-text">Ai un proiect neterminat<span id="recovery-banner-name"></span>. Continui de unde ai rămas?</span>
+  <span class="recovery-banner-actions">
+    <button type="button" class="btn-primary btn-sm" id="btn-recovery-resume">Continuă editarea</button>
+    <button type="button" class="btn-ghost btn-sm" id="btn-recovery-discard">Renunță</button>
   </span>
 </div>
 

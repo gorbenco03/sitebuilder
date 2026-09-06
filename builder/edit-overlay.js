@@ -13,6 +13,16 @@
  *   iframe → parent:
  *     {hb:'ready'}                           — overlay mounted
  *     {hb:'text', path, value}               — text edited (debounced 300ms + blur)
+ *     {hb:'text-live', path, value}          — SAME edit, sent on every keystroke
+ *                                              (undebounced). Wave 9 (save-state audit):
+ *                                              the parent mirrors this into an in-memory
+ *                                              "not yet committed" map so a reload/close
+ *                                              inside the 300ms debounce window never loses
+ *                                              the keystroke — see flushPendingLiveEdits()
+ *                                              in app.js. Cheap by design (no persistence,
+ *                                              no history push) so it is safe to send on
+ *                                              every keystroke without the cost the 300ms
+ *                                              debounce on {hb:'text'} exists to avoid.
  *     {hb:'image', path}                     — user wants to change an image
  *     {hb:'list-add', listPath}              — add new list item
  *     {hb:'list-remove', path}               — remove list item at path
@@ -440,9 +450,17 @@
         });
       }
 
-      /* On input: debounced postMessage */
+      /* On input: debounced postMessage (the "committed" edit — applies to
+       * draft.config, persists, records an undo step) PLUS an immediate,
+       * undebounced mirror (Wave 9 — closes the 300ms reload-loses-the-edit
+       * window: the parent keeps the live value in memory so a reload/close
+       * inside the debounce window can still recover it without waiting on
+       * this timer). The mirror is intentionally cheap — no draft.config
+       * write, no localStorage, no history — so sending it every keystroke
+       * costs nothing the 300ms debounce below still exists to avoid. */
       el.addEventListener('input', function () {
         var value = el.textContent;
+        toParent({ hb: 'text-live', path: path, value: value });
         debounce(path, function () {
           toParent({ hb: 'text', path: path, value: value });
         }, 300);

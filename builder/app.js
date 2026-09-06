@@ -830,6 +830,19 @@ function resetHistory() {
   if (draft.config) pushHistory(null);
   updateHistoryButtons();
   hideTabConflictBanner();
+  // Wave 9: a freshly loaded draft (new design, resumed local draft, paid
+  // bind) starts its own save-state session — never carry over a stale
+  // "Salvat"/error pill (or a live-edit mirror) from whatever was open
+  // before. Guarded like pushHistory/TAB_ID above for isolated-extraction
+  // tests that eval resetHistory() without these declared.
+  if (typeof pendingLiveEdits === 'object' && pendingLiveEdits) pendingLiveEdits = {};
+  if (typeof pendingOpCount === 'number') pendingOpCount = 0;
+  if (typeof localSaveOk !== 'undefined') localSaveOk = true;
+  if (typeof serverSaveTimer !== 'undefined' && serverSaveTimer) { clearTimeout(serverSaveTimer); serverSaveTimer = null; }
+  if (typeof serverSaveInFlight !== 'undefined') serverSaveInFlight = false;
+  if (typeof serverSaveQueuedAgain !== 'undefined') serverSaveQueuedAgain = false;
+  if (typeof hasEverEdited !== 'undefined') hasEverEdited = false;
+  if (typeof setSaveState === 'function') setSaveState('idle');
 }
 
 /** Re-sync every piece of editor UI that caches a copy of draft.config values
@@ -911,6 +924,298 @@ function initTabConflictWatcher() {
     if (!sameDraft) return;
     showTabConflictBanner();
   });
+}
+
+// ---------------------------------------------------------------------------
+// 7d. Save state — visible saving/saved/failed + exit guard (Wave 9)
+// ---------------------------------------------------------------------------
+//
+// The most basic promise a site builder makes — "the customer never loses their work,
+// and always knows whether it is saved" — was previously unmet twice over:
+// (1) there was no beforeunload guard at all, so closing/reloading mid-edit
+// silently dropped anything not yet in localStorage, and (2) canvas text
+// edits sat debounced 300ms before even reaching draft.config, a window a
+// reload could land inside and lose silently.
+//
+// Local persistence (saveDraft() → localStorage) is the safety net every
+// edit already runs through; it is synchronous and effectively instant, so
+// it is treated as the *true* save for anonymous editing. Signed-in users
+// additionally get a debounced server-side autosave (POST /api/draft, the
+// same endpoint already used before HTML/ZIP export) — that round-trip is
+// the one that can genuinely fail (offline, 500, a revoked session) and
+// needs a visible, retryable failure state.
+//
+// States: 'idle' (nothing edited yet — indicator stays hidden, per the task
+// brief note that a builder shouting SAVING on every keystroke is worse
+// than one that says nothing), 'saving', 'saved', 'error'.
+
+let saveState = 'idle';
+let saveErrorMessage = '';
+let hasEverEdited = false;
+
+/** path → value for a canvas text edit sent live (every keystroke) but not
+ * yet confirmed by its debounced/blur {hb:'text'} commit. Cheap mirror only
+ * — never written to draft.config directly. See edit-overlay.js and the
+ * 'text-live' case in initPostMessageListener(). */
+let pendingLiveEdits = {};
+
+/** Count of in-flight async operations that must finish before the canvas
+ * is fully "safe" (currently: image resize between file-pick and the
+ * saveDraft() that follows it — picking a photo and closing the tab before
+ * the resize finishes would otherwise drop the change with no warning). */
+let pendingOpCount = 0;
+
+/** False after localStorage.setItem throws (quota exceeded — a template
+ * stuffed with several full-size photos) until the next successful write. */
+let localSaveOk = true;
+
+const SERVER_AUTOSAVE_DEBOUNCE_MS = 1200;
+let serverSaveTimer = null;
+let serverSaveInFlight = false;
+let serverSaveQueuedAgain = false;
+
+function setSaveState(state, message) {
+  saveState = state;
+  saveErrorMessage = message || '';
+  renderSaveIndicator();
+}
+
+function renderSaveIndicator() {
+  const el = $('save-status');
+  const textEl = $('save-status-text');
+  const retryBtn = $('btn-save-retry');
+  if (!el || !textEl) return;
+  if (saveState === 'idle') { hide(el); return; }
+  show(el);
+  el.dataset.state = saveState;
+  el.title = saveState === 'error' ? saveErrorMessage : '';
+  if (saveState === 'saving') textEl.textContent = 'Se salvează…';
+  else if (saveState === 'saved') textEl.textContent = 'Salvat';
+  else if (saveState === 'error') textEl.textContent = 'Nu s-a salvat';
+  if (retryBtn) retryBtn.style.display = saveState === 'error' ? '' : 'none';
+}
+
+/** Called on every "live" keystroke mirror — cheap, only flips the visible
+ * state to "saving" the first time (no flicker on every character). */
+function noteEditingInProgress() {
+  hasEverEdited = true;
+  if (saveState !== 'saving') setSaveState('saving');
+}
+
+/**
+ * Single settle point, called after ANY local persist attempt (saveDraft())
+ * and after any pending async op (image resize) finishes. Idempotent and
+ * safe to call redundantly — it just resolves the visible state from
+ * whatever is currently true.
+ */
+function settleAfterLocalSave() {
+  if (!localSaveOk) {
+    setSaveState('error', saveErrorMessage ||
+      'Proiectul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.');
+    return;
+  }
+  if (Object.keys(pendingLiveEdits).length > 0 || pendingOpCount > 0) {
+    setSaveState('saving');
+    return;
+  }
+  if (currentUser) {
+    scheduleServerAutosave();
+  } else {
+    setSaveState('saved');
+  }
+}
+
+/**
+ * Start/end markers for an async operation that must complete before the
+ * canvas is "safe" (image resize, FileReader) — see applySelectedImageFile
+ * and openImagePickerForPath. Kept as their own functions (rather than
+ * inlining pendingOpCount++/-- at each call site) so every call site only
+ * needs ONE typeof-guarded reference instead of three, matching the
+ * isolated-extraction test compatibility used throughout this file.
+ */
+function noteAsyncSaveOpStart() {
+  pendingOpCount++;
+  hasEverEdited = true;
+  setSaveState('saving');
+}
+function noteAsyncSaveOpEnd() {
+  pendingOpCount = Math.max(0, pendingOpCount - 1);
+  settleAfterLocalSave();
+}
+
+/** Called from saveDraft() right after lsSet() — see its typeof-guarded call
+ * site for why this indirection exists (isolated-extraction tests eval just
+ * the saveDraft() source text without this function declared). */
+function noteLocalSaveResult(ok) {
+  hasEverEdited = true;
+  localSaveOk = ok;
+  settleAfterLocalSave();
+}
+
+/** Apply any canvas keystroke(s) still sitting in the live mirror straight
+ * into draft.config + localStorage, synchronously. Called from the
+ * beforeunload guard and from a page-hide fallback (mobile Safari/Chrome
+ * often skip beforeunload on tab-close/backgrounding) so the debounce
+ * window can never cost more than what is already safely in memory. */
+function flushPendingLiveEdits() {
+  const paths = Object.keys(pendingLiveEdits);
+  if (!paths.length) return false;
+  paths.forEach((path) => {
+    const value = pendingLiveEdits[path];
+    delete pendingLiveEdits[path];
+    onInlineTextEdit(path, value);
+  });
+  return true;
+}
+
+/** True whenever leaving right now would cost the owner something they
+ * cannot get back — the ONLY condition the beforeunload guard fires on, so
+ * it never trains people to dismiss it (see task brief). */
+function hasUnsavedChanges() {
+  if (!draft.templateId || !draft.config) return false;
+  if (Object.keys(pendingLiveEdits).length > 0) return true;
+  if (pendingOpCount > 0) return true;
+  if (!localSaveOk) return true;
+  return saveState === 'error';
+}
+
+/**
+ * Debounced server-side autosave for signed-in users (POST /api/draft — the
+ * same endpoint already used before HTML/ZIP export, see downloadDraftHtml/
+ * downloadDraftZip). Anonymous editing never reaches this: /api/draft
+ * requires auth, and localStorage is already the anonymous safety net.
+ */
+function scheduleServerAutosave() {
+  setSaveState('saving');
+  if (serverSaveTimer) clearTimeout(serverSaveTimer);
+  serverSaveTimer = setTimeout(runServerAutosave, SERVER_AUTOSAVE_DEBOUNCE_MS);
+}
+
+async function runServerAutosave() {
+  serverSaveTimer = null;
+  if (!currentUser || !draft.templateId || !draft.config) { setSaveState('saved'); return; }
+  if (serverSaveInFlight) { serverSaveQueuedAgain = true; return; }
+  serverSaveInFlight = true;
+  const snapshotTemplateId = draft.templateId;
+  const snapshotConfig = deepClone(draft.config);
+  try {
+    const saved = await apiPost('/api/draft', {
+      siteId: currentSiteId || undefined,
+      templateId: snapshotTemplateId,
+      config: snapshotConfig,
+    });
+    serverSaveInFlight = false;
+    if (saved && saved.site && saved.site.id) {
+      currentSiteId = saved.site.id;
+      currentSitePaid = !!saved.site.paid;
+      if (saved.site.slug) currentSiteSlug = saved.site.slug;
+    }
+    if (serverSaveQueuedAgain || Object.keys(pendingLiveEdits).length > 0 || pendingOpCount > 0) {
+      serverSaveQueuedAgain = false;
+      scheduleServerAutosave();
+    } else {
+      setSaveState('saved');
+    }
+  } catch (e) {
+    serverSaveInFlight = false;
+    serverSaveQueuedAgain = false;
+    let msg;
+    if (e && e.status === 401) {
+      msg = 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.';
+    } else if (e && e.fromServer && e.message) {
+      msg = 'Nu s-a putut salva în cont: ' + e.message;
+    } else {
+      msg = 'Nu s-a putut salva în cont — verifică conexiunea la internet.';
+    }
+    setSaveState('error', msg);
+  }
+}
+
+/** Wired to the retry button that appears next to the "Nu s-a salvat" state. */
+function retrySave() {
+  if (saveState !== 'error') return;
+  if (!localSaveOk) {
+    // Local (quota) failure — re-attempt the local write first; a real fix
+    // (freeing space, publishing) is outside what this page can do alone.
+    saveDraft();
+    return;
+  }
+  runServerAutosave();
+}
+
+function initSaveGuard() {
+  window.addEventListener('beforeunload', (e) => {
+    flushPendingLiveEdits();
+    if (!hasUnsavedChanges()) return undefined;
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  });
+  // Belt-and-suspenders: mobile Safari/Chrome frequently back-ground or kill
+  // a tab without ever firing beforeunload. visibilitychange → 'hidden'
+  // fires reliably in both cases, so flush there too (no dialog — just the
+  // same synchronous local persist beforeunload above would have done).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingLiveEdits();
+  });
+  const retryBtn = $('btn-save-retry');
+  if (retryBtn) retryBtn.addEventListener('click', retrySave);
+}
+
+// ---------------------------------------------------------------------------
+// 7e. Recovery banner — offer an interrupted local draft back (Wave 9)
+// ---------------------------------------------------------------------------
+//
+// #edit already auto-resumes the local draft the instant it opens
+// (resumeLocalDraft, wired into handleRoute) — a plain reload of #edit was
+// never the problem. The gap was returning some OTHER way after a crash or
+// an accidental close: templates screen, dashboard, a fresh tab. This banner
+// only ever shows there, and only when the localStorage draft is NOT the one
+// already loaded in this tab (i.e. genuinely left over from before), so it
+// can never appear alongside — or contradict — the multi-tab conflict
+// banner, which is #edit-only.
+
+let recoveryBannerDismissedThisSession = false;
+
+function showRecoveryBanner() {
+  const banner = $('recovery-banner');
+  if (banner) { banner.style.display = ''; banner.setAttribute('aria-hidden', 'false'); }
+}
+
+function hideRecoveryBanner() {
+  const banner = $('recovery-banner');
+  if (banner) { banner.style.display = 'none'; banner.setAttribute('aria-hidden', 'true'); }
+}
+
+function maybeShowRecoveryBanner() {
+  if (recoveryBannerDismissedThisSession) { hideRecoveryBanner(); return; }
+  const saved = loadDraft();
+  if (!saved || !saved.templateId || !saved.config) { hideRecoveryBanner(); return; }
+  // Already the draft loaded in this tab — not "interrupted", just navigation.
+  if (draft.templateId && draft.templateId === saved.templateId) { hideRecoveryBanner(); return; }
+  const nameEl = $('recovery-banner-name');
+  if (nameEl) {
+    const registry = (typeof getTemplateList === 'function' && getTemplateList()) || [];
+    const meta = registry.find(t => t.id === saved.templateId);
+    nameEl.textContent = meta && meta.name ? (': ' + meta.name) : '';
+  }
+  showRecoveryBanner();
+}
+
+/** "Renunță" — the owner explicitly does not want the leftover draft back.
+ * Only clears the local scratch copy; a paid/created site (siteId bound) is
+ * never touched here and stays reachable from "Proiectele mele". */
+function discardLocalDraft() {
+  recoveryBannerDismissedThisSession = true;
+  try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
+  hideRecoveryBanner();
+}
+
+function initRecoveryBanner() {
+  const resumeBtn = $('btn-recovery-resume');
+  const discardBtn = $('btn-recovery-discard');
+  if (resumeBtn) resumeBtn.addEventListener('click', () => { window.location.hash = '#edit'; });
+  if (discardBtn) discardBtn.addEventListener('click', discardLocalDraft);
 }
 
 // ---------------------------------------------------------------------------
@@ -1295,7 +1600,29 @@ function initPostMessageListener() {
         onIframeReady();
         break;
       case 'text':
+        // The committed edit is about to land — clear the in-memory safety
+        // net FIRST (see 'text-live' below and flushPendingLiveEdits()), so
+        // that onInlineTextEdit()'s own saveDraft() call sees an accurate
+        // "nothing left pending" state when it settles the save indicator —
+        // otherwise it would see this exact edit still marked pending and
+        // stay on "saving" forever after the very edit it was waiting for.
+        // Guarded: a newer keystroke may have arrived after this debounced
+        // message was queued but before it was processed — leave that one
+        // in place for the next flush instead of dropping it.
+        if (msg.path && pendingLiveEdits[msg.path] === msg.value) delete pendingLiveEdits[msg.path];
         onInlineTextEdit(msg.path, msg.value);
+        break;
+      case 'text-live':
+        // Wave 9 (save-state audit): undebounced mirror of an in-progress
+        // canvas text edit. Never applied to draft.config directly — that
+        // stays the job of the debounced/blur {hb:'text'} commit below —
+        // just kept in memory so a reload/close DURING the 300ms debounce
+        // window can still recover the latest keystroke via
+        // flushPendingLiveEdits() instead of silently losing it.
+        if (msg.path) {
+          pendingLiveEdits[msg.path] = msg.value;
+          noteEditingInProgress();
+        }
         break;
       case 'image':
         onImageChangeRequest(msg.path, msg.src, msg.alt);
@@ -1693,6 +2020,12 @@ async function applySelectedImageFile(file, path, src, alt) {
   if (!path) path = resolveImagePathFromSrc(src);
   if (!path) path = resolveImagePathFromAlt(alt);
   if (!file || !path) return;
+  // Wave 9 (save-state audit): resizing runs async with nothing in
+  // draft.config yet — closing the tab mid-resize used to drop the photo
+  // with no warning. Count it as a pending op so the exit guard fires.
+  // typeof-guarded like the pushHistory/TAB_ID checks inside saveDraft() —
+  // isolated-extraction tests eval this function without Wave 9 state.
+  if (typeof noteAsyncSaveOpStart === 'function') noteAsyncSaveOpStart();
   try {
     showPreviewSpinner(true);
     const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
@@ -1707,6 +2040,8 @@ async function applySelectedImageFile(file, path, src, alt) {
   } catch (e) {
     showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
     showPreviewSpinner(false);
+  } finally {
+    if (typeof noteAsyncSaveOpEnd === 'function') noteAsyncSaveOpEnd();
   }
 }
 
@@ -2607,19 +2942,29 @@ function openImagePickerForPath(configPath, cb) {
       release();
       return;
     }
+    // Wave 9 (save-state audit): FileReader is async — closing the tab
+    // between file-pick and the saveDraft() that the cb callback below runs
+    // would otherwise drop the photo with no warning. Same async-op guard
+    // as the canvas image upload path (applySelectedImageFile) — typeof-
+    // guarded for isolated-extraction tests that eval this function
+    // without Wave 9 state declared.
+    if (typeof noteAsyncSaveOpStart === 'function') noteAsyncSaveOpStart();
+    const settlePendingOp = () => { if (typeof noteAsyncSaveOpEnd === 'function') noteAsyncSaveOpEnd(); };
     const reader = new FileReader();
     reader.onload = () => {
       const chosenImage = String(reader.result || '');
-      if (input._hbPathImagePicker !== request) return;
+      if (input._hbPathImagePicker !== request) { settlePendingOp(); return; }
       release();
       if (chosenImage && typeof cb === 'function') cb(chosenImage);
+      settlePendingOp();
     };
-    reader.onerror = release;
-    reader.onabort = release;
+    reader.onerror = () => { release(); settlePendingOp(); };
+    reader.onabort = () => { release(); settlePendingOp(); };
     try {
       reader.readAsDataURL(file);
     } catch (_) {
       release();
+      settlePendingOp();
     }
   };
   // Capture before the shared inline-image listener clears this input's files.
@@ -2785,7 +3130,12 @@ function saveDraft() {
     payload.paid = !!currentSitePaid;
     if (currentSiteSlug) payload.slug = currentSiteSlug;
   }
-  lsSet(DRAFT_KEY, payload);
+  const ok = lsSet(DRAFT_KEY, payload);
+  // Wave 9 (save-state audit): resolve the visible saving/saved/failed
+  // indicator + exit guard from the result of this write. Same
+  // isolated-extraction test compatibility as pushHistory/TAB_ID above.
+  if (typeof noteLocalSaveResult === 'function') noteLocalSaveResult(ok);
+  return ok;
 }
 function loadDraft() { return lsGet(DRAFT_KEY); }
 
@@ -3683,6 +4033,14 @@ function updateUserUI(user) {
     if (navDash) hide(navDash);
     if (acctLogoutItem) hide(acctLogoutItem);
     if (acctLogoutAllItem) hide(acctLogoutAllItem);
+    // Signed out (or session expired mid-edit) — a queued/in-flight server
+    // autosave would just 401 pointlessly. The local draft is untouched, so
+    // fall back to reflecting local-only save status instead of leaving a
+    // stale "Se salvează…"/error pointed at a session that no longer exists.
+    if (serverSaveTimer) { clearTimeout(serverSaveTimer); serverSaveTimer = null; }
+    serverSaveInFlight = false;
+    serverSaveQueuedAgain = false;
+    if (hasEverEdited) setSaveState(localSaveOk ? 'saved' : 'error', localSaveOk ? '' : saveErrorMessage);
   }
 }
 
@@ -4633,6 +4991,38 @@ async function startWithTemplate(templateId) {
 
   hideToast();
 
+  // Wave 9 (save-state audit): the local draft slot below is a SINGLE global
+  // key — starting a different template overwrites it outright. This
+  // switch is never blocked on a confirmation (it must stay a plain,
+  // synchronous UI action — existing walkthroughs, including the frozen
+  // fullpass oracle, click straight through it with no dialog to answer),
+  // but it must never be a SILENT loss either: best-effort back the old
+  // draft up to the account when possible (recoverable afterwards from
+  // "Proiectele mele"), and always say plainly what happened.
+  const existingDraftForSwitch = loadDraft();
+  if (existingDraftForSwitch && existingDraftForSwitch.templateId &&
+      existingDraftForSwitch.templateId !== templateId && existingDraftForSwitch.config) {
+    const existingMeta = registry.find(t => t.id === existingDraftForSwitch.templateId);
+    const existingName = (existingMeta && existingMeta.name) || existingDraftForSwitch.templateId;
+    // typeof-guarded like the pushHistory/TAB_ID checks inside saveDraft() —
+    // the isolated-extraction sandbox (s80-s78-qa-fail.test.js) evals this
+    // function without currentUser/apiPost declared.
+    if (typeof currentUser !== 'undefined' && currentUser && typeof apiPost === 'function' && !existingDraftForSwitch.paid) {
+      apiPost('/api/draft', {
+        siteId: existingDraftForSwitch.siteId || undefined,
+        templateId: existingDraftForSwitch.templateId,
+        config: existingDraftForSwitch.config,
+      }).catch(() => { /* best-effort only — the toast below already tells the owner what happened */ });
+    }
+    const switchNoticeSignedIn = typeof currentUser !== 'undefined' && !!currentUser;
+    showToast(
+      'Proiectul pe designul „' + existingName + '” a fost înlocuit aici' +
+        (switchNoticeSignedIn ? ' — îl găsești în Proiectele mele.' : '.'),
+      '',
+      6000
+    );
+  }
+
   // Always drop paid-site bind when starting a design from the catalog.
   // Same-template republish re-binds via bindSignedInPaidSiteForEdit (template match).
   // Different template must never keep the previous paid siteId in draft (S78/S80).
@@ -4652,6 +5042,14 @@ async function startWithTemplate(templateId) {
   if (typeof resetHistory === 'function') resetHistory();
   // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
   saveDraft();
+  // Wave 9: this saveDraft() call is bookkeeping (clearing the paid-site
+  // bind / seeding the preset), not a user edit — resetHistory() already put
+  // the save-state pill at 'idle' above, but saveDraft() (the single choke
+  // point) always flips it to 'saved' on success. Flatten it back so the
+  // owner does not see "Salvat" before touching anything on a freshly
+  // chosen design. Guarded like every other Wave 9 reference in this file.
+  if (typeof hasEverEdited !== 'undefined') hasEverEdited = false;
+  if (typeof setSaveState === 'function') setSaveState('idle');
 
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;
@@ -5635,6 +6033,11 @@ function showScreen(name) {
         if (shouldAutoOpenDrawer() && !drawerOpen) openDrawer();
       });
     }
+    // #edit already auto-resumes the local draft on its own (resumeLocalDraft,
+    // via handleRoute) — the recovery banner is for OTHER entry points
+    // (crash/accidental-close, then back to templates/dashboard), so the two
+    // must never both be on screen at once.
+    if (typeof hideRecoveryBanner === 'function') hideRecoveryBanner();
   } else {
     if (topbar) hide(topbar);
     if (header) show(header);
@@ -5650,6 +6053,7 @@ function showScreen(name) {
     if (colorPopoverOpen) closeColorPopover();
     if (accountMenuOpen) closeAccountMenu();
     hideTabConflictBanner();
+    if (typeof maybeShowRecoveryBanner === 'function') maybeShowRecoveryBanner();
   }
 }
 
@@ -5720,6 +6124,18 @@ async function handleRoute(hash) {
     }
     // Bind signed-in paid site so Publică skips slug modal without dashboard Editează
     await bindSignedInPaidSiteForEdit();
+    // Wave 9: resumeLocalDraft/bindSignedInPaidSiteForEdit above can each run
+    // their own bookkeeping saveDraft() (site-bind hygiene, never a user
+    // edit) — flatten the save-status pill to idle right before the editor
+    // is actually shown so entering/re-entering #edit never opens on a
+    // stale "Salvat"/error pill nobody earned yet. Only flattens when there
+    // is genuinely nothing in flight, so it can never mask a real failure.
+    if (typeof pendingLiveEdits === 'object' && Object.keys(pendingLiveEdits || {}).length === 0 &&
+        typeof pendingOpCount === 'number' && pendingOpCount === 0 &&
+        typeof serverSaveInFlight !== 'undefined' && !serverSaveInFlight) {
+      if (typeof hasEverEdited !== 'undefined') hasEverEdited = false;
+      if (typeof setSaveState === 'function') setSaveState('idle');
+    }
     showScreen('edit');
     updateChecklist();
     scheduleRerender(true);
@@ -5963,6 +6379,10 @@ function wireStaticButtons() {
   if (tabConflictReloadBtn) tabConflictReloadBtn.addEventListener('click', () => window.location.reload());
   const tabConflictDismissBtn = $('btn-tab-conflict-dismiss');
   if (tabConflictDismissBtn) tabConflictDismissBtn.addEventListener('click', hideTabConflictBanner);
+
+  // Save state indicator + exit guard (Wave 9)
+  initSaveGuard();
+  initRecoveryBanner();
 
   // Undo / redo toolbar buttons
   const undoBtn = $('btn-undo');
