@@ -271,6 +271,18 @@ ul { list-style: none; }
     padding: 9px 15px; border-radius: var(--r-pill);
     border: 1px solid var(--link); color: var(--link);
     font-family: var(--font-ui); font-size: 13px; font-weight: 500;
+    /* WAVE8-03 [MEDIUM, horizontal overflow at 200% zoom]: an Instagram/
+       Facebook handle or address can be one long unbreakable token (no
+       spaces). .pm-contact__list already wraps chips onto new lines
+       (flex-wrap:wrap), but a flex item's default min-width still refuses
+       to shrink a SINGLE chip below its own unbreakable content width, so
+       one long token could still push this chip — and the page — wider
+       than the viewport instead of wrapping internally. Same fix shape as
+       .pf-row/.contact-item in templates/portfolio/styles.css and
+       .pr-contact__row in templates/professionals/styles.css. */
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 .pm-link--static { border-color: rgba(26, 20, 16, 0.14); color: var(--ink-soft); }
 

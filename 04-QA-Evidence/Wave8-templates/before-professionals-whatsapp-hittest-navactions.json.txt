@@ -1,0 +1,82 @@
+(node:91573) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T17:09:02.226Z","event":"server.started","port":59778}
+🌐 HTTP server on :59778 (health + webhooks + API)
+{"ts":"2026-09-06T17:09:06.499Z","event":"email.magic_link.dev","email":"z***@example.com#2af25a89","devLink":"/auth/verify?token=8e98aa0b0cda64d928d0357be71bd485ed9af71c824dc8e41436e4852af8f72c"}
+{"ts":"2026-09-06T17:09:08.068Z","event":"webpublish.stripe_paid.published","siteId":"bd12dd95-f4b5-46bd-83e8-c61e197dcddf","orderId":"61b1301c-1967-42b2-8fef-bcfa2af82997","url":"/live/zoom-diag5-1788714545954/","source":"pending-draft"}
+{
+  "innerWidth": 390,
+  "matchMedia340": false,
+  "matchMedia820": false,
+  "ctaDisplay": "flex",
+  "ctaRect": {
+    "x": 64,
+    "y": 18,
+    "width": 255.125,
+    "height": 80,
+    "top": 18,
+    "right": 319.125,
+    "bottom": 98,
+    "left": 64
+  },
+  "actionsRect": {
+    "x": 64,
+    "y": 14,
+    "width": 362.3125,
+    "height": 88,
+    "top": 14,
+    "right": 426.3125,
+    "bottom": 102,
+    "left": 64
+  },
+  "actionsChildren": [
+    {
+      "cls": "pr-nav__cta",
+      "display": "flex",
+      "rect": {
+        "x": 64,
+        "y": 18,
+        "width": 255.125,
+        "height": 80,
+        "top": 18,
+        "right": 319.125,
+        "bottom": 98,
+        "left": 64
+      }
+    },
+    {
+      "cls": "pr-nav__toggle",
+      "display": "flex",
+      "rect": {
+        "x": 338.3125,
+        "y": 14,
+        "width": 88,
+        "height": 88,
+        "top": 14,
+        "right": 426.3125,
+        "bottom": 102,
+        "left": 338.3125
+      }
+    }
+  ],
+  "innerRect": {
+    "x": 32,
+    "y": 0,
+    "width": 326,
+    "height": 116,
+    "top": 0,
+    "right": 358,
+    "bottom": 116,
+    "left": 32
+  },
+  "brandRect": {
+    "x": 32,
+    "y": 31.96875,
+    "width": 0,
+    "height": 52.0625,
+    "top": 31.96875,
+    "right": 32,
+    "bottom": 84.03125,
+    "left": 32
+  }
+}

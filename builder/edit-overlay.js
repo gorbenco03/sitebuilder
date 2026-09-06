@@ -700,6 +700,35 @@
      6. List add / remove controls
   ───────────────────────────────────────────────────────────────────────── */
 
+  /**
+   * Build a `[data-hb-edit^="…"]` selector that matches only the fields that
+   * belong to exactly this list item — never a sibling whose numeric index
+   * happens to start with the same digits.
+   *
+   * `document.querySelectorAll('[data-hb-edit^="pricing.1"]')` is a plain
+   * string prefix match: once a list holds a 10th+ item, "pricing.1" is also
+   * a string-prefix of "pricing.10", so this call for item 1 pulls in item
+   * 10's fields too. findListItemContainer() then has to find one DOM node
+   * containing fields from BOTH non-adjacent items, climbs all the way up to
+   * the shared list container, and wrongly tags THAT as the "item" — which
+   * is exactly what corrupted the portfolio pricing list (WAVE8-01): item 1
+   * silently lost its own `.hb-list-item` class and delete button while the
+   * whole `.pf-price` wrapper was mistagged instead. Any list on any
+   * template reaching a double-digit index (10+ original items, or 10+
+   * after some "+ Adaugă" clicks) hits the same collision — this is not
+   * specific to one template's markup, so the fix belongs here rather than
+   * in a single template's CSS/HTML.
+   *
+   * Matching itemPath exactly OR itemPath + "." (a real child field) can
+   * only narrow the previous (buggy) match — it can never miss a field the
+   * old selector used to find correctly for single-digit indices — so this
+   * is safe for every existing list on every template.
+   */
+  function itemFieldSelector(itemPath) {
+    var esc = CSS.escape(itemPath);
+    return '[data-hb-edit="' + esc + '"], [data-hb-edit^="' + esc + '."]';
+  }
+
   function setupListControls() {
     var groups = detectListGroups();
 
@@ -719,7 +748,7 @@
         // then find their lowest common ancestor (or we just attach to the first one
         // that has a meaningful parent).
         var itemEls = Array.prototype.slice.call(
-          document.querySelectorAll('[data-hb-edit^="' + CSS.escape(itemPath) + '"]')
+          document.querySelectorAll(itemFieldSelector(itemPath))
         );
         if (itemEls.length === 0) return;
 
@@ -755,7 +784,7 @@
       var lastIdx = indices[indices.length - 1];
       var lastItemPath = root + '.' + lastIdx;
       var lastItemEls = Array.prototype.slice.call(
-        document.querySelectorAll('[data-hb-edit^="' + CSS.escape(lastItemPath) + '"]')
+        document.querySelectorAll(itemFieldSelector(lastItemPath))
       );
       if (lastItemEls.length === 0) return;
 

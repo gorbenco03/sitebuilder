@@ -1,0 +1,130 @@
+{"ts":"2026-09-06T17:26:02.144Z","event":"server.started","port":63270}
+🌐 HTTP server on :63270 (health + webhooks + API)
+✖ wave8 portfolio pricing "+ Adaugă": adds a real row, never corrupts a sibling (3728.07475ms)
+  AssertionError [ERR_ASSERTION]: the .pf-price list WRAPPER must never be tagged .hb-list-item (that belongs to a row)
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-portfolio-pricing-add.test.js:152:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+{"ts":"2026-09-06T17:26:02.145Z","event":"server.started","port":63271}
+🌐 HTTP server on :63271 (health + webhooks + API)
+(node:4957) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T17:26:05.880Z","event":"email.magic_link.dev","email":"w***@example.com#43133d08","devLink":"/auth/verify?token=cf15e4252458f47f649647517b30d6af7987d73611771f8c033f7228c29cd46c"}
+{"ts":"2026-09-06T17:26:07.450Z","event":"webpublish.stripe_paid.published","siteId":"ae4d6d0f-c548-4c0e-a582-0e0a036a3898","orderId":"2a940f18-6c4d-4af8-b274-1a3eb3541f99","url":"/live/wave8-pr-wa-1788715565328/","source":"pending-draft"}
+✖ wave8 professionals WhatsApp float: stays genuinely hittable with a long business name on short viewports (7789.492833ms)
+  AssertionError [ERR_ASSERTION]: at 375x250: header grew to 209.25px — the long business name is wrapping instead of truncating
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-professionals-whatsapp-hittable.test.js:216:14)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+{"ts":"2026-09-06T17:26:02.144Z","event":"server.started","port":63269}
+🌐 HTTP server on :63269 (health + webhooks + API)
+(node:4958) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T17:26:05.880Z","event":"email.magic_link.dev","email":"w***@example.com#507ea6e2","devLink":"/auth/verify?token=0711d0e8c6ba79988dd26610eeb22ebaa45405abd9d891852d5beca1709f47f4"}
+{"ts":"2026-09-06T17:26:07.450Z","event":"webpublish.stripe_paid.published","siteId":"35f09048-e582-4e24-a13b-3a8f475e921d","orderId":"f91491be-b884-48f4-b99c-b61ae2470de0","url":"/live/wave8-zoom-professionals-1788715565329/","source":"pending-draft"}
+{"ts":"2026-09-06T17:26:10.383Z","event":"server.started","port":63316}
+🌐 HTTP server on :63316 (health + webhooks + API)
+✖ wave8 zoom overflow: professionals stays scroll-free at 200% zoom / 390px with a long business name (8406.914208ms)
+  AssertionError [ERR_ASSERTION]: professionals: scrollWidth (853) must not exceed clientWidth (390) at 200% zoom / 390px
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-zoom-overflow.test.js:202:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+{"ts":"2026-09-06T17:26:13.907Z","event":"email.magic_link.dev","email":"w***@example.com#7a110227","devLink":"/auth/verify?token=7f5fb848dd88e473e9c3e287cbe74bfdf7c6d0f982c1140e432502dd51b2ca2d"}
+[ratelimit] save failed: ENOENT: no such file or directory, open '/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave8-zoom-pr-GXlHHo/.ratelimit.json'
+{"ts":"2026-09-06T17:26:15.527Z","event":"webpublish.stripe_paid.published","siteId":"2b8cc54f-666f-4f45-a5ef-a7e0e5d9f2a4","orderId":"a3fff53d-3103-4ad0-8a39-383806bac10d","url":"/live/wave8-zoom-portfolio-1788715573348/","source":"pending-draft"}
+✖ wave8 zoom overflow: portfolio stays scroll-free at 200% zoom / 390px with a long business name (7972.399583ms)
+  AssertionError [ERR_ASSERTION]: portfolio: scrollWidth (601) must not exceed clientWidth (390) at 200% zoom / 390px
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-zoom-overflow.test.js:242:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:633:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+✔ wave8 zoom overflow: product-menu contact chips carry the same defensive overflow-wrap as the other two templates (0.42925ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 1
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16447.127375
+
+✖ failing tests:
+
+test at bot/test/wave8-templates-portfolio-pricing-add.test.js:70:1
+✖ wave8 portfolio pricing "+ Adaugă": adds a real row, never corrupts a sibling (3728.07475ms)
+  AssertionError [ERR_ASSERTION]: the .pf-price list WRAPPER must never be tagged .hb-list-item (that belongs to a row)
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-portfolio-pricing-add.test.js:152:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+test at bot/test/wave8-templates-professionals-whatsapp-hittable.test.js:104:1
+✖ wave8 professionals WhatsApp float: stays genuinely hittable with a long business name on short viewports (7789.492833ms)
+  AssertionError [ERR_ASSERTION]: at 375x250: header grew to 209.25px — the long business name is wrapping instead of truncating
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-professionals-whatsapp-hittable.test.js:216:14)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+test at bot/test/wave8-templates-zoom-overflow.test.js:177:1
+✖ wave8 zoom overflow: professionals stays scroll-free at 200% zoom / 390px with a long business name (8406.914208ms)
+  AssertionError [ERR_ASSERTION]: professionals: scrollWidth (853) must not exceed clientWidth (390) at 200% zoom / 390px
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-zoom-overflow.test.js:202:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:297:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+
+test at bot/test/wave8-templates-zoom-overflow.test.js:217:1
+✖ wave8 zoom overflow: portfolio stays scroll-free at 200% zoom / 390px with a long business name (7972.399583ms)
+  AssertionError [ERR_ASSERTION]: portfolio: scrollWidth (601) must not exceed clientWidth (390) at 200% zoom / 390px
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abf252433ca36ac86/bot/test/wave8-templates-zoom-overflow.test.js:242:12)
+      at async Test.run (node:internal/test_runner/test:935:9)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:633:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
