@@ -332,8 +332,14 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
 
             await check(`PC-03 (${subStatus}): /admin shows "Live" (disk truth), not "Unpublished"`, async () => {
                 const site = await seedAndDegrade('r2adm-' + slugSafeStatus, subStatus);
-                const res = await httpJson(port, 'GET', '/admin?token=' + encodeURIComponent(ADMIN_TOKEN), {
-                    headers: { Accept: 'text/html' },
+                // L1 follow-up (2026-09-06 re-audit): ?token= no longer
+                // authenticates a response directly (it only bootstraps a
+                // cookie via a 302 — see bootstrapAdminCookieFromQuery in
+                // server.js and wave10-security-admin-token-query.test.js).
+                // This check isn't about that mechanism, so authenticate
+                // the direct way instead.
+                const res = await httpJson(port, 'GET', '/admin', {
+                    headers: { Accept: 'text/html', Authorization: 'Bearer ' + ADMIN_TOKEN },
                 });
                 assert.strictEqual(res.status, 200);
                 const row = extractAdminRow(res.body, site.slug);
@@ -366,7 +372,9 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
             });
             const site = registry.getSite(seed.site.id);
             assert.ok(site.status !== 'live' && site.status !== 'active', 'deleted subscription must still unpublish');
-            const res = await httpJson(port, 'GET', '/admin?token=' + encodeURIComponent(ADMIN_TOKEN), { headers: { Accept: 'text/html' } });
+            const res = await httpJson(port, 'GET', '/admin', {
+                headers: { Accept: 'text/html', Authorization: 'Bearer ' + ADMIN_TOKEN },
+            });
             const row = extractAdminRow(res.body, site.slug);
             assert.ok(row && /Unpublished/.test(row), 'canceled site must still show Unpublished: ' + row);
             assert.ok(row && row.includes('canceled'), 'billing must still say canceled: ' + row);
@@ -429,18 +437,27 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
                 visitorName: 'Audit Rate Test',
                 visitorEmail: 'rate-test@example.com',
             };
+            // H1 follow-up (2026-09-06 re-audit): raised from 6 to 20 per 10
+            // minutes per (IP, tenant) — see the comment at the
+            // ratelimit.allowAndConsume('cal_booking_ip', ...) call site in
+            // server.js. A shared-NAT office/café group of real customers
+            // can plausibly send more than 6 booking POSTs in 10 minutes;
+            // 20 keeps stopping a single script looping without punishing
+            // that legitimate case, and the per-tenant window (40/hour,
+            // shared across every IP) remains the actual backstop against a
+            // botnet spreading the same abuse across many addresses.
             const statuses = [];
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 20; i++) {
                 const r = await httpJson(port, 'POST', '/api/calendar-native/bookings', { body: payload });
                 statuses.push(r.status);
             }
-            assert.ok(statuses.every((s) => s !== 429), 'the first 6 requests from one source must not be rate-limited: ' + statuses.join(','));
+            assert.ok(statuses.every((s) => s !== 429), 'the first 20 requests from one source must not be rate-limited: ' + statuses.join(','));
 
-            const seventh = await httpJson(port, 'POST', '/api/calendar-native/bookings', { body: payload });
-            assert.strictEqual(seventh.status, 429, 'the 7th booking POST within the window from the same source must be rate-limited');
-            assert.strictEqual(seventh.json && seventh.json.code, 'RATE_LIMITED');
-            assert.ok(/[a-zăâîșț]/i.test(seventh.json.error) && /programare/i.test(seventh.json.error),
-                'client-facing message must be Romanian: ' + (seventh.json && seventh.json.error));
+            const nextOne = await httpJson(port, 'POST', '/api/calendar-native/bookings', { body: payload });
+            assert.strictEqual(nextOne.status, 429, 'the 21st booking POST within the window from the same source must be rate-limited');
+            assert.strictEqual(nextOne.json && nextOne.json.code, 'RATE_LIMITED');
+            assert.ok(/[a-zăâîșț]/i.test(nextOne.json.error) && /programare/i.test(nextOne.json.error),
+                'client-facing message must be Romanian: ' + (nextOne.json && nextOne.json.error));
         });
 
         // -----------------------------------------------------------------

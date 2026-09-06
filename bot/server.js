@@ -136,17 +136,56 @@ function requestPublicOrigin(req) {
 }
 
 /**
- * Best-effort caller IP for rate-limit bucketing only (BE-01). Prefer
- * X-Forwarded-For (set by the Cloudflare/production reverse proxy) else the raw
- * socket peer. Never used for access-control decisions — X-Forwarded-For is
- * attacker-supplied unless a trusted proxy sets it. Good enough to slow down a
- * single script hammering a public endpoint.
+ * Best-effort caller IP for rate-limit bucketing only (BE-01; H1, 2026-09-06
+ * re-audit). Never used for access-control decisions.
+ *
+ * The old version trusted X-Forwarded-For unconditionally with no
+ * trusted-proxy allowlist — the re-audit's live-probe.mjs fired 30 requests
+ * with 30 spoofed X-Forwarded-For values and got zero blocked, defeating
+ * every per-IP limit in the app (auth email, bookings, domain polling) by
+ * construction. A header the client controls cannot ever be the trust
+ * signal.
+ *
+ * Fix: this app now trusts NOTHING by default — with TRUST_PROXY unset, it
+ * always uses the raw socket peer, which is correct for a direct-to-Node
+ * deployment (Railway with nothing in front of it, or a local/isolated test
+ * server) and closes the spoofing hole outright, because no header is ever
+ * read at all.
+ *
+ * TRUST_PROXY=cloudflare opts into the one fronting proxy this product
+ * actually documents (GO-LIVE.md's "Cloudflare orange-cloud DNS in front of
+ * the origin" recommendation; pricing.js already makes the identical trust
+ * decision for CF-IPCountry). In that mode we read CF-Connecting-IP —
+ * Cloudflare's edge sets this itself on every request and overwrites
+ * whatever the client sent, so a direct client cannot forge it through
+ * Cloudflare. We deliberately do NOT read X-Forwarded-For even in this
+ * mode: Cloudflare also forwards/appends to XFF, but as a chain, not the
+ * single append-only-by-the-edge field CF-Connecting-IP is.
+ *
+ * Assumption this depends on, and cannot enforce from inside a request
+ * handler: the origin must not be reachable except through Cloudflare (no
+ * direct origin IP/hostname an attacker can hit to skip the proxy and set
+ * CF-Connecting-IP themselves). That is an infrastructure control —
+ * firewalling the origin to Cloudflare's published IP ranges, or checking a
+ * Cloudflare-injected shared-secret header at the edge — not something this
+ * process can verify on its own.
+ *
+ * Operational trade-off worth knowing: if this server sits behind some
+ * OTHER reverse proxy (not Cloudflare) with TRUST_PROXY left unset, every
+ * request's socket peer is that proxy's own address, so all visitors share
+ * one rate-limit bucket instead of getting per-visitor buckets. That is a
+ * usability regression, never a security one — the alternative (trusting
+ * an unconfigured header) is what let the bypass happen in the first
+ * place.
  */
 function getClientIp(req) {
-    const xff = req && req.headers && req.headers['x-forwarded-for'];
-    if (xff) {
-        const first = String(Array.isArray(xff) ? xff[0] : xff).split(',')[0].trim();
-        if (first) return first;
+    const trustProxy = String(process.env.TRUST_PROXY || '').toLowerCase();
+    if (trustProxy === 'cloudflare') {
+        const cf = req && req.headers && req.headers['cf-connecting-ip'];
+        if (cf) {
+            const first = String(Array.isArray(cf) ? cf[0] : cf).split(',')[0].trim();
+            if (first) return first;
+        }
     }
     return (req && req.socket && req.socket.remoteAddress) || 'unknown';
 }
@@ -394,20 +433,66 @@ function sendJson(res, status, obj) {
  *     srcdoc <iframe id="preview-iframe"> the app creates itself: frame-ancestors
  *     governs who may embed THIS document, not iframes this document creates.
  *
- * /live/<slug>/* (published customer sites) and every other route get a lighter,
- * deliberately permissive baseline — the audit explicitly says this one "can
- * start permissive". object-src 'none' + base-uri 'self' close the classic
- * plugin/base-tag injection vectors without touching anything the 5 templates
- * actually use (verified: no <object>/<embed>/<base> in templates/*), and
- * frame-ancestors 'self' stops a customer's published site from being framed by
- * an unrelated attacker domain. `default-src * data: blob: 'unsafe-inline'`
- * deliberately stays permissive on everything else because build.js (frozen —
- * out of scope for this fix) already emits, per template, a cross-origin
- * Instagram embed <iframe>/embed.js, a same-origin calendar-native widget
- * <script src="{{appointment.nativeApiBase}}/...">, Google Fonts, and inline
- * bootstrap <script>/<style> blocks — a strict allowlist here would need to
- * chase every current and future template's external hosts to avoid breaking
- * customer sites, which is a bigger change than this pass's fix-minim scope.
+ * /live/<slug>/* (published customer sites) and every other route (L2,
+ * 2026-09-06 re-audit): the previous `default-src * data: blob:
+ * 'unsafe-inline'` mitigated nothing — a wildcard default-src on
+ * script/connect/frame/img means CSP adds zero friction against loading an
+ * attacker script or exfiltrating to an attacker endpoint from any future
+ * injection bug (see C2 in the same re-audit — an `{{& icon}}` sink that
+ * survives HTML-entity normalization). Tightened to an explicit per-
+ * directive allowlist built from what the five templates actually emit
+ * (grepped, not guessed — see 04-QA-Evidence/Wave10-security/):
+ *   - script-src 'self' 'unsafe-inline' — every template's own inline
+ *     bootstrap <script> blocks (portfolio, product-menu, professionals) —
+ *     plus https://www.instagram.com, the one hardcoded external script a
+ *     template ships (desserdirina's `<script async
+ *     src="//www.instagram.com/embed.js">`, gated behind instagram.embedUrl).
+ *     'unsafe-inline' is still required (no nonce/hash plumbing — build.js
+ *     is out of scope for this fix) so this does not stop inline-script
+ *     injection, but it DOES stop an injected `<script src="https://
+ *     attacker.example/x.js">` from ever loading, which the old wildcard
+ *     did not.
+ *   - style-src 'self' 'unsafe-inline' — every template's inline style=""
+ *     attributes and <style> blocks. No template links an external
+ *     stylesheet any more (desserdirina's fonts moved to self-hosted
+ *     woff2 specifically to drop the fonts.googleapis.com dependency — see
+ *     templates/desserdirina/styles.css's file header).
+ *   - img-src 'self' data: — owner-uploaded photos are always either a
+ *     same-origin images/*.jpg|png file or a base64 data:image/... URI
+ *     (build.js's injectResponsiveImages only special-cases those two
+ *     shapes); no template loads an image from a third-party host.
+ *   - font-src 'self' — every template's fonts are either system fonts or
+ *     the self-hosted templates/<id>/fonts/*.woff2 directory; nothing here
+ *     reaches fonts.gstatic.com any more.
+ *   - connect-src 'self' https: — the calendar-native booking widget's
+ *     fetch() target (data-api-base, from {{appointment.nativeApiBase}}) is
+ *     same-origin by default but can be an operator-configured absolute
+ *     URL (bot/calendar-native/cutover.js resolveNativeApiBase) pointing at
+ *     a different host than the one serving this page — that host isn't
+ *     enumerable from a static per-response header, so this stays scoped
+ *     to https: (blocks non-TLS and non-http(s) exfil targets; a strict
+ *     'self'-only connect-src would break that legitimate override).
+ *   - frame-src https: — the Instafidget social-feed embed
+ *     (instagram.embedUrl) is a partner-controlled URL on a domain that
+ *     varies per integration (confirmed across bot/test/*: instafidget.test,
+ *     isolated.local, a literal instagram.com permalink), so it cannot be
+ *     enumerated either; scoped to https: for the same reason as
+ *     connect-src. An iframe's own origin cannot execute script in this
+ *     page's context regardless, so this is a much lower-risk directive to
+ *     leave broad than script-src/connect-src were.
+ *   - object-src 'none' + base-uri 'self' (unchanged) close the classic
+ *     plugin/base-tag injection vectors — verified no <object>/<embed>/
+ *     <base> in templates/*.
+ *   - form-action 'self' — no template posts a <form> to a third-party host
+ *     (the booking/appointment forms are all JS fetch() to the calendar API,
+ *     not native form submission).
+ *   - frame-ancestors 'self' (unchanged) stops a customer's published site
+ *     from being framed by an unrelated attacker domain.
+ * A WhatsApp link (`{{contact.waHref}}`) is a plain <a href> — CSP does not
+ * govern top-level navigation from a click, so it needs no allowance here.
+ * Verified end-to-end against a real published site per template in
+ * 04-QA-Evidence/Wave10-security/ (Playwright: no CSP violation reports, no
+ * broken images/fonts/embeds, screenshots match the pre-change baseline).
  */
 const APP_CSP = [
     "default-src 'self'",
@@ -424,9 +509,16 @@ const APP_CSP = [
 ].join('; ');
 
 const DEFAULT_CSP = [
-    "default-src * data: blob: 'unsafe-inline'",
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://www.instagram.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "connect-src 'self' https:",
+    "frame-src https:",
     "object-src 'none'",
     "base-uri 'self'",
+    "form-action 'self'",
     "frame-ancestors 'self'",
 ].join('; ');
 
@@ -590,20 +682,44 @@ function escapeHtml(s) {
         .replace(/'/g, '&#39;');
 }
 
+/** Name of the short-lived cookie that carries the admin token after the
+ * one-time query-string bootstrap below. */
+const ADMIN_COOKIE_NAME = 'hb_admin_token';
+const ADMIN_COOKIE_MAX_AGE_SEC = 3600; // 1 hour — re-bootstrap after that, same as re-typing the link
+
+/** Minimal `Cookie:` header parse for a single named cookie (no dependency). */
+function getCookieValue(req, name) {
+    const header = String((req && req.headers && req.headers.cookie) || '');
+    if (!header) return null;
+    for (const part of header.split(';')) {
+        const eq = part.indexOf('=');
+        if (eq < 0) continue;
+        if (part.slice(0, eq).trim() !== name) continue;
+        const v = part.slice(eq + 1).trim();
+        try { return decodeURIComponent(v) || null; } catch (_) { return v || null; }
+    }
+    return null;
+}
+
 /**
- * Operator admin token from Authorization: Bearer or ?token= (HTML page only).
- * Constant-time when lengths match. Never log the token.
+ * Operator admin token from Authorization: Bearer or the hb_admin_token
+ * cookie. Constant-time when lengths match (in adminTokenOk). Never log the
+ * token.
+ *
+ * L1 (2026-09-06 re-audit): this used to also read `?token=` directly as an
+ * authenticating credential on every request — a token that rides in the
+ * URL lands in server/proxy access logs, browser history, and any Referer
+ * header a page might send. `?token=` is still accepted, but only once, by
+ * bootstrapAdminCookieFromQuery() below, which trades it for this cookie
+ * and 302-redirects to the query-free URL — no response after that first
+ * hop ever has the token in its address again.
  * @returns {string|null}
  */
-function extractAdminToken(req, query) {
+function extractAdminToken(req) {
     const auth = String((req.headers && (req.headers.authorization || req.headers.Authorization)) || '');
     const m = /^Bearer\s+(\S+)/i.exec(auth);
     if (m) return m[1];
-    if (query && typeof query.get === 'function') {
-        const q = query.get('token');
-        if (q) return String(q);
-    }
-    return null;
+    return getCookieValue(req, ADMIN_COOKIE_NAME);
 }
 
 function adminTokenOk(provided) {
@@ -617,6 +733,31 @@ function adminTokenOk(provided) {
     } catch (_) {
         return false;
     }
+}
+
+/**
+ * One-time admin-token bootstrap: if the request carries a *valid* `?token=`
+ * and isn't already authenticated via header/cookie, set it as an HttpOnly
+ * cookie and 302-redirect to the same path with the query string stripped,
+ * so the token never appears in a served URL more than once. Returns true
+ * iff it handled the response (redirected) — caller must return immediately.
+ * Leaves an invalid/missing query token alone (caller falls through to its
+ * normal 404) so wrong-token probing still can't distinguish "no route"
+ * from "wrong token".
+ * @returns {boolean}
+ */
+function bootstrapAdminCookieFromQuery(req, res, query, pathOnly) {
+    if (!query || typeof query.get !== 'function') return false;
+    const q = query.get('token');
+    if (!q || !adminTokenOk(String(q))) return false;
+    const fwdProto = String((req && req.headers && req.headers['x-forwarded-proto']) || '')
+        .split(',')[0].trim().toLowerCase();
+    const isHttps = fwdProto === 'https' || !!(req && req.socket && req.socket.encrypted);
+    let cookie = `${ADMIN_COOKIE_NAME}=${encodeURIComponent(String(q))}; Path=/admin; HttpOnly; SameSite=Strict; Max-Age=${ADMIN_COOKIE_MAX_AGE_SEC}`;
+    if (isHttps) cookie += '; Secure';
+    res.writeHead(302, { Location: pathOnly, 'Set-Cookie': cookie, 'Cache-Control': 'no-store' });
+    res.end();
+    return true;
 }
 
 /**
@@ -714,7 +855,8 @@ function adminBillingLabel(site, order) {
  * Missing/wrong token → same 404 as unknown routes (do not advertise).
  */
 function handleAdmin(req, res, query) {
-    if (!adminTokenOk(extractAdminToken(req, query))) {
+    if (!adminTokenOk(extractAdminToken(req))) {
+        if (bootstrapAdminCookieFromQuery(req, res, query, '/admin')) return;
         return sendNotFound(req, res, 'not found');
     }
     const reg = getRegistry();
@@ -1783,9 +1925,21 @@ async function handleCalendarNativeBookings(req, res) {
         // (IP, tenant) to stop a single script looping, and a looser one per
         // tenant alone to cap damage from a botnet spreading the same requests
         // across many IPs.
+        //
+        // H1 follow-up (2026-09-06 re-audit): the old max was 6 per 10
+        // minutes. Now that getClientIp() no longer trusts a spoofable
+        // header by default (see getClientIp's docblock), many genuine
+        // visitors behind the SAME NAT — an office, a café, a shared
+        // storefront Wi-Fi — collapse onto one IP bucket, and 6 requests in
+        // 10 minutes is easy for a small group of real customers booking
+        // around the same time to hit legitimately. Raised to 20; the
+        // per-tenant window below (40/hour, shared across every IP) remains
+        // the actual backstop against a botnet spreading the same abuse
+        // across many addresses, so this per-IP window only needs to stop a
+        // single script looping, not carry the whole defense on its own.
         const tenantKey = `${customerId}|${siteId}`;
         const perIp = ratelimit.allowAndConsume('cal_booking_ip', `${getClientIp(req)}|${tenantKey}`, {
-            max: 6, windowMs: 10 * 60 * 1000,
+            max: 20, windowMs: 10 * 60 * 1000,
         });
         if (!perIp.ok) {
             return sendJson(res, 429, {
@@ -3315,7 +3469,7 @@ function createHandler({ onStripeEvent } = {}) {
             // ── Operator admin (token-gated; missing/wrong → plain 404) ──
             if ((req.method === 'GET' || req.method === 'HEAD') && (url === '/admin' || url === '/admin/')) {
                 if (req.method === 'HEAD') {
-                    if (!adminTokenOk(extractAdminToken(req, query))) return sendNotFound(req, res, 'not found');
+                    if (!adminTokenOk(extractAdminToken(req))) return sendNotFound(req, res, 'not found');
                     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
                     return res.end();
                 }
@@ -3675,14 +3829,32 @@ function createHandler({ onStripeEvent } = {}) {
             }
             return sendNotFound(req, res, 'not found');
         } catch (e) {
-            log('server.error', { err: e.message, url }, 'error');
-            // Never forward env var names / stack traces to the browser (factory leak).
+            log('server.error', { err: e && e.message, url }, 'error');
+            // Never forward env var names, stack traces, or raw engine-internal
+            // error strings to the browser (factory leak; M1, 2026-09-06
+            // re-audit: a 5,000-level-deep JSON body sent
+            // "Maximum call stack size exceeded" — a RangeError from wherever
+            // the parsed value is later walked recursively — straight to the
+            // client as {"error":"Maximum call stack size exceeded"}).
+            //
+            // Every error this app deliberately throws to report a client
+            // mistake sets e.status itself (see the many
+            // `throw Object.assign(new Error(...), { status })` call sites) —
+            // that is the one signal that its .message was authored on
+            // purpose to be shown. Anything without a status is, by
+            // definition, an error nobody wrote client-facing copy for: a
+            // bug, a TypeError/RangeError from a pathological input, a
+            // downstream module throwing something unexpected. Those always
+            // get a generic message now, regardless of what they happen to
+            // say — a blocklist of "known bad" substrings (the previous
+            // approach) only catches leaks someone already thought of.
             const raw = (e && e.message) || 'Internal error.';
             const leaksEnv =
                 /SERVER_SECRET|STRIPE_SECRET|STRIPE_WEBHOOK|TELEGRAM_BOT_TOKEN|process\.env|HIDOOK_[A-Z0-9_]+/i.test(raw) ||
                 /\bat\s+\S+\s+\([^)]+:\d+:\d+\)/.test(raw);
-            const safe = leaksEnv ? 'Internal error.' : raw;
-            try { sendJson(res, e.status || 500, { error: safe }); } catch (_) {}
+            const hasStatus = e && typeof e.status === 'number';
+            const safe = (hasStatus && !leaksEnv) ? raw : 'Internal error.';
+            try { sendJson(res, (hasStatus && e.status) || 500, { error: safe }); } catch (_) {}
         }
     };
 }

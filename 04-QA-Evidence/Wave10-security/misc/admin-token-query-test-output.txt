@@ -1,0 +1,14 @@
+{"ts":"2026-09-06T20:28:20.656Z","event":"server.started","port":53758}
+🌐 HTTP server on :53758 (health + webhooks + API)
+PASS RED: GET /admin?token=<valid> must NOT answer 200 with the site list directly any more
+PASS GREEN: GET /admin?token=<valid> 302-redirects to the query-free path and sets an HttpOnly cookie
+(node:37318) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS GREEN: the redirect response body itself carries no site list (defense in depth)
+PASS GREEN: following up with the bootstrapped cookie (no token in the URL) reaches the dashboard
+PASS unchanged: GET /admin?token=wrong still 404s (no new oracle to probe validity)
+PASS unchanged: GET /admin with no token/cookie/header still 404s
+PASS unchanged: Authorization: Bearer still authenticates directly (no cookie needed)
+PASS a bad cookie value alone (no header, no query) still 404s
+
+wave10-security-admin-token-query.test.js: all passed

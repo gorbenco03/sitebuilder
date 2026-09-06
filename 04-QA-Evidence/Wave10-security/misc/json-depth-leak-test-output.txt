@@ -1,0 +1,16 @@
+PASS RED (reconstructed pre-fix logic): a status-less RangeError leaks its raw message
+PASS GREEN (current logic): the same status-less RangeError never reaches the client
+PASS GREEN: an intentional app error (has e.status) still reaches the client unchanged
+{"ts":"2026-09-06T20:28:20.726Z","event":"server.started","port":53760}
+🌐 HTTP server on :53760 (health + webhooks + API)
+{"ts":"2026-09-06T20:28:20.736Z","event":"email.magic_link.dev","email":"d***@example.test#ac393db0","devLink":"/auth/verify?token=e1590c81e1ede3cccbc48f7b7bffc544263ecb96b12cc52d427b991ab74928a6"}
+(node:37320) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS depth=1000: response never contains the raw engine error string
+{"ts":"2026-09-06T20:28:20.745Z","event":"server.error","err":"Maximum call stack size exceeded","url":"/api/draft"}
+PASS depth=5000: response never contains the raw engine error string
+{"ts":"2026-09-06T20:28:20.750Z","event":"server.error","err":"Maximum call stack size exceeded","url":"/api/draft"}
+PASS depth=20000: response never contains the raw engine error string
+PASS server survives the whole probe (still answers /health)
+
+wave10-security-json-depth-leak.test.js: all passed
