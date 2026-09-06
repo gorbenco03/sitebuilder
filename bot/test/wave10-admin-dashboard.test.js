@@ -240,11 +240,36 @@ function assertNoSecretLeak(body, token) {
                 'no mutation buttons');
         });
 
-        await check('GET /admin?token= → 200 HTML (query token for browser)', async () => {
+        // L1 follow-up (2026-09-06 re-audit): a token that authenticates
+        // directly from the URL rides along in server/proxy access logs,
+        // browser history, and any Referer header forever. `?token=` is
+        // still the documented browser bootstrap (OWNER-STRIPE-TRIAL.md),
+        // but it now only trades for a cookie via a 302 to the query-free
+        // URL — no later response ever repeats the token in an address bar
+        // or log line.
+        await check('GET /admin?token= → 302 to query-free /admin + Set-Cookie (no direct 200)', async () => {
             const res = await httpGet(port, '/admin?token=' + encodeURIComponent(ADMIN_TOKEN), {
                 Accept: 'text/html',
             });
-            assert.strictEqual(res.status, 200, 'query token must 200, got ' + res.status);
+            assert.strictEqual(res.status, 302, 'query token must redirect, not answer directly, got ' + res.status);
+            assert.strictEqual(res.headers['location'], '/admin', 'redirects to the query-free path');
+            const setCookie = String(res.headers['set-cookie'] || '');
+            assert.ok(/hb_admin_token=/.test(setCookie), 'sets the admin cookie: ' + setCookie);
+            assert.ok(/HttpOnly/i.test(setCookie), 'cookie is HttpOnly');
+            assert.ok(!res.body.includes(liveSlug) && !res.body.includes(unpubSlug),
+                'redirect body itself must not leak the site list');
+        });
+
+        await check('GET /admin with the bootstrapped cookie → 200 HTML lists both sites', async () => {
+            const bootstrap = await httpGet(port, '/admin?token=' + encodeURIComponent(ADMIN_TOKEN), {
+                Accept: 'text/html',
+            });
+            const setCookie = String(bootstrap.headers['set-cookie'] || '');
+            const cookiePair = setCookie.split(';')[0];
+            assert.ok(cookiePair.startsWith('hb_admin_token='), 'got a cookie to replay: ' + setCookie);
+
+            const res = await httpGet(port, '/admin', { Accept: 'text/html', Cookie: cookiePair });
+            assert.strictEqual(res.status, 200, 'cookie-authenticated request must 200, got ' + res.status);
             assert.ok(res.body.includes(liveSlug) && res.body.includes(unpubSlug), 'lists both sites');
             assertNoSecretLeak(res.body, ADMIN_TOKEN);
         });

@@ -1,0 +1,59 @@
+PASS RED (reconstructed pre-fix algorithm): 30 spoofed X-Forwarded-For values would have produced 30 distinct IP keys
+{"ts":"2026-09-06T20:28:20.561Z","event":"server.started","port":53754}
+🌐 HTTP server on :53754 (health + webhooks + API)
+{"ts":"2026-09-06T20:28:20.571Z","event":"email.magic_link.dev","email":"s***@example.test#82f45ac4","devLink":"/auth/verify?token=54c63ead5b06d342f8b473b6a49f4764826f7e7d87dd8f18b5f6318359ef927d"}
+(node:37316) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T20:28:20.573Z","event":"email.magic_link.dev","email":"s***@example.test#6d9fcda3","devLink":"/auth/verify?token=7658cfef2c0eab23d5c600b0f4f79bc37e7cbe764ae62552e00d3b8895c34dae"}
+{"ts":"2026-09-06T20:28:20.574Z","event":"email.magic_link.dev","email":"s***@example.test#9a74357d","devLink":"/auth/verify?token=220181a786d9dd51256dee6db0e28060c365152a0410dc7f41f1d40197be0a84"}
+{"ts":"2026-09-06T20:28:20.575Z","event":"email.magic_link.dev","email":"s***@example.test#985226fc","devLink":"/auth/verify?token=85cec7d5893be1687712ee3e59e525006769b90d4d5f0fc22955bfd03a31c219"}
+{"ts":"2026-09-06T20:28:20.576Z","event":"email.magic_link.dev","email":"s***@example.test#f511b963","devLink":"/auth/verify?token=22443cc3e1c2f3c4b3a329125bb805ddb5a795c273d858995f49e07cad61e9b3"}
+{"ts":"2026-09-06T20:28:20.577Z","event":"email.magic_link.dev","email":"s***@example.test#4368289f","devLink":"/auth/verify?token=346c92f0cb32ef057aafb4616b4a75ac0347fc180828256cc94dd6edb6e40755"}
+{"ts":"2026-09-06T20:28:20.577Z","event":"email.magic_link.dev","email":"s***@example.test#035cc7da","devLink":"/auth/verify?token=3013fbe8379e1c8a2a4615f2cf757685bda63c35838f15145eb552a3adf8f279"}
+{"ts":"2026-09-06T20:28:20.578Z","event":"email.magic_link.dev","email":"s***@example.test#6623ae5a","devLink":"/auth/verify?token=6c69b7237e7c1660d53d264cb1954e81c014d4ce0411b0dff6a491d0f2019ccd"}
+{"ts":"2026-09-06T20:28:20.579Z","event":"email.magic_link.dev","email":"s***@example.test#f32c0dcf","devLink":"/auth/verify?token=296965d2c85eeac684b059a2da7e346cedc9b90e8cb2c30312a060eda47fced8"}
+{"ts":"2026-09-06T20:28:20.580Z","event":"email.magic_link.dev","email":"s***@example.test#d9d5d9c6","devLink":"/auth/verify?token=88c20131b7b4c486bd7e6879cf2832ace9239818d02d167e245d4e31b1acaf21"}
+{"ts":"2026-09-06T20:28:20.580Z","event":"email.magic_link.dev","email":"s***@example.test#0d28ba0a","devLink":"/auth/verify?token=40a7d492a822f79387f1ef1409df54db89d3dfb769a67bf9b2ed3fcadd641af7"}
+{"ts":"2026-09-06T20:28:20.581Z","event":"email.magic_link.dev","email":"s***@example.test#8e335fea","devLink":"/auth/verify?token=aa6dc6946da24e0d1df9d5607d5b02032d4c32d4d6977ec78b5bdf5b3188396d"}
+{"ts":"2026-09-06T20:28:20.581Z","event":"email.magic_link.dev","email":"s***@example.test#a2965622","devLink":"/auth/verify?token=3cfb71f54210313607e63838cd371e1824b5c26e8766b90cc3d7e015b03f7a7a"}
+{"ts":"2026-09-06T20:28:20.582Z","event":"email.magic_link.dev","email":"s***@example.test#5efc807b","devLink":"/auth/verify?token=d3e0fbab88c0076e682f5e172b867b8440cc3dcf1b571c1870e3ebc8e8e9f309"}
+{"ts":"2026-09-06T20:28:20.582Z","event":"email.magic_link.dev","email":"s***@example.test#a0f4e20b","devLink":"/auth/verify?token=afad263db1546a918e1cfe6664f1c23d1d56944963083706fa1ecfd988b1f74b"}
+{"ts":"2026-09-06T20:28:20.582Z","event":"email.magic_link.dev","email":"s***@example.test#c06d7133","devLink":"/auth/verify?token=6bb8da1c5b1a6d577eec04a944bcb40b998c052653cd8c4f74900f9f0e2e46d1"}
+{"ts":"2026-09-06T20:28:20.583Z","event":"email.magic_link.dev","email":"s***@example.test#6669f96d","devLink":"/auth/verify?token=37392e66f97e3b053cf857dfbcac7709324a190d69561c6601bf5c50f134b8bf"}
+{"ts":"2026-09-06T20:28:20.583Z","event":"email.magic_link.dev","email":"s***@example.test#773732c5","devLink":"/auth/verify?token=4a56319e6ec9fca85b110195a2ce309cbe07ac2d2e639840dda8ef338592e5a3"}
+{"ts":"2026-09-06T20:28:20.584Z","event":"email.magic_link.dev","email":"s***@example.test#f86e501b","devLink":"/auth/verify?token=f0df5d70c09811bab90fa43b823b0c9f82f69cfaffe23857a4280577523377e5"}
+{"ts":"2026-09-06T20:28:20.584Z","event":"email.magic_link.dev","email":"s***@example.test#a6c8e483","devLink":"/auth/verify?token=f535edaa176d5aa9e56b5128be0400a8ad81a0c7757cdb601bce7c0e7d1943b8"}
+PASS GREEN (current code, TRUST_PROXY unset): 30 requests with 30 distinct target emails + 30 distinct spoofed X-Forwarded-For values still hit the per-IP limit
+PASS GREEN: the per-EMAIL limit still engages independently of any IP spoofing (regression guard)
+{"ts":"2026-09-06T20:28:20.590Z","event":"server.started","port":53756}
+🌐 HTTP server on :53756 (health + webhooks + API)
+{"ts":"2026-09-06T20:28:20.591Z","event":"email.magic_link.dev","email":"c***@example.test#966d6d87","devLink":"/auth/verify?token=cf5c1cb5728742c457547ccb18f18f0250989c51c2430ce83753041026767de7"}
+{"ts":"2026-09-06T20:28:20.591Z","event":"email.magic_link.dev","email":"c***@example.test#c2c811f7","devLink":"/auth/verify?token=2922c2163b422bff6b2ec593eba611849c0364e33f2f51ca7b0d4636bccce5c4"}
+{"ts":"2026-09-06T20:28:20.591Z","event":"email.magic_link.dev","email":"c***@example.test#3ace41e2","devLink":"/auth/verify?token=8f955d812abcf7e7bb8efd6ad582f6a8a72a217a2974a81b72cab170414b7657"}
+{"ts":"2026-09-06T20:28:20.592Z","event":"email.magic_link.dev","email":"c***@example.test#83cb61c1","devLink":"/auth/verify?token=1274d8a64788b25ae485441804b85494b909ac22bb4feaef05a3493a29323695"}
+{"ts":"2026-09-06T20:28:20.592Z","event":"email.magic_link.dev","email":"c***@example.test#7b72b1d7","devLink":"/auth/verify?token=1a49fa59f617e5a26e6834da97baca527cc3894479540a993de43e0699fef6c0"}
+{"ts":"2026-09-06T20:28:20.593Z","event":"email.magic_link.dev","email":"c***@example.test#2bc56aec","devLink":"/auth/verify?token=53e940817888b2e188570c8ae883d6d71cf81f9fec62bd6400a4051711e66b9d"}
+PASS TRUST_PROXY=cloudflare: distinct CF-Connecting-IP values get separate per-visitor buckets (legit multi-visitor traffic still works)
+{"ts":"2026-09-06T20:28:20.593Z","event":"email.magic_link.dev","email":"c***@example.test#a29001e1","devLink":"/auth/verify?token=da3326e0c8caa1e622ca56efed8d79c2f6edd407bf03198bb69671c67a615a3d"}
+{"ts":"2026-09-06T20:28:20.593Z","event":"email.magic_link.dev","email":"c***@example.test#aeedd189","devLink":"/auth/verify?token=97927347ee2d4705a429f17823a40502bb4e912e280dcaaa6c6629893bbde81a"}
+{"ts":"2026-09-06T20:28:20.594Z","event":"email.magic_link.dev","email":"c***@example.test#2bbd1b56","devLink":"/auth/verify?token=20fa276030f9aa2b16736ba1d5b8665fc6321af4bb5904ee05548739c227f977"}
+{"ts":"2026-09-06T20:28:20.594Z","event":"email.magic_link.dev","email":"c***@example.test#4c765c7e","devLink":"/auth/verify?token=547cd63c188d0454c250b1e9d6f160c7bbff6320100eabf9c0d71fa2b0a44090"}
+{"ts":"2026-09-06T20:28:20.594Z","event":"email.magic_link.dev","email":"c***@example.test#bf5a1f70","devLink":"/auth/verify?token=4c7b6a88aad4eeec1402270a9ef72c7cacb6e81c1b3fcbbca49d7399b2cb5ece"}
+{"ts":"2026-09-06T20:28:20.595Z","event":"email.magic_link.dev","email":"c***@example.test#78671ed9","devLink":"/auth/verify?token=a1d0bfc89cfe35d13d2522da4097a6f7ef229904729bea569ffc141cb5504d99"}
+{"ts":"2026-09-06T20:28:20.595Z","event":"email.magic_link.dev","email":"c***@example.test#b9ec3640","devLink":"/auth/verify?token=6e6d62feb1a4c398a085d2b91f6c54a00c388c1113465acfa5504d9479d2c442"}
+{"ts":"2026-09-06T20:28:20.595Z","event":"email.magic_link.dev","email":"c***@example.test#b22d7fda","devLink":"/auth/verify?token=fa771eb92888acee05801974f0a5f7b3d8d0ae84e31e55b290e90fb8dae1ac61"}
+{"ts":"2026-09-06T20:28:20.596Z","event":"email.magic_link.dev","email":"c***@example.test#afcf1ab0","devLink":"/auth/verify?token=861986872ce7a1dce6175de9395b589df4e74aab45c276c5dea17127d1ffea0c"}
+{"ts":"2026-09-06T20:28:20.596Z","event":"email.magic_link.dev","email":"c***@example.test#024562b8","devLink":"/auth/verify?token=001a5359ba065016455e6bb7a7354f54926c4f5c99414fb1557f7049760dda4d"}
+{"ts":"2026-09-06T20:28:20.597Z","event":"email.magic_link.dev","email":"c***@example.test#3f0d3461","devLink":"/auth/verify?token=bc4aba31657357c27920fa8a0b4ab86e7d80941a551d17bbd23793644954df73"}
+{"ts":"2026-09-06T20:28:20.597Z","event":"email.magic_link.dev","email":"c***@example.test#d272a347","devLink":"/auth/verify?token=f4d13d88b29a39d816b28fc9de9fc9f3906d6a477a5f239588e155103f33041b"}
+{"ts":"2026-09-06T20:28:20.597Z","event":"email.magic_link.dev","email":"c***@example.test#3a411bb1","devLink":"/auth/verify?token=b55f09b781ad22028b4b480392c53505929e660fc0ffee538d38727f66a225b8"}
+{"ts":"2026-09-06T20:28:20.598Z","event":"email.magic_link.dev","email":"c***@example.test#524686e5","devLink":"/auth/verify?token=541ffe8047eef6f10e43c71e2056cf50275690f2455c61db3c2f9c05037c0238"}
+{"ts":"2026-09-06T20:28:20.598Z","event":"email.magic_link.dev","email":"c***@example.test#8b24bd6f","devLink":"/auth/verify?token=5ecbc204a969d7ee6cb243f20b14e37b167a321cb7558a537717d2f372ecdb27"}
+{"ts":"2026-09-06T20:28:20.598Z","event":"email.magic_link.dev","email":"c***@example.test#a1de7616","devLink":"/auth/verify?token=0067febdd0bb29f5b63403cac82378c1b057450477e75481294126bd6383f47a"}
+{"ts":"2026-09-06T20:28:20.599Z","event":"email.magic_link.dev","email":"c***@example.test#a95b0d00","devLink":"/auth/verify?token=e5c90744c544a5cd06db4bece7acd1f2b723694631b8d505cae891085790550e"}
+{"ts":"2026-09-06T20:28:20.599Z","event":"email.magic_link.dev","email":"c***@example.test#ebb84474","devLink":"/auth/verify?token=7a23a009bb29b1665dafc900f44c9040498ffec371b7ab4352e740499a8eb424"}
+{"ts":"2026-09-06T20:28:20.600Z","event":"email.magic_link.dev","email":"c***@example.test#76ee43c5","devLink":"/auth/verify?token=621e73a0edf1e0e535279c7f1e5c9de042a1c3ddffbf0af76ede067438b7404d"}
+{"ts":"2026-09-06T20:28:20.600Z","event":"email.magic_link.dev","email":"c***@example.test#5b0c403a","devLink":"/auth/verify?token=2704fde4700b3b9152fd824779193293068d0456a50af756687b4771a77a944f"}
+PASS TRUST_PROXY=cloudflare: spoofing X-Forwarded-For alone (fixed CF-Connecting-IP) still hits the per-IP limit
+
+wave10-security-ratelimit-spoof.test.js: all passed
