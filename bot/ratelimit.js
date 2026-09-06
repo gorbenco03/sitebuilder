@@ -82,7 +82,42 @@ function consumeBuild(chatId) {
     _save();
 }
 
-module.exports = { allowBuild, consumeBuild, PER_CHAT_HOUR, GLOBAL_DAY };
+// ---------------------------------------------------------------------------
+// Generic sliding-window limiter — for public HTTP write surfaces that are
+// not the Telegram build flow (e.g. calendar-native's public bookings API,
+// which has intentionally open CORS — see server.js applyPublicCalendarCors —
+// and therefore needs its own throttle so a script on any third-party page
+// cannot flood a client's calendar with fake bookings). Namespaced by
+// `bucket` so callers never collide with each other's counters or with the
+// build limiter above; persisted the same way (same file, same debounce).
+// ---------------------------------------------------------------------------
+
+/**
+ * Is `key` under `opts.max` hits within `opts.windowMs`? Consumes one hit on
+ * success (unlike allowBuild/consumeBuild, this is check+consume in one call
+ * since callers here have no separate "commit" step worth the extra call).
+ * @param {string} bucket   namespace, e.g. 'cal_booking_ip'
+ * @param {string} key      rate-limit key within that bucket
+ * @param {{max:number, windowMs:number}} opts
+ * @returns {{ok:boolean}}
+ */
+function allowAndConsume(bucket, key, opts) {
+    const now = Date.now();
+    const max = (opts && opts.max) || 1;
+    const windowMs = (opts && opts.windowMs) || HOUR_MS;
+    if (!state[bucket]) state[bucket] = {};
+    const arr = (state[bucket][key] || []).filter((ts) => now - ts < windowMs);
+    if (arr.length >= max) {
+        state[bucket][key] = arr;
+        return { ok: false };
+    }
+    arr.push(now);
+    state[bucket][key] = arr;
+    _save();
+    return { ok: true };
+}
+
+module.exports = { allowBuild, consumeBuild, PER_CHAT_HOUR, GLOBAL_DAY, allowAndConsume };
 
 // Offline self-test: node bot/ratelimit.js
 if (require.main === module) {
