@@ -1,0 +1,502 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Site-ul afacerii tale,gata azi",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Cum funcționează",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "Alege un design",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "Editează în browser",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "Începe trialul de 7 zile",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "Editează și republică",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Proiectele mele",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Gata de publicare",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Autentifică-te ca să publici",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Adaugă un card ca să fii live",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Istoric versiuni",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Galerie foto",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Adaugă Instagram",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "thumbs/local-service.jpg",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/product-menu.jpg",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/portfolio.jpg",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/product-menu.jpg",
+      "alt": "Previzualizare Restaurant",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/local-service.jpg",
+      "alt": "Previzualizare Meserii",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/portfolio.jpg",
+      "alt": "Previzualizare Salon",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/professionals.jpg",
+      "alt": "Previzualizare Servicii profesionale",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "thumbs/desserdirina.jpg",
+      "alt": "Previzualizare Desserdirina",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 1,
+    "main": 4,
+    "footer": 1
+  },
+  "forms": [
+    {
+      "tag": "INPUT",
+      "type": "color",
+      "id": "color-custom-swatch",
+      "name": null,
+      "hasLabel": true,
+      "via": "aria-label",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "color-custom-text",
+      "name": null,
+      "hasLabel": true,
+      "via": "aria-label",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "color",
+      "id": "color-bg-swatch",
+      "name": null,
+      "hasLabel": true,
+      "via": "aria-label",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "color-bg-text",
+      "name": null,
+      "hasLabel": true,
+      "via": "aria-label",
+      "visible": false
+    },
+    {
+      "tag": "SELECT",
+      "type": "select-one",
+      "id": "dr_business_lang",
+      "name": "business.lang",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "dr_business_languages",
+      "name": "business.languages",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "dr_labels_whatsapp",
+      "name": "labels.whatsapp",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "color",
+      "id": "dr_hero_background",
+      "name": null,
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "dr_hero_background_img",
+      "name": null,
+      "hasLabel": true,
+      "via": "aria-label",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_appointment_bookingUrl",
+      "name": "appointment.bookingUrl",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "tel",
+      "id": "dr_contact_phone",
+      "name": "contact.phone",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "tel",
+      "id": "dr_contact_whatsapp",
+      "name": "contact.whatsapp",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_contact_waMessage",
+      "name": "contact.waMessage",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_contact_addressHref",
+      "name": "contact.addressHref",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_contact_instagram_url",
+      "name": "contact.instagram.url",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_contact_facebook_url",
+      "name": "contact.facebook.url",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_instagram_url",
+      "name": "instagram.url",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "id": "dr_instagram_embedUrl",
+      "name": "instagram.embedUrl",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "input-slug",
+      "name": null,
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "email",
+      "id": "input-email",
+      "name": null,
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "email",
+      "id": "input-ig-email",
+      "name": null,
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "checkbox",
+      "id": "ig-terms-check",
+      "name": null,
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": false
+    },
+    {
+      "tag": "INPUT",
+      "type": "file",
+      "id": "img-file-input",
+      "name": null,
+      "hasLabel": false,
+      "via": "NONE",
+      "visible": false
+    }
+  ],
+  "contrastFails": [
+    {
+      "text": "40/40",
+      "tag": "SPAN",
+      "id": "checklist-text",
+      "cls": "",
+      "ratio": 3,
+      "threshold": 4.5,
+      "fg": "rgb(22, 163, 74)",
+      "bg": "rgb(220,252,231)",
+      "fontSize": 12.48,
+      "bold": false
+    }
+  ],
+  "contrastUndetermined": [],
+  "ariaIssues": [
+    "aria-hidden=true pe element focusabil: INPUT#img-file-input"
+  ],
+  "smallTargets": [
+    {
+      "tag": "BUTTON",
+      "id": "btn-back-templates",
+      "cls": "btn-icon-back",
+      "w": 78,
+      "h": 28,
+      "text": "Înapoi"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-preview-desktop",
+      "cls": "device-btn active",
+      "w": 32,
+      "h": 28,
+      "text": ""
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-preview-mobile",
+      "cls": "device-btn",
+      "w": 32,
+      "h": 28,
+      "text": ""
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-add-instagram",
+      "cls": "btn-topbar",
+      "w": 36,
+      "h": 28,
+      "text": "Adaugă Instagram"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-color-picker",
+      "cls": "btn-topbar",
+      "w": 36,
+      "h": 28,
+      "text": "Culoare"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-open-drawer",
+      "cls": "btn-topbar",
+      "w": 36,
+      "h": 28,
+      "text": "Detalii"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-download-html",
+      "cls": "btn-topbar",
+      "w": 77,
+      "h": 28,
+      "text": "Descarcă HTML"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-download-zip",
+      "cls": "btn-topbar",
+      "w": 60,
+      "h": 28,
+      "text": "Descarcă ZIP"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "btn-close-drawer",
+      "cls": "drawer-close",
+      "w": 34,
+      "h": 34,
+      "text": "×"
+    },
+    {
+      "tag": "SELECT",
+      "id": "dr_business_lang",
+      "cls": "field-input",
+      "w": 367,
+      "h": 40,
+      "text": "Română"
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_business_languages",
+      "cls": "field-input",
+      "w": 367,
+      "h": 40,
+      "text": ""
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_labels_whatsapp",
+      "cls": "field-input",
+      "w": 367,
+      "h": 40,
+      "text": ""
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_hero_background",
+      "cls": "field-input field-input--color",
+      "w": 367,
+      "h": 27,
+      "text": "Culoare fundal"
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_hero_background_img",
+      "cls": "field-input",
+      "w": 236,
+      "h": 40,
+      "text": "Poză de fundal"
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_contact_phone",
+      "cls": "field-input",
+      "w": 367,
+      "h": 40,
+      "text": ""
+    },
+    {
+      "tag": "INPUT",
+      "id": "dr_contact_whatsapp",
+      "cls": "field-input",
+      "w": 367,
+      "h": 40,
+      "text": ""
+    }
+  ],
+  "lang": "ro",
+  "title": "Hidook Site Builder",
+  "h1Count": 1,
+  "headingSkips": []
+}

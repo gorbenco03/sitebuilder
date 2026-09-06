@@ -1,0 +1,30 @@
+{
+  "verdict": "confirmed",
+  "adjustedSeverity": "high",
+  "originalClaimedSeverity": "critical",
+  "title": "Fundalul hero (poza sau culoare) al șablonului Desserdirina devine invizibil pe site-ul live după orice editare a câmpului 'Fundal deschidere' — background-image: <shorthand> este sintaxă CSS invalidă",
+  "confirmedRootCause": "templates/desserdirina/template.html:57 leagă câmpul de proprietatea CSS 'background-image', dar builder/app.js composeHeroBackground() (liniile 1796-1807) produce o valoare shorthand gen 'linear-gradient(...), url(...) center/cover no-repeat' (sau doar o culoare simplă cand nu e poza) — valori valide DOAR pentru shorthand-ul 'background', nu pentru 'background-image'. Browserul respinge întreaga declarație ca invalidă => backgroundImage calculat = 'none'. Toate celelalte 4 șabloane leagă câmpul de 'background' (shorthand) și randează corect aceeași valoare compusă.",
+  "reproducedIndependently": true,
+  "reproMethods": [
+    "1) Inspecție cod: grep confirmă templates/desserdirina/template.html:57 = 'background-image: {{& hero.background}}', vs product-menu:84 / portfolio:64 / local-service:59 / professionals:63 = toate 'background: {{& hero.background}}'.",
+    "2) Test CSS izolat într-un Chromium real (Playwright): setarea inline style 'background-image: linear-gradient(...), url(...) center/cover no-repeat' => getComputedStyle().backgroundImage = 'none'; aceeași valoare pe 'background:' => se parsează corect (linear-gradient + url vizibile în computed backgroundImage).",
+    "3) Test izolat suplimentar: și varianta doar-culoare, 'background-image: #E85D8C' (fără poză), => computed backgroundImage = 'none' — deci bug-ul se declanșează la ORICE editare a câmpului (culoare sau poză), nu doar la upload de poză.",
+    "4) E2E complet prin aplicația reală (server izolat HIDOOK_TEST_PAY=1/HIDOOK_ISOLATED_DEPLOY=1): /app/ -> accept cookie -> alege Desserdirina -> ÎNAINTE de orice editare, hero.background = 'url(.../hero.jpg)' simplu => se randează corect (computed backgroundImage = url(...)) -> se deschide Details, se încarcă o poză nouă (cupcakes-1.jpg) prin '[data-field-key=\"hero.background\"] button' -> DUPĂ editare, inline style devine 'linear-gradient(...), url(data:image/jpeg;base64,...) center/cover no-repeat' și computed backgroundImage = 'none' chiar în iframe-ul editorului.",
+    "5) Flux complet până la publicare plătită: publish -> slug -> email -> #dev-link -> #btn-pay-publish -> 'Site-ul tău e live' -> navigare directă pe URL-ul live real (nou tab, fără JS/CSS de builder) -> pagina live are '.hero-background' cu style='background-image: linear-gradient(160deg, #1a1a1acc 0%, #1a1a1a66 55%, #1a1a1a99 100%), url(\\'images/hero.jpg\\') center/cover no-repeat' și computed backgroundImage = 'none'. CONFIRMAT pe site publicat și plătit (test-pay)."
+  ],
+  "refutedPart": {
+    "claim": "Pe lângă poză, dispar și tagline-ul și butonul CTA 'Comandă acum' din hero",
+    "verdict": "refuted",
+    "evidence": "Pe pagina live reală, imediat după încărcare (networkidle), tagline-ul și CTA au opacity:0 pentru că animația CSS de intrare (.hero-tagline / .hero-cta: 'fadeInUp 1s ... 0.8s/1s forwards') încă nu a rulat complet — e o stare TRANZITORIE de max ~1.8s, nu un defect persistent. După o așteptare de 3s pe aceeași pagină live, tagline-ul ('TORTURI, PRĂJITURI ȘI PÂINE ARTIZANALĂ') și CTA ('COMANDĂ ACUM →') apar corect, cu opacity:1 și transform normal (vezi screenshot 08-live-after-3s-settle.png vs 07-live-published-desktop.png, ambele din același run, aceeași pagină). Aceeași verificare pe iframe-ul editorului imediat după editarea pozei arată deja opacity:1 pentru ambele. Concluzie: partea asta a constatării originale e un artefact de timing al captării screenshot-ului (screenshot luat prea devreme, în timpul animației de fade-in), nu un bug real de dispariție permanentă a tagline-ului/CTA-ului."
+  },
+  "severityJustification": "Bug-ul de background este real, determinist, reproductibil de 100% ori pe orice editare (culoare SAU poză) a singurului câmp 'hero.background' din șablon, și confirmat pe site LIVE PUBLICAT ȘI PLĂTIT prin fluxul real de test-pay — deci afectează practic toți clienții reali care personalizează Desserdirina (aproape sigur, fiindcă e câmpul central 'Fundal deschidere' din secțiunea 'Prima impresie'). Totuși, conform rubricii stricte primite (critical = pierdere de bani/date/securitate SAU flux comercial blocat), acest defect nu blochează fluxul de publicare/plată și nu produce pierdere directă de bani/date/securitate — site-ul se publică și funcționează, doar elementul vizual hero e stricat. Se încadrează corect la 'high' (defect vizibil clientului, foarte sever ca impact vizual pe un produs plătit, dar nu blocant comercial).",
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/_verify/template-desserdirina_DSD-01/",
+  "evidenceFiles": [
+    "run.mjs (script complet de repro E2E)",
+    "02-editor-opened-desserdirina-default.png (hero OK cu valoare implicita simpla url())",
+    "04-hero-after-photo-upload-iframe.png (hero gol in editor dupa upload poza)",
+    "07-live-published-desktop.png (hero gol pe site LIVE PLATIT, imediat dupa load)",
+    "08-live-after-3s-settle.png (acelasi site live dupa 3s: tagline+CTA apar corect, insa fundalul ramane gol -> confirma ca doar fundalul e stricat, nu tagline/CTA)",
+    "oracle-log.json (note text cu toate valorile computed inline)"
+  ]
+}

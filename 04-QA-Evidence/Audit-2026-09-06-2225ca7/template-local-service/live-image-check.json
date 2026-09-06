@@ -1,0 +1,72 @@
+[
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-baie1.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-baie2.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-baie3.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-buc1.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-buc2.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-buc3.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-ext1.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": null,
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/pr-ext2.jpg",
+    "hasSrcAttr": true,
+    "ok": true,
+    "insideHiddenModal": false
+  },
+  {
+    "id": "wa-qr-img",
+    "src": "",
+    "hasSrcAttr": false,
+    "ok": false,
+    "insideHiddenModal": true
+  },
+  {
+    "id": "lightbox-img",
+    "src": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+    "hasSrcAttr": false,
+    "ok": false,
+    "insideHiddenModal": true
+  }
+]

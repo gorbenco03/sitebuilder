@@ -1,0 +1,59 @@
+{
+  "lens": "security-secrets-sweep-logout",
+  "startedAt": "2026-09-05T21:49:49.198Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "authenticated-header",
+      "action": "authenticated, header shows badge + Deconectare",
+      "selector": null,
+      "screenshot": "01-authenticated-header.png",
+      "sha256": "80b56166e6cba8c499a94ccdbb04d3ceaddd6098b6813b5a23d5864783b31d08",
+      "timestamp": "2026-09-05T21:49:54.892Z",
+      "url": "http://127.0.0.1:52263/app/#templates",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "toast-after-logout-click",
+      "action": "click #btn-logout",
+      "selector": null,
+      "screenshot": "02-toast-after-logout-click.png",
+      "sha256": "96d9493448f4ae9bafdb5df3ca9bcc8fcb009253249778643bcce8025eafc538",
+      "timestamp": "2026-09-05T21:49:55.643Z",
+      "url": "http://127.0.0.1:52263/app/#templates",
+      "contentCheck": {
+        "ok": true,
+        "detail": "toast Te-ai deconectat shown; POST /api/auth/logout status=404"
+      }
+    },
+    {
+      "index": 2,
+      "step": "true-reload-after-logout",
+      "action": "page.reload() — full document reload after clicking Deconectare",
+      "selector": null,
+      "screenshot": "03-true-reload-after-logout.png",
+      "sha256": "d7fd629194a975e6361b973b9aba629fc866a3c65c6b2e979171bfc10a95ec7a",
+      "timestamp": "2026-09-05T21:49:56.792Z",
+      "url": "http://127.0.0.1:52263/app/#templates",
+      "contentCheck": {
+        "ok": true,
+        "detail": "checking whether header still shows authenticated state"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "critical",
+      "title": "Butonul \"Deconectare\" nu invalidează sesiunea — utilizatorul rămâne autentificat după reload",
+      "detail": "Ruta POST /api/auth/logout nu există pe server (bot/server.js expune doar POST /api/auth/email și /api/auth/telegram; nicio potrivire pentru /api/auth/logout, confirmat prin status HTTP 404). Handler-ul din builder/app.js:4460-4468 face fetch la această rută inexistentă într-un try/catch gol, apoi doar ascunde local badge-ul și butonul (updateUserUI(null)) și arată toast-ul \"Te-ai deconectat.\". Cookie-ul hb_session (HttpOnly, SameSite=Lax, Max-Age=2592000 ≈ 30 zile) NU este niciodată revocat de server. La un page.reload() complet (echivalent cu închiderea și redeschiderea tab-ului), header-ul redevine autentificat (badge=true, GET /api/me → 200), deci \"Deconectare\" e doar cosmetic pe orice dispozitiv/browser pe care userul a rulat-o vreodată — grav pe calculatoare partajate/publice.",
+      "screenshot": "true-reload-after-logout.png",
+      "timestamp": "2026-09-05T21:49:56.805Z"
+    }
+  ],
+  "notes": [],
+  "finishedAt": "2026-09-05T21:49:56.805Z"
+}

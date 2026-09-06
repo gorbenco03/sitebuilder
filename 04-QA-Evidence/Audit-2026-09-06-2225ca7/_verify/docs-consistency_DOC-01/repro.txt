@@ -1,0 +1,24 @@
+VERIFICARE DOC-01 — VISION.md vs PROJECT_STATUS.md pe "Produsul e gata?"
+
+1) VISION.md linia 186 (nemodificată, sub §8):
+"Independent QA/advocate pe acest SHA încă necesar înainte de a marca step 5 „QA/advocate complete”."
+
+2) VISION.md linia 367 (sub §12 governance):
+"Nu se declară Produsul până când toate flow-urile cerute pentru launch trec QA + advocate fără defect vizibil."
+
+3) VISION.md header: "Sincronizat: 2026-09-04." — nu a fost re-sincronizat de la declararea Produsului.
+
+4) PROJECT_STATUS.md linia 80-84:
+"## PRODUSUL declarat — 2026-09-05
+Owner a declarat Produsul la commit 884ce76 pe main. ... Integrare finală review-uită independent — ACCEPT. ...
+Push efectuat pe ambele remote (origin, hidook) pe main la cererea explicită a owner-ului."
+
+5) git show --stat 2225ca7 (commit-ul care adaugă declarația):
+commit 2225ca7 "docs: declare Produsul at 884ce76 -- native calendar (VISION §8 a-e) complete, integrated, ACCEPT chain verified"
+ PROJECT_STATUS.md | 7 +++++++
+ 1 file changed, 7 insertions(+)
+=> VISION.md NU a fost atins, deși mesajul de commit pretinde "VISION §8 a-e complete".
+
+CONCLUZIE: constatarea se reproduce integral. Contradicția e reală și verificabilă textual.
+Severitate ajustată: critical -> medium (defect de governance/docs intern, fără impact
+asupra banilor/datelor/securității/fluxului comercial vizibil clientului).

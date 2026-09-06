@@ -1,0 +1,5 @@
+$ node verify-icon-xss.mjs
+After load (checks passive @import/animate execution): alertFired = null
+payload1 link found: 1
+After clicking payload1 link: alertFired = 1
+payload4 xlink link found: 1

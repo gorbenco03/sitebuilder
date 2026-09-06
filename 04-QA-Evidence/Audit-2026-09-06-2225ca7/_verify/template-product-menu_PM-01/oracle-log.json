@@ -1,0 +1,106 @@
+{
+  "lens": "verify-PM-01",
+  "startedAt": "2026-09-05T22:07:09.008Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "catalog-loaded",
+      "action": "goto /app/",
+      "selector": null,
+      "screenshot": "01-catalog-loaded.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T22:07:10.889Z",
+      "url": "http://127.0.0.1:52914/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-opened-product-menu",
+      "action": "click .btn-start-tpl[product-menu]",
+      "selector": null,
+      "screenshot": "02-editor-opened-product-menu.png",
+      "sha256": "f8b58b3a481bedf6991affe54851eaa6e919ca0a7b40959329ed10700df2c153",
+      "timestamp": "2026-09-05T22:07:11.819Z",
+      "url": "http://127.0.0.1:52914/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "publish-success",
+      "action": "publish flow complete",
+      "selector": null,
+      "screenshot": "03-publish-success.png",
+      "sha256": "26043df557d46d472fb28582d20b2e474b6e33d03651aa5768a4029300ab30cd",
+      "timestamp": "2026-09-05T22:07:12.771Z",
+      "url": "http://127.0.0.1:52914/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/"
+      }
+    },
+    {
+      "index": 3,
+      "step": "live-page-loaded",
+      "action": "goto live url",
+      "selector": null,
+      "screenshot": "04-live-page-loaded.png",
+      "sha256": "9fbdae03a9a4568ee23f4087dc5746d74587d1609fd3a4c25d208d13c63f4df6",
+      "timestamp": "2026-09-05T22:07:13.357Z",
+      "url": "http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/"
+      }
+    },
+    {
+      "index": 4,
+      "step": "gallery-scrolled-into-view",
+      "action": "scrollIntoView .collage-photo",
+      "selector": null,
+      "screenshot": "05-gallery-scrolled-into-view.png",
+      "sha256": "bc7c7dbfba8114b4b064de2072df36217b8c130aba104d32b6efff6fb7158cc2",
+      "timestamp": "2026-09-05T22:07:13.490Z",
+      "url": "http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 5,
+      "step": "after-click-gallery-photo",
+      "action": "click .collage-photo",
+      "selector": null,
+      "screenshot": "06-after-click-gallery-photo.png",
+      "sha256": "23645409f1740ceab0f732d4c5716b4231c00bbdb4d8a99c334e7c0d6cb6e26c",
+      "timestamp": "2026-09-05T22:07:14.337Z",
+      "url": "http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "click first gallery photo to open lightbox"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "critical-candidate",
+      "title": "CONFIRMAT: .lightbox se deschide fara CSS (position:static), documentul se alungeste, footer-ul se muta jos.",
+      "detail": "{\"lightboxExists\":true,\"lightboxHidden\":false,\"computed\":{\"position\":\"static\",\"display\":\"block\",\"zIndex\":\"auto\",\"background\":\"rgba(0, 0, 0, 0)\",\"width\":\"1440px\",\"height\":\"1332.69px\"},\"rect\":{\"x\":0,\"y\":1326.484375,\"width\":1440,\"height\":1332.6875,\"top\":1326.484375,\"right\":1440,\"bottom\":2659.171875,\"left\":0},\"docHeight\":4410,\"footTop\":2903.515625,\"bodyOverflow\":\"hidden\"}",
+      "screenshot": "after-click-gallery-photo.png",
+      "timestamp": "2026-09-05T22:07:14.339Z"
+    }
+  ],
+  "notes": [
+    "live URL: http://127.0.0.1:52914/live/verify-pm01-mtoxnz0m/",
+    "collage-photo count on live page: 6",
+    "BEFORE click: {\"docHeight\":3077,\"footTop\":2903.515625}",
+    "AFTER click (.lightbox state): {\"lightboxExists\":true,\"lightboxHidden\":false,\"computed\":{\"position\":\"static\",\"display\":\"block\",\"zIndex\":\"auto\",\"background\":\"rgba(0, 0, 0, 0)\",\"width\":\"1440px\",\"height\":\"1332.69px\"},\"rect\":{\"x\":0,\"y\":1326.484375,\"width\":1440,\"height\":1332.6875,\"top\":1326.484375,\"right\":1440,\"bottom\":2659.171875,\"left\":0},\"docHeight\":4410,\"footTop\":2903.515625,\"bodyOverflow\":\"hidden\"}"
+  ],
+  "finishedAt": "2026-09-05T22:07:14.339Z"
+}

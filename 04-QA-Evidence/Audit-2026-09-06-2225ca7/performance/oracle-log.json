@@ -1,0 +1,106 @@
+{
+  "lens": "performance",
+  "startedAt": "2026-09-05T21:30:47.165Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "cold-load-app-templates-visible",
+      "action": "goto /app/ throttled (150ms RTT, 1.6Mbps down, CPU x4)",
+      "selector": null,
+      "screenshot": "01-cold-load-app-templates-visible.png",
+      "sha256": "12e21c7fa629f3d5cf296f57e821c6577a59b54611d6bc8314f594f3bfa465f4",
+      "timestamp": "2026-09-05T21:30:51.330Z",
+      "url": "http://127.0.0.1:50672/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "template cards visible"
+      }
+    },
+    {
+      "index": 1,
+      "step": "warm-reload-app",
+      "action": "reload /app/ (warm, no throttle)",
+      "selector": null,
+      "screenshot": "02-warm-reload-app.png",
+      "sha256": "aee086e3637b6af1fa3dfd02ff9f9f6a9152dd07e2a7c5c2f2665f4f6349f877",
+      "timestamp": "2026-09-05T21:30:53.043Z",
+      "url": "http://127.0.0.1:50672/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "second load, browser cache active"
+      }
+    },
+    {
+      "index": 2,
+      "step": "template-start-product-menu-editor-open",
+      "action": "click .btn-start-tpl[product-menu]",
+      "selector": null,
+      "screenshot": "03-template-start-product-menu-editor-open.png",
+      "sha256": "f8b58b3a481bedf6991affe54851eaa6e919ca0a7b40959329ed10700df2c153",
+      "timestamp": "2026-09-05T21:31:20.182Z",
+      "url": "http://127.0.0.1:50672/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor opened, iframe populated"
+      }
+    },
+    {
+      "index": 3,
+      "step": "publish-success",
+      "action": "complete test-pay publish flow",
+      "selector": null,
+      "screenshot": "04-publish-success.png",
+      "sha256": "dc325f52f50758dcc35d92d9e855ec7a530f636fc86144eb33879445a819ea17",
+      "timestamp": "2026-09-05T21:33:13.995Z",
+      "url": "http://127.0.0.1:50672/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "success modal with live URL: http://127.0.0.1:50672/live/perfaudit-mtowg9wd/"
+      }
+    },
+    {
+      "index": 4,
+      "step": "live-site-desktop-1440",
+      "action": "goto /live/perfaudit-mtowg9wd/ throttled",
+      "selector": null,
+      "screenshot": "05-live-site-desktop-1440.png",
+      "sha256": "460c890e7270932bc1700400994877448bc6c73aa1022354b96d4b623c51f661",
+      "timestamp": "2026-09-05T21:33:23.045Z",
+      "url": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "desktop-1440"
+      }
+    },
+    {
+      "index": 5,
+      "step": "live-site-mobile-390",
+      "action": "goto /live/perfaudit-mtowg9wd/ throttled",
+      "selector": null,
+      "screenshot": "06-live-site-mobile-390.png",
+      "sha256": "d3c49cf008ff4c9b477f197ed9e28990a78bb31ce3f3e161bbf62808e25bbb54",
+      "timestamp": "2026-09-05T21:33:31.944Z",
+      "url": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "mobile-390"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "Cold /app/ load: loadEvent=3910ms, cards visible=3981ms, LCP=816ms, CLS=0.03652839655369888, requests=18, bytes=2500214",
+    "Warm reload: 22ms, status counts={\"200\":8,\"304\":9,\"401\":1}",
+    "Template product-menu: iframe content in TIMEOUT>20000ms, 8 reqs, 1954KB",
+    "Template local-service: iframe content in TIMEOUT>20000ms, 8 reqs, 2363KB",
+    "Template portfolio: iframe content in TIMEOUT>20000ms, 8 reqs, 1988KB",
+    "Template professionals: iframe content in TIMEOUT>20000ms, 8 reqs, 2169KB",
+    "Template desserdirina: iframe content in TIMEOUT>20000ms, 14 reqs, 2116KB",
+    "Published test site live at: http://127.0.0.1:50672/live/perfaudit-mtowg9wd/",
+    "Live site desktop-1440: load=8051ms LCP=6824 CLS=0.2000155596923828 bytes=1628954 reqs=13",
+    "Live site mobile-390: load=8043ms LCP=6808 CLS=0.1666056071219308 bytes=1628954 reqs=13",
+    "Live site warm reload status counts: {\"200\":13} (expect 304s if cached; live handler has no ETag/Cache-Control by code inspection)",
+    "Server microbench: /api/templates avg=1.22ms, /live/<slug>/ avg=0.44ms, RSS before/after=122/127.8MB"
+  ],
+  "finishedAt": "2026-09-05T21:33:32.219Z"
+}

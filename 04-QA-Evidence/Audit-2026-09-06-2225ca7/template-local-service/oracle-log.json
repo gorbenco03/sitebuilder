@@ -1,0 +1,458 @@
+{
+  "lens": "template-local-service",
+  "startedAt": "2026-09-05T21:22:43.438Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "accept-cookie",
+      "action": "click",
+      "selector": "#hb-cookie-accept",
+      "screenshot": "01-accept-cookie.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T21:22:45.316Z",
+      "url": "http://127.0.0.1:49770/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "banner cookie acceptat"
+      }
+    },
+    {
+      "index": 1,
+      "step": "template-selected-editor-open",
+      "action": "click .btn-start-tpl",
+      "selector": null,
+      "screenshot": "02-template-selected-editor-open.png",
+      "sha256": "39e3327a03828d89655718dfa7d574ce4b35be7aa5d556d2e064a7f4b0205b9a",
+      "timestamp": "2026-09-05T21:22:45.618Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor deschis, drawer auto-open, iframe cu conținut în 112ms"
+      }
+    },
+    {
+      "index": 2,
+      "step": "drawer-inventory-fullpage",
+      "action": "inspect #drawer-body",
+      "selector": null,
+      "screenshot": "03-drawer-inventory-fullpage.png",
+      "sha256": "1adbb328ebad8e9ed385f8020107a0470f9e87e221a9beed838650701d9de43a",
+      "timestamp": "2026-09-05T21:22:45.767Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "11 campuri inventariate"
+      }
+    },
+    {
+      "index": 3,
+      "step": "edit-business-name-inline",
+      "action": "click + fill + blur",
+      "selector": "#preview-iframe [data-hb-edit=\"business.name\"]",
+      "screenshot": "04-edit-business-name-inline.png",
+      "sha256": "ae6d7bbf354e32a9b6223ee50ca74ba7eec63d77d0c2d37f56069313a96cbdce",
+      "timestamp": "2026-09-05T21:22:46.461Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "text iframe: Șt. Țăndărică & Fiii"
+      }
+    },
+    {
+      "index": 4,
+      "step": "drawer-reflects-business-name",
+      "action": "open drawer, check for business.name field",
+      "selector": null,
+      "screenshot": "05-drawer-reflects-business-name.png",
+      "sha256": "d7564173fc5fc940213cb15554bb94a9f9c35ad38d7f63878f1487ccc33c442f",
+      "timestamp": "2026-09-05T21:22:46.658Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "field prezent in drawer: false"
+      }
+    },
+    {
+      "index": 5,
+      "step": "edit-hero-photo",
+      "action": "click + setInputFiles",
+      "selector": "[data-field-key=\"hero.background\"] button",
+      "screenshot": "06-edit-hero-photo.png",
+      "sha256": "f7dddef99b76908ba9c5ac755d7cfdaabee615fe2707d97cc18bc70337d57ad8",
+      "timestamp": "2026-09-05T21:22:47.493Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "poza incarcata: /Users/Work/Desktop/sitebuilder/templates/product-menu/images/cn-hero.jpg"
+      }
+    },
+    {
+      "index": 6,
+      "step": "color-popover-open",
+      "action": "click #btn-color-picker",
+      "selector": null,
+      "screenshot": "07-color-popover-open.png",
+      "sha256": "93938e61be6e190147f9d9e25ee197dec65fd5aab1c4a6bf5088589f09742e8c",
+      "timestamp": "2026-09-05T21:22:47.789Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "CTA culoare inainte: rgb(11, 61, 145)"
+      }
+    },
+    {
+      "index": 7,
+      "step": "colors-applied",
+      "action": "fill #color-custom-text/#color-bg-text",
+      "selector": null,
+      "screenshot": "08-colors-applied.png",
+      "sha256": "44bbefc520d8c441b2fc727ddfb907f1c3ae8dccb49f3618fe278b443b95d8f2",
+      "timestamp": "2026-09-05T21:22:48.417Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "accent=#1D5B79 bg=#E7F1F7"
+      }
+    },
+    {
+      "index": 8,
+      "step": "whatsapp-fields-filled",
+      "action": "fill contact.whatsapp + contact.waMessage",
+      "selector": null,
+      "screenshot": "09-whatsapp-fields-filled.png",
+      "sha256": "afbf68e4b864dc757d7eb09ce55b4e95cfc284b454fbe764060e5055242d38b9",
+      "timestamp": "2026-09-05T21:22:49.290Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "nr=40745123456 msg=\"Bună ziua! Aș dori o ofertă pentru renovare băie, mulțumesc.\""
+      }
+    },
+    {
+      "index": 9,
+      "step": "whatsapp-qr-panel",
+      "action": "click link wa.me in iframe preview",
+      "selector": null,
+      "screenshot": "10-whatsapp-qr-panel.png",
+      "sha256": "9d7db5460aa8c868f21e5ff11f62c6d8c726849296f613dc26f4214c23838b6d",
+      "timestamp": "2026-09-05T21:22:50.016Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "panou QR WhatsApp (#wa-qr) din template"
+      }
+    },
+    {
+      "index": 10,
+      "step": "preview-mobile-390",
+      "action": "click #btn-preview-mobile",
+      "selector": null,
+      "screenshot": "11-preview-mobile-390.png",
+      "sha256": "c2f7d9d251bcd716a55f3c4c911fb5c97571638163986b8360c1670ef2abebf2",
+      "timestamp": "2026-09-05T21:23:10.853Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "previzualizare mobil in editor"
+      }
+    },
+    {
+      "index": 11,
+      "step": "add-service-item",
+      "action": "click \"+ Adaugă articol\" pentru services",
+      "selector": null,
+      "screenshot": "12-add-service-item.png",
+      "sha256": "d0384755c3726eae16a7645a485d55563366bcc143070d53859b282f8a0b75a1",
+      "timestamp": "2026-09-05T21:23:51.783Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "countBefore=0"
+      }
+    },
+    {
+      "index": 12,
+      "step": "remove-service-item",
+      "action": "sterge ultimul articol services",
+      "selector": null,
+      "screenshot": "13-remove-service-item.png",
+      "sha256": "d0384755c3726eae16a7645a485d55563366bcc143070d53859b282f8a0b75a1",
+      "timestamp": "2026-09-05T21:23:51.840Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "removeButtonsFound=0"
+      }
+    },
+    {
+      "index": 13,
+      "step": "publish-modal-open",
+      "action": "click #btn-publish",
+      "selector": null,
+      "screenshot": "14-publish-modal-open.png",
+      "sha256": "6ea1e53fa84d2fd81367f193977d6a05eb8cb5d3d7cdc41f15bf76f984d938bc",
+      "timestamp": "2026-09-05T21:23:51.950Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "modal publicare deschis"
+      }
+    },
+    {
+      "index": 14,
+      "step": "slug-accepted",
+      "action": "fill #input-slug + click continue",
+      "selector": null,
+      "screenshot": "15-slug-accepted.png",
+      "sha256": "f03609e46ceec995b79b12de6542264a9f828bc27ddc199fcd12f2ddb92c74fe",
+      "timestamp": "2026-09-05T21:23:52.225Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "slug=qa-local-service-mtow2s50"
+      }
+    },
+    {
+      "index": 15,
+      "step": "magic-link-sent",
+      "action": "fill email + send magic link",
+      "selector": null,
+      "screenshot": "16-magic-link-sent.png",
+      "sha256": "7cfc416d102d8993d131e664e109ce269009f2f9a59c974e86b8755498433c74",
+      "timestamp": "2026-09-05T21:23:52.306Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev-link vizibil"
+      }
+    },
+    {
+      "index": 16,
+      "step": "unpaid-draft-published",
+      "action": "click #dev-link",
+      "selector": null,
+      "screenshot": "17-unpaid-draft-published.png",
+      "sha256": "1264f48ed4fc872b9199ec3fb8fe906987332481e92397b5b9d9989bd8fe869f",
+      "timestamp": "2026-09-05T21:23:52.389Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "titlu: Adaugă un card ca să fii live"
+      }
+    },
+    {
+      "index": 17,
+      "step": "test-pay-success",
+      "action": "click #btn-pay-publish",
+      "selector": null,
+      "screenshot": "18-test-pay-success.png",
+      "sha256": "f1bcdb23183dfca8af4d451947e75e1c71a4aa4603cf1391185284da7919162c",
+      "timestamp": "2026-09-05T21:23:52.690Z",
+      "url": "http://127.0.0.1:49770/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "titlu: Adaugă un card ca să fii live"
+      }
+    },
+    {
+      "index": 18,
+      "step": "success-modal-share-whatsapp",
+      "action": "inspect #btn-share-wa in modal-success",
+      "selector": null,
+      "screenshot": "19-success-modal-share-whatsapp.png",
+      "sha256": "0265f2212bbe5d8815b99da7ccf7dcfa7d3b5ca923f117b6e172ac825ba4196f",
+      "timestamp": "2026-09-05T21:23:52.737Z",
+      "url": "http://127.0.0.1:49770/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "href/data=null"
+      }
+    },
+    {
+      "index": 19,
+      "step": "live-site-desktop",
+      "action": "open live URL (desktop 1440)",
+      "selector": null,
+      "screenshot": "20-live-site-desktop.png",
+      "sha256": "b5c032c3938322d504f053f480638745aa607414fa40021050a67e8be2c96831",
+      "timestamp": "2026-09-05T21:23:53.522Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/"
+      }
+    },
+    {
+      "index": 20,
+      "step": "live-site-desktop-fullpage",
+      "action": "fullPage screenshot live desktop",
+      "selector": null,
+      "screenshot": "21-live-site-desktop-fullpage.png",
+      "sha256": "73646d69fd74a9bd8a2f2f454a59832370bdee6fce388617c9a7eef0b140aaed",
+      "timestamp": "2026-09-05T21:23:53.928Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/"
+      }
+    },
+    {
+      "index": 21,
+      "step": "live-site-mobile-390",
+      "action": "open live URL la 390px",
+      "selector": null,
+      "screenshot": "22-live-site-mobile-390.png",
+      "sha256": "3c08c2faac0c5b7851845cc55ab3918835d4f7cfbdae31ba72952c233dd235a8",
+      "timestamp": "2026-09-05T21:23:54.648Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/"
+      }
+    },
+    {
+      "index": 22,
+      "step": "live-site-mobile-390-fullpage",
+      "action": "fullPage screenshot live mobil",
+      "selector": null,
+      "screenshot": "23-live-site-mobile-390-fullpage.png",
+      "sha256": "3296d15b113b7e7e63bdbd2f13fca4056ccdc6f755cfcb3f1d0a0dab1d01325d",
+      "timestamp": "2026-09-05T21:23:54.902Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/"
+      }
+    },
+    {
+      "index": 23,
+      "step": "live-lightbox-open",
+      "action": "click pe o poza din galerie",
+      "selector": null,
+      "screenshot": "24-live-lightbox-open.png",
+      "sha256": "2cc3a54b8fff1e6faf11a5b97c71c7527111e2c2d2cb226c45b048cc04d85a2b",
+      "timestamp": "2026-09-05T21:23:55.506Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "incercare deschidere lightbox"
+      }
+    },
+    {
+      "index": 24,
+      "step": "live-cta-scroll-anchor",
+      "action": "click primul link ancora (#contact)",
+      "selector": null,
+      "screenshot": "25-live-cta-scroll-anchor.png",
+      "sha256": "3dd60c85b5780aa436b3829b17b4403fff3236ff24d69ae664070771a9439069",
+      "timestamp": "2026-09-05T21:23:55.872Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/#contact",
+      "contentCheck": {
+        "ok": true,
+        "detail": "scroll test"
+      }
+    },
+    {
+      "index": 25,
+      "step": "live-dock-mobile",
+      "action": "resize to 390 pentru bara sticky call/WA",
+      "selector": null,
+      "screenshot": "26-live-dock-mobile.png",
+      "sha256": "305ebd882860cfb15961389ce7cdd28979883f27bc3ab0f86f35722d35bffcc4",
+      "timestamp": "2026-09-05T21:23:56.193Z",
+      "url": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/#contact",
+      "contentCheck": {
+        "ok": true,
+        "detail": "ls-dock"
+      }
+    },
+    {
+      "index": 26,
+      "step": "export-html-triggered",
+      "action": "click #btn-download-html",
+      "selector": null,
+      "screenshot": "27-export-html-triggered.png",
+      "sha256": "fe64c76d31e4dc33372f0db5fc6ea3ce30922f43f3903d657876d6979cfeb627",
+      "timestamp": "2026-09-05T21:23:56.489Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "salvat in /Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-local-service/downloads/export.html (7260204 bytes)"
+      }
+    },
+    {
+      "index": 27,
+      "step": "export-zip-triggered",
+      "action": "click #btn-download-zip",
+      "selector": null,
+      "screenshot": "28-export-zip-triggered.png",
+      "sha256": "62ff1a3f87607c68638719bd7920c9818845db5e3a3c1d975719d6db8fe865e0",
+      "timestamp": "2026-09-05T21:23:56.805Z",
+      "url": "http://127.0.0.1:49770/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "salvat in /Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-local-service/downloads/export.zip (9457445 bytes)"
+      }
+    },
+    {
+      "index": 28,
+      "step": "zip-standalone-served",
+      "action": "servit ZIP static local si deschis",
+      "selector": null,
+      "screenshot": "29-zip-standalone-served.png",
+      "sha256": "6c4ac1961d72bebe6d243602755bcb38a878dd6500c38a5d2186b1462d873284",
+      "timestamp": "2026-09-05T21:23:57.743Z",
+      "url": "http://127.0.0.1:49928/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "root=/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-local-service/downloads/unzipped port=49928"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "medium",
+      "title": "Buton \"+ Adaugă articol\" nu a fost gasit pentru services",
+      "detail": "",
+      "screenshot": "11-preview-mobile-390.png",
+      "timestamp": "2026-09-05T21:23:51.221Z"
+    },
+    {
+      "severity": "low",
+      "title": "Articol nou la services pare gol",
+      "detail": "inputs value = \"null\"",
+      "screenshot": "12-add-service-item.png",
+      "timestamp": "2026-09-05T21:23:51.784Z"
+    }
+  ],
+  "notes": [
+    "Server isolat pornit la http://127.0.0.1:49770 (DATA_DIR=/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/hb-audit-37YxuD)",
+    "Timp de la click pana la continut in iframe: 112ms",
+    "Inventar campuri drawer: 11 campuri, salvat in drawer-field-inventory.json",
+    "ARHITECTURA: business.name (type=text) nu e camp de drawer deloc (doar phone/url/color/background + cateva chei whitelisted apar in Detalii); editarea se face EXCLUSIV inline in iframe. businessNameInDrawer=0",
+    "hero .ls-hero__media background-image dupa upload: linear-gradient(160deg, rgba(10, 12, 15, 0.8) 0%, rgba(10, 12, 15, 0.4) 55%, rgba(10, 12, 15, 0.6) 100%), url(\"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAA",
+    "CTA culoare dupa: rgb(29, 91, 121) | body bg dupa: rgb(231, 241, 247)",
+    "href WhatsApp badge dupa completare: https://wa.me/40745123456?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20o%20ofert%C4%83%20pentru%20renovare%20b%C4%83ie%2C%20mul%C8%9Bumesc.",
+    "WA href decoded: Bună ziua! Aș dori o ofertă pentru renovare băie, mulțumesc.",
+    "Modal #wa-qr vizibil dupa click pe link wa.me: true",
+    "Overflow orizontal preview mobil (scrollWidth-clientWidth): 0",
+    "Continut articol nou adaugat la services: null",
+    "Text modal succes: × | Adaugă un card ca să fii live | Adaugă un card ca să începi trialul de 7 zile. Site-ul e live imediat. Ești taxat în ziua 7 dacă nu anulezi. Apoi reînnoire 29€/an. | Adaugă un card — începe trialul de 7 zile — | 99€ | Înapoi la editor",
+    "URL live: http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+    "#btn-share-wa vizibil in modalul de succes: true",
+    "Verificari HTML live: {\"businessNamePresent\":true,\"langRo\":true,\"attributionPresent\":true,\"jsonLdPresent\":true,\"ogImagePresent\":true}",
+    "og:image (http://127.0.0.1:49770/live/qa-local-service-mtow2s50/images/hero.jpg) status: 200",
+    "Imagini placeholder de modal excluse din verificare (lightbox/QR, src gol pana la deschidere): wa-qr-img, lightbox-img",
+    "Legal Privacy href=privacy.html status=200",
+    "Legal Cookies href=cookies.html status=200",
+    "Legal Terms href=terms.html status=200",
+    "Overflow orizontal site LIVE mobil: 0",
+    "Console errors (live mobil): []",
+    "Failed requests (live mobil): []",
+    "Console errors (live desktop, colectate dupa incarcare): []",
+    "Failed requests (live desktop): []",
+    "Lightbox vizibil dupa click: true",
+    "ZIP contine 43 fisiere. Vezi zip-contents.txt"
+  ],
+  "finishedAt": "2026-09-05T21:23:57.757Z"
+}

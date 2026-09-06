@@ -1,0 +1,11 @@
+{
+  "liveUrl": "http://127.0.0.1:49770/live/qa-local-service-mtow2s50/",
+  "checks": {
+    "businessNamePresent": true,
+    "langRo": true,
+    "attributionPresent": true,
+    "jsonLdPresent": true,
+    "ogImagePresent": true
+  },
+  "ogImage": "images/hero.jpg"
+}

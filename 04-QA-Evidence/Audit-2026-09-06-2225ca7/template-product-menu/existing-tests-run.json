@@ -1,0 +1,6 @@
+{
+  "flow2-product-menu-language.test.js": {
+    "ok": true,
+    "tail": "PASS both product-menu presets provide distinct English menu copy\nPASS rendered preview/export HTML starts in Romanian for both presets\nPASS parent-era product-menu configs receive the Romanian group label\n\nflow2-product-menu-language.test.js: all checks passed\n✔ /Users/Work/Desktop/sitebuilder/bot/test/flow2-product-menu-language.test.js (53.606541ms)\nℹ tests 1\nℹ suites 0\nℹ pass 1\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 57.481666\n"
+  }
+}

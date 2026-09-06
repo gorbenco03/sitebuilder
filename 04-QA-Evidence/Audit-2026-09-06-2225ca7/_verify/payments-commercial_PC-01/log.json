@@ -1,0 +1,97 @@
+[
+  {
+    "name": "publish",
+    "at": "2026-09-05T22:11:45.204Z",
+    "status": 200,
+    "siteId": "afc9dc5d-060d-4aa5-940a-7a65970ed4fc",
+    "paid": false
+  },
+  {
+    "name": "paid_first_period",
+    "at": "2026-09-05T22:11:45.573Z",
+    "whStatus": 200,
+    "paid": true,
+    "paidUntil": "2027-09-05T22:11:45.206Z",
+    "stripeSubscriptionId": "sub_pc01_original_5c46330215f7",
+    "status": "live"
+  },
+  {
+    "name": "after_stripe_confirms_still_active",
+    "at": "2026-09-05T22:11:45.878Z",
+    "whStatus": 200,
+    "stripeSubscriptionStatus": "active",
+    "paidUntil": "2027-09-05T22:11:45.206Z"
+  },
+  {
+    "name": "simulated_month_13_paidUntil_elapsed",
+    "at": "2026-09-05T22:11:45.878Z",
+    "paidUntil": "2026-08-31T22:11:45.878Z",
+    "stripeSubscriptionStatusStillOnFile": "active"
+  },
+  {
+    "name": "dashboard_GET_api_sites",
+    "at": "2026-09-05T22:11:45.881Z",
+    "status": 200,
+    "site": {
+      "id": "afc9dc5d-060d-4aa5-940a-7a65970ed4fc",
+      "userId": "594b88ca-ab93-4701-b3d3-a5c18078dad9",
+      "templateId": "product-menu",
+      "templateVersion": 1,
+      "slug": "pc01-verify-42aa275e",
+      "projectName": "pc01-verify-42aa275e",
+      "platform": "web",
+      "status": "live",
+      "paid": true,
+      "url": "/live/pc01-verify-42aa275e/",
+      "createdAt": "2026-09-05T22:11:45.201Z",
+      "stripeCustomerId": "cus_pc01_e9dc9a8c39ed",
+      "stripeSubscriptionId": "sub_pc01_original_5c46330215f7",
+      "paidUntil": "2026-08-31T22:11:45.878Z",
+      "stripeSubscriptionStatus": "active",
+      "subscriptionStatus": "active"
+    }
+  },
+  {
+    "name": "export_html_while_stripe_subscription_active",
+    "at": "2026-09-05T22:11:45.884Z",
+    "status": 402,
+    "body": {
+      "error": "Exportul este disponibil după activarea trialului de 7 zile sau cu un abonament activ.",
+      "code": "EXPORT_REQUIRES_SUBSCRIPTION"
+    }
+  },
+  {
+    "name": "rollback_while_stripe_subscription_active",
+    "at": "2026-09-05T22:11:45.885Z",
+    "status": 402,
+    "body": {
+      "error": "Site-ul necesită un abonament sau trial activ."
+    }
+  },
+  {
+    "name": "click_renew_hosting_button",
+    "at": "2026-09-05T22:11:45.889Z",
+    "status": 200,
+    "kind": "renewal",
+    "amountCents": 2900,
+    "paymentUrl": "/app/#test-checkout=cs_test_a10ffc6acd9baf042dcad0f9"
+  },
+  {
+    "name": "after_paying_the_renew_button",
+    "at": "2026-09-05T22:11:46.192Z",
+    "whStatus": 200,
+    "paidUntil": "2027-09-05T22:11:45.891Z",
+    "stripeSubscriptionId_now": "sub_pc01_SECOND_594be7aba179",
+    "ORIGINAL_subscription_id_was": "sub_pc01_original_5c46330215f7",
+    "NEW_subscription_id_from_button": "sub_pc01_SECOND_594be7aba179",
+    "original_subscription_still_referenced_anywhere_in_registry": false
+  },
+  {
+    "name": "original_subscription_later_canceled_by_customer",
+    "at": "2026-09-05T22:11:46.495Z",
+    "whStatus": 200,
+    "site_status_unchanged": "live",
+    "site_stripeSubscriptionStatus_unchanged": "active",
+    "app_never_noticed_because_registry_points_at_the_NEW_sub_id": true
+  }
+]

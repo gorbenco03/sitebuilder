@@ -1,0 +1,54 @@
+{
+  "lens": "backend-api-security",
+  "startedAt": "2026-09-05T21:19:14.857Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "after-magic-link-verify-dashboard",
+      "action": "goto /auth/verify?token=... (single-use magic link)",
+      "selector": null,
+      "screenshot": "01-after-magic-link-verify-dashboard.png",
+      "sha256": "3b9d620555b76a3309c1ba6e3aefd85543d3400daf811f16f5f28053479f51df",
+      "timestamp": "2026-09-05T21:19:16.669Z",
+      "url": "http://127.0.0.1:49351/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Session cookie set, redirected to #dashboard"
+      }
+    },
+    {
+      "index": 1,
+      "step": "live-site-xss-payload-escaped",
+      "action": "goto /live/xss-shot-mtovychr/ (business.name and contact.address held raw <script>/<img onerror> XSS payloads)",
+      "selector": null,
+      "screenshot": "02-live-site-xss-payload-escaped.png",
+      "sha256": "c63e651fd3742b660a0a3ac194b671a16b292b5354b24cd714e907ef83d072e5",
+      "timestamp": "2026-09-05T21:19:17.248Z",
+      "url": "http://127.0.0.1:49351/live/xss-shot-mtovychr/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "No JS dialog fired; payload rendered as visible escaped text, not executed"
+      }
+    },
+    {
+      "index": 2,
+      "step": "admin-route-no-token-404",
+      "action": "goto /admin with no ?token=",
+      "selector": null,
+      "screenshot": "03-admin-route-no-token-404.png",
+      "sha256": "d79488f9a95bc991daf61e6acfb892718f5c80c0b9607371beec3bfeded7a134",
+      "timestamp": "2026-09-05T21:19:17.268Z",
+      "url": "http://127.0.0.1:49351/admin",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Expect plain 404, no leak of route existence"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "Session cookie flags observed via Playwright: {\"httpOnly\":true,\"secure\":false,\"sameSite\":\"Lax\",\"expires\":1791235154.995141}",
+    "dialog fired (would indicate XSS executed): false"
+  ],
+  "finishedAt": "2026-09-05T21:19:17.268Z"
+}

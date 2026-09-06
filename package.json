@@ -8,7 +8,7 @@
     "gallery": "node scripts/build-gallery.js",
     "build:app": "node scripts/build-builder.js",
     "e2e:flow2": "node bot/test/flow2-template-e2e.mjs",
-    "test": "node --test bot/test/*.test.js"
+    "test": "node --experimental-sqlite --test bot/test/*.test.js"
   },
   "devDependencies": {
     "playwright": "^1.62.1"

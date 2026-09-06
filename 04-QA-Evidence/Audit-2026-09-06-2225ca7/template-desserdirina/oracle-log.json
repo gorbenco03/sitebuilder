@@ -1,0 +1,396 @@
+{
+  "lens": "template-desserdirina",
+  "startedAt": "2026-09-05T21:27:04.970Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "accept-cookie",
+      "action": "click #hb-cookie-accept",
+      "selector": null,
+      "screenshot": "01-accept-cookie.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T21:27:07.035Z",
+      "url": "http://127.0.0.1:50248/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "cookie banner accepted on catalog"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-open-with-drawer",
+      "action": "goto /app/ -> click template card",
+      "selector": null,
+      "screenshot": "02-editor-open-with-drawer.png",
+      "sha256": "ef7c45b465a0a9da6f1dcd10eda1c810eb209e360657faa50b4457b30a22af36",
+      "timestamp": "2026-09-05T21:27:07.568Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor deschis, iframe ready in 60ms, drawer auto-open verificat"
+      }
+    },
+    {
+      "index": 2,
+      "step": "drawer-inventory-fullpage",
+      "action": "inspect #drawer-body",
+      "selector": null,
+      "screenshot": "03-drawer-inventory-fullpage.png",
+      "sha256": "e7c4722073b11de2b51efe8237833b8c9bc464cffb8f78f6f76ae5c650f0891d",
+      "timestamp": "2026-09-05T21:27:07.743Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "inventar câmpuri drawer (vezi drawer-field-inventory.json)"
+      }
+    },
+    {
+      "index": 3,
+      "step": "inline-edit-business-name",
+      "action": "click+fill+blur [data-hb-edit=\"business.name\"]",
+      "selector": null,
+      "screenshot": "04-inline-edit-business-name.png",
+      "sha256": "9ca9dfaec11dd42c1d0c1878efeabeb5303b68c32224e5a82ba474db6db828bb",
+      "timestamp": "2026-09-05T21:27:08.343Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "text iframe: Șt. Țăndărică & Fiii"
+      }
+    },
+    {
+      "index": 4,
+      "step": "drawer-synced-business-name",
+      "action": "reopen drawer after inline business.name edit",
+      "selector": null,
+      "screenshot": "05-drawer-synced-business-name.png",
+      "sha256": "9d68c54eb4a070096b2f949af6b4c7b3fba9ad45ba60ede980e05432b7cfbd9b",
+      "timestamp": "2026-09-05T21:27:08.556Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawer nu are camp separat pentru business.name (by design; text editabil doar inline)"
+      }
+    },
+    {
+      "index": 5,
+      "step": "drawer-hero-photo-set",
+      "action": "click hero.background button + setInputFiles",
+      "selector": null,
+      "screenshot": "06-drawer-hero-photo-set.png",
+      "sha256": "484e7165c4b2a3ead92b94437b19b4dec8619fbc9143c7e08b571c256524b22a",
+      "timestamp": "2026-09-05T21:27:17.605Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "uploaded /Users/Work/Desktop/sitebuilder/templates/product-menu/images/cn-hero.jpg"
+      }
+    },
+    {
+      "index": 6,
+      "step": "hero-photo-applied-iframe",
+      "action": "read computed hero background-image in iframe",
+      "selector": null,
+      "screenshot": "07-hero-photo-applied-iframe.png",
+      "sha256": "179257812b5a908370fe664b2ebe59b496422f5da95ccacfa6ee5cd516d821dd",
+      "timestamp": "2026-09-05T21:27:17.685Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "none"
+      }
+    },
+    {
+      "index": 7,
+      "step": "colors-before",
+      "action": "open #btn-color-picker",
+      "selector": null,
+      "screenshot": "08-colors-before.png",
+      "sha256": "5003484e90b186cd2b4f4eaf3da3eaa10491651da1b3b40426874138e61d3ad0",
+      "timestamp": "2026-09-05T21:27:17.851Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "CTA gradient before: linear-gradient(135deg, rgb(232, 88, 140) 0%, rgb(209, 68, 119) 100%)"
+      }
+    },
+    {
+      "index": 8,
+      "step": "colors-after",
+      "action": "fill #color-custom-text=#1D5B79, #color-bg-text=#E7F1F7",
+      "selector": null,
+      "screenshot": "09-colors-after.png",
+      "sha256": "10e5329d8ffac6a19ea3889e059879d49253c229957217ac1cb36c1eff1e9e0a",
+      "timestamp": "2026-09-05T21:27:18.092Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "CTA gradient after: linear-gradient(135deg, rgb(29, 91, 121) 0%, rgb(15, 53, 72) 100%)"
+      }
+    },
+    {
+      "index": 9,
+      "step": "whatsapp-drawer-filled",
+      "action": "fill contact.whatsapp + contact.waMessage in drawer",
+      "selector": null,
+      "screenshot": "10-whatsapp-drawer-filled.png",
+      "sha256": "3096f96aff3a17a7cd8c030b0919b339875f9dbc32eb8c7ab1df574479da7850",
+      "timestamp": "2026-09-05T21:27:19.174Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "nr=40745123456 msg=Bună! Aș vrea să comand un tort pentru ziua mea de naștere — mulțumesc!"
+      }
+    },
+    {
+      "index": 10,
+      "step": "whatsapp-badge-iframe",
+      "action": "read a.whatsapp-float href in iframe",
+      "selector": null,
+      "screenshot": "11-whatsapp-badge-iframe.png",
+      "sha256": "2f6dca96d8847cae55c8c27cf3642234ee24b69ba554e296a1b4947a14e0d18e",
+      "timestamp": "2026-09-05T21:27:19.379Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "href=https://wa.me/40745123456?text=Bun%C4%83!%20A%C8%99%20vrea%20s%C4%83%20comand%20un%20tort%20pentru%20ziua%20mea%20de%20na%C8%99tere%20%E2%80%94%20mul%C8%9Bumesc!"
+      }
+    },
+    {
+      "index": 11,
+      "step": "mobile-preview-390",
+      "action": "click #btn-preview-mobile",
+      "selector": null,
+      "screenshot": "12-mobile-preview-390.png",
+      "sha256": "720e8c22acb07a933fe59f349d49fce0135b407bb982cd3a1535e68978181896",
+      "timestamp": "2026-09-05T21:27:19.948Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "preview mobil in editor"
+      }
+    },
+    {
+      "index": 12,
+      "step": "gallery-category-added",
+      "action": "click .hb-add-btn (gallery.categories)",
+      "selector": null,
+      "screenshot": "13-gallery-category-added.png",
+      "sha256": "cbd094ebe1d32a99be33deb4cc9a372de05709f8229e78d4f94646a5e2e75481",
+      "timestamp": "2026-09-05T21:27:21.212Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "before=1 after=2 title="
+      }
+    },
+    {
+      "index": 13,
+      "step": "gallery-category-removed",
+      "action": "click .hb-remove-btn",
+      "selector": null,
+      "screenshot": "14-gallery-category-removed.png",
+      "sha256": "6b1365df872882be7f343a329470b7e8b58b4e12fb87c0199e1d999e3903429e",
+      "timestamp": "2026-09-05T21:27:22.022Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "count after remove=1"
+      }
+    },
+    {
+      "index": 14,
+      "step": "publish-modal-open",
+      "action": "click #btn-publish",
+      "selector": null,
+      "screenshot": "15-publish-modal-open.png",
+      "sha256": "e345581fed2b649a69ca3bb0230e028f1c3eca55776c6a78d7656adf11c886e9",
+      "timestamp": "2026-09-05T21:27:22.125Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "modal publish deschis"
+      }
+    },
+    {
+      "index": 15,
+      "step": "publish-slug-continue",
+      "action": "fill #input-slug + click #btn-publish-continue",
+      "selector": null,
+      "screenshot": "16-publish-slug-continue.png",
+      "sha256": "e858b07ac8d35237433e43f7bf7f3c9b4ea4936b0740e63cd6fa11bcb4f84176",
+      "timestamp": "2026-09-05T21:27:22.388Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "slug=audit-desserdirina-mtow8r2l"
+      }
+    },
+    {
+      "index": 16,
+      "step": "auth-magic-link-issued",
+      "action": "fill email + click #btn-send-magic",
+      "selector": null,
+      "screenshot": "17-auth-magic-link-issued.png",
+      "sha256": "ed32d1dfc3935014b68c821ff303f906e7054ee4f112f5d809cc71402c27f8c8",
+      "timestamp": "2026-09-05T21:27:22.480Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev-link vizibil"
+      }
+    },
+    {
+      "index": 17,
+      "step": "auth-verified-unpaid",
+      "action": "click #dev-link",
+      "selector": null,
+      "screenshot": "18-auth-verified-unpaid.png",
+      "sha256": "db9cd8ed5a622f0de13194b0ebd65b00dbe7739643e683bed615d082b5ed9c3c",
+      "timestamp": "2026-09-05T21:27:22.581Z",
+      "url": "http://127.0.0.1:50248/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "modal success (neplatit) vizibil"
+      }
+    },
+    {
+      "index": 18,
+      "step": "publish-success-live",
+      "action": "click #btn-pay-publish (test pay)",
+      "selector": null,
+      "screenshot": "19-publish-success-live.png",
+      "sha256": "0c61683260497f96d52a69c77c05c86bbf067472f458cd75dac8f6c96bb388be",
+      "timestamp": "2026-09-05T21:27:22.898Z",
+      "url": "http://127.0.0.1:50248/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "title=Site-ul tău e live — trial de 7 zile început href=http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/"
+      }
+    },
+    {
+      "index": 19,
+      "step": "live-site-desktop-1440",
+      "action": "goto live url",
+      "selector": null,
+      "screenshot": "live-desktop-1440.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:27:23.523Z",
+      "url": "http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "live site desktop viewport"
+      }
+    },
+    {
+      "index": 20,
+      "step": "live-site-mobile-390",
+      "action": "resize+reload",
+      "selector": null,
+      "screenshot": "live-mobile-390.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:27:24.276Z",
+      "url": "http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "live site mobile viewport"
+      }
+    },
+    {
+      "index": 21,
+      "step": "live-wa-float-mobile",
+      "action": "screenshot",
+      "selector": "a.whatsapp-float",
+      "screenshot": "live-mobile-wafloat.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:27:24.309Z",
+      "url": "http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "href=https://wa.me/40745123456?text=Bun%C4%83!%20A%C8%99%20vrea%20s%C4%83%20comand%20un%20tort%20pentru%20ziua%20mea%20de%20na%C8%99tere%20%E2%80%94%20mul%C8%9Bumesc!"
+      }
+    },
+    {
+      "index": 22,
+      "step": "live-cta-scroll",
+      "action": "click .hero-cta",
+      "selector": ".hero-cta",
+      "screenshot": "live-cta-scrolled.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:27:25.484Z",
+      "url": "http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "scrollY=1073"
+      }
+    },
+    {
+      "index": 23,
+      "step": "live-whatsapp-qr-panel",
+      "action": "click a[href*=\"wa.me\"] (desktop, expect QR intercept)",
+      "selector": "a[href*=\"wa.me\"]",
+      "screenshot": "live-whatsapp-qr-panel.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:27:27.332Z",
+      "url": "http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "{\"hasModal\":true,\"hidden\":false,\"visible\":true,\"imgSrcLen\":169975,\"imgNaturalWidth\":240}"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "medium",
+      "title": "Poza hero s-a schimbat dar formatul computed neasteptat",
+      "detail": "background-image=none",
+      "screenshot": "06-drawer-hero-photo-set.png",
+      "timestamp": "2026-09-05T21:27:17.626Z"
+    },
+    {
+      "severity": "medium",
+      "title": "Elementul nou adaugat in galerie are text implicit non-RO / gol",
+      "detail": "title nou = \"\"",
+      "screenshot": "13-gallery-category-added.png",
+      "timestamp": "2026-09-05T21:27:21.212Z"
+    },
+    {
+      "severity": "high",
+      "title": "Imagini rupte (naturalWidth=0) pe site-ul live",
+      "detail": "[{\"src\":\"\",\"naturalWidth\":0,\"alt\":\"WhatsApp QR\"},{\"src\":\"\",\"naturalWidth\":0,\"alt\":\"\"}]",
+      "screenshot": "live-desktop-1440.png",
+      "timestamp": "2026-09-05T21:27:23.733Z"
+    }
+  ],
+  "notes": [
+    "server booted at http://127.0.0.1:50248",
+    "time from template click to iframe body content ready: 60 ms",
+    "drawer field inventory written to drawer-field-inventory.json: 12 fields, sections: [\"Despre afacere\",\"Texte butoane și secțiuni\",\"Culori\",\"Prima impresie\",\"Instagram\",\"Contact și comenzi\"]",
+    "labels containing possible dev jargon: [\"URL Instagram\"]",
+    "confirmare: business.name are camp in drawer? false (asteptat: false, e doar inline pe canvas)",
+    "hero background computed style BEFORE upload: url(\"http://127.0.0.1:50248/app/generated/template-assets/desserdirina/images/hero.jpg\")",
+    "hero background computed style AFTER upload: none",
+    "CTA gradient after color change: linear-gradient(135deg, rgb(29, 91, 121) 0%, rgb(15, 53, 72) 100%)",
+    "body background-color before=rgb(250, 248, 248) after=rgb(231, 241, 247) expected rgb(231, 241, 247)",
+    "whatsapp-float href: https://wa.me/40745123456?text=Bun%C4%83!%20A%C8%99%20vrea%20s%C4%83%20comand%20un%20tort%20pentru%20ziua%20mea%20de%20na%C8%99tere%20%E2%80%94%20mul%C8%9Bumesc!",
+    "decoded wa href text param: Bună! Aș vrea să comand un tort pentru ziua mea de naștere — mulțumesc!",
+    "#btn-share-wa este ascuns in editor pana la publish (isLive=false); QR real e verificat pe site-ul live la pasul 12",
+    "mobile overflow check (editor iframe): {\"scrollWidth\":390,\"clientWidth\":390}",
+    "gallery categories before=1 after=2 newTitle=\"\"",
+    "gallery categories after remove=1",
+    "success title: \"Site-ul tău e live — trial de 7 zile început\" liveHref=http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/",
+    "live HTML checks: {\"hasBizName\":true,\"hasHidookAttribution\":true,\"langRo\":true,\"hasOgImage\":true,\"hasJsonLd\":true,\"hasFactoryText\":false}",
+    "legal page privacy.html -> status 200",
+    "legal page terms.html -> status 200",
+    "legal page cookies.html -> status 200",
+    "og:image http://127.0.0.1:50248/live/audit-desserdirina-mtow8r2l/images/hero.jpg -> status 200",
+    "images total=2 broken(naturalWidth=0)=2 -> [{\"src\":\"\",\"naturalWidth\":0,\"alt\":\"WhatsApp QR\"},{\"src\":\"\",\"naturalWidth\":0,\"alt\":\"\"}]",
+    "live console errors: []",
+    "live failed requests (>=400): []",
+    "live mobile overflow: {\"scrollWidth\":390,\"clientWidth\":390}",
+    "live wa float href (mobile view): https://wa.me/40745123456?text=Bun%C4%83!%20A%C8%99%20vrea%20s%C4%83%20comand%20un%20tort%20pentru%20ziua%20mea%20de%20na%C8%99tere%20%E2%80%94%20mul%C8%9Bumesc!",
+    "scrollY after clicking hero CTA: 1073",
+    "nu exista .collage-photo img pe pagina live (galerie fara categorii/poze?)",
+    "WA QR panel state after clicking wa.me link (desktop): {\"hasModal\":true,\"hidden\":false,\"visible\":true,\"imgSrcLen\":169975,\"imgNaturalWidth\":240}"
+  ]
+}

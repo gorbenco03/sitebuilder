@@ -1,0 +1,30 @@
+Repro script: /private/tmp/claude-502/-Users-Work-Desktop-sitebuilder/053e1940-1a1b-4ecd-a657-0a70815f9141/scratchpad/repro-sterge.js
+Run: node repro-sterge.js (isolated DATA_DIR, no real keys)
+
+BEFORE /sterge:
+  registry site status = live  paid = true
+  published/index.html exists = true
+
+Bot replied:
+---
+🗑️ Am șters toate datele tale (sesiune, poze încărcate, fișierele site-ului și site-urile înregistrate) din sistemele noastre.
+
+Scrie /start oricând ca să începi din nou.
+---
+
+AFTER /sterge:
+  registry site status = deleted  url = null  paid = true
+  published/index.html STILL exists on disk = true
+  published dir path: /var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/hb-sterge-audit-BODITz/published/audit-live-site
+
+>>> CONFIRMED DEFECT: /sterge marks the registry site deleted but leaves the
+>>> published static files in place — the live URL would keep serving the site.
+
+Root cause: bot/flow.js handleSterge() (line ~907-914) calls only
+registry.updateSite(site.id, { status: 'deleted', url: null }) for every site
+returned by registry.listSites(tgUser.id). It never calls
+webpublish.unpublishSite(site), which is the function that actually removes
+$DATA_DIR/published/<slug>/ from disk (see bot/webpublish.js line ~51-108).
+bot/server.js's /live/<slug>/ route (serveLive, line ~721) serves straight from
+that directory with no registry status check at request time, so a paid, live
+site is unaffected by /sterge.

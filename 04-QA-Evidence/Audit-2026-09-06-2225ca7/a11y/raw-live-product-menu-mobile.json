@@ -1,0 +1,278 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Casa Nord",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Povestea noastră",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Meniu",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Rezervări",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "În farfurie",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Farfurii de seară",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Sala de mese și pivnița",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Deschide WhatsApp pe telefon",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "images/cn-d1.jpg",
+      "alt": "Farfurie cu pește și legume de sezon",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cn-d2.jpg",
+      "alt": "Antricot pe farfurie ceramică",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cn-d3.jpg",
+      "alt": "Desert de ciocolată",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cn-r1.jpg",
+      "alt": "Interior restaurant seara",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cn-r2.jpg",
+      "alt": "Masă pregătită pentru cină",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cn-r3.jpg",
+      "alt": "Pahare de vin la bar",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "WhatsApp QR",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 2,
+    "main": 1,
+    "footer": 1
+  },
+  "forms": [],
+  "contrastFails": [],
+  "contrastUndetermined": [],
+  "ariaIssues": [],
+  "smallTargets": [
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pm-mast__pill",
+      "w": 153,
+      "h": 35,
+      "text": "Rezervă o masă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hero-cta pm-hero__cta pm-hero__cta--fill",
+      "w": 159,
+      "h": 41,
+      "text": "Rezervă o masă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pm-hero__cta pm-hero__cta--ghost",
+      "w": 83,
+      "h": 41,
+      "text": "Meniu"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn",
+      "w": 39,
+      "h": 31,
+      "text": "EN"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn is-active",
+      "w": 40,
+      "h": 31,
+      "text": "RO"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pm-link",
+      "w": 133,
+      "h": 40,
+      "text": "+40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pm-link",
+      "w": 96,
+      "h": 40,
+      "text": "WhatsApp"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pm-link",
+      "w": 165,
+      "h": 40,
+      "text": "@casa.nord.bucuresti"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pm-link",
+      "w": 97,
+      "h": 40,
+      "text": "Casa Nord"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 102,
+      "h": 21,
+      "text": "Confidențialitate"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 49,
+      "h": 21,
+      "text": "Termeni"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 65,
+      "h": 21,
+      "text": "Cookie-uri"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 62,
+      "h": 13,
+      "text": "hidook.tech"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 78,
+      "h": 13,
+      "text": "hidook.agency"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 19,
+      "text": "IG"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 16,
+      "h": 19,
+      "text": "FB"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 264,
+      "h": 34,
+      "text": "Politica de cookie-uri"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "hb-cookie-accept",
+      "cls": "",
+      "w": 79,
+      "h": 33,
+      "text": "Acceptă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 84,
+      "h": 18,
+      "text": "Află mai mult"
+    }
+  ],
+  "lang": "ro",
+  "title": "Casa Nord | Restaurant | București",
+  "h1Count": 1,
+  "headingSkips": []
+}

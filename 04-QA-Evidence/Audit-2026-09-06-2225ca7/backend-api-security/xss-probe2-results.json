@@ -1,0 +1,45 @@
+{
+  "publish": {
+    "status": 200,
+    "site": {
+      "id": "61e1b290-678b-4197-9409-5cd072de4540",
+      "userId": "d7885336-daac-4eb9-bf5c-f8bec113a313",
+      "templateId": "product-menu",
+      "templateVersion": 1,
+      "slug": "xss-fresh-840d71",
+      "projectName": "xss-fresh-840d71",
+      "platform": "web",
+      "status": "draft",
+      "paid": false,
+      "url": null,
+      "createdAt": "2026-09-05T21:17:25.558Z"
+    },
+    "paymentUrl": "/app/#test-checkout=cs_test_80f114a1c0683b2bc96d2080"
+  },
+  "sessionId": "cs_test_80f114a1c0683b2bc96d2080",
+  "testpay": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "site": {
+        "id": "61e1b290-678b-4197-9409-5cd072de4540",
+        "slug": "xss-fresh-840d71",
+        "paid": true,
+        "status": "live",
+        "url": "/live/xss-fresh-840d71/",
+        "paidUntil": "2027-09-05T21:17:25.562Z"
+      }
+    }
+  },
+  "live": {
+    "status": 200,
+    "htmlLength": 5914,
+    "rawImgOnerror": false,
+    "rawScriptTag": false,
+    "rawJsProtocol": false,
+    "escapedName": true,
+    "jsProtocolStripped": true
+  },
+  "liveSnippetAroundOnerror": "m-mast__brand\">\n                \n                \n                <h1 class=\"sr-only\">&lt;img src=x onerror=alert(1)&gt;</h1>\n            </div>\n            <nav class=\"pm-mast__nav\" aria-label=\"Navig",
+  "liveSnippetAroundEscaped": "      \n                \n                <h1 class=\"sr-only\">&lt;img src=x onerror=alert(1)&gt;</h1>\n            </div>\n            <nav class=\"pm-mast__nav\" aria-label=\"Navigație\">"
+}

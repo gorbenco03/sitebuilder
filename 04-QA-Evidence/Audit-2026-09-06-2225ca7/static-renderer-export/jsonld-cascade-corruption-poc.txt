@@ -1,0 +1,11 @@
+Reproduction: rename business "Desserdirina" -> 'La "Perla" Bistro' via cascadeBusinessNameIdentity()
+(builder/app.js) — a completely normal rename, not an XSS test.
+
+BEFORE seo.jsonLd: {"@context":"https://schema.org","@type":"Bakery","name":"Desserdirina","telephone":"+40721234567"}
+AFTER  seo.jsonLd: {"@context":"https://schema.org","@type":"Bakery","name":"La "Perla" Bistro","telephone":"+40721234567"}
+JSON.parse(AFTER) -> throws: Expected ',' or '}' after property value in JSON at position 62
+
+Consequence in build.js sanitizeJsonLd(): invalid JSON is detected and SILENTLY
+dropped -> <script type="application/ld+json"></script> ships empty. The
+business's Schema.org structured data (rich snippets) disappears from the live
+site with zero UI warning, triggered by an ordinary business-name edit.

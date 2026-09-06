@@ -1,0 +1,156 @@
+{
+  "lens": "telegram-intake",
+  "summary": "Nucleul tehnic al canalului Telegram (bot/bot.js, bot/flow.js, bot/ai.js) e scris cu grijă reală: gate de siguranță AI cu fences anti-prompt-injection, moderare imagini best-effort, rate limiting per-chat/global persistat pe disc, sesiuni persistate atomic cu debounce, token de login single-use hash-uit cu TTL de 15 minute, și un pod curat către builder (finishTelegramIntake → magic link → /app/) care chiar funcționează — am rulat wizard-ul cap-coadă printr-un script și draftul apare corect în dashboard și în editor. Dar produsul din spatele acestei infrastructuri e la jumătate: Telegram nu întreabă niciodată ce tip de afacere ai, deci orice draft creat din Telegram cade mereu pe șablonul 'product-menu' (Restaurant) — am verificat live, cu screenshot, că o afacere descrisă explicit ca salon de coafură primește eticheta 'Restaurant' în editor. Ce e și mai grav: fișierele care ar fi trebuit să facă exact asta (bot/template-steps.js — selector de șablon complet funcțional, cu wizardHints per vertical în fiecare schema.json) EXISTĂ deja în repo, complete și documentate, dar nu sunt niciodată importate din flow.js — o funcționalitate gata construită stă moartă. Am mai găsit și reprodus un defect critic la /sterge (comanda GDPR): pentru un site plătit și publicat, /sterge marchează doar registry-ul ca 'deleted' dar NU șterge fișierele publicate de pe disc (nu cheamă webpublish.unpublishSite) — botul îi spune userului 'am șters totul', dar site-ul live rămâne accesibil la același URL. Restul e zgomot de fond acceptabil pentru o platformă care a trecut prin mai multe pivotări comerciale: mult cod legacy de plată/deploy direct din Telegram (Stripe/Revolut checkout, poller, webhook) e păstrat intenționat (testat explicit ca 'nu se mai folosește'), dar tot cântărește ~500 din cele 1689 linii ale flow.js. Verdict per ansamblu: nucleul (safety, sesiuni, punte spre builder) merită păstrat și îmbunătățit, nu rescris — dar fără selecția de șablon și fără reparația la /sterge, canalul Telegram nu e la nivelul de încredere pe care 'GDPR — șterge oricând' îl promite, și livrează o experiență vizibil greșită tipului de afacere pentru toți userii din afara unui restaurant.",
+  "score": 5,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake",
+  "strengths": [
+    "Gate-ul de siguranță AI (bot/ai.js moderateRequest + gate din polishBusinessData) încadrează explicit datele proprietarului în delimitatori <<<FIELD>>> și instruiește modelul să nu execute nimic din interior — apărare reală, nu doar de fațadă, împotriva prompt injection prin câmpurile 'despre afacere'/'adresă'/'culori'.",
+      "Rate limiting dublu (per-chat/oră + global/zi) persistat pe disc în bot/ratelimit.js, cu self-test inclus (node bot/ratelimit.js) — protejează bugetul AI împotriva unui abuz simplu de tip /start+/gata în buclă.",
+    "Magic-link spre builder (registry.createLoginToken) e implementat corect din punct de vedere criptografic: token de 32 bytes aleator, stocat hash-uit SHA-256, single-use (marcat 'used' atomic), TTL de 15 minute.",
+    "Persistența sesiunilor (bot/store.js) e atomică (write-tmp + rename) și debounce-uită (800ms), cu flush sincron la SIGINT/SIGTERM/uncaughtException — sesiunile unui client mid-wizard supraviețuiesc unui restart.",
+    "Am verificat efectiv, printr-un script care rulează handlerele reale din flow.js peste un server izolat, că un draft creat 100% din Telegram (fără AI, fără poze reale) ajunge corect în dashboard-ul builder-ului și se deschide în editor cu datele corecte (business.name, servicii) — puntea 'același draft' promisă în VISION.md chiar funcționează mecanic.",
+    "Handler-e dedicate pentru poze trimise ca document (PNG transparent) și pentru mesaje neașteptate (sticker/video/locație) cu mesaje RO clare în loc de tăcere — atenție reală la UX pe cazuri de margine.",
+    "Cele 19 teste specifice acestui lens (telegram-*.test.js, ai-brand.test.js, no-trial-*-comment.test.js) trec integral și chiar codifică explicit intenția produsului curent (fără checkout Telegram, fără deploy Telegram) — semn că echipa a documentat pivotările în teste, nu doar în cod."
+  ],
+  "findings": [
+    {
+      "id": "TG-01",
+      "title": "Telegram nu întreabă niciodată tipul afacerii — orice draft cade pe șablonul 'Restaurant' (product-menu), chiar și pentru un salon",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "telegram",
+      "description": "STEPS din bot/flow.js (linia 785-796) are 9 pași ficși — nume, produse/servicii, despre, culori, Instagram, Facebook, WhatsApp, adresă, logo — și NICIUN pas de alegere a tipului de afacere. resolveIntakeTemplateId() (linia 1251-1257) citește session.templateId sau session.data.templateId, dar niciun cod din flow.js setează vreodată aceste câmpuri, deci funcția cade mereu pe 'product-menu' (CATALOG_TEMPLATE_IDS = doar product-menu/local-service/portfolio — 'professionals' și 'desserdirina' sunt complet inaccesibile din Telegram). Am verificat live: am rulat wizard-ul real (handleStart→handleText×9→handlePhoto→handleGata) cu numele afacerii 'Salon Frumusete Ana' și serviciile 'Tuns, coafat, manichiură' — draftul rezultat, deschis prin magic-link-ul real în builder, arată badge-ul de sus stânga '#editor-template-name = Restaurant'. Pentru orice afacere din Telegram care NU e restaurant/cafenea (adică majoritatea celorlalte 4 verticale din catalog), userul primește un site cu structura greșită (fără galerie tip portofoliu, fără programări, fără link Cal.com) și trebuie să repornească manual din browser ca să aleagă șablonul corect — Telegram devine, de fapt, un drum ocolit care produce muncă suplimentară.",
+      "evidence": "bot/flow.js:785-796 (STEPS fără pas de tip afacere); bot/flow.js:1244-1257 (CATALOG_TEMPLATE_IDS + resolveIntakeTemplateId, default 'product-menu'); 04-QA-Evidence/.../telegram-intake/02-editor-opened.png (badge 'Restaurant' pentru 'Salon Frumusete Ana'); bot/test/ai-brand... / telegram-draft.test.js linia 'finish: default templateId is catalog product-menu when unset' (testul confirmă comportamentul curent ca intenționat, dar nu ca dezirabil pentru un catalog de 5 șabloane)",
+      "reproSteps": "1) node 04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake/run2.mjs (script inclus în evidență) — pornește server izolat, rulează wizard-ul Telegram real cu 'Salon Frumusete Ana', extrage magic-link-ul din reply-ul final, îl deschide într-un browser real, dă click pe 'Editează'. 2) Observă '#editor-template-name' = 'Restaurant' și thumbnail-ul din dashboard (o masă de restaurant la lumina lumânărilor) pentru o afacere de coafură.",
+      "recommendation": "Vezi TG-02 — soluția (selector de șablon) e deja scrisă în bot/template-steps.js; trebuie doar cablată în flow.js (import + folosire STEPS/handleTemplateStep/deriveVertical/copyTemplateFiles în loc de STEPS local + buildConfig/mergeWizardConfig hardcodate pe schema product-menu).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-02",
+      "title": "Selectorul de șablon pentru wizard-ul Telegram e deja construit complet (bot/template-steps.js) dar nu e niciodată importat — funcționalitate moartă din commit-ul care a introdus-o",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "telegram",
+      "description": "bot/template-steps.js (204 linii, documentat complet) implementează exact ce lipsește la TG-01: citește templates/registry.json (cele 5 șabloane), construiește dinamic STEPS cu un pas de alegere a tipului de afacere când sunt ≥2 șabloane, handleTemplateStep() validează răspunsul (număr sau nume), deriveVertical() extrage vertical-ul pentru AI, copyTemplateFiles() copiază fișierele șablonului corect în siteDir. `grep -rn \"require.*template-steps\" bot/*.js` nu găsește NICIO referință — fișierul nu e importat de flow.js, bot.js sau oriunde altundeva. git log arată că a fost introdus în commit 463f430 ('...bot template picker') ca parte a wirajului multi-vertical, dar flow.js și-a păstrat propriul STEPS static și hardcodarea la 'product-menu' introdusă ulterior în pivotarea 130ec3b, iar cei doi nu au mai fost reconciliați. În plus, fiecare templates/<id>/schema.json are un `wizardHints.aiStyle` (ton diferit per vertical — ex. product-menu: 'cald, apetisant, editorial de meniu'; celelalte 4 au propriile tonuri) pe care bot/ai.js nu-l citește niciodată — polishBusinessData() are un system prompt complet generic, indiferent de vertical.",
+      "evidence": "bot/template-steps.js:1-205 (fișier complet, funcțional, dar orfan); comanda 'grep -rn \"require.*template-steps\" bot/*.js' → fără rezultate; git log --oneline -- bot/template-steps.js → doar commit-ul de introducere (463f430); templates/product-menu/schema.json:6-9 + templates/portfolio/schema.json:6-9 etc. (wizardHints.aiStyle per vertical, necitit din bot/ai.js)",
+      "reproSteps": "cd /Users/Work/Desktop/sitebuilder && grep -rn \"require.*template-steps\" bot/*.js  (nimic) && grep -n wizardHints bot/ai.js  (nimic)",
+      "recommendation": "Cablează bot/template-steps.js în flow.js: înlocuiește STEPS local cu templateSteps.STEPS, apelează handleTemplateStep() la primul pas (când templateRegistry.length>=2), folosește copyTemplateFiles(templateId, session, siteDir) în generateSite() în loc de copierea fixă a SHARED_FILES din PROJECT_ROOT, și pasează deriveVertical(session) ca opțiune nouă în polishBusinessData()/moderateRequest() ca 'vertical' hint pentru un ton de copywriting specific fiecărui tip de afacere. Actualizează resolveIntakeTemplateId() să folosească session.templateId setat real, nu doar un fallback static.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-03",
+      "title": "/sterge (ștergere GDPR) NU elimină fișierele unui site plătit și publicat de pe disc — site-ul live rămâne accesibil deși botul confirmă 'am șters totul'",
+      "severity": "critical",
+      "category": "bug",
+      "area": "telegram",
+      "description": "handleSterge() în bot/flow.js (linia 876-923) marchează fiecare site din registry.listSites(tgUser.id) cu `registry.updateSite(site.id, { status: 'deleted', url: null })` — DAR nu apelează niciodată `webpublish.unpublishSite(site)`, singura funcție care șterge efectiv $DATA_DIR/published/<slug>/ de pe disc (bot/webpublish.js linia 51-108). Ruta care servește site-urile live, `serveLive()` din bot/server.js (linia 721+), citește direct de pe disc din $DATA_DIR/published/<slug>/ FĂRĂ să verifice statusul din registry la fiecare cerere. Am reprodus exact scenariul realist: un draft creat din Telegram, plătit și publicat mai târziu din browser (sesiunea Telegram în memorie e deja ștearsă de finishTelegramIntake, deci garda locală `if (s && (s.phase === 'deploy' || ...))` din handleSterge nu se declanșează niciodată pentru acest caz) — după /sterge, registry.getSite(id).status devine 'deleted', dar fișierul published/.../index.html EXISTĂ ÎN CONTINUARE pe disc, deci URL-ul live ar continua să servească site-ul vechi la infinit. Mesajul botului ('Am șters toate datele tale... site-urile înregistrate din sistemele noastre') e o promisiune falsă pentru exact acest caz — cel mai grav caz posibil (un site public, plătit, cu datele reale ale unei afaceri).",
+      "evidence": "bot/flow.js:905-914 (bucla care doar face registry.updateSite, fără unpublishSite); bot/webpublish.js:51-108 (unpublishSite — singura funcție care șterge fișierele publicate; nu e apelată din flow.js); bot/server.js:721-775 (serveLive — servește direct de pe disc, nicio verificare de status per-cerere); 04-QA-Evidence/.../telegram-intake/repro-sterge-output.txt + repro-sterge.js (repro complet, rulat, cu output salvat: 'published/index.html STILL exists on disk = true' după /sterge pe un site status:'live', paid:true)",
+      "reproSteps": "node /Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake/repro-sterge.js — creează un site registry cu status:'live', paid:true și scrie fișiere reale în $DATA_DIR/published/audit-live-site/, apoi apelează flow.handleSterge(fakeCtx) direct (fără sesiune Telegram în memorie, exact ca în producție după ce draftul a fost deja predat browserului). Output arată: 'AFTER /sterge: registry site status = deleted ... published/index.html STILL exists on disk = true'.",
+      "recommendation": "În handleSterge(), pentru fiecare site din regSites, apelează `await webpublish.unpublishSite(site)` (care șterge fișierele + setează status corect) ÎN LOC de (sau înaintea) apelului manual la registry.updateSite. Adaugă un test de regresie care creează un site paid+live cu fișiere reale pe disc și verifică explicit că /sterge le elimină, nu doar că schimbă statusul din registry — testele curente (telegram-command-menu-no-publish.test.js) verifică doar textul descrierii comenzii din meniu, nu comportamentul runtime pe un site live.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-04",
+      "title": "Mesajul de limită de rate (rate limit) e în engleză, singurul text expus userului care rupe regula '100% RO' a produsului",
+      "severity": "medium",
+      "category": "copy",
+      "area": "telegram",
+      "description": "bot/ratelimit.js (liniile 66 și 69) definește reason-urile de refuz în engleză: \"You've reached the limit of ${PER_CHAT_HOUR} sites per hour. Please try again later.\" și \"The system is under heavy load right now. Please try again shortly.\" — iar bot/flow.js linia 988 le trimite direct userului: `ctx.reply('⏳ ' + rl.reason)`. Toate celelalte ~57 de mesaje reply() din flow.js sunt în română corectă cu diacritice; acesta e singurul care scapă în engleză, exact în momentul în care un client entuziast (care a încercat de mai multe ori) e frustrat că nu poate continua.",
+      "evidence": "bot/ratelimit.js:66,69 (reason strings în engleză); bot/flow.js:984-988 (`return ctx.reply('⏳ ' + rl.reason)`)",
+      "reproSteps": "cd /Users/Work/Desktop/sitebuilder && node -e \"const rl=require('./bot/ratelimit.js'); for(let i=0;i<6;i++){const id='x'; console.log(rl.allowBuild(id)); rl.consumeBuild(id);}\" — al 6-lea rezultat arată reason-ul în engleză care ar fi trimis direct în chat.",
+      "recommendation": "Mută reason-urile în română direct în ratelimit.js (sau întoarce doar un cod ('chat'|'global') și lasă flow.js să formuleze mesajul RO, cum face deja pentru toate celelalte cazuri).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-05",
+      "title": "Erorile interne (mesaje de excepție JS) sunt trimise brut userului RO în cel puțin un punct din fluxul live",
+      "severity": "low",
+      "category": "ux",
+      "area": "telegram",
+      "description": "În handleGata() (bot/flow.js:1037-1040), dacă generateSite() aruncă o eroare (ex. disc plin, cale invalidă, eroare fs), mesajul trimis userului este `'❌ Eroare la generarea site-ului: ' + e.message` — concatenând direct mesajul de eroare Node.js (deseori în engleză, uneori conținând căi de fișier de pe server) cu textul românesc. Nu e o scurgere gravă de securitate (nu conține secrete), dar e neprofesional pentru un produs care își propune nivel Wix/Squarespace, și confuz pentru un utilizator non-tehnic.",
+      "evidence": "bot/flow.js:1037-1040",
+      "reproSteps": "Cod: forțează generateSite() să arunce (ex. fs.mkdirSync pe o cale needitabilă) și observă reply-ul brut cu e.message.",
+      "recommendation": "Loghează e.message doar în consolă/ledger; trimite userului un mesaj RO generic ('Ceva nu a mers bine la generarea site-ului, echipa a fost notificată automat.') + notifyAdmin() cu detaliul tehnic.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-06",
+      "title": "Moderarea imaginilor (safety gate pentru poze încărcate) e complet dezactivată quando AI_PROVIDER=openai — niciun avertisment, cădere silențioasă",
+      "severity": "medium",
+      "category": "security",
+      "area": "telegram",
+      "description": "moderateImages() din bot/ai.js (linia 738-742) verifică explicit `getProvider() !== 'anthropic'` și, pentru orice alt provider configurat (inclusiv 'openai', o opțiune de prim rang suportată peste tot altundeva în ai.js — callLLM, polishBusinessData etc.), întoarce silențios `{blocked:false, reason:null}` fără niciun log de avertisment că moderarea a fost sărită. Dacă operatorul configurează AI_PROVIDER=openai (o alegere validă și documentată), poze cu conținut interzis (nuditate, violență, arme) NU mai sunt filtrate deloc înainte de a ajunge pe un site public — singura plasă de siguranță rămasă e gate-ul de text (moderateRequest), care nu vede deloc conținutul pozelor.",
+      "evidence": "bot/ai.js:738-742 (`if (getProvider() !== 'anthropic' || !process.env.ANTHROPIC_API_KEY) return { blocked: false, reason: null }`)",
+      "reproSteps": "Setează AI_PROVIDER=openai + OPENAI_API_KEY, rulează `node -e \"process.env.AI_PROVIDER='openai';process.env.OPENAI_API_KEY='x'; require('./bot/ai.js').moderateImages([Buffer.from('fake')],'ro').then(console.log)\"` → `{blocked:false, reason:null}` fără nicio excepție sau log.",
+      "recommendation": "Fie implementează moderarea și pentru OpenAI (are Vision API), fie loghează explicit (console.warn + notifyAdmin la boot) că moderarea de imagini e dezactivată când providerul nu e Anthropic, ca operatorul să știe conștient riscul pe care și-l asumă.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-07",
+      "title": "Cod legacy de plată/deploy direct din Telegram (Stripe/Revolut checkout, poller, ramuri webhook) rămas în producție — risc de sesiuni-zombie care ating provideri reali de plată la fiecare restart",
+      "severity": "medium",
+      "category": "infra",
+      "area": "telegram",
+      "description": "bot/flow.js păstrează integral mecanismul de plată/deploy direct-din-Telegram dinaintea pivotării 'pay-before-publish' din browser: _initiatePayment() (creează checkout Stripe/Revolut real), _pollPaymentBackground() (polling activ pe pollUntilPaid), reconcilePending() (rulează la boot ȘI la fiecare 5 minute prin sweepTimer din bot.js) care reactivează polling-ul pentru orice sesiune persistată cu phase:'pay', plus handleStripeWebhookEvent() cu o ramură completă 'legacy sessions'. Niciun cod curent nu mai SETEAZĂ phase:'pay'/'deploy' pentru o sesiune nouă (confirmat: 0 rezultate la grep \"phase = 'pay'\"), deci teoretic e drenaj pur. DAR .sessions.json e pe un volum persistent (DATA_DIR) care supraviețuiește redeploy-urilor — dacă din vreo generație anterioară a produsului (acest repo a trecut prin cel puțin 3 pivotări comerciale majore: F2 trial-platform → F4 3-day-trial → pay-before-publish) au rămas sesiuni vechi cu phase:'pay' și un stripeSessionId valid, reconcilePending() le va relua automat la FIECARE restart al botului, apelând Stripe/Revolut real — un comportament greu de observat și greu de testat fără acces la .sessions.json din producție.",
+      "evidence": "bot/flow.js:135-157 (reconcilePending, reactivează poller pentru phase:'pay'); bot/bot.js:236-243 (sweepTimer la fiecare 5 min + reconcilePending la boot); grep -n \"phase = 'pay'\" bot/flow.js → 0 rezultate (nimic mai setează acest phase azi, deci sursa ar fi doar date persistate vechi)",
+      "reproSteps": "Nu am acces la .sessions.json de producție (interzis de regulile auditului să inspectez date reale) — risc dedus din citirea codului + istoricul de pivotări din git log, nu confirmat cu date live.",
+      "recommendation": "Rulează o migrare unică peste .sessions.json de producție care șterge/arhivează orice sesiune cu phase în {'pay','deploy','paid-needs-retry'}, apoi dezactivează explicit acele ramuri din reconcilePending() (log + skip în loc de reluare automată a poller-ului), păstrând doar handleStripeWebhookEvent legacy branch cât timp mai există comenzi vechi de drenat. După migrare, ia în calcul ștergerea propriu-zisă a ~400-500 linii de cod legacy (payments.js checkout path, revolut.js dacă nu mai e folosit altundeva) pentru a reduce suprafața de întreținere a fișierului de 1689 linii.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-08",
+      "title": "Funcții de generare AI complet neutilizate în ai.js (~250 linii moarte): generateSiteConfig (modul 'chat' liber) și describePhotosForCategories",
+      "severity": "low",
+      "category": "product-gap",
+      "area": "telegram",
+      "description": "Antetul bot/flow.js documentează fazele 'chat' (conversație liberă AI) și 'wizard' (fallback), dar handleStart() setează întotdeauna `session.phase = 'wizard'` — faza 'chat' nu mai există în practică. Corespunzător, `ai.generateSiteConfig()` (funcția AI de nivel înalt pentru conversație liberă, cu propriul prompt de sistem, propriul schema JSON, retry pe parse) nu e apelată din nicăieri în flow.js — confirmat prin grep. La fel, `describePhotosForCategories()` (sugestii de categorie/alt-text din poze via vision API) nu e apelată nicăieri. Împreună reprezintă aproape 30% din cele 913 linii ale ai.js.",
+      "evidence": "bot/ai.js:159-186 (docblock generateSiteConfig) + implementare până la linia ~420-540; bot/ai.js:590-620 (describePhotosForCategories); grep -rn \"generateSiteConfig|describePhotosForCategories\" bot/*.js bot/test/*.js → doar în ai.js însuși (exports + self-test)",
+      "reproSteps": "grep -rn \"generateSiteConfig\\|describePhotosForCategories\" bot/*.js | grep -v 'ai.js:' → fără rezultate",
+      "recommendation": "Dacă modul 'chat' liber nu mai e pe roadmap, șterge generateSiteConfig() și describePhotosForCategories() (sau mută-le într-un fișier `ai-experimental.js` clar marcat, dacă echipa vrea să le păstreze pentru o iterație viitoare) — reduce suprafața de întreținere și confuzia pentru orice agent/dezvoltator viitor care citește ai.js și crede că fluxul 'chat' e activ.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "TG-09",
+      "title": "Retenția datelor personale în ledger/rate-limit e permanentă și nu e atinsă de /sterge — potențial gap GDPR minor, nedocumentat",
+      "severity": "low",
+      "category": "data",
+      "area": "telegram",
+      "description": "bot/ledger.js e explicit append-only ('never rewrite') și înregistrează chatId la fiecare eveniment (draft_ready, checkout, paid...) pentru totdeauna; bot/ratelimit.js păstrează chatId în .ratelimit.json cât timp e activ în fereastra curentă (mai puțin sensibil, se auto-curăță pe fereastră). handleSterge() nu atinge niciodată .ledger.jsonl. E o decizie rezonabilă pentru un jurnal contabil/audit (multe jurisdicții cer păstrarea evidenței tranzacțiilor chiar și după o cerere de ștergere a datelor de profil), dar mesajul trimis userului ('Am șters TOATE datele tale... din sistemele noastre') nu menționează această excepție — un DPO sau un user atent la GDPR ar putea contesta formularea.",
+      "evidence": "bot/ledger.js:1-13 (comentariu 'Append-only by design (we never rewrite it)'); bot/flow.js:876-923 (handleSterge nu referă ledger.js deloc)",
+      "reproSteps": "grep -n \"ledger\" bot/flow.js — apare doar la _ledger() (scriere), niciodată la citire/purjare în handleSterge.",
+      "recommendation": "Documentează explicit (în consentNote() sau într-o pagină legală linkuită) că evidența tranzacțiilor (ledger) e păstrată separat conform obligațiilor contabile chiar și după /sterge, ca formularea 'am șters totul' să fie corectă din punct de vedere legal, nu doar din punct de vedere UX.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake/01-dashboard-loaded.png",
+      "whatItShows": "Magic-link-ul generat real de finishTelegramIntake (după rularea completă a wizard-ului Telegram) deschis într-un browser real — dashboard-ul builder-ului arată corect draftul 'salon-frumusete-ana-555000...' cu status 'Neplătit', confirmând că puntea Telegram→builder funcționează mecanic. Se observă și un bug vizual minor: numele site-ului se suprapune cu butonul 'Editează' (text trunchiat/overlap)."
+    },
+    {
+      "file": "04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake/02-editor-opened.png",
+      "whatItShows": "Dovada centrală a TG-01/TG-02: editorul deschis pentru draftul Telegram al afacerii 'Salon Frumusete Ana' (coafură/manichiură) arată badge-ul de sus-stânga '#editor-template-name = Restaurant' — Telegram a ales automat șablonul greșit pentru că nu există niciun pas de selecție a tipului de afacere în wizard."
+    },
+    {
+      "file": "04-QA-Evidence/Audit-2026-09-06-2225ca7/telegram-intake/03-editor-full-page.png",
+      "whatItShows": "Aceeași pagină de editor, captură full-page — se văd toate câmpurile din 'Detalii site' (limba, etichete, culori, Instagram, WhatsApp) generate mecanic (fără AI, provider 'none' în mediul izolat de test) pentru draftul Telegram."
+    }
+  ],
+  "notRun": [
+    "Conectare reală la Telegram (fără TELEGRAM_BOT_TOKEN, conform regulilor auditului) — toată verificarea end-to-end s-a făcut apelând direct handlerele exportate din bot/flow.js (handleStart/handleText/handlePhoto/handleGata) peste un server izolat, cu fetch-ul către api.telegram.org înlocuit (stub) pentru descărcarea de poze — echivalent funcțional cu un update real de la Telegram, dar nu testează parsarea/webhook-ul grammY propriu-zis.",
+    "Comportamentul real al polishBusinessData()/moderateRequest() cu un provider AI real (Anthropic/OpenAI) — nu am folosit chei reale; am verificat doar codul sursă al prompt-urilor și fallback-ul mecanic (buildConfig) când provider='none'.",
+    "Rularea efectivă a reconcilePending() peste un .sessions.json real de producție cu sesiuni legacy phase:'pay' — TG-07 e un risc dedus din cod + istoric git, nu confirmat cu date live (nu am acces la volumul de date real, conform regulilor).",
+    "Comportamentul ADMIN_CHAT_ID în practică (livrare reală a DM-urilor) — am verificat doar punctele din cod unde notifyAdmin() e apelat (3 locuri), nu am putut testa livrarea fără un bot Telegram real.",
+    "Testarea describePhotosForCategories/generateSiteConfig cu chei API reale — sunt cod mort (TG-08), nu am considerat util să le testez funcțional din moment ce nu sunt apelate din produs.",
+    "Structura internă completă a template-steps.js integrată live (fiindcă nu e cablată în flow.js, nu există un scenariu de producție în care să ruleze) — am verificat doar static, prin citirea codului, că e completă și corectă ca implementare."
+  ]
+}

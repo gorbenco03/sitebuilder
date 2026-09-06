@@ -1,0 +1,464 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Atelier Ivoire",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Din salon",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Coafură și culoare",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Manichiură și nail art",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Povestea noastră",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Servicii",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Program",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Echipa Atelier Ivoire",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Claudia Benea",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Dana Pârvu",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Laura Marinescu",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Programează o vizită",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Deschide WhatsApp pe telefon",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "images/iv-par1.jpg",
+      "alt": "Balayage elegant în tonuri de miere",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-par2.jpg",
+      "alt": "Bucle ample și lucioase",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-par3.jpg",
+      "alt": "Tunsoare modernă, texturată",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-par4.jpg",
+      "alt": "Șuvițe discrete pe păr brunet",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-mani1.jpg",
+      "alt": "Manichiură nude cu gel și linie aurie",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-mani2.jpg",
+      "alt": "Model floral de primăvară",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-mani3.jpg",
+      "alt": "Ombré roz-alb pe unghii scurte",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-mani4.jpg",
+      "alt": "Manichiură clasică roșu intens",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-team-c.jpg",
+      "alt": "Claudia Benea",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-team-d.jpg",
+      "alt": "Dana Pârvu",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/iv-team-l.jpg",
+      "alt": "Laura Marinescu",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "WhatsApp QR",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 2,
+    "main": 1,
+    "footer": 1
+  },
+  "forms": [],
+  "contrastFails": [
+    {
+      "text": "Programează o vizită",
+      "tag": "A",
+      "id": "",
+      "cls": "pf-chrome__cta",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "rgb(107,127,90)",
+      "fontSize": 12,
+      "bold": false
+    },
+    {
+      "text": "Programează o vizită",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "rgb(107,127,90)",
+      "fontSize": 12,
+      "bold": false
+    },
+    {
+      "text": "Programează-te pe WhatsApp",
+      "tag": "A",
+      "id": "",
+      "cls": "pf-appt__wa",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "rgb(107,127,90)",
+      "fontSize": 12,
+      "bold": false
+    },
+    {
+      "text": "Program",
+      "tag": "P",
+      "id": "",
+      "cls": "pf-kicker",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.48)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 11,
+      "bold": false
+    },
+    {
+      "text": "Luni – Vineri",
+      "tag": "STRONG",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    },
+    {
+      "text": "09:00 – 20:00",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.72)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    },
+    {
+      "text": "Sâmbătă",
+      "tag": "STRONG",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    },
+    {
+      "text": "09:00 – 18:00",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.72)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    },
+    {
+      "text": "Duminică",
+      "tag": "STRONG",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    },
+    {
+      "text": "10:00 – 15:00",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.72)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 14.72,
+      "bold": false
+    }
+  ],
+  "contrastUndetermined": [],
+  "ariaIssues": [],
+  "smallTargets": [
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 57,
+      "h": 17,
+      "text": "Galerie"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 57,
+      "h": 17,
+      "text": "Servicii"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 93,
+      "h": 17,
+      "text": "Programare"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hero-cta pf-hero__cta",
+      "w": 208,
+      "h": 38,
+      "text": "Programează o vizită"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pf-row",
+      "w": 140,
+      "h": 41,
+      "text": "+40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pf-row",
+      "w": 99,
+      "h": 41,
+      "text": "WhatsApp"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pf-row",
+      "w": 119,
+      "h": 41,
+      "text": "@atelier.ivoire"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item pf-row",
+      "w": 111,
+      "h": 41,
+      "text": "Atelier Ivoire"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pf-appt__wa",
+      "w": 312,
+      "h": 42,
+      "text": "Programează-te pe WhatsApp"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 102,
+      "h": 20,
+      "text": "Confidențialitate"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 49,
+      "h": 20,
+      "text": "Termeni"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 65,
+      "h": 20,
+      "text": "Cookie-uri"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 62,
+      "h": 13,
+      "text": "hidook.tech"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 78,
+      "h": 13,
+      "text": "hidook.agency"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 18,
+      "text": "IG"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 16,
+      "h": 18,
+      "text": "FB"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 189,
+      "h": 35,
+      "text": "Politica de cookie-uri"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "hb-cookie-accept",
+      "cls": "",
+      "w": 84,
+      "h": 35,
+      "text": "Acceptă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 84,
+      "h": 19,
+      "text": "Află mai mult"
+    }
+  ],
+  "lang": "ro",
+  "title": "Atelier Ivoire | Salon și studio de îngrijire | București",
+  "h1Count": 1,
+  "headingSkips": []
+}

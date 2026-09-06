@@ -1,0 +1,335 @@
+{
+  "auth_email_response": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "sent": false,
+      "devLink": "/auth/verify?token=bdcd028d50e75a51b199241ab7af603e994369217fa37151a7ce38d214236801"
+    }
+  },
+  "auth_token_entropy": {
+    "tokenLength": 64,
+    "token": "bdcd028d..."
+  },
+  "auth_verify_cookie": {
+    "status": 302,
+    "location": "/app/#dashboard",
+    "setCookieRaw": "hb_session=v1.eyJ1aWQiOiJhMGE1YTJkYy1lMTFhLTRmNzQtODcxNi1hMjdjNWE5Yjk3MzQiLCJleHAiOjE3OTEyMzQ5MTd9.VBamZrXtjN9_R73AM0W6XbGy6WQYvnqi805MrIWrCdo; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000"
+  },
+  "auth_token_reuse": {
+    "status": 302,
+    "location": "/app/#login-expired",
+    "setCookie": null
+  },
+  "api_me_valid_cookie": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "a0a5a2dc-e11a-4f74-8716-a27c5a9b9734",
+        "email": "auditor-a@example.com",
+        "createdAt": "2026-09-05T21:15:17.128Z"
+      }
+    }
+  },
+  "api_me_no_cookie": {
+    "status": 401,
+    "body": {
+      "error": "Sign-in required."
+    }
+  },
+  "api_me_forged_cookie": {
+    "status": 401,
+    "body": {
+      "error": "Sign-in required."
+    }
+  },
+  "api_me_tampered_payload_old_sig": {
+    "status": 401,
+    "body": {
+      "error": "Sign-in required."
+    }
+  },
+  "cookie_flags": {
+    "raw": "hb_session=v1.eyJ1aWQiOiJhMGE1YTJkYy1lMTFhLTRmNzQtODcxNi1hMjdjNWE5Yjk3MzQiLCJleHAiOjE3OTEyMzQ5MTd9.VBamZrXtjN9_R73AM0W6XbGy6WQYvnqi805MrIWrCdo; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000",
+    "hasHttpOnly": true,
+    "hasSecure": false,
+    "sameSite": "Lax",
+    "maxAge": "2592000"
+  },
+  "user_a_create_draft": {
+    "status": 200,
+    "siteId": "593c12f7-f524-4814-b529-7f53c4c95d96"
+  },
+  "user_b_login": {
+    "hasCookie": true
+  },
+  "crossuser_get_site": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_get_versions": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_rollback": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_checkout": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_billing_portal": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_social_grant": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_social_disconnect": {
+    "status": 403,
+    "body": {
+      "error": "Access denied."
+    }
+  },
+  "crossuser_export_html": {
+    "status": 400,
+    "bodySnippet": "{\"error\":\"No draft to download.\"}"
+  },
+  "crossuser_calendar_owner_bookings": {
+    "status": 403,
+    "body": {
+      "error": "Acces interzis.",
+      "code": "FORBIDDEN"
+    }
+  },
+  "xss_publish_response": {
+    "status": 409
+  },
+  "xss_live_render": {
+    "status": 404,
+    "rawInjectionPresent": false,
+    "containsEscapedName": false,
+    "containsEscapedScript": false,
+    "containsRawJsProtocol": false,
+    "htmlLength": 21
+  },
+  "draft_5mb_body": {
+    "status": 200,
+    "bodySnippet": "{\"site\":{\"id\":\"593c12f7-f524-4814-b529-7f53c4c95d96\",\"userId\":\"a0a5a2dc-e11a-4f74-8716-a27c5a9b9734\",\"templateId\":\"product-menu\",\"templateVersion\":1,\"slug\":\"restaurant-a\",\"projectName\":\"restaurant-a\",\"platform\":\"web\",\"status\":\"draft\",\"paid\":false,\"url\":null,\"createdAt\":\"2026-09-05T21:15:17.135Z\"}}"
+  },
+  "draft_config_array": {
+    "status": 422,
+    "body": {
+      "error": "Ciorna nu conține o configurație validă."
+    }
+  },
+  "draft_config_string": {
+    "status": 422,
+    "body": {
+      "error": "Ciorna nu conține o configurație validă."
+    }
+  },
+  "draft_invalid_json": {
+    "status": 400,
+    "body": "{\"error\":\"Invalid JSON.\"}"
+  },
+  "slug_check_various": {
+    "..": {
+      "available": true,
+      "slug": "site"
+    },
+    "../../etc": {
+      "available": true,
+      "slug": "etc"
+    },
+    "app": {
+      "available": true,
+      "slug": "app"
+    },
+    "api": {
+      "available": true,
+      "slug": "api"
+    },
+    "admin": {
+      "available": true,
+      "slug": "admin"
+    },
+    "live": {
+      "available": true,
+      "slug": "live"
+    },
+    "a": {
+      "available": false,
+      "slug": "a",
+      "error": "Invalid slug (3-40 characters, a-z 0-9 -)."
+    },
+    "ab": {
+      "available": false,
+      "slug": "ab",
+      "error": "Invalid slug (3-40 characters, a-z 0-9 -)."
+    },
+    "CAPS-SLUG": {
+      "available": true,
+      "slug": "caps-slug"
+    },
+    "ünïcödé": {
+      "available": true,
+      "slug": "unicode"
+    },
+    "has spaces": {
+      "available": true,
+      "slug": "has-spaces"
+    },
+    "valid-slug-123": {
+      "available": true,
+      "slug": "valid-slug-123"
+    }
+  },
+  "path_traversal_tests": {
+    "/live/../../bot/server.js": {
+      "status": 404,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"not found\"}"
+    },
+    "/live/xss-test/../../../bot/.env": {
+      "status": 404,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"not found\"}"
+    },
+    "/app/../bot/.env": {
+      "status": 404,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"not found\"}"
+    },
+    "/app/%2e%2e/%2e%2e/bot/server.js": {
+      "status": 404,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"not found\"}"
+    },
+    "/live/abc/%2e%2e/%2e%2e/bot/server.js": {
+      "status": 404,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"not found\"}"
+    },
+    "/live/../": {
+      "status": 302,
+      "looksLikeSource": false,
+      "snippet": ""
+    },
+    "/app/..%2f..%2fbot%2fserver.js": {
+      "status": 403,
+      "looksLikeSource": false,
+      "snippet": "{\"error\":\"Access denied.\"}"
+    }
+  },
+  "rate_limit_auth_email_50reqs": {
+    "counts": {
+      "200": 50
+    },
+    "any429": false
+  },
+  "security_headers_app": {
+    "content-security-policy": null,
+    "x-frame-options": null,
+    "x-content-type-options": null,
+    "referrer-policy": null,
+    "strict-transport-security": null,
+    "permissions-policy": null
+  },
+  "security_headers_live_404": {
+    "content-security-policy": null,
+    "x-frame-options": null,
+    "x-content-type-options": null,
+    "referrer-policy": null,
+    "strict-transport-security": null,
+    "permissions-policy": null
+  },
+  "cors_calendar_native": {
+    "status": 400,
+    "acao": "https://evil.example.com",
+    "acac": null
+  },
+  "admin_no_token": {
+    "status": 404,
+    "bodySnippet": "{\"error\":\"not found\"}"
+  },
+  "admin_wrong_token": {
+    "status": 404
+  },
+  "webhook_unsigned_testpay_accept": {
+    "status": 200,
+    "body": {
+      "received": true
+    }
+  },
+  "webhook_replay_same_event": {
+    "status": 200,
+    "body": {
+      "received": true
+    }
+  },
+  "weird_method_patch_api_me": {
+    "status": 404
+  },
+  "post_missing_content_type": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "sent": false,
+      "devLink": "/auth/verify?token=a445648249da0651c38ab6f85e7d29cf65030ac33a0d0bc6d9714185bf0675a2"
+    }
+  },
+  "post_non_json_body": {
+    "status": 400,
+    "body": "{\"error\":\"Invalid JSON.\"}"
+  },
+  "logout_endpoint": {
+    "status": 404,
+    "body": "{\"error\":\"not found\"}"
+  },
+  "api_me_after_logout_attempt": {
+    "status": 200,
+    "body": {
+      "user": {
+        "id": "a0a5a2dc-e11a-4f74-8716-a27c5a9b9734",
+        "email": "auditor-a@example.com",
+        "createdAt": "2026-09-05T21:15:17.128Z"
+      }
+    }
+  },
+  "concurrent_draft_race": {
+    "distinctSiteIds": 1,
+    "siteIds": [
+      "f08493d4-8c57-4018-b5eb-41f07ec858b6"
+    ],
+    "versionsCreated": null
+  },
+  "registry_file_state": {
+    "sizeBytes": 5254350,
+    "usersCount": 3,
+    "tokensCount": 54,
+    "sitesCount": 2,
+    "ordersCount": 0
+  },
+  "reserved_slug_admin_publish": {
+    "status": 409,
+    "body": {
+      "error": "Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.",
+      "siteId": "593c12f7-f524-4814-b529-7f53c4c95d96"
+    }
+  }
+}

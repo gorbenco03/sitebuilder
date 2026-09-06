@@ -1,0 +1,486 @@
+{
+  "lens": "template-professionals",
+  "startedAt": "2026-09-05T21:32:03.364Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "landing-cookie-accepted",
+      "action": "click #hb-cookie-accept",
+      "selector": null,
+      "screenshot": "01-landing-cookie-accepted.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T21:32:05.337Z",
+      "url": "http://127.0.0.1:50792/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "cookie banner acceptat"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-open-drawer-auto",
+      "action": "select professionals template",
+      "selector": null,
+      "screenshot": "02-editor-open-drawer-auto.png",
+      "sha256": "4959851a742d152a896ee52023a4b7db5dccfb6296b4e695179b5fcb39e95b91",
+      "timestamp": "2026-09-05T21:32:05.938Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "iframe cu continut gata in 139ms; Details drawer deschis automat"
+      }
+    },
+    {
+      "index": 2,
+      "step": "drawer-fields-full",
+      "action": "inventory #drawer-body",
+      "selector": null,
+      "screenshot": "03-drawer-fields-full.png",
+      "sha256": "4959851a742d152a896ee52023a4b7db5dccfb6296b4e695179b5fcb39e95b91",
+      "timestamp": "2026-09-05T21:32:06.097Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "13 campuri gasite cu data-field-key"
+      }
+    },
+    {
+      "index": 3,
+      "step": "inline-edit-business-name",
+      "action": "click+fill+blur [data-hb-edit=\"business.name\"]",
+      "selector": null,
+      "screenshot": "04-inline-edit-business-name.png",
+      "sha256": "efc4b9dde61309db726e2b044e5ca2b10207f04b632753cd888746f62a1f0c71",
+      "timestamp": "2026-09-05T21:32:06.751Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "nume introdus: Șt. Țăndărică & Fiii"
+      }
+    },
+    {
+      "index": 4,
+      "step": "drawer-photo-uploaded",
+      "action": "setInputFiles hero.background",
+      "selector": null,
+      "screenshot": "05-drawer-photo-uploaded.png",
+      "sha256": "fcc6011fdc40fda5a8c3c447bb80589e7171541355f4f37270f5764db20eed1d",
+      "timestamp": "2026-09-05T21:32:07.764Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "poza incarcata: cn-hero.jpg"
+      }
+    },
+    {
+      "index": 5,
+      "step": "before-color-change",
+      "action": "close drawer",
+      "selector": null,
+      "screenshot": "06-before-color-change.png",
+      "sha256": "6ca42237f2634c78aa88edd20f911f560f77d35b15d41c7e790c73bb2c4c5c21",
+      "timestamp": "2026-09-05T21:32:08.008Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "inainte de schimbare culori"
+      }
+    },
+    {
+      "index": 6,
+      "step": "color-popover-filled",
+      "action": "fill #color-custom-text/#color-bg-text",
+      "selector": null,
+      "screenshot": "07-color-popover-filled.png",
+      "sha256": "42917151caf38c68aaa1888ae1f2f5dce37b139f528573359d66310970faa05c",
+      "timestamp": "2026-09-05T21:32:08.697Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "accent=#1D5B79 bg=#E7F1F7"
+      }
+    },
+    {
+      "index": 7,
+      "step": "after-color-change",
+      "action": "close color popover",
+      "selector": null,
+      "screenshot": "08-after-color-change.png",
+      "sha256": "89dc3942c2646c3c1487431bf1a5f0814f8a7cfba19b4448c1524924a0e78c98",
+      "timestamp": "2026-09-05T21:32:09.196Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "culori aplicate"
+      }
+    },
+    {
+      "index": 8,
+      "step": "whatsapp-fields-filled",
+      "action": "fill contact.whatsapp + contact.waMessage",
+      "selector": null,
+      "screenshot": "09-whatsapp-fields-filled.png",
+      "sha256": "49f0b56aba0acf109d2428447c9cdb42144b30f141227926e27e1baa526605ff",
+      "timestamp": "2026-09-05T21:32:10.083Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "numar=40745123456 mesaj cu diacritice"
+      }
+    },
+    {
+      "index": 9,
+      "step": "mobile-preview-390",
+      "action": "click #btn-preview-mobile",
+      "selector": null,
+      "screenshot": "10-mobile-preview-390.png",
+      "sha256": "6d42d60d5f21f72cf9d4b7110c4fbc8e9c6c4f120f2cc93f9ca6e1fd68cf9684",
+      "timestamp": "2026-09-05T21:32:10.820Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "previzualizare mobil in editor"
+      }
+    },
+    {
+      "index": 10,
+      "step": "service-item-added",
+      "action": "click .hb-add-btn dupa lista de servicii (inline in iframe)",
+      "selector": null,
+      "screenshot": "11-service-item-added.png",
+      "sha256": "8a794747bdb1a363b8bd8f37fb2f79f389c4b7824922608804b9f9e2caf4efbd",
+      "timestamp": "2026-09-05T21:32:12.188Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "inainte=4 dupa=5"
+      }
+    },
+    {
+      "index": 11,
+      "step": "service-item-removed",
+      "action": "JS click pe .hb-remove-btn al elementului services.4",
+      "selector": null,
+      "screenshot": "12-service-item-removed.png",
+      "sha256": "4ccfb47a6e0c8d2c98e5c0ebd06839353e2b8dc3bdef408b418111a0f7989d8a",
+      "timestamp": "2026-09-05T21:32:13.088Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "CLICKED_OK | count dupa stergere=4 (inainte de adaugare=4)"
+      }
+    },
+    {
+      "index": 12,
+      "step": "publish-modal-open",
+      "action": "click #btn-publish",
+      "selector": null,
+      "screenshot": "13-publish-modal-open.png",
+      "sha256": "3e08bb3e2d01caf10e073f66939396be5e16f9b5687faba0b6e172c7008a0a01",
+      "timestamp": "2026-09-05T21:32:33.323Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dialog publish deschis"
+      }
+    },
+    {
+      "index": 13,
+      "step": "publish-slug-set",
+      "action": "fill #input-slug + click continue",
+      "selector": null,
+      "screenshot": "14-publish-slug-set.png",
+      "sha256": "3afa84ab49a7e479ebb6edfb99eb03ba97f2890958bc9743e655eac4a7d2b0a2",
+      "timestamp": "2026-09-05T21:32:33.529Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "slug=qa-professionals-audit-1788643953323"
+      }
+    },
+    {
+      "index": 14,
+      "step": "magic-link-issued",
+      "action": "fill email + send magic link",
+      "selector": null,
+      "screenshot": "15-magic-link-issued.png",
+      "sha256": "939d946613784ec4c6261e7786b654e01d6070da15b7358e8b5fd22e80c33a14",
+      "timestamp": "2026-09-05T21:32:33.720Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev-link vizibil"
+      }
+    },
+    {
+      "index": 15,
+      "step": "unpaid-success-modal",
+      "action": "click #dev-link",
+      "selector": null,
+      "screenshot": "16-unpaid-success-modal.png",
+      "sha256": "1f0f1131e95340a8e45c9eae166090afa8eb5a554448eb048ed18d81edd96400",
+      "timestamp": "2026-09-05T21:32:33.992Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "draft publicat nefiscalizat; CTA plata vizibil"
+      }
+    },
+    {
+      "index": 16,
+      "step": "publish-success-paid",
+      "action": "click #btn-pay-publish",
+      "selector": null,
+      "screenshot": "17-publish-success-paid.png",
+      "sha256": "45cc47a98c247d5ed878fa09ee50510f7a77874db2a9f4056fa6663db4451e98",
+      "timestamp": "2026-09-05T21:32:34.162Z",
+      "url": "http://127.0.0.1:50792/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Site-ul tau e live"
+      }
+    },
+    {
+      "index": 17,
+      "step": "export-html-downloaded",
+      "action": "click #btn-download-html",
+      "selector": null,
+      "screenshot": "18-export-html-downloaded.png",
+      "sha256": "ea63f85cf92ef5fae3fd4da147bf4befaf56fc0ea92a871c1f093e387bec5f8c",
+      "timestamp": "2026-09-05T21:32:35.092Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "salvat: export-qa-professionals-audit-1788643953323.html"
+      }
+    },
+    {
+      "index": 18,
+      "step": "export-zip-downloaded",
+      "action": "click #btn-download-zip",
+      "selector": null,
+      "screenshot": "19-export-zip-downloaded.png",
+      "sha256": "eadb2d7b8bb3dbfed3103ec0d1932c9d4a8b91cc8b491a0ae468a6a3ab295440",
+      "timestamp": "2026-09-05T21:32:35.333Z",
+      "url": "http://127.0.0.1:50792/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "salvat: export-qa-professionals-audit-1788643953323.zip"
+      }
+    },
+    {
+      "index": 19,
+      "step": "live-site-desktop",
+      "action": "open #success-url-link (desktop)",
+      "selector": null,
+      "screenshot": "20-live-site-desktop.png",
+      "sha256": "658ecd3d0cfc23f6069757dd07d2e28c46b5be398002b9cd429c117f9ad6df0d",
+      "timestamp": "2026-09-05T21:32:35.568Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "site live la 1440px"
+      }
+    },
+    {
+      "index": 20,
+      "step": "live-site-desktop-fullpage",
+      "action": "fullPage screenshot live desktop",
+      "selector": null,
+      "screenshot": "21-live-site-desktop-fullpage.png",
+      "sha256": "34a862841e5e50ef11450902f41eb08afb2f6504075cbbaf3860988ed67bd285",
+      "timestamp": "2026-09-05T21:32:35.903Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "site live complet 1440px"
+      }
+    },
+    {
+      "index": 21,
+      "step": "whatsapp-qr-panel-live",
+      "action": "click a[href*=wa.me] pe site live desktop",
+      "selector": null,
+      "screenshot": "22-whatsapp-qr-panel-live.png",
+      "sha256": "d9305b0e07c0051af328a956ad2ceca0b9c52f69046533da3b5f5f4a28c44c5f",
+      "timestamp": "2026-09-05T21:32:36.546Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "panou QR WhatsApp (#wa-qr) ar trebui sa apara in loc de navigare"
+      }
+    },
+    {
+      "index": 22,
+      "step": "live-site-mobile-390",
+      "action": "resize to 390px + reload",
+      "selector": null,
+      "screenshot": "23-live-site-mobile-390.png",
+      "sha256": "41d7645babbba9472a54e78e69f0abc18cab01090451a33f730b8ba03a88f002",
+      "timestamp": "2026-09-05T21:33:07.416Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "site live mobil"
+      }
+    },
+    {
+      "index": 23,
+      "step": "mobile-nav-links-hidden",
+      "action": "verify .pr-nav__links vizibilitate la 390px",
+      "selector": null,
+      "screenshot": "24-mobile-nav-links-hidden.png",
+      "sha256": "6bd1dd5a0ef91a8c7b04d9c449e7be9ac03dcb05745f21de1348987af37c9337",
+      "timestamp": "2026-09-05T21:33:07.439Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "CONFIRMAT: .pr-nav__links are display:none sub 820px (styles.css) SI nu exista niciun buton hamburger/meniu alternativ in template.html — pe mobil doar butonul \"Programare\" (.pr-nav__cta) ramane vizibil in header"
+      }
+    },
+    {
+      "index": 24,
+      "step": "appointment-form-visible",
+      "action": "scroll to #pr-appt-form",
+      "selector": null,
+      "screenshot": "25-appointment-form-visible.png",
+      "sha256": "9446da8efff23ad80901cac76af602ab39a91f9886bfd004bbb760406378e545",
+      "timestamp": "2026-09-05T21:33:08.011Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "formular local de programare vizibil"
+      }
+    },
+    {
+      "index": 25,
+      "step": "appointment-form-filled",
+      "action": "fill nume+email+data+ora",
+      "selector": null,
+      "screenshot": "26-appointment-form-filled.png",
+      "sha256": "f09576bb4452c9b9ee1b72fd95063dddbbd86a16caa133eb63fe3f7b54913468",
+      "timestamp": "2026-09-05T21:33:08.953Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "formular completat"
+      }
+    },
+    {
+      "index": 26,
+      "step": "appointment-form-submitted",
+      "action": "click #pr-appt-submit",
+      "selector": null,
+      "screenshot": "27-appointment-form-submitted.png",
+      "sha256": "7131292c0151d7def5c9c593ec43fdf448cc6caaeb1d992fe5e7ac98acea3378",
+      "timestamp": "2026-09-05T21:33:10.204Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "stare dupa trimitere POST /api/appointments"
+      }
+    },
+    {
+      "index": 27,
+      "step": "live-final-state",
+      "action": "final fullPage state",
+      "selector": null,
+      "screenshot": "28-live-final-state.png",
+      "sha256": "cef53828a3bf3bd611bf18bd50d2d5f33181dfa9610fbdbaa8c6585be5b7e039",
+      "timestamp": "2026-09-05T21:33:10.513Z",
+      "url": "http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "stare finala site live"
+      }
+    },
+    {
+      "index": 28,
+      "step": "zip-standalone-served",
+      "action": "serve extracted zip statically + open",
+      "selector": null,
+      "screenshot": "29-zip-standalone-served.png",
+      "sha256": "c733a1243a6d7bdeaa787e9993c2c5c2e2b1bfd416f9d33b2333319b48886b26",
+      "timestamp": "2026-09-05T21:33:11.352Z",
+      "url": "http://127.0.0.1:50929/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "index.html din zip servit pe port 50929"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "high",
+      "title": "Elementul de serviciu nou adaugat e complet gol (fara text default RO in titlu)",
+      "detail": "span data-hb-edit al noului serviciu are text gol: \"\" — clientul vede un card gol pana scrie el insusi ceva, spre deosebire de un placeholder gen \"Serviciu nou\"",
+      "screenshot": "13-service-item-added.png",
+      "timestamp": "2026-09-05T21:32:12.274Z"
+    },
+    {
+      "severity": "high",
+      "title": "Dupa \"+ Adaugă\", butonul de adaugare ajunge grefat/nested GRESIT in interiorul noului <li>, nu ca frate dupa <ul>",
+      "detail": "outerHTML noul <li>: <li class=\"pr-svc__card\">\n                        <h3 class=\"pr-svc__title hb-list-item\"><span data-hb-edit=\"services.4.label\" data-hb-kind=\"text\" contenteditable=\"true\" spellcheck=\"true\" style=\"\"></span><button type=\"button\" class=\"hb-remove-btn\" aria-label=\"Șterge elementul 5\">×</button></h3><button type=\"button\" class=\"hb-add-btn\">+ Adaugă</button>\n                        \n                    < — structura DOM se degradeaza progresiv la adaugari repetate.",
+      "screenshot": "13-service-item-added.png",
+      "timestamp": "2026-09-05T21:32:12.274Z"
+    },
+    {
+      "severity": "medium",
+      "title": "Lipseste JSON-LD structured data (LocalBusiness) pe pagina live",
+      "detail": "template.html are bloc <!-- @if seo.jsonLd --> dar seo.jsonLd e gol la publish prin builder-ul web (bot/flow.js buildSeo() populeaza jsonLd doar in fluxul Telegram, build.js/normalizeConfigForRender nu calculeaza seo.jsonLd deloc — doar seo.ogImage via deriveSocialImage). Deja notat ca gol cunoscut in VISION.md §4.6 (\"SEO insuficient expus\").",
+      "screenshot": "17-live-site-desktop.png",
+      "timestamp": "2026-09-05T21:33:06.867Z"
+    },
+    {
+      "severity": "medium",
+      "title": "Lipsesc complet <link rel=canonical> si <meta property=og:url> pe orice site publicat",
+      "detail": "seo.canonical apare doar ca token in build.js linia ~109 dar nu e populat NICAIERI in cod (grep confirmat) — blocul <!-- @if seo.canonical --> e mereu fals, deci ambele tag-uri lipsesc din <head> pe toate site-urile publicate prin builder-ul web, nu doar professionals.",
+      "screenshot": "17-live-site-desktop.png",
+      "timestamp": "2026-09-05T21:33:06.868Z"
+    },
+    {
+      "severity": "medium",
+      "title": "og:image / twitter:image sunt cai RELATIVE, nu absolute (incalca spec Open Graph)",
+      "detail": "continut meta: \"images/hero.jpg\" — Open Graph/Twitter Card cer URL absolut; Facebook/WhatsApp/LinkedIn/iMessage de regula NU rezolva un og:image relativ, deci preview-ul de share ar putea sa nu arate poza. Cauza: build.js deriveSocialImage() intoarce orice string brut gasit in config care se potriveste /image|photo|logo|src/i, fara sa-l rezolve fata de PUBLIC_URL.",
+      "screenshot": "17-live-site-desktop.png",
+      "timestamp": "2026-09-05T21:33:06.869Z"
+    },
+    {
+      "severity": "high",
+      "title": "Fara meniu de navigare pe mobil — linkurile Servicii/Despre/Întrebări/Contact dispar complet sub 820px",
+      "detail": ".pr-nav__links { display:none } sub 820px (templates/professionals/styles.css:109-119) si templates/professionals/template.html nu are niciun toggle/hamburger care sa le arate din nou. Pe telefon (majoritatea vizitatorilor reali) singura navigare din header e butonul CTA \"Programare\" — Servicii, Despre, Întrebări si Contact sunt accesibile DOAR prin scroll manual, fara ancore rapide.",
+      "screenshot": "mobile-nav-links-hidden.png",
+      "timestamp": "2026-09-05T21:33:07.439Z"
+    }
+  ],
+  "notes": [
+    "Server izolat pornit la http://127.0.0.1:50792 (DATA_DIR=/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/hb-audit-tu6XQy)",
+    "Timp pana la continut iframe: 139ms",
+    "Campuri fara diacritice RO (posibil ok pt cuvinte scurte/engleza tehnica): [\"hero.background\",\"instagram.url\"]",
+    "Nota design: business.name NU are camp in Details drawer (drawer contine doar campuri structurate: telefon/URL/culoare/fundal/WhatsApp/limba); tot continutul text (nume, tagline, servicii, FAQ, etc. — 93 noduri [data-hb-edit] gasite) se editeaza inline direct in iframe, cu butoane \"+ Adaugă\" inline pt liste. Pattern valid (similar Squarespace inline-edit), dar merita verificat daca e suficient de descoperibil pentru un client nefamiliarizat (vezi sectiunea critica de design).",
+    "Hero background dupa upload: linear-gradient(160deg, rgba(243, 239, 232, 0.8) 0%, rgba(243, 239, 232, 0.4) 55%, rgba(243, 239, 232, 0.6) 100%) repeat...",
+    "Culoare accent confirmata pe CTA: rgb(29, 91, 121)",
+    "wa.me href decodat OK cu diacritice: Bună ziua! Aș dori să programez o consultație și să întreb despre disponibilitat",
+    "Panoul QR WhatsApp (wa-qr) traieste in template.html/script.js pe site-ul LIVE (desktop), nu in builder — #btn-share-wa din builder e alt buton (\"Trimite pe WhatsApp\" din modalul de succes, share al linkului site-ului). Verificarea panoului QR e mutata la pasul site live.",
+    "Fara overflow orizontal detectat in preview mobil editor.",
+    "Stergere confirmata: count a revenit la 4",
+    "Textul modalului succes nu mentioneaza explicit pretul 99/29 (poate fi normal daca nu e cazul aici).",
+    "Live URL: http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/",
+    "Panou QR WhatsApp OK pe desktop live, qr img src generat.",
+    "JSON-LD gasit: 0 bloc(uri)",
+    "og:image (raw meta content): images/hero.jpg",
+    "canonical link: null | og:url: null",
+    "og:image (rezolvat absolut http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/images/hero.jpg) status: 200",
+    "Erori console filtrate (doar /api/me 401 pre-login, asteptat): 3",
+    "Fara erori console neasteptate (in afara de /api/me 401 pre-login, care e normal).",
+    "Fara request-uri 4xx/5xx neasteptate (in afara de /api/me 401 pre-login).",
+    "Link legal \"Confidențialitate\" -> http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/privacy.html status=200",
+    "Link legal \"Termeni\" -> http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/terms.html status=200",
+    "Link legal \"Cookie-uri\" -> http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/cookies.html status=200",
+    "Link legal \"Politica de cookie-uri\" -> http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/cookies.html status=200",
+    "Link legal \"Află mai mult\" -> http://127.0.0.1:50792/live/qa-professionals-audit-1788643953323/cookies.html status=200",
+    "Stare succes programare vizibila dupa submit.",
+    "=== Test-run existing automated tests relevant to this template (results captured separately in shell, not in this script) ==="
+  ],
+  "finishedAt": "2026-09-05T21:33:11.355Z"
+}

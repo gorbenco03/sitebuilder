@@ -1,0 +1,145 @@
+{
+  "lens": "Modulul nativ de calendar/rezervari (bot/calendar-native/) — declarat \"Produsul\" pe 2026-09-05",
+  "summary": "Motorul intern (engine.js + schema.js + db.js) e de departe cel mai solid lucru gasit in acest audit: masina de stari requested/confirmed cu blocare de slot prin index UNIQUE partial + tranzactie BEGIN IMMEDIATE functioneaza corect si am verificat-o live, nu doar in teste — 20 cereri simultane pe acelasi slot au produs exact 1 confirmare si 19 'reschedule_needed', zero dublu-book. Izolarea de tenant e reala si verificata live (404 curat cross-tenant, 401 pe API-ul owner fara sesiune valida), iar widget-ul public arata onestitate exemplara: cand am furat programatic slotul pe care UI-ul tocmai il avea selectat, vizitatorul a vazut corect 'Cerere inregistrata... Nu e o confirmare falsa', in romana, cu fallback de contact. Totusi, produsul asa cum e configurat azi in Dockerfile + bot/DEPLOY.md (singurul path de productie documentat) NU poate porni deloc: baza foloseste node:sqlite, un modul care nu exista in Node 20 (imaginea de baza a Dockerfile-ului), iar CMD-ul de productie nu are niciun flag experimental si niciun shim de auto-relansare (shim-ul exista doar in fisierele de test, ceea ce a mascat problema fata de suita verde de 142/144 teste). Pe langa asta, doua decizii owner-locked explicite din VISION SS8 nu sunt implementate: vizitatorul nu poate reprograma prin link-ul de gestionare (doar anula), iar retentia de 24 luni / dreptul la stergere nu au niciun cod, doar documentatie. Fata de standardul cerut in audit (Calendly/Cal.com), lipsesc si reminder-urile, atasamentul .ics, sincronizarea cu Google Calendar si conceptul de staff multiplu. Verdict: fundatia tehnica e mult peste nivel de prototip si merita pastrata, dar produsul livrat azi catre un client platitor real, pe infrastructura descrisa in repo, pur si simplu nu porneste — ceea ce face intrebarea 'e production-fit?' un NU categoric pana la fix-ul de infrastructura, chiar daca fix-ul in sine e mic si bine inteles.",
+  "score": 4,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/calendar-native",
+  "findings": [
+    {
+      "id": "CAL-001",
+      "title": "Modulul de calendar nativ e complet nefunctional pe imaginea Docker de productie (Node 20, fara node:sqlite)",
+      "severity": "critical",
+      "category": "infra",
+      "area": "backend",
+      "description": "Sistemul de stocare (VISION SS8: \"magazin relational production-fit\") e implementat corect ca SQLite prin modulul built-in node:sqlite (bot/calendar-native/db.js), dar acest modul NU exista deloc in Node 20 (a fost introdus abia in Node 22.5, experimental, in spatele flagului --experimental-sqlite). Dockerfile-ul de la radacina repo-ului, pe care bot/DEPLOY.md il declara explicit ca fiind singurul mecanism de productie (\"Railway runs the Dockerfile at the repo root\"), porneste de la `FROM node:20-alpine` si ruleaza `CMD [\"node\", \"web.js\"]` fara niciun flag experimental. bot/web.js foloseste exact acelasi `startServer` din bot/server.js pe care l-am testat eu. Niciun fisier de productie (server.js, web.js, bot.js) nu are un shim de auto-relansare cu flagul; acest shim exista DOAR in fisierele de test (bot/test/calendar-native-*.test.js foloseste spawnSync ca sa se relanseze singur cu --experimental-sqlite), ceea ce explica de ce suita de teste trece verde desi productia reala ar crapa instant. Nici package.json, nici bot/package.json nu declara `engines` care sa impuna Node >=22.5. Rezultat: la prima cerere catre orice ruta /api/calendar-native/* sau /calendar-native/*, `require('node:sqlite')` arunca `Error: No such built-in module: node:sqlite`; handler-ul global (server.js ~2904) prinde exceptia si intoarce un 500 generic (mesajul tehnic in engleza scapa neschimbat catre client pentru ca nu se potriveste cu regex-ul de scurgere de secrete). Practic, TOT track-ul declarat \"Produsul\" pe 2026-09-05 e mort la livrare in orice deployment care respecta Dockerfile-ul si DEPLOY.md din acest repo — inclusiv toate dovezile QA anterioare din 04-QA-Evidence/Calendar-Cutover/, care au fost capturate local pe Node 23.1 cu flagul manual, deci nu au validat niciodata runtime-ul de productie real.",
+      "evidence": "Dockerfile:5 `FROM node:20-alpine`; Dockerfile:31 `CMD [\"node\", \"web.js\"]` (fara --experimental-sqlite); bot/DEPLOY.md:8 \"Railway runs the `Dockerfile` at the repo root\"; bot/calendar-native/db.js:20-30 (mesaj propriu: \"run with --experimental-sqlite on Node 22.5+\"); bot/web.js:26 `require('./server.js')` (acelasi handler testat); grep \"experimental-sqlite|execArgv|spawnSync\" pe bot/server.js, bot/web.js, bot/bot.js -> zero rezultate (fara shim in productie) vs bot/test/calendar-native-engine.test.js:13-18 (shim prezent doar in test); verificat local: `node -e \"require('node:sqlite')\"` fara flag -> `No such built-in module: node:sqlite` (reprodus pe Node 23.1 si confirmat identic pe Node 22.11 instalat local prin `n`); zero `engines` in package.json/bot/package.json.",
+      "reproSteps": "1) Citeste Dockerfile:5 (`FROM node:20-alpine`) si Dockerfile ultima linie (`CMD [\"node\",\"web.js\"]`). 2) Citeste bot/DEPLOY.md sectiunea de Railway: confirma ca acest Dockerfile e singurul path de productie. 3) `node -e \"try{require('node:sqlite')}catch(e){console.log(e.message)}\"` fara flag -> `No such built-in module: node:sqlite`. 4) grep dupa `experimental-sqlite` in bot/server.js, bot/web.js, bot/bot.js -> nimic; doar fisierele de test au logica de auto-relansare cu spawnSync. 5) Concluzie: in container-ul construit din acest Dockerfile, prima cerere pe orice ruta calendar-native arunca exceptia si primeste 500.",
+      "recommendation": "Fie (a) schimba `FROM node:20-alpine` in Dockerfile la o imagine Node >=22.5 (ideal 22 LTS curent) SI adauga `--experimental-sqlite` la CMD (sau NODE_OPTIONS=--experimental-sqlite in imagine), fie (b) daca produsul trebuie sa ramana pe Node 20, inlocuieste stratul de stocare cu un driver SQLite extern (better-sqlite3 sau ceva echivalent care nu depinde de node:sqlite) inainte de a declara acest track \"gata pentru QA independent\". Adauga `engines` in package.json care sa refuze instalarea/pornirea pe o versiune Node incompatibila, si un smoke-test de boot in CI care porneste literalmente containerul din Dockerfile si loveste `GET /api/calendar-native/services?...` — nu doar testele unitare care ruleaza pe masina dezvoltatorului cu shim propriu.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-002",
+      "title": "Vizitatorul nu poate reprograma prin link-ul de gestionare — doar anula; contravine deciziei owner-locked",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "VISION.md SS8, decizia owner-locked \"Anulare / reprogramare\": \"Visitor: poate anula/reprograma doar cu token-ul de gestionare primit pe email\". In implementare, `bot/calendar-native/manage-api.js` expune DOAR `getBookingByToken` si `cancelByToken` — nu exista nicio functie de reschedule pentru vizitator. `bot/server.js` nu are nicio ruta de tipul `POST /api/calendar-native/manage/reschedule`. UI-ul vizitatorului (`bot/calendar-native/manage/manage.js`, functia `renderBooking`) randeaza un singur buton, \"Anulează programarea\" — niciun buton sau flux de reprogramare. Singura cale de reprogramare implementata e prin dashboard-ul owner (`rescheduleBookingAsOwner` / `PUT .../reschedule`), la care vizitatorul nu are acces. Practic vizitatorul care vrea sa mute ora trebuie sa anuleze si sa faca o rezervare noua de la zero (pierzand nota/istoricul), ceea ce e o experienta inferioara oricarui produs de booking modern (Calendly/Cal.com permit ambele din acelasi link) si nu respecta decizia owner explicit \"obligatorie la implementare\".",
+      "evidence": "bot/calendar-native/manage-api.js:100-105 (module.exports: doar getBookingByToken, cancelByToken — fara reschedule); bot/server.js grep \"calendar-native/manage\" -> doar GET manage si POST manage/cancel, nicio ruta reschedule; bot/calendar-native/manage/manage.js:104-123 (un singur buton `data-hm-cancel`, fara echivalent de reprogramare); VISION.md linia din sectiunea \"Anulare / reprogramare\" (SS8): \"Visitor: poate anula/reprograma doar cu token-ul de gestionare\".",
+      "reproSteps": "1) Deschide orice link de manage cu token valid (`/calendar-native/manage/?token=...`) — vezi screenshot 17-manage-valid-token.png. 2) Observa ca exista doar butonul \"Anulează programarea\", niciun \"Reprogramează\". 3) grep in manage-api.js si server.js dupa \"reschedule\" -> apare doar in owner-api.js / owner-dashboard.js, niciodata legat de un token de vizitator.",
+      "recommendation": "Adauga `rescheduleByToken(db, rawToken, {startUtc, nowMs})` in manage-api.js care refoloseste `engine.rescheduleBookingAsOwner`-like logica dar scopata la booking-ul rezolvat prin token (nu prin tenant+id), respectand aceeasi fereastra `min_cancel_hours` ca la anulare; adauga ruta `POST /api/calendar-native/manage/reschedule` si un flux in manage.js care afiseaza sloturile disponibile (reutilizand acelasi generator ca widget-ul public) plus un buton \"Reprogramează\" langa \"Anulează\".",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-003",
+      "title": "Fara nicio implementare a retentiei PII de 24 luni / dreptului la stergere — doar documentat in VISION, zero cod",
+      "severity": "high",
+      "category": "data",
+      "area": "backend",
+      "description": "VISION.md SS8 blocheaza explicit, ca decizie \"obligatorie la implementare\": retentie default \"pastrate cat timp contul Professional e activ + 24 luni dupa anularea abonamentului / stergerea site-ului, apoi stergere sau anonimizare\" si \"owner poate cere stergere anticipata (drept de stergere)\". Nu exista in bot/calendar-native/ nicio urma de job programat, script de purjare, functie de anonimizare sau endpoint API prin care owner-ul sa ceara stergerea anticipata a datelor unui visitor sau a intregului tenant. `calendar_bookings` stocheaza `visitor_name`, `visitor_email`, `visitor_phone` permanent, fara TTL, fara flag de anonimizare, fara legatura cu ciclul de viata al abonamentului Stripe (nu exista niciun hook care sa citeasca evenimentul de anulare a abonamentului si sa programeze stergerea). Pentru un produs vandut in UE cu PII reale de vizitatori (nume, email, telefon), aceasta e o lacuna de conformitate reala, nu doar o nota de roadmap — mai ales ca politica de retentie e prezentata ca deja \"decisa\" si \"obligatorie\".",
+      "evidence": "grep -rn \"retention|purge|anonymiz|24.*luni|24.*month|GDPR|cron|setInterval\" pe bot/calendar-native/ -> zero rezultate; schema.js nu are nicio coloana de tip `anonymized_at` / `purge_after`; nu exista niciun endpoint owner de tip \"sterge datele acestui vizitator\" in owner-api.js.",
+      "reproSteps": "1) Citeste VISION.md sectiunea \"Date personale — minimizare si retentie\" din SS8. 2) grep dupa oricare dintre termenii de retentie/purjare in tot bot/calendar-native/ -> nimic. 3) Verifica schema.js (SCHEMA_SQL_V1/V2) -> nicio coloana sau tabela legata de ciclul de viata al datelor dupa anulare.",
+      "recommendation": "Implementeaza un job periodic (cron intern sau ruta declansata de webhook-ul Stripe de anulare a abonamentului) care marcheaza bookingurile mai vechi de 24 luni de la anulare pentru anonimizare (sterge visitor_name/email/phone/note, pastreaza doar statisticile agregate) si un endpoint owner \"sterge datele acestui visitor la cerere\" care sa acopere dreptul la stergere GDPR mentionat explicit in VISION. Documenteaza politica reala si in privacy.html daca produsul o promoveaza catre clienti.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-004",
+      "title": "Fara concept de staff/resursa multipla — un singur calendar comun per site",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "Schema relationala (calendar_services, calendar_weekly_availability, calendar_bookings) nu are nicio coloana de staff_id / resource_id / provider_id. Disponibilitatea saptamanala si blocarea de slot sunt la nivel de (customer_id, site_id, service_id) — adica un singur \"program\" comun pentru tot site-ul, indiferent cate persoane presteaza serviciile. Pentru un salon cu 2-3 stiliste (sablonul \"portfolio\"/Salon) sau un cabinet cu mai multi practicieni, sistemul nu poate reprezenta \"Ana e libera la 10:00 dar Maria e ocupata\" — orice rezervare pe un serviciu blocheaza acel interval pentru toata lumea. Aceasta e o limitare structurala reala fata de Calendly/Cal.com, care au conceptul de \"event type per host\" din prima zi.",
+      "evidence": "bot/calendar-native/schema.js:47-139 (SCHEMA_SQL_V1) — nicio coloana staff/resource in niciun tabel.",
+      "reproSteps": "Citeste schema.js integral; cauta \"staff\", \"resource\", \"provider\", \"employee\" -> zero rezultate.",
+      "recommendation": "Daca tinta comerciala include saloane/cabinete cu mai multi angajati, adauga un tabel `calendar_staff` si o coloana `staff_id` opționala pe servicii + bookinguri, cu fallback la comportamentul actual (un singur \"staff\" implicit) cand owner-ul nu configureaza mai multi. Documenteaza limitarea in materialele de vanzare pana atunci, ca sa nu fie vanduta gresit catre saloane multi-angajat.",
+      "effort": "L",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-005",
+      "title": "Lacune reale de feature fata de Calendly/Cal.com: fara reminder-uri, fara .ics, fara sync Google/Outlook, fara avans, fara tracking no-show",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "grep exhaustiv pe tot bot/calendar-native/ pentru ics/ICS, google calendar, reminder, no-show, deposit/prepay, multi-staff nu a gasit nicio implementare. Emailul tranzactional se trimite o singura data la crearea/schimbarea statusului bookingului — nu exista niciun reminder programat (ex. cu 24h/1h inainte), care e o functie de baza la orice tool de booking modern si reduce semnificativ no-show-urile. Nu se ataseaza fisier .ics la emailul de confirmare, deci vizitatorul nu poate adauga cu un click evenimentul in calendarul propriu. Nu exista sincronizare cu Google/Outlook Calendar pentru owner (deci owner-ul risca dublu-book intre acest sistem si calendarul lui personal daca are si programari offline). Nu exista concept de avans/depozit la rezervare (Stripe e deja integrat in produs pentru plati, dar nu si aici) si nu exista niciun tracking de no-show / rata de prezenta. Toate acestea sunt asteptari standard la nivelul \"Calendly/Cal.com\" mentionat explicit in brief-ul de audit.",
+      "evidence": "grep -rni \"ics|google.*calendar|gcal|no-show|noshow|deposit|prepay|reminder|multi-staff|staff\" pe bot/calendar-native/ -> zero rezultate relevante (doar cateva potriviri accidentale pe cuvantul \"services\").",
+      "reproSteps": "grep -rni pe intreg directorul bot/calendar-native/ dupa termenii de mai sus.",
+      "recommendation": "Prioritizeaza in aceasta ordine pentru paritate minima cu asteptarile pietei: (1) atasament .ics la emailul de confirmare (cost mic, impact mare), (2) reminder email cu 24h inainte (reutilizeaza outbox-ul existent + un job de scanare periodica), (3) sincronizare Google Calendar pentru owner (OAuth + push/pull), (4) avans/depozit optional prin Stripe la rezervare pentru servicii cu risc de no-show ridicat.",
+      "effort": "L",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-006",
+      "title": "Comentarii de \"gandire cu voce tare\" nefinalizate, lasate in codul de productie din engine.js",
+      "severity": "low",
+      "category": "docs",
+      "area": "backend",
+      "description": "In `createBooking` (engine.js), intre liniile ~524-553, exista un bloc de ~30 de linii de comentarii care documenteaza procesul de gandire al autorului in timp real (\"Actually UNIQUE includes requested... That would lose the desired time... Fix: partial unique only WHERE status = 'confirmed'... Cleaner: on unique failure...\") in loc de un comentariu final, concis, care sa explice DOAR solutia adoptata. Codul functioneaza corect (verificat live prin testul de rasa), dar comentariul confunda orice viitor contributor care incearca sa inteleaga rapid de ce e proiectat asa, si sugereaza ca decizia finala nu a fost revizuita/curatata inainte de commit.",
+      "evidence": "bot/calendar-native/engine.js:524-553.",
+      "reproSteps": "Deschide engine.js si citeste comentariul dintre liniile 524 si 553.",
+      "recommendation": "Inlocuieste blocul cu 3-4 linii care explica direct regula finala: unicitatea DB acopera doar requested+confirmed; la conflict pe INSERT, al doilea booking se re-insereaza cu status reschedule_needed (exclus din indexul unic) pastrand ora dorita, deci nu pierde informatia si nu incalca niciodata unicitatea.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "CAL-007",
+      "title": "Daca modulul crapa (ex. CAL-001), eroarea tehnica bruta in engleza poate scapa direct din API catre orice client care nu e widget-ul livrat",
+      "severity": "low",
+      "category": "bug",
+      "area": "backend",
+      "description": "Handler-ul global din server.js (~2904) mascheaza doar mesajele care se potrivesc cu un regex de secrete (SERVER_SECRET, STRIPE_*, stack traces cu \"at ... (file:line:col)\"). Mesajul \"No such built-in module: node:sqlite\" sau \"Native calendar requires Node.js with node:sqlite (run with --experimental-sqlite on Node 22.5+)\" nu se potriveste cu acel regex, deci ar fi trimis ca atare, in engleza, catre orice client API (nu doar catre widget-ul propriu care are un fallback RO fix pe orice eroare/exceptie de retea). VISION SS8 cere explicit ca orice cale de eroare a backend-ului de booking sa arate \"un mesaj clar in romana\" — API-ul crud nu respecta asta by default, doar widget-ul JS livrat o repara la nivel de client.",
+      "evidence": "bot/server.js:2904-2913 (regex de leaksEnv nu acopera mesaje tehnice generice ca cel din db.js:25); bot/calendar-native/db.js:20-30 (mesajul de eroare exact).",
+      "reproSteps": "Simuleaza indisponibilitatea node:sqlite (ex. ruleaza fara --experimental-sqlite) si loveste direct `GET /api/calendar-native/services?customerId=x&siteId=y` cu curl — raspunsul JSON contine mesajul tehnic in engleza, nu un mesaj RO.",
+      "recommendation": "In stratul de dispatch pentru rutele /api/calendar-native/*, prinde exceptiile de infrastructura (require esuat, DB indisponibila) separat si intoarce mereu acelasi mesaj RO onest (\"Programarile online sunt temporar indisponibile...\") indiferent de client, nu doar cand vine prin widget-ul propriu.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "strengths": [
+    "Motorul de rezervare rezista la rasa reala, verificat LIVE (nu doar in teste unitare): 20 POST simultane pe acelasi slot -> exact 1 'confirmed', 19 corect retrogradate la 'reschedule_needed', 0 erori, 0 dublu-book — combinatia index UNIQUE partial + BEGIN IMMEDIATE + revalidare de overlap functioneaza exact cum cere VISION SS8.",
+    "Onestitatea anti-fals-confirmat e dovedita end-to-end in UI-ul real, nu doar in cod: am furat programatic exact slotul pe care widget-ul il avea selectat intre incarcare si submit, iar rezultatul afisat vizitatorului a fost corect 'Cerere inregistrata... Intervalul ales nu a putut fi confirmat automat... Nu e o confirmare falsa' — comportament mai onest decat multe produse de booking reale.",
+    "Izolarea de tenant verificata live prin API, nu doar prin cod citit: interogarea serviciilor unui tenant B neconfigurat intoarce 404 curat fara nicio scurgere de date de la tenant A; dashboard-ul owner intoarce 401 atat fara sesiune cat si cu un cookie de sesiune falsificat; codul sursa leaga dur customer_id de session.userId (owner-api.js:75).",
+    "Dashboard-ul owner e utilizabil la 390px fara scroll orizontal si fara controale taiate (verificat programatic: scrollWidth <= clientWidth); actiunea de anulare din dashboard owner s-a propagat corect si instant pe pagina de manage a vizitatorului (statusul 'anulata' vizibil imediat).",
+    "Politica de retry pentru email e documentata clar si marginita: backoff exponential 1s/2s/4s/8s, maximum 5 incercari, apoi dead_letter auditat, fara drop tacut si fara secrete de productie necesare pe acest track.",
+    "Toate cele 6 teste automate specifice modulului (engine, tenant-isolation, email, cutover, owner-dashboard, public-widget) trec curat, iar copy-ul romanesc din widget e consecvent onest si include mereu un fallback de contact (WhatsApp/telefon/email) in orice stare de eroare, inclusiv email invalid si lipsa de disponibilitate."
+  ],
+  "screenshots": [
+    {
+      "file": "06-widget-desktop-confirmation.png",
+      "whatItShows": "Flux complet de booking pe widget-ul public (desktop): serviciu -> zi -> ora -> formular -> 'Programare confirmata', copy RO clar, honest despre email ('cand livrarea email este activa')."
+    },
+    {
+      "file": "22-widget-error-slot-taken-meanwhile.png",
+      "whatItShows": "Dovada live a onestitatii anti-fals-confirmat: slotul selectat de UI a fost 'furat' programatic prin API chiar inainte de submit, iar widget-ul arata corect 'Cerere inregistrata... Nu e o confirmare falsa', niciodata 'confirmat'."
+    },
+    {
+      "file": "21-widget-error-invalid-email.png",
+      "whatItShows": "Stare de eroare de validare (email invalid) cu mesaj RO clar si fallback de contact WhatsApp/telefon/email repetat sub formular."
+    },
+    {
+      "file": "12-owner-desktop-bookings-list.png",
+      "whatItShows": "Dashboard owner desktop dupa rasa de 20 rezervari simultane: 1 confirmata + 19 'reprogramare' vizibile corect, contoare (2 confirmate / 0 in asteptare / 19 reprogramare / 0 anulate)."
+    },
+    {
+      "file": "13-owner-desktop-availability-editor.png",
+      "whatItShows": "Editor de disponibilitate saptamanala + zile libere/ore speciale (blackout), nivel de finisare comparabil cu un SaaS de booking real."
+    },
+    {
+      "file": "16-owner-mobile-390-bookings-list.png",
+      "whatItShows": "Dashboard owner la 390px: fara scroll orizontal, actiuni Reprogrameaza/Anuleaza accesibile, contoare lizibile pe mobil."
+    },
+    {
+      "file": "18-manage-invalid-token.png",
+      "whatItShows": "Link de gestionare vizitator cu token invalid: mesaj RO clar 'Nu am gasit programarea pentru acest link', fara scurgere de informatie."
+    }
+  ],
+  "notRun": [
+    "Nu am reprodus efectiv esecul intr-un container Docker construit din Dockerfile-ul real (sandbox-ul de audit nu are permisiune pe docker daemon) — concluzia CAL-001 se bazeaza pe inspectia Dockerfile + DEPLOY.md + comportamentul confirmat local (de doua ori, pe Node 23.1 si Node 22.11) al node:sqlite fara flag, nu pe un build Docker efectiv executat.",
+    "Nu am testat un flux complet de reprogramare prin token de vizitator, pentru ca functia nu exista in cod (vezi CAL-002) — nu era testabil end-to-end.",
+    "Nu am parcurs cutover-ul complet prin builder-ul din browser (creare site professionals -> opt-in appointment.nativeBooking=da -> publish live -> booking pe /live/<slug>/) — m-am bazat pe testul automat calendar-native-cutover.test.js (trece) si pe evidenta anterioara deja capturata in 04-QA-Evidence/Calendar-Cutover/, in respectul bugetului de timp alocat lens-ului meu.",
+    "Nu am testat trimiterea reala de email catre o cutie postala externa — harnessul e local/memory by design (interzis sa facem apeluri reale, conform regulilor de audit).",
+    "Nu am facut un audit de accesibilitate aprofundat (screen reader real, navigare completa doar cu tastatura, contrast masurat) — am verificat doar prezenta de baza a atributelor ARIA (role=listbox, aria-label) in codul sursa.",
+    "Testul de rasa a rulat pe un singur proces Node; deoarece engine.createBooking e complet sincron, cele 20 cereri sunt partial serializate de event loop-ul JS inainte sa ajunga la interleaving real la nivel de disc — constraint-ul UNIQUE din SQLite ramane plasa reala de siguranta pentru un scenariu cu adevarat concurent (multi-worker/multi-proces), care nu a fost testat aici."
+  ]
+}

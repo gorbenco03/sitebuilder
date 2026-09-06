@@ -1,0 +1,18 @@
+{
+  "id": "afc9dc5d-060d-4aa5-940a-7a65970ed4fc",
+  "userId": "594b88ca-ab93-4701-b3d3-a5c18078dad9",
+  "templateId": "product-menu",
+  "templateVersion": 1,
+  "slug": "pc01-verify-42aa275e",
+  "projectName": "pc01-verify-42aa275e",
+  "platform": "web",
+  "status": "live",
+  "paid": true,
+  "url": "/live/pc01-verify-42aa275e/",
+  "createdAt": "2026-09-05T22:11:45.201Z",
+  "stripeCustomerId": "cus_pc01_e9dc9a8c39ed",
+  "stripeSubscriptionId": "sub_pc01_SECOND_594be7aba179",
+  "paidUntil": "2027-09-05T22:11:45.891Z",
+  "stripeSubscriptionStatus": "active",
+  "subscriptionStatus": "active"
+}

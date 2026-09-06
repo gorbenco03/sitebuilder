@@ -1,0 +1,80 @@
+[
+  {
+    "key": "business.lang",
+    "label": "Limba site-ului*",
+    "type": "select:select-one",
+    "value": "ro"
+  },
+  {
+    "key": "business.languages",
+    "label": "Limbi în care lucrezi (ex. română, engleză) — opțional",
+    "type": "input:text",
+    "value": "Română, engleză și spaniolă"
+  },
+  {
+    "key": "labels.whatsapp",
+    "label": "Etichetă link WhatsApp (secțiune contact)",
+    "type": "input:text",
+    "value": "WhatsApp"
+  },
+  {
+    "key": "hero.background",
+    "label": "Fundal deschidere",
+    "type": "input:color",
+    "value": "#f3efe8"
+  },
+  {
+    "key": "appointment.bookingUrl",
+    "label": "Link Cal.com de programări (opțional)",
+    "type": "textarea:textarea",
+    "value": ""
+  },
+  {
+    "key": "contact.phone",
+    "label": "Telefon (format internațional)",
+    "type": "input:tel",
+    "value": "+40721555014"
+  },
+  {
+    "key": "contact.whatsapp",
+    "label": "WhatsApp (cifre internaționale)",
+    "type": "input:tel",
+    "value": "40721555014"
+  },
+  {
+    "key": "contact.waMessage",
+    "label": "Mesaj precompletat WhatsApp (text simplu; diacritice OK)",
+    "type": "textarea:textarea",
+    "value": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
+  },
+  {
+    "key": "contact.addressHref",
+    "label": "Link hartă (opțional)",
+    "type": "textarea:textarea",
+    "value": ""
+  },
+  {
+    "key": "contact.instagram.url",
+    "label": "Instagram (secțiune contact)",
+    "type": "textarea:textarea",
+    "value": ""
+  },
+  {
+    "key": "contact.facebook.url",
+    "label": "Link Facebook (opțional)",
+    "type": "textarea:textarea",
+    "value": ""
+  },
+  {
+    "key": "instagram.url",
+    "label": "Profil Instagram",
+    "type": "textarea:textarea",
+    "value": ""
+  },
+  {
+    "key": "instagram.embedUrl",
+    "label": "URL feed Instafidget (opțional)",
+    "type": "textarea:textarea",
+    "value": ""
+  }
+]

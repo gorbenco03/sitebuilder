@@ -1,0 +1,10 @@
+{
+  "staticBase": "http://127.0.0.1:53255",
+  "pathname": "/",
+  "apiCallsToAppointments": [],
+  "doneVisible": true,
+  "doneTitle": "Cerere trimisă — așteaptă confirmarea",
+  "doneBody": "Consultație inițială · luni, 7 septembrie la 09:00 · stare de previzualizare locală",
+  "doneConfirm": "Am înregistrat cererea. Confirmăm disponibilitatea înainte ca întâlnirea să devină fermă.",
+  "sessionStorage": "[{\"slug\":\"\",\"appointmentTypeId\":\"consult-init\",\"appointmentTypeLabel\":\"Consultație inițială\",\"requestedStartISO\":\"2026-09-07T06:00:21.093Z\",\"timezone\":\"Europe/Bucharest\",\"durationMin\":45,\"mode\":\"online\",\"visitorName\":\"Ana Test\",\"visitorEmail\":\"ana@example.com\",\"id\":\"local-mtoxv969\",\"status\":\"requested\",\"createdAt\":\"2026-09-05T22:12:51.633Z\"}]"
+}

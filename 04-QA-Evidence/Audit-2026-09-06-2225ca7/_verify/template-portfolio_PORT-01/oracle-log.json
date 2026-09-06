@@ -1,0 +1,161 @@
+{
+  "lens": "verify-PORT-01",
+  "startedAt": "2026-09-05T22:07:27.356Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "catalog-open",
+      "action": "goto /app/",
+      "selector": null,
+      "screenshot": "01-catalog-open.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T22:07:29.197Z",
+      "url": "http://127.0.0.1:52951/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-opened-portfolio",
+      "action": "click .btn-start-tpl[data-template-id=portfolio]",
+      "selector": null,
+      "screenshot": "02-editor-opened-portfolio.png",
+      "sha256": "c8ea86cec367775db83136ab48f80f664dd6398f08f9e7ab7eebdaa839c2a567",
+      "timestamp": "2026-09-05T22:07:30.937Z",
+      "url": "http://127.0.0.1:52951/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "publish-slug-entered",
+      "action": "fill+click",
+      "selector": "#input-slug,#btn-publish-continue",
+      "screenshot": "03-publish-slug-entered.png",
+      "sha256": "224f061bcb603ba255d464d276b76d239f74acc835d5ce72c708882d98240397",
+      "timestamp": "2026-09-05T22:07:31.773Z",
+      "url": "http://127.0.0.1:52951/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "verify-port01-1788646051248"
+      }
+    },
+    {
+      "index": 3,
+      "step": "magic-link-sent",
+      "action": "fill+click",
+      "selector": "#input-email,#btn-send-magic",
+      "screenshot": "04-magic-link-sent.png",
+      "sha256": "9550ed50e6c5d910d776cb04f66b517e7df59b98046eec073a54897f894f4c08",
+      "timestamp": "2026-09-05T22:07:31.987Z",
+      "url": "http://127.0.0.1:52951/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 4,
+      "step": "auth-verified-pay-visible",
+      "action": "click",
+      "selector": "#dev-link",
+      "screenshot": "05-auth-verified-pay-visible.png",
+      "sha256": "ae803bfc0636550465429a0b69018aea06e0b5e35111b51b6549fa292ecc419d",
+      "timestamp": "2026-09-05T22:07:32.221Z",
+      "url": "http://127.0.0.1:52951/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 5,
+      "step": "publish-success-modal",
+      "action": "click",
+      "selector": "#btn-pay-publish",
+      "screenshot": "06-publish-success-modal.png",
+      "sha256": "042a10f1a1494789536b8130506d76107b011212d93a382c9bb2656a174983d4",
+      "timestamp": "2026-09-05T22:07:32.446Z",
+      "url": "http://127.0.0.1:52951/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 6,
+      "step": "live-site-loaded",
+      "action": "goto",
+      "selector": null,
+      "screenshot": "07-live-site-loaded.png",
+      "sha256": "3fdf9efc3576dcff4670933fe8a4ad6e295e06e0b2af2de2287ecaf4af6ece6f",
+      "timestamp": "2026-09-05T22:07:33.219Z",
+      "url": "http://127.0.0.1:52951/live/verify-port01-1788646051248/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "http://127.0.0.1:52951/live/verify-port01-1788646051248/"
+      }
+    },
+    {
+      "index": 7,
+      "step": "live-scrolled-to-gallery",
+      "action": "scrollIntoView .collage-photo",
+      "selector": null,
+      "screenshot": "08-live-scrolled-to-gallery.png",
+      "sha256": "aa60d9e4afea0d48fc915b66ed00c5ce7ddf9e384fa82b1d4811556996f76adc",
+      "timestamp": "2026-09-05T22:07:34.404Z",
+      "url": "http://127.0.0.1:52951/live/verify-port01-1788646051248/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 8,
+      "step": "live-after-click-photo-viewport",
+      "action": "click .collage-photo",
+      "selector": ".collage-photo",
+      "screenshot": "09-live-after-click-photo-viewport.png",
+      "sha256": "aa60d9e4afea0d48fc915b66ed00c5ce7ddf9e384fa82b1d4811556996f76adc",
+      "timestamp": "2026-09-05T22:07:35.065Z",
+      "url": "http://127.0.0.1:52951/live/verify-port01-1788646051248/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "expect nothing visible if defect real"
+      }
+    },
+    {
+      "index": 9,
+      "step": "scrolled-to-lightbox-actual-position",
+      "action": "scrollTo lightbox rect.top",
+      "selector": null,
+      "screenshot": "10-scrolled-to-lightbox-actual-position.png",
+      "sha256": "4831c595f45b170f76cc63e81c0a6ae338b091f09009cb17b3ffb1515a378d82",
+      "timestamp": "2026-09-05T22:07:35.427Z",
+      "url": "http://127.0.0.1:52951/live/verify-port01-1788646051248/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "shows raw unstyled image if defect real"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "high",
+      "title": "Lightbox needen confirmat prin verificare independentă pe pagina live",
+      "detail": "{\"found\":true,\"hiddenAttr\":false,\"display\":\"block\",\"position\":\"static\",\"background\":\"rgba(0, 0, 0, 0)\",\"zIndex\":\"auto\",\"rect\":{\"top\":5840.546875,\"left\":0,\"width\":1440,\"height\":1331},\"bodyScrollHeight\":8257,\"outerHTMLSnippet\":\"<div class=\\\"lightbox\\\"><button class=\\\"lightbox-close\\\" aria-label=\\\"Închide\\\">×</button><button class=\\\"lightbox-nav lightbox-prev\\\" aria-label=\\\"Anterior\\\">‹</button><img class=\\\"lightbox-img\\\" alt=\\\"Balayage elegant în tonuri de miere\\\" src=\\\"http://127.0.0.1:52951/live/verify-port01-1788646051248/images/iv-pa\"}",
+      "screenshot": "10-scrolled-to-lightbox-actual-position.png",
+      "timestamp": "2026-09-05T22:07:35.430Z"
+    }
+  ],
+  "notes": [
+    "live URL from #success-url-link: http://127.0.0.1:52951/live/verify-port01-1788646051248/",
+    "lightbox computed style/geometry after click: {\"found\":true,\"hiddenAttr\":false,\"display\":\"block\",\"position\":\"static\",\"background\":\"rgba(0, 0, 0, 0)\",\"zIndex\":\"auto\",\"rect\":{\"top\":5840.546875,\"left\":0,\"width\":1440,\"height\":1331},\"bodyScrollHeight\":8257,\"outerHTMLSnippet\":\"<div class=\\\"lightbox\\\"><button class=\\\"lightbox-close\\\" aria-label=\\\"Închide\\\">×</button><button class=\\\"lightbox-nav lightbox-prev\\\" aria-label=\\\"Anterior\\\">‹</button><img class=\\\"lightbox-img\\\" alt=\\\"Balayage elegant în tonuri de miere\\\" src=\\\"http://127.0.0.1:52951/live/verify-port01-1788646051248/images/iv-pa\"}",
+    "served styles.css lightbox rule count (live page): {\"found\":true,\"url\":\"http://127.0.0.1:52951/live/verify-port01-1788646051248/styles.css\",\"len\":13579,\"lightboxMatches\":0}"
+  ],
+  "finishedAt": "2026-09-05T22:07:35.430Z"
+}

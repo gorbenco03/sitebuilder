@@ -1,0 +1,234 @@
+{
+  "lens": "verify-PM-02",
+  "startedAt": "2026-09-05T22:10:52.193Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "app-loaded",
+      "action": "goto /app/",
+      "selector": null,
+      "screenshot": "01-app-loaded.png",
+      "sha256": "c64c85b9e5e3cfaaada81c86e51e261f2a9b3d364bf44097c90a50d7a69af067",
+      "timestamp": "2026-09-05T22:10:54.010Z",
+      "url": "http://127.0.0.1:53112/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-opened-product-menu",
+      "action": "click .btn-start-tpl[product-menu]",
+      "selector": null,
+      "screenshot": "02-editor-opened-product-menu.png",
+      "sha256": "f8b58b3a481bedf6991affe54851eaa6e919ca0a7b40959329ed10700df2c153",
+      "timestamp": "2026-09-05T22:10:55.684Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "drawer-closed",
+      "action": "click #btn-close-drawer",
+      "selector": null,
+      "screenshot": "03-drawer-closed.png",
+      "sha256": "5928884f3f99afcbd7b7ddd1a111f584a4d4e122cebad51998cec2047a1ddaf5",
+      "timestamp": "2026-09-05T22:10:56.198Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 3,
+      "step": "before-click-add-specialitate",
+      "action": "scroll to +Adaugă (services)",
+      "selector": ".hb-add-btn",
+      "screenshot": "04-before-click-add-specialitate.png",
+      "sha256": "36069601e720969a2356c43b5e04ada912c8d80dd778db3ea1c62d5855796ada",
+      "timestamp": "2026-09-05T22:10:56.278Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 4,
+      "step": "after-click-add-specialitate",
+      "action": "click +Adaugă (services)",
+      "selector": null,
+      "screenshot": "05-after-click-add-specialitate.png",
+      "sha256": "60675497e301c1fbe46939db4350d4fb8af25d0df3c748a4e5ace4a3f96e0574",
+      "timestamp": "2026-09-05T22:10:57.208Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "before=6 after=7"
+      }
+    },
+    {
+      "index": 5,
+      "step": "new-empty-card-visible",
+      "action": "scrollIntoView new services.6.label",
+      "selector": null,
+      "screenshot": "06-new-empty-card-visible.png",
+      "sha256": "3b5dee18b72d56a5008ddeb8c69ef5ef99e20010b88aea5e65e2dd5ffb34a6c1",
+      "timestamp": "2026-09-05T22:10:57.276Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "empty card at index 6"
+      }
+    },
+    {
+      "index": 6,
+      "step": "hover-on-new-card",
+      "action": "hover li.service-card[6]",
+      "selector": null,
+      "screenshot": "07-hover-on-new-card.png",
+      "sha256": "d8d97b93c1413d35ba58339685b094882a1179664922c6a1cf39b19ee65eef03",
+      "timestamp": "2026-09-05T22:10:57.633Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "checking whether remove (x) button becomes visible"
+      }
+    },
+    {
+      "index": 7,
+      "step": "after-attempt-remove-click",
+      "action": "attempt click remove-btn at reported geometry",
+      "selector": null,
+      "screenshot": "08-after-attempt-remove-click.png",
+      "sha256": "dff88a44f999b3a0bc003fc793f4b1631df52447432133fd8edd129ffafb5fa6",
+      "timestamp": "2026-09-05T22:10:58.175Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "clicked at (25.0,1552.0); cards now=7"
+      }
+    },
+    {
+      "index": 8,
+      "step": "card-count-after-remove-attempt",
+      "action": "count cards post remove-attempt",
+      "selector": null,
+      "screenshot": "09-card-count-after-remove-attempt.png",
+      "sha256": "71aaeac1a2650932ef442638b2b0bb23db50f54464d150281d0e35f9842321df",
+      "timestamp": "2026-09-05T22:11:01.217Z",
+      "url": "http://127.0.0.1:53112/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "count=7"
+      }
+    },
+    {
+      "index": 9,
+      "step": "publish-success-modal",
+      "action": "complete test-pay publish",
+      "selector": null,
+      "screenshot": "10-publish-success-modal.png",
+      "sha256": "c2128a2048673008c6998990fdf1c98aae7480be4a76e5c1e0e0656b7bf44915",
+      "timestamp": "2026-09-05T22:11:02.064Z",
+      "url": "http://127.0.0.1:53112/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "href=http://127.0.0.1:53112/live/verify-pm02-1788646261264/"
+      }
+    },
+    {
+      "index": 10,
+      "step": "after-type-workaround-attempt",
+      "action": "click LI center + type \"Test label\"",
+      "selector": null,
+      "screenshot": "11-after-type-workaround-attempt.png",
+      "sha256": "3b8b743034d8e3079896055d3654085603806bd1aa26a2f3eb06c42a8ba60163",
+      "timestamp": "2026-09-05T22:11:03.014Z",
+      "url": "http://127.0.0.1:53112/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "li boundingBox not available"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "Inspection of newly-added services item: {\"byIdx\":{\"0\":[\"services.0.label\"],\"1\":[\"services.1.label\"],\"2\":[\"services.2.label\"],\"3\":[\"services.3.label\"],\"4\":[\"services.4.label\"],\"5\":[\"services.5.label\"],\"6\":[\"services.6.label\"]},\"maxIdx\":6,\"found\":true,\"containerTag\":\"SPAN.pm-ticket__label hb-list-item\",\"containerRect\":{\"x\":39,\"y\":1537.96875,\"w\":0,\"h\":0},\"containerDisplay\":\"block\",\"containerPosition\":\"relative\",\"liTag\":\"LI.service-card pm-ticket\",\"liRect\":{\"x\":22,\"y\":1504.96875,\"w\":365.75,\"h\":66},\"removeBtnFound\":true,\"removeBtnRect\":{\"x\":15,\"y\":1541.96875,\"w\":20,\"h\":20},\"topElementAtBtnCenter\":null,\"btnIsTopElement\":false,\"liOuterHTML\":\"<li class=\\\"service-card pm-ticket\\\" style=\\\"--reveal-delay: 390ms;\\\">\\n                        <span class=\\\"pm-ticket__stub\\\" aria-hidden=\\\"true\\\"></span>\\n                        <span class=\\\"pm-ticket__label hb-list-item\\\"><span data-hb-edit=\\\"services.6.label\\\" data-hb-kind=\\\"text\\\" contenteditable=\\\"true\\\" spellcheck=\\\"true\\\" style=\\\"\\\"></span><button type=\\\"button\\\" class=\\\"hb-remove-btn\\\" aria-label=\\\"Șterge elementul 7\\\">×</button></span><button type=\\\"button\\\" class=\\\"hb-add-btn\\\">+ Adaugă</button>\\n                        <span class=\\\"pm-ticket__perf\\\" aria-hidden=\\\"true\\\"></span>\\n                    </li>\",\"labelText\":\"\"}",
+    "Attempt to click remove button by real geometry: clicked at (25.0,1552.0); cards now=7",
+    "Playwright real .click() on scoped .hb-remove-btn: click FAILED/timed out: locator.click: Timeout 3000ms exceeded.",
+    "Card count after attempted remove click: 7 (was 7 after add)",
+    "Live page (http://127.0.0.1:53112/live/verify-pm02-1788646261264/) service-card count=7, empty-label spans=1",
+    "Attempt (post-publish) to click into LI center and type a label as a workaround: li boundingBox not available"
+  ],
+  "result": {
+    "beforeCount": 6,
+    "afterCount": 7,
+    "afterPwClickCount": 7,
+    "inspection": {
+      "byIdx": {
+        "0": [
+          "services.0.label"
+        ],
+        "1": [
+          "services.1.label"
+        ],
+        "2": [
+          "services.2.label"
+        ],
+        "3": [
+          "services.3.label"
+        ],
+        "4": [
+          "services.4.label"
+        ],
+        "5": [
+          "services.5.label"
+        ],
+        "6": [
+          "services.6.label"
+        ]
+      },
+      "maxIdx": 6,
+      "found": true,
+      "containerTag": "SPAN.pm-ticket__label hb-list-item",
+      "containerRect": {
+        "x": 39,
+        "y": 1537.96875,
+        "w": 0,
+        "h": 0
+      },
+      "containerDisplay": "block",
+      "containerPosition": "relative",
+      "liTag": "LI.service-card pm-ticket",
+      "liRect": {
+        "x": 22,
+        "y": 1504.96875,
+        "w": 365.75,
+        "h": 66
+      },
+      "removeBtnFound": true,
+      "removeBtnRect": {
+        "x": 15,
+        "y": 1541.96875,
+        "w": 20,
+        "h": 20
+      },
+      "topElementAtBtnCenter": null,
+      "btnIsTopElement": false,
+      "liOuterHTML": "<li class=\"service-card pm-ticket\" style=\"--reveal-delay: 390ms;\">\n                        <span class=\"pm-ticket__stub\" aria-hidden=\"true\"></span>\n                        <span class=\"pm-ticket__label hb-list-item\"><span data-hb-edit=\"services.6.label\" data-hb-kind=\"text\" contenteditable=\"true\" spellcheck=\"true\" style=\"\"></span><button type=\"button\" class=\"hb-remove-btn\" aria-label=\"Șterge elementul 7\">×</button></span><button type=\"button\" class=\"hb-add-btn\">+ Adaugă</button>\n                        <span class=\"pm-ticket__perf\" aria-hidden=\"true\"></span>\n                    </li>",
+      "labelText": ""
+    },
+    "clickOutcome": "clicked at (25.0,1552.0); cards now=7",
+    "pwClickResult": "click FAILED/timed out: locator.click: Timeout 3000ms exceeded.",
+    "liveCardCount": 7,
+    "liveHasEmptyCard": true,
+    "typeWorkaround": "li boundingBox not available"
+  },
+  "finishedAt": "2026-09-05T22:11:03.014Z"
+}

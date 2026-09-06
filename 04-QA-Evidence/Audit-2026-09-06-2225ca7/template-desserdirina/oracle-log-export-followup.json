@@ -1,0 +1,98 @@
+{
+  "lens": "template-desserdirina-export-followup",
+  "startedAt": "2026-09-05T21:32:30.398Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "reach-edited-draft",
+      "action": "quick edit business.name for export follow-up",
+      "selector": null,
+      "screenshot": "01-reach-edited-draft.png",
+      "sha256": "a0973c34ac7489f66e92d2dcf86bb7f9ea07715cfa230bc524c43b123b071f08",
+      "timestamp": "2026-09-05T21:32:32.862Z",
+      "url": "http://127.0.0.1:50834/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Șt. Țăndărică & Fiii"
+      }
+    },
+    {
+      "index": 1,
+      "step": "reached-paid-live",
+      "action": "publish+auth+test-pay",
+      "selector": null,
+      "screenshot": "02-reached-paid-live.png",
+      "sha256": "41bc2a269d4d644044f724d6d4cb9c6701da98664ea3cb6bc46dd5ebac93957e",
+      "timestamp": "2026-09-05T21:32:33.711Z",
+      "url": "http://127.0.0.1:50834/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "href=http://127.0.0.1:50834/live/audit-desserdirina-export-mtowfev9/"
+      }
+    },
+    {
+      "index": 2,
+      "step": "settled-after-close",
+      "action": "close success modal, wait 1s for SPA to settle",
+      "selector": null,
+      "screenshot": "03-settled-after-close.png",
+      "sha256": "fc994407f4f256fc4e6064d127f4c845e0046950479d0d39d3be5adc34469609",
+      "timestamp": "2026-09-05T21:32:34.942Z",
+      "url": "http://127.0.0.1:50834/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "about to try downloads"
+      }
+    },
+    {
+      "index": 3,
+      "step": "export-html-downloaded",
+      "action": "click #btn-download-html",
+      "selector": null,
+      "screenshot": "04-export-html-downloaded.png",
+      "sha256": "1e44bd4577ddd383e23dac4ccb787d79a6c534d46d308a60dee09413a6bd9780",
+      "timestamp": "2026-09-05T21:32:35.246Z",
+      "url": "http://127.0.0.1:50834/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "saved audit-desserdirina-export-mtowfev9.html"
+      }
+    },
+    {
+      "index": 4,
+      "step": "export-zip-downloaded",
+      "action": "click #btn-download-zip",
+      "selector": null,
+      "screenshot": "05-export-zip-downloaded.png",
+      "sha256": "feba7dd08df485db4f19f157c045622a72e76f197901842b45a9aa71e331baea",
+      "timestamp": "2026-09-05T21:32:35.564Z",
+      "url": "http://127.0.0.1:50834/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "saved audit-desserdirina-export-mtowfev9.zip"
+      }
+    },
+    {
+      "index": 5,
+      "step": "export-zip-standalone-served",
+      "action": "serve unzipped export statically + goto",
+      "selector": null,
+      "screenshot": "export-zip-standalone-served.png",
+      "sha256": null,
+      "timestamp": "2026-09-05T21:32:36.549Z",
+      "url": "http://127.0.0.1:50854/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "served on ephemeral port 50854"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "reached paid/live: http://127.0.0.1:50834/live/audit-desserdirina-export-mtowfev9/",
+    "export HTML saved: /Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-desserdirina/export.html size=4052669 bytes name=audit-desserdirina-export-mtowfev9.html",
+    "export ZIP saved: /Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-desserdirina/export.zip size=2944738 bytes name=audit-desserdirina-export-mtowfev9.zip",
+    "ZIP unpacked top-level: [\"README-EXPORT.txt\",\"collage.js\",\"cookie-banner.css\",\"cookie-banner.js\",\"cookies.html\",\"images\",\"index.html\",\"privacy.html\",\"script.js\",\"styles.css\",\"terms.html\"]",
+    "ZIP contents: index=true privacy=true terms=true cookies=true images/=true"
+  ]
+}

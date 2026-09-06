@@ -1,0 +1,161 @@
+{
+  "lens": "security-secrets-sweep",
+  "summary": "Igiena de secrete și de istoric git e curată: nu există chei Stripe/Resend/GitHub/AWS reale nici pe HEAD, nici în tot istoricul (git log -p --all -S pe toate pattern-urile cheie), iar fișierele runtime (.env, .sessions.json, .sites-map.json, .ledger.jsonl, bot.log) n-au ajuns niciodată commise. npm audit e la zero vulnerabilități în root și bot. Dincolo de asta însă, expunerea runtime are două defecte critice verificate live: fallback-ul de login fără RESEND_API_KEY returnează token-ul de autentificare oricui întreabă pentru orice email (preluare de cont fără interacțiune cu victima), iar butonul „Deconectare” nu invalidează nimic pe server — la reload complet userul rămâne autentificat cu cookie-ul vechi. La asta se adaugă lipsa totală a header-elor de securitate HTTP (CSP/XFO/HSTS/Referrer-Policy) pe orice rută și absența oricărui rate-limiting pe autentificare. Igiena de repo e neglijentă (358MB+ de PNG-uri de QA commise, .git de 282MB, 130 de branch-uri, două remote-uri distincte), deși aceasta nu afectează utilizatorii finali. Un produs la nivel Wix/Squarespace nu ar avea niciuna dintre aceste găuri de bază.",
+  "score": 4,
+  "findings": [
+    {
+      "id": "SEC-01",
+      "title": "Fallback-ul de autentificare fără RESEND_API_KEY expune token-ul de login oricărui apelant — preluare totală de cont",
+      "severity": "critical",
+      "category": "security",
+      "area": "backend",
+      "description": "bot/email.js:22-27: când RESEND_API_KEY nu e setat, sendMagicLink() nu trimite email — loghează linkul complet (cu token viu) și îl întoarce ca `devLink`. bot/server.js:855-865 (handleAuthEmail) copiază necondiționat acest `devLink` în răspunsul JSON al POST /api/auth/email, către orice apelant, pentru orice adresă de email introdusă — fără nicio verificare NODE_ENV. Spre deosebire de HIDOOK_TEST_PAY / HIDOOK_FAKE_DEPLOY / HIDOOK_ISOLATED_DEPLOY, care sunt explicit refuzate când NODE_ENV=production (bot/server.js:1683, 1849 etc.), acest fallback NU are gardă de producție. GO-LIVE.md §3.1 documentează doar simptomul UX („clientul nu primește emailul”), nu și impactul de securitate real: oricine poate obține tokenul de login al oricărui email, fără a avea acces la acea căsuță poștală.",
+      "evidence": "bot/email.js:22-27; bot/server.js:847-865; comanda curl reprodusă live: POST /api/auth/email {\"email\":\"victim-ceo@example.com\"} → 200 {\"ok\":true,\"sent\":false,\"devLink\":\"/auth/verify?token=2f5fee66...\"} (server izolat fără RESEND_API_KEY, exact condiția descrisă în GO-LIVE.md §3.1 ca eroare silențioasă la deploy real)",
+      "reproSteps": "1) Pornește serverul fără RESEND_API_KEY (exact scenariul de misconfigurare descris chiar în GO-LIVE.md §3.1). 2) POST /api/auth/email cu {\"email\":\"<orice adresă>\"}. 3) Răspunsul JSON conține `devLink` cu tokenul valid de autentificare pentru acea adresă — folosește-l direct pe GET /auth/verify?token=... și ești autentificat ca acel utilizator, fără să fi avut vreodată acces la inbox-ul lui.",
+      "recommendation": "Condiționează întoarcerea `devLink` (și logarea lui) strict de NODE_ENV !== 'production' (la fel ca testPay). În producție, la lipsa RESEND_API_KEY, întoarce 503 (\"Service unavailable\") în loc de a simula succes cu tokenul expus. Adaugă un test automat care verifică asta explicit (similar cu asserțiile deja existente în flow2-template-e2e-oracle.test.js pentru alte secrete).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-02",
+      "title": "Butonul \"Deconectare\" nu invalidează sesiunea pe server — utilizatorul rămâne autentificat 30 de zile",
+      "severity": "critical",
+      "category": "security",
+      "area": "backend",
+      "description": "builder/app.js:4460-4468 face fetch POST /api/auth/logout la click pe #btn-logout, dar bot/server.js nu expune deloc această rută (doar POST /api/auth/email și /api/auth/telegram există — grep confirmă). Fetch-ul primește 404, e ignorat într-un catch gol, iar clientul doar ascunde local badge-ul/butonul (updateUserUI(null)) și arată un toast \"Te-ai deconectat.\" — pur cosmetic. Cookie-ul hb_session (HttpOnly, SameSite=Lax, Max-Age=2592000 ≈ 30 zile, semnat HMAC fără stare pe server) nu e niciodată revocat. Nefiind server-side session store, nici nu există un mecanism de invalidare (nu doar lipsește ruta — arhitectura actuală de sesiune stateless nu suportă deloc \"sign out\" real fără o listă de revocare).",
+      "evidence": "Verificat live cu Playwright pe serverul izolat: 01-authenticated-header.png (autentificat, header arată emailul + \"Deconectare\"), 02-toast-after-logout-click.png (după click: toast \"Te-ai deconectat.\", fetch la /api/auth/logout → 404), 03-true-reload-after-logout.png (după page.reload() complet: header redevine autentificat, badge=sec-audit4@example.com, GET /api/me → 200 cu userul, cookie-ul hb_session tot prezent). Toate 3 în 04-QA-Evidence/Audit-2026-09-06-2225ca7/security-secrets-sweep/.",
+      "reproSteps": "1) Autentifică-te în /app/ prin magic link (dev-link). 2) Click pe \"Deconectare\" din header — apare toast-ul de confirmare. 3) Reîncarcă complet pagina (F5 / page.reload, nu doar schimbare de hash). 4) Header-ul arată din nou emailul și butonul Deconectare; GET /api/me întoarce userul autentificat.",
+      "recommendation": "Implementează POST /api/auth/logout pe server: la minim, șterge cookie-ul cu Set-Cookie: hb_session=; Max-Age=0. Pentru o invalidare reală (nu doar ștergerea cookie-ului din acel browser — un cookie furat rămâne valid oricum), adaugă o listă de revocare (jti/versiune de sesiune per user în registry) verificată în verifySession(). Reduce și Max-Age implicit de la 30 de zile dacă nu există revocare server-side.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-03",
+      "title": "Zero headere de securitate HTTP pe orice rută a bot-ului (fără CSP, X-Frame-Options, HSTS, Referrer-Policy, Permissions-Policy)",
+      "severity": "high",
+      "category": "security",
+      "area": "backend",
+      "description": "Testat pe /, /app/, /health, /api/config, /api/templates pe serverul izolat: niciun răspuns nu conține Content-Security-Policy, X-Frame-Options, Strict-Transport-Security, Referrer-Policy sau Permissions-Policy. Singurul header de securitate din tot bot/server.js este X-Content-Type-Options: nosniff, și doar pe cele două rute de download (export-html linia 2104, export-zip linia 2145) — nicăieri altundeva. Fără X-Frame-Options/CSP frame-ancestors, /app/ (editorul complet, inclusiv fluxul de plată) poate fi încărcat într-un <iframe> de pe orice site terț — clickjacking clasic pe butoane precum \"Publică\"/\"Continuă cu plata\".",
+      "evidence": "Output curl direct din sesiunea de audit: headere lipsă confirmate pentru toate cele 5 rute testate; grep -n \"X-Frame-Options\\|Content-Security-Policy\\|Strict-Transport-Security\\|Referrer-Policy\\|Permissions-Policy\" bot/server.js bot/*.js → 0 rezultate.",
+      "reproSteps": "curl -sD - http://127.0.0.1:<port>/app/ | grep -i 'x-frame\\|content-security\\|strict-transport' → nimic returnat.",
+      "recommendation": "Adaugă un set minim de headere globale pe fiecare răspuns: X-Frame-Options: DENY (sau CSP frame-ancestors 'none' pentru /app/), X-Content-Type-Options: nosniff peste tot, Referrer-Policy: strict-origin-when-cross-origin, Strict-Transport-Security pe originea de producție (HTTPS), și o CSP de bază pentru /app/ (script-src 'self', permițând explicit CDN-urile folosite).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-04",
+      "title": "Fără rate-limiting pe POST /api/auth/email — permite email-bombing și, combinat cu SEC-01, recoltare masivă de token-uri",
+      "severity": "high",
+      "category": "security",
+      "area": "backend",
+      "description": "10 cereri POST /api/auth/email consecutive (adrese diferite) au primit toate 200, fără nicio limitare de rată sau CAPTCHA. Fișierul GO-LIVE.md menționează RL_BUILD_PER_CHAT_HOUR / RL_BUILD_GLOBAL_DAY pentru fluxul de build din Telegram, dar nu există echivalent pentru autentificarea prin email pe web. În producție (cu RESEND_API_KEY configurat corect), asta permite oricui să bombardeze inbox-ul unei terțe persoane cu emailuri de \"magic link\" nesolicitate. Combinat cu SEC-01 (când cheia Resend lipsește), lipsa rate-limit-ului transformă bug-ul într-un vector de recoltare automată în masă a token-urilor de login pentru orice listă de emailuri.",
+      "evidence": "Output test: \"10x auth/email statuses: 200,200,200,200,200,200,200,200,200,200\" — toate acceptate instant, fără 429.",
+      "reproSteps": "for i in 1..10: curl -X POST /api/auth/email -d '{\"email\":\"test'$i'@x.com\"}' → toate 200 imediat, fără throttling per-IP sau per-email.",
+      "recommendation": "Adaugă rate-limiting per IP și per adresă de email pe /api/auth/email (ex: max 3-5 cereri/oră/email, cooldown de câteva secunde între cereri de pe același IP), reutilizând infrastructura de rate-limit deja existentă pentru fluxul Telegram (RL_BUILD_PER_CHAT_HOUR).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-05",
+      "title": "CORS deschis (reflectă orice Origin) + fără rate-limit pe /api/calendar-native/* — spam de programări de pe orice site terț",
+      "severity": "medium",
+      "category": "security",
+      "area": "calendar",
+      "description": "bot/server.js:267-281 (applyPublicCalendarCors) reflectă intenționat orice header Origin pe Access-Control-Allow-Origin pentru API-ul public de calendar, ca să poată fi apelat de pe orice domeniu unde e publicat un site (design rezonabil pentru un widget de booking embeddabil, fără credențiale/cookie-uri). Problema e că această deschidere totală nu e însoțită de niciun rate-limit vizibil pe crearea de programări/servicii — orice pagină de pe internet poate scripta cereri POST către /api/calendar-native/bookings pentru orice slug de site publicat, fără limită de volum, umplând calendarul unui client cu programări false.",
+      "evidence": "Test live: GET /api/calendar-native/services?slug=test cu Origin: https://evil.com → 400, dar cu Access-Control-Allow-Origin: https://evil.com reflectat; grep în bot/calendar-native/*.js pentru \"rate.?limit|throttle\" → 0 rezultate.",
+      "reproSteps": "curl -H 'Origin: https://evil.com' '<base>/api/calendar-native/services?slug=<slug-real>' → header CORS reflectă evil.com; nu există limitare vizibilă la crearea repetată de booking-uri către /api/calendar-native/bookings.",
+      "recommendation": "Adaugă rate-limiting per IP + per slug pe rutele de scriere din calendar-native (bookings create), și opțional un throttle mai agresiv per combinație (IP, slug, interval orar cerut) pentru a preveni umplerea artificială a sloturilor unui client.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-06",
+      "title": "Șablonul Desserdirina încarcă fonturi Google direct de la Google, necondiționat de consimțământ (expunere GDPR)",
+      "severity": "medium",
+      "category": "legal",
+      "area": "template:desserdirina",
+      "description": "templates/desserdirina/template.html:34-36 include <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"> și încarcă fontul Cormorant Garamond/Montserrat direct de pe fonts.googleapis.com / fonts.gstatic.com, în <head>, pentru fiecare vizitator, indiferent de răspunsul la bannerul de cookie. Asta trimite adresa IP a vizitatorului către Google la fiecare încărcare de pagină, înainte de orice consimțământ — exact scenariul pentru care mai multe autorități europene (inclusiv o hotărâre cunoscută în Germania, LG München) au sancționat site-uri. Celelalte 4 șabloane (product-menu, local-service, portfolio, professionals) nu au acest apel extern — nu folosesc Google Fonts de la Google.",
+      "evidence": "templates/desserdirina/template.html:34-36; grep -rln 'fonts.googleapis\\|fonts.gstatic' templates/*/template.html → doar templates/desserdirina/template.html.",
+      "reproSteps": "Deschide un site publicat cu șablonul Desserdirina și inspectează network tab: fonts.googleapis.com/css2?family=... e cerut imediat la încărcare, înainte de a apăsa \"Acceptă\" pe bannerul de cookie.",
+      "recommendation": "Auto-găzduiește fonturile local (fișiere .woff2 în templates/desserdirina/, cum probabil fac deja celelalte 4 șabloane) în loc să le încarce de pe serverele Google, eliminând transferul de date către terți fără consimțământ.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-07",
+      "title": "358MB+ de PNG-uri/video de QA commise direct în git — .git a ajuns la 282MB și crește la fiecare rulare de audit",
+      "severity": "medium",
+      "category": "infra",
+      "area": "backend",
+      "description": "04-QA-Evidence/ (361 fișiere, 358MB pe disc, toate tracked în git) și 04-Deliverables/ (57 fișiere, 31MB, tracked) conțin capturi de ecran PNG și clipuri .webm/.mp4 commise direct în istoricul git, nu doar în working tree. Suma blob-urilor din istoric pentru aceste două directoare e ~166MB doar în obiectele git (compresate), contribuind semnificativ la cele 282MB ale .git. În plus, în timpul acestei sesiuni de audit, alte 38 de PNG-uri deja tracked din 04-QA-Evidence/FullPass-63230d2/ au apărut ca \"modified\" în git status — dovadă că acest director e tratat ca un blob-store comun peste care rulează concurent mai multe agent-uri, ceea ce garantează conflicte/diff-uri binare inutile la fiecare commit viitor.",
+      "evidence": "du -sh 04-QA-Evidence → 358M (361 fișiere tracked); du -sh 04-Deliverables → 31M (57 fișiere tracked); du -sh .git → 282M; git cat-file --batch-check pe toate blob-urile din istoric arată top-20 dominat de PNG/webm/mp4 din aceste două directoare (ex. 04-Deliverables/Flow2/flow.webm 6.4MB, 04-Deliverables/Advocate-5508863/flow.mp4 2.2MB); git status --porcelain a arătat 38 de fișiere \"M\" în 04-QA-Evidence/FullPass-63230d2/ deja la începutul acestei sesiuni.",
+      "reproSteps": "du -sh .git (282M) vs. codul sursă efectiv (fără node_modules/.git/.worktrees) rămâne mult mai mic; git ls-files 04-QA-Evidence | wc -l → 361.",
+      "recommendation": "Scoate 04-QA-Evidence/ și 04-Deliverables/ din git (adaugă în .gitignore, păstrează doar findings.json/oracle-log.json text dacă e nevoie de trasabilitate) sau mută binarele pe Git LFS / un bucket extern; fă un git filter-repo pentru istoricul deja umflat dacă mărimea .git devine o problemă operațională (clone/CI lent).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-08",
+      "title": "130 de branch-uri locale și două remote-uri distincte (origin + hidook către alt owner GitHub) — risc de push greșit",
+      "severity": "low",
+      "category": "infra",
+      "area": "backend",
+      "description": "git branch | wc -l → 130 (134 incluzând remote-tracking). Repo-ul are configurate două remote-uri: origin → git@github.com:gorbenco03/sitebuilder.git și hidook → git@github.com:NikuX/lp-builder1-hidook-agency.git — doi useri GitHub diferiți. Un `git push hidook main` (upstream greșit, ușor de tastat din obișnuință) ar trimite codul într-un repo al unui terț (NikuX), nu al proprietarului produsului. Numărul mare de branch-uri locale (majoritatea, judecând după denumiri, worktree-uri de workflow terminate) sugerează lipsa unei curățări periodice.",
+      "evidence": "git remote -v → origin (gorbenco03/sitebuilder) și hidook (NikuX/lp-builder1-hidook-agency); git branch | wc -l → 130.",
+      "reproSteps": "git remote -v; git branch | wc -l.",
+      "recommendation": "Confirmă dacă remote-ul \"hidook\" mai e necesar; dacă nu, elimină-l (git remote remove hidook) pentru a elimina riscul de push accidental către alt cont. Rulează o curățare periodică de branch-uri merge-uite (git branch --merged | grep -v main | xargs git branch -d).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "SEC-09",
+      "title": ".worktrees/ ocupă 6.4GB pe disc local (38 de directoare) — corect ignorat de git, dar bloat masiv și majoritatea stale",
+      "severity": "info",
+      "category": "infra",
+      "area": "backend",
+      "description": ".worktrees/ e listat corect în .gitignore și nu are niciun fișier tracked (git ls-files .worktrees | wc -l → 0), deci nu e un risc de a ajunge în istoricul git. Însă ocupă 6.4GB pe disc local, cu 38 de subdirectoare care par a fi worktree-uri de workflow-uri Hermes încheiate de mult (flow4-toast-nav-clip, legacy-g1-flow2, of-empty-tab, etc.) — probabil node_modules duplicat de 38 de ori. Nu afectează produsul livrat, dar e spațiu risipit și crește timpul oricărei scanări full-repo (cum e și acest audit) dacă nu e exclus explicit.",
+      "evidence": "du -sh .worktrees → 6.4G; ls .worktrees | wc -l → 38; git check-ignore -v .worktrees → confirmă că e ignorat (.gitignore:27).",
+      "reproSteps": "du -sh .worktrees; git worktree list arată și worktree-uri git reale înregistrate în alte locații (/Users/Work/.hermes/worktrees/..., /private/tmp/critic-...) care nu sunt curățate cu `git worktree prune`.",
+      "recommendation": "Rulează `git worktree prune` pentru worktree-urile git reale abandonate și șterge manual directoarele .worktrees/* care nu mai corespund unui workflow activ, pentru a recupera spațiu de disc.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    },
+    {
+      "id": "SEC-10",
+      "title": "Node engine nedeclarat în package.json; Dockerfile fixează node:20-alpine, dezvoltarea locală rulează v23.1.0",
+      "severity": "low",
+      "category": "infra",
+      "area": "deploy",
+      "description": "Nici package.json (root), nici bot/package.json nu au un câmp \"engines\", deci npm nu avertizează dacă cineva instalează/dezvoltă pe o versiune de Node incompatibilă cu producția. Dockerfile-ul de deploy fixează FROM node:20-alpine, dar mediul local de dezvoltare (unde rulează și testele) e Node v23.1.0 — o diferență de 3 major-versiuni care poate ascunde regresii de comportament (ex. diferențe în fetch/undici, timere, parsere) până ajung în producție.",
+      "evidence": "grep -n '\"engines\"' package.json bot/package.json → nimic; Dockerfile:5 → FROM node:20-alpine; node -v local → v23.1.0.",
+      "reproSteps": "cat Dockerfile | grep FROM; node -v.",
+      "recommendation": "Adaugă \"engines\": { \"node\": \"20.x\" } în ambele package.json și, ideal, folosește nvm/.nvmrc local pentru a rula dezvoltarea pe aceeași major-versiune ca producția.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "strengths": [
+    "Zero secrete reale (chei Stripe live/test, Resend, GitHub, AWS, chei private) găsite pe HEAD sau în tot istoricul git (git log -p --all -S pe toate pattern-urile cheie) — tot ce apare sunt placeholder-uri în documentație și fixture-uri de test, exact cum ar trebui.",
+    "Fișierele runtime cu date reale (bot/.env, .sessions.json, .sites-map.json, .ledger.jsonl, bot.log, appointments/) sunt corect în .gitignore și n-au fost niciodată commise (git log --all --diff-filter=A confirmă 0 commit-uri).",
+    "npm audit → 0 vulnerabilități cunoscute, atât în root cât și în bot/.",
+    "Cookie-ul de sesiune e HttpOnly + SameSite=Lax (+ Secure când NODE_ENV=production sau PUBLIC_URL e https), semnat HMAC cu comparație constant-time (safeEqual/timingSafeEqual) — nu e vulnerabil la falsificare sau la citire din JS.",
+    "Token-urile de login (magic link) sunt single-use (consumeLoginToken) — nu pot fi refolosite după prima verificare.",
+    "/admin e corect gardat: fără HIDOOK_ADMIN_TOKEN setat, orice cerere (cu sau fără token greșit) primește un 404 simplu, fără scurgere de informație despre existența rutei.",
+    "Flag-urile periculoase (HIDOOK_TEST_PAY, HIDOOK_FAKE_DEPLOY, HIDOOK_ISOLATED_DEPLOY) sunt explicit dezactivate când NODE_ENV=production — verificat live: POST /api/test-pay/complete cu NODE_ENV=production → 403 corect.",
+    "Fără scurgere de stack trace la JSON invalid, body binar corupt sau URL-uri malformate (%zz, path traversal) — toate răspund curat cu mesaje de eroare generice, nu cu detalii interne.",
+    "Fără fingerprinting de versiune — niciun header Server sau X-Powered-By expus."
+  ],
+  "screenshots": [
+    { "file": "01-authenticated-header.png", "whatItShows": "Header autentificat înainte de logout: badge cu emailul (sec-audit4@example.com) și butonul \"Deconectare\" vizibile." },
+    { "file": "02-toast-after-logout-click.png", "whatItShows": "Imediat după click pe \"Deconectare\": toast \"Te-ai deconectat.\" și header revenit vizual la starea neautentificată — dar fetch-ul POST /api/auth/logout a primit 404 (rută inexistentă)." },
+    { "file": "03-true-reload-after-logout.png", "whatItShows": "După un page.reload() complet (echivalent cu redeschiderea tab-ului): header-ul arată din nou emailul și \"Deconectare\" — sesiunea nu a fost niciodată invalidată pe server, deși userul a \"dat logout\"." }
+  ],
+  "notRun": [
+    "Headerele de securitate ale unui deploy real pe Cloudflare/Vercel/Netlify pentru /live/<slug>/ nu au fost verificate — doar varianta HIDOOK_ISOLATED_DEPLOY (fișier local); provider-ul real ar putea adăuga propriile headere implicite.",
+    "Rate-limiting-ul nu a fost verificat sistematic pe toate rutele API (doar pe /api/auth/email și, indirect, pe /api/calendar-native/*) — /api/draft, /api/publish etc. nu au fost testate la volum.",
+    "Nu am folosit un scanner extern (Snyk/OSV) pe lângă npm audit — doar rezultatul npm audit local.",
+    "bot/.env nu există pe acest checkout, deci nu era nimic de citit/verificat acolo.",
+    "SRI (Subresource Integrity) și mixed-content pe fișierele exportate HTML/ZIP au fost verificate doar static (grep în șabloane), nu într-un browser real cu rețea live pe un export descărcat.",
+    "Nu am verificat reflog-uri sau stash-uri (dincolo de `git log --all`) pentru eventuale secrete istorice — improbabil relevant, dar neexclus explicit."
+  ]
+}

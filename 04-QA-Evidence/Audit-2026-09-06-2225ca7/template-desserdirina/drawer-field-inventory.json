@@ -1,0 +1,108 @@
+{
+  "fields": [
+    {
+      "key": "business.lang",
+      "label": "Limba site-ului*",
+      "tag": "SELECT",
+      "type": "select-one",
+      "value": "ro",
+      "placeholder": null
+    },
+    {
+      "key": "labels.whatsapp",
+      "label": "Etichetă WhatsApp",
+      "tag": "INPUT",
+      "type": "text",
+      "value": "WhatsApp",
+      "placeholder": null
+    },
+    {
+      "key": "hero.background",
+      "label": "Fundal deschidere (culoare sau foto)",
+      "tag": "INPUT",
+      "type": "color",
+      "value": "#1a1a1a",
+      "placeholder": null
+    },
+    {
+      "key": "hero.background",
+      "label": "Fundal deschidere (culoare sau foto)",
+      "tag": "INPUT",
+      "type": "text",
+      "value": "Poză adăugată",
+      "placeholder": "Nicio poză încă"
+    },
+    {
+      "key": "instagram.url",
+      "label": "URL Instagram",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "https://www.instagram.com/desserdirina",
+      "placeholder": null
+    },
+    {
+      "key": "instagram.embedUrl",
+      "label": "URL feed Instafidget (opțional)",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "",
+      "placeholder": null
+    },
+    {
+      "key": "contact.whatsapp",
+      "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
+      "tag": "INPUT",
+      "type": "tel",
+      "value": "40721234567",
+      "placeholder": null
+    },
+    {
+      "key": "contact.waMessage",
+      "label": "Mesaj precompletat WhatsApp (text liber; diacritice OK)",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "Bună ziua, aș dori o comandă de tort.",
+      "placeholder": null
+    },
+    {
+      "key": "contact.phone",
+      "label": "Telefon cu prefix țară",
+      "tag": "INPUT",
+      "type": "tel",
+      "value": "+40721234567",
+      "placeholder": null
+    },
+    {
+      "key": "contact.instagram.url",
+      "label": "Instagram (secțiune contact)",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "https://www.instagram.com/desserdirina",
+      "placeholder": null
+    },
+    {
+      "key": "contact.facebook.url",
+      "label": "Link Facebook (opțional)",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "https://www.facebook.com/desserdirina",
+      "placeholder": null
+    },
+    {
+      "key": "contact.addressHref",
+      "label": "Link Google Maps",
+      "tag": "TEXTAREA",
+      "type": "textarea",
+      "value": "https://maps.google.com/?q=Strada+Franceza+28+Bucuresti",
+      "placeholder": null
+    }
+  ],
+  "sectionTitles": [
+    "Despre afacere",
+    "Texte butoane și secțiuni",
+    "Culori",
+    "Prima impresie",
+    "Instagram",
+    "Contact și comenzi"
+  ]
+}

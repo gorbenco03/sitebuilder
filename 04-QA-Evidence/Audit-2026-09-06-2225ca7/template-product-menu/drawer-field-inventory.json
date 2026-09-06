@@ -1,0 +1,79 @@
+[
+  {
+    "section": "Despre afacerea ta",
+    "label": "Limba site-ului*",
+    "tag": "select",
+    "type": "select-one",
+    "value": "ro"
+  },
+  {
+    "section": "Texte butoane și secțiuni",
+    "label": "Etichetă link WhatsApp (secțiune contact)",
+    "tag": "input",
+    "type": "text",
+    "value": "WhatsApp"
+  },
+  {
+    "section": "Prima impresie",
+    "label": "Fundal deschidere*",
+    "tag": "input",
+    "type": "color",
+    "value": "#0a0a0a"
+  },
+  {
+    "section": "Instagram",
+    "label": "URL Instagram (https://www.instagram.com/...)",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": "https://www.instagram.com/casa.nord.bucuresti"
+  },
+  {
+    "section": "Instagram",
+    "label": "URL feed Instafidget (opțional)",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": ""
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
+    "tag": "input",
+    "type": "tel",
+    "value": "40721234567"
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Mesaj precompletat WhatsApp (text simplu; diacritice OK)",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": "Bună ziua, aș dori o rezervare."
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Telefon cu prefix de țară (ex. +40 721 234 567)",
+    "tag": "input",
+    "type": "tel",
+    "value": "+40721234567"
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Instagram (secțiune contact)",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": "https://www.instagram.com/casa.nord.bucuresti"
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Link Facebook (opțional)",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": "https://www.facebook.com/casanordbucuresti"
+  },
+  {
+    "section": "Contact și rezervări",
+    "label": "Link Google Maps pentru adresă",
+    "tag": "textarea",
+    "type": "textarea",
+    "value": "https://maps.google.com/?q=Str.+Herastrau+12+Bucuresti"
+  }
+]

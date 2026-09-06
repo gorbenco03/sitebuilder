@@ -1,0 +1,127 @@
+{
+  "lens": "Șablonul \"Desserdirina (cofetărie)\" — E2E complet cu screenshot-uri",
+  "summary": "Infrastructura din jurul șablonului (autentificare, plată de test, publish, export HTML/ZIP, pagini legale, SEO/JSON-LD, atribuire Hidook, integrarea WhatsApp cu QR pe desktop) e solidă și lipsită de erori — nimic din stratul de platformă nu s-a stricat. Problema reală e în șablonul desserdirina însuși: două defecte critice, reproduse determinist de mai multe ori independent, lovesc exact primele două lucruri pe care le-ar face un proprietar de cofetărie la prima editare — schimbarea pozei din hero și adăugarea/organizarea galeriei foto. (1) Orice schimbare a fundalului hero (poză sau doar culoare) prin panoul de Detalii rupe complet zona hero pe site-ul publicat și plătit — devine un dreptunghi gol, fără poză, fără tagline, fără butonul CTA \"Comandă acum\" — din cauza unei singure proprietăți CSS greșite în template.html (background-image în loc de background), unică față de celelalte 4 șabloane. (2) Adăugarea unei categorii noi de galerie urmată de ștergerea ei corupe array-ul photos al categoriei ORIGINALE (nu doar al celei noi) — pozele dispar atât din editor cât și de pe site-ul live plătit, iar serverul emite un avertisment silențios (\"@each 'photos' is not an array — skipping\") pe care proprietarul nu-l vede niciodată. Pentru un vertical unde fotografia e tot produsul (torturi, prăjituri), aceste două defecte sunt descalificante pentru un lansare comercială, deși restul experienței (texte, culori de accent, WhatsApp, plată, export) e la un nivel comercial rezonabil.",
+  "score": 4,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-desserdirina/",
+  "findings": [
+    {
+      "id": "DSD-01",
+      "title": "Fundalul hero (poză sau culoare) dispare complet pe site-ul live după orice editare — background-image invalid în CSS",
+      "severity": "critical",
+      "category": "bug",
+      "area": "template:desserdirina",
+      "description": "Panoul 'Fundal deschidere (culoare sau foto)' din Detalii compune valoarea CSS ca 'linear-gradient(...), url(...) center/cover no-repeat' (builder/app.js, composeHeroBackground(), linii 1796-1807) — sintaxă validă DOAR pentru proprietatea shorthand 'background'. Toate cele 4 celelalte șabloane (product-menu, local-service, portfolio, professionals) leagă acest câmp de 'style=\"background: {{& hero.background}}\"'. Desserdirina este SINGURUL șablon care îl leagă de 'style=\"background-image: {{& hero.background}}\"' (templates/desserdirina/template.html:57) — proprietate care NU acceptă sintaxa position/size/repeat. Rezultatul: browserul respinge întreaga declarație CSS ca invalidă și randează background-image:none. Am reprodus asta determinist de 5 ori (3 rulări complete + 2 teste izolate, cu 2 poze diferite: cn-hero.jpg și tv-a1.jpg — ambele au eșuat identic), inclusiv pe site-ul LIVE, PUBLICAT ȘI PLĂTIT (nu doar în editor). Pe lângă poză, dispar și tagline-ul și butonul CTA 'Comandă acum' din hero (probabil legate de un trigger de animație la încărcarea imaginii care nu se mai declanșează).",
+      "evidence": "templates/desserdirina/template.html:57; builder/app.js:1796-1807 (composeHeroBackground); templates/product-menu/template.html:84, templates/local-service/template.html:59, templates/portfolio/template.html:64, templates/professionals/template.html:63 (toate folosesc 'background:' nu 'background-image:'); screenshot 07-hero-photo-applied-iframe.png (editor, fundal gol roz simplu, fără poză); screenshot 09-colors-after.png (nici culoarea de fundal aleasă nu se vede în hero); screenshot live-desktop-1440.png și live-desktop-1440-fullpage.png (site LIVE plătit — hero complet gol, fără tagline, fără CTA, sute de pixeli de spațiu alb); screenshot live-mobile-390.png (aceeași problemă pe mobil — doar numele afacerii plutind în gol); oracle-log.json notes: 'hero background computed style BEFORE upload: url(...); AFTER upload: none' (de 3 ori, în 3 rulări separate); /private/tmp/.../scratchpad/repro-hero.mjs — output: 'templates/product-menu/images/tv-a1.jpg => none' și 'cn-hero.jpg => none' (confirmă că nu ține de fișierul ales).",
+      "reproSteps": "1. /app/ → acceptă cookie → alege șablonul Desserdirina. 2. În Detalii (deschis automat), la 'Fundal deschidere', apasă 'Alege o poză' și încarcă orice fotografie (sau doar schimbă culoarea din swatch-ul de lângă). 3. Observă: zona hero din iframe rămâne complet goală (fără poză, doar un gradient roz generic din alt loc din CSS). 4. Publică → autentifică (dev-link) → plată de test → 'Site-ul tău e live'. 5. Deschide URL-ul live: hero e gol, fără tagline, fără butonul 'Comandă acum', pe desktop ȘI pe mobil.",
+      "recommendation": "Fix de o linie: în templates/desserdirina/template.html:57 schimbă 'style=\"background-image: {{& hero.background}}\"' în 'style=\"background: {{& hero.background}}\"' (aliniat cu celelalte 4 șabloane). Rebuild (scripts/build-builder.js) și re-testează fluxul complet upload-poză → publish → live pentru desserdirina. Recomand și un test de regresie automat (similar cu flow2-desserdirina-layout.test.js) care verifică exact acest binding CSS pentru toate șabloanele, ca să nu mai poată aluneca vreun șablon nou pe același bug.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-02",
+      "title": "Adaugă + șterge o categorie de galerie corupe pozele categoriei ORIGINALE — galeria dispare complet de pe site-ul live plătit",
+      "severity": "critical",
+      "category": "bug",
+      "area": "template:desserdirina",
+      "description": "Din canvas (butonul '+ Adaugă' care apare inline lângă ultima categorie foto), adăugarea unei categorii noi de galerie (goală, fără poze) urmată de ștergerea ei imediată (butonul '×') NU restaurează starea inițială: categoria ORIGINALĂ (cu cele 4 poze reale din preset: torturi-1.jpg, catering-1.jpg, placinte-1.jpg, cupcakes-1.jpg) își pierde array-ul 'photos' — confirmat direct în editor (0 imagini '.collage-photo img' după add+remove, față de 4 înainte) și pe site-ul LIVE PUBLICAT ȘI PLĂTIT (0 poze randate, deși blocul de categorie gol tot apare). Numărul de categorii afișat în canvas revine corect la 1, deci proprietarul nu vede niciun semnal că ceva s-a stricat. La publish, serverul emite avertismentul silențios '@each \"photos\" is not an array — skipping' (build.js:588) — vizibil doar în consola serverului, niciodată în UI. Reprodus de 3 ori independent (o dată în fluxul complet + de 2 ori într-un test izolat minimal), 100% determinist.",
+      "evidence": "build.js:588 ('@each ... is not an array — skipping'); builder/app.js:1105-1175 (onListAdd/onListRemove); builder/edit-overlay.js:604-675 (setupListControls/detectListGroups, atașarea butoanelor +/− per grup de listă); oracle-log.json (rulare principală): 'gallery categories before=1 after=2 newTitle=\"\"' → 'gallery categories after remove=1' → mai târziu 'nu exista .collage-photo img pe pagina live'; oracle-log.json defect 'high — Imagini rupte' (fals-pozitiv parțial — vezi nota din raport, dar semnalul real e absența galeriei); /private/tmp/.../scratchpad/repro-gallery-out2.log — output determinist: 'categories before add: 1 / after add: 2 / after remove: 1 / collage photos in editor after add+remove: 0' urmat de '⚠️ @each \"photos\" is not an array — skipping' și 'LIVE collage photos count: 0'.",
+      "reproSteps": "1. Alege șablonul Desserdirina (preset-ul are 1 categorie de galerie cu 4 poze). 2. Închide Detalii ca să vezi canvas-ul. 3. Derulează la secțiunea Galerie, apasă butonul '+ Adaugă' de sub categoria existentă. 4. Apasă imediat butonul '×' de pe categoria nou-adăugată, ca s-o ștergi. 5. Verifică: numărul de categorii revine la 1 (pare OK), DAR pozele din categoria originală au dispărut din canvas. 6. Publică → autentifică → plătește → deschide site-ul live: secțiunea Galerie e goală (fără nicio fotografie).",
+      "recommendation": "Investighează onListAdd/onListRemove + detectListGroups din edit-overlay.js pentru cazul specific al unui item de listă al cărui sub-câmp 'photos' e un array gol (deci nu produce niciun element DOM cu data-hb-edit) — indexarea/gruparea pare să confunde item-ul nou (fără DOM) cu item-ul 0, ducând la ștergerea/corupția array-ului 'photos' al item-ului greșit la remove. Adaugă un test de regresie: add→remove pe gallery.categories trebuie să lase array-ul JSON byte-identic cu starea inițială. Pe termen scurt, afișează în UI un avertisment vizibil (nu doar în consola serverului) când '@each' primește o valoare non-array la publish, ca proprietarul să nu publice o galerie goală fără să știe.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-03",
+      "title": "Galeria foto (secțiunea cea mai importantă pentru o cofetărie) nu are titlu și e minusculă în layout, chiar și în starea implicită, ne-coruptă",
+      "severity": "medium",
+      "category": "design",
+      "area": "template:desserdirina",
+      "description": "Presetul RO implicit (templates/desserdirina/presets.json) trimite 'galleryTitle': '' și categoria unică cu 'title': '' și 'blurb': '' — secțiunea de galerie apare pe site fără niciun titlu, fără context, ca un bloc mic de colaj (~220px) plutind izolat, cu spații albe enorme în jur (vezi export-zip-standalone-served.png, secțiunea din mijlocul paginii). Pentru un vertical unde tocmai fotografia produsului (torturi decorate) e argumentul de vânzare, o galerie neetichetată și vizual minoră e sub standardul comercial. Schema suportă mai multe categorii numite (ex. 'Torturi', 'Nunți', 'Cupcakes'), dar presetul implicit expune o singură categorie fără nume — funcționalitatea de organizare pe categorii e complet ascunsă unui proprietar care nu citește codul.",
+      "evidence": "templates/desserdirina/presets.json (categories[0].title=\"\", blurb=\"\", galleryTitle=\"\"); screenshot export-zip-standalone-served.png (galeria mică, fără titlu, centrată cu spații mari în jur, între cardul de contact și footer).",
+      "reproSteps": "Alege șablonul Desserdirina fără nicio editare → publică → deschide site-ul live → derulează la secțiunea de sub cardul 'Comandă acum': galeria nu are titlu vizibil și ocupă un spațiu vizual disproporționat de mic față de restul paginii.",
+      "recommendation": "Populează presetul implicit cu un galleryTitle (ex. 'Galeria noastră') și cel puțin 2 categorii numite relevante pentru cofetărie (ex. 'Torturi de eveniment', 'Prăjituri de zi cu zi'), și mărește dimensiunea vizuală a colajului în CSS pentru a reflecta importanța fotografiei în acest vertical.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-04",
+      "title": "Descarcă HTML/ZIP nu produc nimic la primul click imediat după ce site-ul devine live plătit",
+      "severity": "medium",
+      "category": "bug",
+      "area": "frontend",
+      "description": "Butonul 'Adaugă un card' (plată de test) face o navigare reală de pagină (window.location.href = paymentUrl, apoi revenire prin #test-checkout=...). Imediat după ce modalul de succes arată 'Site-ul tău e live', un click pe 'Descarcă HTML' sau 'Descarcă ZIP' din bara de sus (vizibilă și ea, nu doar în spatele modalului) nu declanșează nicio descărcare (așteptare de 15-20s fără eveniment 'download'). downloadDraftHtml()/downloadDraftZip() (builder/app.js) verifică 'if (!currentUser) { showToast(...); return; }' — starea SPA (currentUser) pare să nu fie încă reîmprospătată imediat după navigarea reală declanșată de plată. Închiderea modalului de succes și o așteptare de ~1s rezolvă problema (a doua rulare a scriptului meu a funcționat din prima încercare cu acest pas în plus). Nu am putut confirma textul exact al toast-ului de eroare (nu am reușit să-l capturez înainte să dispară), dar comportamentul e reproductibil.",
+      "evidence": "builder/app.js:2488-2494 (guard 'if (!currentUser)' în downloadDraftHtml); oracle-log.json / run.mjs, prima încercare: 'page.waitForEvent: Timeout 20000ms exceeded while waiting for event \"download\"' imediat după tranziția la 'Site-ul tău e live'; run-export.mjs a doua rulare, cu închiderea modalului + wait 1s adăugate: descărcarea a reușit din prima (vezi export.html, export.zip, oracle-log din export-followup/).",
+      "reproSteps": "1. Parcurge fluxul complet publish → autentificare → plată de test, până la modalul 'Site-ul tău e live'. 2. FĂRĂ să închizi modalul, apasă imediat 'Descarcă HTML' din bara de sus (vizibilă deasupra modalului). 3. Așteaptă: nu se întâmplă nimic vizibil timp de câteva secunde. 4. Închide modalul, mai încearcă o dată după 1-2 secunde: funcționează.",
+      "recommendation": "Dezactivează vizual (sau afișează un spinner pe) butoanele Descarcă HTML/ZIP/Publică până când starea SPA post-plată (currentUser, currentSiteId) e confirmată reîncărcată, în loc să lași un buton aparent-activ care eșuează silențios la primul click.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-05",
+      "title": "Câmpurile de tip URL din Detalii (Instagram, Facebook, Google Maps, Instafidget) se randează ca zone de text multi-linie, nu ca input pe o linie",
+      "severity": "low",
+      "category": "ux",
+      "area": "frontend",
+      "description": "Inventarul complet al câmpurilor din #drawer-body (drawer-field-inventory.json) arată că instagram.url, instagram.embedUrl, contact.instagram.url, contact.facebook.url și contact.addressHref sunt randate ca elemente <textarea> (cutii de 3 rânduri), deși conțin întotdeauna un singur URL scurt pe o linie. Vizual, arată ca o cutie prea mare pentru un răspuns scurt — inconsistent cu câmpurile de telefon/culoare, care sunt input-uri pe o linie.",
+      "evidence": "drawer-field-inventory.json (tag: 'TEXTAREA', type: 'textarea' pentru cele 5 câmpuri URL enumerate mai sus); screenshot 03-drawer-inventory-fullpage.png (câmpul 'URL Instagram' apare ca o cutie de 3 rânduri).",
+      "reproSteps": "Deschide Detalii pe orice draft Desserdirina, derulează la secțiunea Instagram sau Contact și comenzi: câmpurile de URL sunt cutii text multi-linie.",
+      "recommendation": "Randează câmpurile cu type:'url' din schema.json ca <input type=\"text\"> pe o linie (ca la phone/color), nu ca <textarea>, în buildDrawerField() din builder/app.js.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-06",
+      "title": "\"Limba site-ului\" e un dropdown obligatoriu cu o singură opțiune imuabilă (Română)",
+      "severity": "low",
+      "category": "ux",
+      "area": "template:desserdirina",
+      "description": "schema.json definește business.lang ca select cu o singură opțiune ({value:'ro', label:'Română'}), marcat required. În drawer apare ca un control funcțional (dropdown/input) pe care proprietarul nu poate de fapt să-l schimbe — control mort, zgomot vizual minor într-un panou altfel bine curățat.",
+      "evidence": "templates/desserdirina/schema.json (business.lang, options: [{value:'ro'}] — o singură opțiune); drawer-field-inventory.json (business.lang, tag SELECT, value 'ro'); screenshot 03-drawer-inventory-fullpage.png (primul câmp din panou).",
+      "reproSteps": "Deschide Detalii pe Desserdirina — primul câmp vizibil e 'Limba site-ului*' cu o singură valoare posibilă.",
+      "recommendation": "Ascunde câmpul din drawer când schema are o singură opțiune (ca și pentru alte câmpuri single-choice), sau afișează-l ca text simplu needitabil ('Limba site-ului: Română') până când există mai multe limbi disponibile pentru acest șablon.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "DSD-07",
+      "title": "Puncte forte confirmate: integrarea WhatsApp, pipeline-ul publish/plată/live și export-ul HTML/ZIP funcționează curat, la nivel comercial",
+      "severity": "info",
+      "category": "ux",
+      "area": "template:desserdirina",
+      "description": "Contrabalans onest la defectele critice de mai sus: (a) linkul wa.me păstrează corect diacriticele din mesajul precompletat (verificat prin decodarea parametrului 'text'); (b) pe desktop, click pe orice link WhatsApp deschide un panou QR centrat, finit vizual, cu titlu, cod QR generat corect (SVG, 240x240, randat cu succes) și link de rezervă 'Sau deschide WhatsApp Web' — genuine UX de nivel comercial (templates/desserdirina/script.js, initWhatsAppQR); (c) fluxul complet publish → autentificare (magic link) → plată de test → live nu a produs nicio eroare de consolă, niciun request 4xx/5xx, paginile legale (privacy/terms/cookies) răspund toate 200 cu conținut RO, og:image e prezent și răspunde 200, JSON-LD e prezent, lang=\"ro\", iar atribuirea 'Build by hidook.tech powered by hidook.agency' e prezentă și corectă; (d) prețurile din tot fluxul (99€ trial, 29€/an reînnoire) sunt consistente, fără contradicții; (e) export-ul HTML și ZIP produc un site 100% funcțional, servit standalone, cu toate paginile legale, imaginile și numele editat prezente byte-perfect.",
+      "evidence": "oracle-log.json notes: 'decoded wa href text param: Bună! Aș vrea să comand un tort...'; 'WA QR panel state ... {visible:true, imgSrcLen:169975, imgNaturalWidth:240}'; 'live console errors: []'; 'live failed requests (>=400): []'; 'legal page privacy.html/terms.html/cookies.html -> status 200'; 'og:image ... -> status 200'; screenshot live-whatsapp-qr-panel.png; screenshot export-zip-standalone-served.png; export.html/export.zip (4MB/2.9MB, conțin BIZNAME și atribuirea Hidook).",
+      "reproSteps": "N/A — constatare pozitivă, vezi dovezile.",
+      "recommendation": "Păstrează acest nivel de finisare și pentru zonele defecte (hero, galerie) — infrastructura de platformă e pregătită pentru un produs comercial, doar șablonul desserdirina în sine are cele două regresii critice de mai sus.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    }
+  ],
+  "strengths": [
+    "Panoul de Detalii se deschide automat la alegerea șablonului, iar toate etichetele sunt în română corectă, cu diacritice, formulate pentru un client non-tehnic (ex. 'Numele afacerii (cofetărie, patiserie)', nu 'business.name').",
+    "Editarea inline a textului (nume afacere) în canvas e instantă și se reflectă corect peste tot unde textul cascadează (Instagram, footer).",
+    "Culorile de accent și de fundal ale paginii se aplică fidel pixel-perfect (verificat prin getComputedStyle pe gradientul CTA și pe background-color al body-ului), cu excepția specifică a hero-ului (vezi DSD-01).",
+    "Integrarea WhatsApp (link cu diacritice, panou QR pe desktop) e genuin la nivel comercial — cea mai bine finisată parte a experienței testate.",
+    "Fluxul de plată/publicare/live (autentificare, test-pay, legal, SEO, atribuire) nu a produs nicio eroare tehnică în 5 rulări complete independente.",
+    "Export-ul HTML și ZIP produc un site static complet funcțional, care se deschide standalone fără nicio dependență lipsă.",
+    "Fără overflow orizontal pe mobil (390px), nici în editor, nici pe site-ul live, nici înainte nici după editări.",
+    "Niciun text de tip 'factory' (Lorem ipsum, TODO, [object Object], nume interne de template) găsit pe site-ul live."
+  ],
+  "screenshots": [
+    { "file": "07-hero-photo-applied-iframe.png", "whatItShows": "Editor: după încărcarea unei poze noi pentru hero, zona rămâne complet goală (fără poză) — dovada vizuală directă a DSD-01" },
+    { "file": "live-desktop-1440-fullpage.png", "whatItShows": "Site LIVE, plătit, la 1440px: hero complet gol (fără poză/tagline/CTA), urmat mai jos de un card de contact și meniu bine finisate — contrast direct între zona stricată și restul paginii" },
+    { "file": "live-mobile-390.png", "whatItShows": "Site LIVE la 390px: doar numele afacerii plutind în spațiu gol, fără tagline, fără CTA, fără poză — primul ecran pe care-l vede un vizitator de telefon" },
+    { "file": "export-zip-standalone-served.png", "whatItShows": "Export ZIP servit standalone, pe un draft NEATINS de bug-urile de mai sus: hero cu poza implicită funcțională, dar galeria (mijlocul paginii) e mică, fără titlu — dovadă pentru DSD-03" },
+    { "file": "live-whatsapp-qr-panel.png", "whatItShows": "Panoul QR WhatsApp pe desktop — exemplu de funcționalitate finisată la nivel comercial (DSD-07)" },
+    { "file": "03-drawer-inventory-fullpage.png", "whatItShows": "Panoul Detalii complet — etichete RO corecte, dar și câmpul dublu 'Limba site-ului' (DSD-06) și structura URL-urilor ca textarea (DSD-05)" },
+    { "file": "09-colors-after.png", "whatItShows": "Culorile de accent/fundal aplicate corect pe text și CTA, dar hero-ul rămâne cu un gradient generic, nu cu culoarea aleasă — încă o dovadă pentru DSD-01" },
+    { "file": "19-publish-success-live.png", "whatItShows": "Modalul de succes cu copy corect (preț 99€ trial / 29€ reînnoire), fără contradicții" }
+  ],
+  "notRun": [
+    "Nu am putut instrumenta cu precizie mesajul exact al toast-ului de eroare pentru DSD-04 (a dispărut prea repede pentru a fi capturat în text) — comportamentul (fără descărcare) e totuși confirmat determinist.",
+    "Nu am investigat codul exact din edit-overlay.js/app.js care cauzează coruperea array-ului 'photos' la DSD-02 dincolo de identificarea zonei (onListAdd/onListRemove/detectListGroups) — root-cause-ul exact la nivel de linie ar necesita debugging suplimentar în cod, dincolo de bugetul de timp al acestui audit.",
+    "Nu am testat formular de programare/contact (acest șablon — desserdirina — nu are un formular local de tip 'programare'; are doar carduri de contact cu linkuri telefon/WhatsApp/Instagram/Facebook/hartă, toate verificate funcționale).",
+    "Nu am testat meniul hamburger mobil — acest șablon e o pagină unică cu scroll, fără bară de navigare/hamburger.",
+    "Nu am testat comportamentul sub Stripe real sau deploy real (Vercel/Cloudflare/Railway) — conform regulilor, am folosit exclusiv HIDOOK_TEST_PAY + HIDOOK_ISOLATED_DEPLOY pe server izolat.",
+    "Nu am reluat testele Playwright ale suitei principale (advocate-eed3ca0-repair, mobile-chrome-390-aabb) — sunt rulate izolat de orchestrator, conform instrucțiunilor."
+  ]
+}

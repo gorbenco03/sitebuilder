@@ -1,0 +1,168 @@
+{
+  "lens": "payments-commercial",
+  "startedAt": "2026-09-05T21:27:32.588Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "landing-catalog-price",
+      "action": "goto /app/, accept cookies",
+      "selector": null,
+      "screenshot": "01-landing-catalog-price.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T21:27:34.346Z",
+      "url": "http://127.0.0.1:50349/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "catalog price chip visible (isolated QA defaults to RO/EUR bucket per pricing.js)"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-opened",
+      "action": "click .btn-start-tpl product-menu",
+      "selector": null,
+      "screenshot": "02-editor-opened.png",
+      "sha256": "f8b58b3a481bedf6991affe54851eaa6e919ca0a7b40959329ed10700df2c153",
+      "timestamp": "2026-09-05T21:27:35.100Z",
+      "url": "http://127.0.0.1:50349/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor + details drawer open"
+      }
+    },
+    {
+      "index": 2,
+      "step": "publish-modal-slug",
+      "action": "fill #input-slug",
+      "selector": "#input-slug",
+      "screenshot": "03-publish-modal-slug.png",
+      "sha256": "69d2a9b82687f813a46bed4f7397c9566c5a4ff13869b83b076dde265bea0afa",
+      "timestamp": "2026-09-05T21:27:35.446Z",
+      "url": "http://127.0.0.1:50349/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "audit-pc-b110f5"
+      }
+    },
+    {
+      "index": 3,
+      "step": "auth-dev-link",
+      "action": "click #btn-send-magic",
+      "selector": null,
+      "screenshot": "04-auth-dev-link.png",
+      "sha256": "c9bcdc22fe945e8e3720f79f4015ab31ece17cfeb4419b5a4a5e5a7cc06f0fe8",
+      "timestamp": "2026-09-05T21:27:35.751Z",
+      "url": "http://127.0.0.1:50349/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev magic link shown (no RESEND configured)"
+      }
+    },
+    {
+      "index": 4,
+      "step": "trial-card-cta",
+      "action": "after magic-link login",
+      "selector": null,
+      "screenshot": "05-trial-card-cta.png",
+      "sha256": "4e020f5c32f7cfb441e88699d9319f9fb79cc53df8fb92488b32588b77786e2f",
+      "timestamp": "2026-09-05T21:27:35.878Z",
+      "url": "http://127.0.0.1:50349/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Adauga card - incepe trialul de 7 zile CTA with price"
+      }
+    },
+    {
+      "index": 5,
+      "step": "success-live-trial",
+      "action": "click #btn-pay-publish (offline test-pay)",
+      "selector": null,
+      "screenshot": "06-success-live-trial.png",
+      "sha256": "b4a630ecb9edefa071940ff95fedce43835b3b447be2dd8236d95586220ea9c0",
+      "timestamp": "2026-09-05T21:27:36.155Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Site-ul tau e live - trial de 7 zile chrome"
+      }
+    },
+    {
+      "index": 6,
+      "step": "dashboard-active-trial",
+      "action": "goto #dashboard",
+      "selector": null,
+      "screenshot": "07-dashboard-active-trial.png",
+      "sha256": "6411bacc7b5cb7b523ccfa5765b889ff1767d13c0b89a69bcec95d31bd72ecc8",
+      "timestamp": "2026-09-05T21:27:38.127Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dashboard card for the freshly-paid (trialing) site"
+      }
+    },
+    {
+      "index": 7,
+      "step": "dashboard-false-expired-active-sub",
+      "action": "reload #sites after forcing paidUntil into the past while stripeSubscriptionStatus stays active",
+      "selector": null,
+      "screenshot": "08-dashboard-false-expired-active-sub.png",
+      "sha256": "e4dda5ce177c05e20c4e78bc8344b3d3d0cdb2abff0447dbb8ef4fc503a222ec",
+      "timestamp": "2026-09-05T21:27:39.196Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "BUG: dashboard shows \"Reinnoieste hosting\" upsell for a customer Stripe already auto-renewed (status=active)"
+      }
+    },
+    {
+      "index": 8,
+      "step": "renew-button-visible",
+      "action": "locate Reinnoieste hosting button",
+      "selector": null,
+      "screenshot": "09-renew-button-visible.png",
+      "sha256": "e4dda5ce177c05e20c4e78bc8344b3d3d0cdb2abff0447dbb8ef4fc503a222ec",
+      "timestamp": "2026-09-05T21:27:39.237Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "button offers a NEW paid checkout to an already-active subscriber"
+      }
+    },
+    {
+      "index": 9,
+      "step": "dashboard-after-duplicate-renewal",
+      "action": "reload after paying the duplicate renewal",
+      "selector": null,
+      "screenshot": "10-dashboard-after-duplicate-renewal.png",
+      "sha256": "64529b4e4878c98901ba27e518a353fb397f2dbcb56ae37c544578a11da5cbed",
+      "timestamp": "2026-09-05T21:27:40.512Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "card now shows hosting-until far future again, masking that TWO subscriptions are now live on the customer card"
+      }
+    },
+    {
+      "index": 10,
+      "step": "after-cancel-portal",
+      "action": "click Anuleaza, confirm dialog",
+      "selector": null,
+      "screenshot": "11-after-cancel-portal.png",
+      "sha256": "569c355d0c5a61d04b53ee910e65d5e37c7b86e1556f9f3e073b54f51ba58d54",
+      "timestamp": "2026-09-05T21:27:41.805Z",
+      "url": "http://127.0.0.1:50349/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "offline billing-portal completes cancel; site should unpublish"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "GET /api/export-html for a customer whose Stripe subscription is genuinely active (stripeSubscriptionStatus=active) but whose locally-cached paidUntil (set once, +12mo, at first publish) has lapsed -> HTTP 402 {\"error\":\"Exportul este disponibil după activarea trialului de 7 zile sau cu un abonament activ.\",\"code\":\"EXPORT_REQUIRES_SUBSCRIPTION\"} (export blocked for a paying customer).",
+    "POST /api/sites/:id/checkout on a site whose Stripe subscription is ALREADY active -> HTTP 200 kind=renewal amountCents=2900. This issues a SECOND, independent Stripe subscription/checkout (mode=subscription, no trial, charges immediately) unrelated to the one Stripe is already auto-renewing.",
+    "Original Stripe subscription id (the one Stripe auto-bills every year via the Subscription Schedule): sub_test_cs_test_2b8920855017247502a43754. After the confused customer pays the duplicate \"Reinnoieste hosting\" checkout, registry.stripeSubscriptionId becomes: sub_test_cs_test_43ac91605433d15ac3e1ea4e (different). The original subscription reference is LOST from the app -- Stripe will keep charging it forever with zero visibility inside Hidook (not in /admin, not in the dashboard, not cancellable from the app's own billing-portal button, which now only knows the new subscription's customer/session).",
+    "GET http://127.0.0.1:50349/live/audit-pc-b110f5/ after Cancel -> HTTP 404 (expect 404 unpublished)."
+  ],
+  "finishedAt": "2026-09-05T21:27:41.808Z"
+}

@@ -1,0 +1,331 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Desserdirina",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Despre noi",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Meniu",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Comandă acum",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "",
+      "visible": false
+    },
+    {
+      "tag": "H3",
+      "text": "Deschide WhatsApp pe telefon",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "images/torturi-1.jpg",
+      "alt": "Torturi tematice de sărbătoare",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/catering-1.jpg",
+      "alt": "Platouri catering cu dulciuri asortate",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/placinte-1.jpg",
+      "alt": "Plăcinte tradiționale românești",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/cupcakes-1.jpg",
+      "alt": "Torturi mousse și cupcakes",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "WhatsApp QR",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 1,
+    "main": 1,
+    "footer": 1
+  },
+  "forms": [],
+  "contrastFails": [
+    {
+      "text": "Torturi, prăjituri și pâine artizanală",
+      "tag": "P",
+      "id": "",
+      "cls": "section-eyebrow",
+      "ratio": 3.38,
+      "threshold": 4.5,
+      "fg": "rgb(232, 88, 140)",
+      "bg": "rgb(255,255,255)",
+      "fontSize": 11.2,
+      "bold": false
+    },
+    {
+      "text": "EN",
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(209, 68, 119)",
+      "bg": "rgb(255,255,255)",
+      "fontSize": 13.6,
+      "bold": false
+    },
+    {
+      "text": "RO",
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn is-active",
+      "ratio": 3.38,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "rgb(232,88,140)",
+      "fontSize": 13.6,
+      "bold": false
+    },
+    {
+      "text": "Torturi",
+      "tag": "SUMMARY",
+      "id": "",
+      "cls": "menu-cat",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(209, 68, 119)",
+      "bg": "rgb(255,255,255)",
+      "fontSize": 22.4,
+      "bold": false
+    },
+    {
+      "text": "La comandă",
+      "tag": "SUMMARY",
+      "id": "",
+      "cls": "menu-cat",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(209, 68, 119)",
+      "bg": "rgb(255,255,255)",
+      "fontSize": 22.4,
+      "bold": false
+    },
+    {
+      "text": "Servicii și Evenimente",
+      "tag": "SUMMARY",
+      "id": "",
+      "cls": "menu-cat",
+      "ratio": 4.37,
+      "threshold": 4.5,
+      "fg": "rgb(209, 68, 119)",
+      "bg": "rgb(255,255,255)",
+      "fontSize": 22.4,
+      "bold": false
+    }
+  ],
+  "contrastUndetermined": [
+    {
+      "text": "Comandă acum",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on A.hero-cta"
+    },
+    {
+      "text": "Comandă acum",
+      "tag": "H2",
+      "id": "",
+      "cls": "section-title",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "Comandă prin WhatsApp sau vino la patise",
+      "tag": "P",
+      "id": "",
+      "cls": "contact-intro",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "+40 721 234 567",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "WhatsApp",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "@desserdirina",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "Desserdirina",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on DIV#order.contact-card"
+    },
+    {
+      "text": "Strada Franceză 28București 030105Lângă ",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "",
+      "reason": "background-image on DIV#order.contact-card"
+    }
+  ],
+  "ariaIssues": [],
+  "smallTargets": [
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn",
+      "w": 51,
+      "h": 38,
+      "text": "EN"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "cls": "menu-lang-btn is-active",
+      "w": 52,
+      "h": 38,
+      "text": "RO"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 113,
+      "h": 22,
+      "text": "Confidențialitate"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 56,
+      "h": 22,
+      "text": "Termeni"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 70,
+      "h": 22,
+      "text": "Cookie-uri"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 83,
+      "h": 16,
+      "text": "hidook.tech"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 104,
+      "h": 16,
+      "text": "hidook.agency"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 40,
+      "h": 40,
+      "text": ""
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 40,
+      "h": 40,
+      "text": ""
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 148,
+      "h": 18,
+      "text": "Politica de cookie-uri"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "hb-cookie-accept",
+      "cls": "",
+      "w": 88,
+      "h": 35,
+      "text": "Acceptă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 95,
+      "h": 19,
+      "text": "Află mai mult"
+    }
+  ],
+  "lang": "ro",
+  "title": "Desserdirina | Cofetărie & catering | București",
+  "h1Count": 1,
+  "headingSkips": []
+}

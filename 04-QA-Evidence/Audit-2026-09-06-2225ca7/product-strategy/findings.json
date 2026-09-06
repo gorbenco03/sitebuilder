@@ -1,0 +1,267 @@
+{
+  "lens": "product-strategy",
+  "summary": "Verdict onest: azi Hidook Site Builder este un generator de landing page cu 5 șabloane fixe și un panou de configurare (formular lung, câmp cu câmp), nu un constructor vizual de site-uri. Editorul nu are model de document real — nu poți adăuga, șterge sau reordona secțiuni, nu există undo/redo, nu există multipage, nu există control de tipografie, iar mecanismul de inline-edit e literalmente text-matching prin regex peste HTML randat (builder/app.js:680-737), exact cum semnalează VISION §4.6. Asta înseamnă că orice text duplicat, orice valoare sub 3 caractere sau orice text transformat de motorul de randare NU devine editabil inline — un defect structural, nu un bug izolat. Pe partea pozitivă: calendarul nativ (SQLite tenant-keyed, state machine, izolare tenant, retry email) e arhitectural mult peste nivelul restului produsului, fluxul Stripe trial→live e complet și funcțional, preview-ul mobil cu device-frame arată profesionist, iar poziționarea WhatsApp-first + RO nativ + calendar inclus e un unghi de diferențiere real pentru piața țintă (meseriași, saloane, profesioniști RO/UE) — nu toți competitorii mari au asta din cutie. Dar comparat cu bara pe care owner-ul o cere explicit (\"Wix/Squarespace-tier\", OWNER-FEEDBACK-2026-09-02 §5), produsul e la o fracțiune din suprafața funcțională așteptată: 5 șabloane fixe (vs 100+), fără canvas drag&drop, fără generare AI din descriere, fără domeniu custom self-serve (doar concierge manual — bot/webpublish.js:1033-1040 spune literal \"Contact us and we'll set it up for you\"), fără analytics, fără sitemap/SEO panel real, fără form-builder pentru lead-uri custom, fără help center in-app. Recomandarea mea: nu „rebuild total” de la zero — motorul de randare per șablon, calendarul nativ, fluxul de plată și legal-ul sunt fundații solide de păstrat — dar arhitectura editorului (document model + secțiuni + undo/redo) TREBUIE refăcută, pentru că orice altă investiție de UI deasupra regex-matching-ului actual e teren nisipos. Instafidget și Telegram nu trebuie tăiate (sunt cost redus, funcționale, diferențiatoare pentru piața asta), dar nu mai primesc timp de inginerie până când fundația editorului e rezolvată.",
+  "score": 3,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/product-strategy/",
+  "findings": [
+    {
+      "id": "PS-01",
+      "title": "Editorul nu are model de document — inline-edit se face prin regex text-matching peste HTML randat",
+      "severity": "critical",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "injectDataHb() (builder/app.js:680-737) parcurge config-ul, sortează valorile string după lungime descrescător, apoi caută fiecare valoare ca text literal în HTML-ul randat (regex `(>[^<]*?)(valoare)([^<]*?<)`) ca să-i lipească un `data-hb=\"path\"`. Valorile sub 3 caractere, cele care încep cu `data:`, `http`, `#`, `<`, sau conțin `seo.`/`background`/`gradient` sunt sărite explicit din inline-edit. Dacă două câmpuri au aceeași valoare text, doar prima apariție se leagă corect. Acesta este exact defectul structural descris în VISION §4.6 („edit mapping fragil prin regex”) — nu e o presupunere, e confirmat direct în cod.",
+      "evidence": "builder/app.js:680-737 (funcția injectDataHb); VISION.md §4.6 linia 126",
+      "reproSteps": "1. Deschide orice șablon cu două câmpuri text care ar putea avea aceeași valoare implicită (ex. un buton CTA repetat în hero și footer). 2. Editează unul din ele inline în iframe. 3. Observă că doar prima apariție din HTML primește data-hb și devine editabilă; a doua rămâne needitabilă inline (trebuie editată din drawer, dacă are câmp dedicat).",
+      "recommendation": "Rescrie randarea de template ca model de document (AST/JSON de secțiuni cu id-uri stabile per nod, nu text-matching pe HTML final). Fiecare câmp din schema.json ar trebui să injecteze `data-hb` direct la generare (server-side sau template engine), nu prin căutare de text după fapt. Aceasta e fundația de care depinde tot restul roadmap-ului (undo/redo, add/remove secțiuni).",
+      "effort": "L",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-02",
+      "title": "Fără add/remove/reorder de SECȚIUNI — doar add/remove de ITEMI în liste fixe",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "templates/professionals/schema.json definește 12 secțiuni fixe (business, labels, theme, hero, services, process, credentials, faq, appointment, contact, instagram, footer) — niciuna nu poate fi ștearsă, adăugată sau reordonată de client. Singurul \"add\" real e pe liste de itemi în interiorul unei secțiuni existente (ex. adaugă un serviciu nou în lista `services`), via SAFE_LIST_PATHS din edit-overlay.js:44 (`['services','menu','pricing','packages','steps','reviews']`). Un client care vrea să elimine secțiunea FAQ sau să adauge o secțiune de testimoniale nouă nu poate — trebuie să folosească exact scheletul de secțiuni al șablonului ales.",
+      "evidence": "templates/professionals/schema.json (12 secțiuni fixe, fără câmp `removable`/`addable`); builder/edit-overlay.js:44 SAFE_LIST_PATHS; grep fără rezultate pentru 'reorder'/'sortable'/'section.*add' în builder/app.js",
+      "reproSteps": "1. Deschide editorul pe orice șablon. 2. Deschide Details drawer. 3. Observă că secțiunile listate corespund 1:1 cu schema.json — nu există niciun buton „adaugă secțiune” sau „șterge secțiune” sau drag-handle de reordonare.",
+      "recommendation": "Introdu un model de secțiuni cu `type`, `order`, `removable: true/false` (badge-ul Hidook rămâne non-removable) — permite măcar reordonare + ascundere/afișare secțiune ca prim pas, apoi bibliotecă de blocuri reutilizabile cross-șablon ca pas doi.",
+      "effort": "L",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-03",
+      "title": "Fără undo/redo în întregul builder",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "Nicio funcție, variabilă de istoric sau shortcut Ctrl+Z nu există în builder/app.js (grep 'undo\\|redo' — zero rezultate). Orice greșeală a clientului (ștergere accidentală de item din listă, suprascriere de text) e ireversibilă în UI, singura plasă de siguranță fiind `#modal-versions` la nivel de site publicat (versiuni salvate la fiecare publish), nu la nivel de editare curentă.",
+      "evidence": "grep -in \"undo|redo\" builder/app.js → 0 rezultate; selectorul #modal-versions din listă e per-publish, nu per-editare",
+      "reproSteps": "1. În drawer, șterge un item dintr-o listă (ex. un serviciu). 2. Nu există niciun buton sau shortcut care să anuleze acțiunea înainte de următorul publish.",
+      "recommendation": "Adaugă un stack de undo/redo la nivel de config (in-memory, keyed pe draft) cu Ctrl+Z/Ctrl+Shift+Z — orice constructor de site modern (Wix, Squarespace, Framer, Webflow) are asta ca funcție de bază, nu ca extra.",
+      "effort": "M",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-04",
+      "title": "Fără control de tipografie/fonturi — clientul nu poate schimba fontul",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "Singurele referințe la `font-family` din builder/app.js sunt hardcodate în stilurile inline ale overlay-ului de editare și ale ecranelor de loading/eroare (system-ui) — nu există niciun câmp de schema de tip `font`/`typography` în niciun templates/*/schema.json. Fiecare șablon are un font-pairing fix, needitabil de client.",
+      "evidence": "grep -in 'font-family|fontFamily|typography|google font' builder/app.js templates/*/schema.json → doar hardcodări system-ui, zero câmpuri configurabile",
+      "reproSteps": "1. Deschide Details drawer pe orice șablon. 2. Caută o secțiune de tipografie/fonturi — nu există.",
+      "recommendation": "Adaugă minim 3-5 perechi de fonturi curate per șablon (heading+body), selectabile dintr-un dropdown vizual, încărcate din Google Fonts (deja whitelisted ca sursă externă). Nu construi un font-picker liber la început — un set curat e suficient pentru piața țintă.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-05",
+      "title": "Fără multi-page real — fiecare șablon e o singură pagină (secțiuni ancoră)",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "Toate cele 5 șabloane sunt one-page-scroll cu ancore (#servicii, #despre etc.) — nu există concept de pagini separate cu URL propriu (ex. /despre-noi, /galerie), nici navigație multipage în builder. Pentru multe afaceri mici (mai ales portfolio/professionals cu galerie extinsă sau blog) asta e o limitare reală vs. Wix/Squarespace/Carrd care oferă minim pagini multiple.",
+      "evidence": "grep -in 'multipage|multi-page|pages\\[' builder/app.js → 0 rezultate; toate template.html-urile din templates/*/ sunt fișiere unice cu ancore #id",
+      "reproSteps": "1. Inspectează orice templates/<id>/template.html — o singură pagină HTML cu secțiuni #ancoră, fără router sau pagini secundare.",
+      "recommendation": "Nu construi un router complex de la început — pentru piața asta (afaceri mici RO), 1-2 pagini suplimentare opționale (ex. \"Galerie\" sau \"Despre echipă\" ca pagină separată) ar acoperi 80% din nevoie. Prioritizează asta după ce modelul de document (PS-01) există, pentru că multipage fără document-model real ar dubla fragilitatea regex-ului.",
+      "effort": "L",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-06",
+      "title": "Doar 5 șabloane fixe, fără piață/bibliotecă de blocuri reutilizabile",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "template",
+      "description": "templates/registry.json listează exact 5 șabloane (product-menu, local-service, portfolio, professionals, desserdirina), fiecare cu schemă proprie și fără blocuri partajate reutilizabile cross-șablon. Competitorii de nivel Wix/Squarespace oferă 100+ șabloane sau sisteme de blocuri combinabile. Pentru un business mic care nu se regăsește exact în unul din cele 5 verticale (ex. un magazin de retail, un studio foto, o clinică veterinară), nu există opțiune potrivită.",
+      "evidence": "templates/registry.json (5 intrări); fiecare templates/<id>/schema.json e independent, fără `sections` partajate",
+      "reproSteps": "1. Deschide catalogul (#screen-templates). 2. Numără cardurile — 5 exact, fiecare cu un vertical fix.",
+      "recommendation": "Nu construi 100 de șabloane manual — investește în arhitectura pe BLOCURI (hero variants, service-grid variants, testimonial variants) reutilizabile cross-vertical, apoi generează combinații de \"șabloane\" din blocuri. E singura cale realistă să scalezi de la 5 la 30-50 fără cost linear de design.",
+      "effort": "L",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-07",
+      "title": "Fără generare/asistență AI la creare site (onboarding rămâne 100% manual)",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "bot/ai.js (913 linii) integrează Anthropic/OpenAI DOAR pentru moderare de imagini în flow-ul Telegram (`ai.moderateImages`, bot/flow.js:1017-1021) — nu există niciun apel AI pentru generare de copy inițial, sugestii de layout sau completare automată de conținut din descrierea afacerii. Competitorii moderni (Durable, 10Web, Hostinger AI Builder, Framer AI) generează un site funcțional dintr-un prompt în <60 secunde; aici clientul pornește de la un șablon gol și completează fiecare câmp manual.",
+      "evidence": "bot/ai.js:18-56 (provider config: anthropic|openai|none, folosit doar pentru moderare); bot/flow.js:1017-1021 (singurul apel real la ai.*)",
+      "reproSteps": "1. Deschide un șablon nou din catalog. 2. Toate câmpurile business.name, hero.headline etc. pornesc din presets.json generic — nimic personalizat automat din vreun input al clientului.",
+      "recommendation": "Adaugă un pas opțional \"descrie afacerea ta\" la alegerea șablonului, care pre-completează hero.headline, business.about, services list via Claude Haiku (deja integrat ca provider) — reduce timpul până la primul preview de la minute la secunde. Diferențiator real de poziționare, nu doar cosmetic.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-08",
+      "title": "Fără domeniu custom self-serve — doar concierge manual prin contact",
+      "severity": "high",
+      "category": "product-gap",
+      "area": "deploy",
+      "description": "Mesajul trimis clientului la publish (bot/webpublish.js:1033-1040) spune literal: \"Want your own domain (e.g. yourbusiness.com)? Contact us and we'll set it up for you.\" — nu există niciun flux in-app de adăugare DNS/verificare domeniu/SSL automat. README.md confirmă: \"Custom domains: concierge after launch; not required for the first happy path.\" La nivelul unui constructor \"Wix-tier\", legarea unui domeniu propriu e o funcție self-serve de bază (CNAME/verificare automată), nu un ticket de suport.",
+      "evidence": "bot/webpublish.js:1033-1040; PRODUCT.md linia 11 (\"Custom domains: concierge after launch\")",
+      "reproSteps": "1. Publică un site de test. 2. Caută o opțiune \"conectează domeniul tău\" în UI — nu există, doar mențiunea din mesajul de succes care trimite la contact manual.",
+      "recommendation": "Construiește flux self-serve: client introduce domeniul, i se arată record-urile CNAME/TXT necesare, sistemul verifică propagarea și emite SSL automat (Cloudflare API deja integrat pentru deploy — extinde-l). Chiar și o versiune minimă (fără suport pentru domenii complexe/subdomenii multiple) ar închide un gol major față de orice competitor serios.",
+      "effort": "M",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-09",
+      "title": "Fără analytics, sitemap.xml sau robots.txt indexabil — SEO practic inexistent dincolo de meta tags de bază",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "Toate site-urile publicate trimit `X-Robots-Tag: noindex, nofollow` și `<meta name=\"robots\" content=\"noindex,nofollow\">` în multiple locuri din bot/server.js (liniile 327, 540, 578, 1436) — ceea ce pare corect DOAR pentru preview-uri/draft-uri, dar grep-ul nu a găsit nicio generare de sitemap.xml sau robots.txt real pentru site-urile LIVE publicate. Nu există niciun câmp de analytics (Google Analytics/Plausible) editabil de client, nici panou SEO per-pagină (title/description per secțiune, redirects).",
+      "evidence": "grep -in 'sitemap|robots' bot/*.js → doar noindex/nofollow (draft/legal pages), fără generare sitemap.xml pentru live; grep -in 'analytics|gtag' builder/app.js bot/server.js → 0 rezultate",
+      "reproSteps": "1. Publică un site de test (HIDOOK_TEST_PAY). 2. Verifică /live/<slug>/sitemap.xml și /live/<slug>/robots.txt — necesită verificare directă pe server pentru a confirma dacă site-urile live (nu draft-urile) primesc index corect; din cod nu există generator dedicat.",
+      "recommendation": "Verifică întâi dacă site-urile LIVE (nu preview) sunt de fapt indexabile (elimină noindex doar pe /live/, păstrează-l pe preview tokenizat conform VISION §4.5). Apoi adaugă generare automată de sitemap.xml + un slot de analytics (măcar un câmp \"Google Analytics ID\" opțional) — cost mic, impact SEO real pentru clienți mici care depind de căutare locală.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-10",
+      "title": "Form builder inexistent — doar câmpuri de contact fixe, fără lead-forms custom",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "template",
+      "description": "Secțiunea `contact` din schema.json are 15 câmpuri fixe (telefon, email, adresă etc.) dar niciun șablon nu oferă un \"form builder\" unde clientul își definește propriile câmpuri de captare lead (ex. \"tip proiect\", \"buget estimat\" pentru local-service). VISION §4.6 confirmă explicit \"form builder limitat\" ca lacună cunoscută.",
+      "evidence": "templates/local-service/schema.json (fără câmpuri de tip 'form'/'custom-fields'); VISION.md §4.6 linia 129",
+      "reproSteps": "1. Deschide Details drawer pe local-service (\"Meserii\"). 2. Secțiunea de contact are doar câmpurile predefinite din schema — niciun buton \"adaugă câmp de formular\".",
+      "recommendation": "Pentru piața asta (meseriași, servicii locale), un form builder simplu cu 2-3 tipuri de câmp (text scurt, dropdown, checkbox) + notificare email la submit ar avea impact disproporționat de mare față de cost — mulți clienți vor exact asta pentru calificare de lead-uri.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-11",
+      "title": "Fără help center / documentație in-app pentru client",
+      "severity": "low",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "Nu există niciun link \"Ajutor\", \"Suport\" sau \"FAQ produs\" (diferit de FAQ-ul editabil al site-ului clientului) în builder/index.html sau server. Un client blocat (ex. nu înțelege ce e Cal.com, cum funcționează trialul) nu are unde să caute răspuns fără să contacteze direct echipa.",
+      "evidence": "grep -in 'help|support|docs' builder/index.html bot/server.js → 0 rezultate relevante (doar termenul generic 'Response helpers' din cod)",
+      "reproSteps": "1. Navighează prin tot builder-ul (#screen-templates, #screen-edit, #screen-dashboard). 2. Nu există niciun link vizibil de suport/ajutor.",
+      "recommendation": "Adaugă minim un link footer \"Ai nevoie de ajutor?\" către un ghid static (chiar și un singur doc RO cu screenshot-uri pentru pașii cheie: alegere șablon, editare, publish, export). Cost minim, reduce fricțiunea de suport.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-12",
+      "title": "Imaginile sunt stocate ca base64 direct în config-ul draft-ului, nu ca fișiere/CDN",
+      "severity": "medium",
+      "category": "performance",
+      "area": "frontend",
+      "description": "applySelectedImageFile()/applyImageDataUrl() (builder/app.js:1180-1235) convertesc imaginea uploadată direct în data-URL base64 și o scriu în config (localStorage draft + payload publish), exact cum semnalează VISION §4.6 (\"imagini base64 în config\"). Asta umflă draft-ul, încetinește localStorage (limită ~5-10MB per origine), nu beneficiază de optimizare/resize la CDN, și face payload-ul de publish inutil de mare.",
+      "evidence": "builder/app.js:1180-1236 (applyImageDataUrl, resizeImageToDataUrl); VISION.md §4.6 linia 127",
+      "reproSteps": "1. Într-un draft, adaugă 3-4 poze de rezoluție medie din Details drawer. 2. Verifică dimensiunea localStorage-ului draft-ului (DevTools → Application → Local Storage) — crește direct proporțional cu suma bytes base64 ale imaginilor.",
+      "recommendation": "Migrează la upload real către storage (fișiere reale + URL, nu base64 inline), cu optimizare/resize server-side și cache headers — exact pattern-ul deja cerut pentru imaginile de șablon în VISION §4.1 (Cache-Control/ETag), extins la imaginile încărcate de client.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-13",
+      "title": "Matrice de comparație vs competitori (Wix/Squarespace/Framer/Durable/Carrd) pe capabilitățile cheie",
+      "severity": "info",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "Rezumat comparativ (verificat din cod, nu din presupuneri): AI generare din descriere — Hidook: nu (bot/ai.js doar moderare) vs Durable/10Web: da. Șabloane — Hidook: 5 fixe vs Wix: 800+, Squarespace: 100+. Add/remove/reorder secțiuni — Hidook: nu vs toți: da. Undo/redo — Hidook: nu vs toți: da. Multipage — Hidook: nu (one-page ancoră) vs toți: da. Tipografie — Hidook: nu vs toți: da (Google Fonts picker). Teme/culori globale — Hidook: parțial (theme.primary/cream consumate real per VISION §4.2, dar fără temă completă/paletă coordonată) vs toți: da. Domeniu custom self-serve — Hidook: nu (concierge) vs toți: da (CNAME automat + SSL). Analytics — Hidook: nu vs toți: da (integrare GA/Plausible). SEO panel — Hidook: metaDescription per site, fără sitemap generator vizibil vs toți: title/desc per pagină + sitemap automat. Formulare — Hidook: câmpuri fixe vs toți: form builder. Rezervări/calendar — Hidook: DA, nativ, arhitectură solidă (SQLite tenant-keyed, state machine, izolare) — AICI Hidook e la paritate sau chiar peste unii competitori generaliști care nu au calendar inclus. E-commerce/meniu comandă online — Hidook: nu (WhatsApp contact only) vs Wix: da (cart+checkout). Preț — Hidook: 99 prim an + 29/an vs Wix Business: ~$27-32/lună (~$324-384/an), Squarespace: ~$23-49/lună — Hidook e semnificativ mai ieftin anual. Export/portabilitate — Hidook: DA, ZIP static complet, fără runtime lock-in (rar la competitori mari) — punct forte real. Integrare WhatsApp — Hidook: nativă, first-class vs competitorii generici: rar/inexistent nativ. i18n — Hidook: nu (doar RO) vs toți: da.",
+      "evidence": "Sinteză din: bot/ai.js, templates/registry.json (5 șabloane), grep-uri negative pentru undo/redo/multipage/domain/analytics, bot/calendar-native/ (arhitectură), bot/site-export.js + bot/zip.js (export static), templates/*/template.html (WhatsApp wa.me nativ)",
+      "reproSteps": "N/A — sinteză comparativă, nu un defect reproductibil punctual.",
+      "recommendation": "Poziționare corectă pentru Hidook: NU \"încearcă să fii Wix cu toate feature-urile\" (imposibil de atins cu resursele curente), CI \"cel mai simplu constructor RO-nativ cu WhatsApp+calendar incluse, la un preț de 3-5x mai mic pe an\" — un unghi de piață real (afaceri mici RO/UE care nu au nevoie de e-commerce complex, ci de prezență + programări + contact rapid). Prioritizează închiderea gap-urilor care ating această poziționare (editor solid, domeniu custom, SEO local) și acceptă conștient gap-urile care nu (e-commerce complex, 100+ șabloane, multi-limbă).",
+      "effort": "M",
+      "rebuildOrImprove": "keep"
+    },
+    {
+      "id": "PS-14",
+      "title": "Fundații solide de păstrat: calendarul nativ, fluxul de plată Stripe și export-ul static",
+      "severity": "info",
+      "category": "product-gap",
+      "area": "calendar",
+      "description": "Spre deosebire de editor, calendarul nativ (bot/calendar-native/) are decizii arhitecturale corecte documentate și implementate: constraint unic DB / lock tranzacțional pentru anti-double-book (nu optimistic-only), stocare canonică UTC, izolare tenant pe (customerId+siteId), token-uri de management unice/unguessable, harness de email cu retry/backoff fără secrete reale. Fluxul de plată (Stripe trial 7 zile → live imediat → export gated pe entitlement) e complet și verificat per commit-urile recente (f21c38c, 884ce76). Exportul ZIP e cu adevărat portabil (fără runtime Hidook necesar). Acestea NU trebuie refăcute — sunt exact tipul de fundație pe care un produs \"Wix-tier\" ar trebui să se bazeze.",
+      "evidence": "VISION.md §8 (decizii owner-locked calendar); bot/calendar-native/; git log (884ce76 merge calendar v2 cutover, f21c38c remediere 11 defecte QA); VISION.md §6 (export)",
+      "reproSteps": "N/A — constatare de arhitectură pozitivă, verificată din documentație + istoricul de commit-uri.",
+      "recommendation": "Nu realoca efort de inginerie de la editor către mai multe funcții de calendar/plăți în acest moment — sunt deja la un nivel de maturitate mai mare decât restul produsului. Reutilizează modelul de arhitectură (tenant isolation, state machine, oracle de izolare) ca șablon de calitate pentru rebuild-ul editorului.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    },
+    {
+      "id": "PS-15",
+      "title": "Foaie de parcurs pe 3 orizonturi — de la \"generator de landing page\" la \"constructor real\"",
+      "severity": "info",
+      "category": "product-gap",
+      "area": "frontend",
+      "description": "ORIZONT 1 (0-4 săptămâni, quick wins, impact mare/efort mic): (a) elimină noindex de pe site-urile LIVE dacă e cazul + adaugă sitemap.xml generat automat [S]; (b) adaugă 3-5 perechi de fonturi curate selectabile per șablon [S]; (c) adaugă câmp opțional Google Analytics ID [S]; (d) adaugă link \"Ajutor\" cu ghid static RO [S]; (e) rezolvă duplicarea de cookie banner observată (vezi PS-16). ORIZONT 2 (1-3 luni, fundație structurală, impact mare/efort mare): (a) rescrie randarea de template ca model de document cu id-uri stabile per câmp (elimină regex text-matching, PS-01) [L]; (b) construiește undo/redo pe config draft [M]; (c) permite reordonare + ascundere de secțiuni existente (nu încă add/remove complet) [M]; (d) migrează imaginile de la base64-în-config la upload real cu storage/CDN [M]; (e) flux self-serve de domeniu custom (CNAME + verificare + SSL automat) [M]. ORIZONT 3 (3-6 luni, diferențiere reală, impact mare/efort mare): (a) generare AI de conținut inițial din descrierea afacerii (Claude Haiku deja integrat ca provider) [M]; (b) arhitectură pe blocuri reutilizabile cross-șablon → extinde de la 5 la 20-30 de combinații fără cost linear de design [L]; (c) form builder simplu (2-3 tipuri de câmp) pentru lead-uri custom per vertical [M]; (d) multipage minimal (1-2 pagini suplimentare opționale) construit PESTE modelul de document din Orizont 2, nu peste regex-ul vechi [L].",
+      "evidence": "Sinteză bazată pe PS-01 până la PS-12 de mai sus + VISION §4.6 + OWNER-FEEDBACK-2026-09-02 §5",
+      "reproSteps": "N/A — plan de acțiune, nu defect.",
+      "recommendation": "Nu începe Orizontul 3 înainte ca Orizontul 2(a) [modelul de document] să fie stabil — orice funcție de UI construită peste regex-ul actual (multipage, add/remove secțiuni) va trebui rescrisă a doua oară. Secvențiază strict: fundație întâi, diferențiere după.",
+      "effort": "L",
+      "rebuildOrImprove": "rebuild"
+    },
+    {
+      "id": "PS-16",
+      "title": "Două banner-e de cookie diferite observate în aceeași sesiune de browser (text și stil diferite)",
+      "severity": "medium",
+      "category": "ux",
+      "area": "legal",
+      "description": "Pe ecranul de catalog banner-ul de cookie afișează textul \"Folosim stocare esențială în browser ca să rămâi conectat și să păstrezi progresul ciornei\" cu link \"Cookie-uri\" (screenshot 01), iar după intrarea în editor apare UN AL DOILEA banner cu text diferit: \"Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). Politica de cookie-uri\" (screenshot 03) — deci fie există două implementări de consent necoordonate, fie primul click nu a persistat corect starea „acceptat” la navigare. În plus, `git status` la începutul acestui audit arată fișiere netracked la rădăcina repo-ului (`cookie-banner.css`, `cookie-banner.js`, `cookies.html`, `privacy.html`, `terms.html`) care nu par legate din niciun șablon verificat — semn de lucru legal în curs, neconsolidat într-un singur sistem.",
+      "evidence": "04-QA-Evidence/Audit-2026-09-06-2225ca7/product-strategy/01-catalog-landing.png vs 03-editor-with-details-drawer.png (text banner diferit); git status la începutul sesiunii (fișiere netracked cookie-banner.css/js, cookies.html, privacy.html, terms.html în rădăcina repo)",
+      "reproSteps": "1. Deschide /app/, acceptă cookie banner-ul de pe ecranul de catalog. 2. Selectează un șablon și intră în editor. 3. Observă apariția unui AL DOILEA banner de cookie cu text diferit de primul.",
+      "recommendation": "Consolidează într-o singură implementare de cookie consent (un singur banner, un singur set de chei localStorage, folosit consecvent pe toate ecranele builder-ului) și clarifică dacă fișierele netracked de la rădăcina repo (cookie-banner.js/css, cookies.html etc.) sunt versiunea curentă intenționată sau artefacte de lucru abandonate — verifică cu echipa de legal/Flow 3 înainte de a le integra sau șterge.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PS-17",
+      "title": "Telegram și Instafidget: nu se taie, dar nu mai primesc investiție de inginerie până la rezolvarea fundației editorului",
+      "severity": "info",
+      "category": "product-gap",
+      "area": "telegram",
+      "description": "Telegram (bot/bot.js + bot/flow.js) e doar acquisition/intake care deschide același draft (per VISION §1) — cost de mentenanță redus, funcțional, și potențial diferențiator real pentru piața RO unde multe afaceri mici comunică deja prin aplicații de mesagerie. Instafidget e un produs partener conectat (feed Instagram, 12 luni gratuit apoi watermark) — funcțional conform testului manual (modalul \"Adaugă Instagram\" apare corect, screenshot 08), dar e o dependență externă pentru o funcție de social-proof care ar putea fi construită nativ mai ieftin pe termen lung (Instagram Basic Display/Graph API).",
+      "evidence": "VISION.md §1 (Telegram doar acquisition), §7 (Instafidget); screenshot 08-list-add-item-result.png (modal Instagram funcțional)",
+      "reproSteps": "N/A — constatare de scop, nu defect.",
+      "recommendation": "NU tăia niciuna din cele două acum — sunt cost redus și funcționale. DAR îngheață orice extindere de scope pe ele (nu adăuga funcții noi în Telegram flow, nu aprofunda integrarea Instafidget) până când Orizontul 2 din roadmap (PS-15) e livrat. Reevaluează dependența de Instafidget peste 12 luni când clienții încep să treacă pe tier-ul cu watermark — dacă feedback-ul negativ e mare, ia în calcul o integrare nativă Instagram la acel moment.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    }
+  ],
+  "strengths": [
+    "Poziționare de piață reală și defendabilă: WhatsApp-first (wa.me nativ, nu doar link generic) + calendar de programări inclus nativ + limbă română corectă cu diacritice — o combinație pe care majoritatea constructorilor generaliști (Wix/Squarespace) nu o oferă din cutie pentru piața RO/UE de afaceri mici.",
+    "Calendarul nativ (bot/calendar-native/) are decizii arhitecturale de nivel producție reale: constraint unic DB/lock tranzacțional anti-double-book, UTC canonic, izolare tenant riguroasă, token-uri de management unguessable, harness de email cu retry — mult peste maturitatea restului codebase-ului.",
+    "Fluxul comercial Stripe trial 7 zile → live imediat → export gated pe entitlement e complet implementat și coerent cu politica descrisă în VISION, inclusiv gating corect pe export (unpaid/past_due/expirat = fără fișier).",
+    "Export ZIP cu adevărat portabil — site-ul generat rulează pe orice host static fără runtime Hidook, un diferențiator real față de majoritatea constructorilor SaaS care blochează clientul în platformă.",
+    "Landing page-ul catalogului (ecranul de start) are un nivel de polish vizual peste așteptări pentru stadiul produsului — tipografie serif/sans combinată corect, imagini de calitate, layout curat (screenshot 01).",
+    "Preview-ul mobil cu device-frame (screenshot 07) e o touch de UX pe care mulți constructori mici nu o au — arată intenționat, nu improvizat.",
+    "Prețul (99 prim an + 29/an reînnoire) e semnificativ sub competitorii mari calculați anual (~$300-580/an la Wix Business/Squarespace) — un argument de vânzare clar pentru bugetul unei afaceri mici."
+  ],
+  "screenshots": [
+    {
+      "file": "01-catalog-landing.png",
+      "whatItShows": "Ecranul de catalog/landing al builder-ului — 5 șabloane, hero copy RO, tipografie serif/sans, filtre pe verticale. Punct de referință pentru polish vizual general."
+    },
+    {
+      "file": "02-catalog-full-scroll.png",
+      "whatItShows": "Catalogul complet (full page scroll) cu toate cele 5 carduri de șablon vizibile simultan — confirmă vizual numărul mic de opțiuni (5) față de competitori."
+    },
+    {
+      "file": "03-editor-with-details-drawer.png",
+      "whatItShows": "Editorul deschis pe șablonul \"Servicii profesionale\" cu Details drawer auto-deschis — arată natura de FORMULAR lung (nu canvas vizual drag&drop) a interfeței de editare, plus al doilea banner de cookie diferit de cel din ecranul 01."
+    },
+    {
+      "file": "07-preview-mobile-toggle.png",
+      "whatItShows": "Toggle-ul de preview mobil cu device-frame — dovadă a unui detaliu de UX bine executat (WhatsApp badge vizibil, layout responsive corect)."
+    },
+    {
+      "file": "08-list-add-item-result.png",
+      "whatItShows": "Modalul \"Adaugă Instagram\" (Instafidget) — confirmă funcționarea integrării descrise în VISION §7, dar și lipsa unui buton clar/vizibil de \"adaugă secțiune\" în bara de instrumente a editorului."
+    }
+  ],
+  "notRun": [
+    "Nu am rulat fluxul complet de publish (card test → live) — modalul Instagram a interceptat click-ul pe #btn-publish în timpul disponibil; alte lens-uri (E2E/QA) acoperă deja acest flow conform baseline (142 teste, 140 pass).",
+    "Nu am verificat direct pe server dacă /live/<slug>/sitemap.xml sau /robots.txt există pentru un site publicat real (am dedus din grep pe cod, nu din inspecție live a unui site publicat) — recomand verificare punctuală de altă echipă dacă subiectul SEO devine prioritate.",
+    "Nu am testat color picker-ul vizual live (click-ul pe #btn-color-picker nu a produs schimbare vizibilă în captura de ecran în fereastra de timp disponibilă — posibil interceptat de drawer-ul deschis) — VISION §4.2 raportează deja acest flow ca fiind verificat separat de alt lens/flow, deci nu am insistat pentru a nu duplica efort.",
+    "Nu am analizat dashboard-ul de conturi (#screen-dashboard, #modal-versions) vizual — timpul bugetat a fost prioritizat pe editor și catalog, care sunt suprafața principală a gap-ului de produs.",
+    "Nu am evaluat performanța reală (Lighthouse/throttling) a site-urilor publicate — VISION §4.1/Flow 1 menționează asta ca flow separat, presupun acoperit de alt lens de audit."
+  ]
+}

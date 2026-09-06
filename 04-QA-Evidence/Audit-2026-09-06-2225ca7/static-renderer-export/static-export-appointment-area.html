@@ -1,0 +1,49 @@
+
+            <div class="pr-shell">
+                <p class="pr-kicker">Programare</p>
+                <h2 class="pr-display pr-display--sec" id="book-heading">Solicită o programare</h2>
+                
+                
+                
+                
+                <p class="pr-copy pr-copy--lg">Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.</p>
+                
+                <p class="pr-warn" role="note">Nu trimite documente sau informații confidențiale prin acest formular.</p>
+                
+
+                <form class="pr-appt" id="pr-appt-form" novalidate="" hidden="">
+                    <fieldset class="pr-appt__fieldset">
+                        <legend class="pr-appt__legend">Tipul consultației</legend>
+                        <div class="pr-appt__types" role="radiogroup" aria-label="Tipul consultației">
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="consult-init" data-label="Consultație inițială" data-duration="45" data-mode="online" style="">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Consultație inițială</span>
+                                    <span class="pr-type__meta">45 min · online</span>
+                                </span>
+                            </label>
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="contract-review" data-label="Revizuire contract" data-duration="60" data-mode="cabinet" style="">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Revizuire contract</span>
+                                    <span class="pr-type__meta">60 min · cabinet</span>
+                                </span>
+                            </label>
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="follow-up" data-label="Discuție de urmărire" data-duration="30" data-mode="telefon" style="">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Discuție de urmărire</span>
+                                    <span class="pr-type__meta">30 min · telefon</span>
+                                </span>
+                            </label>
+                            
+                        </div>
+                    </fieldset>
+
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-appt-date">Data</label>
+                            <select class="pr-input" id="pr-appt-date" name="date" required=""><option value

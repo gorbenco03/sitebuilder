@@ -1,0 +1,143 @@
+{
+  "lens": "accesibilitate (builder chrome + cele 5 site-uri generate)",
+  "summary": "Fundația semantică e solidă — landmark-uri complete, un singur h1, fără sărituri de heading, alt text descriptiv și specific pe toate cele ~40 de imagini verificate, toate câmpurile de formular au label asociat, toate dialogurile builder au role=dialog + aria-modal + aria-labelledby, lang=\"ro\" consistent și niciun aria-label englezesc scăpat (testul flow2-ro-aria-labels.test.js trece). Galeria foto din local-service/portfolio are un lightbox construit corect pentru tastatură (Enter/Space, Escape, săgeți, focus mutat la deschidere). Dincolo de fundație însă, produsul NU e încă la nivel de conformitate WCAG 2.1 AA: niciun modal din builder (publish, success, preview, versions, gallery, instagram) nu capturează efectiv focusul — Tab iese din dialog spre editorul din spate deși vizual modalul rămâne deasupra — iar modalul Instagram nici măcar nu se închide cu Escape. Patru din cele cinci șabloane au cel puțin un eșec real de contrast pe fundal opac (nu artefact de calcul), cel mai grav fiind cifrele \"12+/240+\" din trust-meter-ul local-service (1.8:1, aproape ilizibile). Trei din cinci șabloane au linkuri sociale footer \"IG\"/\"FB\" sub minimul de 24×24px. Desserdirina produce scroll orizontal la nivel de pagină la zoom 200% din cauza galeriei foto. Per total: un fundament peste medie, dar cu defecte concrete și reproductibile care ar pica un audit formal EAA/WCAG AA în starea actuală — verdict per ansamblu: improve, nu rebuild.",
+  "score": 5,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/a11y/",
+  "strengths": [
+    "Landmark-uri complete (header/nav/main/footer) pe toate paginile testate (builder + 5 șabloane), un singur h1 pe pagină, fără sărituri în ierarhia de heading-uri.",
+    "Alt text verificat pe conținut (nu doar prezență) pe toate cele ~40 de imagini din cele 5 șabloane: descriptiv și specific (ex. \"Baie modernă renovată complet · București\", \"Balayage elegant în tonuri de miere\"), 0 cazuri de alt lipsă/generic pe imagini non-decorative.",
+    "Toate câmpurile de formular (drawer builder, formular de programare professionals) au label asociat corect; radio-ul custom \"tip consultație\" din professionals e implementat corect din punct de vedere a11y (input opacity:0 + pointer-events:none, label mare ca target real, :has(input:focus-visible) pe wrapper pentru inel de focus vizibil).",
+    "Toate dialogurile din builder (#modal-publish, #modal-success, #modal-preview, #modal-versions, #modal-gallery, #modal-instagram, #color-popover, #hb-cookie-banner) au role=\"dialog\" + aria-modal=\"true\" + aria-labelledby/aria-label corect — fundația semantică e acolo, doar implementarea de focus-trap lipsește (vezi A11Y-01).",
+    "Lightbox-ul galeriei foto (local-service, portfolio) e complet operabil de la tastatură: card-urile au tabindex=0/role=button/aria-label, Enter/Space deschide, Escape închide, ArrowLeft/Right navighează, focusul e mutat pe butonul de închidere la deschidere.",
+    "Floating WhatsApp button are aria-label tradus (labels.whatsapp) pe toate cele 5 șabloane; iconițele Instagram/Facebook din professionals/desserdirina (SVG 40×40) au aria-label și trec testul de target-size.",
+    "lang=\"ro\" consistent peste tot; testul dedicat bot/test/flow2-ro-aria-labels.test.js trece (0 aria-label engleze scăpate în șabloane).",
+    "Focus vizibil pe toate elementele parcurse prin Tab (outline nativ sau box-shadow custom) — nicio eliminare de outline fără înlocuire; .field-input:focus{outline:none} din builder e compensat corect cu box-shadow.",
+    "prefers-reduced-motion verificat corect prin matchMedia în collage.js și script.js pe toate cele 5 șabloane."
+  ],
+  "findings": [
+    {
+      "id": "A11Y-01",
+      "title": "Niciun modal din builder nu capturează focusul (fără focus trap real)",
+      "severity": "high",
+      "category": "a11y",
+      "area": "frontend",
+      "description": "Deși toate dialogurile (#modal-publish, #modal-instagram, #modal-preview, #modal-success, #modal-versions, #modal-gallery) au role=\"dialog\" aria-modal=\"true\", codul JS nu implementează niciun ciclu de focus (Tab/Shift+Tab) în interiorul lor. La al 3-lea/4-lea Tab, focusul iese din dialog și ajunge pe controalele din editor-topbar aflate vizual în spatele overlay-ului, deși modalul rămâne deschis deasupra lor. Un utilizator de tastatură sau cititor de ecran ajunge să interacționeze \"orb\" cu elemente ascunse vizual.",
+      "evidence": "Verificat live prin script Playwright ad-hoc (Tab de 12-15 ori după deschiderea #modal-publish, respectiv #modal-instagram): secvența de focus trece prin 2-3 elemente din dialog apoi ajunge pe <body> și apoi pe #btn-back-templates, #btn-preview-desktop, #btn-preview-mobile, #btn-add-instagram, #btn-color-picker, #btn-open-drawer, #btn-download-html, #btn-download-zip, #btn-publish, #preview-iframe — toate din spatele modalului. Cod: builder/app.js ~liniile 4505-4521 (blocul \"Escape closes everything\" + \"Close on overlay click\") nu conține logică de trap focus. Notă completă în 04-QA-Evidence/Audit-2026-09-06-2225ca7/a11y/oracle-log.json (secțiunea \"VERIFICARI SUPLIMENTARE\").",
+      "reproSteps": "1) node server izolat, deschide /app/ → acceptă cookie → alege orice șablon → editorul se deschide. 2) Click #btn-publish → #modal-publish vizibil → click în #input-slug → apasă Tab de 3 ori → focusul ajunge pe <body>/butoane din topbar din spate. 3) Repetă cu #btn-add-instagram → #modal-instagram → Tab de 3 ori → același rezultat.",
+      "recommendation": "Implementează un focus-trap standard (interceptează keydown Tab/Shift+Tab în handler-ul dialogului, calculează primul/ultimul element focusabil din containerul modalului cu querySelectorAll('a[href],button:not([disabled]),input,select,textarea,[tabindex=\"0\"]') și ciclează între ele) pentru toate .modal-overlay[role=dialog]. Pattern-ul ARIA APG pentru \"Modal Dialog\" e documentat și direct aplicabil.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-02",
+      "title": "#modal-instagram nu se închide cu tasta Escape",
+      "severity": "high",
+      "category": "a11y",
+      "area": "frontend",
+      "description": "Handler-ul global de Escape din builder/app.js închide explicit doar o listă hardcodată de modale ('modal-publish','modal-preview','modal-success','modal-versions','modal-gallery'); 'modal-instagram' lipsește din această listă, deci apăsarea Escape nu are niciun efect când modalul Instagram e deschis. Combinat cu A11Y-01 (fără focus trap), acest dialog e dublu inaccesibil pentru utilizatorii de tastatură: nu pot nici să iasă cu Escape, nici Tab-ul nu-i ține înăuntru.",
+      "evidence": "builder/app.js, blocul document.addEventListener('keydown', ...) — array-ul explicit nu conține 'modal-instagram'. Verificat live: deschis #modal-instagram din #btn-add-instagram, apăsat Escape, modalul a rămas vizibil (isVisible()===true).",
+      "reproSteps": "Editor → #btn-add-instagram → #modal-instagram vizibil → apasă Escape → modalul rămâne deschis (nu se închide, spre deosebire de celelalte 5 modale).",
+      "recommendation": "Adaugă 'modal-instagram' în array-ul din handler-ul de Escape.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-03",
+      "title": "desserdirina: scroll orizontal la nivel de pagină la zoom 200%, cauzat de galeria foto",
+      "severity": "medium",
+      "category": "a11y",
+      "area": "template:desserdirina",
+      "description": "La zoom 200% (document.documentElement.style.zoom='2', echivalent cu Ctrl/Cmd + în browser), pagina desserdirina capătă scroll orizontal la nivel de <html> (scrollWidth 2040px vs clientWidth 1440px). Elementele responsabile sunt .gallery-section/.collage-stage/.collage-deck, care se întind de la x=-600 până la x=2040 — poziționarea absolută a fotografiilor din colaj nu se recalculează la zoom. Testat izolat (fără alt state anterior): portfolio și local-service, care folosesc același collage.js, NU reproduc problema (scrollWidth=clientWidth=1440), deci defectul e specific configurației/conținutului desserdirina, nu bibliotecii comune.",
+      "evidence": "raw-live-desserdirina.json (\"zoom200 overflow\": sw:2040 cw:1440); 32-live-desserdirina-zoom200.png; verificare izolată suplimentară (fără reload anterior pentru reduced-motion) a confirmat identic sw:2040/cw:1440 doar pentru desserdirina, sw:1440/cw:1440 pentru portfolio și local-service.",
+      "reproSteps": "Publică desserdirina (sau orice site cu acest șablon) → deschide URL-ul live → setează zoom 200% în browser → derulează la secțiunea galeriei foto → apare bară de scroll orizontală la nivel de document întreg.",
+      "recommendation": "Adaugă overflow-x:hidden pe body/.gallery-section ca plasă de siguranță și fă ca poziționarea colajului (--x/--y calculate probabil din window.innerWidth la load) să se recalculeze pe evenimentul 'resize' (zoom-ul declanșează resize în browserele moderne).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-04",
+      "title": "Linkuri sociale text-only \"IG\"/\"FB\" din footer, sub minimul WCAG 2.5.8 de 24×24px",
+      "severity": "medium",
+      "category": "a11y",
+      "area": "template:local-service",
+      "description": "În footer-ul a 3 din cele 5 șabloane, linkurile către Instagram/Facebook sunt randate ca text simplu \"IG\"/\"FB\" fără padding, rezultând ținte de click de doar ~13-18px lățime × 13-23px înălțime — sub pragul minim WCAG 2.2 SC 2.5.8 (24×24 CSS px). Aceleași linkuri au aria-label corect (\"Instagram\"/\"Facebook\"), deci problema e strict de dimensiune a țintei tactile, nu de nume accesibil. professionals și desserdirina folosesc deja iconițe SVG de 40×40px pentru echivalent și trec testul.",
+      "evidence": "templates/local-service/template.html:343 (<a ... aria-label=\"Instagram\">IG</a>), :346 (Facebook); templates/portfolio/template.html:283,286; templates/product-menu/template.html:260,263. Măsurători live: raw-live-local-service.json → IG 13×23px, FB 16×23px, WhatsApp 18×23px.",
+      "reproSteps": "Deschide live orice din local-service/portfolio/product-menu, derulează la footer, inspectează linkurile scurte de lângă \"hidook.tech\" — text simplu de 2 litere fără chenar/padding.",
+      "recommendation": "Înlocuiește textul simplu \"IG\"/\"FB\" cu iconițe SVG cu padding suficient (după modelul professionals/desserdirina) sau adaugă min-width/min-height:24px (ideal 44px) + padding pe aceste linkuri.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-05",
+      "title": "Contrast insuficient pe culori de brand și elemente UI, pe fundal opac (verificat vizual, nu artefact)",
+      "severity": "medium",
+      "category": "a11y",
+      "area": "template:local-service",
+      "description": "Mai multe elemente text/UI au raport de contrast sub pragul WCAG AA (4.5:1 text normal / 3:1 text mare sau UI), măsurat pe fundal complet opac și confirmat vizual prin zoom pe screenshot: (1) local-service — cifrele trust-meter \"12+\"/\"240+\" (albastru rgb(11,61,145) pe aproape-negru rgb(15,23,32)) = 1.8:1, necesar 3:1 pentru text bold 21.6px — aproape ilizibile la prima privire; (2) desserdirina — eyebrow-ul \"TORTURI, PRĂJITURI ȘI PÂINE ARTIZANALĂ\" 3.38:1, toggle-ul de limbă EN 4.37:1 / RO activ 3.38:1, titlurile categoriilor de meniu (\"Torturi\", \"La comandă\", \"Servicii și Evenimente\") 4.37:1 — toate sub 4.5:1 necesar, folosind aceeași culoare roz de brand #D14477-ish; (3) portfolio — CTA-urile \"Programează o vizită\"/\"Programează-te pe WhatsApp\" (alb pe verde-oliv) 4.37:1, la limită sub 4.5:1; (4) builder — cifrele pașilor \"01-04\" din secțiunea \"Cum funcționează\" 3.67:1, badge-ul \"40/40\" din topbar-ul editorului 3:1. Notă metodologică: alte eșecuri raportate inițial de scriptul automat (fundaluri semi-transparente pe secțiuni întunecate, ex. programul de lucru din professionals/portfolio) s-au dovedit artefacte ale calculului de compoziție alfa și au fost verificate vizual ca fiind de fapt OK — excluse din această listă.",
+      "evidence": "zoom-local-service-trustmeter3.png (cifre trust-meter), zoom-desserdirina-menu.png + zoom-desserdirina-torturi.png (roz de brand), 22-live-portfolio-desktop.png + zoom-portfolio-schedule2.png (CTA verde), 03-builder-catalog-full.png + zoom-editor-checklist2.png (builder); valori exacte în raw-live-local-service.json, raw-live-desserdirina.json, raw-live-portfolio.json, raw-builder-catalog.json, raw-builder-editor.json (câmpul contrastFails).",
+      "reproSteps": "getComputedStyle(el).color / backgroundColor pe elementele numite, calcul raport WCAG (formula relativă de luminanță) — reproductibil direct din DevTools pe fiecare pagină live.",
+      "recommendation": "Întunecă ușor culorile de brand folosite pe text (roz desserdirina, verde portfolio, albastru local-service) sau mărește greutatea/dimensiunea fontului pe zonele afectate; rulează un audit automat de contrast (ex. axe-core) pe fiecare preset.json înainte de a adăuga un șablon nou sau o culoare custom nouă în color picker-ul din builder.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-06",
+      "title": "aria-describedby pe #input-slug referă un ID inexistent (\"slug-status\")",
+      "severity": "low",
+      "category": "a11y",
+      "area": "frontend",
+      "description": "Câmpul de slug din #modal-publish are aria-describedby=\"slug-preview slug-status\", dar nu există niciun element cu id=\"slug-status\" în DOM — elementul real de eroare are id=\"slug-error\". Rezultatul: mesajul de eroare (role=\"alert\") tot se anunță quando apare (role=alert e live region implicit), dar câmpul nu expune starea de eroare persistentă când utilizatorul revine cu Tab pe el (cititorul de ecran nu re-citește eroarea la refocus).",
+      "evidence": "builder/index.html:359 (aria-describedby=\"slug-preview slug-status\") vs :363 (<p ... id=\"slug-error\" role=\"alert\">).",
+      "reproSteps": "Inspectează #input-slug în DevTools → verifică atributul aria-describedby → caută id=\"slug-status\" în document → nu există.",
+      "recommendation": "Corectează la aria-describedby=\"slug-preview slug-error\".",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-07",
+      "title": "Lightbox-ul galeriei nu restaurează focusul pe elementul declanșator la închidere",
+      "severity": "low",
+      "category": "a11y",
+      "area": "template:local-service",
+      "description": "Funcția close() din lightbox-ul galeriei (local-service, portfolio) ascunde dialogul dar nu readuce focusul pe card-ul foto care l-a deschis; la Escape/click pe close, focusul se pierde (probabil revine implicit pe <body>), obligând utilizatorul de tastatură să reia navigarea de la începutul paginii.",
+      "evidence": "templates/local-service/script.js, funcția close() (lângă linia ~319): setează lb.hidden=true și resetează lbImg.src, dar nu apelează niciun .focus() pe elementul anterior activ.",
+      "reproSteps": "Deschide live local-service/portfolio → Tab până la un card foto → Enter (deschide lightbox) → Escape (închide) → observă unde ajunge focusul (nu pe cardul inițial).",
+      "recommendation": "Reține document.activeElement înainte de show() într-o variabilă și apelează .focus() pe acel element în close().",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "A11Y-08",
+      "title": "Butoane frecvente din topbar-ul editorului sub 44×44px (peste minimul AA de 24px, sub AAA/nivel touch)",
+      "severity": "low",
+      "category": "a11y",
+      "area": "frontend",
+      "description": "Butoanele Culoare, Detalii, Adaugă Instagram, Descarcă HTML/ZIP și toggle-urile desktop/mobil din editor-topbar au ~28-36px înălțime — trec pragul minim WCAG AA (24×24px) dar rămân sub cei 44×44px recomandați pentru ergonomie tactilă la nivel de produs SaaS (Wix/Squarespace folosesc constant ≥40px pe controale primare). Nu am putut verifica dacă acest topbar are un layout dedicat pentru ecrane mici (nu a fost testat la 390px în acest audit).",
+      "evidence": "raw-builder-editor.json (smallTargets: btn-back-templates 78×28, btn-preview-desktop/mobile 32×28, btn-add-instagram/color-picker/open-drawer 36×28, btn-download-html/zip 77-60×28).",
+      "reproSteps": "Editor deschis → inspectează dimensiunile butoanelor din bara de sus.",
+      "recommendation": "Mărește la 40-44px înălțime minimă pentru un feel de produs premium, mai ales dacă editorul va fi folosit vreodată pe tabletă.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "screenshots": [
+    { "file": "zoom-local-service-trustmeter3.png", "whatItShows": "Cifrele \"12+\"/\"240+\" din trust-meter-ul local-service, zoom 3x — confirmă vizual raportul de contrast 1.8:1 (aproape ilizibil) pe fundal aproape-negru." },
+    { "file": "zoom-desserdirina-torturi.png", "whatItShows": "Titlul de categorie \"Meniu\" în roz de brand pe alb, zoom 3x — ilustrează culoarea de brand desserdirina care pică sub 4.5:1 în mai multe locuri (eyebrow, toggle limbă, titluri categorii)." },
+    { "file": "32-live-desserdirina-zoom200.png", "whatItShows": "desserdirina la zoom 200% — pagina care produce scroll orizontal la nivel de document (cauzat de galeria foto mai jos pe pagină, vezi A11Y-03)." },
+    { "file": "zoom-portfolio-schedule2.png", "whatItShows": "Cardul \"Program\" din portfolio, zoom 2x — confirmă vizual că acest text ERA de fapt lizibil (contrastul raportat automat ca 1:1 a fost un fals-pozitiv al metodei de calcul pe fundal semi-transparent, corectat în raport)." },
+    { "file": "07-builder-editor-professionals.png", "whatItShows": "Editorul builder cu șablonul professionals încărcat și drawer-ul de detalii deschis automat — arată topbar-ul, badge-ul de checklist \"40/40\" și structura generală a chrome-ului." },
+    { "file": "zoom-editor-checklist2.png", "whatItShows": "Badge-ul \"40/40\" din topbar-ul editorului, zoom 4x — text verde pe fundal verde-deschis, 3:1 față de 4.5:1 necesar." },
+    { "file": "18-live-local-service-desktop.png", "whatItShows": "Pagina completă local-service (full page) — context pentru trust-meter, structura de landmark-uri și heading-uri." },
+    { "file": "30-live-desserdirina-desktop.png", "whatItShows": "Pagina completă desserdirina (full page) — context pentru culorile de brand și secțiunea de galerie foto." }
+  ],
+  "notRun": [
+    "Nu am folosit un scanner automat axe-core/Lighthouse (indisponibil în mediul izolat) — am construit verificări manuale echivalente (contrast, landmark-uri, labels, target-size, ARIA) direct în Playwright; e posibil să fi ratat cazuri pe care axe-core le-ar prinde suplimentar (ex. duplicate ID-uri ARIA, tabele fără th corect asociate).",
+    "Nu am testat cu un cititor de ecran real (VoiceOver/NVDA/JAWS) — doar inspecție DOM/ARIA/tab-order; anunțurile efective pot diferi ușor față de ce sugerează marcajul.",
+    "Nu am testat fluxul de calendar-native (bot/calendar-native/*) sau widget-ul embed de programări — professionals/portfolio pot referi un link Cal.com extern, neconfigurat/netestat în acest audit.",
+    "Nu am testat în profunzime ecranul de dashboard (#screen-dashboard) și #modal-versions dincolo de prezența landmark-urilor generale (nu am creat un cont cu site-uri publicate multiple pentru a le popula complet).",
+    "Zoom testat doar la 200%; standardul WCAG 1.4.10 Reflow se referă strict la 400%/320px lățime — recomand test suplimentar la acel prag, mai ales pentru desserdirina unde am găsit deja o problemă la 200%.",
+    "Nu am simulat daltonism (protanopie/deuteranopie/tritanopie) pe combinațiile de culoare cu contrast redus.",
+    "Topbar-ul editorului nu a fost verificat separat la 390px (mobil) — doar catalogul și landing-ul au fost testate la acea lățime.",
+    "Nu am verificat comportamentul de focus-trap/Escape pe #color-popover și #modal-gallery/#modal-preview/#modal-versions individual (am extrapolat din #modal-publish și #modal-instagram, care au aceeași structură de cod; probabil identic, dar netestat direct pe fiecare)."
+  ]
+}

@@ -1,0 +1,17 @@
+{"ts":"2026-09-05T22:13:40.956Z","event":"server.started","port":53271}
+🌐 HTTP server on :53271 (health + webhooks + API)
+BEFORE /sterge: GET /live/verify-live-site/ -> 200, marker present = true
+BEFORE registry status = live paid = true
+
+Bot reply:
+---
+🗑️ Am șters toate datele tale (sesiune, poze încărcate, fișierele site-ului și site-urile înregistrate) din sistemele noastre.
+
+Scrie /start oricând ca să începi din nou.
+---
+
+AFTER registry status = deleted url = null paid = true
+AFTER published/index.html exists on disk = true
+AFTER /sterge: GET /live/verify-live-site/ -> 200, marker STILL present = true
+
+>>> CONFIRMED: registry says status=deleted, bot confirmed full deletion, but the live URL still returns 200 with the original site content.

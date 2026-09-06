@@ -1,0 +1,128 @@
+{
+  "lens": "template-professionals (Servicii profesionale) — E2E complet cu screenshot-uri",
+  "summary": "Șablonul \"Servicii profesionale\" e vizual la un nivel cu adevărat comercial — tipografie serif calmă, paletă hârtie/cerneală, ierarhie curată, fotografie plauzibilă pentru un cabinet/consultanță; se simte aproape de Squarespace, nu de un AI-slop generic. Editarea inline (93 noduri [data-hb-edit], click direct în iframe) e bine executată și rapidă (conținut iframe gata în ~130ms), iar culorile și poza de fundal se propagă instant și corect la nivel de pixel (CTA rgb(29,91,121) exact egal cu hexul ales). Fluxul complet publish → autentificare magic-link → plată de test → live → export HTML/ZIP → pagini legale funcționează fără erori de consolă sau request-uri eșuate. Formularul de programare (cerere, nu rezervare automată) trimite corect către /api/appointments și arată o stare de succes clară în română. Am găsit însă trei probleme reale, reproductibile: adăugarea unui serviciu nou prin \"+ Adaugă\" creează un card complet gol (fără text placeholder) și corupe structura DOM a listei (butonul de adăugare ajunge grefat în interiorul noului <li>); și, mai grav pentru trafic real, pe mobil (sub 820px) linkurile de navigare Servicii/Despre/Întrebări/Contact dispar complet din header fără niciun buton hamburger alternativ — un vizitator de telefon nu poate sări direct la nicio secțiune. În plus, SEO-ul rămâne sub-expus exact cum e deja notat în VISION §4.6: og:image/twitter:image sunt căi relative (încalcă spec-ul Open Graph), <link rel=canonical> și <meta property=og:url> lipsesc complet de pe orice site publicat prin builder-ul web, iar JSON-LD LocalBusiness nu se generează în acest flux (doar fluxul Telegram îl populează). Per total, un șablon cu bază de design foarte solidă, dar cu suficiente cusături funcționale (mai ales pe mobil) încât încă nu e la paritate completă cu un produs de tip Wix/Squarespace matur.",
+  "score": 7,
+  "strengths": [
+    "Direcție de artă coerentă cu wizardHints (\"calm editorial, premium, trustworthy\"): serif pentru titluri mari, paletă hârtie/cerneală (#1D5B79 pe #E7F1F7 în test), fără gradient-uri stridente sau iconițe stock — se simte ca un site de cabinet de avocatură/consultanță real, nu ca un template generic.",
+    "Editare inline WYSIWYG foarte bine făcută: 93 de noduri [data-hb-edit] acoperă tot conținutul text (nume, tagline, servicii, proces, FAQ, programare), cu butoane inline \"+ Adaugă\" / \"×\" pentru liste — un pattern modern, la fel ca Squarespace/Framer, superior unui formular clasic cu 40 de câmpuri.",
+    "Editarea culorilor și a fotografiei de fundal se propagă instant și verificabil la nivel de pixel (CTA a preluat exact accentul ales, fundalul body a preluat exact culoarea de fundal aleasă).",
+    "Integrarea WhatsApp e neobișnuit de atentă: pe desktop, click pe orice link wa.me deschide un modal cu cod QR generat local (fără dependință externă) în loc să navigheze aiurea — un detaliu de UX pe care puține template-uri low-cost îl au.",
+    "Fluxul complet publish → magic-link → plată de test → live → export HTML/ZIP → pagini legale a rulat integral fără nicio eroare de consolă sau request eșuat (dincolo de un 401 /api/me așteptat înainte de autentificare).",
+    "Formularul de programare (model de cerere, nu rezervare automată) trimite corect la /api/appointments și arată o stare de succes clară, în română, cu tipul consultației, data și ora.",
+    "Export ZIP e complet: index.html + styles.css + script.js + imagini + cookie-banner.js/css + privacy/terms/cookies.html, verificat că pornește standalone servit static.",
+    "Toate cele 5 teste automate existente relevante (flow2-professional-appointment-ro, flow2-professional-hero, flow2-professional-layout, s70-professionals-appointments, s3-design-systems, flow2-template-pass) au trecut curat la rulare individuală."
+  ],
+  "notRun": [
+    "Nu am testat plata reală Stripe (doar HIDOOK_TEST_PAY=1, conform regulilor de izolare).",
+    "Nu am testat trimiterea reală de emailuri (Resend) — am folosit #dev-link.",
+    "Nu am verificat comportamentul cu appointment.nativeBooking=\"da\" (calendarul nativ Hidook) — am testat doar formularul local implicit; comutarea la calendarul nativ pentru acest șablon rămâne neverificată în acest audit.",
+    "Nu am testat adăugarea a mai mult de un element repetabil consecutiv (ex. 3-4 adăugări la rând) ca să văd cât de departe se agravează coruperea structurii DOM găsită la primul add — un singur ciclu add+remove a fost suficient ca reproducere.",
+    "Nu am testat comportamentul galeriei Instagram (instagram.gallery) din drawer — schema o listează dar nu am completat-o explicit în acest pass, fiind opțională și cu risc scăzut relativ la timpul disponibil.",
+    "Nu am verificat vizual cele 8 servicii la maximul schema.json (max:8) — am testat doar cu 4 (implicit) + 1 adăugat.",
+    "Captura de ecran 'mobile-nav-links-hidden' (și 'live-site-mobile-390') a ieșit scrollată la secțiunea de programare, nu la header, din cauză că Chrome a păstrat poziția de scroll printr-un reload() pe aceeași pagină — verificarea reală a lipsei meniului s-a făcut totuși corect prin isVisible() pe .pr-nav__links, confirmat și vizual (header-ul din capturi arată doar brand+CTA, fără linkuri, la orice poziție de scroll)."
+  ],
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-professionals",
+  "screenshots": [
+    { "file": "02-editor-open-drawer-auto.png", "whatItShows": "Editorul desktop 1440px imediat după alegerea șablonului professionals — Details drawer deschis automat, iframe cu conținut deja randat (~130ms)." },
+    { "file": "21-live-site-desktop-fullpage.png", "whatItShows": "Site-ul live complet (fullPage, 1440px) cu numele editat, poza nouă, culorile aplicate — bază de evaluare pentru critica de design." },
+    { "file": "08-after-color-change.png", "whatItShows": "Verificare pixel: accentul #1D5B79 și fundalul #E7F1F7 aplicate corect pe CTA și pe body (confirmat și prin getComputedStyle)." },
+    { "file": "11-service-item-added.png", "whatItShows": "Stare a editorului imediat după click pe \"+ Adaugă\" la servicii; dovada defectului (card gol + <button class=hb-add-btn> grefat în noul <li>) e în fișierul new-service-item.html din același director, nu vizibil direct în cadru (view-ul nu a scrollat la secțiune)." },
+    { "file": "24-mobile-nav-links-hidden.png", "whatItShows": "Site live la 390px — header arată doar brand + butonul CTA Programare, fără Servicii/Despre/Întrebări/Contact (confirmat separat prin .pr-nav__links.isVisible()===false)." },
+    { "file": "22-whatsapp-qr-panel-live.png", "whatItShows": "Panoul QR WhatsApp deschis pe desktop live la click pe link wa.me — cod QR generat local, buton alternativ \"Sau deschide WhatsApp Web\"." },
+    { "file": "27-appointment-form-submitted.png", "whatItShows": "Starea de succes după trimiterea cererii de programare — text RO clar, fără confirmare automată promisă eronat." },
+    { "file": "29-zip-standalone-served.png", "whatItShows": "ZIP-ul exportat, dezarhivat și servit standalone printr-un mic server static — site-ul se încarcă identic, fără dependențe de builder." }
+  ],
+  "findings": [
+    {
+      "id": "prof-01",
+      "title": "Adăugarea unui serviciu nou (\"+ Adaugă\") creează un card complet gol, fără text implicit",
+      "severity": "high",
+      "category": "bug",
+      "area": "template:professionals",
+      "description": "În secțiunea Servicii, clic pe butonul inline \".hb-add-btn\" (din interiorul <ul class=\"pr-svc\">) adaugă un nou <li> în listă, dar span-ul cu data-hb-edit=\"services.N.label\" e complet gol (fără text) — spre deosebire de un pattern uzual de tip \"Serviciu nou\" / \"Titlu serviciu\" ca placeholder editabil. Clientul vede un card vizibil gol pe site până completează el însuși titlul.",
+      "evidence": "04-QA-Evidence/Audit-2026-09-06-2225ca7/template-professionals/new-service-item.html (outerHTML capturat): <li class=\"pr-svc__card\"><h3 class=\"pr-svc__title hb-list-item\"><span data-hb-edit=\"services.4.label\" ...></span>...</h3>...</li> — span fără text; oracle-log.json, entry index 10 (service-item-added).",
+      "reproSteps": "1) /app/ → alege șablonul professionals → închide Details drawer. 2) Scroll la secțiunea Servicii în iframe. 3) Click pe butonul \"+ Adaugă\" (ultimul element din <ul class=\"pr-svc\">). 4) Inspectează noul <li>: titlul (h3 > span[data-hb-edit]) e gol.",
+      "recommendation": "La creare, populează noul item cu un placeholder editabil vizibil (ex. \"Serviciu nou\" / \"Adaugă un titlu\") în loc de string gol, ca utilizatorul să vadă imediat unde să scrie și cardul să nu pară stricat înainte de a fi completat.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-02",
+      "title": "Structura DOM a listei de servicii se corupe la adăugare: butonul \"+ Adaugă\" ajunge grefat în interiorul noului element, nu ca frate după <ul>",
+      "severity": "high",
+      "category": "bug",
+      "area": "frontend",
+      "description": "Înainte de orice adăugare, <button class=\"hb-add-btn\"> este ultimul copil al <ul class=\"pr-svc\"> (după toate <li>-urile). După un click pe el, noul <li> conține el însuși un <button class=\"hb-add-btn\">+ Adaugă</button> ca ultim copil — adică butonul de adăugare 'migrează' înăuntrul elementului nou creat în loc să rămână după listă. La adăugări repetate structura s-ar degrada progresiv (butonul ajungând tot mai adânc imbricat), ceea ce poate produce randare vizuală incorectă (buton de adăugare în interiorul unui card de serviciu) și potențial dificultăți la ștergere/reordonare ulterioară. Acesta pare un bug în logica generică de inserare a elementelor repetabile din builder/edit-overlay.js, deci probabil afectează orice listă repetabilă din orice șablon (servicii, FAQ, pași proces, credențiale etc.), nu doar professionals.",
+      "evidence": "new-service-item.html: <li class=\"pr-svc__card\">...<button type=\"button\" class=\"hb-remove-btn\" aria-label=\"Șterge elementul 5\">×</button></h3><button type=\"button\" class=\"hb-add-btn\">+ Adaugă</button>\\n</li> — butonul hb-add-btn e ultimul copil al <li>, nu al <ul>.",
+      "reproSteps": "1) În editor, la secțiunea Servicii, inspectează HTML-ul <ul class=\"pr-svc\"> — hb-add-btn e ultimul copil direct al <ul>. 2) Click pe \"+ Adaugă\". 3) Inspectează noul <li> adăugat — conține el însuși un <button class=\"hb-add-btn\">.",
+      "recommendation": "În logica de inserare din edit-overlay.js, ancorează noul element cu insertBefore față de butonul de adăugare existent (păstrându-l ca ultim copil al containerului de listă), nu prin clonare/append care mută accidental butonul în interiorul noului nod. Adaugă un test automat care verifică, după N adăugări succesive, că .hb-add-btn rămâne exact 1 element și e mereu frate direct al ultimului <li>, nu descendent al lui.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-03",
+      "title": "Fără meniu de navigare pe mobil — linkurile Servicii/Despre/Întrebări/Contact dispar complet sub 820px, fără hamburger alternativ",
+      "severity": "high",
+      "category": "ux",
+      "area": "template:professionals",
+      "description": "templates/professionals/styles.css setează \".pr-nav__links { display: none; }\" cu excepția \"@media (min-width: 820px)\" — și template.html nu conține niciun buton hamburger/meniu-toggle alternativ. Rezultat: pe orice telefon (majoritatea traficului real pentru un cabinet/consultanță), header-ul arată doar numele afacerii și butonul CTA \"Programare\" — linkurile către Servicii, Despre, Întrebări și Contact sunt complet inaccesibile din navigare, singura opțiune fiind scroll manual lung pe toată pagina.",
+      "evidence": "templates/professionals/styles.css:109-119 (.pr-nav__links{display:none} / @media (min-width:820px){display:flex}); templates/professionals/template.html:45-58 (niciun element de tip toggle/hamburger); confirmat live prin livePage.locator('.pr-nav__links').isVisible() === false la 390px — screenshot 24-mobile-nav-links-hidden.png (header arată doar brand + Programare).",
+      "reproSteps": "1) Publică orice site cu șablonul professionals. 2) Deschide site-ul live la 390px lățime (telefon). 3) Observă header-ul: apare doar numele firmei și butonul \"Programare\"; niciun link către Servicii/Despre/Întrebări/Contact, niciun buton de meniu.",
+      "recommendation": "Adaugă un buton hamburger standard (vizibil doar sub 820px) care deschide un meniu mobil cu aceleași 5 linkuri din .pr-nav__links, cu focus-trap și buton de închidere — pattern deja folosit probabil în alte șablone (verifică portfolio/local-service pentru consecvență) sau introdus centralizat.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-04",
+      "title": "og:image și twitter:image sunt căi relative, nu URL-uri absolute — încalcă spec-ul Open Graph și pot rupe preview-ul de distribuire",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "Pe site-ul live publicat, <meta property=\"og:image\" content=\"images/hero.jpg\"> și <meta name=\"twitter:image\" content=\"images/hero.jpg\"> sunt căi relative. Open Graph/Twitter Card cer explicit URL absolut; Facebook, WhatsApp, LinkedIn și iMessage de regulă nu rezolvă un og:image relativ, deci un link distribuit către site poate apărea fără imagine de previzualizare. Cauza: build.js → deriveSocialImage() întoarce orice string brut găsit în config care se potrivește /image|photo|logo|src/i, fără să-l rezolve față de PUBLIC_URL/originea site-ului. Fișierul din spate există și răspunde 200 quand rezolvat manual absolut, deci problema e strict în meta tag, nu în asset.",
+      "evidence": "live-page-checks.json: \"ogImage\": \"images/hero.jpg\"; build.js linia ~197-221 (deriveSocialImage) și linia 251 (cfg.seo.ogImage = deriveSocialImage(cfg)) — fără nicio normalizare la absolut; og:image rezolvat manual la http://.../live/<slug>/images/hero.jpg → status 200 (og-image-note în oracle-log.json).",
+      "reproSteps": "1) Publică orice site professionals cu poză de fundal setată. 2) Deschide sursa paginii live. 3) Caută <meta property=\"og:image\"> — conținutul e o cale relativă (images/...), nu http(s)://...",
+      "recommendation": "În build.js (sau la publish, în webpublish.js), rezolvă seo.ogImage la un URL absolut folosind PUBLIC_URL/originea publicată a site-ului (același mecanism care construiește deja /live/<slug>/ absolut), înainte de a-l scrie în meta tag-uri.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-05",
+      "title": "<link rel=canonical> și <meta property=og:url> lipsesc complet de pe orice site publicat prin builder-ul web",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "template.html are un bloc condițional \"<!-- @if seo.canonical --><link rel=canonical ...><meta property=og:url ...><!-- @endif -->\", dar seo.canonical nu este populat nicăieri în cod (apare doar ca literal într-o listă de token-uri în build.js, fără nicio funcție care să-i atribuie o valoare) — deci blocul e mereu fals și ambele tag-uri lipsesc din <head> pe orice site publicat prin fluxul web. E un gol global (nu specific professionals) deja recunoscut generic în VISION.md §4.6 (\"SEO insuficient expus\"), dar merită documentat cu specificul exact găsit aici.",
+      "evidence": "grep -n \"canonical\" pe tot bot/*.js → apare doar în build.js linia ~109 ca literal de token, nicio atribuire; live-page-checks.json / oracle-log.json notă: \"canonical link: null | og:url: null\"; templates/professionals/template.html:21-23.",
+      "reproSteps": "1) Publică orice site prin builder-ul web (nu fluxul Telegram). 2) Deschide sursa paginii live, caută 'canonical' și 'og:url' — nu există.",
+      "recommendation": "Populează seo.canonical la publish cu URL-ul absolut al site-ului (PUBLIC_URL + /live/<slug>/), similar cu cum se construiește deja live URL-ul pentru succesul din builder; aplică pentru toate cele 5 șabloane, nu doar professionals.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-06",
+      "title": "JSON-LD LocalBusiness nu se generează la publicare prin builder-ul web (doar fluxul Telegram îl populează)",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "template.html are <!-- @if seo.jsonLd --><script type=\"application/ld+json\">{{& seo.jsonLd}}</script><!-- @endif -->, iar funcția care ar trebui să construiască acest JSON (buildSeo() din bot/flow.js) e apelată doar din fluxul Telegram (bot/flow.js liniile 543 și 639), nu din calea de publish a builder-ului web (build.js/webpublish.js). Rezultat: niciun site publicat prin /app/ (webpublish) nu are date structurate LocalBusiness, afectând vizibilitatea în căutare (rich results, knowledge panel).",
+      "evidence": "grep -n 'buildSeo(' bot/*.js → doar în bot/flow.js; build.js/normalizeConfigForRender calculează doar cfg.seo.ogImage, nu cfg.seo.jsonLd; livePage checks.jsonLd.length === 0 confirmat pe site-ul publicat prin builder web.",
+      "reproSteps": "1) Publică orice site prin /app/ (nu prin Telegram). 2) Caută <script type=\"application/ld+json\"> în sursa paginii live — nu există.",
+      "recommendation": "Extrage buildSeo() (sau echivalent) într-un modul comun apelat și din calea de publish web, nu doar din fluxul Telegram, astfel încât toate site-urile publicate să primească JSON-LD LocalBusiness cu numele, adresa, telefonul și rețelele sociale disponibile.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "prof-07",
+      "title": "Câmpul \"Etichetă link WhatsApp\" (labels.whatsapp) apare în Details drawer doar din cauza unui match de substring, inconsistent cu restul câmpurilor labels.*",
+      "severity": "low",
+      "category": "ux",
+      "area": "frontend",
+      "description": "builder/app.js definește DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', ...] pentru a decide ce câmpuri apar în drawer pe lângă tipurile structurate (phone/url/color/background). labels.whatsapp (eticheta text a linkului WhatsApp din secțiunea contact, ex. \"WhatsApp\") conține substring-ul \"whatsapp\" și ajunge astfel în drawer, deși e un simplu text editabil ca oricare alt labels.* (navServices, navAbout etc.) care rămân editabile doar inline. Nu e o problemă funcțională, dar creează o mică inconsecvență: de ce tocmai acest label text apare separat în settings, și nu și celelalte.",
+      "evidence": "builder/app.js: DRAWER_TYPES/DRAWER_KEYS_PARTIAL (liniile ~485-486); drawer-fields-inventory.json din acest audit conține \"labels.whatsapp\" alături de câmpuri structurate reale (telefon, culoare, fundal).",
+      "reproSteps": "1) Deschide Details drawer pe orice șablon cu labels.whatsapp în schema. 2) Observă că acest singur label text apare acolo, spre deosebire de restul label-urilor (navServices, servicesEyebrow etc.) care rămân doar inline.",
+      "recommendation": "Rafinează condiția de includere din DRAWER_KEYS_PARTIAL să verifice cheia completă (ex. 'contact.whatsapp', 'contact.waMessage') în loc de un substring generic 'whatsapp', ca să nu prindă accidental alte chei care doar conțin cuvântul.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ]
+}

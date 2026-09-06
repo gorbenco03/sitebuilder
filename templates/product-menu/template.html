@@ -198,7 +198,7 @@
                     <div class="collage-deck">
                         <!-- @each photos -->
                         <figure class="collage-photo pm-shot">
-                            <img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy">
+                            <img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy" decoding="async">
                         </figure>
                         <!-- @end -->
                     </div>
@@ -234,7 +234,7 @@
             <div class="pm-ig-grid">
                 <!-- @each instagram.gallery -->
                 <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pm-ig-cell">
-                    <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
+                    <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy" decoding="async">
                 </a>
                 <!-- @end -->
             </div>

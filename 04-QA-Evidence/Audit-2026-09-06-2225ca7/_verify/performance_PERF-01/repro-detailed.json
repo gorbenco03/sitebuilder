@@ -1,0 +1,148 @@
+{
+  "product-menu": {
+    "wallTimeToFrameLoadEventMs": 7728,
+    "wallTimeToFrameContentAttachedMs": 7756,
+    "requestCountSinceClick": 8,
+    "totalBytesSinceClick": 2000450,
+    "hasApiTemplatesCallSinceClick": false,
+    "allResponses": [
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/product-menu.jpg",
+        "bytes": 210206,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/local-service.jpg",
+        "bytes": 612774,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/portfolio.jpg",
+        "bytes": 232106,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/professionals.jpg",
+        "bytes": 405184,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/desserdirina.jpg",
+        "bytes": 254039,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/templates/product-menu.js",
+        "bytes": 75906,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "application/javascript; charset=utf-8"
+      },
+      {
+        "url": "http://127.0.0.1:53216/api/me",
+        "bytes": 29,
+        "status": 401,
+        "contentEncoding": null,
+        "cacheControl": null,
+        "contentType": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/template-assets/product-menu/images/cn-hero.jpg",
+        "bytes": 210206,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      }
+    ]
+  },
+  "local-service": {
+    "wallTimeToFrameLoadEventMs": 11608,
+    "wallTimeToFrameContentAttachedMs": 11637,
+    "requestCountSinceClick": 8,
+    "totalBytesSinceClick": 2419485,
+    "hasApiTemplatesCallSinceClick": false,
+    "allResponses": [
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/product-menu.jpg",
+        "bytes": 210206,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/local-service.jpg",
+        "bytes": 612774,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/portfolio.jpg",
+        "bytes": 232106,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/professionals.jpg",
+        "bytes": 405184,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/thumbs/desserdirina.jpg",
+        "bytes": 254039,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/templates/local-service.js",
+        "bytes": 92373,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "application/javascript; charset=utf-8"
+      },
+      {
+        "url": "http://127.0.0.1:53216/api/me",
+        "bytes": 29,
+        "status": 401,
+        "contentEncoding": null,
+        "cacheControl": null,
+        "contentType": "application/json"
+      },
+      {
+        "url": "http://127.0.0.1:53216/app/generated/template-assets/local-service/images/pr-hero.jpg",
+        "bytes": 612774,
+        "status": 200,
+        "contentEncoding": null,
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "contentType": "image/jpeg"
+      }
+    ]
+  }
+}

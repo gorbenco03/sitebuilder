@@ -1,0 +1,127 @@
+{
+  "lens": "Șablon \"Restaurant\" (product-menu) — E2E complet cu screenshot-uri",
+  "summary": "Fundația vizuală a șablonului Restaurant e la un nivel bun — tipografie serif elegantă, fotografie de calitate, copy RO cald și fără urme de placeholder, iar fluxul de publicare (slug → email → plată de test → live) e curat și corect (preț 99€/29€ afișat corect). Editarea inline și cascada de identitate (redenumirea afacerii propagă automat în Instagram/Facebook/about) sunt detalii de produs matur. Totuși, am găsit DOUĂ bug-uri critice, reproduse și confirmate la nivel de cod: (1) galeria foto își pierde complet stilizarea la click — elementul .lightbox nu are NICIO regulă CSS nicăieri în template, deci în loc de un vizualizator full-screen, pagina se rupe și afișează poza brută inline, împingând footer-ul; (2) adăugarea unui element în lista de specialități creează un card gol pe care userul nu-l poate nici completa, nici șterge din UI (butonul '×' ajunge poziționat absolut într-o cutie 0x0), iar acel card gol se publică pe site-ul live — l-am văzut literal în pagina live publicată. Pe lângă acestea, butonul CTA principal din hero rămâne mereu transparent, indiferent de culoarea de accent aleasă (bug de specificitate CSS, confirmat din starea implicită), iar pe mobil linkurile de navigare din header dispar complet fără niciun meniu hamburger de rezervă. Un client care ar încerca să adauge un fel de mâncare sau să deschidă o poză din galerie ar da imediat peste o experiență ruptă — asta scoate produsul din liga Wix/Squarespace, chiar dacă design-ul static arată bine.",
+  "score": 4,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-product-menu",
+  "findings": [
+    {
+      "id": "PM-01",
+      "title": "Galeria foto (lightbox) e complet nestilizată — click pe o poză rupe layout-ul paginii în loc să deschidă un vizualizator",
+      "severity": "critical",
+      "category": "bug",
+      "area": "template:product-menu",
+      "description": "templates/product-menu/collage.js:23-31 creează dinamic <div class=\"lightbox\"> cu butoane .lightbox-close/.lightbox-prev/.lightbox-next și <img class=\"lightbox-img\">, iar openLightbox()/closeLightbox() comută DOAR atributul `hidden`. Nicăieri în templates/product-menu/styles.css sau template.html nu există reguli CSS pentru .lightbox, .lightbox-img, .lightbox-close sau .lightbox-nav (grep \"lightbox\" pe ambele fișiere = zero rezultate de stil). Fără poziționare fixed/fullscreen, fundal întunecat sau z-index, elementul se comportă ca un <div> normal în fluxul paginii.",
+      "evidence": "templates/product-menu/collage.js:23-31 (creare element, fără CSS asociat); verificare directă pe site-ul live cu getComputedStyle(.lightbox) = {position:\"static\", display:\"block\", zIndex:\"auto\", background:\"rgba(0,0,0,0)\"}, boundingClientRect = {w:1440,h:1332,y:1210}; captură 36-repro-gallery-lightbox-unstyled.png (fullPage) — se vede footer-ul \"rupt\" la mijlocul paginii și imaginea brută, uriașă, nestilizată dedesubt.",
+      "reproSteps": "1) Publică un site din șablonul Restaurant. 2) Pe pagina live, derulează la secțiunea \"În farfurie\" (galeria foto). 3) Click pe orice poză. 4) Rezultat: pagina se alungește brusc, footer-ul dispare la mijloc, iar o imagine brută la rezoluție naturală apare inline la finalul paginii — fără fundal, fără cadru, fără butoane vizibile de închidere/navigare.",
+      "recommendation": "Adaugă în styles.css regulile lipsă: .lightbox{position:fixed;inset:0;z-index:...;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center} + .lightbox[hidden]{display:none} + stilizare pentru .lightbox-img (max-width/height, object-fit), .lightbox-close/.lightbox-nav (poziționare absolută, culoare vizibilă, dimensiune touch-friendly). Testează pe toate cele 5 șabloane — collage.js pare partajat, deci verifică dacă bug-ul se repetă și pe celelalte sisteme cu galerie.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-02",
+      "title": "\"+ Adaugă\" pe lista de specialități creează un card gol imposibil de completat sau șters din UI, care ajunge publicat pe site-ul live",
+      "severity": "critical",
+      "category": "bug",
+      "area": "frontend",
+      "description": "builder/edit-overlay.js:686-702 (findListItemContainer) ia părintele imediat al singurului element [data-hb-edit] al noului item. Pentru un item nou cu label gol, acel element e <span data-hb-edit=\"services.N.label\"> fără text, iar părintele lui e <span class=\"pm-ticket__label\"> — un span inline gol, deci cu boundingClientRect 0x0 (confirmat: {w:0,h:0}). Butonul .hb-remove-btn e poziționat absolut în interiorul acestei cutii 0x0, deci în pagina reală nu poate fi accesat cu click (un <li> vecin \"intercepts pointer events\"). În plus, următorul buton \"+ Adaugă\" se inserează CA SIBLING în interiorul aceluiași span 0x0, deci vizual în interiorul cardului-tichet anterior, nu după el în listă.",
+      "evidence": "builder/edit-overlay.js:686-702 (algoritm findListItemContainer); HTML capturat direct din iframe: <li class=\"service-card pm-ticket\">...<span class=\"pm-ticket__label hb-list-item\"><span data-hb-edit=\"services.6.label\" contenteditable=\"true\"></span><button class=\"hb-remove-btn\">×</button></span><button class=\"hb-add-btn\">+ Adaugă</button>...</li>; export.zip/index.html conține efectiv 7 <li class=\"service-card pm-ticket\">, al 7-lea cu <span class=\"pm-ticket__label\"></span> complet gol; capturi 35-repro-empty-item-broken-controls.png și 25-live-site-desktop-fullpage.png (cardul gol e vizibil chiar pe site-ul LIVE publicat, sub \"Brunch de weekend\").",
+      "reproSteps": "1) În editor, la secțiunea \"Specialități/Produse\" (rail-ul \"La masă\"), click pe butonul \"+ Adaugă\" din capătul listei. 2) Se creează un card nou, complet gol (fără text, fără cursor vizibil unde să tastezi). 3) Încearcă să dai click pe \"×\" (butonul de ștergere) — nu apare la hover / clickul nu are efect. 4) Publică site-ul — cardul gol apare pe pagina live, vizibil pentru orice vizitator.",
+      "recommendation": "În findListItemContainer, ignoră ancestorii cu boundingClientRect 0x0 (continuă urcarea în DOM până la primul ancestor cu dimensiune reală), sau marchează explicit rădăcina fiecărui item repetabil cu un atribut dedicat (ex. data-hb-item-root) la randare, în loc să deduci containerul din elementele editabile. Suplimentar, dă noilor iteme un text placeholder minim (ca la menu.en/ro care primesc \"New section\"/\"New item\") ca elementul editabil să aibă mereu o dimensiune vizibilă și clicabilă.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-03",
+      "title": "Butonul CTA principal din hero (\"REZERVĂ O MASĂ\") rămâne mereu transparent, indiferent de culoarea de accent aleasă",
+      "severity": "high",
+      "category": "bug",
+      "area": "template:product-menu",
+      "description": "Elementul are class=\"hero-cta pm-hero__cta pm-hero__cta--fill\" (templates/product-menu/template.html, secțiunea hero). Regula .pm-hero__cta--fill{background:var(--cta)} (styles.css:120) e suprascrisă de .pm-hero__cta--ghost, .hero-cta{background:transparent} (styles.css:121) — ambele au specificitate egală (o singură clasă), iar regula cu .hero-cta e definită AL DOILEA în fișier, deci câștigă cascada CSS. Bug-ul e prezent din starea implicită (seed), nu doar după schimbarea culorii de accent — verificat pe /app/ înainte de orice editare.",
+      "evidence": "templates/product-menu/styles.css:120-121; templates/product-menu/template.html (clasa \"hero-cta\" pe link-ul CTA principal, absentă pe cel secundar \"MENIU\"); test direct: getComputedStyle(.pm-hero__cta--fill) = {bg:\"rgba(0,0,0,0)\"} atât înainte, cât și după setarea #color-custom-text la #1D5B79; header pill (.pm-mast__pill) SE colorează corect (bg=rgb(29,91,121)) cu aceeași acțiune — inconsistență direct vizibilă între cele două elemente. Capturi: 04-editor-drawer-autoopen.png (stare implicită), 13-whatsapp-badge-href.png (după schimbare imagine+nume, tot transparent), 11-colors-after.png.",
+      "reproSteps": "1) Deschide șablonul Restaurant (nicio editare). 2) Observă butonul \"REZERVĂ O MASĂ\" din hero — e doar un contur, identic vizual cu butonul secundar \"MENIU\". 3) Deschide #btn-color-picker, schimbă culoarea de accent — pill-ul din header se colorează corect, dar butonul din hero rămâne transparent.",
+      "recommendation": "Scoate clasa \"hero-cta\" de pe link-ul CTA principal (păstrează doar pm-hero__cta pm-hero__cta--fill), sau mută regula .pm-hero__cta--fill DUPĂ .hero-cta în stylesheet, sau crește specificitatea (.pm-hero__cta--fill.hero-cta{background:var(--cta)}). Fix de o linie.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-04",
+      "title": "Pe mobil, linkurile de navigare din header (\"LA MASĂ\", \"MENIU\", \"REZERVĂRI\") dispar complet, fără meniu hamburger de rezervă",
+      "severity": "high",
+      "category": "ux",
+      "area": "template:product-menu",
+      "description": "Pe site-ul live la 390px lățime, .pm-mast__nav nu se randează (boundingBox = null la evaluare), iar bara de header rămâne doar cu numele afacerii și pill-ul CTA. Nu există niciun buton hamburger sau meniu alternativ pentru a ajunge la secțiunile \"La masă\"/\"Meniu\"/\"Rezervări\" fără scroll manual. Pentru un restaurant, navigarea directă la meniu/program e exact tipul de acțiune pe care un vizitator mobil (majoritatea traficului local) o caută imediat.",
+      "evidence": "Screenshot 27-live-site-mobile-390.png și 31-live-mobile-nav-header.png — header-ul mobil arată doar logo-ul și butonul \"REZERVĂ O MASĂ\", fără urmă de \"LA MASĂ / MENIU / REZERVĂRI\"; verificare: page.locator('.pm-mast__nav').boundingBox() = null la 390px.",
+      "reproSteps": "1) Publică site-ul din șablonul Restaurant. 2) Deschide URL-ul live pe un viewport de 390px lățime (telefon). 3) Observă header-ul — lipsesc complet linkurile de navigare prezente pe desktop.",
+      "recommendation": "Adaugă un meniu hamburger pe breakpoint mobil care expune aceleași ancore (#pm-menu-rail, #pm-menu-block, #contact-card), sau cel puțin păstrează navigarea ca o bară orizontală cu scroll, în loc s-o ascunzi complet.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-05",
+      "title": "Două câmpuri \"Instagram URL\" identice ca valoare inițială, în secțiuni diferite ale drawer-ului, fără explicație a diferenței",
+      "severity": "medium",
+      "category": "ux",
+      "area": "template:product-menu",
+      "description": "Drawer-ul are atât \"URL Instagram (https://www.instagram.com/...)\" (secțiunea Instagram, legat de instagram.url) cât și \"Instagram (secțiune contact)\" (secțiunea Contact și rezervări, legat de contact.instagram.url) — ambele pornesc cu exact aceeași valoare (https://www.instagram.com/casa.nord.bucuresti) și niciun hint nu explică de ce există două. Un user care actualizează doar unul (crezând că a corectat handle-ul peste tot) va lăsa site-ul cu două linkuri Instagram diferite — unul în secțiunea Instagram, altul în cardul de contact.",
+      "evidence": "drawer-field-inventory.json — două intrări separate cu labelul aproape identic și aceeași valoare inițială; templates/product-menu/schema.json câmpurile instagram.url și contact.instagram.url.",
+      "reproSteps": "1) Deschide Detalii (drawer). 2) Compară câmpul \"URL Instagram\" (secțiunea Instagram) cu \"Instagram (secțiune contact)\" — identice ca valoare, fără nicio notă care să explice unde apare fiecare pe site.",
+      "recommendation": "Fie unifică cele două câmpuri într-unul singur care alimentează ambele locații din site, fie adaugă un hint explicit (\"apare în footer\" / \"apare în cardul de contact\") ca userul să înțeleagă că sunt independente.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-06",
+      "title": "Banner-ul de cookie acoperă parțial link-urile legale din footer pe desktop, până la acceptare",
+      "severity": "low",
+      "category": "ux",
+      "area": "template:product-menu",
+      "description": "Pe desktop, banner-ul de cookie (poziționat fixed jos-stânga) se suprapune vizual peste linia \"Confidențialitate · Termeni · Cookie-uri\" din footer, exact link-urile pe care un vizitator atent la confidențialitate ar vrea să le citească înainte să accepte.",
+      "evidence": "Captura 29-live-gallery-lightbox.png — banner-ul de cookie din colțul stânga-jos acoperă parțial textul \"onfidențialitate\" din footer.",
+      "reproSteps": "1) Deschide site-ul live pe desktop, fără să accepți cookie-urile. 2) Derulează la footer. 3) Observă că banner-ul de cookie se suprapune peste linkurile legale.",
+      "recommendation": "Repoziționează banner-ul (ex. centrat jos, pe toată lățimea, cu z-index sub footer) sau adaugă un margin ca linkurile legale să rămână accesibile chiar și cu banner-ul activ.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PM-07",
+      "title": "Modalul de plată (paywall) poate fi surprins vizual \"spălat\"/greu de citit în prima fracțiune de secundă după apariție",
+      "severity": "low",
+      "category": "ux",
+      "area": "frontend",
+      "description": "Modalul folosește animație CSS slideUp .2s ease (builder/app.css:1471-1484). Într-un screenshot luat imediat ce Playwright consideră elementul \"visible\" (adică atașat, nu neapărat la finalul tranziției), conținutul apare cu contrast foarte slab, aproape ilizibil. La ~1-2s conținutul e complet corect (copy RO, preț 99€ trial / 29€ reînnoire). Nu e specific șablonului Restaurant (e chrome comun al builder-ului), dar afectează prima impresie la exact momentul plății.",
+      "evidence": "Captura 22-publish-authenticated-paywall.png (imediat după ce #btn-pay-publish devine vizibil) vs. debug-paywall-2s.png (la 2s, complet lizibil).",
+      "reproSteps": "1) Parcurge fluxul de publicare până la ecranul \"Adaugă un card ca să fii live\". 2) Fă un screenshot chiar în momentul apariției — textul poate fi greu de citit până se termină tranziția.",
+      "recommendation": "Verifică dacă tranziția CSS are vreun caz în care rămâne blocată la opacitate parțială mai mult de 0.2s (posibil dublă randare a modalului); scurtează sau elimină animația pentru acest ecran critic (plată).",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    }
+  ],
+  "strengths": [
+    "Editare inline fluidă (click direct pe text în iframe) și încărcare foarte rapidă a editorului (~76ms până la conținut vizibil în iframe la pornirea din catalog).",
+    "Copy implicit (seed) editorial, în română corectă cu diacritice, fără urme de Lorem/placeholder — inclusiv textele noilor secțiuni de meniu (\"New section\"/\"New item\" apar doar la meniu, restul seed-ului e complet localizat și tematic).",
+    "Cascada de identitate la redenumirea afacerii (business.name) propagă inteligent noul nume/slug în Instagram, Facebook, meta description, tagline și JSON-LD — evită să rămână urme din numele demo (\"Casa Nord\") după rebranding, fără să suprascrie câmpuri complet nelegate de vechiul nume.",
+    "WhatsApp end-to-end funcțional: numărul + mesajul cu diacritice se păstrează corect codate în href-ul wa.me, iar fallback-ul cu cod QR pentru desktop (fără a naviga afară din pagină) e un detaliu de UX bine gândit.",
+    "Fotografia și tipografia (serif elegant pe titluri, paletă caldă) dau o senzație editorială, de nivel boutique — comparabilă vizual cu șabloane Squarespace pentru restaurante, în capturile statice.",
+    "Fluxul de plată/succes e clar, corect (99€ trial, 29€/an reînnoire, dată exactă de taxare afișată în dashboard) și fără contradicții de copy.",
+    "Export HTML/ZIP funcționează integral: arhiva conține index.html + pagini legale + assets, se deschide standalone printr-un server static fără erori de consolă și păstrează toate editările (nume, poză, text).",
+    "Paginile legale (privacy/terms/cookies) răspund toate 200, conțin text RO real și sunt linkate corect din footer-ul site-ului live; nicio eroare de consolă sau request eșuat (4xx/5xx) pe site-ul live, desktop sau mobil."
+  ],
+  "screenshots": [
+    { "file": "04-editor-drawer-autoopen.png", "whatItShows": "Stare implicită a editorului: Details drawer deschis automat, CTA hero deja transparent din seed (bug PM-03 vizibil din prima secundă)." },
+    { "file": "13-whatsapp-badge-href.png", "whatItShows": "După editare nume + poză hero: pill-ul din header colorat corect vs. CTA din hero tot transparent — contrast direct pentru PM-03." },
+    { "file": "35-repro-empty-item-broken-controls.png", "whatItShows": "Cardul gol rezultat din \"+ Adaugă\" pe lista de specialități, fără niciun buton \"×\" vizibil la hover — dovadă PM-02." },
+    { "file": "36-repro-gallery-lightbox-unstyled.png", "whatItShows": "Pagina live după click pe o poză din galerie: lightbox-ul nestilizat rupe layout-ul, footer-ul ajunge la mijlocul paginii — dovadă PM-01." },
+    { "file": "27-live-site-mobile-390.png", "whatItShows": "Header mobil pe site-ul live: linkurile de navigare au dispărut complet, fără hamburger — dovadă PM-04." },
+    { "file": "25-live-site-desktop-fullpage.png", "whatItShows": "Pagina live completă (desktop): design editorial reușit, dar cardul gol din PM-02 e vizibil sub \"Brunch de weekend\"." },
+    { "file": "23-publish-success-modal.png", "whatItShows": "Ecranul de succes post-plată: copy corect, preț corect, dashboard cu data exactă de taxare — exemplu de flux polish-uit (strength)." },
+    { "file": "29-live-gallery-lightbox.png", "whatItShows": "Secțiunea de galerie foto pe site-ul live: fotografie de calitate, grid curat — arată bine static, dar interacțiunea (lightbox) e complet ruptă." }
+  ],
+  "notRun": [
+    "Fluxul formularului de programări (/api/appointments) — nu se aplică acestui șablon (Restaurant folosește card de contact WhatsApp/telefon, nu formular local de programare ca la 'professionals').",
+    "Plată reală Stripe / webhook semnat — testat doar cu HIDOOK_TEST_PAY conform regulilor de izolare a auditului.",
+    "Integrare Telegram bot și randare live a unui embed Instafidget real (câmpul 'URL feed Instafidget' a rămas gol în acest walk).",
+    "Testare pe browser real mobil (iOS Safari / Android Chrome) — rezultatele 'mobil' provin din emulare viewport 390px în Chromium (Playwright), nu de pe dispozitiv fizic.",
+    "Scanarea fizică a codului QR WhatsApp cu un telefon real — verificat doar poziționarea/structura DOM, nu scanabilitatea efectivă.",
+    "Testare exhaustivă a fiecărui câmp din schema.json (ex. toate variantele bilingve menu.en) — am verificat un eșantion reprezentativ (business, hero, theme, contact, services), nu fiecare câmp individual."
+  ]
+}

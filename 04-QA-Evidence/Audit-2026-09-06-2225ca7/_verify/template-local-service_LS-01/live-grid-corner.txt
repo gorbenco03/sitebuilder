@@ -1,0 +1,10 @@
+Top-left 9x9 of LIVE rendered QR (from actual app DOM):
+#######  
+######## 
+### #### 
+## # ####
+### #####
+######## 
+#######  
+ ##### # 
+##   # # 

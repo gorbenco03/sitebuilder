@@ -1,0 +1,152 @@
+{
+  "lens": "renderer static + export HTML/ZIP + legal injection",
+  "auditedAt": "2026-09-06",
+  "repoHead": "2225ca7",
+  "summary": "Motorul de randare (build.js) si pipeline-ul de export (bot/site-export.js + bot/zip.js) sunt o baza tehnica solida: escaping consistent, sink-uri raw explicit enumerate si sanitizate, engine.js pentru preview generat prin extragere literala din build.js (deci fara drift), zip writer cu protectie zip-slip, iar controlul de acces la export este impus server-side (nu doar ascuns in UI) exact ca in VISION S6. Am gasit insa doua defecte critice reale, confirmate cu exploit functional in Chromium real, nu doar teoretic: (1) un bypass de sanitizare pentru sink-ul raw {{& icon}} din templates/portfolio (stored XSS clickabil, verificat cu alert() executat), si (2) formularul de programare din templates/professionals afiseaza succes fals ('Cerere trimisa... Am inregistrat cererea') pe orice export self-hosted, desi cererea nu paraseste niciodata browserul vizitatorului (0 apeluri de retea, doar sessionStorage). Am mai gasit doua defecte de SEO reale si usor de reparat (og:image relativ, deci preview WhatsApp/Facebook rupt pe orice site live; canonical/og:url niciodata generat) si o corupere silentioasa a seo.jsonLd la o simpla redenumire a afacerii (cascada text-replace fara escaping JSON). Restul suprafetei testate (escaping general, export ZIP offline, leak-scan, control acces export, determinism build.js) este curat si la nivel bun.",
+  "score": 6,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/static-renderer-export",
+  "findings": [
+    {
+      "id": "F1",
+      "title": "Stored XSS: sink-ul raw {{& icon}} din templates/portfolio poate fi ocolit cu 'jav<TAB>ascript:' in href/xlink:href — alert() executat real in Chromium",
+      "severity": "critical",
+      "category": "security",
+      "area": "template:portfolio",
+      "description": "build.js sanitizeaza sink-ul raw {{& icon}} (folosit doar in templates/portfolio/template.html:136, `<span class=\"pf-chip__icon\">{{& icon}}</span>`) printr-o blacklist regex care cauta literal substringul 'javascript'/'data'/'vbscript' imediat dupa un atribut href/xlink:href/src/action/formaction (build.js:364-381). Regexul nu normalizeaza URL-ul inainte de verificare. Browserele insa elimina caracterele ASCII tab/CR/LF dintr-un URL inainte de a-i interpreta schema (spec WHATWG URL) — deci href=\"jav\\tascript:alert(1)\" este vazut de regex ca sigur (nu contine substringul 'javascript'), dar Chrome real il executa ca javascript: URI la click. Comentariul din build.js care justifica lipsa unei sanitizari mai stricte ('builder/bot-generated, never raw user input') este FALS pentru acest camp: schema.json declara explicit campul ca text liber destinat exact acestui scop — 'Listă servicii (icon SVG + nume + preț opțional)' (templates/portfolio/schema.json:285-293), deci orice cont de client poate scrie acest payload in campul 'icon' al unui serviciu prin fluxul normal al aplicatiei (Details drawer -> Servicii).",
+      "evidence": "build.js:364-381 (sink-ul icon); templates/portfolio/schema.json:285-293 (camp text liber, etichetat explicit 'icon SVG'); templates/portfolio/template.html:136 ({{& icon}}); 04-QA-Evidence/.../static-renderer-export/xss-poc-portfolio-icon-sink.html (output brut, netrunchiat, cu payload-ul intact); xss-poc-verify-script.mjs + xss-poc-verify-output.txt (rulare Playwright reala: 'After clicking payload1 link: alertFired = 1')",
+      "reproSteps": "1) node -e cu build.js renderHtml() pe templates/portfolio, config cu services[0].icon = '<svg><a href=\"jav\\tascript:alert(1)\"><text x=\"5\" y=\"15\">x</text></a></svg>'. 2) Output contine literal <span class=\"pf-chip__icon\" aria-hidden=\"true\"><svg><a href=\"jav\\tascript:alert(1)\">... — neescapat, tab-ul e pastrat brut. 3) Deschide HTML-ul in Chromium (Playwright), da click pe link-ul din interiorul span-ului .pf-chip__icon -> alert(1) se declanseaza (dialog event confirmat, alertFired='1'). Am testat si variante suplimentare de bypass in acelasi sink: SMIL <animate attributeName=\"href\" values=\"javascript:...\"> si <style>@import 'javascript:...'</style> — ambele trec neschimbate prin sanitizer (posibil neexecutabile in Chrome modern din alte motive de securitate ale browserului, dar dovedesc ca sanitizer-ul e o blacklist incompleta, nu un allowlist).",
+      "recommendation": "Inlocuieste blacklist-ul regex cu (a) normalizarea URL-ului inainte de verificare — elimina \\t\\r\\n din valoare inainte de a cauta schema periculoasa — si (b) o sanitizare de tip allowlist pentru SVG (elemente/atribute permise explicit, fara <style>, <animate>/<set> cu attributeName ce tinteste href/xlink:href, fara <a> deloc daca nu e nevoie). Cel mai simplu si robust: inlocuieste campul de text liber 'icon SVG' cu un set curat de iconite predefinite (dropdown/picker), eliminand complet nevoia de a accepta SVG arbitrar de la client. Adauga un test de regresie cu exact payload-urile de mai sus.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F2",
+      "title": "Formularul de programare (templates/professionals) afiseaza succes fals pe orice export self-hosted — cererea nu ajunge niciodata la proprietar",
+      "severity": "critical",
+      "category": "bug",
+      "area": "template:professionals",
+      "description": "templates/professionals/script.js decide daca trimite cererea de programare la /api/appointments doar daca location.pathname se potriveste cu tiparul /live/<slug>/ (functia detectLiveSlug, linia 126-129) SI originea e http(s) (linia 348). Pe orice site auto-gazduit exportat (ZIP/HTML, exact functia promovata in VISION S6 'poate fi servit de pe orice static host fara runtime Hidook'), calea nu contine /live/<slug>/, deci codul intra pe ramura 'else' (localOnly, linia 372-385): NU face niciun apel de retea, salveaza cererea doar in sessionStorage-ul vizitatorului, si afiseaza exact acelasi mesaj de succes ca pe site-ul live: 'Cerere trimisă — așteaptă confirmarea' + 'Am înregistrat cererea. Confirmăm disponibilitatea...'. Singurul indiciu ca nu s-a trimis nimic real e un sufix discret in interiorul liniei cu data/ora: '· stare de previzualizare locală' — usor de ratat, si oricum ambiguu pentru un vizitator obisnuit. Rezultat: orice client care foloseste exportul HTML/ZIP self-hosted (functie explicit vanduta ca parte a produsului) pierde silentios toate cererile de programare, in timp ce vizitatorii lui primesc confirmare falsa ca cererea a fost inregistrata.",
+      "evidence": "templates/professionals/script.js:126-129 (detectLiveSlug), 346-421 (sendRequest, in special liniile 348 si 372-413); 04-QA-Evidence/.../static-renderer-export/live-appointment-submitted.png (pe /live/<slug>/: POST catre /api/appointments confirmat in reteaua capturata) vs static-export-appointment-submitted.png (identic vizual, dar 0 cereri de retea); static-export-appointment-area.html (HTML complet al zonei afectate)",
+      "reproSteps": "1) Publica un site cu template-ul 'professionals' (Servicii profesionale) fara sa activezi calendarul nativ (stare implicita). 2) Descarca export ZIP, dezarhiveaza, serveste static pe orice server simplu (fara backend Hidook). 3) Completeaza formularul 'Solicită o programare' (tip, data, ora, nume, email) si trimite. 4) Constata: 0 cereri de retea catre /api/appointments (verificat), dar UI afiseaza 'Cerere trimisă — așteaptă confirmarea. Am înregistrat cererea.' — identic cu succesul real de pe /live/<slug>/, unde acelasi flux chiar trimite POST si primeste raspuns de la server.",
+      "recommendation": "Detecteaza explicit lipsa unui backend Hidook viu (nu doar prin path-ul /live/) inainte de a arata formularul, si fie (a) inlocuieste formularul cu un CTA onest de telefon/WhatsApp/email pe exporturile self-hosted ('Acest site foloseste export static — foloseste telefonul sau WhatsApp de mai jos pentru programari'), fie (b) schimba radical textul de succes pe ramura localOnly astfel incat titlul insusi sa spuna clar ca cererea NU a fost trimisa real (nu doar un sufix discret la sfarsitul unei propozitii).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F3",
+      "title": "og:image si twitter:image sunt cai relative pe site-ul LIVE publicat — preview-ul de distribuire (WhatsApp/Facebook/Telegram/X) nu se incarca",
+      "severity": "high",
+      "category": "bug",
+      "area": "backend",
+      "description": "Specificatia Open Graph cere ca og:image sa fie un URL absolut; majoritatea crawler-elor de link-preview (WhatsApp, Facebook, Telegram, X/Twitter, LinkedIn) nu rezolva o cale relativa fata de pagina. build.js -> deriveSocialImage() calculeaza corect o cale relativa (ex. 'images/hero.jpg') din poza de hero/business, dar acest URL nu este niciodata transformat in absolut la publicare (nu exista niciun cod in bot/webpublish.js care sa prefixeze cu domeniul live). Confirmat direct pe site-ul live publicat prin fluxul real din UI (nu doar in exportul offline, unde relativul e de asteptat): og:image ramane 'images/hero.jpg'. Aceasta rupe exact caracteristica documentata in VISION S.Flow2/PRODUCT.md ('imaginea pentru distribuire sociala se alege automat') pentru canalul principal de distributie al produsului (share pe WhatsApp).",
+      "evidence": "04-QA-Evidence/.../static-renderer-export/live-page-source.html linia 11: <meta property=\"og:image\" content=\"images/hero.jpg\"> si linia 18 (twitter:image identic) — capturat de pe URL-ul live real /live/<slug>/, nu din exportul offline; build.js functia deriveSocialImage() (liniile 193-222) returneaza direct calea gasita, fara vreo transformare in absolut; grep in bot/webpublish.js nu arata nicio prelucrare a seo.ogImage.",
+      "reproSteps": "Publica orice site, deschide URL-ul live intr-un tab nou, View Source, cauta 'og:image' — content e o cale relativa fara schema/host.",
+      "recommendation": "La publicare (webpublish.js), inainte de a apela build(), seteaza cfg.seo.ogImage = PUBLIC_URL + '/live/' + slug + '/' + relativePath (sau domeniul custom cand exista), similar cu cum sunt injectate deja nativeCustomerId/nativeSiteId pentru calendar.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F4",
+      "title": "Redenumirea afacerii corupe silentios seo.jsonLd printr-o inlocuire de text neescapata JSON — datele structurate (rich snippets) dispar fara avertisment",
+      "severity": "high",
+      "category": "bug",
+      "area": "frontend",
+      "description": "builder/app.js include 'seo.jsonLd' in lista de campuri afectate de cascadeBusinessNameIdentity() (linia 287), care sincronizeaza identitatea (titlu, about, retele sociale) cand utilizatorul schimba numele afacerii. Functia rewriteIdentityString() (liniile 218-240) face un simplu out.split(oldName).join(newName) pe TEXTUL BRUT serializat JSON, fara nicio scapare JSON a valorii noi inainte de inserare. Cand vechiul nume al afacerii apare literal in seo.jsonLd (cazul normal, campul e populat implicit cu numele afacerii la creare) si noul nume contine un caracter special JSON (cel mai comun: ghilimele duble, ex. un nume complet plauzibil precum 'La \"Perla\" Bistro'), JSON-ul rezultat devine invalid. build.js -> sanitizeJsonLd() detecteaza corect JSON invalid si NU il injecteaza brut (deci nu exista risc XSS) — dar consecinta este ca <script type=\"application/ld+json\"> iese complet gol pe site-ul publicat, stergand silentios datele structurate Schema.org (eligibilitate rich-snippets Google) ale afacerii, fara niciun semnal in UI-ul builder-ului (doar un console.warn pe server, invizibil clientului).",
+      "evidence": "builder/app.js:181-287 (cascadeBusinessNameIdentity, in special 218-240 rewriteIdentityString si 287 lista de cascade); build.js:289-302 (sanitizeJsonLd, care confirma comportamentul de fallback silentios); 04-QA-Evidence/.../static-renderer-export/jsonld-cascade-corruption-poc.txt — repro determinist, fara nicio interactiune de browser: BEFORE {\"name\":\"Desserdirina\",...} -> redenumire in 'La \"Perla\" Bistro' -> AFTER {\"name\":\"La \"Perla\" Bistro\",...} -> JSON.parse arunca eroare la pozitia 62.",
+      "reproSteps": "Extrage functia cascadeBusinessNameIdentity din builder/app.js, ruleaz-o cu oldName='Desserdirina', newName='La \"Perla\" Bistro' pe un config al carui seo.jsonLd contine \"name\":\"Desserdirina\" — JSON.parse(rezultat) esueaza. Pe fluxul real din UI: redenumeste orice afacere folosind un nume cu ghilimele duble, publica, verifica <script type=\"application/ld+json\"> pe site-ul live — e gol.",
+      "recommendation": "La cascada pe seo.jsonLd, parseaza JSON-ul intai, inlocuieste valorile-string care contin vechiul nume folosind atribuire sigura (nu string.replace pe textul serializat), apoi re-serializeaza cu JSON.stringify. Alternativ, exclude seo.jsonLd din lista de cascade text-replace si regenereaza-l structural din business.name la fiecare cascada.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F5",
+      "title": "Niciun site publicat nu are vreodata canonical URL / og:url — campul e ascuns de client si nu e populat automat la publicare",
+      "severity": "medium",
+      "category": "bug",
+      "area": "backend",
+      "description": "Toate cele 5 template-uri genereaza <link rel=\"canonical\"> si <meta property=\"og:url\"> doar cand seo.canonical exista (<!-- @if seo.canonical -->). Campul e insa listat explicit in HIDDEN_DRAWER_KEYS din builder/app.js (linia 488) — clientul nu-l poate seta niciodata din UI — si nu exista niciun cod in bot/webpublish.js care sa-l populeze automat cu URL-ul live la publicare. Rezultat: absolut niciun site construit cu acest produs are vreodata un tag canonical, un gol SEO de baza pentru orice produs la nivelul Wix/Squarespace.",
+      "evidence": "04-QA-Evidence/.../static-renderer-export/live-page-source.html — nu contine deloc 'canonical' sau 'og:url'; templates/desserdirina/template.html:24-28 (guard @if seo.canonical); builder/app.js:488 (HIDDEN_DRAWER_KEYS include seo.canonical).",
+      "reproSteps": "Publica orice site, View Source pe URL-ul live, cauta 'canonical' — nu exista.",
+      "recommendation": "Injecteaza cfg.seo.canonical = PUBLIC_URL + '/live/' + slug + '/' (sau domeniul custom) la publicare, exact ca la nativeCustomerId/nativeSiteId. Nu necesita UI nou.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F6",
+      "title": "Niciun site (live sau export ZIP) nu include robots.txt / sitemap.xml",
+      "severity": "medium",
+      "category": "product-gap",
+      "area": "backend",
+      "description": "scripts/build-site.js foloseste robots.txt/sitemap.xml doar pentru pagina de prezentare proprie hidook.agency, dar bot/site-export.js si bot/webpublish.js (fluxul real pentru clienti) nu genereaza niciodata aceste fisiere pentru site-urile clientilor, nici pe live, nici in ZIP.",
+      "evidence": "04-QA-Evidence/.../static-renderer-export/zip-contents.json — 21 fisiere in ZIP, fara robots.txt/sitemap.xml; grep in bot/site-export.js/webpublish.js confirma absenta oricarui generator.",
+      "reproSteps": "Descarca orice export ZIP, lista continutul — lipsesc robots.txt si sitemap.xml.",
+      "recommendation": "Genereaza un robots.txt minimal (Allow: /) si un sitemap.xml cu index.html + privacy/terms/cookies la fiecare build al site-ului de client (build.js sau site-export.js), asa cum se face deja pentru pagina proprie hidook.agency.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F7",
+      "title": "Paginile legale contin text vizibil '[PLACEHOLDER: ...]' pe orice site publicat azi",
+      "severity": "info",
+      "category": "product-gap",
+      "area": "legal",
+      "description": "bot/site-legal.js genereaza corect privacy.html/terms.html/cookies.html cu placeholder-uri clare pentru date legale (entitate, CUI/VAT, jurisdictie, DPO) — comportament DELIBERAT si documentat explicit in VISION.md S5 ('Nu se livrează la clienți plătitori cu text legal inventat', 'placeholder-uri clare'), deci nu e o abatere de la specificatie. Semnalez totusi ca, la data auditului, orice vizitator al oricarui site publicat poate deschide privacy.html si vedea text de genul '[PLACEHOLDER: denumire legală / entitate]' — acceptabil pentru stadiul curent (dev/pre-productie), dar un blocker real inainte de a vinde catre clienti finali reali, asa cum e deja notat in owner gates (VISION S10: date legale/VAT/jurisdictie raman in sarcina owner-ului).",
+      "evidence": "bot/site-legal.js:106-133 (stringurile PLACEHOLDER); confirmat live: GET pe privacy.html/terms.html/cookies.html ale site-ului de test au raspuns 200 si contin textul placeholder nemodificat.",
+      "reproSteps": "Publica orice site, deschide <live-url>/privacy.html — text vizibil '[PLACEHOLDER: ...]' in mai multe locuri.",
+      "recommendation": "Nicio actiune de dezvoltare necesara — ramane on owner (date legale reale) inainte de orice lansare comerciala reala, exact cum specifica VISION S10.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    },
+    {
+      "id": "F8",
+      "title": "Cascada de identitate (redenumire afacere) poate produce link-uri Instagram/Facebook rupte fara avertisment cand noul nume nu produce un slug rezonabil",
+      "severity": "low",
+      "category": "ux",
+      "area": "frontend",
+      "description": "cascadeBusinessNameIdentity rescrie contact.instagram.url/contact.facebook.url substituind slug-ul vechiului nume cu slug-ul (curatat corect, fara caractere periculoase) al noului nume. Cand noul nume e text neobisnuit (ex. colat/lipit din alta parte, foarte lung, sau plin de simboluri), rezultatul e un URL de profil care aproape sigur nu exista, fara nicio confirmare/avertisment ca link-urile sociale tocmai s-au schimbat.",
+      "evidence": "builder/app.js:181-238 (slugify + rewriteIdentityString aplicate pe contact.facebook.url/contact.instagram.url); observat empiric in cursul testarii XSS (business.name modificat -> contact.instagram.url a devenit 'https://www.instagram.com/scriptwindowpwn1scriptimgsrcxonerrorwi', un link garantat mort, dar sigur — fara caractere periculoase, doar text irelevant).",
+      "reproSteps": "Redenumeste o afacere cu text lung/neobisnuit cand contact.instagram.url contine inca slug-ul vechi — link-ul social devine automat un profil care nu exista, fara confirmare.",
+      "recommendation": "Arata un toast/confirmare cand cascada modifica un URL extern ('Am actualizat link-ul Instagram din X in Y — verifica-l'), sau limiteaza cascada doar la cazuri cu incredere mare (nume vechi/nou ambele scurte si alfanumerice).",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "F9",
+      "title": "Campul schema 'icon' e declarat si pentru product-menu/local-service dar nu e randat niciodata in acele template-uri (schema moarta)",
+      "severity": "low",
+      "category": "data",
+      "area": "template:product-menu",
+      "description": "templates/product-menu/schema.json si templates/local-service/schema.json declara 'icon': 'text' pe itemShape-ul serviciilor, dar template.html-urile respective nu folosesc deloc {{icon}}/{{& icon}} in randare — orice valoare introdusa de client in acest camp e stocata dar nu are niciun efect vizibil. Nu e o vulnerabilitate (nu exista sink care sa randeze valoarea), dar e o confuzie inutila pentru client si spatiu irosit in schema/drawer.",
+      "evidence": "templates/product-menu/schema.json:227, templates/local-service/schema.json:386,404 declara campul; grep in template.html-urile respective nu gaseste nicio referinta la {{icon}} in sectiunea servicii.",
+      "reproSteps": "In editor, pe template Restaurant sau Meserii, completeaza campul 'icon' al unui serviciu — nimic se schimba vizual pe site.",
+      "recommendation": "Fie elimina campul din schema pentru aceste doua template-uri, fie implementeaza-l vizual (cu un sanitizer corect, vezi F1) daca era intentionat.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "strengths": [
+    "Escaping consistent si testat direct prin fluxul real al produsului: am injectat <script>, atribute onerror, javascript:, JSON invalid si scheme CSS periculoase prin editorul inline live (nu doar prin config.json manual), am publicat, si am verificat in ZIP/HTML exportat — toate au iesit corect escapate/blocate, cu exceptia sink-ului {{& icon}} (F1).",
+    "Arhitectura engine.js (browser) este generata prin extragere literala a codului sursa din build.js (scripts/build-builder.js), deci zero risc de drift intre randarea din editor/preview si randarea reala de la publicare/export — confirmat prin comparatia continutului.",
+    "Controlul de acces la export (GET /api/export-html, /api/export-zip) e impus server-side prin hasActiveCommercialEntitlement(), cu eroare RO onesta si cod EXPORT_REQUIRES_SUBSCRIPTION — nu doar ascuns in UI.",
+    "Export ZIP complet functional offline: dezarhivat si servit cu un server static generic (fara nicio dependinta de Hidook), site-ul se incarca fara nicio eroare de consola/retea, cu toate imaginile, CSS/JS, pagini legale si banner de cookie functionale.",
+    "Zero leak-uri gasite (grep automat pe toate fisierele text din export): fara cai locale (/Users/Work), fara 127.0.0.1/localhost, fara nume interne de template (DESSERD), fara console.log de debug in script.js/collage.js livrat.",
+    "bot/zip.js are protectie zip-slip (respinge nume de intrare cu '..').",
+    "node build.js e determinist: reconstruit pe config.json/template.html din radacina, produce index.html byte-identic cu fisierul urmarit in git.",
+    "Favicon-uri dedicate per template, ca SVG inline (fara request suplimentar), cu culori potrivite brandului fiecarui design."
+  ],
+  "screenshots": [
+    { "file": "static-export-appointment-submitted.png", "whatItShows": "Formularul de programare pe exportul self-hosted (server static generic, fara backend Hidook) afisand 'Cerere trimisă — așteaptă confirmarea' desi 0 cereri de retea au fost facute (vezi F2)" },
+    { "file": "live-appointment-submitted.png", "whatItShows": "Acelasi formular pe site-ul LIVE Hidook — POST real catre /api/appointments confirmat, pentru contrast direct cu exportul" },
+    { "file": "static-served-index.png", "whatItShows": "Site-ul desserdirina exportat (ZIP dezarhivat), servit de un server static generic fara runtime Hidook — se incarca complet, 0 erori de consola" },
+    { "file": "xss-poc-portfolio-icon-sink.html", "whatItShows": "Output brut HTML dupa randare cu build.js, aratand payload-ul XSS neescapat in interiorul span-ului .pf-chip__icon (F1)" },
+    { "file": "drawer-portfolio-services-icon-field.png", "whatItShows": "Details drawer deschis pe template-ul portfolio (Salon), la deschiderea automata dupa selectarea design-ului" },
+    { "file": "live-site-injected.png", "whatItShows": "Site-ul desserdirina live cu numele afacerii inlocuit cu un payload adversarial (text HTML/script), afisat corect escapat pe pagina" },
+    { "file": "07-publish-success.png", "whatItShows": "Modal de succes dupa publicare cu plata de test (HIDOOK_TEST_PAY), cu URL-ul live generat" }
+  ],
+  "notRun": [
+    "Nu am rulat scripts/build-builder.js pentru a regenera builder/generated/engine.js si a diff-ui rezultatul (ar fi modificat fisiere tracked in git, interzis de regula read-only); am verificat in schimb prin citirea codului sursa si grep tintit ca engine.js curent contine toate functiile de sanitizare actuale din build.js (SAFE_CSS_DATA_IMAGE, sanitizeJsonLd, isConnectedSocialFeedEmbed) — nicio dovada de drift.",
+    "Nu am confirmat printr-un screenshot direct al UI-ului de drawer campul exact 'icon SVG' pentru portfolio (am gasit sectiunea de servicii mai jos in drawer decat am cautat in timpul alocat) — dovada pentru F1 se bazeaza in schimb pe schema.json (text explicit) + randare reala prin build.js + exploit confirmat in Chromium, ceea ce considera suficient de solid.",
+    "Nu am testat exportul HTML/ZIP pentru celelalte doua template-uri (local-service, professionals cu native booking activat) end-to-end vizual in profunzime — timpul alocat lens-ului a fost directionat spre cele doua defecte critice (F1, F2) si verificarile SEO/leak/acces la nivel general, care acopera toate cele 5 template-uri prin cod, nu doar prin UI.",
+    "Nu am validat comportamentul exact al bypass-urilor SMIL <animate>/<style>@import in alte motoare de randare (Firefox/Safari) — verificarea a fost facuta doar in Chromium (Playwright); pe Chrome payload-ul <a href> functioneaza cert, celelalte doua variante raman dovada a unei sanitizari incomplete indiferent de comportamentul exact per-browser."
+  ]
+}

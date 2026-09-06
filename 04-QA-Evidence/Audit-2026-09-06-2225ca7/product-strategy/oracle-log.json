@@ -1,0 +1,138 @@
+{
+  "lens": "product-strategy",
+  "startedAt": "2026-09-05T21:42:57.830Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "catalog-landing",
+      "action": "goto /app/",
+      "selector": null,
+      "screenshot": "01-catalog-landing.png",
+      "sha256": "c64c85b9e5e3cfaaada81c86e51e261f2a9b3d364bf44097c90a50d7a69af067",
+      "timestamp": "2026-09-05T21:43:00.101Z",
+      "url": "http://127.0.0.1:51548/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Prima ecran: catalog de 5 șabloane"
+      }
+    },
+    {
+      "index": 1,
+      "step": "catalog-full-scroll",
+      "action": "scroll to see full catalog",
+      "selector": null,
+      "screenshot": "02-catalog-full-scroll.png",
+      "sha256": "eac3d694c3488f54ff165fed80e9f238a0817c728f6eebc8d01bc065ca6113d5",
+      "timestamp": "2026-09-05T21:43:00.528Z",
+      "url": "http://127.0.0.1:51548/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "editor-with-details-drawer",
+      "action": "click .btn-start-tpl professionals",
+      "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
+      "screenshot": "03-editor-with-details-drawer.png",
+      "sha256": "4959851a742d152a896ee52023a4b7db5dccfb6296b4e695179b5fcb39e95b91",
+      "timestamp": "2026-09-05T21:43:01.899Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Editor deschis, Details drawer auto-open"
+      }
+    },
+    {
+      "index": 3,
+      "step": "drawer-fields-detail",
+      "action": "inspect #drawer-body",
+      "selector": null,
+      "screenshot": "04-drawer-fields-detail.png",
+      "sha256": "4959851a742d152a896ee52023a4b7db5dccfb6296b4e695179b5fcb39e95b91",
+      "timestamp": "2026-09-05T21:43:02.053Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Câmpuri disponibile pentru editare per secțiune fixă"
+      }
+    },
+    {
+      "index": 4,
+      "step": "color-picker-popover",
+      "action": "click #btn-color-picker",
+      "selector": "#btn-color-picker",
+      "screenshot": "05-color-picker-popover.png",
+      "sha256": "4959851a742d152a896ee52023a4b7db5dccfb6296b4e695179b5fcb39e95b91",
+      "timestamp": "2026-09-05T21:43:22.623Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Popover cu presets de culoare + custom hex"
+      }
+    },
+    {
+      "index": 5,
+      "step": "preview-iframe-inline-edit-surface",
+      "action": "inspect #preview-iframe",
+      "selector": null,
+      "screenshot": "06-preview-iframe-inline-edit-surface.png",
+      "sha256": "3f332452c00376ae3a3d4daa93d4d0acd4f2b9ab812d748d98116655e06b939e",
+      "timestamp": "2026-09-05T21:43:22.799Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Suprafața de inline-edit (text/imagini) în iframe"
+      }
+    },
+    {
+      "index": 6,
+      "step": "preview-mobile-toggle",
+      "action": "click #btn-preview-mobile",
+      "selector": "#btn-preview-mobile",
+      "screenshot": "07-preview-mobile-toggle.png",
+      "sha256": "b7c362c82001341b91c2a9fbb51d4b02f17b8c6a1c47877d9ae0f469e87e2941",
+      "timestamp": "2026-09-05T21:43:23.401Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Toggle mobil/desktop pentru preview"
+      }
+    },
+    {
+      "index": 7,
+      "step": "list-add-item-result",
+      "action": "click primul buton \"Adaugă\" din drawer",
+      "selector": null,
+      "screenshot": "08-list-add-item-result.png",
+      "sha256": "78eea241ebfd553dead856c2ec78860f257c852babee5c83df6931887f29e27d",
+      "timestamp": "2026-09-05T21:43:24.001Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Verificare regressie item 6 owner-feedback (tab gol la add)"
+      }
+    },
+    {
+      "index": 8,
+      "step": "publish-modal-slug",
+      "action": "click #btn-publish",
+      "selector": "#btn-publish",
+      "screenshot": "09-publish-modal-slug.png",
+      "sha256": "78eea241ebfd553dead856c2ec78860f257c852babee5c83df6931887f29e27d",
+      "timestamp": "2026-09-05T21:43:44.757Z",
+      "url": "http://127.0.0.1:51548/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "Modal publish: alegere slug"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "Verificat manual: nicio funcție de add/remove/reorder SECȚIUNI (doar add/remove ITEMI în liste ca services/menu). Nicio funcție undo/redo găsită în builder/app.js. Niciun control de tipografie/font. Fără suport multipage.",
+    "injectDataHb() în builder/app.js (linia ~680) confirmă edit mapping fragil prin regex text-match pe HTML randat — exact ce descrie VISION §4.6."
+  ],
+  "finishedAt": "2026-09-05T21:43:44.757Z"
+}

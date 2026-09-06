@@ -1,0 +1,9 @@
+{
+  "hasFlag": false,
+  "nodeVersion": "v23.1.0",
+  "route": "/api/calendar-native/services",
+  "status": 400,
+  "bodySnippet": "{\"error\":\"Native calendar requires Node.js with node:sqlite (run with --experimental-sqlite on Node 22.5+).\",\"code\":\"ERROR\"}",
+  "widgetPreviewStatus": 404,
+  "widgetPreviewSnippet": "{\"error\":\"not found\"}"
+}

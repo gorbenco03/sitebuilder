@@ -1,0 +1,145 @@
+{
+  "lens": "builder-chrome-ux-part3",
+  "startedAt": "2026-09-05T21:30:12.864Z",
+  "entries": [
+    {
+      "step": "tab-order-10th",
+      "file": "01-p3-tab-order-10th.png",
+      "detail": "focus after 10 tabs: btn-publish",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:15.304Z"
+    },
+    {
+      "step": "escape-modal-publish",
+      "file": "02-p3-escape-modal-publish.png",
+      "detail": "Publish modal + Escape: before=true after=false",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:15.835Z"
+    },
+    {
+      "step": "escape-modal-instagram",
+      "file": "03-p3-escape-modal-instagram.png",
+      "detail": "Instagram modal + Escape (re-check): before=true after=true",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:16.302Z"
+    },
+    {
+      "step": "escape-drawer",
+      "file": "04-p3-escape-drawer.png",
+      "detail": "details-drawer visible after Escape: false",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:17.010Z"
+    },
+    {
+      "step": "editor-mobile-390-viewport",
+      "file": "05-p3-editor-mobile-390-viewport.png",
+      "detail": "editor chrome at 390px width (is builder itself usable on phone?)",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:17.498Z"
+    },
+    {
+      "step": "editor-mobile-390-drawer-open",
+      "file": "06-p3-editor-mobile-390-drawer-open.png",
+      "detail": "Details drawer at 390px width",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:17.857Z"
+    },
+    {
+      "step": "second-tab-same-editor-url",
+      "file": "07-p3-second-tab-same-editor-url.png",
+      "detail": "opened a 2nd tab directly at #edit in the same browser context",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:19.205Z"
+    },
+    {
+      "step": "second-tab-editor-state",
+      "file": "08-p3-second-tab-editor-state.png",
+      "detail": "tab2 editor state (draft loaded from localStorage independently?)",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:19.376Z"
+    },
+    {
+      "step": "returning-client-site-published",
+      "file": "09-p3-returning-client-site-published.png",
+      "detail": "site published for qa-returning-1788643820617@example.com / qa-returning-client-mtowckjn",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:21.092Z"
+    },
+    {
+      "step": "returning-client-back-to-header",
+      "file": "10-p3-returning-client-back-to-header.png",
+      "detail": "back to a screen where #app-header (logout) is available",
+      "url": "http://127.0.0.1:50608/app/#templates",
+      "ts": "2026-09-05T21:30:21.630Z"
+    },
+    {
+      "step": "returning-client-after-logout",
+      "file": "11-p3-returning-client-after-logout.png",
+      "detail": "logged out",
+      "url": "http://127.0.0.1:50608/app/#templates",
+      "ts": "2026-09-05T21:30:22.178Z"
+    },
+    {
+      "step": "returning-client-dashboard-logged-out",
+      "file": "12-p3-returning-client-dashboard-logged-out.png",
+      "detail": "visiting #dashboard while logged out",
+      "url": "http://127.0.0.1:50608/app/#dashboard",
+      "ts": "2026-09-05T21:30:22.606Z"
+    },
+    {
+      "step": "returning-client-relogin-result",
+      "file": "13-p3-returning-client-relogin-result.png",
+      "detail": "re-authenticated with same email qa-returning-1788643820617@example.com via magic link",
+      "url": "http://127.0.0.1:50608/app/#dashboard",
+      "ts": "2026-09-05T21:30:23.171Z"
+    },
+    {
+      "step": "returning-client-dashboard-both-sites",
+      "file": "14-p3-returning-client-dashboard-both-sites.png",
+      "detail": "dashboard after re-login, site-card count=1",
+      "url": "http://127.0.0.1:50608/app/#dashboard",
+      "ts": "2026-09-05T21:30:23.708Z"
+    },
+    {
+      "step": "returning-client-edit-original-site",
+      "file": "15-p3-returning-client-edit-original-site.png",
+      "detail": "reopened original site in editor for further edits",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:24.538Z"
+    },
+    {
+      "step": "returning-client-edited-original-site",
+      "file": "16-p3-returning-client-edited-original-site.png",
+      "detail": "edited business name on the original returning-client site",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:44.839Z"
+    },
+    {
+      "step": "returning-client-republish-success",
+      "file": "17-p3-returning-client-republish-success.png",
+      "detail": "republish for already-paid site skipped modal-publish and went straight to modal-success (silent republish by design)",
+      "url": "http://127.0.0.1:50608/app/#edit",
+      "ts": "2026-09-05T21:30:45.075Z"
+    }
+  ],
+  "defects": [
+    {
+      "sev": "medium",
+      "title": "Escape nu închide modalul modal-instagram",
+      "detail": "Instagram modal + Escape (re-check) - Escape ar trebui să închidă orice modal deschis (pattern standard SaaS/accesibilitate)"
+    },
+    {
+      "sev": "medium",
+      "title": "Niciun acces la cont (deconectare/proiectele mele) din interiorul editorului",
+      "detail": "editor-topbar (afișat pe ruta #edit) nu conține #btn-logout sau #nav-dashboard - acestea există doar în #app-header, ascuns explicit de showScreen() cât timp name==='edit' (builder/app.js showScreen). Utilizatorul trebuie să apese Înapoi (spre catalogul de designuri) ca să ajungă la Deconectare sau Proiectele mele."
+    }
+  ],
+  "notes": [
+    "Tab order (10 presses) from editor topbar: [\"editor-preview-cookie-isolated\",\"btn-back-templates\",\"btn-preview-desktop\",\"btn-preview-mobile\",\"btn-add-instagram\",\"btn-color-picker\",\"btn-open-drawer\",\"btn-download-html\",\"btn-download-zip\",\"btn-publish\"]",
+    "Tab2 preview-iframe business.name editable field visible without re-picking a template: true",
+    "btn-logout visible while still in editor (#edit route) right after publish: false",
+    "Re-auth POST /api/auth/email status=200 devLink=/auth/verify?token=651beb936bad6fd5164b605f1fc6164925dee65bb532f2d592967219f74063cc",
+    "Returning client dashboard: site-card count after re-login = 1 (expect 1: qa-returning-client-mtowckjn)",
+    "First site card (qa-returning-client-mtowckjn) found on dashboard after re-login: 1"
+  ]
+}

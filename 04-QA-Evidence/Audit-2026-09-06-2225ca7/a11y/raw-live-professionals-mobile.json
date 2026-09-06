@@ -1,0 +1,410 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Claritate pentru deciziile importante.",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Servicii",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Contracte și negocieri",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Organizare și guvernanță corporativă",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Îndrumare în drept civil",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Verificări juridice esențiale",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "De la cerere la consultație",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Trimite cererea",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Confirmăm ora",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Analizăm opțiunile",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Cabinet Juridic Ionescu",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Experiență",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Solicită o programare",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Cerere trimisă — așteaptă confirmarea",
+      "visible": false
+    },
+    {
+      "tag": "H2",
+      "text": "Întrebări frecvente",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Contact",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Deschide WhatsApp pe telefon",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "",
+      "alt": "WhatsApp QR",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 2,
+    "main": 1,
+    "footer": 1
+  },
+  "forms": [
+    {
+      "tag": "INPUT",
+      "type": "radio",
+      "id": "",
+      "name": "appt-type",
+      "hasLabel": true,
+      "via": "wrapping label",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "radio",
+      "id": "",
+      "name": "appt-type",
+      "hasLabel": true,
+      "via": "wrapping label",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "radio",
+      "id": "",
+      "name": "appt-type",
+      "hasLabel": true,
+      "via": "wrapping label",
+      "visible": true
+    },
+    {
+      "tag": "SELECT",
+      "type": "select-one",
+      "id": "pr-appt-date",
+      "name": "date",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "SELECT",
+      "type": "select-one",
+      "id": "pr-appt-slot",
+      "name": "slot",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "pr-name",
+      "name": "name",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "email",
+      "id": "pr-email",
+      "name": "email",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "tel",
+      "id": "pr-phone",
+      "name": "phone",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    },
+    {
+      "tag": "INPUT",
+      "type": "text",
+      "id": "pr-note",
+      "name": "note",
+      "hasLabel": true,
+      "via": "label[for]",
+      "visible": true
+    }
+  ],
+  "contrastFails": [
+    {
+      "text": "Nu trimite documente sau informații conf",
+      "tag": "P",
+      "id": "",
+      "cls": "pr-warn",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(243, 239, 232, 0.9)",
+      "bg": "(alpha~){\"r\":243,\"g\":239,\"b\":232,\"approx\":true}",
+      "fontSize": 14.4,
+      "bold": false
+    },
+    {
+      "text": "Consultație inițială",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__label",
+      "ratio": 2.04,
+      "threshold": 4.5,
+      "fg": "rgb(243, 239, 232)",
+      "bg": "(alpha~){\"r\":196,\"g\":165,\"b\":116,\"approx\":true}",
+      "fontSize": 15.2,
+      "bold": false
+    },
+    {
+      "text": "45 min · online",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__meta",
+      "ratio": 2.04,
+      "threshold": 4.5,
+      "fg": "rgba(243, 239, 232, 0.55)",
+      "bg": "(alpha~){\"r\":196,\"g\":165,\"b\":116,\"approx\":true}",
+      "fontSize": 12.8,
+      "bold": false
+    },
+    {
+      "text": "Revizuire contract",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__label",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(243, 239, 232)",
+      "bg": "(alpha~){\"r\":243,\"g\":239,\"b\":232,\"approx\":true}",
+      "fontSize": 15.2,
+      "bold": false
+    },
+    {
+      "text": "60 min · cabinet",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__meta",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(243, 239, 232, 0.55)",
+      "bg": "(alpha~){\"r\":243,\"g\":239,\"b\":232,\"approx\":true}",
+      "fontSize": 12.8,
+      "bold": false
+    },
+    {
+      "text": "Discuție de urmărire",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__label",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(243, 239, 232)",
+      "bg": "(alpha~){\"r\":243,\"g\":239,\"b\":232,\"approx\":true}",
+      "fontSize": 15.2,
+      "bold": false
+    },
+    {
+      "text": "30 min · telefon",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "pr-type__meta",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(243, 239, 232, 0.55)",
+      "bg": "(alpha~){\"r\":243,\"g\":239,\"b\":232,\"approx\":true}",
+      "fontSize": 12.8,
+      "bold": false
+    }
+  ],
+  "contrastUndetermined": [],
+  "ariaIssues": [],
+  "smallTargets": [
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pr-nav__brand pr-nav__word",
+      "w": 178,
+      "h": 26,
+      "text": "Cabinet Juridic Ionescu"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pr-nav__cta",
+      "w": 128,
+      "h": 40,
+      "text": "Programare"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "pr-scroll",
+      "w": 17,
+      "h": 89,
+      "text": "Explorează"
+    },
+    {
+      "tag": "INPUT",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 13,
+      "text": ""
+    },
+    {
+      "tag": "INPUT",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 13,
+      "text": ""
+    },
+    {
+      "tag": "INPUT",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 13,
+      "text": ""
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 214,
+      "h": 16,
+      "text": "contact@cabinetjuridicionescu."
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 109,
+      "h": 16,
+      "text": "+40 721 555 014"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 102,
+      "h": 21,
+      "text": "Confidențialitate"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 49,
+      "h": 21,
+      "text": "Termeni"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 65,
+      "h": 21,
+      "text": "Cookie-uri"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 62,
+      "h": 13,
+      "text": "hidook.tech"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 78,
+      "h": 13,
+      "text": "hidook.agency"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 264,
+      "h": 34,
+      "text": "Politica de cookie-uri"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "hb-cookie-accept",
+      "cls": "",
+      "w": 79,
+      "h": 33,
+      "text": "Acceptă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 84,
+      "h": 18,
+      "text": "Află mai mult"
+    }
+  ],
+  "lang": "ro",
+  "title": "Cabinet Juridic Ionescu | Consultanță juridică | București",
+  "h1Count": 1,
+  "headingSkips": []
+}

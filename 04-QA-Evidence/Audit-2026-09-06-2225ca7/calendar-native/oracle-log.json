@@ -1,0 +1,345 @@
+{
+  "lens": "calendar-native",
+  "startedAt": "2026-09-05T21:43:46.688Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "widget-desktop-service-step",
+      "action": "goto widget preview desktop",
+      "selector": null,
+      "screenshot": "01-widget-desktop-service-step.png",
+      "sha256": "e3df492cabaeb94322c512376a8266d9e2399349d932549905b9a604df8c8506",
+      "timestamp": "2026-09-05T21:43:48.122Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "pasul 1: alegere serviciu (default: Consultatie initiala preselectata)"
+      }
+    },
+    {
+      "index": 1,
+      "step": "widget-desktop-after-service-click",
+      "action": "click serviciul Control",
+      "selector": null,
+      "screenshot": "02-widget-desktop-after-service-click.png",
+      "sha256": "70c39961498d07d4d5578f463c36afc3a2093672d8ea247e244df2efbc55ced7",
+      "timestamp": "2026-09-05T21:43:48.738Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "clicked=true"
+      }
+    },
+    {
+      "index": 2,
+      "step": "widget-desktop-day-selected",
+      "action": "click o zi lucratoare (Lu-Vi) din calendar",
+      "selector": null,
+      "screenshot": "03-widget-desktop-day-selected.png",
+      "sha256": "c378be0e594eb7679a3d5beb26694f2c6930d583e05cf02eeab9fd1d87a9df7d",
+      "timestamp": "2026-09-05T21:43:49.305Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 3,
+      "step": "widget-desktop-slot-selected-form",
+      "action": "click primul slot orar liber",
+      "selector": null,
+      "screenshot": "04-widget-desktop-slot-selected-form.png",
+      "sha256": "c98374cd47c5760700e11734e84821bb8dbf47cfdba4674cbafc27af5d67d971",
+      "timestamp": "2026-09-05T21:43:49.865Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "slotClicked=true"
+      }
+    },
+    {
+      "index": 4,
+      "step": "widget-desktop-form-filled",
+      "action": "completare formular vizitator (nume/email/telefon)",
+      "selector": null,
+      "screenshot": "05-widget-desktop-form-filled.png",
+      "sha256": "7925392ed28c681e9490880acdc6e483ade00b4fba53484c31326da4496a03b4",
+      "timestamp": "2026-09-05T21:43:49.905Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 5,
+      "step": "widget-desktop-confirmation",
+      "action": "submit formular -> stare confirmare/eroare (data-hnb-success)",
+      "selector": null,
+      "screenshot": "06-widget-desktop-confirmation.png",
+      "sha256": "7186e8808eda2cb0e6c70b056dee33297716e1e3a1094458232d753a56e72e00",
+      "timestamp": "2026-09-05T21:43:51.144Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 6,
+      "step": "widget-mobile-service-step",
+      "action": "goto widget preview mobile 390px",
+      "selector": null,
+      "screenshot": "07-widget-mobile-service-step.png",
+      "sha256": "d2ca35aaaaa2a08cfdda0f574113bb0d74cc18ee88a983fb6fa5bd3bad0d06a3",
+      "timestamp": "2026-09-05T21:43:51.852Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 7,
+      "step": "widget-mobile-after-service",
+      "action": "click serviciul Control pe mobil",
+      "selector": null,
+      "screenshot": "08-widget-mobile-after-service.png",
+      "sha256": "c92aea37dbea083e0b2325c8c36dcc54d18ad1791c47e2b83c9c85c587c4b8c5",
+      "timestamp": "2026-09-05T21:43:52.434Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 8,
+      "step": "widget-mobile-day-slots",
+      "action": "zi lucratoare + sloturi pe mobil",
+      "selector": null,
+      "screenshot": "09-widget-mobile-day-slots.png",
+      "sha256": "db30e6d0e787f77bac7b36b57b0209f4aaa663e0e9e1afd4101d094323de0bea",
+      "timestamp": "2026-09-05T21:43:52.977Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 9,
+      "step": "widget-mobile-form",
+      "action": "formular completat pe mobil dupa alegere slot",
+      "selector": null,
+      "screenshot": "10-widget-mobile-form.png",
+      "sha256": "dcab887cc9471f6eb139c635211b731a7b83939ea860fb8d38a0088634f5d4c8",
+      "timestamp": "2026-09-05T21:43:53.420Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 10,
+      "step": "widget-mobile-confirmation",
+      "action": "submit pe mobil -> confirmare",
+      "selector": null,
+      "screenshot": "11-widget-mobile-confirmation.png",
+      "sha256": "7c5f95806cf3ab3b9be726acaeb0e36430d8a501345241a4c49776eb296d47b6",
+      "timestamp": "2026-09-05T21:43:54.450Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 11,
+      "step": "owner-desktop-bookings-list",
+      "action": "goto owner preview desktop -> lista rezervari",
+      "selector": null,
+      "screenshot": "12-owner-desktop-bookings-list.png",
+      "sha256": "2eb72cb12a6df6cbb74db960d5ab5b823e884dd672d9076f3776825baa639ecc",
+      "timestamp": "2026-09-05T21:43:55.945Z",
+      "url": "http://127.0.0.1:51629/calendar-native/owner/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 12,
+      "step": "owner-desktop-availability-editor",
+      "action": "click tab Disponibilitate -> editor weekly + blackout",
+      "selector": null,
+      "screenshot": "13-owner-desktop-availability-editor.png",
+      "sha256": "eae27190b98166efdbd1920db582b723bbb05b15d192089bc534f087c772e4bf",
+      "timestamp": "2026-09-05T21:43:56.511Z",
+      "url": "http://127.0.0.1:51629/calendar-native/owner/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 13,
+      "step": "owner-desktop-services-tab",
+      "action": "click tab Servicii",
+      "selector": null,
+      "screenshot": "14-owner-desktop-services-tab.png",
+      "sha256": "d64e8a92bddc9cd3712ff59c1ae564990ef4402b0cface475abfa29d68bf5f83",
+      "timestamp": "2026-09-05T21:43:56.967Z",
+      "url": "http://127.0.0.1:51629/calendar-native/owner/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 14,
+      "step": "owner-desktop-after-cancel-action",
+      "action": "click Anuleaza pe o programare (confirm dialog acceptat)",
+      "selector": null,
+      "screenshot": "15-owner-desktop-after-cancel-action.png",
+      "sha256": "ae781e50cd0c5725c011ab406e9f4f5feea2848471bf4409b322becdb91a44b0",
+      "timestamp": "2026-09-05T21:43:58.164Z",
+      "url": "http://127.0.0.1:51629/calendar-native/owner/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 15,
+      "step": "owner-mobile-390-bookings-list",
+      "action": "goto owner preview 390px -> verificare fara scroll orizontal / controale taiate",
+      "selector": null,
+      "screenshot": "16-owner-mobile-390-bookings-list.png",
+      "sha256": "40e60d3b06b3a38aa908d730bbc0ac7e986c6d16ffd76caa7e0f3454e89b1e67",
+      "timestamp": "2026-09-05T21:43:59.636Z",
+      "url": "http://127.0.0.1:51629/calendar-native/owner/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 16,
+      "step": "manage-valid-token",
+      "action": "deschide manage link cu token valid",
+      "selector": null,
+      "screenshot": "17-manage-valid-token.png",
+      "sha256": "0d9087ca8a76cd58e539e3e2c0c28696457217b888796ef27755b1b8d566ba84",
+      "timestamp": "2026-09-05T21:44:00.298Z",
+      "url": "http://127.0.0.1:51629/calendar-native/manage/?token=EvHdi2J50eLvb9I2BGPCL2PnUM4pZ3hD",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 17,
+      "step": "manage-invalid-token",
+      "action": "deschide manage link cu token invalid",
+      "selector": null,
+      "screenshot": "18-manage-invalid-token.png",
+      "sha256": "a01b5365471797ac89a9e91ff993cabbd359526cfe2b883724987b36517a4973",
+      "timestamp": "2026-09-05T21:44:00.822Z",
+      "url": "http://127.0.0.1:51629/calendar-native/manage/?token=invalid-token-xyz-000000",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 18,
+      "step": "manage-missing-token",
+      "action": "deschide manage link fara token",
+      "selector": null,
+      "screenshot": "19-manage-missing-token.png",
+      "sha256": "9b9e4af7d28a6796ec8c1fc1fe8c89cc843ecfd1868a7aca72a7ea77e2885b76",
+      "timestamp": "2026-09-05T21:44:01.355Z",
+      "url": "http://127.0.0.1:51629/calendar-native/manage/?token=",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 19,
+      "step": "manage-after-cancel-reused",
+      "action": "reincarcare manage link dupa anulare (token reused)",
+      "selector": null,
+      "screenshot": "20-manage-after-cancel-reused.png",
+      "sha256": "0d9087ca8a76cd58e539e3e2c0c28696457217b888796ef27755b1b8d566ba84",
+      "timestamp": "2026-09-05T21:44:01.882Z",
+      "url": "http://127.0.0.1:51629/calendar-native/manage/?token=EvHdi2J50eLvb9I2BGPCL2PnUM4pZ3hD",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 20,
+      "step": "widget-error-invalid-email",
+      "action": "submit cu email invalid (\"not-an-email\")",
+      "selector": null,
+      "screenshot": "21-widget-error-invalid-email.png",
+      "sha256": "f27d38902a76819deb54a98589174b6a39c37a642471c2249a58c93ab50c51d7",
+      "timestamp": "2026-09-05T21:44:04.056Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 21,
+      "step": "widget-error-slot-taken-meanwhile",
+      "action": "submit pe un slot pe care API l-a ocupat intre timp (stale UI) -> ar trebui eroare/rescheduled, NICIODATA confirmare falsa",
+      "selector": null,
+      "screenshot": "22-widget-error-slot-taken-meanwhile.png",
+      "sha256": "3ce65981df7b18f8fc9ef899b9ed1ed35c4ce7738fdaf30d6c8df2a758ffdfc8",
+      "timestamp": "2026-09-05T21:44:06.290Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 22,
+      "step": "widget-no-availability-today",
+      "action": "stare fara disponibilitate (Duminica, fara program) - copy RO implicit la incarcare",
+      "selector": null,
+      "screenshot": "23-widget-no-availability-today.png",
+      "sha256": "e3df492cabaeb94322c512376a8266d9e2399349d932549905b9a604df8c8506",
+      "timestamp": "2026-09-05T21:44:07.506Z",
+      "url": "http://127.0.0.1:51629/calendar-native/widget/preview.html",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [
+    "Cross-tenant probe results: svcA=200 svcB=404 mismatch=404 ownerNoAuth=401 bogusCookie=401",
+    "RACE 20x simultaneous POST same slot: confirmed=1 requested=0 reschedule_needed=19 errors=0 raw=[\"confirmed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\",\"reschedule_needed\"]",
+    "Race OK la nivel API sincron intra-proces: exact 1 confirmed din 20. NOTA: engine.createBooking e 100% sincron (fara await intern), deci sub Node single-thread aceste 20 requesturi sunt de facto serializate de event loop inainte sa ajunga la interleaving real — testul nu dovedeste robustete sub concurenta reala multi-proces/multi-worker, doar corectitudine logica secventiala + constraint UNIQUE ca plasa de siguranta.",
+    "CTA text after submit (should NOT be stuck on \"Se trimite…\"): null",
+    "Widget desktop console errors: []",
+    "Widget desktop failed requests: []",
+    "Widget mobile 390 horizontal-scroll present (pas 1): false",
+    "Widget mobile 390 horizontal-scroll present (dupa selectie zi): false",
+    "Widget mobile console errors: []",
+    "Owner desktop console errors: []",
+    "Owner mobile 390 console errors: []",
+    "Owner mobile 390 horizontal-scroll present: false",
+    "Manage token reuse test: first cancel: 200 {\"ok\":true,\"already\":true,\"booking\":{\"id\":\"bk_67cd8285cb97b476e9d5293f\",\"status\":\"cancelled\",\"statusLabelRo\":\"anulată\",\"startUtc\":\"2026-09-07T06:00:00.000Z\",\"endUtc\":\"2026-09-07T06:45:00.000Z\",\"serviceName\":\"Consultație inițială\",\"visitorName\":\"Maria Ionescu\",\"visitorEmail\":\"maria@example.com\",\"timezone\":\"Europe/Bucharest\"},\"slotFreed\":true} | second cancel (reused): 200 {\"ok\":true,\"already\":true,\"booking\":{\"id\":\"bk_67cd8285cb97b476e9d5293f\",\"status\":\"cancelled\",\"statusLabelRo\":\"anulată\",\"startUtc\":\"2026-09-07T06:00:00.000Z\",\"endUtc\":\"2026-09-07T06:45:00.000Z\",\"serviceName\":\"Consultație inițială\",\"visitorName\":\"Maria Ionescu\",\"visitorEmail\":\"maria@example.com\",\"timezone\":\"Europe/Bucharest\"},\"slotFreed\":true}"
+  ],
+  "finishedAt": "2026-09-05T21:44:07.521Z"
+}

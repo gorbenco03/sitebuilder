@@ -1,0 +1,494 @@
+{
+  "headings": [
+    {
+      "tag": "H1",
+      "text": "Renovări Casa Nord",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Despre noi",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Cere o ofertă gratuită",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Servicii",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Cum lucrăm",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Evaluare gratuită",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Execuție controlată",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Predare și garanție",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "De ce să ne alegi",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "12 ani de experiență",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Garanție scrisă de 2 ani",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Oferte transparente",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Firmă autorizată și asigurată",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Lucrări finalizate",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Renovări complete de baie",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Bucătării și spații deschise",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Extinderi și lucrări structurale",
+      "visible": true
+    },
+    {
+      "tag": "H2",
+      "text": "Pregătit să începem?",
+      "visible": true
+    },
+    {
+      "tag": "H3",
+      "text": "Deschide WhatsApp pe telefon",
+      "visible": false
+    }
+  ],
+  "imgs": [
+    {
+      "src": "images/pr-baie1.jpg",
+      "alt": "Baie modernă renovată complet · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-baie2.jpg",
+      "alt": "Finisaje premium cu gresie · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-baie3.jpg",
+      "alt": "Duș walk-in placat cu gresie · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-buc1.jpg",
+      "alt": "Bucătărie renovată în plan deschis · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-buc2.jpg",
+      "alt": "Living cu pardoseală din lemn · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-buc3.jpg",
+      "alt": "Tavan suspendat cu LED în bucătărie · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-ext1.jpg",
+      "alt": "Extindere de casă pe structură metalică · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "images/pr-ext2.jpg",
+      "alt": "Construcție finalizată în curte · București",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "",
+      "alt": "WhatsApp QR",
+      "hasAlt": true,
+      "empty": false,
+      "generic": false,
+      "decorative": false
+    },
+    {
+      "src": "a11y-local-service-mtowwcpb/",
+      "alt": "",
+      "hasAlt": true,
+      "empty": true,
+      "generic": false,
+      "decorative": false
+    }
+  ],
+  "landmarks": {
+    "header": 1,
+    "nav": 1,
+    "main": 1,
+    "footer": 1
+  },
+  "forms": [],
+  "contrastFails": [
+    {
+      "text": "12+",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "ls-meter__n",
+      "ratio": 1.8,
+      "threshold": 3,
+      "fg": "rgb(11, 61, 145)",
+      "bg": "rgb(15,23,32)",
+      "fontSize": 21.6,
+      "bold": true
+    },
+    {
+      "text": "240+",
+      "tag": "SPAN",
+      "id": "",
+      "cls": "ls-meter__n",
+      "ratio": 1.8,
+      "threshold": 3,
+      "fg": "rgb(11, 61, 145)",
+      "bg": "rgb(15,23,32)",
+      "fontSize": 21.6,
+      "bold": true
+    },
+    {
+      "text": "12 ani de experiență",
+      "tag": "H3",
+      "id": "",
+      "cls": "ls-trust__t",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 16.8,
+      "bold": true
+    },
+    {
+      "text": "Peste un deceniu de lucrări în București",
+      "tag": "P",
+      "id": "",
+      "cls": "ls-text",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.68)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 17,
+      "bold": false
+    },
+    {
+      "text": "Garanție scrisă de 2 ani",
+      "tag": "H3",
+      "id": "",
+      "cls": "ls-trust__t",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 16.8,
+      "bold": true
+    },
+    {
+      "text": "Fiecare lucrare de construcții și finisa",
+      "tag": "P",
+      "id": "",
+      "cls": "ls-text",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.68)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 17,
+      "bold": false
+    },
+    {
+      "text": "Oferte transparente",
+      "tag": "H3",
+      "id": "",
+      "cls": "ls-trust__t",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 16.8,
+      "bold": true
+    },
+    {
+      "text": "Primești devizul detaliat înainte de înc",
+      "tag": "P",
+      "id": "",
+      "cls": "ls-text",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.68)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 17,
+      "bold": false
+    },
+    {
+      "text": "Firmă autorizată și asigurată",
+      "tag": "H3",
+      "id": "",
+      "cls": "ls-trust__t",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgb(255, 255, 255)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 16.8,
+      "bold": true
+    },
+    {
+      "text": "Suntem autorizați și asigurați pentru lu",
+      "tag": "P",
+      "id": "",
+      "cls": "ls-text",
+      "ratio": 1,
+      "threshold": 4.5,
+      "fg": "rgba(255, 255, 255, 0.68)",
+      "bg": "(alpha~){\"r\":255,\"g\":255,\"b\":255,\"approx\":true}",
+      "fontSize": 17,
+      "bold": false
+    }
+  ],
+  "contrastUndetermined": [],
+  "ariaIssues": [],
+  "smallTargets": [
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "ls-util__phone",
+      "w": 98,
+      "h": 18,
+      "text": "+40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "ls-util__cta",
+      "w": 121,
+      "h": 34,
+      "text": "Cere ofertă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hero-cta ls-btn ls-btn--fill",
+      "w": 131,
+      "h": 42,
+      "text": "Cere ofertă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "ls-btn ls-btn--ghost",
+      "w": 191,
+      "h": 42,
+      "text": "Sună · +40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item ls-lead__row",
+      "w": 296,
+      "h": 43,
+      "text": "+40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item ls-lead__row",
+      "w": 296,
+      "h": 43,
+      "text": "WhatsApp"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item ls-lead__row",
+      "w": 296,
+      "h": 43,
+      "text": "@renovari.casa.nord"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item ls-lead__row",
+      "w": 296,
+      "h": 43,
+      "text": "Renovări Casa Nord"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "contact-item ls-lead__row",
+      "w": 296,
+      "h": 43,
+      "text": "București și împrejurimi"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "ls-btn ls-btn--fill",
+      "w": 131,
+      "h": 42,
+      "text": "Cere ofertă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "ls-btn ls-btn--ghost",
+      "w": 191,
+      "h": 42,
+      "text": "Sună · +40 721 234 567"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 102,
+      "h": 20,
+      "text": "Confidențialitate"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 49,
+      "h": 20,
+      "text": "Termeni"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 65,
+      "h": 20,
+      "text": "Cookie-uri"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 62,
+      "h": 13,
+      "text": "hidook.tech"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 78,
+      "h": 13,
+      "text": "hidook.agency"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 13,
+      "h": 23,
+      "text": "IG"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 16,
+      "h": 23,
+      "text": "FB"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "",
+      "w": 18,
+      "h": 23,
+      "text": "WhatsApp"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 264,
+      "h": 34,
+      "text": "Politica de cookie-uri"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "hb-cookie-accept",
+      "cls": "",
+      "w": 79,
+      "h": 33,
+      "text": "Acceptă"
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "cls": "hb-cookie-link",
+      "w": 84,
+      "h": 18,
+      "text": "Află mai mult"
+    }
+  ],
+  "lang": "ro",
+  "title": "Renovări Casa Nord | Renovări interioare București",
+  "h1Count": 1,
+  "headingSkips": []
+}

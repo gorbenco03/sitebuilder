@@ -1,0 +1,9 @@
+{
+  "hasFlag": true,
+  "nodeVersion": "v23.1.0",
+  "route": "/api/calendar-native/services",
+  "status": 404,
+  "bodySnippet": "{\"error\":\"Calendar is not configured for this site.\",\"code\":\"NOT_CONFIGURED\",\"status\":404}",
+  "widgetPreviewStatus": 404,
+  "widgetPreviewSnippet": "{\"error\":\"not found\"}"
+}

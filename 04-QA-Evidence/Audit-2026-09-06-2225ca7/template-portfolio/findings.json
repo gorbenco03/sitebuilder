@@ -1,0 +1,139 @@
+{
+  "lens": "Șablonul \"Salon\" (portfolio) — E2E complet cu screenshot-uri, HEAD 2225ca7",
+  "summary": "Fundația de design a șablonului Salon e sinceră: tipografie serif elegantă, fotografie de calitate, ierarhie clară, spațiere generoasă și un sistem de culori cu accent personalizabil — la prima vedere arată la nivel de Squarespace pentru un salon boutique. Sub suprafață însă am găsit mai multe defecte funcționale reale, reproduse consistent în 2-3 rulări independente: lightbox-ul galeriei foto e complet nestilizat (styles.css nu are nicio regulă pentru .lightbox) și practic invizibil la click; butonul inline \"+ Adaugă\" pentru categorii de galerie nu funcționează deloc; site-ul publicat nu are absolut niciun meniu de navigare pe mobil (fără hamburger, fără alternativă) sub 720px; redenumirea afacerii lasă în urmă \"Echipa Atelier Ivoire\" în secțiunea echipă, o contradicție de brand vizibilă pe pagina live; iar preview-ul din editor rămâne cu culoarea veche câteva momente după ce schimbi poza și apoi culoarea, contrazicând promisiunea explicită \"previzualizarea live se actualizează imediat\". În schimb, ce funcționează — text inline, poză hero, culori (la publicare finală), WhatsApp cu diacritice + QR code, plăți de test, export HTML/ZIP, pagini legale, JSON-LD, og:image — funcționează curat, fără erori de consolă sau cereri eșuate. Per total, un produs cu bune intenții de design dar cu prea multe fisuri funcționale vizibile pentru pretenția de nivel Wix/Squarespace.",
+  "score": 6,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/template-portfolio/",
+  "findings": [
+    {
+      "id": "PORT-01",
+      "title": "Lightbox-ul galeriei foto e complet nestilizat și needen la click — funcție centrală ruptă",
+      "severity": "critical",
+      "category": "bug",
+      "area": "template:portfolio",
+      "description": "templates/portfolio/collage.js deschide un lightbox full-screen la click pe orice poză din galerie prin `lb.removeAttribute('hidden')` (comentariul din cod promite explicit: \"full-screen lightbox on click/tap\"). Dar templates/portfolio/styles.css conține ZERO reguli CSS pentru .lightbox/.lightbox-img/.lightbox-close/.lightbox-nav (verificat cu grep -c lightbox styles.css = 0). Rezultat: elementul revine la stilul implicit al browserului — display:block, position:static, fundal transparent, z-index:auto — și e poziționat ca ultimul copil din <body>, DUPĂ tot conținutul paginii (confirmat: top=5848px într-un document de 8264px). Vizual, click-ul pe o poză din galerie nu produce NIMIC vizibil pe ecran; doar dacă vizitatorul derulează manual sub footer găsește o imagine brută, needimensionată, cu un simplu caracter \"›\" ca navigare.",
+      "evidence": "templates/portfolio/collage.js:24-48 (creare + openLightbox/closeLightbox); templates/portfolio/styles.css (0 potriviri pentru \"lightbox\"); screenshot 25-live-gallery-lightbox-viewport.png (nimic vizibil imediat după click) și 26-live-gallery-lightbox-actual.png (starea reală, needimensionată, sub footer, după scrollTo(0, document.body.scrollHeight)); oracle-log.json → defects[2] cu getBoundingClientRect/getComputedStyle complet (display:block, position:static, background:rgba(0,0,0,0))",
+      "reproSteps": "1. /app/ → accept cookie → alege șablonul Salon (portfolio). 2. Publică site-ul (slug + email + dev-link + test-pay). 3. Pe site-ul live, derulează la secțiunea galerie (\"Din salon\"), așteaptă ~1s ca animația de scatter să se așeze, apoi click pe orice fotografie (.collage-photo). 4. Observă: nimic nu se schimbă vizual în viewport. 5. Rulează în consolă: document.querySelector('.lightbox').getBoundingClientRect() → top ~5800px, position:static, background transparent.",
+      "recommendation": "Adaugă în styles.css regulile lipsă pentru .lightbox (position:fixed; inset:0; z-index:100; display:grid; place-items:center; background:rgba(0,0,0,.9)), .lightbox[hidden]{display:none}, .lightbox-img (max-width/max-height, object-fit:contain), .lightbox-close/.lightbox-nav (poziționare absolută, stil buton vizibil) — analog cu .wa-qr care E stilizat corect în același fișier și poate servi ca model direct.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-02",
+      "title": "Butonul inline \"+ Adaugă\" pentru categorii de galerie nu adaugă nimic — funcție de personalizare blocată",
+      "severity": "high",
+      "category": "bug",
+      "area": "template:portfolio",
+      "description": "Secțiunea galerie generează un buton .hb-add-btn (builder/edit-overlay.js) sub textul fiecărei categorii, dar clic pe el (inclusiv click forțat direct pe poziția din DOM) nu modifică absolut nimic: .hb-list-item a rămas la 18 elemente, iar câmpurile data-hb-edit pentru services/pricing au rămas neschimbate. Butonul nici măcar nu e vizibil în pagina randată — galeria trece direct din paragraful de descriere la grila de poze, fără nicio pastilă \"+ Adaugă\" vizibilă. Cauza cea mai probabilă: schema.json declară \"categories\" ca listă cu itemShape {title, blurb, photos}, dar template.html nu expune niciun data-hb-edit=\"categories.N.*\" pe pagina randată — overlay-ul de liste (care se bazează exclusiv pe atribute data-hb-edit pentru a grupa elementele) nu are niciun ancoraj valid pentru acest root, iar butonul inserat cade inert într-un layout CSS Grid (.pf-series). Ca test de control, butoanele \"+ Adaugă\" pentru servicii (a doua listă) și prețuri detaliate (a treia listă) FUNCȚIONEAZĂ corect (12→13, respectiv 20→22 câmpuri) — deci nu e o problemă generală a mecanismului, ci specifică listei de categorii.",
+      "evidence": "screenshot 13-repeatable-category-add-btn-in-context.png (buton invizibil în context) și 14-repeatable-category-add-clicked.png (fără efect după click); oracle-log.json → note \"category add-btn click: .hb-list-item 18->18; services fields 12->12; pricing fields 20->20\" vs \"control check — services: fields 12->13 (works correctly)\"; templates/portfolio/template.html (0 potriviri pentru data-hb-edit=\"categories)",
+      "reproSteps": "1. Editor Salon → închide Details drawer → derulează la galeria \"Din salon\". 2. Caută vizual un buton \"+ Adaugă\" lângă categoriile foto — nu există. 3. Din consolă, document.querySelectorAll('.hb-add-btn')[0].click() (primul buton, root=categories). 4. Numără document.querySelectorAll('.hb-list-item').length înainte/după — identic.",
+      "recommendation": "Adaugă atribute data-hb-edit=\"categories.N.title\" / \"categories.N.blurb\" pe elementele randate în template.html pentru fiecare categorie din galerie (analog cu services.N.label), astfel încât overlay-ul de liste să detecteze corect root-ul \"categories\" și să poată insera / poziționa corect butonul +/×.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-03",
+      "title": "Fără niciun meniu de navigare pe mobil (fără hamburger, fără alternativă) sub 720px",
+      "severity": "high",
+      "category": "ux",
+      "area": "template:portfolio",
+      "description": "templates/portfolio/styles.css ascunde complet .pf-chrome__nav sub 720px lățime (display:none, revine la flex doar de la 720px în sus) și nu există absolut niciun buton hamburger sau meniu mobil alternativ nicăieri în template.html/script.js (0 potriviri pentru \"hamburger\"/\"menu-toggle\"). Pe live-site-mobile-390, header-ul arată doar numele afacerii și butonul CTA \"Programează o vizită\" — linkurile Galerie/Servicii/Programare dispar fără urmă. Pentru o afacere de tip salon, unde majoritatea traficului real e de pe mobil, vizitatorii nu au nicio cale rapidă de a sări la o secțiune anume; singura opțiune e scroll manual prin toată pagina (document de ~7000px).",
+      "evidence": "templates/portfolio/styles.css:61-65 (.pf-chrome__nav{display:none} / @media(min-width:720px)); grep -n \"hamburger\\|menu-toggle\" pe template.html/script.js = 0 rezultate; screenshot 24-live-site-mobile-390-fullpage.png (header mobil fără linkuri de navigare)",
+      "reproSteps": "1. Deschide site-ul live la 390px lățime (sau orice telefon). 2. Observă header-ul sticky: doar numele afacerii + CTA, fără GALERIE/SERVICII/PROGRAMARE și fără iconiță de meniu.",
+      "recommendation": "Adaugă un buton hamburger standard sub 720px care deschide un meniu overlay/drawer cu aceleași linkuri de navigare din .pf-chrome__nav (pattern comun în celelalte 4 șabloane — verifică dacă vreunul dintre ele are deja implementarea, pentru reutilizare).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-04",
+      "title": "Redenumirea afacerii lasă în urmă numele preset-ului (\"Echipa Atelier Ivoire\") — contradicție de brand pe pagina live",
+      "severity": "high",
+      "category": "data",
+      "area": "template:portfolio",
+      "description": "builder/app.js cascadeBusinessNameIdentity() (linia ~181) sincronizează la redenumire: business.title, business.about, contact.facebook.label/url, instagram.handle/url/embedUrl, contact.email, business.metaDescription, business.tagline, seo.jsonLd — dar NU și team.title. templates/portfolio/presets.json setează team.title la valoarea statică \"Echipa Atelier Ivoire\" (numele brandului bătut direct în text), spre deosebire de footer, care folosește corect interpolarea {{business.name}} în template.html (\"© {{footer.year}} {{business.name}}. {{footer.note}}\"). Confirmat pe site-ul LIVE publicat, după redenumirea afacerii la \"Șt. Țăndărică & Fiii\": header-ul și hero arată corect numele nou, dar secțiunea echipă afișează în continuare \"Echipa Atelier Ivoire\" — numele vechi din preset, vizibil oricărui vizitator.",
+      "evidence": "builder/app.js:181-287 (lista de câmpuri cascadate, team.title absent); templates/portfolio/presets.json → team.title=\"Echipa Atelier Ivoire\" (string static); templates/portfolio/template.html:180 (<h2>{{team.title}}</h2>, randare directă fără fallback) vs linia 273 (footer folosește corect {{business.name}} separat); screenshot 22-live-site-desktop-fullpage.png și 24-live-site-mobile-390-fullpage.png (ambele arată \"Echipa Atelier Ivoire\" lângă hero-ul cu noul nume)",
+      "reproSteps": "1. Editor Salon → editează inline [data-hb-edit=\"business.name\"] cu un nume nou (ex. \"Șt. Țăndărică & Fiii\"). 2. Publică site-ul. 3. Derulează la secțiunea echipă pe site-ul live → titlul secțiunii spune \"Echipa Atelier Ivoire\", nu numele nou.",
+      "recommendation": "Fie adaugă \"team.title\" la lista de câmpuri din cascadeBusinessNameIdentity (rewriteIdentityString îl acoperă deja ca pattern), fie — mai robust pe termen lung — schimbă preset-ul să folosească un titlu generic (\"Echipa noastră\", ca teamEyebrow) sau interpolare {{business.name}} direct în template.html, eliminând complet clasa asta de bug pentru orice câmp similar necascadat.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-05",
+      "title": "Preview-ul live din editor rămâne cu culoarea veche câteva momente după schimbarea accentului, dacă a fost precedată de o schimbare de poză",
+      "severity": "high",
+      "category": "bug",
+      "area": "template:portfolio",
+      "description": "Secvență reprodusă identic în 2 din 2 rulări complete: 1) înlocuiești poza de fundal hero din drawer, 2) imediat după, schimbi culoarea accent/fundal din #btn-color-picker. getComputedStyle în iframe raportează IMEDIAT noua culoare (rgb(29,91,121)), dar butoanele CTA vizibile în captura de ecran rămân vizual verzi/olive (culoarea implicită a preset-ului), nu albastre — o discrepanță reală între valoarea calculată de CSS și pixelii randați. Asta contrazice explicit hint-ul câmpului \"Fundal deschidere\" din drawer: \"Previzualizarea live se actualizează imediat.\" Culoarea corectă apare abia la următorul re-render declanșat de altă acțiune (confirmat: click pe #btn-preview-mobile câteva pași mai târziu arată corect albastru), iar site-ul publicat final ESTE corect colorat — deci nu e o pierdere de date, dar un client care schimbă poza și apoi culoarea, în succesiune rapidă (un flux absolut firesc), vede aparent că alegerea lui de culoare \"nu a avut efect\" și riscă să reîncerce inutil sau să piardă încrederea în produs chiar în timpul editării.",
+      "evidence": "screenshot 09-colors-before.png și 10-colors-after-applied.png (buton CTA rămâne verde în ambele, deși popover-ul arată #1D5B79/#E7F1F7 selectate) — comparație cu 12-mobile-preview-390.png (același proiect, câțiva pași mai târziu, buton corect albastru); oracle-log.json → note \"CTA computed backgroundColor after accent change: rgb(29, 91, 121)\" (calculul CSS e deja corect) coroborat cu pixelii vizibil verzi din captură",
+      "reproSteps": "1. Editor Salon → înlocuiește poza de fundal hero (drawer → \"Alege o poză\"). 2. Închide drawer-ul. 3. Deschide #btn-color-picker, schimbă imediat #color-custom-text și #color-bg-text. 4. Fă un screenshot — butoanele CTA sunt încă verzi/olive, nu culoarea aleasă.",
+      "recommendation": "Investighează dacă cele două re-render-uri (unul declanșat de upload foto — cu embed base64, mai lent — și unul declanșat de schimbarea culorii) pot rula concurent și cel mai lent poate suprascrie srcdoc-ul iframe-ului cu o versiune mai veche (fără noua culoare). Cel mai simplu fix: serializează/debounce re-render-urile astfel încât un nou trigger să aștepte finalizarea celui anterior înainte de a construi HTML-ul, sau anulează explicit un re-render în curs când altul e declanșat.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-06",
+      "title": "Câmpurile de tip URL din Details drawer sunt randate ca <textarea> multi-linie, nu ca input cu o singură linie",
+      "severity": "low",
+      "category": "design",
+      "area": "template:portfolio",
+      "description": "builder/app.js (linia ~1670-1673) creează deliberat un <textarea> pentru type==='url' în loc de <input type=\"url\">. Vizual, în drawer, câmpuri ca \"URL Instagram\", \"URL feed Instafidget\", \"Instagram (secțiune contact)\", \"Link Facebook\", \"Link Google Maps\" apar ca o cutie dreptunghiulară cu mâner de redimensionare în colțul din dreapta-jos — neobișnuit pentru o valoare pe o singură linie și vizibil \"de developer\", nu la nivelul de fintuire al unui Squarespace/Wix.",
+      "evidence": "builder/app.js:1667-1683 (branch type==='url' → document.createElement('textarea')); screenshot 04-drawer-inventory.png (câmpul \"URL Instagram\" cu mâner de resize vizibil)",
+      "reproSteps": "1. Editor Salon → deschide Details drawer → observă câmpul \"URL Instagram\" — e o cutie înaltă cu mâner de resize, nu un input obișnuit de o linie.",
+      "recommendation": "Randează type==='url' ca <input type=\"url\"> (cu validare nativă a browserului ca bonus), la fel ca type==='phone'/'email', care deja folosesc <input>.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PORT-07",
+      "title": "Câmpul \"Limba site-ului\" e obligatoriu (*) dar are o singură opțiune posibilă (\"Română\")",
+      "severity": "low",
+      "category": "ux",
+      "area": "template:portfolio",
+      "description": "schema.json declară business.lang ca select required cu options=[{value:'ro',label:'Română'}] — un singur item. Drawer-ul arată un select obligatoriu (cu steluță roșie) pe care utilizatorul nu poate să-l greșească pentru că nu are de ales nimic. Minor, dar transmite senzația de câmp \"lăsat din greșeală\" dintr-un plan de internaționalizare neterminat.",
+      "evidence": "templates/portfolio/schema.json (business.lang, options cu un singur element); screenshot 04-drawer-inventory.png (\"Limba site-ului*\" cu valoare fixă \"Română\")",
+      "reproSteps": "1. Deschide Details drawer → primul câmp, \"Limba site-ului*\", e un select cu o singură opțiune.",
+      "recommendation": "Fie ascunde câmpul din drawer când are o singură opțiune posibilă (ca și celelalte câmpuri needitabile derivate), fie marchează-l explicit ca needitabil/informativ, nu ca \"required\" cu steluță.",
+      "effort": "S",
+      "rebuildOrImprove": "keep"
+    },
+    {
+      "id": "PORT-08",
+      "title": "Exportul ZIP include imagini nefolosite din alte preset-uri ale șablonului (crește inutil dimensiunea descărcării)",
+      "severity": "low",
+      "category": "performance",
+      "area": "template:portfolio",
+      "description": "ZIP-ul exportat (8.1MB) conține 40 de fișiere images/*.jpg, dintre care doar ~13 sunt efectiv referite de configurația curentă (prefixul \"iv-\", plus poza hero încărcată manual); restul (prefixul \"sf-\": sf-ext1-4, sf-hero, sf-ig1-6, sf-mua1-3, sf-og, sf-team-a/m/o) aparțin unui alt preset din templates/portfolio/presets.json care nu e folosit în acest proiect. Exportul pare să copieze întregul director images/ al șablonului, nu doar asset-urile efectiv referite de config.",
+      "evidence": "oracle-log.json → \"zip entries (48): [...]\" listează atât fișiere \"iv-*\" cât și \"sf-*\"; comparație cu templates/portfolio/images/ (conține ambele seturi de preset)",
+      "reproSteps": "1. Publică orice site din șablonul Salon → Descarcă ZIP. 2. Dezarhivează → images/ conține și fișiere sf-*.jpg care nu apar nicăieri în index.html.",
+      "recommendation": "La generarea exportului, filtrează images/ la doar căile efectiv referite în HTML-ul randat (parsare simplă de atribute src/background), nu întregul folder de asset-uri al șablonului sursă.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "strengths": [
+    "Tipografie și ierarhie vizuală la nivel comercial: serif elegant pe titluri, sans curat pe corp de text, spațiere generoasă — aspectul general de \"studio boutique\" e credibil pentru vertical-ul salon, nu simte a AI slop sau layout evident de template.",
+    "Editare inline funcționează corect și robust pentru text cu diacritice complete (Ș, Ț, Â, Î păstrate perfect din editor până pe site-ul live).",
+    "Integrarea WhatsApp e de foarte bună calitate: numărul + mesajul cu diacritice se propagă corect în href-ul wa.me (encoding corect verificat), iar pe desktop clic pe iconița flotantă deschide un modal QR generat local (zero CDN extern), bine stilizat, funcțional.",
+    "Fluxul complet de plată/publicare (test-pay) funcționează fără erori: slug → email → magic link → card de test → \"Site-ul tău e live\", cu preț 99€/29€ afișat consecvent și corect în toate locurile (modal succes, dashboard, fără contradicții).",
+    "Legal și SEO tehnic sunt complete: privacy.html/terms.html/cookies.html răspund 200 cu conținut RO, JSON-LD prezent, og:image derivat automat și verificat cu status 200, lang=\"ro\" corect pe pagina live.",
+    "Export HTML și ZIP funcționează: ZIP-ul dezarhivat conține index.html + assets + pagini legale și rulează standalone servit static, fără erori JS.",
+    "Layout responsive solid dincolo de problema navigării: la 390px nu există overflow orizontal nicăieri (verificat scrollWidth==clientWidth atât în editor cât și pe site-ul live), iar cardurile de echipă/servicii/preț se recompun curat pe o singură coloană.",
+    "Zero erori de consolă și zero cereri 4xx/5xx reale pe parcursul întregului flux (după excluderea 401-urilor așteptate /api/me înainte de autentificare)."
+  ],
+  "screenshots": [
+    { "file": "26-live-gallery-lightbox-actual.png", "whatItShows": "Lightbox-ul galeriei complet nestilizat — imagine brută, needimensionată, poziționată sub footer, la 5848px în josul paginii, în loc de un overlay full-screen centrat" },
+    { "file": "13-repeatable-category-add-btn-in-context.png", "whatItShows": "Zona galeriei unde ar trebui să existe butonul \"+ Adaugă\" categorie — complet invizibil, galeria trece direct din text la grila de poze" },
+    { "file": "10-colors-after-applied.png", "whatItShows": "Butoanele CTA rămân verzi/olive în preview deși popover-ul arată #1D5B79/#E7F1F7 selectate — discrepanță preview vs. valoare aplicată" },
+    { "file": "22-live-site-desktop-fullpage.png", "whatItShows": "Pagina live completă la 1440px: design de ansamblu de bună calitate, dar cu \"Echipa Atelier Ivoire\" vizibil sub hero-ul redenumit \"Șt. Țăndărică & Fiii\"" },
+    { "file": "24-live-site-mobile-390-fullpage.png", "whatItShows": "Site-ul live la 390px: header fără nicio navigare (fără hamburger), dar fără overflow orizontal și layout responsive corect altfel" },
+    { "file": "20-publish-success.png", "whatItShows": "Modalul de succes după plata de test: copy RO corect, preț 99€/29€ fără contradicții" },
+    { "file": "04-drawer-inventory.png", "whatItShows": "Inventarul complet al Details drawer (11 câmpuri) — inclusiv câmpul URL redat ca textarea cu mâner de resize" },
+    { "file": "31-export-zip-standalone.png", "whatItShows": "ZIP-ul exportat, dezarhivat și servit static pe un server local — funcționează standalone, fără erori" }
+  ],
+  "notRun": [
+    "Nu există un test automat dedicat bot/test/flow2-portfolio*.test.js — am rulat în schimb bot/test/s3-design-systems.test.js, bot/test/flow2-template-pass.test.js și bot/test/flow2-unhappy-ro-and-salon-details-photo.test.js (toate PASS, relevante pentru portfolio).",
+    "Nu am testat formular de contact/programare cu POST /api/appointments — șablonul Salon nu are formular local de programare (folosește buton WhatsApp direct), spre deosebire de professionals; nesolicitat de acest lens.",
+    "Nu am verificat comportamentul pe un device fizic real (doar viewport emulat 390x844 în Chromium headless) — animații de tip hover/tactile (drag pe collage) pot diferi ușor pe iOS Safari real.",
+    "Nu am testat fluxul de anulare a trialului / billing-portal / rollback de versiuni pentru acest proiect — în afara scopului acestui lens (E2E pe șablon, nu pe gestionarea contului).",
+    "Nu am reprodus explicit cauza exactă (race condition) a bug-ului PORT-05 la nivel de cod sursă (doar simptomul, confirmat de 2 ori) — ar necesita profiling suplimentar în builder/app.js pentru a identifica exact unde se suprapun cele două re-render-uri."
+  ]
+}

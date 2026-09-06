@@ -1,0 +1,450 @@
+{
+  "lens": "builder-chrome-ux-editor",
+  "startedAt": "2026-09-05T21:21:24.470Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "editor-loaded-drawer-auto-open",
+      "action": "click .btn-start-tpl product-menu",
+      "selector": null,
+      "screenshot": "01-editor-loaded-drawer-auto-open.png",
+      "sha256": "fe0d79620122cd1c516da35f9e6e32b4398c176e638ed02d5c10804297397d4d",
+      "timestamp": "2026-09-05T21:21:26.308Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "editor loaded, Details drawer auto-open"
+      }
+    },
+    {
+      "index": 1,
+      "step": "details-drawer-content",
+      "action": "observe #drawer-body",
+      "selector": null,
+      "screenshot": "02-details-drawer-content.png",
+      "sha256": "0dceaebdaf8e232377aefdc846c02bf56d6e6d7d4ac7ecb6ea3a90dc0a85e2b3",
+      "timestamp": "2026-09-05T21:21:26.396Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "drawer-closed-inline-preview",
+      "action": "click #btn-close-drawer",
+      "selector": null,
+      "screenshot": "03-drawer-closed-inline-preview.png",
+      "sha256": "b4db69ab5c6f0fdd844fff10c2af3c83fcac9d05a6d7eb963d90cf30d1e59b96",
+      "timestamp": "2026-09-05T21:21:26.487Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 3,
+      "step": "keyboard-tab-focus-topbar",
+      "action": "press Tab x3",
+      "selector": null,
+      "screenshot": "04-keyboard-tab-focus-topbar.png",
+      "sha256": "ae4324444db08aeba27a6133a728f87d05c2573722e2231951a9f9002dded2b0",
+      "timestamp": "2026-09-05T21:21:26.561Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "checking visible focus ring on topbar controls"
+      }
+    },
+    {
+      "index": 4,
+      "step": "inline-edit-business-name",
+      "action": "click+fill+blur business.name",
+      "selector": null,
+      "screenshot": "05-inline-edit-business-name.png",
+      "sha256": "d9e76c084a86262033fc5ab53e04783154a6ddab925aaeb7e5ecce4c6c097ad7",
+      "timestamp": "2026-09-05T21:21:26.736Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "inline text edit in iframe"
+      }
+    },
+    {
+      "index": 5,
+      "step": "drawer-reopened-after-edit",
+      "action": "click #btn-open-drawer",
+      "selector": null,
+      "screenshot": "06-drawer-reopened-after-edit.png",
+      "sha256": "0b2ee48c22917aba6e45b83e0926bda39053b951cfce7276a385347b8061aa2e",
+      "timestamp": "2026-09-05T21:21:26.843Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "drawer reopened after inline edit"
+      }
+    },
+    {
+      "index": 6,
+      "step": "color-popover-open",
+      "action": "click #btn-color-picker",
+      "selector": null,
+      "screenshot": "07-color-popover-open.png",
+      "sha256": "bde05c6cada3c318d85552de35f2c1fd246b05aeb04655522b53fbf6d8e88743",
+      "timestamp": "2026-09-05T21:21:27.108Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 7,
+      "step": "color-popover-invalid-hex",
+      "action": "fill #color-custom-text with zzz",
+      "selector": null,
+      "screenshot": "08-color-popover-invalid-hex.png",
+      "sha256": "c54c6f0c2f0d55f45a99a61f073396ff01b7dbbe9d6f56b1ba886e69fa62455c",
+      "timestamp": "2026-09-05T21:21:27.180Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "testing invalid hex input handling"
+      }
+    },
+    {
+      "index": 8,
+      "step": "color-popover-valid-hex",
+      "action": "fill valid hex colors",
+      "selector": null,
+      "screenshot": "09-color-popover-valid-hex.png",
+      "sha256": "3992c916e972713bafe72b644ca666eefb959c0020d09b2405383b59af5f34dd",
+      "timestamp": "2026-09-05T21:21:28.006Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 9,
+      "step": "iframe-cookie-banner-after-color-change",
+      "action": "observe iframe after color change re-render",
+      "selector": null,
+      "screenshot": "10-iframe-cookie-banner-after-color-change.png",
+      "sha256": "1867e7a12a46d70b142211d59b8b33a6b0f0a9de442c617c7c90bc0b5bc35d8a",
+      "timestamp": "2026-09-05T21:21:28.533Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "template cookie banner visible again inside preview iframe after full re-render: true"
+      }
+    },
+    {
+      "index": 10,
+      "step": "preview-toggle-mobile",
+      "action": "click #btn-preview-mobile",
+      "selector": null,
+      "screenshot": "11-preview-toggle-mobile.png",
+      "sha256": "d96366a64b83c49cc01843a133145523489d53d85195bb304fae0dee4e458d43",
+      "timestamp": "2026-09-05T21:21:28.619Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 11,
+      "step": "preview-toggle-desktop-back",
+      "action": "click #btn-preview-desktop",
+      "selector": null,
+      "screenshot": "12-preview-toggle-desktop-back.png",
+      "sha256": "034394377f3c1f7a4afacf430d0324713aa3862b48ca408b52b0e1b5e9fa7ba3",
+      "timestamp": "2026-09-05T21:21:28.712Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 12,
+      "step": "instagram-modal-initial",
+      "action": "click #btn-add-instagram",
+      "selector": null,
+      "screenshot": "13-instagram-modal-initial.png",
+      "sha256": "e78c6779ed8512397c457a76d6b2cf0e0ad4020e6df1e08aabf823993662d52a",
+      "timestamp": "2026-09-05T21:21:28.807Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 13,
+      "step": "instagram-modal-empty-email-submit",
+      "action": "click #btn-ig-send-magic with empty email",
+      "selector": null,
+      "screenshot": "14-instagram-modal-empty-email-submit.png",
+      "sha256": "c70f64694f180b0b4c0c76f41bd6aad3d6c87c0c10a6761faa5dce9a779d3d9b",
+      "timestamp": "2026-09-05T21:21:29.051Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "validation message check"
+      }
+    },
+    {
+      "index": 14,
+      "step": "instagram-modal-after-escape",
+      "action": "press Escape",
+      "selector": null,
+      "screenshot": "15-instagram-modal-after-escape.png",
+      "sha256": "4aabe419df0acd152636fe01141e123368bc4199c3aeedecc9a2bf8ab1d576fe",
+      "timestamp": "2026-09-05T21:21:29.437Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "modal-instagram visible after Escape: true"
+      }
+    },
+    {
+      "index": 15,
+      "step": "refresh-mid-edit-check",
+      "action": "reload page mid-edit",
+      "selector": null,
+      "screenshot": "16-refresh-mid-edit-check.png",
+      "sha256": "577649a4bf9e9b52a075d68204b6d1bd2be7c25a1bf2b5d119e841cf2567b75e",
+      "timestamp": "2026-09-05T21:21:30.601Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "checking if #edit route + business name persisted"
+      }
+    },
+    {
+      "index": 16,
+      "step": "publish-modal-open",
+      "action": "click #btn-publish",
+      "selector": null,
+      "screenshot": "17-publish-modal-open.png",
+      "sha256": "2cb91cad854433684c626e238e7eef3878e1d57c864e9750728c2eae34ffa3dc",
+      "timestamp": "2026-09-05T21:21:30.733Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 17,
+      "step": "slug-too-short",
+      "action": "fill #input-slug with \"a\"",
+      "selector": null,
+      "screenshot": "18-slug-too-short.png",
+      "sha256": "d44f0fb213acbc6a74ca86f7f9ebc8025a1cc9de906d1840def1863f5638e203",
+      "timestamp": "2026-09-05T21:21:31.416Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "slug too short validation"
+      }
+    },
+    {
+      "index": 18,
+      "step": "slug-invalid-chars",
+      "action": "fill #input-slug with invalid chars",
+      "selector": null,
+      "screenshot": "19-slug-invalid-chars.png",
+      "sha256": "f155198470f2649dbb9c2a1123e1ac5661a5b463d4f853531aa5259c0715d26d",
+      "timestamp": "2026-09-05T21:21:32.102Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "diacritics/spaces/symbols validation"
+      }
+    },
+    {
+      "index": 19,
+      "step": "slug-valid",
+      "action": "fill #input-slug with valid slug",
+      "selector": null,
+      "screenshot": "20-slug-valid.png",
+      "sha256": "bb2e86cd3055142af16e24df8c1e78987e406de7be427753c91f2ba0f5398b60",
+      "timestamp": "2026-09-05T21:21:32.797Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 20,
+      "step": "auth-step-email-form",
+      "action": "click #btn-publish-continue",
+      "selector": null,
+      "screenshot": "21-auth-step-email-form.png",
+      "sha256": "e232b4196c32e9629fa249f99fd8308520eeb24a61c5403cd3195bd329ff89af",
+      "timestamp": "2026-09-05T21:21:32.901Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 21,
+      "step": "auth-invalid-email-format",
+      "action": "submit invalid email format",
+      "selector": null,
+      "screenshot": "22-auth-invalid-email-format.png",
+      "sha256": "6ab9c836d0179c2720bf91548212d1b8c0378f9cb27a6d2f422c762a754eff57",
+      "timestamp": "2026-09-05T21:21:33.404Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "client-side email validation check"
+      }
+    },
+    {
+      "index": 22,
+      "step": "auth-dev-link-visible",
+      "action": "submit valid email",
+      "selector": null,
+      "screenshot": "23-auth-dev-link-visible.png",
+      "sha256": "69769cf853f9045643b694cab3c30fb88d7d477449de429dfeaa1f3690f627bd",
+      "timestamp": "2026-09-05T21:21:33.506Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "dev magic link visible (no RESEND configured)"
+      }
+    },
+    {
+      "index": 23,
+      "step": "success-modal-add-card",
+      "action": "click #dev-link",
+      "selector": null,
+      "screenshot": "24-success-modal-add-card.png",
+      "sha256": "d48fd882c7e3f93b1f178ec35e0d7e9dcfc0b09e1c9ceade3c2e31df109651fb",
+      "timestamp": "2026-09-05T21:21:33.631Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "draft published unpaid; add-card CTA"
+      }
+    },
+    {
+      "index": 24,
+      "step": "success-modal-live",
+      "action": "click #btn-pay-publish (test pay)",
+      "selector": null,
+      "screenshot": "25-success-modal-live.png",
+      "sha256": "bf2cc6aa249aff69c3dbb0f3a44b90bc147cc3622f3c93ce6ce21bb2c6ea7a68",
+      "timestamp": "2026-09-05T21:21:33.939Z",
+      "url": "http://127.0.0.1:49619/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "live URL shown"
+      }
+    },
+    {
+      "index": 25,
+      "step": "success-modal-closed-back-to-editor",
+      "action": "click #btn-success-close",
+      "selector": null,
+      "screenshot": "26-success-modal-closed-back-to-editor.png",
+      "sha256": "54b64b8aec30b60e8d2d142715997a3436695adecbe9039484b4903400b082d9",
+      "timestamp": "2026-09-05T21:21:33.993Z",
+      "url": "http://127.0.0.1:49619/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 26,
+      "step": "reused-magic-link-token",
+      "action": "navigate to consumed dev-link again",
+      "selector": null,
+      "screenshot": "27-reused-magic-link-token.png",
+      "sha256": "58c5421dd7ca0b592f79f7f992f11367e8be5b81fa770c6328bdda73cb43bb55",
+      "timestamp": "2026-09-05T21:21:35.159Z",
+      "url": "http://127.0.0.1:49619/app/#templates",
+      "contentCheck": {
+        "ok": true,
+        "detail": "url=http://127.0.0.1:49619/app/#templates"
+      }
+    },
+    {
+      "index": 27,
+      "step": "dashboard-view",
+      "action": "goto #dashboard",
+      "selector": null,
+      "screenshot": "28-dashboard-view.png",
+      "sha256": "147ed88478f4d9ec4c5fc7b6ffa1715cc9e77d8dac8777ea6bafe537be03dc88",
+      "timestamp": "2026-09-05T21:21:35.707Z",
+      "url": "http://127.0.0.1:49619/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "sites-list with published site"
+      }
+    },
+    {
+      "index": 28,
+      "step": "versions-modal",
+      "action": "click versions button",
+      "selector": null,
+      "screenshot": "29-versions-modal.png",
+      "sha256": "b02b21023de7f4f0b32044859cf0bc293739fe81efe36d97e7f274f858a63e49",
+      "timestamp": "2026-09-05T21:21:35.767Z",
+      "url": "http://127.0.0.1:49619/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 29,
+      "step": "after-logout",
+      "action": "click #btn-logout",
+      "selector": null,
+      "screenshot": "30-after-logout.png",
+      "sha256": "7b431424e21246c95741687e4f1b204e82d5017c50623f3194601180f20264df",
+      "timestamp": "2026-09-05T21:21:36.728Z",
+      "url": "http://127.0.0.1:49619/app/#templates",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "high",
+      "title": "Bannerul de cookie al șablonului reapare în canvas la fiecare re-render (schimbare culoare/imagine)",
+      "detail": "Iframe-ul de previzualizare are sandbox=\"allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox\" FARA allow-same-origin, deci localStorage/cookie din interiorul iframe-ului esueaza silentios (try/catch); starea \"acceptat\" a bannerului de cookie al site-ului nu persista intre re-render-uri complete (schimbare culoare, poza, liste). Verificat: acceptat manual in iframe -> banner ascuns; dupa schimbarea culorii accent -> banner reapare din nou.",
+      "screenshot": "iframe-cookie-banner-after-color-change",
+      "timestamp": "2026-09-05T21:21:28.534Z"
+    },
+    {
+      "severity": "medium",
+      "title": "Escape nu inchide modalul Instagram",
+      "detail": "Modalele ar trebui sa se inchida la Escape pentru accesibilitate/asteptari SaaS standard",
+      "screenshot": "15-instagram-modal-after-escape.png",
+      "timestamp": "2026-09-05T21:21:29.437Z"
+    }
+  ],
+  "notes": [
+    "URL after reload: http://127.0.0.1:49619/app/#edit | business.name after reload: \"QA Bistro Verificare\"",
+    "dev-link href: /auth/verify?token=5f7e6bc035f69c1d41fad92689e7089407a069e8c169b52ecb0001e79af198c0",
+    "First /auth/verify status on click (via UI) already consumed possibly. Testing raw second GET status=200",
+    "live href: http://127.0.0.1:49619/live/qa-bistro-chrome-ux-mtow18zr/",
+    "versions button count on dashboard card: 1"
+  ],
+  "finishedAt": "2026-09-05T21:21:36.729Z"
+}

@@ -1,0 +1,23 @@
+{
+  "lens": "static-renderer-export-icon-field",
+  "startedAt": "2026-09-05T21:50:36.960Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "drawer-auto-open-portfolio",
+      "action": "template-select",
+      "selector": null,
+      "screenshot": "01-drawer-auto-open-portfolio.png",
+      "sha256": "c8ea86cec367775db83136ab48f80f664dd6398f08f9e7ab7eebdaa839c2a567",
+      "timestamp": "2026-09-05T21:50:39.954Z",
+      "url": "http://127.0.0.1:52315/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [],
+  "finishedAt": "2026-09-05T21:50:39.958Z"
+}

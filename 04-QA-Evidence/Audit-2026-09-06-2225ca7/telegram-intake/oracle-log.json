@@ -1,0 +1,62 @@
+{
+  "lens": "telegram-intake-part2",
+  "startedAt": "2026-09-05T21:46:36.617Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "dashboard-loaded",
+      "action": "goto magic link",
+      "selector": null,
+      "screenshot": "01-dashboard-loaded.png",
+      "sha256": "bb35ee193b9ee661b3f0b34b50bb552866e52878266fa57789f56f886d690a7f",
+      "timestamp": "2026-09-05T21:46:38.210Z",
+      "url": "http://127.0.0.1:52023/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-opened",
+      "action": "click Editeaza",
+      "selector": null,
+      "screenshot": "02-editor-opened.png",
+      "sha256": "fecf2af2b35d06ac12f839731fe866db05838daed44d5a5168263b01c27f0a9b",
+      "timestamp": "2026-09-05T21:46:39.774Z",
+      "url": "http://127.0.0.1:52023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "editor-full-page",
+      "action": "full page after open",
+      "selector": null,
+      "screenshot": "03-editor-full-page.png",
+      "sha256": "fecf2af2b35d06ac12f839731fe866db05838daed44d5a5168263b01c27f0a9b",
+      "timestamp": "2026-09-05T21:46:39.841Z",
+      "url": "http://127.0.0.1:52023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "high",
+      "title": "Telegram intake mereu produce draft 'Restaurant' (product-menu), indiferent de tipul afacerii",
+      "detail": "Wizard-ul Telegram (STEPS din flow.js) nu \u00eentreab\u0103 niciodat\u0103 tipul afacerii; resolveIntakeTemplateId() cade mereu pe 'product-menu' cand session.templateId lipseste. Editorul deschis prin link-ul magic arata badge-ul 'Restaurant' pentru o afacere descrisa explicit ca 'Salon Frumusete Ana' (coafur\u0103/manichiur\u0103).",
+      "screenshot": "02-editor-opened.png",
+      "timestamp": "2026-09-05T21:46:39.774Z"
+    }
+  ],
+  "notes": [
+    "link=http://127.0.0.1:52023/auth/verify?token=0fac4ad7447045fc62506f28af3dd4b0b50a2ca61e67ac9c3bf65abd19fcad7c",
+    "Business name folosit in test: 'Salon Frumusete Ana' (coafor). editor-template-name a revenit 'Restaurant'. Vezi 02-editor-opened.png / 03-editor-full-page.png."
+  ],
+  "finishedAt": "2026-09-05T21:46:39.841Z"
+}

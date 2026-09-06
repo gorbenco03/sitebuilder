@@ -1,0 +1,898 @@
+{
+  "generatedAt": "2026-09-05T21:30:47.166Z",
+  "sections": {
+    "coldLoadApp": {
+      "throttling": "150ms RTT, 1.6Mbps down / 750kbps up, CPU x4",
+      "wallTimeToLoadEventMs": 3910,
+      "wallTimeToTemplateCardsVisibleMs": 3981,
+      "navigationTiming": {
+        "domContentLoaded": 3765.2000000476837,
+        "loadEvent": 3907.2000000476837,
+        "responseEnd": 313.7000000476837,
+        "transferSize": 34302,
+        "encodedBodySize": 34002
+      },
+      "firstContentfulPaintMs": 816,
+      "largestContentfulPaintMs": 816,
+      "cumulativeLayoutShift": 0.03652839655369888,
+      "requestCount": 18,
+      "totalTransferBytes": 2500214,
+      "totalTransferKB": 2442,
+      "top10LargestResources": [
+        {
+          "url": "/app/generated/thumbs/local-service.jpg",
+          "bytes": 612774,
+          "type": "image",
+          "contentType": "image/jpeg"
+        },
+        {
+          "url": "/app/generated/thumbs/professionals.jpg",
+          "bytes": 405184,
+          "type": "image",
+          "contentType": "image/jpeg"
+        },
+        {
+          "url": "/app/generated/thumbs/desserdirina.jpg",
+          "bytes": 254039,
+          "type": "image",
+          "contentType": "image/jpeg"
+        },
+        {
+          "url": "/app/generated/thumbs/portfolio.jpg",
+          "bytes": 232106,
+          "type": "image",
+          "contentType": "image/jpeg"
+        },
+        {
+          "url": "/app/generated/thumbs/product-menu.jpg",
+          "bytes": 210206,
+          "type": "image",
+          "contentType": "image/jpeg"
+        },
+        {
+          "url": "/app/app.js",
+          "bytes": 167742,
+          "type": "script",
+          "contentType": "application/javascript; charset=utf-8"
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjIJFJpc.woff2",
+          "bytes": 131848,
+          "type": "font",
+          "contentType": "font/woff2"
+        },
+        {
+          "url": "/app/generated/engine.js",
+          "bytes": 102027,
+          "type": "script",
+          "contentType": "application/javascript; charset=utf-8"
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK439DyjIJFJpeBZQ.woff2",
+          "bytes": 86628,
+          "type": "font",
+          "contentType": "font/woff2"
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2",
+          "bytes": 85272,
+          "type": "font",
+          "contentType": "font/woff2"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "url": "http://127.0.0.1:50672/app/",
+          "text": "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        }
+      ],
+      "failedRequests": [
+        {
+          "status": 401,
+          "url": "http://127.0.0.1:50672/api/me"
+        }
+      ]
+    },
+    "warmReload": {
+      "wallTimeToReloadEventMs": 22,
+      "requestCount": 18,
+      "statusCounts": {
+        "200": 8,
+        "304": 9,
+        "401": 1
+      },
+      "keyResourceHeaders": {
+        "/app/": {
+          "status": 200,
+          "cacheControl": "no-cache",
+          "etag": "\"84d2-1a068f378f8\"",
+          "lastModified": "Thu, 03 Sep 2026 20:26:21 GMT"
+        },
+        "/app/generated/engine.js": {
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": "\"18e8b-1a073766319\"",
+          "lastModified": "Sat, 05 Sep 2026 21:25:33 GMT"
+        },
+        "/app/generated/templates-data.js": {
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": "\"764-1a07376638c\"",
+          "lastModified": "Sat, 05 Sep 2026 21:25:33 GMT"
+        },
+        "/app/app.js": {
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": "\"28f3e-1a068f378f7\"",
+          "lastModified": "Thu, 03 Sep 2026 20:26:21 GMT"
+        },
+        "/app/app.css": {
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": "\"be08-1a068f378f6\"",
+          "lastModified": "Thu, 03 Sep 2026 20:26:21 GMT"
+        },
+        "/app/generated/thumbs/product-menu.jpg": {
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": "\"3351e-1a07376632b\"",
+          "lastModified": "Sat, 05 Sep 2026 21:25:33 GMT"
+        }
+      },
+      "allResponses": [
+        {
+          "url": "/app/",
+          "status": 200,
+          "cacheControl": "no-cache",
+          "etag": true
+        },
+        {
+          "url": "/app/app.css",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/templates-data.js",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/engine.js",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/app.js",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa25L7W0Q5n-wU.woff2",
+          "status": 200,
+          "cacheControl": "public, max-age=31536000",
+          "etag": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "status": 200,
+          "cacheControl": "public, max-age=31536000",
+          "etag": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oReyJFYYzbARA_n8.woff2",
+          "status": 200,
+          "cacheControl": "public, max-age=31536000",
+          "etag": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK439DyjIJFJpeBZQ.woff2",
+          "status": 200,
+          "cacheControl": "public, max-age=31536000",
+          "etag": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjIJFJpc.woff2",
+          "status": 200,
+          "cacheControl": "public, max-age=31536000",
+          "etag": false
+        },
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap",
+          "status": 200,
+          "cacheControl": "private, max-age=86400, stale-while-revalidate=604800",
+          "etag": false
+        },
+        {
+          "url": "/api/me",
+          "status": 401,
+          "cacheControl": null,
+          "etag": false
+        },
+        {
+          "url": "/api/config",
+          "status": 200,
+          "cacheControl": null,
+          "etag": false
+        },
+        {
+          "url": "/app/generated/thumbs/local-service.jpg",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/thumbs/product-menu.jpg",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/thumbs/portfolio.jpg",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/thumbs/professionals.jpg",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        },
+        {
+          "url": "/app/generated/thumbs/desserdirina.jpg",
+          "status": 304,
+          "cacheControl": "public, max-age=0, must-revalidate",
+          "etag": true
+        }
+      ]
+    },
+    "perTemplateStart": {
+      "product-menu": {
+        "wallTimeToIframeContentMs": "TIMEOUT>20000",
+        "requestCount": 8,
+        "totalTransferBytes": 2000450,
+        "totalTransferKB": 1954,
+        "largest": [
+          {
+            "url": "/app/generated/thumbs/local-service.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/thumbs/professionals.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/thumbs/desserdirina.jpg",
+            "bytes": 254039
+          },
+          {
+            "url": "/app/generated/thumbs/portfolio.jpg",
+            "bytes": 232106
+          },
+          {
+            "url": "/app/generated/thumbs/product-menu.jpg",
+            "bytes": 210206
+          }
+        ]
+      },
+      "local-service": {
+        "wallTimeToIframeContentMs": "TIMEOUT>20000",
+        "requestCount": 8,
+        "totalTransferBytes": 2419485,
+        "totalTransferKB": 2363,
+        "largest": [
+          {
+            "url": "/app/generated/thumbs/local-service.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/template-assets/local-service/images/pr-hero.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/thumbs/professionals.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/thumbs/desserdirina.jpg",
+            "bytes": 254039
+          },
+          {
+            "url": "/app/generated/thumbs/portfolio.jpg",
+            "bytes": 232106
+          }
+        ]
+      },
+      "portfolio": {
+        "wallTimeToIframeContentMs": "TIMEOUT>20000",
+        "requestCount": 8,
+        "totalTransferBytes": 2035653,
+        "totalTransferKB": 1988,
+        "largest": [
+          {
+            "url": "/app/generated/thumbs/local-service.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/thumbs/professionals.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/thumbs/desserdirina.jpg",
+            "bytes": 254039
+          },
+          {
+            "url": "/app/generated/thumbs/portfolio.jpg",
+            "bytes": 232106
+          },
+          {
+            "url": "/app/generated/template-assets/portfolio/images/iv-hero.jpg",
+            "bytes": 232106
+          }
+        ]
+      },
+      "professionals": {
+        "wallTimeToIframeContentMs": "TIMEOUT>20000",
+        "requestCount": 8,
+        "totalTransferBytes": 2221109,
+        "totalTransferKB": 2169,
+        "largest": [
+          {
+            "url": "/app/generated/thumbs/local-service.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/thumbs/professionals.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/template-assets/professionals/images/hero.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/thumbs/desserdirina.jpg",
+            "bytes": 254039
+          },
+          {
+            "url": "/app/generated/thumbs/portfolio.jpg",
+            "bytes": 232106
+          }
+        ]
+      },
+      "desserdirina": {
+        "wallTimeToIframeContentMs": "TIMEOUT>20000",
+        "requestCount": 14,
+        "totalTransferBytes": 2167227,
+        "totalTransferKB": 2116,
+        "largest": [
+          {
+            "url": "/app/generated/thumbs/local-service.jpg",
+            "bytes": 612774
+          },
+          {
+            "url": "/app/generated/thumbs/professionals.jpg",
+            "bytes": 405184
+          },
+          {
+            "url": "/app/generated/thumbs/desserdirina.jpg",
+            "bytes": 254039
+          },
+          {
+            "url": "/app/generated/thumbs/portfolio.jpg",
+            "bytes": 232106
+          },
+          {
+            "url": "/app/generated/thumbs/product-menu.jpg",
+            "bytes": 210206
+          }
+        ]
+      }
+    },
+    "liveSite_desktop-1440": {
+      "wallTimeToLoadMs": 8051,
+      "navigationTiming": {
+        "domContentLoaded": 6450.300000071526,
+        "loadEvent": 8049.100000023842,
+        "transferSize": 19950
+      },
+      "fcp": 460,
+      "lcp": 6824,
+      "cls": 0.2000155596923828,
+      "requestCount": 13,
+      "totalTransferBytes": 1628954,
+      "totalTransferKB": 1591,
+      "top10LargestResources": [
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d1.jpg",
+          "bytes": 332196,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r2.jpg",
+          "bytes": 247052,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-hero.jpg",
+          "bytes": 210206,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d2.jpg",
+          "bytes": 208886,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r1.jpg",
+          "bytes": 204699,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d3.jpg",
+          "bytes": 175387,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r3.jpg",
+          "bytes": 175264,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/",
+          "bytes": 19650,
+          "contentType": "text/html; charset=utf-8",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/script.js",
+          "bytes": 18361,
+          "contentType": "application/javascript; charset=utf-8",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/styles.css",
+          "bytes": 13161,
+          "contentType": "text/css; charset=utf-8",
+          "cacheControl": null
+        }
+      ],
+      "images": [
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d1.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d2.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d3.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r1.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 858,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r2.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r3.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 858,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto",
+          "hasSrcset": false
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto",
+          "hasSrcset": false
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    "liveSite_mobile-390": {
+      "wallTimeToLoadMs": 8043,
+      "navigationTiming": {
+        "domContentLoaded": 6437.100000023842,
+        "loadEvent": 8042.100000023842,
+        "transferSize": 19950
+      },
+      "fcp": 452,
+      "lcp": 6808,
+      "cls": 0.1666056071219308,
+      "requestCount": 13,
+      "totalTransferBytes": 1628954,
+      "totalTransferKB": 1591,
+      "top10LargestResources": [
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d1.jpg",
+          "bytes": 332196,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r2.jpg",
+          "bytes": 247052,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-hero.jpg",
+          "bytes": 210206,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d2.jpg",
+          "bytes": 208886,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r1.jpg",
+          "bytes": 204699,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d3.jpg",
+          "bytes": 175387,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r3.jpg",
+          "bytes": 175264,
+          "contentType": "image/jpeg",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/",
+          "bytes": 19650,
+          "contentType": "text/html; charset=utf-8",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/script.js",
+          "bytes": 18361,
+          "contentType": "application/javascript; charset=utf-8",
+          "cacheControl": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/styles.css",
+          "bytes": 13161,
+          "contentType": "text/css; charset=utf-8",
+          "cacheControl": null
+        }
+      ],
+      "images": [
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d1.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d2.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-d3.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r1.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 858,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r2.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 1280,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "http://127.0.0.1:50672/live/perfaudit-mtowg9wd/images/cn-r3.jpg",
+          "naturalWidth": 1280,
+          "naturalHeight": 858,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager",
+          "hasSrcset": false
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto",
+          "hasSrcset": false
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto",
+          "hasSrcset": false
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    "liveSiteWarmReload": {
+      "statusCounts": {
+        "200": 13
+      },
+      "sampleHeaders": [
+        {
+          "url": "/live/perfaudit-mtowg9wd/",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/styles.css",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d1.jpg",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d2.jpg",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-d3.jpg",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r1.jpg",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/images/cn-r2.jpg",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        },
+        {
+          "url": "/live/perfaudit-mtowg9wd/cookie-banner.css",
+          "status": 200,
+          "cacheControl": null,
+          "etag": null,
+          "lastModified": null
+        }
+      ]
+    },
+    "serverMicroBench": {
+      "apiTemplates": {
+        "firstCallMs": 4,
+        "subsequentAvgMs": 1.2222222222222223,
+        "bytes": 114985,
+        "cacheControl": null,
+        "allMs": [
+          4,
+          1,
+          2,
+          1,
+          1,
+          2,
+          0,
+          0,
+          2,
+          2
+        ]
+      },
+      "liveSlugRoot": {
+        "firstCallMs": 1,
+        "subsequentAvgMs": 0.4444444444444444,
+        "bytes": 19650,
+        "cacheControl": null,
+        "etag": null,
+        "allMs": [
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ]
+      },
+      "processMemoryRss_beforeMB": 122,
+      "processMemoryRss_after100ReqsMB": 127.8,
+      "processMemoryHeapUsed_beforeMB": 51.1,
+      "processMemoryHeapUsed_afterMB": 55.1
+    },
+    "buildSizes": {
+      "builderGeneratedTotalMB": 28.32,
+      "templateAssetsTotalMB": 26.13,
+      "thumbsTotalKB": 1674,
+      "engineJsBytes": 102027,
+      "appJsBytes": 167742,
+      "appCssBytes": 48648,
+      "templatesSourceImagesTotalMB": 26.63
+    },
+    "perTemplateStart_CORRECTED_note": "The original perTemplateStart section above used page.waitForFunction reading #preview-iframe.contentDocument, which is always null because the iframe has sandbox without allow-same-origin (opaque origin) -- so it timed out at 20000ms for all 5 templates as a pure measurement artifact, NOT a real 20s+ load time. perTemplateStart_CORRECTED below uses Playwright frame.waitForLoadState via CDP (works regardless of sandboxing) and is the trustworthy number.",
+    "perTemplateStart_CORRECTED": {
+      "product-menu": {
+        "wallTimeToFrameLoadEventMs": 7799,
+        "wallTimeToFrameContentAttachedMs": 7826,
+        "requestCountSinceClick": 8,
+        "totalBytesSinceClick_includesCacheHitsCountedAsFullSize": 2000450,
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/product-menu.js",
+            "bytes": 75906
+          },
+          {
+            "url": "/app/generated/template-assets/product-menu/images/cn-hero.jpg",
+            "bytes": 210206
+          }
+        ]
+      },
+      "local-service": {
+        "wallTimeToFrameLoadEventMs": 11719,
+        "wallTimeToFrameContentAttachedMs": 11746,
+        "requestCountSinceClick": 8,
+        "totalBytesSinceClick_includesCacheHitsCountedAsFullSize": 2419485,
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/local-service.js",
+            "bytes": 92373
+          },
+          {
+            "url": "/app/generated/template-assets/local-service/images/pr-hero.jpg",
+            "bytes": 612774
+          }
+        ]
+      },
+      "portfolio": {
+        "wallTimeToFrameLoadEventMs": 8290,
+        "wallTimeToFrameContentAttachedMs": 8319,
+        "requestCountSinceClick": 8,
+        "totalBytesSinceClick_includesCacheHitsCountedAsFullSize": 2035653,
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/portfolio.js",
+            "bytes": 89209
+          },
+          {
+            "url": "/app/generated/template-assets/portfolio/images/iv-hero.jpg",
+            "bytes": 232106
+          }
+        ]
+      },
+      "professionals": {
+        "wallTimeToFrameLoadEventMs": 10364,
+        "wallTimeToFrameContentAttachedMs": 10392,
+        "requestCountSinceClick": 8,
+        "totalBytesSinceClick_includesCacheHitsCountedAsFullSize": 2221109,
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/professionals.js",
+            "bytes": 101587
+          },
+          {
+            "url": "/app/generated/template-assets/professionals/images/hero.jpg",
+            "bytes": 405184
+          }
+        ]
+      },
+      "desserdirina": {
+        "wallTimeToFrameLoadEventMs": 7805,
+        "wallTimeToFrameContentAttachedMs": 7833,
+        "requestCountSinceClick": 14,
+        "totalBytesSinceClick_includesCacheHitsCountedAsFullSize": 2167227,
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/desserdirina.js",
+            "bytes": 111391
+          },
+          {
+            "url": "/app/generated/template-assets/desserdirina/images/hero.jpg",
+            "bytes": 107002
+          }
+        ]
+      }
+    }
+  }
+}

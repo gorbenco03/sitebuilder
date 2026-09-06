@@ -1,0 +1,7 @@
+BEFORE GET /live/verify-live-site/ -> 200, marker present = true
+BEFORE registry status = n/a (already mutated above)
+bot replies: ["🗑️ Am șters toate datele tale (sesiune, poze încărcate, fișierele site-ului și site-urile înregistrate) din sistemele noastre.\n\nScrie /start oricând ca să începi din nou."]
+AFTER registry status = deleted, url = null, paid = true
+AFTER published/index.html exists on disk = true
+AFTER GET /live/verify-live-site/ -> 200, marker STILL present = true
+defectConfirmed = true

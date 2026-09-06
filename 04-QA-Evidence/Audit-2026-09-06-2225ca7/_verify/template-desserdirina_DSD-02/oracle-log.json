@@ -1,0 +1,155 @@
+{
+  "lens": "verify-DSD-02",
+  "startedAt": "2026-09-05T22:08:41.947Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "catalog-open",
+      "action": "goto /app/",
+      "selector": null,
+      "screenshot": "01-catalog-open.png",
+      "sha256": "13a496c97a37b1be5b7c6c1847e00fc7330dad8e5247b1fa8599200c221af390",
+      "timestamp": "2026-09-05T22:08:43.750Z",
+      "url": "http://127.0.0.1:53023/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "editor-open",
+      "action": "template start desserdirina",
+      "selector": null,
+      "screenshot": "02-editor-open.png",
+      "sha256": "7ec418fe66310992300da022a2b468c7d3f107c0f7eee73151a6764b64a84683",
+      "timestamp": "2026-09-05T22:08:45.138Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "gallery-before",
+      "action": "inspect gallery before add",
+      "selector": null,
+      "screenshot": "03-gallery-before.png",
+      "sha256": "7ec418fe66310992300da022a2b468c7d3f107c0f7eee73151a6764b64a84683",
+      "timestamp": "2026-09-05T22:08:45.368Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "blocks=1 photosCat0=4"
+      }
+    },
+    {
+      "index": 3,
+      "step": "gallery-category-added",
+      "action": "click .gallery-section .hb-add-btn",
+      "selector": null,
+      "screenshot": "04-gallery-category-added.png",
+      "sha256": "2a4875a560f850c1e80590c20f0d06ccaed6b1d7b1292db8164c37385d538b7d",
+      "timestamp": "2026-09-05T22:08:46.183Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "blocks=2"
+      }
+    },
+    {
+      "index": 4,
+      "step": "gallery-category-removed",
+      "action": "click .gallery-section .hb-remove-btn (last)",
+      "selector": null,
+      "screenshot": "05-gallery-category-removed.png",
+      "sha256": "2a4875a560f850c1e80590c20f0d06ccaed6b1d7b1292db8164c37385d538b7d",
+      "timestamp": "2026-09-05T22:08:46.958Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "blocks=1 photosCat0=0"
+      }
+    },
+    {
+      "index": 5,
+      "step": "publish-slug-continue",
+      "action": "fill slug + continue",
+      "selector": null,
+      "screenshot": "06-publish-slug-continue.png",
+      "sha256": "7e3a61ad5dae534a8356ce99ba506af81e5e318fc98eb27d07a5e0927f170a2e",
+      "timestamp": "2026-09-05T22:08:47.459Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "verify-dsd02-mtoxq0eq"
+      }
+    },
+    {
+      "index": 6,
+      "step": "auth-verified-unpaid",
+      "action": "dev-link verify",
+      "selector": null,
+      "screenshot": "07-auth-verified-unpaid.png",
+      "sha256": "21b3df03941a1fc98307e1774c928d0e4e9eec1f7600e0a6974b663174afae73",
+      "timestamp": "2026-09-05T22:08:47.747Z",
+      "url": "http://127.0.0.1:53023/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 7,
+      "step": "publish-success-live",
+      "action": "test-pay complete",
+      "selector": null,
+      "screenshot": "08-publish-success-live.png",
+      "sha256": "c621f3824fb51f4c3f0f3a4c8d07b20c591b353cd7807dd28df43c0853da09fc",
+      "timestamp": "2026-09-05T22:08:47.911Z",
+      "url": "http://127.0.0.1:53023/app/#dashboard",
+      "contentCheck": {
+        "ok": true,
+        "detail": "#"
+      }
+    },
+    {
+      "index": 8,
+      "step": "live-gallery-check",
+      "action": "goto live url, inspect gallery",
+      "selector": null,
+      "screenshot": "09-live-gallery-check.png",
+      "sha256": "e2d61a1aa09e02002e8a9f0b4e0a66c96bcd9419d8082ad31df140d1aea3477e",
+      "timestamp": "2026-09-05T22:08:48.704Z",
+      "url": "http://127.0.0.1:53023/app/",
+      "contentCheck": {
+        "ok": true,
+        "detail": "blocks=0 photos=0"
+      }
+    }
+  ],
+  "defects": [
+    {
+      "severity": "critical",
+      "title": "CONFIRMAT (editor): add+remove categorie goleste photos[] al categoriei originale",
+      "detail": "{\"before\":[{\"title\":\"\",\"blurb\":\"\",\"photos\":[{\"src\":\"images/torturi-1.jpg\",\"alt\":\"Torturi tematice de sărbătoare\"},{\"src\":\"images/catering-1.jpg\",\"alt\":\"Platouri catering cu dulciuri asortate\"},{\"src\":\"images/placinte-1.jpg\",\"alt\":\"Plăcinte tradiționale românești\"},{\"src\":\"images/cupcakes-1.jpg\",\"alt\":\"Torturi mousse și cupcakes\"}]}],\"afterAdd\":[{\"title\":\"\",\"blurb\":\"\",\"photos\":[{\"src\":\"images/torturi-1.jpg\",\"alt\":\"Torturi tematice de sărbătoare\"},{\"src\":\"images/catering-1.jpg\",\"alt\":\"Platouri catering cu dulciuri asortate\"},{\"src\":\"images/placinte-1.jpg\",\"alt\":\"Plăcinte tradiționale românești\"},{\"src\":\"images/cupcakes-1.jpg\",\"alt\":\"Torturi mousse și cupcakes\"}]},\"\"],\"afterRemove\":[\"\"]}",
+      "screenshot": "gallery-category-removed",
+      "timestamp": "2026-09-05T22:08:46.958Z"
+    },
+    {
+      "severity": "critical",
+      "title": "CONFIRMAT (live, platit): galeria e complet goala pe site-ul live dupa add+remove categorie",
+      "detail": "liveCollageCount=0, liveCategoryBlocks=0",
+      "screenshot": "live-gallery-check",
+      "timestamp": "2026-09-05T22:08:48.704Z"
+    }
+  ],
+  "notes": [
+    "before=[{\"title\":\"\",\"blurb\":\"\",\"photos\":[{\"src\":\"images/torturi-1.jpg\",\"alt\":\"Torturi tematice de sărbătoare\"},{\"src\":\"images/catering-1.jpg\",\"alt\":\"Platouri catering cu dulciuri asortate\"},{\"src\":\"images/placinte-1.jpg\",\"alt\":\"Plăcinte tradiționale românești\"},{\"src\":\"images/cupcakes-1.jpg\",\"alt\":\"Torturi mousse și cupcakes\"}]}]",
+    "afterAdd=[{\"title\":\"\",\"blurb\":\"\",\"photos\":[{\"src\":\"images/torturi-1.jpg\",\"alt\":\"Torturi tematice de sărbătoare\"},{\"src\":\"images/catering-1.jpg\",\"alt\":\"Platouri catering cu dulciuri asortate\"},{\"src\":\"images/placinte-1.jpg\",\"alt\":\"Plăcinte tradiționale românești\"},{\"src\":\"images/cupcakes-1.jpg\",\"alt\":\"Torturi mousse și cupcakes\"}]},\"\"]",
+    "afterRemove=[\"\"]",
+    "counts: beforeBlocks=1 beforePhotosCat0=4 afterAddBlocks=2 afterAddPhotosCat0=4 afterRemoveBlocks=1 afterRemovePhotosCat0=0"
+  ],
+  "finishedAt": "2026-09-05T22:08:48.709Z"
+}

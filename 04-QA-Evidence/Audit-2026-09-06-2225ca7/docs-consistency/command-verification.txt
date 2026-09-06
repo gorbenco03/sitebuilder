@@ -1,0 +1,80 @@
+Verificare comenzi documentate (rulate din root repo, read-only, fara push/commit):
+
+1) npm run build           -> OK, "dist/ ready — 6 files + 6 images." (dist/ e gitignored, git status curat dupa)
+2) npm run gallery         -> OK, 12 demo-uri construite in dist-gallery/ (gitignored)
+3) npm run build:app       -> OK, builder/generated/ regenerat; templates-data.js = 1852 bytes
+   (confirma remedierea VISION §4.1: bundle-ul de ~32MB istoric NU mai exista, e "light registry")
+4) node build.js           -> OK, scrie index.html (24754 bytes) la root; `git diff index.html` gol
+   dupa rulare -> build deterministic, fara drift fata de fisierul tracked.
+5) node .claude/serve.js   -> OK, serveste pe :4173, GET / si /index.html raspund 200; oprit curat.
+
+Toate cele 5 comenzi documentate in README.md / CLOUDFLARE-DEPLOY.md functioneaza exact cum scrie
+in docs si nu modifica niciun fisier tracked (verificat cu `git status --porcelain` inainte/dupa).
+
+6) node bot.js cu TELEGRAM_BOT_TOKEN=xxxxx (fals) + SERVER_SECRET + PUBLIC_URL + PORT=3999
+   -> HTTP server porneste normal, GET /health raspunde {"ok":true,...}; bot-ul Telegram
+   incearca reconectare la fiecare 5s si esueaza (404 deleteWebhook) dar NU crash-loop-eaza
+   procesul intreg. Deci reteta din README.md/bot/README.md functioneaza pentru partea web,
+   dar genereaza zgomot infinit de retry in loguri, nedocumentat.
+
+7) grep "VISION" pe toate docs-urile principale:
+   README.md:0  LAUNCH.md:0  GO-LIVE.md:0  CLOUDFLARE-DEPLOY.md:0
+   OWNER-STRIPE-TRIAL.md:1  OWNER-CALENDAR-CAL-DIY.md:3  PRODUCT.md:1  AGENTS.md:5
+   bot/README.md:0  bot/DEPLOY.md:0  templates/README.md:0
+   -> VISION.md (sursa de adevar declarata explicit) e complet invizibil din README.md si din
+   toate docs-urile "operator-facing"; e cunoscut doar in docs-urile de proces pentru agenti AI.
+
+8) Numarul de sabloane raportat in diverse docs (adevarul din templates/registry.json = 5):
+   LAUNCH.md §7            -> "Three design systems" (3)
+   GO-LIVE.md §0 si §6     -> "one of four designs" / "All four designs ... (Restaurant, Trades,
+                              Salon, Professional services)" (4, fara Desserdirina)
+   OWNER-STRIPE-TRIAL.md   -> "Out of this how-to: Fifth design system" (trateaza al 5-lea sablon
+                              ca fiind inca neconstruit, desi templates/desserdirina/ exista si e
+                              aprobat in VISION §3 si registry.json)
+   PRODUCT.md / VISION.md / README.md(builder chrome) -> 5, corect.
+
+9) templates/README.md linia 31 "labels in English", linia 75 "natural English copy", linia 85
+   exemplu schema.json cu "language": "en" -- versus VISION §3 "Produsul este in limba romana
+   pe suprafetele vizibile" si PRODUCT.md "All visible customer/site copy should be Romanian".
+   Verificare fisiere reale:
+     templates/product-menu/schema.json:5   "language": "ro"   (corect)
+     templates/desserdirina/schema.json:5   "language": "ro"   (corect)
+     templates/local-service/schema.json:5  "language": "en"   <- gresit, label-urile sunt RO
+     templates/portfolio/schema.json:5      "language": "en"   <- gresit, label-urile sunt RO
+     templates/professionals/schema.json:5  "language": "en"   <- gresit, label-urile sunt RO
+   (label-uri verificate: "Numele firmei sau al meseriei", "Nume studio, salon sau brand", etc.)
+   grep in bot/*.js si builder/app.js dupa `schema.language` / citiri ale campului -> 0 rezultate,
+   deci campul e mort/nefolosit in cod, dar induce in eroare orice dezvoltator care il citeste.
+
+10) OWNER-CALENDAR-CAL-DIY.md descrie "Chosen path: option C" (cal.diy self-hosted) ca planul
+    curent, desi VISION.md §8 spune explicit ca aceasta decizie a fost suprascrisa DE DOUA ORI
+    (intai de Cal.com-link-only 2026-09-01, apoi de modulul nativ Hidook, LOCKED 2026-09-04) si ca
+    "Pilotul Railway separat Hidook Calendar (cal.diy) ramane netulburat si nelegat de Site
+    Builder". Codul confirma noua arhitectura: bot/calendar-native/ exista complet (db.js,
+    engine.js, owner-api.js, public-api.js, manage-api.js, cutover.js, email/, widget/, owner/,
+    manage/), cu 6 fisiere de test bot/test/calendar-native-*.test.js si flag-ul
+    appointment.nativeBooking in templates/professionals/schema.json:462 + template.html:179,204.
+    bot/calendar-boundary.js (referit de doc) inca exista ca fisier separat, neconectat la
+    codul nou, si forteaza calDiyEnabled:false necondiționat (cod vestigial).
+
+11) wrangler.toml linia 4: name = "hidook-site-builder" (deja corectat) versus
+    CLOUDFLARE-DEPLOY.md linia 7 si 50 care avertizeaza in continuare despre
+    `wrangler.toml name = "desserdina"` ca un risc curent -- avertismentul e stale, riscul
+    descris nu mai exista in fisierul tracked.
+
+12) Dockerfile CMD real (linia finala) = ["node", "web.js"] (web-only implicit, Telegram
+    dezactivat by default; bot/web.js explica in comentarii ca trebuie suprascris CMD-ul cu
+    "node bot.js" pentru a porni si Telegram). Niciunul din README.md, bot/README.md sau
+    bot/DEPLOY.md nu mentioneaza bot/web.js sau necesitatea de a schimba comanda de start in
+    Railway pentru Telegram -- toate cele trei docs descriu doar `node bot.js` / `npm start`
+    ca si cum ar fi singurul/implicitul entry point de productie.
+
+13) PROJECT_STATUS.md liniile 80-84 "PRODUSUL declarat - 2026-09-05" (declara Produsul complet,
+    "Integrare finala review-uita independent - ACCEPT") versus VISION.md §8 (fisier NEATINS de
+    commit-ul 2225ca7, cf. `git show --stat 2225ca7`) care inca contine explicit propozitia
+    "Independent QA/advocate pe acest SHA inca necesar inainte de a marca step 5 <<QA/advocate
+    complete>>" si VISION §12 "Nu se declara Produsul pana cand toate flow-urile cerute pentru
+    launch trec QA + advocate fara defect vizibil." VISION.md nu a fost re-sincronizat (ramane
+    datat "Sincronizat: 2026-09-04") desi PROJECT_STATUS.md declara Produsul o zi mai tarziu,
+    lasand cele doua fisiere de autoritate sa se contrazica direct pe cel mai important punct
+    (produsul e gata sau nu).

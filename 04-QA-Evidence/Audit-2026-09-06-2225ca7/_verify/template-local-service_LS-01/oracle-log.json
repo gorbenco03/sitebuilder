@@ -1,0 +1,65 @@
+{
+  "lens": "verify-LS-01-whatsapp-qr",
+  "startedAt": "2026-09-05T22:06:32.422Z",
+  "entries": [
+    {
+      "index": 0,
+      "step": "editor-open-local-service",
+      "action": "click .btn-start-tpl[local-service]",
+      "selector": null,
+      "screenshot": "01-editor-open-local-service.png",
+      "sha256": "497ab9120ad6f69f335ca836ba7f1fdcdaa2fa690c7045181c6386f1805a0d19",
+      "timestamp": "2026-09-05T22:06:34.404Z",
+      "url": "http://127.0.0.1:52860/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 1,
+      "step": "drawer-open",
+      "action": "inspect drawer field keys",
+      "selector": null,
+      "screenshot": "02-drawer-open.png",
+      "sha256": "1adbb328ebad8e9ed385f8020107a0470f9e87e221a9beed838650701d9de43a",
+      "timestamp": "2026-09-05T22:06:36.563Z",
+      "url": "http://127.0.0.1:52860/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 2,
+      "step": "after-fill-whatsapp-fields",
+      "action": "fill whatsapp phone+message in drawer",
+      "selector": null,
+      "screenshot": "03-after-fill-whatsapp-fields.png",
+      "sha256": "288adfbd5a0ef40a6e7adbf31c5b9389815f5aab87427a9723e6c277a75e9e27",
+      "timestamp": "2026-09-05T22:06:37.232Z",
+      "url": "http://127.0.0.1:52860/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    },
+    {
+      "index": 3,
+      "step": "clicked-wa-me-link",
+      "action": "click a[href*=wa.me] inside preview iframe",
+      "selector": null,
+      "screenshot": "04-clicked-wa-me-link.png",
+      "sha256": "c98760fc7409ce3e515bffe7f606ca936e27bd9404c960fb66f38fcebc49e21e",
+      "timestamp": "2026-09-05T22:06:38.246Z",
+      "url": "http://127.0.0.1:52860/app/#edit",
+      "contentCheck": {
+        "ok": true,
+        "detail": "captured"
+      }
+    }
+  ],
+  "defects": [],
+  "notes": [],
+  "finishedAt": "2026-09-05T22:06:38.264Z"
+}

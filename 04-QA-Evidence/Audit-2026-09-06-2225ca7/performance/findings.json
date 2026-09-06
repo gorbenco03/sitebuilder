@@ -1,0 +1,146 @@
+{
+  "lens": "performanță (first load builder, editor, site-uri live)",
+  "summary": "Fundația e mai solidă decât m-aș fi așteptat: stratul static /app/* (index.html, app.js, app.css, engine.js, templates-data.js, cele 5 thumbnail-uri de catalog) are deja ETag + Last-Modified + Cache-Control + 304 corect implementate, iar catalogul chiar amână payload-ul greu (~28MB de template-assets) până la click pe Start — exact defectul istoric din VISION §4.1 ('templates-data.js de 32MB bloca prima încărcare') pare rezolvat cu adevărat, verificat mecanic (reload = 22ms, 9/9 resurse eligibile → 304). Dincolo de asta însă produsul ratează câteva lucruri de bază pe care orice site chiar de nivel Wix/Squarespace le are din oficiu: serverul Node nu comprimă NIMIC (zero gzip/brotli, verificat cu curl -H 'Accept-Encoding: gzip' pe app.js — 200 necomprimat), nu există nicio linie de minificare în tot pipeline-ul de build, și nu există niciun pipeline de imagini — pozele sunt JPEG needitate, la rezoluția originală, fără width/height, fără srcset, fără WebP/AVIF. Rezultatul concret: click pe 'Start' pe un template (momentul-cheie de conversie al produsului) durează 7.8–11.7 secunde pe throttling realist (150ms RTT, 1.6Mbps, CPU×4) — de 2.6 până la 4 ori peste ținta ≤3s pe care VISION §4.1/§10 și-o asumă chiar produsul. Pe site-ul live publicat (testat printr-un flux real de test-pay), LCP e 6.8s și CLS e 0.17–0.20 pe ambele viewport-uri — ambele peste pragurile 'good' din industrie (LCP<2.5s, CLS<0.1). Notă importantă de nuanță: măsurătorile pe site-ul live au folosit calea locală HIDOOK_ISOLATED_DEPLOY (singura permisă de regulile auditului), pe care codul însuși o documentează ca 'refused in production' — clienții reali ajung pe Cloudflare Pages/Vercel/Netlify, care comprimă și cache-uiesc automat la edge, deci partea de 'lipsă Cache-Control/gzip pe /live/' nu e neapărat reprezentativă pentru producție. Dar greutatea și formatul imaginilor, lipsa width/height (sursa CLS-ului), lipsa minificării și lipsa compresiei pe serverul propriu-zis (folosit inclusiv pentru /app/ — asta ESTE producție) rămân valabile indiferent de unde ajunge site-ul final. Per ansamblu: nu e un produs care trebuie rescris — arhitectura de cache există deja și e corectă unde a fost aplicată — dar are 3-4 lipsuri de bază (compresie, minificare, pipeline de imagini, cache pe /api/templates) care, odată reparate, ar tăia probabil 60-70% din timpii măsurați cu efort relativ mic.",
+  "score": 4,
+  "evidenceDir": "/Users/Work/Desktop/sitebuilder/04-QA-Evidence/Audit-2026-09-06-2225ca7/performance/",
+  "strengths": [
+    "/app/* are un strat de cache real: getCachedStatic()/sendCachedFile() în bot/server.js:130-209 generează ETag stabil (size+mtime), Last-Modified și Cache-Control public,max-age=0,must-revalidate, cu suport corect pentru If-None-Match ȘI If-Modified-Since → 304. Verificat mecanic: warm reload = 22ms, 9 din 9 resurse eligibile (engine.js, templates-data.js, app.js, app.css, cele 5 thumbnail-uri) au întors 304.",
+    "Bundle split real, nu doar pe hârtie: cold load pe /app/ transferă doar 2.44MB (18 request-uri), dominate de cele 5 thumbnail-uri de catalog — NU de cele ~28MB din builder/generated/template-assets. Payload-ul greu per-template (JS 76-111KB + hero image) se descarcă abia la click pe Start, confirmat per-template (câte 8 request-uri noi per Start, nu tot registry-ul).",
+    "GET /api/templates este memoizat server-side (loadTemplates() cache în bot/server.js:629-649) — 4ms la primul apel, ~1ms în medie după; GET /live/<slug>/ răspunde sub 1ms chiar dacă face readFileSync sincron per request (fișierele sunt mici, deci nu e vizibil ca bottleneck la scara testată).",
+    "Fluxul de publish (test-pay izolat) funcționează integral și produce un site live vizual corect și plăcut (Casa Nord / product-menu) — nu am întâmpinat erori de consolă sau request-uri eșuate pe site-ul live (consoleErrors: [], failedRequests: [])."
+  ],
+  "findings": [
+    {
+      "id": "PERF-01",
+      "title": "Click pe 'Start' pentru un template (momentul-cheie de conversie) durează 7.8-11.7s pe throttling realist — de 2.6-4x peste ținta ≤3s a produsului",
+      "severity": "critical",
+      "category": "performance",
+      "area": "frontend",
+      "description": "Măsurat cu CDP throttling (150ms RTT, 1.6Mbps down/750kbps up, CPU×4) și detectare corectă a conținutului iframe-ului (Playwright frame.waitForLoadState — #preview-iframe e sandbox fără allow-same-origin, deci contentDocument din page-context întoarce mereu null; am corectat metodologia după ce prima trecere a raportat fals TIMEOUT>20000ms). Timp real de la click la iframe.load: product-menu 7799ms, portfolio 8290ms, desserdirina 7805ms, professionals 10364ms, local-service 11719ms. Cauza: per template se descarcă serial JS-ul specific (75.9-111.4KB, necomprimat) + o imagine hero needitată (210-612KB JPEG) + un payload /api/templates de 114985 bytes fără niciun Cache-Control (deci re-fetch la fiecare Start), toate pe o conexiune throttled fără gzip.",
+      "evidence": "04-QA-Evidence/Audit-2026-09-06-2225ca7/performance/perf-template-timing-corrected.json; 03-template-start-product-menu-editor-open.png (arată rezultatul final corect randat, deci nu e un bug funcțional, ci de viteză); VISION.md §4.1/§10 ('first-load ≤ 3 secunde pe throttling realist')",
+      "reproSteps": "node 04-QA-Evidence/Audit-2026-09-06-2225ca7/performance/run2-template-timing.mjs (rulează izolat, aplică CDP Network.emulateNetworkConditions + Emulation.setCPUThrottlingRate(4), navighează /app/, dă click pe .btn-start-tpl pentru fiecare din cele 5 șabloane, măsoară frame.waitForLoadState('load'))",
+      "recommendation": "Aplică gzip/brotli pe server (vezi PERF-03) + adaugă Cache-Control/ETag pe /api/templates (PERF-05) + comprimă/redimensionează imaginile hero din preset-uri (PERF-02). Cele trei combinate ar trebui să scoată 4-6s din acest flux fără nicio schimbare de arhitectură.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-02",
+      "title": "Nu există niciun pipeline de optimizare a imaginilor — JPEG needitate, fără width/height, fără srcset, fără WebP/AVIF, servite la 3.7-7.5x rezoluția afișată",
+      "severity": "high",
+      "category": "performance",
+      "area": "template:product-menu",
+      "description": "Pe site-ul live publicat (Casa Nord/product-menu), imaginile hero+galerie sunt JPEG la 1280x1280px nativ, afișate la 341x256px pe desktop (1440) și 169x127px pe mobil (390) — adică se transferă 3.7x-7.5x mai mulți pixeli decât se afișează. grep pe templates/*/template.html arată 0 <img> cu srcset în toate cele 5 șabloane și doar 5 tag-uri <img> din tot proiectul au width/height explicit (restul nu rezervă spațiu de layout). grep pe templates + builder/generated confirmă 109 fișiere .jpg/.png și 0 .webp/.avif. Asta explică direct CLS 0.20 (desktop) / 0.167 (mobil) măsurat pe site-ul live — ambele peste pragul 'good' de 0.1.",
+      "evidence": "perf.json → sections.liveSite_desktop-1440.images (naturalWidth 1280 vs displayWidth 341) și sections.liveSite_mobile-390.images (displayWidth 169); sections.liveSite_desktop-1440.cls=0.2000155..., liveSite_mobile-390.cls=0.1666...; grep -rn srcset templates/*/template.html → 0 rezultate",
+      "reproSteps": "Publică orice template prin test-pay, deschide /live/<slug>/ cu throttling + PerformanceObserver layout-shift, inspectează document.images (naturalWidth/Height vs clientWidth/Height)",
+      "recommendation": "Pipeline de build care generează 2-3 dimensiuni per imagine (ex. 400/800/1600px) + conversie WebP cu fallback JPEG + <img width height loading> setate din schema.json (dimensiunile sunt cunoscute la build time). Efort mediu, câștig mare (probabil -60-70% bytes imagine + CLS aproape de 0).",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-03",
+      "title": "Serverul Node nu comprimă niciodată răspunsurile — zero gzip/brotli în tot bot/server.js, confirmat cu curl",
+      "severity": "high",
+      "category": "performance",
+      "area": "backend",
+      "description": "grep -n 'gzip|brotli|Content-Encoding|zlib' bot/server.js → 0 rezultate. Confirmat live: curl -H 'Accept-Encoding: gzip, deflate, br' pe /app/app.js (167742 bytes necomprimate) întoarce 200 fără header Content-Encoding, deci corpul e trimis integral necomprimat. Se aplică la toate asset-urile text servite de acest server (HTML/CSS/JS/JSON) pe /app/*, /live/*/ și toate rutele /api/*. Pe o conexiune throttled la 1.6Mbps (folosită în tot auditul, un profil realist de rețea slabă), JS/CSS/JSON text comprimă tipic 60-75% cu gzip simplu — deci acest singur fix ar reduce cu ~1.5-2s prima încărcare a /app/ (app.js+app.css+engine.js = ~318KB necomprimate) fără nicio altă schimbare.",
+      "evidence": "curl output: 'HTTP/1.1 200 OK / Content-Type: application/javascript.../ Content-Length: 167742' — fără Content-Encoding, cu Accept-Encoding: gzip trimis explicit în request",
+      "reproSteps": "curl -s -D - -o /dev/null -H \"Accept-Encoding: gzip, deflate, br\" http://127.0.0.1:<port>/app/app.js  (pe serverul izolat pornit din audit-harness.mjs)",
+      "recommendation": "Adaugă zlib.gzipSync (sau brotli) în sendCachedFile()/serveLive()/sendJson(), condiționat de header-ul Accept-Encoding al request-ului, pentru mime-type-uri text (js/css/html/json/svg). Cache rezultatul comprimat alături de bufferul necomprimat în staticFileCache existent, ca să nu recomprimi la fiecare request.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-04",
+      "title": "Zero minificare în tot pipeline-ul de build — app.js (167.7KB), app.css (48.6KB), engine.js (102KB) sunt shipate ca atare, cu comentarii și whitespace",
+      "severity": "medium",
+      "category": "performance",
+      "area": "backend",
+      "description": "package.json nu are nicio devDependency de minificare (terser/esbuild/csso/swc) — singura dependență e playwright. scripts/build-builder.js (435 linii) generează engine.js/templates-data.js prin concatenare/asamblare, fără niciun pas de minify. Un minify simplu (ex. esbuild --minify) ar tăia tipic 25-40% din JS/CSS text, cumulativ cu compresia (PERF-03).",
+      "evidence": "cat package.json (devDependencies: doar playwright); grep -n 'minif|terser|uglify|esbuild|swc' scripts/build-builder.js package.json → 0 rezultate; wc -c builder/app.js=167742, builder/app.css=48648, builder/generated/engine.js=102027",
+      "reproSteps": "cat package.json; grep -n minify scripts/build-builder.js",
+      "recommendation": "Adaugă esbuild ca devDependency (zero-config aproape) și rulează --minify pe app.js/app.css/engine.js în npm run build:app. Efort mic, fără risc funcțional dacă se testează după.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-05",
+      "title": "GET /api/templates (114985 bytes) nu are Cache-Control/ETag deloc, deși e memoizat server-side și practic imuabil între deploy-uri",
+      "severity": "medium",
+      "category": "performance",
+      "area": "backend",
+      "description": "loadTemplates() (bot/server.js:629-649) cache-uiește rezultatul în memorie (_templateCache), deci payload-ul nu se schimbă până la restart. Totuși handler-ul nu setează niciun Cache-Control/ETag/Last-Modified — confirmat cu curl (header list conține doar Content-Type și Content-Length). Acest payload de 115KB pare re-fetch-uit la fiecare click pe Start (vezi PERF-01 breakdown), contribuind direct la timpii de 7.8-11.7s.",
+      "evidence": "curl -s -D - -o /dev/null http://127.0.0.1:<port>/api/templates → fără Cache-Control/ETag; bot/server.js:629-649 (loadTemplates cu _templateCache)",
+      "reproSteps": "curl -s -D - -o /dev/null http://127.0.0.1:<port>/api/templates",
+      "recommendation": "Adaugă un ETag static derivat din hash-ul registry.json + schema/presets (calculat o dată la boot/prima cerere, ca staticFileCache) și Cache-Control: public, max-age=0, must-revalidate, mirror la ce există deja pentru /app/*.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-06",
+      "title": "LCP 6.8s și CLS 0.17-0.20 pe site-ul live publicat, peste pragurile 'good' din industrie (LCP<2.5s, CLS<0.1) — cu o rezervă importantă de metodologie",
+      "severity": "medium",
+      "category": "performance",
+      "area": "frontend",
+      "description": "Măsurat pe un site real publicat prin fluxul complet de test-pay (slug perfaudit-mtowg9wd), pe throttling identic (150ms/1.6Mbps/CPU×4), la 1440x1000 și 390x844: LCP=6824ms/6808ms, CLS=0.2000/0.1666, page weight 1.59MB pe 13 request-uri, toate cele 7 imagini JPEG marcate loading='eager' (nici cele din galeria de jos, sub fold, nu sunt lazy). REZERVĂ: măsurătoarea a folosit calea locală HIDOOK_ISOLATED_DEPLOY=1 (server.js serveLive()), pe care bot/webpublish.js o documentează explicit ca 'refused in production' — clienții reali ajung pe Cloudflare Pages/Vercel/Netlify (bot/deploy-cloudflare.js, bot/deploy-vercel.js), platforme care aplică propria compresie/cache la edge și pe care regulile auditului nu permit să le testez cu adevărat. Deci partea de LCP absolut e parțial artefact al lipsei de compresie pe calea de test; dar greutatea/formatul imaginilor și lipsa loading='lazy' pe galerie (cauza structurală) sunt identice indiferent de unde e găzduit site-ul, pentru că build.js/site-export.js generează exact același bundle static pentru orice țintă de deploy.",
+      "evidence": "perf.json → sections.liveSite_desktop-1440 (lcp:6824, cls:0.2000155...) și liveSite_mobile-390 (lcp:6808, cls:0.1666...); 05-live-site-desktop-1440.png, 06-live-site-mobile-390.png; bot/webpublish.js comment 'HIDOOK_ISOLATED_DEPLOY=1 (refused in production)'",
+      "reproSteps": "Publică un site prin fluxul de test-pay (vezi run.mjs secțiunea 4), apoi navighează /live/<slug>/ cu CDP throttling + PerformanceObserver (paint, largest-contentful-paint, layout-shift)",
+      "recommendation": "Aplică loading='lazy' pe toate imaginile sub fold din template.html (doar galeria 'În farfurie'/'Sala de mese' de mai jos, nu hero-ul), plus fix-urile de imagine din PERF-02. Pentru numărul absolut de LCP pe producția reală (Cloudflare/Vercel), ar trebui repetat testul cu un deploy real, în afara acestui audit izolat.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-07",
+      "title": "serveLive() (ruta /live/<slug>/*, doar dev/QA local) face fs.readFileSync sincron per request, fără cache/ETag/Cache-Control — spre deosebire de serveStatic()/sendCachedFile() folosit pentru /app/*",
+      "severity": "low",
+      "category": "performance",
+      "area": "backend",
+      "description": "bot/server.js:786 ('const content = fs.readFileSync(realFile);' în serveLive()) nu trece prin staticFileCache/getCachedStatic() ca serveStatic() (linia 691) — nu setează ETag, Last-Modified sau Cache-Control deloc. Explicit gated non-producție (HIDOOK_ISOLATED_DEPLOY 'refused in production' per bot/webpublish.js), deci nu afectează clienți reali, dar înseamnă că orice test local de performanță pe /live/ (inclusiv acest audit) pornește sistematic mai prost decât ar sta un deploy real pe Cloudflare/Vercel. Confirmat: liveSiteWarmReload → toate cele 13 request-uri au întors 200 (nu 304) la un reload, cu cacheControl:null pe toate.",
+      "evidence": "bot/server.js linia 786 (readFileSync) vs liniile 130-209 (getCachedStatic/sendCachedFile, calea folosită de serveStatic); perf.json → sections.liveSiteWarmReload.statusCounts = {\"200\":13} (zero 304)",
+      "reproSteps": "Publică un site, apoi fă reload pe /live/<slug>/ și inspectează header-ele de răspuns (toate 200, fără ETag/Cache-Control)",
+      "recommendation": "Rutează serveLive() prin sendCachedFile() (aceeași funcție deja scrisă pentru /app/*) în loc de readFileSync direct — schimbare mică, mai ales utilă ca disciplină/consistență și ca numerele de QA locală să nu fie sistematic mai pesimiste decât producția reală.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-08",
+      "title": "Cold /app/ load: 'cardurile de template sunt vizibile' e un moment înșelător — la momentul selectorului DOM, cardurile sunt goale vizual (fără thumbnail/shimmer)",
+      "severity": "info",
+      "category": "performance",
+      "area": "frontend",
+      "description": "wallTimeToTemplateCardsVisibleMs=3981ms marchează doar existența elementelor .template-card în DOM, nu conținutul lor vizual. Screenshot-ul luat exact la acel moment arată cutii goale (fără shimmer vizibil, fără imagine) — deci timpul perceput real de utilizator până văd ceva util e mai mare decât 3981ms brut, deși sub target string 'load' event a fost 3910ms (deja peste ținta ≤3s din VISION §4.1/§10).",
+      "evidence": "01-cold-load-app-templates-visible.png (cutii goale la momentul selectorului); perf.json sections.coldLoadApp.wallTimeToLoadEventMs=3910, wallTimeToTemplateCardsVisibleMs=3981, firstContentfulPaintMs=816 (LCP a prins probabil blocul de text din hero, nu imaginile, deci arată artificial de bine)",
+      "reproSteps": "Navighează /app/ cu throttling (150ms/1.6Mbps/CPU4x), fă screenshot exact când #templates-grid .template-card apare în DOM",
+      "recommendation": "Fixurile de compresie (PERF-03) și imagine (PERF-02) vor scurta timpul real până la conținut vizibil; opțional, un shimmer/skeleton mai lung vizibil ar reduce percepția de 'gol' chiar dacă timpul brut rămâne similar.",
+      "effort": "S",
+      "rebuildOrImprove": "improve"
+    },
+    {
+      "id": "PERF-09",
+      "title": "26+MB de imagini needitate duplicate în builder/generated/template-assets, oglindă 1:1 a templates/*/images — debt de build/repo, nu (încă) de runtime",
+      "severity": "low",
+      "category": "infra",
+      "area": "deploy",
+      "description": "builder/generated total 28.32MB, din care template-assets 26.13MB — aproape identic cu templates/*/images (26.63MB sursă), adică o copiere brută fără nicio compresie/redimensionare la build. NU e servit integral per request (confirmat: per Start se descarcă doar 1 imagine hero + 1 JS chunk, nu tot folderul), deci nu e un bug de runtime, dar e exact sursa needitată din spatele PERF-02 și umflă repo-ul/timpii de checkout CI pe măsură ce se adaugă șabloane noi.",
+      "evidence": "du -sh builder/generated/template-assets → 26.13MB; du -sh templates/*/images însumat → 26.63MB; perf.json sections.buildSizes",
+      "reproSteps": "du -sh builder/generated/template-assets templates/*/images",
+      "recommendation": "Rulează pipeline-ul de imagine (PERF-02) la build time peste template-assets, nu doar peste ce ajunge pe site-ul live — ar tăia probabil 70-80% din cele 26MB.",
+      "effort": "M",
+      "rebuildOrImprove": "improve"
+    }
+  ],
+  "screenshots": [
+    { "file": "01-cold-load-app-templates-visible.png", "whatItShows": "Catalogul /app/ la momentul exact în care selectorul .template-card există în DOM (throttled) — cardurile sunt vizual goale, fără thumbnail sau shimmer, arătând că timpul perceput real e mai mare decât timpul brut al selectorului." },
+    { "file": "02-warm-reload-app.png", "whatItShows": "Reload la cald al /app/ (fără throttling) — cardurile complet încărcate în 22ms, confirmă vizual cache-ul funcțional." },
+    { "file": "03-template-start-product-menu-editor-open.png", "whatItShows": "Editorul deschis după click pe Start (product-menu/Casa Nord) — dovedește că randarea finală e corectă și arată bine; problema e viteza (7.8s până aici pe throttling), nu funcționalitatea." },
+    { "file": "04-publish-success.png", "whatItShows": "Modalul de succes după fluxul complet de test-pay publish, cu link-ul live." },
+    { "file": "05-live-site-desktop-1440.png", "whatItShows": "Site-ul live publicat (Casa Nord) la 1440px, complet încărcat — arată calitatea vizuală reală a output-ului, contrastul cu timpii de încărcare măsurați (LCP 6.8s până la această stare)." },
+    { "file": "06-live-site-mobile-390.png", "whatItShows": "Același site live la 390px (mobil) — folosit pentru CLS/LCP mobil (LCP 6.8s, CLS 0.167)." }
+  ],
+  "notRun": [
+    "Hosting real de producție (Cloudflare Pages / Vercel / Netlify) — regulile auditului interzic deploy-uri/apeluri externe reale; am testat doar calea locală HIDOOK_ISOLATED_DEPLOY (documentată explicit ca 'refused in production'), care nu are compresie/cache la nivel de server. Impactul asupra fișierelor generate (greutate imagini, minificare) e identic; impactul asupra header-elor HTTP (gzip, Cache-Control, CDN edge) NU a putut fi verificat pentru producția reală.",
+    "Test de memory-leak susținut — am făcut doar 160 request-uri (RSS 122MB→127.8MB, +5.8MB); insuficient pentru concluzie fermă asupra unui leak, ar necesita mii de request-uri pe minute (în afara bugetului de 30-40 min).",
+    "Scor Lighthouse oficial — am folosit PerformanceObserver + Navigation Timing brute prin CDP, comparabile ca prag (LCP/CLS) dar nu un audit Lighthouse complet (nu am rulat lighthouse CLI).",
+    "Condiții de rețea pe dispozitiv fizic real (4G/3G/Wi-Fi cu jitter real) — am folosit doar throttling emulat CDP (Network.emulateNetworkConditions + Emulation.setCPUThrottlingRate), conform cerinței din task.",
+    "Performanța widget-ului de calendar nativ (/calendar-native/widget/preview, /calendar-native/owner/preview) — în afara bugetului de timp pentru acest lens; nemăsurat."
+  ]
+}
