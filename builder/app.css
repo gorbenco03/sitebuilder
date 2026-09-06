@@ -342,6 +342,14 @@ input, textarea, select {
   overflow: visible;
 }
 
+/* Wave 11 mobile: no-op on desktop/tablet — `display:contents` hoists these
+   children to be direct flex items of .editor-topbar-right, so layout above
+   this width is byte-identical to before the rail existed. See the
+   max-width:640px block below for what changes on a phone. */
+.editor-topbar-scroll {
+  display: contents;
+}
+
 .editor-tpl-name {
   font-size: 0.85rem;
   font-weight: 600;
@@ -419,6 +427,116 @@ body.details-drawer-open .editor-tpl-name {
   body.details-drawer-open #btn-download-zip .btn-topbar-label::after {
     content: 'ZIP';
     font-size: 0.78rem;
+  }
+}
+
+/* ============================================================
+   WAVE 11 — phone-width editor topbar (390px investigation)
+   ============================================================
+   Root cause found by driving the real editor at a 390x844 touch
+   viewport: .editor-topbar-right is flex:1 1 auto + justify-content:
+   flex-end + overflow:visible. At phone width its buttons need far
+   more room than the box flexbox gives them, and because the box is
+   right-aligned, the *overflow bleeds backward past the box's own
+   left edge* — measured, at 390px, instagram/color/gallery/etc.
+   rendered starting around x=70px, stacking directly on top of
+   btn-back-templates, btn-account-menu, undo/redo and the
+   desktop/mobile preview toggle (x 63px-232px). Later-DOM elements
+   win hit-testing on overlap, so several left/center topbar controls
+   were untappable on a real phone — confirmed by a Playwright tap on
+   #btn-preview-mobile timing out because an svg from
+   .editor-topbar-right intercepted the pointer event.
+   Fix: below 640px, `.editor-topbar-scroll` (see above) stops being a
+   layout no-op and becomes its own horizontally-scrolling flex row,
+   containing everything that used to overflow. Nothing bleeds outside
+   its own box any more — it either fits, or it scrolls, but it never
+   overlaps a sibling. #btn-publish lives outside the rail so it is
+   always visible without scrolling. Threshold picked well clear of
+   every viewport width already exercised by the test suite (390 vs.
+   1000/1200/1280/1400/1440), so nothing above phone width changes.
+*/
+@media (max-width: 640px) {
+  /* Same overflow-bleed shape appears a second time once touch targets
+     grow below: left has flex-shrink:1 + min-width:0 + default
+     overflow:visible, so once back+account (now 44px tall/wide) no
+     longer fit the width flex-shrink squeezed it to, its content
+     overflowed rightward on top of the center undo/redo/device-toggle
+     group. Pin left (and cap the template name) to its real content
+     width instead, so it never gets shrunk below what it needs —
+     .editor-topbar-right (the flexible, scrollable side) absorbs all
+     of the squeeze instead, exactly as designed above. */
+  .editor-topbar-left {
+    flex-shrink: 0;
+  }
+  .editor-tpl-name {
+    max-width: 84px;
+  }
+  .editor-topbar-right {
+    overflow: visible;
+  }
+  .editor-topbar-scroll {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Small end-padding so the last scrolled item isn't flush against
+       the pinned Publish button. */
+    padding-right: 0.2rem;
+  }
+  .editor-topbar-scroll::-webkit-scrollbar { display: none; }
+  .editor-topbar-scroll > * {
+    flex-shrink: 0;
+  }
+
+  /* Publish stays icon-only at phone width on purpose: showing the
+     "Publică site-ul" label here needs ~140px, which doesn't fit next
+     to the pinned-width left/center sections without reintroducing the
+     exact overflow-bleed this file works around elsewhere (measured:
+     re-enabling the label pushed Publish's own box wide enough that it
+     started intercepting taps meant for the device toggle again). The
+     accent-colored button + icon remains reachable and 44x44+; the
+     label reappears at the existing >=420px breakpoint below. */
+
+  /* Touch targets: a phone is fingers, not a mouse pointer. Bring
+     every interactive topbar control up to the 44x44 baseline.
+     !important: each unguarded base rule (.device-btn, .drawer-close,
+     etc.) is declared later in this file than this section, so without
+     it the later, smaller, unconditional rule would win the cascade
+     even while this media query matches. */
+  .btn-icon-back { min-width: 44px !important; min-height: 44px !important; }
+  .btn-icon-account { width: 44px !important; height: 44px !important; }
+  .btn-icon-history { width: 44px !important; height: 44px !important; }
+  .device-btn { width: 44px !important; height: 44px !important; }
+  .btn-topbar { min-width: 44px !important; min-height: 44px !important; }
+  .drawer-close { width: 44px !important; height: 44px !important; }
+
+  /* Color popover: it is positioned by app.js from the button's
+     bounding rect (an inline `right` style we cannot edit here — see
+     HANDOFF-mobile.md). If that rect is ever off, or simply too close
+     to an edge, a min-width:240px popover can end up partly or fully
+     off-screen. Force it to dock full-width between two fixed margins
+     on phones instead, regardless of what inline position JS computed. */
+  .color-popover {
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    width: auto !important;
+    max-width: none;
+  }
+  .color-preset-dot { width: 34px !important; height: 34px !important; }
+
+  /* Cookie consent accept button (index.html inline style sets
+     padding only, no min-height — measured 89x38px on a 390px phone). */
+  .hb-cookie-banner button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 

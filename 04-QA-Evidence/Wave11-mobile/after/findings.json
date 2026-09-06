@@ -1,0 +1,184 @@
+[
+  {
+    "step": "cookie-banner",
+    "ok": true,
+    "detail": "Accept button size 89x44px (need >=44x44)",
+    "extra": null
+  },
+  {
+    "step": "template-start-button",
+    "ok": true,
+    "detail": "Start button size 171x44px",
+    "extra": null
+  },
+  {
+    "step": "editor-canvas-size",
+    "ok": true,
+    "detail": "canvas wrap {\"x\":0,\"y\":166,\"width\":390,\"height\":678} iframe {\"x\":0,\"y\":166,\"width\":390,\"height\":678}",
+    "extra": null
+  },
+  {
+    "step": "topbar-pinned-buttons-fit-viewport",
+    "ok": true,
+    "detail": "0 of 10 non-scrollable topbar buttons extend outside 0..390px",
+    "extra": [
+      {
+        "id": "btn-back-templates",
+        "box": {
+          "x": 12,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-account-menu",
+        "box": {
+          "x": 72,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "account-menu-projects",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "account-menu-logout",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "account-menu-logout-all",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "btn-undo",
+        "box": {
+          "x": 122.46875,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-redo",
+        "box": {
+          "x": 169.65625,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-preview-desktop",
+        "box": {
+          "x": 224.25,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-preview-mobile",
+        "box": {
+          "x": 268.25,
+          "y": 3.5,
+          "width": 44,
+          "height": 44
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-publish",
+        "box": {
+          "x": 320.8125,
+          "y": 3.5,
+          "width": 57.1875,
+          "height": 44
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "step": "topbar-buttons-touch-target-44",
+    "ok": true,
+    "detail": "0 of 17 visible topbar buttons are under 44x44px",
+    "extra": []
+  },
+  {
+    "step": "topbar-buttons-no-overlap",
+    "ok": true,
+    "detail": "0 overlapping on-screen topbar button pairs",
+    "extra": []
+  },
+  {
+    "step": "edit-field-visible-above-keyboard",
+    "ok": true,
+    "detail": "business.name field top/bottom {\"x\":16,\"y\":181.984375,\"width\":178.171875,\"height\":26.03125} vs simulated keyboard top y=508",
+    "extra": null
+  },
+  {
+    "step": "drawer-covers-most-of-viewport",
+    "ok": true,
+    "detail": "drawer width 367px of 390px viewport",
+    "extra": null
+  },
+  {
+    "step": "drawer-close-button-touch-target",
+    "ok": true,
+    "detail": "close button 44x44px",
+    "extra": null
+  },
+  {
+    "step": "drawer-photo-button-touch-target",
+    "ok": true,
+    "detail": "photo button height 44px",
+    "extra": null
+  },
+  {
+    "step": "photo-replace-from-file-chooser",
+    "ok": true,
+    "detail": "file chooser opened by tap and accepted a file",
+    "extra": null
+  },
+  {
+    "step": "color-popover-fits-viewport",
+    "ok": true,
+    "detail": "popover box {\"x\":12,\"y\":53.5,\"width\":366,\"height\":254.46875} vs viewport 390x844",
+    "extra": null
+  },
+  {
+    "step": "preview-mobile-toggle-touch-target",
+    "ok": true,
+    "detail": "mobile toggle 44x44px",
+    "extra": null
+  },
+  {
+    "step": "publish-button-reachable",
+    "ok": true,
+    "detail": "publish button visible=true box={\"x\":320.8125,\"y\":3.5,\"width\":57.1875,\"height\":44}",
+    "extra": null
+  },
+  {
+    "step": "publish-modal-fits-viewport",
+    "ok": true,
+    "detail": "publish modal box {\"x\":16,\"y\":175.8125,\"width\":358,\"height\":492.375}",
+    "extra": null
+  },
+  {
+    "step": "publish-flow-completed",
+    "ok": true,
+    "detail": "reached live-site success screen",
+    "extra": null
+  }
+]
