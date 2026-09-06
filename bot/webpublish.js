@@ -260,13 +260,20 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
         return null;
     }
 
-    // Event-level claim (duplicate webhooks)
+    // Event-level claim (duplicate webhooks). unpublishSite() below stays
+    // idempotent and runs on every delivery (in case a prior run's registry
+    // write partially applied), but a NOTIFICATION is not idempotent from the
+    // owner's point of view — Wave10 fix: a duplicate delivery of the same
+    // eventId used to still call notifyAdmin again (the old code only logged
+    // "already_handled" and fell through), which would have sent the same
+    // "site oprit" Telegram message — and now email — more than once for one
+    // real-world failure. firstDelivery gates every notification below.
     const eventId = event.id;
+    let firstDelivery = true;
     if (eventId && typeof registry.claimStripeEvent === 'function') {
-        const first = registry.claimStripeEvent(eventId);
-        if (!first) {
+        firstDelivery = registry.claimStripeEvent(eventId);
+        if (!firstDelivery) {
             log('webpublish.subscription.already_handled', { eventId, siteId: site.id });
-            // Still ensure unpublished (idempotent) in case prior run partially applied
         }
     }
 
@@ -283,15 +290,26 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
         // action (they didn't click Cancel) — Stripe exhausted every dunning
         // retry and gave up. That is exactly the moment a silent unpublish is
         // unacceptable, so notify (best-effort; web-only deployments have no
-        // channel yet — see bot/web.js and HANDOFF-payments.md).
-        if (isUnpaidUpdate && typeof notifyAdmin === 'function' && result) {
+        // Telegram channel — Wave10 adds a real email channel below).
+        // firstDelivery: exactly once per Stripe event, never on a replay.
+        if (isUnpaidUpdate && firstDelivery && result) {
+            if (typeof notifyAdmin === 'function') {
+                try {
+                    notifyAdmin(
+                        `🔴 Site oprit: „${site.slug || site.projectName}” nu mai este public. ` +
+                        `Stripe a renunțat la reîncercări după eșecul repetat al plății (status abonament: ${status}). ` +
+                        'Adaugă un card nou din tabloul de bord ca să repornești site-ul — hostingul rămâne al tău, doar plata a eșuat.'
+                    );
+                } catch (_) { /* best-effort — never let a notify failure block the unpublish */ }
+            }
             try {
-                notifyAdmin(
-                    `🔴 Site oprit: „${site.slug || site.projectName}” nu mai este public. ` +
-                    `Stripe a renunțat la reîncercări după eșecul repetat al plății (status abonament: ${status}). ` +
-                    'Adaugă un card nou din tabloul de bord ca să repornești site-ul — hostingul rămâne al tău, doar plata a eșuat.'
+                await _notifyOwnerEmail(
+                    site,
+                    'site_down',
+                    buildSiteDownEmailRo(site),
+                    { subscriptionId: sub.id, subscriptionStatus: status }
                 );
-            } catch (_) { /* best-effort — never let a notify failure block the unpublish */ }
+            } catch (_) { /* best-effort — must never turn an unpublish into a thrown error */ }
         }
         return result;
     }
@@ -645,6 +663,21 @@ async function handleStripeInvoicePaymentFailed(event, notifyAdmin) {
         notifyAdmin(buildDunningNoticeRo(site, { attemptCount, nextPaymentAttempt }));
     }
 
+    // Wave10 — the real owner-facing channel: notifyAdmin above is Telegram
+    // only and is always undefined on the production web entry point
+    // (bot/web.js). Gated by the same eventId claim as the rest of this
+    // function (already returned early above on a duplicate delivery), so
+    // this fires exactly once per Stripe event — one email per decline, one
+    // per retry, never a resend for a duplicate webhook.
+    try {
+        await _notifyOwnerEmail(
+            site,
+            'payment_declined',
+            buildPaymentDeclinedEmailRo(site, { attemptCount, nextPaymentAttempt }),
+            { attemptCount, nextPaymentAttempt, subscriptionId, invoiceId: invoice.id || null }
+        );
+    } catch (_) { /* best-effort — must never turn a recorded decline into a thrown error */ }
+
     return registry.getSite(site.id);
 }
 
@@ -671,6 +704,288 @@ function buildDunningNoticeRo(site, { attemptCount, nextPaymentAttempt }) {
         next +
         'Actualizează cardul din portalul de facturare (butonul din tabloul de bord) ca să eviți oprirea site-ului.'
     );
+}
+
+// ---------------------------------------------------------------------------
+// Wave10 — real owner email for the failing-payment sequence
+// ---------------------------------------------------------------------------
+//
+// The dunning machinery above (record + Telegram notifyAdmin) is correct but
+// Telegram-only: bot/web.js (the production entry point, Dockerfile CMD
+// `node web.js`) always passes notifyAdmin: undefined, because a web-only
+// deployment has no admin chat. A card that quietly expires is the single
+// most common way a small business loses its site by accident — they do not
+// log in to see a dashboard badge, so a dashboard-only signal is not being
+// told anything. This reuses the same transactional-email shape as
+// bot/email.js's sendMagicLink (RESEND_API_KEY → real POST to Resend; unset
+// → dev-log only, never throws) and the same idempotency spine as the rest
+// of this file (registry.claimStripeEvent), so it is provable end-to-end
+// under HIDOOK_TEST_PAY/no RESEND_API_KEY without any real Stripe/Resend
+// credentials. It is intentionally self-contained here (does not import
+// bot/email.js or bot/calendar-native/email/**) — bot/calendar-native/** is
+// owned by another agent, and bot/email.js is scoped to sign-in links, not
+// commercial-entitlement copy; the pattern (dev fallback, Resend POST, never
+// throw) is reused, not the module.
+
+const RESEND_API = 'https://api.resend.com/emails';
+
+/** Best-effort "From" for owner-facing transactional email. */
+function _emailFrom() {
+    return process.env.EMAIL_FROM || 'onboarding@resend.dev';
+}
+
+/**
+ * Dashboard URL for "what to click" links in owner email. Same fallback
+ * order and same "log the fallback as an error" convention as
+ * bot/calendar-native/email/index.js#manageBaseUrl (a dead link in a
+ * worried owner's inbox is invisible to the business until they click it),
+ * reimplemented here rather than imported since that module is out of scope
+ * to edit and this is a two-line rule, not shared state.
+ * @returns {string}
+ */
+function _dashboardUrl() {
+    const publicUrl = process.env.PUBLIC_URL;
+    if (publicUrl && String(publicUrl).trim()) {
+        return String(publicUrl).trim().replace(/\/$/, '') + '/app';
+    }
+    try {
+        log('webpublish.dashboard_url.unconfigured', {
+            detail: 'PUBLIC_URL is unset — the link in owner payment-failure email will not resolve',
+        }, 'error');
+    } catch (_) { /* logging must never block sending */ }
+    return 'http://127.0.0.1:0/app';
+}
+
+/**
+ * The site owner's email address — the same account used to sign in to the
+ * dashboard (magic-link auth; registry.getUser(userId).email). Returns null
+ * (never throws) when the site has no userId or the user has no email on
+ * file (e.g. a Telegram-origin site with no web account), so callers must
+ * treat null as "nothing to send to", not as an error.
+ * @param {object} site
+ * @returns {string|null}
+ */
+function _ownerEmailForSite(site) {
+    if (!site) return null;
+    try {
+        const userId = site.userId;
+        if (!userId) return null;
+        const user = registry.getUser(userId);
+        if (user && user.email && String(user.email).trim()) {
+            return String(user.email).trim();
+        }
+    } catch (_) { /* registry lookup must never block a notification attempt */ }
+    return null;
+}
+
+/**
+ * Low-level send: RESEND_API_KEY set → real POST to Resend; unset → log-only
+ * dev fallback, same contract as bot/email.js#sendMagicLink. Never throws —
+ * a failed/misconfigured send must never break webhook processing, which is
+ * why every call site below wraps this in its own try/catch as well (belt
+ * and suspenders: a bug in this function specifically must not either).
+ *
+ * @param {{to: string|null, subject: string, text: string, html: string, meta?: object}} msg
+ * @returns {Promise<{sent: boolean, reason?: string}>}
+ */
+async function _sendOwnerEmail({ to, subject, text, html, meta }) {
+    if (!to) {
+        log('webpublish.owner_email.no_recipient', { meta: meta || null }, 'warn');
+        return { sent: false, reason: 'no_recipient' };
+    }
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        log('webpublish.owner_email.dev', { to, subject, meta: meta || null });
+        return { sent: false, reason: 'dev_no_api_key' };
+    }
+    try {
+        const res = await fetch(RESEND_API, {
+            method: 'POST',
+            headers: {
+                Authorization: 'Bearer ' + apiKey,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ from: _emailFrom(), to, subject, text, html }),
+        });
+        if (!res.ok) {
+            const bodyText = await res.text().catch(() => '');
+            log('webpublish.owner_email.error', {
+                to, subject, status: res.status, body: bodyText.slice(0, 200), meta: meta || null,
+            }, 'error');
+            return { sent: false, reason: `resend_http_${res.status}` };
+        }
+        log('webpublish.owner_email.sent', { to, subject, meta: meta || null });
+        return { sent: true };
+    } catch (e) {
+        log('webpublish.owner_email.exception', { to, subject, err: e.message, meta: meta || null }, 'error');
+        return { sent: false, reason: e.message };
+    }
+}
+
+/** ro-RO long date, e.g. "5 septembrie 2026" — shared by every email below. */
+function _formatRoDateLong(iso) {
+    const ms = Date.parse(iso || '');
+    if (!Number.isFinite(ms)) return '';
+    return new Date(ms).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/** Shared HTML wrapper — same visual language as bot/email.js#sendMagicLink. */
+function _emailHtmlShell({ heading, bodyHtml, dashboardUrl, buttonLabel }) {
+    return `
+<!DOCTYPE html>
+<html lang="ro">
+<head><meta charset="UTF-8"></head>
+<body style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#222">
+  <h2 style="color:#333">${heading}</h2>
+  ${bodyHtml}
+  <p style="text-align:center;margin:32px 0">
+    <a href="${dashboardUrl}"
+       style="background:#E8588C;color:#fff;padding:12px 28px;border-radius:6px;
+              text-decoration:none;font-size:16px;display:inline-block">
+      ${buttonLabel}
+    </a>
+  </p>
+  <p style="font-size:13px;color:#aaa">
+    Sau copiază acest link:<br>
+    <a href="${dashboardUrl}" style="color:#aaa;word-break:break-all">${dashboardUrl}</a>
+  </p>
+</body>
+</html>`.trim();
+}
+
+/**
+ * Wave10 — email #1/#2 in the sequence: a card declined, whether it is the
+ * first attempt or a later automatic retry. Two variants share one template:
+ * a retry still scheduled (site stays live, concrete date to act by) vs. no
+ * retry left (last chance before the terminal 'unpaid' email below fires).
+ *
+ * @param {object} site
+ * @param {{attemptCount: number, nextPaymentAttempt: string|null}} info
+ * @returns {{subject: string, text: string, html: string}}
+ */
+function buildPaymentDeclinedEmailRo(site, { attemptCount, nextPaymentAttempt }) {
+    const label = site.slug || site.projectName || site.id;
+    const dashboardUrl = _dashboardUrl();
+    const hasNext = !!nextPaymentAttempt;
+    const nextDate = hasNext ? _formatRoDateLong(nextPaymentAttempt) : '';
+
+    const subject = hasNext
+        ? `Card refuzat pentru site-ul „${label}" (încercarea ${attemptCount}) — site-ul rămâne live`
+        : `Ultima încercare de plată a eșuat pentru „${label}" — actualizează cardul acum`;
+
+    const whatHappened = hasNext
+        ? `Cardul folosit pentru hostingul site-ului „${label}" a fost refuzat la încercarea ${attemptCount}.`
+        : `Cardul folosit pentru hostingul site-ului „${label}" a fost refuzat din nou (încercarea ${attemptCount}).`;
+
+    const whatItCosts = hasNext
+        ? `Site-ul tău rămâne live. Stripe reîncearcă automat plata — următoarea încercare este pe ${nextDate}. Dacă nici acea încercare nu reușește, site-ul va fi oprit.`
+        : 'Stripe nu mai are nicio reîncercare programată. Dacă nu actualizezi cardul, abonamentul va trece pe stare „neplătit" și site-ul tău va fi oprit — vizitatorii nu vor mai putea să-l vadă.';
+
+    const whatToClick = hasNext
+        ? `Actualizează cardul din tabloul de bord (secțiunea de facturare) înainte de ${nextDate}, ca să eviți oprirea site-ului.`
+        : 'Adaugă un card nou din tabloul de bord chiar acum, ca să eviți oprirea site-ului.';
+
+    const text =
+        `Bună,\n\n${whatHappened}\n\n` +
+        `Ce se întâmplă acum: ${whatItCosts}\n\n` +
+        `Ce trebuie să faci: ${whatToClick}\n\n` +
+        `Deschide tabloul de bord: ${dashboardUrl}\n\n` +
+        'Dacă ai întrebări, răspunde la acest email.\n\n' +
+        '— Hidook Site Builder';
+
+    const html = _emailHtmlShell({
+        heading: hasNext ? 'Card refuzat — site-ul rămâne live' : 'Ultima încercare a eșuat',
+        bodyHtml:
+            `<p>${whatHappened}</p>` +
+            `<p><strong>Ce se întâmplă acum:</strong> ${whatItCosts}</p>` +
+            `<p><strong>Ce trebuie să faci:</strong> ${whatToClick}</p>`,
+        dashboardUrl,
+        buttonLabel: 'Actualizează cardul',
+    });
+
+    return { subject, text, html };
+}
+
+/**
+ * Wave10 — email #3 in the sequence: the terminal one, the day the site
+ * actually comes down (subscription status unpaid/incomplete_expired —
+ * Stripe has given up on every retry). Only ever built for that path, never
+ * for a customer-initiated cancel (canceled/deleted) — they already know,
+ * they clicked Cancel; see the isUnpaidUpdate-only call site below.
+ *
+ * @param {object} site
+ * @returns {{subject: string, text: string, html: string}}
+ */
+function buildSiteDownEmailRo(site) {
+    const label = site.slug || site.projectName || site.id;
+    const dashboardUrl = _dashboardUrl();
+
+    const subject = `Site-ul „${label}" a fost oprit — plata nu a putut fi finalizată`;
+    const text =
+        `Bună,\n\nSite-ul tău „${label}" NU mai este live. Stripe a încercat de mai multe ori să proceseze ` +
+        'plata pentru hosting și toate încercările au eșuat, așa că am oprit publicarea automat.\n\n' +
+        'Ce înseamnă asta: vizitatorii primesc acum o pagină inexistentă în locul site-ului tău. ' +
+        'Conținutul și configurația site-ului sunt păstrate neschimbate — nu s-a pierdut nimic.\n\n' +
+        'Ce trebuie să faci: adaugă un card nou din tabloul de bord ca să repornești site-ul imediat — ' +
+        'de îndată ce plata trece, site-ul redevine live automat.\n\n' +
+        `Deschide tabloul de bord: ${dashboardUrl}\n\n` +
+        '— Hidook Site Builder';
+
+    const html = _emailHtmlShell({
+        heading: 'Site-ul a fost oprit',
+        bodyHtml:
+            `<p>Site-ul tău „${label}" <strong>nu mai este live</strong>. Stripe a încercat de mai multe ori ` +
+            'să proceseze plata pentru hosting și toate încercările au eșuat, așa că am oprit publicarea automat.</p>' +
+            '<p><strong>Ce înseamnă asta:</strong> vizitatorii primesc acum o pagină inexistentă în locul site-ului tău. ' +
+            'Conținutul și configurația site-ului sunt păstrate neschimbate — nu s-a pierdut nimic.</p>' +
+            '<p><strong>Ce trebuie să faci:</strong> adaugă un card nou din tabloul de bord ca să repornești site-ul imediat.</p>',
+        dashboardUrl,
+        buttonLabel: 'Repornește site-ul',
+    });
+
+    return { subject, text, html };
+}
+
+/**
+ * Wave10 — send + durably record one owner notification email. Best-effort
+ * end to end (never throws into the caller's webhook handler): a failed or
+ * dev-mode send still gets a ledger row (sent:false + reason), so an
+ * operator can grep the ledger for "did the owner actually get told" without
+ * needing production Resend credentials to prove the attempt happened.
+ *
+ * @param {object} site
+ * @param {'payment_declined'|'site_down'} kind
+ * @param {{subject: string, text: string, html: string}} content
+ * @param {object} [extra]  extra ledger fields (attemptCount, subscriptionId, …)
+ * @returns {Promise<{sent: boolean, reason?: string}>}
+ */
+async function _notifyOwnerEmail(site, kind, content, extra = {}) {
+    const to = _ownerEmailForSite(site);
+    let result;
+    try {
+        result = await _sendOwnerEmail({
+            to,
+            subject: content.subject,
+            text: content.text,
+            html: content.html,
+            meta: { siteId: site.id, kind },
+        });
+    } catch (e) {
+        result = { sent: false, reason: e.message };
+    }
+    try {
+        ledger.append({
+            event: 'owner_notified',
+            channel: 'email',
+            kind,
+            siteId: site.id,
+            to: to || null,
+            sent: !!result.sent,
+            reason: result.reason || null,
+            ...extra,
+        });
+    } catch (_) { /* best-effort — never let a ledger write mask a real send */ }
+    return result;
 }
 
 /**
@@ -2049,4 +2364,11 @@ module.exports = {
     getDunningState,
     getInvoiceHistory,
     buildDunningNoticeRo,
+    // Wave10 — owner payment-failure email (tests + HANDOFF-payments-notify.md)
+    buildPaymentDeclinedEmailRo,
+    buildSiteDownEmailRo,
+    _dashboardUrl,
+    _ownerEmailForSite,
+    _sendOwnerEmail,
+    _notifyOwnerEmail,
 };

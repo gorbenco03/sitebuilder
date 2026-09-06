@@ -1,0 +1,24 @@
+(node:22422) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T20:20:39.984Z","event":"server.started","port":64991}
+🌐 HTTP server on :64991 (health + webhooks + API)
+{"ts":"2026-09-06T20:20:39.999Z","event":"webhook.stripe.received","type":"invoice.payment_failed","id":"evt_f8142247-87dc-46e3-9cc4-cf0d2d4b07ae"}
+{"ts":"2026-09-06T20:20:40.000Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"766cc3fc-da1d-4dba-8d40-8f3c64fa5dd9","slug":"int-decline-599fd616","subscriptionId":"sub_test_int-decline_61c66567","invoiceId":"in_40b9cafd","attemptCount":1,"nextPaymentAttempt":"2026-09-07T20:20:39.000Z"}
+{"ts":"2026-09-06T20:20:40.009Z","event":"webpublish.owner_email.dev","to":"owner-int-decline@example.test","subject":"Card refuzat pentru site-ul „int-decline-599fd616\" (încercarea 1) — site-ul rămâne live","meta":{"siteId":"766cc3fc-da1d-4dba-8d40-8f3c64fa5dd9","kind":"payment_declined"}}
+{"ts":"2026-09-06T20:20:40.009Z","event":"webhook.stripe.handled","type":"invoice.payment_failed"}
+PASS real signed HTTP webhook, invoice.payment_failed, through bot/web.js unmodified: decline email is recorded
+{"ts":"2026-09-06T20:20:40.095Z","event":"webhook.stripe.received","type":"customer.subscription.updated","id":"evt_7c628653-7b35-4b7f-be17-b19d2a84dc2e"}
+{"ts":"2026-09-06T20:20:40.096Z","event":"webpublish.unpublish.done","siteId":"4bc5acb0-f5c7-4156-aad1-6bc9c0d1df61","slug":"int-sitedown-6eb54277","alreadyDown":false,"subscriptionId":"sub_test_int-sitedown_881a1fac"}
+{"ts":"2026-09-06T20:20:40.096Z","event":"webpublish.owner_email.dev","to":"owner-int-sitedown@example.test","subject":"Site-ul „int-sitedown-6eb54277\" a fost oprit — plata nu a putut fi finalizată","meta":{"siteId":"4bc5acb0-f5c7-4156-aad1-6bc9c0d1df61","kind":"site_down"}}
+{"ts":"2026-09-06T20:20:40.096Z","event":"webhook.stripe.handled","type":"customer.subscription.updated"}
+PASS real signed HTTP webhook, subscription unpaid, through bot/web.js unmodified: site-down email is recorded
+{"ts":"2026-09-06T20:20:40.180Z","event":"webhook.stripe.received","type":"invoice.payment_failed","id":"evt_d7960d63-28d6-44dc-b213-1006a21e58a1"}
+{"ts":"2026-09-06T20:20:40.181Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"1de3fdc4-7707-48fd-bf9c-dd03d37802ae","slug":"int-dup-48b06990","subscriptionId":"sub_test_int-dup_be828b16","invoiceId":"in_9193ceb1","attemptCount":1,"nextPaymentAttempt":"2026-09-07T20:20:40.000Z"}
+{"ts":"2026-09-06T20:20:40.181Z","event":"webpublish.owner_email.dev","to":"owner-int-dup@example.test","subject":"Card refuzat pentru site-ul „int-dup-48b06990\" (încercarea 1) — site-ul rămâne live","meta":{"siteId":"1de3fdc4-7707-48fd-bf9c-dd03d37802ae","kind":"payment_declined"}}
+{"ts":"2026-09-06T20:20:40.181Z","event":"webhook.stripe.handled","type":"invoice.payment_failed"}
+{"ts":"2026-09-06T20:20:40.245Z","event":"webhook.stripe.received","type":"invoice.payment_failed","id":"evt_d7960d63-28d6-44dc-b213-1006a21e58a1"}
+{"ts":"2026-09-06T20:20:40.245Z","event":"webpublish.invoice_payment_failed.already_handled","eventId":"evt_d7960d63-28d6-44dc-b213-1006a21e58a1","siteId":"1de3fdc4-7707-48fd-bf9c-dd03d37802ae"}
+{"ts":"2026-09-06T20:20:40.245Z","event":"webhook.stripe.handled","type":"invoice.payment_failed"}
+PASS real signed HTTP webhook, duplicate delivery of the same event id: no double email through the real path either
+
+All wave10-payments-notify-integration checks passed.

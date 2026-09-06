@@ -1,0 +1,42 @@
+{"ts":"2026-09-06T20:20:39.902Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"32900583-9367-431a-8fb2-a8de4c1851d2","slug":"email-decline1-18724fa4","subscriptionId":"sub_test_email-decline1_e2cba6ee","invoiceId":"in_9bef2f00","attemptCount":1,"nextPaymentAttempt":"2026-09-09T20:20:39.000Z"}
+(node:22421) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T20:20:39.912Z","event":"webpublish.owner_email.sent","to":"owner-decline1@example.test","subject":"Card refuzat pentru site-ul „email-decline1-18724fa4\" (încercarea 1) — site-ul rămâne live","meta":{"siteId":"32900583-9367-431a-8fb2-a8de4c1851d2","kind":"payment_declined"}}
+PASS first decline (attempt 1, retry scheduled): emails the owner with a concrete date and the dashboard link
+{"ts":"2026-09-06T20:20:39.913Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"9112b87a-c7e2-45e3-9102-6c8331ce0b22","slug":"email-retry3-dedbb323","subscriptionId":"sub_test_email-retry3_d8109fa5","invoiceId":"in_ec9097a0","attemptCount":3,"nextPaymentAttempt":"2026-09-07T20:20:39.000Z"}
+{"ts":"2026-09-06T20:20:39.913Z","event":"webpublish.owner_email.sent","to":"owner-retry3@example.test","subject":"Card refuzat pentru site-ul „email-retry3-dedbb323\" (încercarea 3) — site-ul rămâne live","meta":{"siteId":"9112b87a-c7e2-45e3-9102-6c8331ce0b22","kind":"payment_declined"}}
+PASS a later retry (attempt 3, still scheduled): updated attempt count, still "site stays live"
+{"ts":"2026-09-06T20:20:39.914Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"50175642-b300-4586-bc15-58c4ccdb624a","slug":"email-lastchance-decd1cfa","subscriptionId":"sub_test_email-lastchance_976d347f","invoiceId":"in_e95ddc6b","attemptCount":4,"nextPaymentAttempt":null}
+{"ts":"2026-09-06T20:20:39.914Z","event":"webpublish.owner_email.sent","to":"owner-lastchance@example.test","subject":"Ultima încercare de plată a eșuat pentru „email-lastchance-decd1cfa\" — actualizează cardul acum","meta":{"siteId":"50175642-b300-4586-bc15-58c4ccdb624a","kind":"payment_declined"}}
+PASS final scheduled retry fails (no next_payment_attempt): last-chance copy, tells them the site is about to go down
+{"ts":"2026-09-06T20:20:39.915Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"839a42d4-17ad-4eaa-a5f2-765591a7d19d","slug":"email-dup-decline-163b3232","subscriptionId":"sub_test_email-dup-decline_aa8eb529","invoiceId":"in_87321479","attemptCount":1,"nextPaymentAttempt":"2026-09-07T20:20:39.000Z"}
+{"ts":"2026-09-06T20:20:39.915Z","event":"webpublish.owner_email.sent","to":"owner-dup-decline@example.test","subject":"Card refuzat pentru site-ul „email-dup-decline-163b3232\" (încercarea 1) — site-ul rămâne live","meta":{"siteId":"839a42d4-17ad-4eaa-a5f2-765591a7d19d","kind":"payment_declined"}}
+{"ts":"2026-09-06T20:20:39.915Z","event":"webpublish.invoice_payment_failed.already_handled","eventId":"evt_44389863-f550-41e4-9cdc-63b53da2fa6e","siteId":"839a42d4-17ad-4eaa-a5f2-765591a7d19d"}
+PASS duplicate delivery of the SAME invoice.payment_failed event: email sent exactly once
+{"ts":"2026-09-06T20:20:39.916Z","event":"webpublish.unpublish.done","siteId":"aff6e66a-64a7-4e98-a786-b3b29f76e26c","slug":"email-sitedown-65bc0173","alreadyDown":false,"subscriptionId":"sub_test_email-sitedown_dee93747"}
+{"ts":"2026-09-06T20:20:39.916Z","event":"webpublish.owner_email.sent","to":"owner-sitedown@example.test","subject":"Site-ul „email-sitedown-65bc0173\" a fost oprit — plata nu a putut fi finalizată","meta":{"siteId":"aff6e66a-64a7-4e98-a786-b3b29f76e26c","kind":"site_down"}}
+PASS subscription flips to unpaid: the critical "site is down" email fires, names the site, links the dashboard
+{"ts":"2026-09-06T20:20:39.917Z","event":"webpublish.unpublish.done","siteId":"544c01ae-3688-4e38-a667-fbf895f5ec8b","slug":"email-incexp-614a8950","alreadyDown":false,"subscriptionId":"sub_test_email-incexp_5c30a862"}
+{"ts":"2026-09-06T20:20:39.917Z","event":"webpublish.owner_email.sent","to":"owner-incexp@example.test","subject":"Site-ul „email-incexp-614a8950\" a fost oprit — plata nu a putut fi finalizată","meta":{"siteId":"544c01ae-3688-4e38-a667-fbf895f5ec8b","kind":"site_down"}}
+PASS subscription flips to incomplete_expired (first invoice never paid): the same critical email fires
+{"ts":"2026-09-06T20:20:39.918Z","event":"webpublish.unpublish.done","siteId":"b8d43c64-b4e8-4a65-8081-3188caff5541","slug":"email-dup-unpaid-06eab3d8","alreadyDown":false,"subscriptionId":"sub_test_email-dup-unpaid_9d922ac8"}
+{"ts":"2026-09-06T20:20:39.918Z","event":"webpublish.owner_email.sent","to":"owner-dup-unpaid@example.test","subject":"Site-ul „email-dup-unpaid-06eab3d8\" a fost oprit — plata nu a putut fi finalizată","meta":{"siteId":"b8d43c64-b4e8-4a65-8081-3188caff5541","kind":"site_down"}}
+{"ts":"2026-09-06T20:20:39.918Z","event":"webpublish.subscription.already_handled","eventId":"evt_063ea7e1-f63e-4f32-9653-1b35a55c6236","siteId":"b8d43c64-b4e8-4a65-8081-3188caff5541"}
+{"ts":"2026-09-06T20:20:39.918Z","event":"webpublish.unpublish.done","siteId":"b8d43c64-b4e8-4a65-8081-3188caff5541","slug":"email-dup-unpaid-06eab3d8","alreadyDown":true,"subscriptionId":"sub_test_email-dup-unpaid_9d922ac8"}
+PASS duplicate delivery of the SAME customer.subscription.updated(unpaid) event: email sent exactly once
+{"ts":"2026-09-06T20:20:39.919Z","event":"webpublish.unpublish.done","siteId":"1111221d-f551-4190-9cb0-cb74359746ac","slug":"email-cancel-946af0ce","alreadyDown":false,"subscriptionId":"sub_test_email-cancel_1070039e"}
+PASS subscription canceled via the customer portal: no email at all (they clicked Cancel themselves)
+{"ts":"2026-09-06T20:20:39.920Z","event":"webpublish.unpublish.done","siteId":"e550e150-3bf4-4995-b89f-f3cdf3b9636b","slug":"email-deleted-72c8366d","alreadyDown":false,"subscriptionId":"sub_test_email-deleted_c0ecd98a"}
+PASS subscription.deleted: no email either (same reasoning as canceled)
+{"ts":"2026-09-06T20:20:39.921Z","event":"webpublish.subscription.status_updated","siteId":"4599aab9-3414-4562-930d-493100151b40","status":"past_due","subscriptionId":"sub_test_email-recover_743c42e5"}
+{"ts":"2026-09-06T20:20:39.921Z","event":"webpublish.subscription.status_updated","siteId":"4599aab9-3414-4562-930d-493100151b40","status":"active","subscriptionId":"sub_test_email-recover_743c42e5"}
+PASS subscription recovers (past_due → active): no email fires for the recovery transition itself
+{"ts":"2026-09-06T20:20:39.922Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"c416d898-ea37-41e7-b6e8-5902c41f4e8f","slug":"email-devmode-4de3fff9","subscriptionId":"sub_test_email-devmode_fc5baa00","invoiceId":"in_955a7a19","attemptCount":1,"nextPaymentAttempt":"2026-09-07T20:20:39.000Z"}
+{"ts":"2026-09-06T20:20:39.922Z","event":"webpublish.owner_email.dev","to":"owner-devmode@example.test","subject":"Card refuzat pentru site-ul „email-devmode-4de3fff9\" (încercarea 1) — site-ul rămâne live","meta":{"siteId":"c416d898-ea37-41e7-b6e8-5902c41f4e8f","kind":"payment_declined"}}
+PASS no RESEND_API_KEY (dev/offline default): does not throw, ledger still records the attempt as unsent
+{"ts":"2026-09-06T20:20:39.923Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"d05dd52a-b9df-4c46-8467-7c268660307e","slug":"email-noowner-606acd05","subscriptionId":"sub_test_noowner_81b1a3e9","invoiceId":"in_3f8ad312","attemptCount":1,"nextPaymentAttempt":"2026-09-07T20:20:39.000Z"}
+{"ts":"2026-09-06T20:20:39.923Z","event":"webpublish.owner_email.no_recipient","meta":{"siteId":"d05dd52a-b9df-4c46-8467-7c268660307e","kind":"payment_declined"}}
+PASS site has no user email on file (e.g. Telegram-origin site): never throws, ledger records "no_recipient"
+PASS buildPaymentDeclinedEmailRo / buildSiteDownEmailRo are pure functions (no site mutation, no network)
+
+All wave10-payments-notify-email checks passed.

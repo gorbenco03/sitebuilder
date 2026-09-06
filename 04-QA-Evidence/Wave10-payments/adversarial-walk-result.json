@@ -1,0 +1,180 @@
+{
+  "ranAt": "2026-09-06T20:12:43.211Z",
+  "allOk": true,
+  "steps": [
+    {
+      "name": "trial start (checkout.session.completed, no_payment_required) → site goes live",
+      "ok": true,
+      "detail": {
+        "status": "live",
+        "paid": true
+      }
+    },
+    {
+      "name": "told-vs-charged: dashboard says live AND the public URL actually serves (told == real)",
+      "ok": true,
+      "detail": {
+        "liveStatus": 200
+      }
+    },
+    {
+      "name": "renewal (invoice.paid, subscription_cycle): entitlement extends",
+      "ok": true,
+      "detail": {
+        "before": "2026-09-16T20:12:42.645Z",
+        "after": "2027-09-16T20:12:42.645Z"
+      }
+    },
+    {
+      "name": "told-vs-charged: invoice history has exactly one renewal entry matching the charged amount (2900 eur)",
+      "ok": true,
+      "detail": {
+        "invoices": [
+          {
+            "event": "invoice",
+            "siteId": "26cc924b-2732-4f1a-9e01-25fe617a495c",
+            "subscriptionId": "sub_test_walk_8807db2c",
+            "kind": "renewal",
+            "invoiceId": "in_d3fe5e67",
+            "amountCents": 2900,
+            "currency": "eur",
+            "hostedInvoiceUrl": null,
+            "invoicePdf": null,
+            "ts": "2026-09-06T20:12:42.648Z"
+          },
+          {
+            "event": "invoice",
+            "siteId": "26cc924b-2732-4f1a-9e01-25fe617a495c",
+            "orderId": "dd5e2524-a1a8-495b-a132-167020313383",
+            "kind": "publish",
+            "invoiceId": null,
+            "amountCents": 9900,
+            "currency": "eur",
+            "ts": "2026-09-06T20:12:42.507Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "told-vs-charged: a different event id for the SAME invoice does not double-charge the ledger (idempotent renewal)",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "name": "C1 re-check: canStartRenewalCheckout refuses a stale-but-active site (guard itself, direct call)",
+      "ok": true,
+      "detail": {
+        "allowed": false,
+        "reasonCode": "SUBSCRIPTION_STILL_ACTIVE",
+        "reasonRo": "Acest site are deja un abonament activ. Nu deschidem un al doilea abonament — dacă hostingul pare oprit din greșeală, te rugăm să ne contactezi înainte de a plăti din nou."
+      }
+    },
+    {
+      "name": "C1 re-check: bot/server.js still wires the guard into BOTH the renewal endpoint and the republish path (source re-confirmed, unedited by this wave)",
+      "ok": true,
+      "detail": {}
+    },
+    {
+      "name": "decline attempt 1: dashboard state is \"warning\", NOT \"critical\" (told matches reality: site still up)",
+      "ok": true,
+      "detail": {
+        "severity": "warning",
+        "code": "PAYMENT_RETRY_IN_PROGRESS",
+        "attemptCount": 1,
+        "lastFailedAt": "2026-09-06T20:12:42.823Z",
+        "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+      }
+    },
+    {
+      "name": "told-vs-charged: after decline #1 the email says \"site stays live\" AND the site actually still serves",
+      "ok": true,
+      "detail": {
+        "liveStatus": 200,
+        "siteStatus": "live"
+      }
+    },
+    {
+      "name": "decline #1 produced exactly one owner email, addressed to the real account email",
+      "ok": true,
+      "detail": [
+        {
+          "event": "owner_notified",
+          "channel": "email",
+          "kind": "payment_declined",
+          "siteId": "26cc924b-2732-4f1a-9e01-25fe617a495c",
+          "to": "owner-walk@example.test",
+          "sent": false,
+          "reason": "dev_no_api_key",
+          "attemptCount": 1,
+          "nextPaymentAttempt": "2026-09-09T20:12:42.000Z",
+          "subscriptionId": "sub_test_walk_8807db2c",
+          "invoiceId": "in_3b95e085",
+          "ts": "2026-09-06T20:12:42.829Z"
+        }
+      ]
+    },
+    {
+      "name": "each retry produced its own email — total 3 payment_declined emails after 3 attempts",
+      "ok": true,
+      "detail": {
+        "count": 3
+      }
+    },
+    {
+      "name": "retries exhausted: site status flips to unpublished",
+      "ok": true,
+      "detail": {
+        "status": "unpublished"
+      }
+    },
+    {
+      "name": "told-vs-charged: the critical email says the site is down AND /live/<slug>/ actually 404s (never a live site with a \"down\" email, never the reverse)",
+      "ok": true,
+      "detail": {
+        "liveStatus": 404
+      }
+    },
+    {
+      "name": "dashboard now shows \"critical\" — matches the email, matches reality",
+      "ok": true,
+      "detail": {
+        "severity": "critical",
+        "code": "SITE_DOWN_PAYMENT_FAILED",
+        "messageRo": "Site-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. Adaugă un card nou din tabloul de bord ca să repornești site-ul."
+      }
+    },
+    {
+      "name": "exactly one site_down email, addressed correctly",
+      "ok": true,
+      "detail": [
+        {
+          "event": "owner_notified",
+          "channel": "email",
+          "kind": "site_down",
+          "siteId": "26cc924b-2732-4f1a-9e01-25fe617a495c",
+          "to": "owner-walk@example.test",
+          "sent": false,
+          "reason": "dev_no_api_key",
+          "subscriptionId": "sub_test_walk_8807db2c",
+          "subscriptionStatus": "unpaid",
+          "ts": "2026-09-06T20:12:43.036Z"
+        }
+      ]
+    },
+    {
+      "name": "return: after a real terminal failure (unpaid), a genuine resubscribe checkout is allowed again (not permanently locked out)",
+      "ok": true,
+      "detail": {
+        "allowed": true
+      }
+    },
+    {
+      "name": "customer-initiated cancel: site comes down, but zero payment-failure emails fire (they already know)",
+      "ok": true,
+      "detail": {
+        "status": "unpublished",
+        "emailRows": 0
+      }
+    }
+  ]
+}
