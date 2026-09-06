@@ -24,7 +24,7 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 ## Surfaces
 
 - Commercial product = **browser builder**: account, editor, preview, card/trial, live publish, edit, republish, export.
-- Telegram = acquisition / guided intake that opens the **same** draft. No second checkout or deploy state machine.
+- Telegram = **frozen, out of product scope** (owner decision, 2026-09-06). The channel is being retired: the code still runs and still opens the same draft with no second checkout or deploy state machine, but no Telegram file is touched any more and its audit findings are deferred rather than fixed. It is not scored as part of the product.
 
 ## Design and templates
 

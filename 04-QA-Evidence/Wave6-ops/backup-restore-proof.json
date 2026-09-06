@@ -1,10 +1,10 @@
 {
-  "ranAt": "2026-09-06T13:26:10.549Z",
-  "registryDbPath": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-4C79GR/data/registry.sqlite",
-  "snapshot": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-4C79GR/data/backups/registry-2026-09-06T13-26-10-534Z.sqlite",
-  "snapshotSha256": "3daf3aee96254078deccb03acac198aebee95c3a07b936b87b4ed2bf238fca24",
-  "contentDigestBeforeDisaster": "ceef79637bcbc3181c7f6faa2e8e2123480002c06bad7e330c65d7a14b7b097f",
-  "contentDigestAfterRestore": "ceef79637bcbc3181c7f6faa2e8e2123480002c06bad7e330c65d7a14b7b097f",
+  "ranAt": "2026-09-06T13:42:55.311Z",
+  "registryDbPath": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-9JK53H/data/registry.sqlite",
+  "snapshot": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-9JK53H/data/backups/registry-2026-09-06T13-42-55-276Z.sqlite",
+  "snapshotSha256": "7b7345119704dcf037c8928378c06e57c2d178684184888aa5e16a49c0b6bc1a",
+  "contentDigestBeforeDisaster": "3d5ff388a1b42f77610de321b1a496b37181fe283b3763ec824079c54bfade5d",
+  "contentDigestAfterRestore": "3d5ff388a1b42f77610de321b1a496b37181fe283b3763ec824079c54bfade5d",
   "byteForByteMatch": true,
   "contentMatch": true
 }

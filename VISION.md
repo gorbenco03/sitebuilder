@@ -23,7 +23,7 @@ Un străin trebuie să poată:
 11. exporta site-ul pentru self-deploy când politica comercială permite;
 12. vedea linkuri/pagini legale curate.
 
-Telegram rămâne doar acquisition/intake care deschide **același draft**. Nu există checkout separat în Telegram și nu există deploy Telegram paralel.
+**Telegram — ÎNGHEȚAT, în afara scopului produsului (decizie owner, 2026-09-06).** Canalul iese din produs. Codul rămâne în repo, funcțional, dar **niciun fișier Telegram nu se mai atinge** (`bot/bot.js`, `bot/flow.js`, `bot/ai.js`, `bot/template-steps.js`) și constatările de audit pe Telegram sunt **amânate, nu rezolvate**. Nu se punctează la evaluarea produsului. Istoric: Telegram era acquisition/intake care deschidea **același draft**, fără checkout separat și fără deploy paralel — comportamentul acela nu s-a schimbat, doar a încetat să mai fie dezvoltat.
 
 ## 2. Model comercial curent
 
