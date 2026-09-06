@@ -15,7 +15,13 @@
     --brass: var(--color-primary-light, #C4A574);
     --accent: var(--color-primary, #9A4030);
     --soft: rgba(20, 18, 15, 0.72);
-    --mute: rgba(20, 18, 15, 0.48);
+    /* 0.48 measured 3.21:1 against --paper/--snow (WCAG AA needs 4.5:1 for
+       this text's size) on .pr-kicker, .pr-hero__meta, .pr-scroll and
+       .pr-copy--sm/.pr-ig-handle wherever they render on a light section —
+       0.62 clears 4.5:1 on both backgrounds with margin. Dark-section (book)
+       uses of these classes are already repainted by more specific
+       .pr-sec--book overrides, so this only affects the light contexts. */
+    --mute: rgba(20, 18, 15, 0.62);
     --line: rgba(20, 18, 15, 0.12);
     --cloud: #E7E9E5;
     --snow: #FBF9F5;
@@ -108,12 +114,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pr-nav__logo { height: 22px; width: auto; }
 .pr-nav__links {
     display: none;
+    align-items: center;
     gap: 1.4rem;
     font-size: 0.78rem;
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--soft);
+}
+.pr-nav__links a {
+    /* Text alone (12.5px/line-height) renders under the 24px WCAG 2.5.8
+       target-size minimum — this padding makes the real hit area >=24px
+       tall without changing the header's visual density (nav row already
+       has room via min-height:58px). */
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 0;
 }
 .pr-nav__links a:hover { color: var(--ink); }
 @media (min-width: 820px) { .pr-nav__links { display: flex; } }
@@ -275,6 +291,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
     color: var(--mute);
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+    /* The rendered text column is ~17px wide — under the 24px WCAG 2.5.8
+       minimum on the cross-axis. Physical left/right (not padding-inline,
+       which follows the vertical-rl writing-mode above and would pad the
+       wrong axis) widens the real hit area without moving the text. */
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 /* Buttons */
@@ -404,6 +426,17 @@ button, input, select, textarea { font: inherit; color: inherit; }
     font-size: 1.25rem;
     font-weight: 500;
     margin-bottom: 0.45rem;
+}
+/* A freshly-added service ("+ Adaugă") starts with an empty label/blurb
+   (builder/app.js seeds list items with '' for text fields) — without this,
+   the card renders as visibly blank until the owner fills it in, both in the
+   editor and on a published site nobody has finished editing yet. */
+.pr-svc__title:empty::before,
+.pr-svc__title > [data-hb-edit]:empty::before {
+    content: "Serviciu nou — adaugă un titlu";
+    color: var(--mute);
+    font-style: italic;
+    font-weight: 400;
 }
 
 .pr-steps { display: grid; gap: 1.25rem; counter-reset: prstep; margin-top: 0.5rem; }
@@ -674,6 +707,22 @@ a.pr-contact__row:hover { border-color: var(--accent); }
     font-size: 1.1rem;
     margin-bottom: 0.25rem;
 }
+/* Previously unstyled: default inline <a> sizing left these links under the
+   24px WCAG 2.5.8 target-size minimum (text-only height ~20px). */
+.hb-legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+}
+.hb-legal-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0.25rem 0;
+    font-size: 0.85rem;
+    color: var(--soft);
+}
+.hb-legal-links a:hover { color: var(--ink); }
 
 /* Reveal */
 .pr-reveal {
@@ -683,11 +732,16 @@ a.pr-contact__row:hover { border-color: var(--accent); }
 }
 .pr-reveal.is-in { opacity: 1; transform: none; }
 .js-loaded .pr-hero__copy {
+    /* Opacity-only: a translateY/scale entrance here would move the hero's
+       painted box on every animation frame, which the CLS Layout Instability
+       metric counts as a real shift (transforms move the rendered rect even
+       though they skip layout/reflow). Fading in place keeps the box's rect
+       identical across frames, so this animation contributes 0 to CLS. */
     animation: prFade 0.9s var(--ease) both;
 }
 @keyframes prFade {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: none; }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* WA float (optional) */

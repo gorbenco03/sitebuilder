@@ -1,0 +1,32 @@
+{
+  "label": "before",
+  "generatedAt": "2026-09-06T10:50:58.659Z",
+  "desktop": {
+    "lcp": 592,
+    "cls": 0.018710765817901234,
+    "shifts": [
+      {
+        "value": 0.018710765817901234,
+        "time": 580,
+        "sources": [
+          "MAIN",
+          "A.pr-scroll"
+        ]
+      }
+    ]
+  },
+  "mobile": {
+    "lcp": 592,
+    "cls": 0.007074823007393803,
+    "shifts": [
+      {
+        "value": 0.007074823007393803,
+        "time": 581.8999999999069,
+        "sources": [
+          "MAIN",
+          "A.pr-scroll"
+        ]
+      }
+    ]
+  }
+}

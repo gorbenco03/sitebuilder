@@ -1,0 +1,56 @@
+{
+  "wave": "Wave5-professionals",
+  "template": "templates/professionals",
+  "baseCommit": "8a13c19",
+  "generatedAt": "2026-09-06",
+  "findingsClosed": {
+    "prof-06_jsonld_localbusiness": {
+      "severity": "medium",
+      "before": "No <script type=application/ld+json> anywhere on a site published through the web builder (before-jsonld.json: parsed=null).",
+      "after": "initLocalBusinessJsonLd() in script.js builds a real schema.org LocalBusiness block client-side from the rendered DOM (name/description/url/telephone/email/address/image/openingHoursSpecification), via JSON.stringify (always-valid escaping), and only when no server-populated JSON-LD already exists (Telegram's buildSeo() output, if present, is left untouched). Verified on a REAL published site — see after-jsonld.json.",
+      "oracle": "bot/test/wave5-professionals-jsonld.test.js (8 assertions, all green; verified red on a real published site via before-jsonld.json)",
+      "outOfScope": "The absolute, server-computed seo.canonical/og:url (prof-05) and the option to also emit JSON-LD server-side for non-JS crawlers are owned by another agent — see HANDOFF-professionals.md."
+    },
+    "cls_cookie_banner_layout_shift": {
+      "severity": "high (measured, not in original audit table)",
+      "before": "0.0187 (desktop 1440) / 0.0071 (mobile 390) — cookie-banner.js mounted near </body> toggled html.hb-cookie-open (bot/site-legal.js COOKIE_BANNER_CSS keys .pr-hero/.pr-hero__copy padding on that class) AFTER the hero's first layout pass, producing a real box-size change.",
+      "after": "0 / 0 — cookie banner markup + stylesheet + script now mount at the top of <body>, before the hero, so the class (and its CSS) resolve before the hero is ever laid out. A second, independent contributor (.js-loaded .pr-hero__copy entrance animation using transform:translateY) was also removed — opacity-only fade now.",
+      "oracle": "bot/test/wave5-professionals-cls.test.js (asserts CLS < 0.01 on both viewports; verified red before at 0.0187/0.0071)",
+      "note": "Reproduced with the REAL bot/site-legal.js COOKIE_BANNER_CSS/COOKIE_BANNER_JS (read-only import), not a stand-in. Numbers measured on this template specifically — the audit's generic 0.20/0.17 figures were measured on product-menu, not professionals."
+    },
+    "a11y_contrast_and_target_size": {
+      "severity": "real, found in this wave (not previously flagged for this template in the audit)",
+      "contrastBefore": "--mute (rgba(20,18,15,0.48)) measured 3.21:1 against --paper/--snow on .pr-kicker and .pr-hero__meta (AA needs 4.5:1) — real fail, not a false positive (verified by walking the actual composited ancestor background chain, not raw CSS values).",
+      "contrastAfter": "--mute raised to alpha 0.62 -> 4.99:1 on paper, 4.81:1 on snow. All 25 probed text styles pass AA.",
+      "targetSizeBefore": "Desktop nav links ~19px tall, hero scroll indicator ~17px wide (vertical-rl text), footer legal links (previously entirely unstyled) ~20px tall — all under the WCAG 2.5.8 24px minimum.",
+      "targetSizeAfter": "Padding added to .pr-nav__links a, .pr-scroll (physical left/right, not padding-inline — vertical-rl swaps that axis), and new .hb-legal-links/.hb-legal-links a rules. All >=24x24 on desktop and mobile (menu open).",
+      "reflow": "No horizontal scroll at 640px (200%-zoom-equivalent for a 1280 baseline) or 320px (WCAG 1.4.10 reference width) — already clean before and after.",
+      "oracle": "bot/test/wave5-professionals-a11y.test.js (verified red on contrast + both target-size subtests before; reflow subtest was already green)"
+    },
+    "lost_fixes_reapplied": {
+      "note": "Two prior fixes existed on commit 7cb02c4/merge 5d290eb but never landed on the current main lineage (git merge-base --is-ancestor 7cb02c4 HEAD => false). Confirmed both regressions were live on HEAD (8a13c19) before this wave, then reapplied verbatim (adapted to the current file context) plus a new oracle.",
+      "prof-03_mobile_nav": "No hamburger menu below 820px, .pr-nav__links links completely unreachable on phones. Fixed: accessible toggle (44x44, aria-expanded/aria-controls, focus-trap, Escape, outside-click).",
+      "F2_appointment_fake_success_on_export": "script.js required payload.slug to even attempt the POST, so a self-hosted export (real http(s) origin, no slug, no backend) always fell into the fake-success branch with 0 network requests. Fixed: any http(s) origin always attempts the real fetch; a genuine failure now shows an honest #pr-appt-fail panel with real phone/WhatsApp CTAs, form stays visible and usable.",
+      "oracle": "bot/test/wave5-professionals-mobile-nav-and-export.test.js (verified red against the current HEAD files before this wave's edits, green after)"
+    },
+    "prof-01_empty_service_card_mitigated": {
+      "severity": "high (root cause outside template scope)",
+      "note": "builder/app.js's onListAdd() still seeds new list items with '' for text fields (out of scope: builder/** is frozen for this wave). Added a template-only CSS mitigation: .pr-svc__title:empty::before shows an italic placeholder ('Serviciu nou — adaugă un titlu') so an unfinished card never renders as literally blank, in the editor or on a published site. Documented the real fix in HANDOFF-professionals.md."
+    },
+    "prof-02_dom_corruption_verified_fixed": {
+      "note": "builder/edit-overlay.js's list-add logic already uses insertBefore(addBtn, lastContainer.nextSibling) correctly on HEAD (8a13c19) — re-verified structurally, not touched (out of scope, and already correct)."
+    }
+  },
+  "testSuite": {
+    "command": "node --experimental-sqlite --test bot/test/*.test.js",
+    "totalTests": 165,
+    "pass": 162,
+    "fail": 3,
+    "failingKnownBaseline": [
+      "bot/test/flow3-legal-export.test.js (explicitly named as known-red, owned elsewhere)",
+      "bot/test/advocate-eed3ca0-repair.test.js (confirmed independently: fails identically with the ORIGINAL pre-wave professionals files swapped back in — Brave/timing-dependent, not caused by this wave)",
+      "bot/test/mobile-chrome-390-aabb.test.js (same category per git log 0acdb69 'pin browser oracles to Playwright Chromium, make Brave opt-in')"
+    ],
+    "wave5OwnTests": "bot/test/wave5-professionals-*.test.js — 23/23 assertions green"
+  }
+}

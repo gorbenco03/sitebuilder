@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileNav();
     initAppointment();
     initWhatsAppQR();
+    initLocalBusinessJsonLd();
 });
 
 function initMobileNav() {
@@ -75,6 +76,94 @@ function initMobileNav() {
         if (mq.addEventListener) mq.addEventListener('change', onChange);
         else if (mq.addListener) mq.addListener(onChange);
     } catch (_) { /* matchMedia unavailable — ignore */ }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   JSON-LD LocalBusiness — built client-side from the already-rendered
+   page (name/phone/email/address/hours/socials), so every publish path
+   (web builder, Telegram, self-hosted export) gets the same structured
+   data with no server-side changes. If a server-populated JSON-LD block
+   already exists (e.g. the Telegram flow's seo.jsonLd), that one wins —
+   this is strictly a fallback for the gap where nothing was generated.
+   ───────────────────────────────────────────────────────────── */
+function initLocalBusinessJsonLd() {
+    try {
+        if (document.querySelector('script[type="application/ld+json"]')) return;
+
+        const text = (sel) => {
+            const el = document.querySelector(sel);
+            return el ? el.textContent.trim() : '';
+        };
+        const attr = (sel, name) => {
+            const el = document.querySelector(sel);
+            return el ? (el.getAttribute(name) || '').trim() : '';
+        };
+
+        const name = text('[data-ld="name"]');
+        if (!name) return; // nothing reliable to publish
+
+        const data = { '@context': 'https://schema.org', '@type': 'LocalBusiness', name };
+
+        const description = attr('meta[name="description"]', 'content');
+        if (description) data.description = description;
+
+        const canonical = attr('link[rel="canonical"]', 'href');
+        data.url = canonical || (typeof location !== 'undefined' ? location.href : '');
+        if (!data.url) delete data.url;
+
+        const phoneHref = attr('[data-ld="phone"]', 'href');
+        if (phoneHref) data.telephone = phoneHref.replace(/^tel:/i, '');
+
+        const emailHref = attr('[data-ld="email"]', 'href');
+        if (emailHref) data.email = emailHref.replace(/^mailto:/i, '');
+
+        const addressEl = document.querySelector('[data-ld="address"]');
+        if (addressEl) {
+            const lines = addressEl.innerHTML
+                .split(/<br\s*\/?>/i)
+                .map((chunk) => chunk.replace(/<[^>]*>/g, '').trim())
+                .filter(Boolean);
+            if (lines.length) data.address = { '@type': 'PostalAddress', streetAddress: lines.join(', ') };
+        }
+
+        const sameAs = [];
+        const igHref = attr('[data-ld="instagram"]', 'href');
+        if (igHref) sameAs.push(igHref);
+        const fbHref = attr('[data-ld="facebook"]', 'href');
+        if (fbHref) sameAs.push(fbHref);
+        if (sameAs.length) data.sameAs = sameAs;
+
+        const heroBg = document.querySelector('.pr-hero__bg');
+        if (heroBg) {
+            const bgImage = getComputedStyle(heroBg).backgroundImage || '';
+            const m = /url\((['"]?)(.*?)\1\)/.exec(bgImage);
+            if (m && m[2] && !/^data:/i.test(m[2])) {
+                try { data.image = new URL(m[2], location.href).href; } catch (_) { data.image = m[2]; }
+            }
+        }
+
+        const DAY = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
+        const weeklyRoot = document.getElementById('pr-weekly');
+        if (weeklyRoot) {
+            const spec = Array.from(weeklyRoot.querySelectorAll('[data-w]'))
+                .map((el) => {
+                    const day = DAY[String(el.getAttribute('data-w')).trim()];
+                    const opens = (el.getAttribute('data-s') || '').trim();
+                    const closes = (el.getAttribute('data-e') || '').trim();
+                    if (!day || !opens || !closes) return null;
+                    return { '@type': 'OpeningHoursSpecification', dayOfWeek: 'https://schema.org/' + day, opens, closes };
+                })
+                .filter(Boolean);
+            if (spec.length) data.openingHoursSpecification = spec;
+        }
+
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(data);
+        document.head.appendChild(script);
+    } catch (_) {
+        /* never let SEO best-effort break the page */
+    }
 }
 
 function initReveal() {
