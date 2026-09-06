@@ -341,8 +341,32 @@ button, input, select, textarea { font: inherit; color: inherit; }
     border-radius: 6px;
     box-shadow: 0 30px 70px rgba(20, 18, 15, 0.22);
 }
+
+/* Mobile hero density.
+   The shared consent-card clearance in bot/site-legal.js works by adding
+   padding BELOW the hero copy: on a hero that centres its content in a
+   viewport-height box, that padding lifts the copy clear of the fixed card.
+   This hero does not centre — it is content-driven and taller than a phone
+   screen — so bottom padding lifts nothing, and the .pr-hero__card polish
+   pushed the last line (the meta strip) under the consent card at 390px.
+
+   Measured on the 390x844 canvas: masthead ends at y=59, the consent card
+   starts at y=564, so the hero has a 505px band. The card's own content is
+   431px and its padding 48px — it fits. What did not fit was the hero's 5rem
+   top padding, which started the card at y=139 instead of ~91. So the fix is
+   the honest one: a phone does not need 80px of air between a sticky mast and
+   the hero, and the internal rhythm can tighten a little with it. That leaves
+   ~30px of slack under the consent card and, unlike a clearance hack, it does
+   not depend on :has() or on the banner being open at all. */
+@media (max-width: 899px) {
+    .pr-hero { padding-top: 2rem; }
+    .pr-kicker { margin-bottom: 0.5rem; }
+    .pr-lede { margin-top: 0.75rem; }
+    .pr-hero__actions { margin-top: 1.25rem; gap: 0.5rem; }
+    .pr-hero__meta { margin-top: 1rem; }
+}
 @media (max-width: 560px) {
-    .pr-hero__card { max-width: none; padding: 1.5rem 1.35rem; }
+    .pr-hero__card { max-width: none; padding: 1.5rem 1.35rem 1.25rem; }
 }
 .pr-hero__actions {
     display: flex;
