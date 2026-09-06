@@ -1857,6 +1857,152 @@ body.details-drawer-open .editor-tpl-name {
 .version-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 
 /* ============================================================
+   CUSTOM DOMAIN MODAL (Wave 8 — self-serve BYO domain, audit #47)
+   ============================================================ */
+
+.modal-box--domain { max-width: 560px; }
+
+.domain-connect-form { display: flex; flex-direction: column; gap: .75rem; }
+
+.domain-status-row {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-wrap: wrap;
+  margin-bottom: .35rem;
+}
+.domain-status-row .status-badge { flex-shrink: 0; }
+.domain-current-host {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: .85rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.domain-message {
+  font-size: .85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: .9rem;
+}
+.domain-message--error { color: var(--error); }
+.domain-message--active { color: var(--success); }
+
+.domain-apex-note {
+  font-size: .78rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .65rem .8rem;
+  line-height: 1.5;
+  margin-bottom: .9rem;
+}
+
+/* DNS records: a real table so tip/nume/valoare/TTL line up, with a
+   dedicated copy button per value — a mistyped TXT/CNAME value is the most
+   common way this flow fails for a non-technical owner, so selecting text
+   by hand is never the only option. */
+.dns-records-wrap { overflow-x: auto; margin-bottom: .75rem; }
+.dns-records-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.dns-records-table th {
+  text-align: left;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--text-light);
+  padding: 0 .5rem .35rem 0;
+  font-weight: 600;
+}
+.dns-records-table td {
+  border-top: 1px solid var(--border);
+  padding: .55rem .5rem .55rem 0;
+  vertical-align: middle;
+}
+.dns-records-table td.dns-col-type {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dns-records-table td.dns-col-ttl {
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-size: .78rem;
+}
+.dns-copy-field {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .3rem .4rem .3rem .55rem;
+  max-width: 100%;
+}
+.dns-copy-field code {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: .8rem;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.btn-copy-dns {
+  flex-shrink: 0;
+  appearance: none;
+  border: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .25rem .5rem;
+  font-size: .74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-copy-dns:hover { background: var(--accent-light); color: var(--accent); }
+.btn-copy-dns.copied { background: var(--success-bg); color: var(--success); }
+
+.domain-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-top: .5rem; }
+.domain-last-check { font-size: .74rem; color: var(--text-light); margin-top: .5rem; }
+.domain-switch-link {
+  background: none; border: none; padding: 0; margin-top: .75rem;
+  font-size: .8rem; color: var(--text-muted); text-decoration: underline;
+  cursor: pointer; text-align: left;
+}
+.domain-switch-link:hover { color: var(--text); }
+
+/* ============================================================
+   INVOICES / BILLING HISTORY MODAL (Wave 8 reachability)
+   ============================================================ */
+
+.invoices-list { display: flex; flex-direction: column; gap: .6rem; margin-top: .75rem; max-height: 420px; overflow-y: auto; }
+.invoice-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .65rem .8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+.invoice-item-main { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.invoice-date { font-size: .84rem; color: var(--text); font-weight: 600; }
+.invoice-kind { font-size: .76rem; color: var(--text-muted); }
+.invoice-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text);
+  font-size: .9rem;
+  white-space: nowrap;
+}
+.invoice-links { display: flex; gap: .4rem; flex-shrink: 0; }
+
+/* ============================================================
    FIELD COMPONENTS (used in drawer)
    ============================================================ */
 
