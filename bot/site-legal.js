@@ -232,10 +232,17 @@ function cookiesHtml(config) {
  * product's brand, on all five templates.
  *
  * The min-height/min-width are not cosmetic. Measured on rendered pixels, the
- * button came out 88x35 at 1440px and 83x33 at 390px — under the 44px WCAG
- * 2.5.8 minimum target size, on every site the product has ever exported,
- * while every template's own buttons honour 48px. See
- * bot/test/waveB-consent-control-quality.test.js.
+ * button came out 88x35 at 1440px and 83x33 at 390px, on every site the
+ * product has ever exported, while every template's own buttons honour 48px.
+ *
+ * Being exact about the standard, because an earlier version of this comment
+ * was not: WCAG 2.5.8 Target Size (Minimum) is Level AA and asks 24x24 CSS
+ * pixels, which 33px clears. The 44x44 figure is 2.5.5 Target Size (Enhanced),
+ * Level AAA, and it is also what the iOS and Android platform guidelines ask
+ * for a touch target. So this was not an AA violation — it was a 33px tap
+ * target for a thumb on the first screen of every generated site, which is a
+ * usability defect on its own terms and is fixed here to the platform figure.
+ * See bot/test/waveB-consent-control-quality.test.js.
  *
  * Kept out here rather than inside the template literal below: everything in
  * that string is copied verbatim into cookie-banner.css on every published
@@ -577,6 +584,15 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
   font-size: 0.88rem;
   color: #e6e6e6;
   text-underline-offset: 2px;
+}
+/* Only the link in the actions row is a standalone target. The one inside the
+ * sentence above it stays inline — WCAG 2.5.8 exempts a target whose size is
+ * constrained by the line-height of the text it sits in, and forcing it to
+ * 44px would break the paragraph it belongs to. */
+.hb-cookie-actions .hb-cookie-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 .hb-legal-links {
   display: flex;

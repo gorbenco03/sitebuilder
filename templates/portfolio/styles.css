@@ -86,6 +86,12 @@ ul { list-style: none; }
     min-width: 0;
 }
 .pf-chrome__logo { height: 22px; width: auto; }
+/* Standalone nav targets, 44px. These rendered 17px tall — text with no
+   padding — which is under even the 24x24 of WCAG 2.5.8 (Level AA), and a
+   masthead link is not "inline in a sentence", so no exception applies. This
+   is the primary navigation of a paying customer's site. Same floor the CTAs
+   use; see bot/test/waveB-touch-targets.test.js. */
+.pf-chrome__nav a { display: inline-flex; align-items: center; min-height: 44px; }
 .pf-chrome__nav {
     display: none; gap: 1.35rem; font-size: 11px; font-weight: 600;
     letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.72);
@@ -224,8 +230,18 @@ ul { list-style: none; }
     margin-top: 1.1rem;
     color: rgba(255, 255, 255, 0.94);
 }
+/* Touch-target floor: 44px.
+   Measured across all five templates at 1440 and 390, every primary call to
+   action on a generated site — the buttons that make a small business's phone
+   ring — rendered between 34px and 42px tall. That clears WCAG 2.5.8 (Level
+   AA, 24x24) and falls short of 2.5.5 (Level AAA, 44x44) and of the figure
+   both the iOS and Android guidelines give for a thumb. Several of these rules
+   already carried a min-height, set just under the mark.
+   Locked by bot/test/waveB-touch-targets.test.js, which measures the rendered
+   box rather than the declaration. */
 .pf-hero__cta, .hero-cta {
-    display: inline-flex; margin-top: 1.35rem; padding: 10px 20px;
+    display: inline-flex; align-items: center; min-height: 44px;
+    margin-top: 1.35rem; padding: 10px 20px;
     background: var(--cta); color: #fff; border: 0; border-radius: var(--r-pill);
     font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
@@ -419,7 +435,7 @@ ul { list-style: none; }
 }
 .pf-appt__list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.25rem; }
 .pf-row, .contact-item {
-    display: inline-flex; align-items: center;
+    display: inline-flex; align-items: center; min-height: 44px;
     padding: 9px 15px; border-radius: var(--r-pill);
     border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 14px;
     /* WAVE8-03: an address or Instagram handle can be one long unbreakable
@@ -439,6 +455,7 @@ ul { list-style: none; }
 }
 .pf-appt__wa {
     display: inline-flex; width: 100%; justify-content: center;
+    align-items: center; min-height: 44px;
     background: var(--cta); color: #fff; border-radius: var(--r-pill);
     padding: 12px 16px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.25rem;

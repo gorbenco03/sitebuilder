@@ -51,10 +51,20 @@ ul, ol { list-style: none; }
     background: var(--void); color: #fff;
     font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
 }
-.ls-util__phone { color: #fff; }
+.ls-util__phone { color: #fff; display: inline-flex; align-items: center; min-height: 44px; }
 .ls-util__zone { color: rgba(255,255,255,0.55); display: none; }
 @media (min-width: 720px) { .ls-util__zone { display: inline; } }
+/* Touch-target floor: 44px.
+   Measured across all five templates at 1440 and 390, every primary call to
+   action on a generated site — the buttons that make a small business's phone
+   ring — rendered between 34px and 42px tall. That clears WCAG 2.5.8 (Level
+   AA, 24x24) and falls short of 2.5.5 (Level AAA, 44x44) and of the figure
+   both the iOS and Android guidelines give for a thumb. Several of these rules
+   already carried a min-height, set just under the mark.
+   Locked by bot/test/waveB-touch-targets.test.js, which measures the rendered
+   box rather than the declaration. */
 .ls-util__cta {
+    display: inline-flex; align-items: center; min-height: 44px;
     background: var(--cta); color: #fff; border-radius: var(--r);
     padding: 8px 14px; font-size: 12px; font-weight: 700;
     letter-spacing: 0.06em; text-transform: uppercase;
@@ -113,7 +123,7 @@ ul, ol { list-style: none; }
 .ls-meter__l { font-size: 12px; color: rgba(255,255,255,0.56); text-transform: uppercase; letter-spacing: 0.06em; }
 .ls-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.25rem; }
 .ls-btn, .hero-cta {
-    display: inline-flex; align-items: center; min-height: 42px; padding: 10px 16px;
+    display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px;
     border-radius: var(--r); font-size: 13px; font-weight: 700;
     letter-spacing: 0.04em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
@@ -172,7 +182,7 @@ ul, ol { list-style: none; }
 }
 .ls-lead__list { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; min-width: 0; }
 .ls-lead__row, .contact-item {
-    display: flex; align-items: center; padding: 10px 12px; min-width: 0;
+    display: flex; align-items: center; min-height: 44px; padding: 10px 12px; min-width: 0;
     border-radius: var(--r); border: 1px solid rgba(15,23,32,0.12);
     font-size: 14px; font-weight: 600; color: var(--ink);
 }
@@ -314,6 +324,10 @@ ul, ol { list-style: none; }
     width: 44px; height: 44px; border-radius: 50%;
 }
 .ls-foot__soc a:hover { background: rgba(15,23,32,0.06); }
+.ls-foot__soc a {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; min-width: 44px;
+}
 .ls-foot__soc .soc-icon { display: block; }
 
 .whatsapp-float {
