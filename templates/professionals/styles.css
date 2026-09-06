@@ -33,7 +33,20 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+/* WAVE8-03 [MEDIUM, horizontal overflow at 200% zoom]: the .pr-nav row
+   (brand + nav-links-toggle + CTA + hamburger) is a non-wrapping flex row
+   whose pieces are each already near their practical minimum width (see the
+   .pr-nav__brand/.pr-nav__cta notes above for why). At the effective
+   ~195px layout width 200% zoom produces on a 390px phone, that row can
+   still be a few pixels short even after those fixes. overflow-x:hidden on
+   both html and body is the standard, low-risk backstop for exactly this
+   class of "a fixed-content row is a hair too wide" overflow — verified
+   (see templates/portfolio/styles.css, which needed the same pair) to
+   actually stop real sideways scrolling (checked via scrollTo()/wheel, not
+   just the scrollWidth number, since a position:fixed/sticky descendant can
+   still nudge that number independently of what a visitor can actually
+   scroll to) without affecting the sticky header or any vertical scroll. */
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body.pr-page {
     font-family: var(--font);
     background: var(--paper);
@@ -42,6 +55,7 @@ body.pr-page {
     line-height: 1.55;
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -172,6 +186,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
     transition: transform 140ms var(--ease), opacity 140ms var(--ease);
 }
 .pr-nav__cta:active { transform: scale(0.98); }
+@media (max-width: 340px) {
+    /* WAVE8-03: below 820px the hamburger's own drawer already repeats this
+       exact booking link as .pr-nav__mobile-cta, so hiding the header's
+       inline copy here loses no functionality. .pr-nav__inner is a
+       non-wrapping flex row (see the header-height note on .pr-nav__brand
+       above for why it must stay non-wrapping); on a genuinely narrow
+       viewport — or the ~195px effective layout width 200% zoom produces on
+       a 390px phone — brand + links-toggle + cta + hamburger no longer all
+       fit on that one line, and the row overflowed horizontally instead of
+       shrinking further (every remaining piece is already at its practical
+       minimum: an ellipsis-truncated brand, and a 44px touch-target
+       hamburger that must not get smaller). Dropping the redundant CTA here
+       is the only remaining slack. */
+    .pr-nav__cta { display: none; }
+}
 .pr-nav__actions {
     display: flex;
     align-items: center;
@@ -618,8 +647,29 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .pr-appt__hint { margin: 0.35rem 0 0.85rem; font-size: 0.9rem; }
 .pr-privacy { font-size: 0.85rem; margin: 0.75rem 0 1rem; max-width: 40rem; }
-.pr-appt__submit { margin-top: 0.25rem; min-width: 12rem; }
-.pr-appt__fallback { margin-top: 1rem; font-size: 0.88rem; }
+.pr-appt__submit {
+    margin-top: 0.25rem;
+    /* WAVE8-03: min-width:12rem was a hard floor that always won over the
+       form's actual available width — fine on any real phone (min-width
+       12rem = 192px fits easily), but 200% zoom on a 390px viewport halves
+       the effective layout width to ~195px, leaving less room than the
+       floor demanded once shell padding is subtracted. width:min(...) keeps
+       the same comfortable 12rem whenever there's room, but lets the button
+       shrink to fit a narrower container instead of forcing an overflow. */
+    width: min(100%, 12rem);
+}
+.pr-appt__fallback {
+    margin-top: 1rem;
+    font-size: 0.88rem;
+    /* WAVE8-03: contact.email is one unbreakable token (no spaces/hyphens
+       for the browser to wrap on). Plain inline text wrapping only breaks
+       between words by default, so a long email inside this <a> could push
+       past the form's width instead of wrapping — same overflow-at-200%-zoom
+       mechanism fixed for .pr-contact__row above, just via inline flow
+       instead of a grid column here. */
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
 .pr-appt__fail {
     margin-top: 1.5rem;
     padding: 1.35rem 1.25rem;
@@ -717,11 +767,21 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pr-contact {
     display: grid;
     gap: 2rem;
+    /* WAVE8-03: a grid item's default min-width:auto refuses to shrink below
+       its content's min-content size — see .pr-contact__list below for why
+       that matters here. */
+    min-width: 0;
 }
 @media (min-width: 720px) {
     .pr-contact { grid-template-columns: 1.1fr 0.9fr; gap: 3rem; }
 }
-.pr-contact__list { display: grid; gap: 0.55rem; }
+.pr-contact__list {
+    display: grid;
+    gap: 0.55rem;
+    /* Same reasoning one level up: .pr-contact__list is itself a grid item
+       of .pr-contact (the 2-column layout at >=720px). */
+    min-width: 0;
+}
 .pr-contact__row {
     display: block;
     padding: 0.85rem 1rem;
@@ -729,7 +789,23 @@ button, input, select, textarea { font: inherit; color: inherit; }
     border-radius: var(--r);
     background: var(--snow);
     transition: border-color 140ms var(--ease);
+    /* WAVE8-03 [MEDIUM, horizontal overflow at 200% zoom]: contact.email
+       ("contact@cabinetjuridicionescu.ro") is one unbreakable token — no
+       spaces to wrap on. .pr-contact__list's implicit auto grid column has
+       default min-width:auto on its <li> items, which refuses to shrink a
+       column below the widest unbreakable token in it; every row shares that
+       one column, so the whole list (and the .pr-contact shell around it)
+       was forced as wide as the email needed, however narrow the real
+       viewport. At 100% zoom on a 390px phone there's just enough room for
+       it to fit without visibly overflowing; 200% zoom halves the effective
+       layout width, so the same email no longer fits and the page gained
+       real horizontal scroll. overflow-wrap lets a long token break instead
+       of forcing the column (and every sibling row) wider; min-width:0 on
+       the <li> (below) is what actually lets the column shrink to use it. */
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
+.pr-contact__list > li { min-width: 0; }
 a.pr-contact__row:hover { border-color: var(--accent); }
 .pr-contact__row--static { color: var(--soft); }
 

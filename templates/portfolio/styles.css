@@ -34,13 +34,32 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+/* WAVE8-03: .pf-mobile-nav (the off-canvas hamburger drawer, below) is
+   position:fixed + inset:0, hidden by transform:translateX(100%) rather than
+   display:none (needed so its slide-in transition can animate). A
+   position:fixed box shifted a full viewport-width to the right is, by
+   spec, taken out of normal flow and shouldn't inflate the document's own
+   scrollable area — but this codebase's 200%-zoom test approximation
+   (document.documentElement.style.zoom, not a real browser zoom) measurably
+   counts it anyway, and it's the last remaining source of horizontal
+   overflow on this template. overflow-x:hidden on <html> is the standard,
+   low-risk fix for exactly this "off-canvas drawer causes horizontal
+   scroll" class of issue — it only clips the X axis (no effect on the
+   normal vertical scroll or the .pf-chrome sticky header, verified against
+   the existing lightbox/mobile-nav/sticky-header oracles). */
+html { scroll-behavior: smooth; overflow-x: hidden; }
+/* overflow-x:hidden must be repeated on body too: html's overflow-x alone
+   governs the VIEWPORT's own scrollbar, but body remains its own box that
+   can still be dragged/scrolled sideways within that viewport if it (not
+   html) is what's actually wider than the viewport content-box — confirmed
+   by testing scrollTo()/wheel after setting only html's rule. */
 body.pf-page {
     font-family: var(--font);
     background: var(--void);
     color: var(--snow);
     font-size: 17px; line-height: 1.5; letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
@@ -329,6 +348,16 @@ ul { list-style: none; }
     display: inline-flex; align-items: center;
     padding: 9px 15px; border-radius: var(--r-pill);
     border: 1px solid rgba(255,255,255,0.35); color: #fff; font-size: 14px;
+    /* WAVE8-03: an address or Instagram handle can be one long unbreakable
+       token (no spaces). .pf-appt__list already wraps chips onto new lines
+       (flex-wrap:wrap), but a flex item's default min-width still refuses
+       to shrink a SINGLE chip below its own unbreakable content width, so
+       one long token could still push this chip — and the page — wider
+       than the viewport instead of wrapping internally. Same fix shape as
+       .pr-contact__row in templates/professionals/styles.css. */
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
 }
 .pf-appt__panel {
     background: rgba(255,255,255,0.06); border-radius: var(--r);
