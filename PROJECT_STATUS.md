@@ -152,6 +152,59 @@ Rămân netratate din audit (ordine sugerată din §9): #14b security headers, #
 
 **Rămân netratate din audit, în ordinea recomandată:** calendarul nativ care nu pornește pe imaginea Docker de producție (Node 20 fără `node:sqlite`); primul load al unui șablon la 8-12s față de ținta de 3s; fonturile Google încărcate fără consimțământ pe desserdirina (expunere GDPR reală în UE); emailul scris în clar în loguri la fiecare autentificare; CORS deschis fără rate-limit pe `/api/calendar-native/*`; `invoice.payment_failed` netratat; etichetele greșite din `/admin` pentru `past_due`/`unpaid` (descrise exact în raportul agentului comercial, în `bot/server.js:423-486`); registry-ul pe un singur fișier JSON; 358MB de capturi QA comise în git.
 
+## Ultimul eveniment integrat (2026-09-06, valul 3 de remediere audit — 12 agenți)
+
+**12 branch-uri integrate local pe `main`** (`8b82280`..`5a2e0f1`, fără push). Agenți Sonnet în
+worktree-uri izolate, proprietate exclusivă pe fișiere. Suita: **245/247**, singurul eșec fiind
+`flow3-legal-export`, oracle-ul deliberat specific Brave, preexistent la `2225ca7`.
+
+**Ce s-a închis:** SEO tehnic complet pe fluxul web (canonical, og:url absolut, JSON-LD,
+robots.txt, sitemap.xml, pe live ȘI pe export); timeout pe fiecare apel către provideri;
+`invoice.payment_failed` cablat; erori de plată în română; undo/redo cu plafon de 40 pași sau 15MB;
+avertisment la două tab-uri; acces la cont din editor; fonturi self-hostate pe desserdirina (GDPR,
+OFL 1.1, zero cereri către Google dovedit); remindere de programare, `.ics` conform RFC 5545,
+fereastră de preaviz; backup/restore SQLite **dovedit prin distrugerea bazei și restaurarea ei**;
+`/health/ready` care chiar verifică dependențele; ARCHITECTURE.md, BACKUP-RESTORE.md, CHANGELOG,
+LICENSE; CLS 0,18 → 0 pe Restaurant și 0,019 → 0 pe Profesionale; contrast AA și ținte de atingere
+pe toate șabloanele.
+
+**Defecte găsite la integrare, absente din rapoartele agenților:**
+
+- **XSS-ul din constatarea #10 era raportat închis și nu era.** Cinci variante obfuscate
+  (`jav<TAB>ascript:`, CR, LF, `&#106;`, `&#x6a;`) executau în Chromium prin fluxul real de
+  publicare. Filtrul verifica textul sursă; browserul execută textul normalizat. Reparat în
+  motorul partajat, verificat izolat cu apărarea din client dezactivată.
+- **Editorul inline era complet mort pe Profesionale.** `renderPreview` injecta overlay-ul cu
+  `html.replace('</body>', ...)`, care înlocuiește prima apariție; un comentariu care explica un
+  fix cita eticheta, iar tot editorul a fost injectat în interiorul comentariului. Niciun log,
+  niciun simptom care să arate cauza. Injecția de mai jos, pentru paginile legale, folosea deja
+  `lastIndexOf` cu un comentariu care descria exact acest pericol — nimeni nu generalizase.
+- **1244 de linii de encoder QR mort** pe toate cele 5 șabloane: valul QR a adăugat suprascrierea
+  cu biblioteca MIT, dar n-a șters encoderul cu tipare de detecție corupte, care se livra în
+  continuare pe fiecare site publicat.
+- **85 de fotografii** coborâte sub pragul de calitate de valul de performanță, nu una singură
+  (oracle-ul se oprea la primul eșec).
+- **`fonts/` nu ajungea pe site-ul publicat**: ambele bucle de copiere tratau doar `images/`, deci
+  fixul GDPR ar fi livrat reguli `@font-face` fără fișiere, tăcut.
+- **Câmpurile de eșec la plată erau acceptate și aruncate** de lista albă din `updateSite`.
+- **`GO-LIVE.md` cerea backup la `.registry.json`**, fișier care nu mai există după migrarea pe
+  SQLite — cine urma runbook-ul pierdea totul la restaurare.
+
+**Oracle-uri care se auto-invalidau la merge:** opt verificări „roșu-înainte" citeau versiunea
+veche prin `git show HEAD`. După integrare HEAD devine codul reparat, deci picau pentru motivul
+greșit. Fixate pe commit-ul de bază, cu suprascriere din mediu. Unul dintre ele — cel care apăra
+constatarea critică #6 — **nu rula deloc**: extrăgea funcții din `builder/app.js` într-un sandbox
+căruia îi lipseau dependențe noi, deci toate cele 5 verificări cădeau cu `ReferenceError`, nu cu
+o aserțiune.
+
+**Descoperire:** constatarea critică #6 nu mai e reproductibilă nici cu schema veche — `onListAdd`
+a fost întărit independent între timp. Normalizarea cheii și acea întărire sunt acum două apărări
+independente; aserțiunea a fost inversată ca să fixeze exact asta.
+
+**Atribuire corectată:** CLS-ul de 0,20/0,17 din raport venea dintr-o singură măsurătoare pe un
+site Restaurant, generalizată la tot produsul. Pe Meserii era deja practic zero înainte de orice
+schimbare. Numărul era real, atribuirea nu.
+
 ## Ultimul eveniment integrat (2026-09-06, valul 2 de remediere audit + reconciliere)
 
 **5 branch-uri de val 2 + plasa de siguranță pentru stocare, integrate local pe `main`** (fără push).
