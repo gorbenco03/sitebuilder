@@ -51,6 +51,8 @@ function statusLabelRo(bookingStatus) {
  * @param {{
  *   templateKey: string,
  *   visitorName: string,
+ *   visitorEmail?: string,
+ *   visitorPhone?: string|null,
  *   serviceName: string,
  *   startOwnerLocal: string,
  *   startUtc: string,
@@ -68,6 +70,8 @@ function render(p) {
     }
 
     const name = String(p.visitorName || 'Client').trim() || 'Client';
+    const visitorEmail = String(p.visitorEmail || '').trim();
+    const visitorPhone = p.visitorPhone != null ? String(p.visitorPhone).trim() : '';
     const service = String(p.serviceName || 'Serviciu').trim() || 'Serviciu';
     const when = String(p.startOwnerLocal || p.startUtc || '').trim();
     const status = String(p.bookingStatus || '');
@@ -96,6 +100,11 @@ function render(p) {
     }
     if (key === 'booking_reschedule_needed' && status !== 'reschedule_needed') {
         const err = new Error('refusing reschedule_needed copy for status=' + status);
+        err.code = 'HONESTY';
+        throw err;
+    }
+    if ((key === 'booking_reminder' || key === 'booking_reminder_owner') && status !== 'confirmed') {
+        const err = new Error('refusing reminder copy for status=' + status);
         err.code = 'HONESTY';
         throw err;
     }
@@ -153,6 +162,28 @@ function render(p) {
                 'Noua dată și oră (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
+        case 'booking_reminder':
+            subject = 'Reamintire programare — ' + service;
+            headline = 'Reamintire pentru programarea ta';
+            bodyLead =
+                'Salut, ' + name + '.\n\n' +
+                'Îți reamintim de programarea ta la ' + site + ' pentru „' + service + '”.\n' +
+                'Data și ora (ora cabinetului): ' + when + '.\n' +
+                'Stare: ' + label + '.\n\n' +
+                'Dacă nu mai poți ajunge, te rugăm să anulezi sau să reprogramezi din timp.';
+            break;
+        case 'booking_reminder_owner':
+            subject = 'Reamintire programare — ' + service + ' (' + name + ')';
+            headline = 'Programare viitoare';
+            bodyLead =
+                'Ai o programare viitoare la ' + site + '.\n\n' +
+                'Client: ' + name +
+                (visitorEmail ? ' (' + visitorEmail + ')' : '') +
+                (visitorPhone ? ' · ' + visitorPhone : '') + '.\n' +
+                'Serviciu: ' + service + '.\n' +
+                'Data și ora (ora cabinetului): ' + when + '.\n' +
+                'Stare: ' + label + '.';
+            break;
         default:
             subject = 'Actualizare programare — ' + service;
             headline = 'Actualizare programare';
@@ -185,13 +216,22 @@ function render(p) {
           escapeHtml(manageUrl) + '</p>'
         : '';
 
+    // The owner-reminder copy addresses the site owner, not the visitor — no
+    // "Salut, {visitorName}" greeting, and the full lead paragraph (it has no
+    // separate greeting line to strip via slice(1) like every other template).
+    const isOwnerFacing = key === 'booking_reminder_owner';
+    const greetingHtml = isOwnerFacing ? '' : '<p>' + escapeHtml('Salut, ' + name + '.') + '</p>';
+    const leadHtml = isOwnerFacing
+        ? bodyLead.replace(/\n/g, ' ')
+        : bodyLead.split('\n\n').slice(1).join(' ').replace(/\n/g, ' ');
+
     const html = [
         '<!DOCTYPE html><html lang="ro"><head><meta charset="UTF-8"><title>',
         escapeHtml(subject),
         '</title></head><body style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222">',
         '<h1 style="font-size:20px;line-height:1.3">', escapeHtml(headline), '</h1>',
-        '<p>', escapeHtml('Salut, ' + name + '.'), '</p>',
-        '<p>', escapeHtml(bodyLead.split('\n\n').slice(1).join(' ').replace(/\n/g, ' ')), '</p>',
+        greetingHtml,
+        '<p>', escapeHtml(leadHtml), '</p>',
         '<p><strong>Stare:</strong> ', escapeHtml(label), '</p>',
         '<p><strong>Serviciu:</strong> ', escapeHtml(service), '<br>',
         '<strong>Data/ora (cabinet):</strong> ', escapeHtml(when), '</p>',

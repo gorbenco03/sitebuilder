@@ -150,6 +150,21 @@ function publicWeekly(row) {
     };
 }
 
+/** Camel-cased settings shape shared by GET availability and PUT settings. */
+function publicSettings(row) {
+    return {
+        timezone: row.timezone,
+        defaultBufferMinutes: row.default_buffer_minutes,
+        minCancelHours: row.min_cancel_hours,
+        slotIntervalMinutes: row.slot_interval_minutes,
+        minNoticeMinutes: row.min_notice_minutes,
+        maxAdvanceDays: row.max_advance_days != null ? row.max_advance_days : null,
+        reminderHoursBefore: row.reminder_hours_before,
+        reminderVisitorEnabled: !!row.reminder_visitor_enabled,
+        reminderOwnerEnabled: !!row.reminder_owner_enabled,
+    };
+}
+
 function publicOverride(row) {
     return {
         id: row.id,
@@ -320,12 +335,7 @@ function getOwnerAvailability(db, customerId, siteId) {
     }
     return {
         ok: true,
-        settings: {
-            timezone: settings.timezone,
-            defaultBufferMinutes: settings.default_buffer_minutes,
-            minCancelHours: settings.min_cancel_hours,
-            slotIntervalMinutes: settings.slot_interval_minutes,
-        },
+        settings: publicSettings(settings),
         weekly: engine.listWeeklyAvailability(db, customerId, siteId).map(publicWeekly),
         overrides: engine.listDateOverrides(db, customerId, siteId).map(publicOverride),
         services: engine.listServices(db, customerId, siteId, { activeOnly: false }).map(publicServiceAdmin),
@@ -464,17 +474,52 @@ function putOwnerSettings(db, customerId, siteId, body) {
             body.slotIntervalMinutes != null ? body.slotIntervalMinutes : body.slot_interval_minutes
         );
     }
+
+    // Booking-window policy (audit #26) — same owner-configurable pattern as
+    // default_buffer_minutes / min_cancel_hours above.
+    if (body && (body.minNoticeMinutes != null || body.min_notice_minutes != null)) {
+        const v = Number(body.minNoticeMinutes != null ? body.minNoticeMinutes : body.min_notice_minutes);
+        if (!Number.isFinite(v) || v < 0 || v > 20160) {
+            return { error: 'Notificarea minimă trebuie să fie între 0 și 20160 minute (14 zile).', code: 'VALIDATION', status: 400 };
+        }
+        patch.min_notice_minutes = v;
+    }
+    if (body && Object.prototype.hasOwnProperty.call(body, 'maxAdvanceDays')
+        || (body && Object.prototype.hasOwnProperty.call(body, 'max_advance_days'))) {
+        const raw = body.maxAdvanceDays !== undefined ? body.maxAdvanceDays : body.max_advance_days;
+        if (raw === null || raw === '') {
+            patch.max_advance_days = null;
+        } else {
+            const v = Number(raw);
+            if (!Number.isFinite(v) || v <= 0 || v > 730) {
+                return { error: 'Orizontul maxim de rezervare trebuie să fie între 1 și 730 zile (sau gol pentru fără limită).', code: 'VALIDATION', status: 400 };
+            }
+            patch.max_advance_days = v;
+        }
+    }
+
+    // Reminder policy (audit #26).
+    if (body && (body.reminderHoursBefore != null || body.reminder_hours_before != null)) {
+        const v = Number(body.reminderHoursBefore != null ? body.reminderHoursBefore : body.reminder_hours_before);
+        if (!Number.isFinite(v) || v < 0 || v > 336) {
+            return { error: 'Reamintirea trebuie să fie între 0 și 336 ore (14 zile) înainte.', code: 'VALIDATION', status: 400 };
+        }
+        patch.reminder_hours_before = v;
+    }
+    if (body && (body.reminderVisitorEnabled != null || body.reminder_visitor_enabled != null)) {
+        patch.reminder_visitor_enabled = Boolean(
+            body.reminderVisitorEnabled != null ? body.reminderVisitorEnabled : body.reminder_visitor_enabled
+        );
+    }
+    if (body && (body.reminderOwnerEnabled != null || body.reminder_owner_enabled != null)) {
+        patch.reminder_owner_enabled = Boolean(
+            body.reminderOwnerEnabled != null ? body.reminderOwnerEnabled : body.reminder_owner_enabled
+        );
+    }
+
     try {
         const settings = engine.ensureSettings(db, customerId, siteId, patch);
-        return {
-            ok: true,
-            settings: {
-                timezone: settings.timezone,
-                defaultBufferMinutes: settings.default_buffer_minutes,
-                minCancelHours: settings.min_cancel_hours,
-                slotIntervalMinutes: settings.slot_interval_minutes,
-            },
-        };
+        return { ok: true, settings: publicSettings(settings) };
     } catch (e) {
         return mapEngineError(e);
     }
@@ -491,7 +536,8 @@ function listOwnerSlots(db, customerId, siteId, opts) {
 function mapEngineError(e) {
     const code = e && e.code ? String(e.code) : 'ERROR';
     const status =
-        code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST' || code === 'STATE'
+        code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST' ||
+            code === 'STATE' || code === 'MIN_NOTICE' || code === 'MAX_ADVANCE'
             ? 400
             : code === 'SERVICE_NOT_FOUND' || code === 'SETTINGS_MISSING' || code === 'NOT_FOUND'
                 ? 404
@@ -501,11 +547,15 @@ function mapEngineError(e) {
             ? 'Intervalul ales nu este disponibil (în afara programului sau zi liberă).'
             : code === 'SLOT_IN_PAST'
                 ? 'Intervalul ales a trecut deja.'
-                : code === 'STATE'
-                    ? 'Starea programării nu permite această acțiune.'
-                    : code === 'VALIDATION'
-                        ? 'Verifică datele introduse.'
-                        : 'Nu am putut salva. Încearcă din nou.';
+                : code === 'MIN_NOTICE'
+                    ? 'Această programare trebuie făcută cu mai mult timp înainte.'
+                    : code === 'MAX_ADVANCE'
+                        ? 'Această dată este prea departe în viitor pentru o programare.'
+                        : code === 'STATE'
+                            ? 'Starea programării nu permite această acțiune.'
+                            : code === 'VALIDATION'
+                                ? 'Verifică datele introduse.'
+                                : 'Nu am putut salva. Încearcă din nou.';
     return { error: ro, code, status };
 }
 

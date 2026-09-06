@@ -1,0 +1,138 @@
+{
+  "properties": [
+    {
+      "name": "BEGIN",
+      "params": "",
+      "value": "VCALENDAR",
+      "raw": "BEGIN:VCALENDAR"
+    },
+    {
+      "name": "VERSION",
+      "params": "",
+      "value": "2.0",
+      "raw": "VERSION:2.0"
+    },
+    {
+      "name": "PRODID",
+      "params": "",
+      "value": "-//Hidook Site Builder//Calendar Native//RO",
+      "raw": "PRODID:-//Hidook Site Builder//Calendar Native//RO"
+    },
+    {
+      "name": "CALSCALE",
+      "params": "",
+      "value": "GREGORIAN",
+      "raw": "CALSCALE:GREGORIAN"
+    },
+    {
+      "name": "METHOD",
+      "params": "",
+      "value": "REQUEST",
+      "raw": "METHOD:REQUEST"
+    },
+    {
+      "name": "BEGIN",
+      "params": "",
+      "value": "VEVENT",
+      "raw": "BEGIN:VEVENT"
+    },
+    {
+      "name": "UID",
+      "params": "",
+      "value": "bk_44bf8f918c4df67c56843a5b@calendar.hidook.invalid",
+      "raw": "UID:bk_44bf8f918c4df67c56843a5b@calendar.hidook.invalid"
+    },
+    {
+      "name": "DTSTAMP",
+      "params": "",
+      "value": "20260906T113305Z",
+      "raw": "DTSTAMP:20260906T113305Z"
+    },
+    {
+      "name": "DTSTART",
+      "params": "",
+      "value": "20300107T070000Z",
+      "raw": "DTSTART:20300107T070000Z"
+    },
+    {
+      "name": "DTEND",
+      "params": "",
+      "value": "20300107T073000Z",
+      "raw": "DTEND:20300107T073000Z"
+    },
+    {
+      "name": "SUMMARY",
+      "params": "",
+      "value": "Programare: Consultație cu diacritice ăâîșț — cabinet",
+      "raw": "SUMMARY:Programare: Consultație cu diacritice ăâîșț — cabinet"
+    },
+    {
+      "name": "DESCRIPTION",
+      "params": "",
+      "value": "Programare la cabinet pentru „Consultație cu diacritice ăâîșț”.",
+      "raw": "DESCRIPTION:Programare la cabinet pentru „Consultație cu diacritice ăâîșț”."
+    },
+    {
+      "name": "LOCATION",
+      "params": "",
+      "value": "cabinet",
+      "raw": "LOCATION:cabinet"
+    },
+    {
+      "name": "STATUS",
+      "params": "",
+      "value": "CONFIRMED",
+      "raw": "STATUS:CONFIRMED"
+    },
+    {
+      "name": "SEQUENCE",
+      "params": "",
+      "value": "0",
+      "raw": "SEQUENCE:0"
+    },
+    {
+      "name": "ORGANIZER",
+      "params": "CN=cabinet",
+      "value": "mailto:no-reply@hidook.invalid",
+      "raw": "ORGANIZER;CN=cabinet:mailto:no-reply@hidook.invalid"
+    },
+    {
+      "name": "ATTENDEE",
+      "params": "CN=Ana Ionescu;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE",
+      "value": "mailto:ana.ionescu@example.com",
+      "raw": "ATTENDEE;CN=Ana Ionescu;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:ana.ionescu@example.com"
+    },
+    {
+      "name": "TRANSP",
+      "params": "",
+      "value": "OPAQUE",
+      "raw": "TRANSP:OPAQUE"
+    },
+    {
+      "name": "END",
+      "params": "",
+      "value": "VEVENT",
+      "raw": "END:VEVENT"
+    },
+    {
+      "name": "END",
+      "params": "",
+      "value": "VCALENDAR",
+      "raw": "END:VCALENDAR"
+    }
+  ],
+  "requiredPresent": [
+    "UID",
+    "DTSTAMP",
+    "DTSTART",
+    "DTEND",
+    "SUMMARY",
+    "DESCRIPTION",
+    "LOCATION",
+    "ORGANIZER",
+    "STATUS",
+    "SEQUENCE",
+    "METHOD"
+  ],
+  "byteLength": 682
+}

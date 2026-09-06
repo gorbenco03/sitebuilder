@@ -42,6 +42,8 @@ const EMAIL_TEMPLATE_KEYS = Object.freeze([
     'booking_cancelled',
     'booking_reschedule_needed',
     'booking_reschedule_confirmed',
+    'booking_reminder',
+    'booking_reminder_owner',
 ]);
 
 const SCHEMA_SQL_V1 = `
@@ -202,8 +204,61 @@ const SCHEMA_SQL_V3 = `
 ALTER TABLE calendar_bookings ADD COLUMN anonymized_at TEXT;
 `;
 
+/**
+ * v4 — Wave 6 (audit finding #26): reminders, .ics sync, booking-window policy.
+ *
+ * calendar_settings gains the same "owner-configurable, tenant-defaulted"
+ * columns already established by default_buffer_minutes / min_cancel_hours:
+ *   - min_notice_minutes / max_advance_days: booking-window policy. Defaults
+ *     (0 / NULL = no cap) intentionally preserve pre-v4 behavior for every
+ *     existing row and every test fixture that never patches these fields —
+ *     the policy is opt-in per tenant, enforced server-side once configured.
+ *   - reminder_hours_before / reminder_visitor_enabled / reminder_owner_enabled:
+ *     reminder policy. Visitor reminders default ON (24h before) because the
+ *     reminder *sweep* (reminders.js) only ever acts when explicitly run —
+ *     it never fires inline on booking mutations — so this default cannot
+ *     change the row/email counts any existing oracle asserts immediately
+ *     after create/cancel/reschedule.
+ *
+ * calendar_bookings gains:
+ *   - visitor_reminder_sent_at / owner_reminder_sent_at: idempotency ledger
+ *     for the reminder sweep (NULL = not yet sent; reset to NULL by
+ *     applyReschedule() whenever the slot moves, so a reschedule earns a
+ *     fresh reminder for the new time).
+ *   - ics_sequence: RFC 5545 SEQUENCE counter for the .ics attached to
+ *     lifecycle email (confirm / reschedule-confirm / cancel). Starts at 0;
+ *     bumped by one every time email/index.js emits a calendar object for
+ *     that booking, independent of which lifecycle event triggered it.
+ *
+ * calendar_email_outbox gains ics_content / ics_filename (nullable — only
+ * populated for confirm/reschedule-confirm/cancel rows) so the .ics rides
+ * the EXISTING outbox/backoff/audit pipeline instead of a second path.
+ */
+const SCHEMA_SQL_V4 = `
+ALTER TABLE calendar_settings ADD COLUMN min_notice_minutes INTEGER NOT NULL DEFAULT 0
+    CHECK (min_notice_minutes >= 0 AND min_notice_minutes <= 20160);
+ALTER TABLE calendar_settings ADD COLUMN max_advance_days INTEGER
+    CHECK (max_advance_days IS NULL OR (max_advance_days > 0 AND max_advance_days <= 730));
+ALTER TABLE calendar_settings ADD COLUMN reminder_hours_before INTEGER NOT NULL DEFAULT 24
+    CHECK (reminder_hours_before >= 0 AND reminder_hours_before <= 336);
+ALTER TABLE calendar_settings ADD COLUMN reminder_visitor_enabled INTEGER NOT NULL DEFAULT 1
+    CHECK (reminder_visitor_enabled IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN reminder_owner_enabled INTEGER NOT NULL DEFAULT 0
+    CHECK (reminder_owner_enabled IN (0, 1));
+
+ALTER TABLE calendar_bookings ADD COLUMN visitor_reminder_sent_at TEXT;
+ALTER TABLE calendar_bookings ADD COLUMN owner_reminder_sent_at TEXT;
+ALTER TABLE calendar_bookings ADD COLUMN ics_sequence INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_calendar_bookings_status_start
+    ON calendar_bookings (status, start_utc);
+
+ALTER TABLE calendar_email_outbox ADD COLUMN ics_content TEXT;
+ALTER TABLE calendar_email_outbox ADD COLUMN ics_filename TEXT;
+`;
+
 /** Full schema for brand-new databases. */
-const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3;
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3 + '\n' + SCHEMA_SQL_V4;
 
 module.exports = {
     SCHEMA_VERSION,
@@ -211,6 +266,7 @@ module.exports = {
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
     SCHEMA_SQL_V3,
+    SCHEMA_SQL_V4,
     BOOKING_STATUSES,
     ACTIVE_BOOKING_STATUSES,
     EMAIL_DELIVERY_STATUSES,

@@ -89,6 +89,8 @@ function writeAudit(db, {
  *   idempotencyKey: string,
  *   providerName?: string,
  *   maxAttempts?: number,
+ *   icsContent?: string|null,
+ *   icsFilename?: string|null,
  *   nowMs?: number,
  * }} input
  */
@@ -107,6 +109,10 @@ function enqueue(db, input) {
     const ts = nowIso(input.nowMs);
     const transport = getTransport();
     const providerName = String(input.providerName || transport.name || 'local-memory');
+    // .ics carries no visitor-typed free text — RFC 5545 structural content,
+    // scrubbed anyway for defense in depth (never trust "no secrets in here").
+    const icsContent = input.icsContent ? scrubString(String(input.icsContent)) : null;
+    const icsFilename = input.icsFilename ? String(input.icsFilename).slice(0, 80) : null;
 
     if (!customerId || !siteId || !bookingId || !templateKey || !recipient || !idem) {
         const err = new Error('email enqueue validation failed');
@@ -128,13 +134,13 @@ function enqueue(db, input) {
             recipient_email, subject, body_text, body_html, booking_status_snapshot,
             manage_link_present, status, attempt_count, max_attempts, next_attempt_at,
             last_error, provider_name, provider_message_id, idempotency_key,
-            created_at, updated_at, sent_at
+            created_at, updated_at, sent_at, ics_content, ics_filename
         ) VALUES (
             ?, ?, ?, ?, ?,
             ?, ?, ?, ?, ?,
             ?, 'queued', 0, ?, ?,
             NULL, ?, NULL, ?,
-            ?, ?, NULL
+            ?, ?, NULL, ?, ?
         )`
     ).run(
         id,
@@ -153,7 +159,9 @@ function enqueue(db, input) {
         providerName,
         idem,
         ts,
-        ts
+        ts,
+        icsContent,
+        icsFilename
     );
 
     writeAudit(db, {
@@ -222,6 +230,8 @@ async function attemptDeliver(db, row, ctx) {
             subject: row.subject,
             text: row.body_text,
             html: row.body_html,
+            icsContent: row.ics_content || null,
+            icsFilename: row.ics_filename || null,
             meta: {
                 outboxId: row.id,
                 templateKey: row.template_key,
@@ -314,13 +324,14 @@ async function attemptDeliver(db, row, ctx) {
  * Tenant-scoped list for owner tooling / tests (no secrets).
  */
 function listOutbox(db, customerId, siteId, { bookingId, status, limit = 100, includeBodies = false } = {}) {
-    const bodyCols = includeBodies ? ',\n                body_text, body_html' : '';
+    const bodyCols = includeBodies ? ',\n                body_text, body_html, ics_content, ics_filename' : '';
     let sql =
         `SELECT id, customer_id, site_id, booking_id, template_key, recipient_email,
                 subject, booking_status_snapshot, manage_link_present, status,
                 attempt_count, max_attempts, next_attempt_at, last_error,
                 provider_name, provider_message_id, idempotency_key,
-                created_at, updated_at, sent_at${bodyCols}
+                created_at, updated_at, sent_at,
+                (ics_content IS NOT NULL) AS has_ics${bodyCols}
          FROM calendar_email_outbox
          WHERE customer_id = ? AND site_id = ?`;
     const params = [customerId, siteId];

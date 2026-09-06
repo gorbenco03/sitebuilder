@@ -1,0 +1,22 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Hidook Site Builder//Calendar Native//RO
+CALSCALE:GREGORIAN
+METHOD:REQUEST
+BEGIN:VEVENT
+UID:bk_44bf8f918c4df67c56843a5b@calendar.hidook.invalid
+DTSTAMP:20260906T113305Z
+DTSTART:20300107T070000Z
+DTEND:20300107T073000Z
+SUMMARY:Programare: Consultație cu diacritice ăâîșț — cabinet
+DESCRIPTION:Programare la cabinet pentru „Consultație cu diacritice ăâ
+ îșț”.
+LOCATION:cabinet
+STATUS:CONFIRMED
+SEQUENCE:0
+ORGANIZER;CN=cabinet:mailto:no-reply@hidook.invalid
+ATTENDEE;CN=Ana Ionescu;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FAL
+ SE:mailto:ana.ionescu@example.com
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR

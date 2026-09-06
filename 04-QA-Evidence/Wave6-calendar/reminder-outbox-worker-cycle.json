@@ -1,0 +1,99 @@
+{
+  "steps": [
+    {
+      "label": "hazard1-cancelled-booking-swept",
+      "outbox": [
+        {
+          "id": "em_8a0b2280de8caf3babb270ff",
+          "templateKey": "booking_confirmed",
+          "recipientEmail": "va.anula@example.com",
+          "status": "queued",
+          "hasIcs": true
+        },
+        {
+          "id": "em_8cf6bb70edf03caa5ad12e89",
+          "templateKey": "booking_cancelled",
+          "recipientEmail": "va.anula@example.com",
+          "status": "queued",
+          "hasIcs": true
+        }
+      ]
+    },
+    {
+      "label": "hazard2-first-run",
+      "outbox": [
+        {
+          "id": "em_011c8352ca964c23778cae26",
+          "templateKey": "booking_confirmed",
+          "recipientEmail": "dubla@example.com",
+          "status": "sent",
+          "hasIcs": true
+        },
+        {
+          "id": "em_8555f14fd86bfbf3ee69a2b5",
+          "templateKey": "booking_reminder",
+          "recipientEmail": "dubla@example.com",
+          "status": "sent",
+          "hasIcs": false
+        }
+      ]
+    },
+    {
+      "label": "hazard2-second-run",
+      "outbox": [
+        {
+          "id": "em_011c8352ca964c23778cae26",
+          "templateKey": "booking_confirmed",
+          "recipientEmail": "dubla@example.com",
+          "status": "sent",
+          "hasIcs": true
+        },
+        {
+          "id": "em_8555f14fd86bfbf3ee69a2b5",
+          "templateKey": "booking_reminder",
+          "recipientEmail": "dubla@example.com",
+          "status": "sent",
+          "hasIcs": false
+        }
+      ]
+    },
+    {
+      "label": "hazard3-worker-back-after-outage",
+      "outbox": [
+        {
+          "id": "em_e52f715431b94682b49a72cb",
+          "templateKey": "booking_confirmed",
+          "recipientEmail": "trecuta@example.com",
+          "status": "queued",
+          "hasIcs": true
+        }
+      ]
+    },
+    {
+      "label": "owner-reminder-demo-tenant",
+      "outbox": [
+        {
+          "id": "em_11f0706b44d4b689fa9dd8f3",
+          "templateKey": "booking_confirmed",
+          "recipientEmail": "client.cabinet@example.com",
+          "status": "sent",
+          "hasIcs": true
+        },
+        {
+          "id": "em_d409828fbac0aa6e1d7769d0",
+          "templateKey": "booking_reminder",
+          "recipientEmail": "client.cabinet@example.com",
+          "status": "sent",
+          "hasIcs": false
+        },
+        {
+          "id": "em_990368052400f98e7e78e0aa",
+          "templateKey": "booking_reminder_owner",
+          "recipientEmail": "elena@cabinet.ro",
+          "status": "sent",
+          "hasIcs": false
+        }
+      ]
+    }
+  ]
+}
