@@ -769,6 +769,12 @@ function writeLegalSiteFiles(siteDir, config) {
         ['privacy.html', privacyHtml(config)],
         ['terms.html', termsHtml(config)],
         ['cookies.html', cookiesHtml(config)],
+        // NOT minified here. This module is bundled into the browser engine
+        // (builder/generated/engine.js) and renderHtml must stay pure — no fs,
+        // no path, no requires. Importing the minifier here threw
+        // "HidookEngine: require(\"./css-minify.js\") called" inside the editor
+        // preview and left the canvas blank. bot/site-export.js minifies the
+        // written file instead, where Node is a given.
         ['cookie-banner.css', COOKIE_BANNER_CSS],
         ['cookie-banner.js', COOKIE_BANNER_JS],
     ];

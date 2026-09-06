@@ -7,6 +7,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { minifyCss } = require('./css-minify.js');
 const { build } = require('../build.js');
 const { createZip } = require('./zip.js');
 const { writeLegalSiteFiles } = require('./site-legal.js');
@@ -132,6 +133,12 @@ function materializeImages(cfg, imagesDir, explicitImages) {
     walkLeftovers(cfg, '');
 }
 
+/** Rewrite a stylesheet on disk with its minified form. No-op if absent. */
+function minifyCssFileInPlace(file) {
+    if (!fs.existsSync(file)) return;
+    fs.writeFileSync(file, minifyCss(fs.readFileSync(file, 'utf8')), 'utf8');
+}
+
 function copyTemplateTree(templateId, siteDir) {
     const templateDir = path.join(TEMPLATES_DIR, templateId);
     const imagesDir = path.join(siteDir, 'images');
@@ -147,7 +154,21 @@ function copyTemplateTree(templateId, siteDir) {
         const src = path.join(templateDir, entry);
         const st = fs.statSync(src);
         if (st.isFile()) {
-            fs.copyFileSync(src, path.join(siteDir, entry));
+            if (/\.css$/i.test(entry)) {
+                // Minify on the way out. The builder's baked preview payload
+                // has been minified for a long time and the file an actual
+                // visitor downloads was not: templates/professionals/styles.css
+                // shipped byte-identical to source, 36% of it English comments,
+                // 35338 bytes where 20563 would do. The perf ceilings only ever
+                // watched the builder side, so nothing noticed.
+                fs.writeFileSync(
+                    path.join(siteDir, entry),
+                    minifyCss(fs.readFileSync(src, 'utf8')),
+                    'utf8'
+                );
+            } else {
+                fs.copyFileSync(src, path.join(siteDir, entry));
+            }
         } else if (st.isDirectory()) {
             // Any asset directory a template ships, not just images/. This
             // used to be `entry === 'images'`, which silently dropped
@@ -354,6 +375,11 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     build(dir);
     // build.js already writes legal pages; ensure present even if older build
     writeLegalSiteFiles(dir, cfgCopy);
+    // Minify the shared consent stylesheet on the way out, the same as every
+    // template stylesheet above. It cannot happen inside site-legal.js: that
+    // module is bundled into the browser engine and renderHtml must stay pure,
+    // so a require() there throws and blanks the editor preview.
+    minifyCssFileInPlace(path.join(dir, 'cookie-banner.css'));
 
     // F6: robots.txt + sitemap.xml — every export gets both (live publish
     // path is bot/webpublish.js, wired the same way via buildSeoFiles), using
