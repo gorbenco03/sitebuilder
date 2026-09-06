@@ -206,6 +206,19 @@
     --color-black: #1a1a1a;
     --accent: var(--color-primary, #E8588C);
     --paper: var(--color-cream, #faf8f8);
+    /* AA-safe text colour for normal/small brand-pink text on white or cream
+       (eyebrow label, language toggle, menu category titles). Audit
+       A11Y-05 / DSD-06 measured --color-primary-dark itself at 4.37:1 on
+       white — short of the 4.5:1 WCAG AA floor for normal text (it only
+       clears 4.5:1 at "large text" sizes/weights, which is why headings
+       using --color-primary-dark elsewhere were never flagged). Mixing
+       further toward black guarantees enough headroom regardless of which
+       accent colour a site picks (color-mix darkens whatever
+       --color-primary-dark resolves to, it never lightens it), while
+       staying visibly the same brand pink/berry hue. Verified 6.88:1 for
+       the default preset (measured on real rendered pixels, not just
+       getComputedStyle) — see bot/test/wave9-desserdirina-contrast.test.js. */
+    --color-primary-ink: color-mix(in srgb, var(--color-primary-dark) 75%, black);
     --font-serif: 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
     --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
@@ -255,15 +268,20 @@ body {
     border: 0;
 }
 
-/* Shared section eyebrow (small uppercase label above titles) */
+/* Shared section eyebrow (small uppercase label above titles).
+   DSD-06: was `color: var(--color-primary); opacity: 0.85;` — the opacity
+   is a paint-time effect that getComputedStyle(el).color can't see, so it
+   was invisible to a naive contrast check while still lightening every
+   rendered pixel (the audit's real-pixel measurement caught it at 3.38:1).
+   Fixed by dropping the opacity entirely and using the AA-safe ink colour
+   at full strength instead — 4.5:1+ on both white and cream. */
 .section-eyebrow {
     font-size: 0.7rem;
     font-weight: 500;
     letter-spacing: 0.32em;
     text-transform: uppercase;
-    color: var(--color-primary);
+    color: var(--color-primary-ink);
     margin-bottom: 0.9rem;
-    opacity: 0.85;
 }
 
 /* ============================================================
@@ -300,7 +318,15 @@ body {
     to   { transform: scale(1.14) translateY(-2%); }
 }
 
-/* Layered overlay: soft cream wash up top + a refined brand-tinted vignette */
+/* Layered overlay: soft cream wash up top (protects the title/tagline text
+   against an arbitrary owner-uploaded photo, worst case) + a lighter fade
+   lower down. The top two stops (0%/32%) are left untouched on purpose —
+   they sit directly behind the hero text and are the reason the overlay
+   exists at all. The bottom two stops (68%/100%), further from any text,
+   were washing the photo almost as heavily as the top for no legibility
+   reason — thinned out here so the actual photography reads through with
+   its real colour lower in the hero, instead of the whole frame looking
+   like a flat, hazy sheet regardless of what was uploaded. */
 .hero-overlay {
     position: fixed;
     top: 0;
@@ -315,8 +341,8 @@ body {
             180deg,
             rgba(255, 255, 255, 0.86) 0%,
             rgba(255, 255, 255, 0.68) 32%,
-            rgba(255, 245, 249, 0.62) 68%,
-            rgba(232, 88, 140, 0.22) 100%
+            rgba(255, 245, 249, 0.42) 68%,
+            rgba(232, 88, 140, 0.10) 100%
         );
 }
 
@@ -747,10 +773,15 @@ body {
     margin: 0;
 }
 .menu-langs { display: inline-flex; gap: 0.4rem; }
+/* DSD-06: both states measured under the 4.5:1 AA floor at this 13.6px size
+   (inactive "EN" 4.37:1 text-on-white; active "RO" 3.38:1 white-on-pink) —
+   both now use the same AA-safe ink colour, as text on white when inactive
+   and as the fill behind white text when active, so either state clears
+   6.88:1 on the default preset. */
 .menu-lang-btn {
     border: 1px solid rgba(0, 0, 0, 0.12);
     background: #fff;
-    color: var(--color-primary-dark, #333);
+    color: var(--color-primary-ink, #333);
     padding: 0.45rem 0.9rem;
     border-radius: 999px;
     font: inherit;
@@ -758,10 +789,10 @@ body {
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
-.menu-lang-btn:hover { border-color: var(--color-primary); }
+.menu-lang-btn:hover { border-color: var(--color-primary-ink); }
 .menu-lang-btn.is-active {
-    background: var(--color-primary);
-    border-color: var(--color-primary);
+    background: var(--color-primary-ink);
+    border-color: var(--color-primary-ink);
     color: #fff;
 }
 .menu-panel[hidden] { display: none; }
@@ -771,11 +802,16 @@ body {
     gap: 1.5rem 2rem;
 }
 .menu-group { margin-bottom: 0.4rem; }
+/* DSD-06: category titles ("Torturi", "La comandă", …) measured 4.37:1 at
+   this 22.4px/600-weight combination — under 4.5:1, since 600 doesn't
+   qualify as WCAG "bold" for the large-text 3:1 exemption (that needs
+   >=700). AA-safe ink brings it to 6.88:1 without having to also bump the
+   font-weight. */
 .menu-cat {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.4rem;
     font-weight: 600;
-    color: var(--color-primary-dark, #333);
+    color: var(--color-primary-ink, #333);
     margin: 0;
     padding: 0.45rem 0;
     border-bottom: 2px solid var(--color-primary-light, #f0a);

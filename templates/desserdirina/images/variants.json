@@ -1,65 +1,65 @@
 {
   "images/torturi-1.jpg": {
-    "width": 1280,
-    "height": 1280,
+    "width": 1000,
+    "height": 1000,
     "variants": [
       {
         "width": 480,
         "webp": "images/torturi-1-480w.webp",
-        "bytes": 26376
+        "bytes": 17002
       },
       {
         "width": 960,
         "webp": "images/torturi-1-960w.webp",
-        "bytes": 80822
+        "bytes": 45258
       }
     ]
   },
   "images/catering-1.jpg": {
-    "width": 1280,
-    "height": 1276,
+    "width": 1000,
+    "height": 955,
     "variants": [
       {
         "width": 480,
         "webp": "images/catering-1-480w.webp",
-        "bytes": 25246
+        "bytes": 13370
       },
       {
         "width": 960,
         "webp": "images/catering-1-960w.webp",
-        "bytes": 85848
+        "bytes": 40036
       }
     ]
   },
   "images/placinte-1.jpg": {
-    "width": 1280,
-    "height": 1276,
+    "width": 700,
+    "height": 1000,
     "variants": [
       {
         "width": 480,
         "webp": "images/placinte-1-480w.webp",
-        "bytes": 37562
+        "bytes": 26802
       },
       {
-        "width": 960,
-        "webp": "images/placinte-1-960w.webp",
-        "bytes": 126890
+        "width": 700,
+        "webp": "images/placinte-1-700w.webp",
+        "bytes": 51440
       }
     ]
   },
   "images/cupcakes-1.jpg": {
-    "width": 1280,
-    "height": 1276,
+    "width": 878,
+    "height": 1000,
     "variants": [
       {
         "width": 480,
         "webp": "images/cupcakes-1-480w.webp",
-        "bytes": 23550
+        "bytes": 21416
       },
       {
-        "width": 960,
-        "webp": "images/cupcakes-1-960w.webp",
-        "bytes": 71132
+        "width": 878,
+        "webp": "images/cupcakes-1-878w.webp",
+        "bytes": 56166
       }
     ]
   },
