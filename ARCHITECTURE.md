@@ -295,6 +295,38 @@ Owner-uploaded photos arrive as base64 data URIs in the config and never pass
 through this generator. They get intrinsic `width`/`height` (decoded from the
 data URI) so they do not cause layout shift, but no WebP and no `srcset`.
 
+## 10b. Production, as actually configured (verified 2026-09-06)
+
+Read from the live Railway service rather than inferred from this repo, because
+documentation here has drifted from production before.
+
+| Fact | Value |
+|---|---|
+| Workspace / project | `My Projects` / `grateful-fascination` |
+| Service | `lp-builder1-hidook-agency` |
+| Build | **Dockerfile**, per `railway.json` (`builder: DOCKERFILE`) — not Nixpacks |
+| Entry point | `bot/web.js`; boot log says "web-only mode (no Telegram)" |
+| `PUBLIC_URL` | `https://lp.hidook.agency` |
+| `DATA_DIR` | `/data`, matching `RAILWAY_VOLUME_MOUNT_PATH` — the SQLite stores are on the persistent volume |
+| `DEPLOY_PROVIDER` | `cloudflare` |
+| Healthcheck | `/health`, per `railway.json` |
+
+Set in production: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, the six
+`STRIPE_PRICE_ID_*` (first-year and renewal, EUR/GBP/USD), `RESEND_API_KEY`,
+`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `BRAND_DOMAIN`,
+`SERVER_SECRET`, `SITEBUILDER_PARTNER_SECRET`, `EMAIL_FROM`.
+
+**Not set in production**, and worth knowing:
+
+- `CALENDAR_PUBLIC_BASE_URL` / `PUBLIC_BASE_URL` — the calendar's manage links
+  used to read only these two and fell back to `http://127.0.0.1:0`, so every
+  cancel/reschedule link mailed to a visitor was dead. `PUBLIC_URL` is now the
+  fallback, which production does set.
+- `STRIPE_AUTOMATIC_TAX` — VAT collection is therefore off, which is the
+  deliberate default until Stripe Tax is configured in the Dashboard.
+- `NODE_OPTIONS` — not needed as a service variable; the Dockerfile sets
+  `--experimental-sqlite` itself.
+
 ## 11. Testing
 
 `bot/test/*.test.js`, run via `node --experimental-sqlite --test bot/test/*.test.js`
