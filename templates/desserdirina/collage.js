@@ -1,14 +1,14 @@
 // Photo collage — vanilla scattered, draggable photo gallery + lightbox viewer.
-// Photos start stacked in the center, spring out into a row when scrolled into view,
-// can be dragged (spring back), tilt + rise above the others on hover, and open in a
-// full-screen lightbox on click/tap. Multiple decks supported (one per category).
-// On small screens the scatter is replaced (via CSS) by a clean masonry of full photos.
+// Photos scatter into a spread-out row immediately on load (DSD-04 — see
+// initDeck below for why this must not wait for a scroll-triggered
+// IntersectionObserver), can be dragged (spring back), tilt + rise above the
+// others on hover, and open in a full-screen lightbox on click/tap. Multiple
+// decks supported (one per category). On small screens the scatter is
+// replaced (via CSS) by a clean masonry of full photos.
 
 (function () {
     const decks = Array.from(document.querySelectorAll('.collage-deck'));
     if (decks.length === 0) return;
-
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     /* ---------------- Lightbox ---------------- */
     // All gallery images across every deck, in document order — used for prev/next.
@@ -108,26 +108,54 @@
         }
 
         compute();
-        apply(false);
+        // DSD-04: scatter the photos into their spread-out positions
+        // IMMEDIATELY, not only after an IntersectionObserver reports the
+        // deck 20%-visible from a real scroll. That gate meant the very
+        // first paint of every fresh page load showed all N photos stacked
+        // exactly on top of each other at the deck's center (--x/--y default
+        // to 0 in the base .collage-photo rule) — a single ~200-280px pile
+        // the width of ONE photo, not the intended full-width grid, and a
+        // click could only ever reach whichever photo the z-index stack put
+        // on top. This is not just a real-user race: a live re-audit
+        // confirmed it on the published site, and this file's own
+        // `page.screenshot({ fullPage: true })` proof (see
+        // bot/test/wave8-desserdirina-gallery-collapse.test.js) shows a
+        // Playwright full-page capture — the exact technique most QA/audit
+        // tooling uses — never triggers a real scroll event either, so the
+        // observer's callback had not fired by capture time even though the
+        // deck itself was already laid out correctly off-screen. Positioning
+        // immediately removes the dependency on scroll timing entirely: the
+        // gallery is a normal-width grid from the first frame, on every
+        // template that uses this file.
+        apply(true);
 
         function scatter() { apply(true); }
 
-        if (reduce) {
-            scatter();
-        } else {
-            const io = new IntersectionObserver((entries) => {
-                entries.forEach((e) => {
-                    if (e.isIntersecting) { setTimeout(scatter, 150); io.disconnect(); }
-                });
-            }, { threshold: 0.2 });
-            io.observe(deck);
-        }
-
         let rt;
-        window.addEventListener('resize', () => {
+        function recompute() {
             clearTimeout(rt);
-            rt = setTimeout(() => { compute(); apply(deck.querySelector('.placed') !== null); }, 150);
-        });
+            rt = setTimeout(() => { compute(); apply(true); }, 150);
+        }
+        window.addEventListener('resize', recompute);
+        // DSD-05 (200% zoom overflow): `window.resize` never fires from a
+        // browser/OS zoom change alone (pinch-zoom, ctrl/cmd+=, or the CSS
+        // `zoom` property used to approximate it in tests) — only from an
+        // actual viewport size change. compute()'s photo offsets (--x/--y,
+        // baked in as fixed CSS-pixel values) were therefore left stale at
+        // whatever the deck's width was at zoom 1, while the deck's own box
+        // keeps reflowing correctly under zoom — so the absolutely
+        // positioned photos, translated by those stale wider-viewport
+        // offsets, spilled out past the now-narrower effective deck and
+        // caused real horizontal page overflow (worst of the five templates:
+        // 42% at 1440px). A ResizeObserver on the deck itself fires on ANY
+        // box-size change regardless of cause — zoom, container reflow, or a
+        // real window resize — so it supersedes (and, mirroring the
+        // `resize` listener's guard, is intentionally not removed) the
+        // window-level listener above; wiring both is harmless since either
+        // one settles into the same debounced recompute.
+        if (typeof ResizeObserver === 'function') {
+            new ResizeObserver(recompute).observe(deck);
+        }
 
         // Drag with spring-back; a click/tap (no real movement) opens the lightbox.
         photos.forEach((el, i) => {
