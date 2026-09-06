@@ -1,0 +1,249 @@
+== RED BEFORE (pre-Wave7 bot/payments.js + bot/webpublish.js) ==
+{"ts":"2026-09-06T13:12:16.306Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"5b644383-e77d-45b0-8ecd-691455251073","slug":"dun-retry-5ba16ec0","subscriptionId":"sub_test_dun-retry_8fb39cd5","invoiceId":"in_332d2bb2","attemptCount":2}
+(node:29470) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL failed invoice with a scheduled retry: notice names the attempt and the next retry date - must mention the retry
+{"ts":"2026-09-06T13:12:16.308Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"7991ee74-2261-4f7c-8337-2baaea21322f","slug":"dun-last-fc51c6ed","subscriptionId":"sub_test_dun-last_9c04883f","invoiceId":"in_4ca26f5e","attemptCount":4}
+FAIL failed invoice with NO further retry scheduled: notice says plainly the site is about to go dark - must warn the site is about to stop
+FAIL getDunningState: null for a healthy site (no failure, no bad status) - webpublish.getDunningState is not a function
+{"ts":"2026-09-06T13:12:16.311Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"c5c5fa97-2633-400d-8b16-3e5f308b2ccb","slug":"dun-warn-055ae971","subscriptionId":"sub_test_dun-warn_b35ae1a4","invoiceId":"in_b0224b7d","attemptCount":1}
+FAIL getDunningState: warning + attempt info once a failure is on record (past_due) - webpublish.getDunningState is not a function
+FAIL getDunningState: critical + "site is down" once status is unpaid - webpublish.getDunningState is not a function
+FAIL getDunningState: null site → null (never throws) - webpublish.getDunningState is not a function
+{"ts":"2026-09-06T13:12:16.314Z","event":"webpublish.unpublish.done","siteId":"172c1227-b64a-4d85-b3db-232c6380696a","slug":"dun-dark-e47d4353","alreadyDown":false,"subscriptionId":"sub_test_dun-dark_cc1be57d"}
+FAIL customer.subscription.updated → unpaid: unpublishes AND notifies the owner in Romanian that the site went dark - owner must be told exactly once
+
+0 !== 1
+
+{"ts":"2026-09-06T13:12:16.315Z","event":"webpublish.unpublish.done","siteId":"8d6b7c25-b3ee-4bfa-9ea1-8c6c20b16772","slug":"dun-cancel-91104469","alreadyDown":false,"subscriptionId":"sub_test_dun-cancel_f363eda4"}
+PASS customer.subscription.updated → canceled (owner-initiated via portal): unpublishes but does NOT notify — no surprise, they clicked Cancel
+{"ts":"2026-09-06T13:12:16.317Z","event":"webpublish.subscription.status_updated","siteId":"35e2fb58-6fe4-41f4-a4a3-c003c6ed2e23","status":"past_due","subscriptionId":"sub_test_dun-noopts_b775107d"}
+PASS handleStripeSubscriptionEvent still works with no opts argument at all (backward compatible)
+{"ts":"2026-09-06T13:12:16.319Z","event":"webpublish.subscription.ignored","type":"customer.subscription.created","status":"trialing","subscriptionId":"sub_test_dun-created_e4682b62"}
+FAIL customer.subscription.created persists stripeSubscriptionStatus (was previously silently ignored) - must resolve the site, not silently ignore
+{"ts":"2026-09-06T13:12:16.321Z","event":"webpublish.subscription.ignored","type":"customer.subscription.created","status":"canceled","subscriptionId":"sub_test_dun-created-term_276a1eb2"}
+FAIL customer.subscription.created with an already-terminal status still unpublishes (defensive) - The expression evaluated to a falsy value:
+
+  assert.ok(result)
+
+
+9 failure(s)
+✖ bot/test/wave7-payments-dunning.test.js (98.387875ms)
+  'test failed'
+
+FAIL getInvoiceHistory: unknown/null site → [] - webpublish.getInvoiceHistory is not a function
+(node:29471) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T13:12:16.307Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-first_519219a2486f","subscriptionId":"sub_test_inv_f38407ab","scheduleId":"sub_sched_test_4e523f300736ca69","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:16.373Z","event":"webpublish.stripe_paid.published","siteId":"cf0ff08e-067e-4010-8d24-eb3aa3ee17d8","orderId":"9b332a70-dfd0-4e64-8dcd-ee57ce0ee607","url":"http://127.0.0.1:0/live/inv-first-115af8c6/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:16.374Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+FAIL first-year payment (checkout.session.completed, test-pay) records an invoice history entry - webpublish.getInvoiceHistory is not a function
+{"ts":"2026-09-06T13:12:16.375Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-renew_f09ee609ef2a","subscriptionId":"sub_test_invr_861460c3","scheduleId":"sub_sched_test_99d536468dca4e27","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:16.411Z","event":"webpublish.stripe_paid.published","siteId":"22c2b8a4-d42b-42f6-b5fe-7808978745cd","orderId":"cba2e3ed-207b-4d4b-958a-04540bba8fd2","url":"http://127.0.0.1:0/live/inv-renew-e60e6a3d/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:16.411Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:16.412Z","event":"webpublish.stripe_paid.renewed","siteId":"22c2b8a4-d42b-42f6-b5fe-7808978745cd","orderId":"e5e27641-8afc-4047-9ec6-2b8ab86f23a0","paidUntil":"2027-09-06T13:12:16.412Z"}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:16.458Z","event":"webpublish.stripe_paid.renewal_reactivated","siteId":"22c2b8a4-d42b-42f6-b5fe-7808978745cd","orderId":"e5e27641-8afc-4047-9ec6-2b8ab86f23a0","url":"http://127.0.0.1:0/live/inv-renew-e60e6a3d/"}
+{"ts":"2026-09-06T13:12:16.458Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+FAIL renewal payment adds a second, newer invoice entry — newest first - webpublish.getInvoiceHistory is not a function
+{"ts":"2026-09-06T13:12:16.460Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-stripe_b6057cb6aeb8","subscriptionId":"sub_test_invs_44360ccc","scheduleId":"sub_sched_test_e392319d033d107a","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:16.499Z","event":"webpublish.stripe_paid.published","siteId":"34dcce92-7676-4c4a-a9fc-f305262b80a8","orderId":"cb1022ec-7b3b-426d-a7de-79c5298d8820","url":"http://127.0.0.1:0/live/inv-stripe-809c3e0f/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:16.499Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:16.500Z","event":"webpublish.invoice_paid.renewed","siteId":"34dcce92-7676-4c4a-a9fc-f305262b80a8","subscriptionId":"sub_test_invs_44360ccc","invoiceId":"in_c491c848","paidUntil":"2027-09-16T13:12:16.499Z"}
+FAIL real-Stripe renewal path (invoice.payment_succeeded) records hosted invoice / PDF links - webpublish.getInvoiceHistory is not a function
+FAIL payments.listCustomerInvoices: offline/no key → [] (never throws, never blocks the dashboard) - payments.listCustomerInvoices is not a function
+
+5 failure(s)
+✖ bot/test/wave7-payments-invoices.test.js (271.607834ms)
+  'test failed'
+
+FAIL canStartRenewalCheckout: unpaid site (first publish/trial start) — always allowed - webpublish.canStartRenewalCheckout is not a function
+(node:29472) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL canStartRenewalCheckout: paid site with NO subscription-status signal — allowed (offline / webhook-not-arrived-yet flows unaffected) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with stripeSubscriptionStatus=active — BLOCKED (this is the audit bug) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with stripeSubscriptionStatus=trialing — BLOCKED (this is the audit bug) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with stripeSubscriptionStatus=past_due — BLOCKED (this is the audit bug) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with terminal status=canceled — allowed (legitimate resubscribe) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with terminal status=cancelled — allowed (legitimate resubscribe) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with terminal status=unpaid — allowed (legitimate resubscribe) - webpublish.canStartRenewalCheckout is not a function
+FAIL canStartRenewalCheckout: paid site with terminal status=incomplete_expired — allowed (legitimate resubscribe) - webpublish.canStartRenewalCheckout is not a function
+FAIL reconcileSiteFromStripe: HIDOOK_TEST_PAY offline → no-op (returns the same site, never touches network) - webpublish.reconcileSiteFromStripe is not a function
+FAIL reconcileSiteFromStripe: real Stripe says still active — heals paidUntil from current_period_end, sets status live - webpublish.reconcileSiteFromStripe is not a function
+FAIL reconcileSiteFromStripe: real Stripe agrees it is canceled — does not fabricate a live status, just persists the truth - webpublish.reconcileSiteFromStripe is not a function
+{"ts":"2026-09-06T13:12:16.315Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_e2e_158fed93d4e1","subscriptionId":"sub_test_e2e_87019122","scheduleId":"sub_sched_test_b8c7f5ee7dc17e5a","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:16.376Z","event":"webpublish.stripe_paid.published","siteId":"61727111-93cc-4630-a285-91cdd8f7da47","orderId":"09574263-e9f4-4eee-9ebd-eaa7e14582fc","url":"http://127.0.0.1:0/live/e2e-d603af3e/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:16.377Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:16.377Z","event":"webpublish.subscription.ignored","type":"customer.subscription.created","status":"trialing","subscriptionId":"sub_test_e2e_87019122"}
+{"ts":"2026-09-06T13:12:16.377Z","event":"webpublish.subscription.status_updated","siteId":"61727111-93cc-4630-a285-91cdd8f7da47","status":"active","subscriptionId":"sub_test_e2e_87019122"}
+{"ts":"2026-09-06T13:12:16.378Z","event":"webpublish.invoice_paid.renewed","siteId":"61727111-93cc-4630-a285-91cdd8f7da47","subscriptionId":"sub_test_e2e_87019122","invoiceId":"in_0c21afc0","paidUntil":"2027-09-16T13:12:16.377Z"}
+FAIL END TO END: active subscription + renewal paid → dashboard label stays correct AND a second Checkout is refused - webpublish.canStartRenewalCheckout is not a function
+
+13 failure(s)
+✖ bot/test/wave7-payments-no-double-subscription.test.js (149.262083ms)
+  'test failed'
+
+PASS automatic_tax OFF by default (no env flag) — Checkout body has none of the tax fields
+FAIL STRIPE_AUTOMATIC_TAX=1 turns on automatic_tax + billing address + VAT id collection - automatic_tax must be enabled
++ actual - expected
+
++ undefined
+- 'true'
+
+FAIL inline price_data always carries tax_behavior:exclusive (Checkout line + renewal Price), flag-independent - Checkout line price_data must set tax_behavior
++ actual - expected
+
++ undefined
+- 'exclusive'
+
+PASS HIDOOK_TEST_PAY offline checkout never calls Stripe — automatic_tax flag is inert there
+FAIL RO_ERRORS.ALREADY_ACTIVE_SUBSCRIPTION exists, Romanian, with diacritics - must exist
+FAIL SUBSCRIPTION_ENTITLED_STATUSES is exactly active/trialing/past_due - The expression evaluated to a falsy value:
+
+  assert.ok(set instanceof Set)
+
+
+4 failure(s)
+✖ bot/test/wave7-payments-vat.test.js (71.725042ms)
+  'test failed'
+
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 278.059167
+
+✖ failing tests:
+
+test at bot/test/wave7-payments-dunning.test.js:1:1
+✖ bot/test/wave7-payments-dunning.test.js (98.387875ms)
+  'test failed'
+
+test at bot/test/wave7-payments-invoices.test.js:1:1
+✖ bot/test/wave7-payments-invoices.test.js (271.607834ms)
+  'test failed'
+
+test at bot/test/wave7-payments-no-double-subscription.test.js:1:1
+✖ bot/test/wave7-payments-no-double-subscription.test.js (149.262083ms)
+  'test failed'
+
+test at bot/test/wave7-payments-vat.test.js:1:1
+✖ bot/test/wave7-payments-vat.test.js (71.725042ms)
+  'test failed'

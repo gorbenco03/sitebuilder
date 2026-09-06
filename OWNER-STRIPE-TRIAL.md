@@ -117,6 +117,144 @@ Instagram feed is provided by Instafidget, a partner product (not Hidook Site Bu
 
 ---
 
+## VAT / EU tax compliance (Wave7)
+
+**Why this exists:** Hidook sells to Romanian and EU small businesses.
+Charging without handling VAT correctly is a compliance problem, not a
+polish item (audit medium #10). The code is ready; turning it on for real
+money needs a few Dashboard steps and, for two of them, your accountant —
+this repo cannot decide those for you, and guessing would be worse than
+leaving them written down here.
+
+### What the code does today
+
+- `STRIPE_AUTOMATIC_TAX` env var, **unset/`0` by default**. When set to `1`,
+  Checkout Sessions add:
+  - `automatic_tax: {enabled: true}` — Stripe calculates VAT per customer
+    location.
+  - `billing_address_collection: 'required'` — needed both for the tax
+    calculation and because a VAT-compliant invoice must show the
+    customer's address.
+  - `tax_id_collection: {enabled: true}` — an EU business customer can enter
+    their VAT id at checkout; Stripe validates it and, once automatic_tax is
+    on, applies the intra-EU B2B **reverse charge** (0% charged to the
+    customer, they self-assess) automatically.
+- Every inline Price (`price_data`) — the Checkout line item and the
+  renewal-phase Price created by `attachFirstThenRenewalSchedule` — sets
+  `tax_behavior: 'exclusive'` **unconditionally**, flag or no flag. This
+  means the 99/29 figures in `bot/pricing.js` are treated as **net of VAT**:
+  if you later turn `STRIPE_AUTOMATIC_TAX=1` on, an EU consumer sees VAT
+  added on top of 99/29, not carved out of it.
+
+**Why the flag defaults off:** `automatic_tax: {enabled:true}` makes
+Checkout Session creation **fail outright** on any Stripe account that has
+not configured Stripe Tax (Dashboard → Tax → origin address +
+registrations). Turning it on unconditionally the day this ships would take
+down 100% of checkout on an unconfigured account — a strictly worse outcome
+than today's VAT gap. Flip the env var only after the Dashboard steps below.
+
+### Before you set `STRIPE_AUTOMATIC_TAX=1`
+
+1. **Stripe Dashboard → Tax** → enable Stripe Tax, set your business's
+   origin address, and add a tax registration for Romania (and any other
+   country you are obligated to collect VAT in).
+2. Test in Stripe **test mode** first (`sk_test_…` + `STRIPE_AUTOMATIC_TAX=1`)
+   and run a checkout with a test card from an EU billing address to confirm
+   Stripe actually computes and shows a tax line before doing this in live
+   mode.
+3. Only then set `STRIPE_AUTOMATIC_TAX=1` alongside `sk_live_…` in production.
+
+### Questions for your accountant (this repo does not guess these)
+
+- **Inclusive vs. exclusive pricing.** The code currently treats 99/29 as
+  VAT-exclusive (VAT added on top, varying by the customer's EU country's
+  rate). Should the *displayed* headline price instead be VAT-inclusive
+  (same 99€ regardless of buyer country, margin absorbs the VAT
+  difference)? This is a pricing/positioning call, not a technical one —
+  changing it is a one-line `tax_behavior` flip in `bot/payments.js` once
+  you decide.
+- **OSS (One-Stop-Shop) registration.** Selling a digital service (site
+  hosting) to EU consumers (B2C) across borders above the EU-wide
+  €10,000/year threshold requires either registering for VAT in each
+  buyer's country or using the OSS scheme to file once. Below that
+  threshold, domestic Romanian VAT rules alone may suffice for now — has
+  that threshold check been done, and is OSS registration in progress if
+  needed?
+- **Romanian invoicing requirements beyond VAT.** Sequential invoice
+  numbering, mandatory company fields (CUI, registration number) on every
+  invoice — Stripe's own invoices carry your Business Settings details, but
+  confirm with your accountant that Stripe-generated invoices satisfy
+  Romanian ANAF requirements for your entity type, or whether e-Factura
+  (Romania's mandatory e-invoicing system) obligations apply to a SaaS
+  subscription sold this way.
+- **B2B reverse charge validation.** `tax_id_collection` lets a business
+  customer type *any* string as a VAT id at checkout — Stripe validates it
+  against the EU VIES registry before applying the reverse charge, but
+  confirm you're comfortable with Stripe's validation being the sole gate
+  (no manual review) before relying on it for real invoices.
+
+Until these are answered, leave `STRIPE_AUTOMATIC_TAX` unset. The product
+still functions exactly as before — this is additive, not a behavior change
+for existing checkout.
+
+---
+
+## Dunning: the sequence a customer (and the owner) can act on
+
+**Audit:** "a failed invoice currently records a ledger entry and one
+Romanian notification." Wave7 built out the rest of the sequence:
+
+| Day | Stripe state | What the code does | What the owner sees |
+|-----|--------------|---------------------|----------------------|
+| 0 | Charge declines | `invoice.payment_failed` → `webpublish.handleStripeInvoicePaymentFailed`: records `paymentFailedAt`/`paymentFailedCount` on the site, appends a ledger `payment_failed` entry (with Stripe's own `next_payment_attempt`), best-effort notifies. | Site stays live. Notification names the attempt number and either the next scheduled retry date or, if none, says plainly retries are exhausted. |
+| Stripe subscription flips to `past_due` around the same time | `customer.subscription.updated status=past_due` → status persisted, **not** unpublished (past_due is recoverable — Stripe keeps retrying on its own schedule). | Dashboard: `webpublish.getDunningState(site)` returns a `warning`-severity state — see §2 of `HANDOFF-payments.md` for the exact dashboard wiring (this agent doesn't own `builder/**`). |
+| Retries 2, 3, 4… (Stripe's own Smart Retries schedule — not configured by this codebase) | Each failed attempt repeats the row above with an incrementing `attemptCount`. | Same warning, updated attempt count. |
+| All retries exhausted | Stripe flips the subscription to `unpaid` (or `incomplete_expired` for a first invoice that never got paid) → `handleStripeSubscriptionEvent` unpublishes the site **and now notifies the owner** ("Site oprit: …") — this used to be completely silent. | `getDunningState` returns a `critical`-severity state: the site is down, add a new card to bring it back. |
+
+**Stripe Dashboard settings this code does not control:** Smart Retries
+schedule (how many attempts, how spaced) and "Email customers about failed
+invoices" live in **Stripe Dashboard → Settings → Subscriptions and
+emails**. This codebase has no customer email channel of its own — on the
+web platform there is currently no owner-facing notification channel at all
+(`bot/web.js` passes `notifyAdmin: undefined` throughout; see
+`HANDOFF-payments.md` §2). Until a real channel exists, enable those Stripe
+Dashboard settings so the *customer* gets Stripe's own dunning emails, and
+treat the dashboard card as the *owner's* notice.
+
+---
+
+## Invoice history ("Facturi")
+
+**Audit:** "an owner paying yearly has no way to see or download past
+invoices." `webpublish.getInvoiceHistory(site)` now returns every charge
+(first-year and renewal, `HIDOOK_TEST_PAY` and real Stripe alike) from a
+durable ledger record this branch appends on every successful payment —
+provable without real Stripe credentials. Real-Stripe renewals also carry
+Stripe's own `hostedInvoiceUrl`/`invoicePdf` links. See `HANDOFF-payments.md`
+§4 for the `GET /api/sites/:id/invoices` route and the "Facturi" button this
+agent could not add directly (does not own `bot/server.js`/`builder/**`).
+
+---
+
+## No second subscription for a site that already has one
+
+**Audit's worst payments finding:** "a paying customer labelled 'Expirat'
+and pushed into opening a second subscription that billed alongside the
+first." Re-verified end to end in
+`bot/test/wave7-payments-no-double-subscription.test.js` (active
+subscription → renewal paid → dashboard label stays correct → the guard
+refuses a second Checkout). Two new functions, both need one wiring step in
+`bot/server.js` — see `HANDOFF-payments.md` §1:
+
+- `webpublish.reconcileSiteFromStripe(site)` — heals a stale local
+  `paidUntil` from Stripe's own subscription status before anything else
+  decides the site looks expired.
+- `webpublish.canStartRenewalCheckout(site)` — refuses to open a Checkout
+  Session while Stripe still reports the site's subscription as
+  active/trialing/past_due.
+
+---
+
 ## Out of this how-to
 
 - Telegram checkout (all five design systems, including Desserdirina, already ship —
