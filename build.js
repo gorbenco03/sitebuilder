@@ -727,6 +727,28 @@ function reorderSections(html, sectionsMeta) {
     // never silently dropped by an incomplete section list.
     blocks.forEach((b) => { if (!seen.has(b.id)) ordered.push(b); });
 
+    // Everything between the first and last section is about to be replaced by
+    // the reordered blocks, so anything living BETWEEN them -- a divider, a
+    // decorative strip, a stray script -- would be deleted without a trace.
+    // No shipped template has such content today, which is exactly why this
+    // has to be checked rather than assumed: the day someone adds a divider
+    // between two sections, the first owner who reorders would silently lose
+    // it, and nothing would point at this function.
+    //
+    // Refuse the reorder instead. A section list that does not reorder is a
+    // visible, reportable disappointment; markup that vanishes from a paying
+    // customer's live site is not.
+    for (let i = 1; i < blocks.length; i++) {
+        const gap = html.slice(blocks[i - 1].end, blocks[i].start);
+        if (gap.trim() !== '') {
+            console.warn(
+                '  ⚠️  section reorder skipped: non-whitespace content between sections "' +
+                blocks[i - 1].id + '" and "' + blocks[i].id + '" would be lost'
+            );
+            return html;
+        }
+    }
+
     const replacement = ordered.map((b) => html.slice(b.start, b.end)).join('\n\n        ');
     return html.slice(0, spanStart) + replacement + html.slice(spanEnd);
 }
