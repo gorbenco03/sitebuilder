@@ -1,0 +1,17 @@
+{
+  "itemCount": 7,
+  "lastItemOuterHTML": "<li class=\"service-card pm-ticket hb-list-item\" style=\"--reveal-delay: 390ms;\">\n                        <span class=\"pm-ticket__stub\" aria-hidden=\"true\"></span>\n                        <span class=\"pm-ticket__label\"><span data-hb-edit=\"services.6.label\" data-hb-kind=\"text\" contenteditable=\"true\" spellcheck=\"true\" style=\"\">Specialitate nouă</span></span>\n                        <span class=\"pm-ticket__perf\" aria-hidden=\"true\"></span>\n                    <button type=\"button\" class=\"hb-remove-btn\" aria-label=\"Șterge elementul 7\">×</button></li>",
+  "lastItemTexts": [
+    {
+      "path": "services.6.label",
+      "text": "Specialitate nouă"
+    }
+  ],
+  "addBtnParentTag": "UL.pm-tickets",
+  "addBtnInsideListItem": false,
+  "addBtnIsSiblingOfLastItem": true,
+  "removeBtnRect": {
+    "w": 20,
+    "h": 20
+  }
+}

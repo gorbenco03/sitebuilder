@@ -1,0 +1,17 @@
+{
+  "itemCount": 5,
+  "lastItemOuterHTML": "<li class=\"pr-svc__card hb-list-item\">\n                        <h3 class=\"pr-svc__title\"><span data-hb-edit=\"services.4.label\" data-hb-kind=\"text\" contenteditable=\"true\" spellcheck=\"true\" style=\"\">Serviciu nou</span></h3>\n                        \n                    <button type=\"button\" class=\"hb-remove-btn\" aria-label=\"Șterge elementul 5\">×</button></li>",
+  "lastItemTexts": [
+    {
+      "path": "services.4.label",
+      "text": "Serviciu nou"
+    }
+  ],
+  "addBtnParentTag": "UL.pr-svc",
+  "addBtnInsideListItem": false,
+  "addBtnIsSiblingOfLastItem": true,
+  "removeBtnRect": {
+    "w": 20,
+    "h": 20
+  }
+}
