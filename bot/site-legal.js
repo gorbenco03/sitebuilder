@@ -525,16 +525,29 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
   align-items: center;
   pointer-events: auto;
 }
+/* The accept control.
+ * It used to be #25d366 on #06210f — WhatsApp green, borrowed from the chat
+ * FAB that sits in the opposite corner. It is the single most prominent
+ * control on the first screen of EVERY generated site, so it put the same
+ * neon green on an advocate's paper-and-brass palette, a patisserie's pinks
+ * and a monochrome portfolio alike. Paper-on-ink instead: it belongs to the
+ * dark consent card rather than to any one brand, reads as considered on all
+ * five templates, and lands at 20.4:1 against the card.
+ * The min-height is not cosmetic — the button measured 35px tall, under the
+ * 44px WCAG 2.5.8 target minimum, on every site the product has ever shipped. */
 .hb-cookie-banner button {
   appearance: none;
   border: 0;
   border-radius: 8px;
-  padding: 0.55rem 1rem;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.55rem 1.15rem;
   font: inherit;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  background: #25d366;
-  color: #06210f;
+  background: #f5f5f5;
+  color: #111;
   position: relative;
   z-index: 1;
   pointer-events: auto;
@@ -548,6 +561,9 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
 }
 .hb-cookie-banner .hb-cookie-link {
   font-size: 0.88rem;
+  /* Was a pale green tint from the same borrowed WhatsApp palette. */
+  color: #e6e6e6;
+  text-underline-offset: 2px;
 }
 .hb-legal-links {
   display: flex;
