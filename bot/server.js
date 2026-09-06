@@ -38,6 +38,8 @@
  *   POST /api/calendar-native/bookings → public create booking via native engine (+ local email outbox)
  *   GET  /api/calendar-native/manage?token= → visitor booking summary (single-booking token)
  *   POST /api/calendar-native/manage/cancel → visitor cancel via manage token (frees slot)
+ *   GET  /api/calendar-native/manage/slots  → free slots the visitor may move to
+ *   POST /api/calendar-native/manage/reschedule → visitor reschedule via manage token
  *   GET  /api/calendar-native/owner/*  → authenticated owner dashboard API (tenant = session uid + site)
  *   GET  /calendar-native/widget/*     → static public booking widget assets + preview
  *   GET  /calendar-native/owner/*      → static owner dashboard assets + preview
@@ -1631,6 +1633,41 @@ async function handleCalendarNativeManageCancel(req, res) {
 }
 
 /**
+ * GET /api/calendar-native/manage/slots?token=&from=&to= — free slots a visitor
+ * may reschedule onto. Tenant and service are resolved server-side from the
+ * token, so the caller never needs (or can forge) customerId/siteId.
+ */
+async function handleCalendarNativeManageSlots(req, res, query) {
+    const token = String((query && query.get && query.get('token')) || '').trim();
+    const fromDateLocal = String((query && query.get && query.get('from')) || '').trim();
+    const toDateLocal = String((query && query.get && query.get('to')) || '').trim();
+    const db = resolveCalendarNativeDb();
+    const out = getCalendarManageApi().getSlotsForToken(db, token, { fromDateLocal, toDateLocal });
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/**
+ * POST /api/calendar-native/manage/reschedule — visitor moves their booking to
+ * another free slot. Refuses (without touching the existing booking) if the
+ * target slot was taken in the meantime.
+ */
+async function handleCalendarNativeManageReschedule(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const token = String((body && body.token) || '').trim();
+    const startUtc = String((body && body.startUtc) || '').trim();
+    const db = resolveCalendarNativeDb();
+    const out = getCalendarManageApi().rescheduleByToken(db, token, { startUtc });
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/**
  * GET /calendar-native/widget/* — static public booking widget (preview + assets).
  */
 function serveCalendarNativeWidget(req, res, urlPath) {
@@ -3104,7 +3141,9 @@ function createHandler({ onStripeEvent } = {}) {
                     url === '/api/calendar-native/slots' ||
                     url === '/api/calendar-native/bookings' ||
                     url === '/api/calendar-native/manage' ||
-                    url === '/api/calendar-native/manage/cancel')
+                    url === '/api/calendar-native/manage/cancel' ||
+                    url === '/api/calendar-native/manage/slots' ||
+                    url === '/api/calendar-native/manage/reschedule')
             ) {
                 applyPublicCalendarCors(req, res);
                 res.writeHead(204);
@@ -3126,6 +3165,14 @@ function createHandler({ onStripeEvent } = {}) {
             if (req.method === 'POST' && url === '/api/calendar-native/manage/cancel') {
                 applyPublicCalendarCors(req, res);
                 return await handleCalendarNativeManageCancel(req, res);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/manage/slots') {
+                applyPublicCalendarCors(req, res);
+                return await handleCalendarNativeManageSlots(req, res, query);
+            }
+            if (req.method === 'POST' && url === '/api/calendar-native/manage/reschedule') {
+                applyPublicCalendarCors(req, res);
+                return await handleCalendarNativeManageReschedule(req, res);
             }
 
             // Owner dashboard API (authenticated, tenant-scoped)
