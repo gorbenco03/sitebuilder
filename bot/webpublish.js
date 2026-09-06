@@ -210,6 +210,88 @@ async function handleStripeSubscriptionEvent(event) {
     }
 }
 
+/**
+ * Extend a site's entitlement after Stripe automatically collects a subscription
+ * renewal invoice. Checkout handles the first subscription invoice, therefore
+ * subscription_create is deliberately a no-op here.
+ *
+ * @param {object} event Stripe invoice.payment_succeeded or invoice.paid event
+ * @returns {Promise<object|null>}
+ */
+async function handleStripeInvoicePaid(event) {
+    const invoice = event && event.data && event.data.object;
+    if (!invoice) return null;
+
+    const subscriptionId = typeof invoice.subscription === 'string'
+        ? invoice.subscription
+        : (invoice.subscription && invoice.subscription.id);
+    if (!subscriptionId) return null;
+    if (invoice.billing_reason === 'subscription_create') {
+        log('webpublish.invoice_paid.subscription_create_ignored', { subscriptionId, invoiceId: invoice.id || null });
+        return null;
+    }
+    if (invoice.billing_reason !== 'subscription_cycle') {
+        log('webpublish.invoice_paid.ignored', {
+            subscriptionId,
+            invoiceId: invoice.id || null,
+            billingReason: invoice.billing_reason || null,
+        });
+        return null;
+    }
+
+    const site = findSiteBySubscriptionId(subscriptionId);
+    if (!site) {
+        log('webpublish.invoice_paid.no_site', { subscriptionId, invoiceId: invoice.id || null }, 'warn');
+        return null;
+    }
+
+    const eventId = event && event.id;
+    if (eventId && typeof registry.claimStripeEvent === 'function' && !registry.claimStripeEvent(eventId)) {
+        log('webpublish.invoice_paid.already_handled', { eventId, siteId: site.id });
+        return registry.getSite(site.id);
+    }
+    // Stripe may emit both supported event types for the same invoice. The
+    // invoice claim complements Stripe-event idempotency and prevents two years.
+    if (invoice.id && typeof registry.claimStripeEvent === 'function' && !registry.claimStripeEvent(`invoice-paid:${invoice.id}`)) {
+        log('webpublish.invoice_paid.invoice_already_handled', { invoiceId: invoice.id, siteId: site.id });
+        return registry.getSite(site.id);
+    }
+
+    const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
+        ? site.paidUntil
+        : new Date().toISOString();
+    const paidUntil = registry.addMonthsIso(baseIso, 12);
+    registry.updateSite(site.id, { paid: true, paidUntil });
+
+    const fresh = registry.getSite(site.id);
+    if (fresh && fresh.status === 'expired') {
+        const versions = registry.listVersions(site.id);
+        const last = versions[versions.length - 1];
+        const lastConfig = last && registry.getVersionConfig(site.id, last.versionId);
+        if (!lastConfig) {
+            log('webpublish.invoice_paid.no_version_for_reactivation', { siteId: site.id }, 'error');
+            registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
+        } else {
+            try {
+                const result = await module.exports.publishSite({
+                    site: { ...fresh, paid: true },
+                    config: lastConfig,
+                    images: [],
+                    siteDirAlreadyBuilt: false,
+                });
+                registry.updateSite(site.id, { status: 'live', url: result.url, paid: true, paidUntil });
+                log('webpublish.invoice_paid.reactivated', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, url: result.url });
+            } catch (e) {
+                log('webpublish.invoice_paid.reactivate_failed', { siteId: site.id, err: e.message }, 'error');
+                registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
+            }
+        }
+    }
+
+    log('webpublish.invoice_paid.renewed', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, paidUntil });
+    return registry.getSite(site.id);
+}
+
 // ---------------------------------------------------------------------------
 // Fake-deploy stub (tests only) + isolated local publish
 // ---------------------------------------------------------------------------
@@ -1055,6 +1137,7 @@ module.exports = {
     publishSite,
     makeLocalSeedImagesEager,
     handleStripePaid,
+    handleStripeInvoicePaid,
     handleStripeSubscriptionEvent,
     unpublishSite,
     findSiteBySubscriptionId,
