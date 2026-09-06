@@ -100,10 +100,53 @@ function hideToast() {
   if (t) t.style.display = 'none';
 }
 
+// Focus trap: keep Tab/Shift+Tab cycling inside the open modal instead of
+// leaking into the editor topbar/iframe hidden behind the overlay. ARIA APG
+// "Modal Dialog" pattern, no library. One handler + one "opener" element is
+// tracked per modal id so repeated open/close cycles stay clean.
+const modalFocusState = Object.create(null);
+
+function getFocusableEls(container) {
+  if (!container) return [];
+  const nodes = container.querySelectorAll(
+    'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),iframe,[tabindex]:not([tabindex="-1"])'
+  );
+  return Array.prototype.filter.call(nodes, (el) => {
+    // Skip anything hidden (display:none ancestor, e.g. an inactive publish step).
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  });
+}
+
+function trapModalTab(e, container) {
+  if (e.key !== 'Tab') return;
+  const focusable = getFocusableEls(container);
+  if (!focusable.length) { e.preventDefault(); return; }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  if (e.shiftKey) {
+    if (active === first || !container.contains(active)) {
+      e.preventDefault();
+      last.focus();
+    }
+  } else {
+    if (active === last || !container.contains(active)) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+}
+
 function openModal(id) {
   const el = $(id);
   if (!el) return;
   el.style.display = '';
+  const state = modalFocusState[id] || (modalFocusState[id] = {});
+  state.opener = document.activeElement;
+  if (!state.handler) {
+    state.handler = (e) => trapModalTab(e, el);
+    el.addEventListener('keydown', state.handler);
+  }
   requestAnimationFrame(() => {
     const first = el.querySelector('button,input,a,[tabindex]:not([tabindex="-1"])');
     if (first) first.focus();
@@ -113,6 +156,11 @@ function closeModal(id) {
   const el = $(id);
   if (el) el.style.display = 'none';
   if (id === 'modal-preview') document.body.classList.remove('preview-cookie-isolated');
+  const state = modalFocusState[id];
+  if (state && state.opener && typeof state.opener.focus === 'function' && document.contains(state.opener)) {
+    state.opener.focus();
+  }
+  if (state) state.opener = null;
 }
 
 function setBtnLoading(btn, loading, originalText) {
@@ -246,6 +294,39 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     if (next !== cur) setPath(config, path, next);
   }
 
+  // seo.jsonLd holds serialized JSON, not plain text: a raw split/join over the
+  // string (like cascadeStringPath does) can corrupt the JSON when newN carries a
+  // quote or backslash, silently zeroing out the site's structured data at publish
+  // time. Parse it, rewrite string values as an object, then re-serialize. If it
+  // doesn't parse as JSON, leave it untouched rather than risk breaking it further.
+  function cascadeJsonLdPath(path) {
+    const cur = getPath(config, path);
+    if (typeof cur !== 'string' || !cur) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(cur);
+    } catch (_) {
+      return;
+    }
+    function walk(node) {
+      if (typeof node === 'string') return rewriteIdentityString(node);
+      if (Array.isArray(node)) return node.map(walk);
+      if (node && typeof node === 'object') {
+        const out = {};
+        Object.keys(node).forEach((k) => { out[k] = walk(node[k]); });
+        return out;
+      }
+      return node;
+    }
+    let nextStr;
+    try {
+      nextStr = JSON.stringify(walk(parsed));
+    } catch (_) {
+      return;
+    }
+    if (nextStr !== cur) setPath(config, path, nextStr);
+  }
+
   const title = getPath(config, 'business.title');
   if (typeof title === 'string' && title.length) {
     if (title === oldN) {
@@ -284,8 +365,11 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     'contact.email',
     'business.metaDescription',
     'business.tagline',
-    'seo.jsonLd',
+    'team.title',
   ].forEach(cascadeStringPath);
+
+  // seo.jsonLd is serialized JSON — cascade it structurally, not as plain text.
+  cascadeJsonLdPath('seo.jsonLd');
 }
 
 function isPlausibleHttpUrl(value) {
@@ -1102,6 +1186,47 @@ function onImageChangeRequest(path, src, alt) {
   }
 }
 
+/**
+ * Romanian, vertical-aware default text for the primary field of a newly added
+ * list item. A new item seeded with '' renders as a blank card the customer can
+ * neither read nor (on some templates) delete, and templates that guard fields
+ * with `<!-- @if title -->` render no editable node at all, so the inline editor
+ * has nothing to attach to. Seeding the primary field keeps every new item
+ * visible, editable and deletable, and carries the text into draft.config so it
+ * survives preview, publish and export.
+ */
+function defaultListItemLabel(listPath) {
+  const p = String(listPath || '');
+  if (/^menu\.en/.test(p)) return 'New category';
+  if (/^menu\.ro/.test(p)) return 'Categorie nouă';
+  if (/categories$/.test(p)) return 'Categorie nouă';
+  if (/^services$/.test(p)) {
+    const id = (currentTemplate && currentTemplate.meta && currentTemplate.meta.id)
+      || (currentTemplate && currentTemplate.data && currentTemplate.data.schema
+          && currentTemplate.data.schema.templateId)
+      || (draft && draft.templateId);
+    return id === 'product-menu' ? 'Specialitate nouă' : 'Serviciu nou';
+  }
+  if (/^pricing$/.test(p)) return 'Serviciu nou';
+  if (/^trust$/.test(p)) return 'Punct forte nou';
+  if (/^certifications$/.test(p)) return 'Certificare nouă';
+  if (/^schedule\.rows$/.test(p)) return 'Zi nouă';
+  if (/^team\.members$/.test(p)) return 'Nume și prenume';
+  if (/^process\.steps$/.test(p)) return 'Pas nou';
+  if (/^credentials\.items$/.test(p)) return 'Calificare nouă';
+  if (/^faq\.items$/.test(p)) return 'Întrebare nouă';
+  return 'Titlu nou';
+}
+
+/** Pick the field of an itemShape that renders as the item's visible headline. */
+function primaryItemShapeKey(itemShape) {
+  const keys = Object.keys(itemShape || {}).filter(k => itemShape[k] === 'text');
+  if (!keys.length) return null;
+  const preferred = ['label', 'title', 'name', 'category', 'q', 'day', 'weekday'];
+  for (const want of preferred) if (keys.includes(want)) return want;
+  return keys[0];
+}
+
 function onListAdd(listPath) {
   if (!listPath) return;
   const tpl = currentTemplate && currentTemplate.data;
@@ -1124,16 +1249,22 @@ function onListAdd(listPath) {
     }
     if (!Array.isArray(draft.config.menu.en)) draft.config.menu.en = [];
     if (!Array.isArray(draft.config.menu.ro)) draft.config.menu.ro = [];
-    newItem = { category: 'New section', items: ['New item'] };
+    // menu.en is the English half of a bilingual menu, so English defaults are
+    // correct there; only the Romanian half gets Romanian seeds.
+    newItem = /^menu\.en$/.test(listPath)
+      ? { category: 'New section', items: ['New item'] }
+      : { category: 'Categorie nouă', items: ['Preparat nou'] };
   } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
-    newItem = 'New item';
+    newItem = /^menu\.en\./.test(listPath) ? 'New item' : 'Preparat nou';
   } else if (typeof itemShape === 'string') {
-    newItem = itemShape === 'photos' ? [] : '';
+    newItem = itemShape === 'photos' ? [] : defaultListItemLabel(listPath);
   } else if (typeof itemShape === 'object' && itemShape !== null) {
     newItem = {};
+    const primaryKey = primaryItemShapeKey(itemShape);
     Object.keys(itemShape).forEach(k => {
       if (itemShape[k] === 'photos') newItem[k] = [];
       else if (itemShape[k] === 'list' || k === 'items') newItem[k] = [''];
+      else if (k === primaryKey) newItem[k] = defaultListItemLabel(listPath);
       else newItem[k] = '';
     });
   } else {
@@ -4512,7 +4643,7 @@ function wireStaticButtons() {
   // Escape closes everything
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery'].forEach(id => {
+      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery','modal-instagram'].forEach(id => {
         const el = $(id);
         if (el && el.style.display !== 'none') closeModal(id);
       });

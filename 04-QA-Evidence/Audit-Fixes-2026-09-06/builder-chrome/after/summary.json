@@ -1,0 +1,26 @@
+{
+  "runLabel": "after",
+  "hostileName": "Șt. \"Țăndărică\" & Fiii\\Nord",
+  "results": {
+    "A11Y-01 modal-publish focus trap": {
+      "ok": true,
+      "detail": "15 Tab presses stayed inside #modal-publish"
+    },
+    "A11Y-01 modal-instagram focus trap": {
+      "ok": true,
+      "detail": "15 Tab presses stayed inside #modal-instagram"
+    },
+    "A11Y-02 modal-instagram closes on Escape": {
+      "ok": true,
+      "detail": "modal-instagram closed on Escape"
+    },
+    "F4 live seo.jsonLd valid + carries new name": {
+      "ok": true,
+      "detail": "jsonLd.name === new hostile business name, JSON valid"
+    },
+    "PORT-04 live team heading carries new business name": {
+      "ok": true,
+      "detail": "team-heading text: \"Echipa Șt. \\\"Țăndărică\\\" & Fiii\\\\Nord\""
+    }
+  }
+}
