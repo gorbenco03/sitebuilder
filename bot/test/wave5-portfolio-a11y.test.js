@@ -44,6 +44,12 @@ const path = require('path');
 const http = require('http');
 const { execSync } = require('child_process');
 
+
+// The pre-fix baseline is pinned to the commit this wave branched from, not
+// to HEAD. Using HEAD meant the oracle asserted "the bug is present at HEAD",
+// which stops being true the moment the fix is merged -- the check would then
+// fail forever, for the wrong reason. Override with HIDOOK_BEFORE_REF.
+const BEFORE_REF = process.env.HIDOOK_BEFORE_REF || '8a13c19';
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Wave5-portfolio', 'a11y');
 const TPL_DIR = path.join(ROOT, 'templates', 'portfolio');
@@ -246,7 +252,7 @@ async function main() {
   fs.mkdirSync(EVIDENCE, { recursive: true });
   const { chromium } = loadPlaywright();
 
-  const beforeDir = buildVariant('before', (name) => readAtRef('HEAD', name));
+  const beforeDir = buildVariant('before', (name) => readAtRef(BEFORE_REF, name));
   const afterDir = buildVariant('after', (name) => readWorkingTree(name));
   const beforeServer = await serveDir(beforeDir);
   const afterServer = await serveDir(afterDir);

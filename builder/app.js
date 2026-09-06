@@ -1503,7 +1503,17 @@ function defaultListItemLabel(listPath) {
   const p = String(listPath || '');
   if (/^menu\.en/.test(p)) return 'New category';
   if (/^menu\.ro/.test(p)) return 'Categorie nouă';
-  if (/categories$/.test(p)) return 'Categorie nouă';
+  if (/categories$/.test(p)) {
+    // Vertical-specific wording, mirroring the labels edit-overlay.js already
+    // picks from DOM context (pm-catblock / pf-series). Both paths can seed the
+    // same list -- the shared overlay and a template's own controls -- so they
+    // have to agree, or the text a customer sees depends on which one ran.
+    const catId = (currentTemplate && currentTemplate.meta && currentTemplate.meta.id)
+      || (draft && draft.templateId);
+    if (catId === 'product-menu') return 'Categorie foto nouă';
+    if (catId === 'portfolio' || catId === 'local-service') return 'Categorie de lucrări nouă';
+    return 'Categorie nouă';
+  }
   if (/^services$/.test(p)) {
     const id = (currentTemplate && currentTemplate.meta && currentTemplate.meta.id)
       || (currentTemplate && currentTemplate.data && currentTemplate.data.schema

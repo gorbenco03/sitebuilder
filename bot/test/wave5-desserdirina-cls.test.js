@@ -232,7 +232,11 @@ async function measurePageCls(dir, viewport, screenshotPath) {
 
   await check('MECHANISM (hard gate): old .collage-photo rule (auto width) leaves the box unreserved until the photo arrives', async () => {
     const oldCss = require('child_process')
-      .execFileSync('git', ['-C', TEMPLATE_DIR, 'show', 'HEAD:templates/desserdirina/styles.css'], { encoding: 'utf8' })
+      // Pinned, not HEAD: once this fix merged, HEAD stopped having the bug
+      // and this check started failing for the wrong reason. Override with
+      // HIDOOK_BEFORE_REF.
+      .execFileSync('git', ['-C', TEMPLATE_DIR, 'show',
+        (process.env.HIDOOK_BEFORE_REF || '8a13c19') + ':templates/desserdirina/styles.css'], { encoding: 'utf8' })
       .toString();
     const photoRule = extractRule(oldCss, '.collage-photo');
     const imgRule = 'height: 320px; width: auto; object-fit: contain; display: block;';

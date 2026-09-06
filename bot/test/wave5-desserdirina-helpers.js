@@ -18,6 +18,12 @@ const path = require('path');
 const http = require('http');
 const { execFileSync } = require('child_process');
 
+
+// The pre-fix baseline is pinned to the commit this wave branched from, not
+// to HEAD. Using HEAD meant the oracle asserted "the bug is present at HEAD",
+// which stops being true the moment the fix is merged -- the check would then
+// fail forever, for the wrong reason. Override with HIDOOK_BEFORE_REF.
+const BEFORE_REF = process.env.HIDOOK_BEFORE_REF || '8a13c19';
 const ROOT = path.resolve(__dirname, '../..');
 const TEMPLATE_DIR = path.join(ROOT, 'templates', 'desserdirina');
 
@@ -65,13 +71,13 @@ function listGitDir(ref, relDir) {
  * @param {'before'|'after'} opts.state - 'after' = current working tree (with
  *   Wave5 fixes); 'before' = git ref `opts.ref` (defaults to HEAD, the commit
  *   this wave started from — i.e. the pre-fix template).
- * @param {string} [opts.ref='HEAD']
+ * @param {string} [opts.ref=BEFORE_REF]
  * @param {number} [opts.presetIndex=0]
  * @returns {{ dir: string, presetConfig: object }}
  */
 function buildSite(opts) {
   const state = opts.state;
-  const ref = opts.ref || 'HEAD';
+  const ref = opts.ref || BEFORE_REF;
   const presetIndex = opts.presetIndex || 0;
 
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `wave5-desserd-${state}-`));

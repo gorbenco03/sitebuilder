@@ -79,7 +79,16 @@ function extractFunction(src, name) {
  * effects irrelevant to the data mutation being tested).
  */
 function runListOp(appSrc, schema, config, op) {
-  const fns = ['getPath', 'setPath', 'getAllSchemaFields', 'onListAdd', 'onListRemove']
+  // primaryItemShapeKey landed in builder/app.js after this oracle was
+  // written, and onListAdd calls it. Extracting onListAdd without it leaves
+  // the sandbox missing a symbol the real function needs, so every check
+  // here failed with a ReferenceError rather than an assertion.
+  // Pure data helpers are taken from the real source, so this oracle tests the
+  // shipped logic rather than a copy. Everything onListAdd/onListRemove call
+  // for side effects (persistence, re-render, toasts, the undo stack) is
+  // stubbed below: they touch the DOM or localStorage and are irrelevant to
+  // the data mutation under test.
+  const fns = ['getPath', 'setPath', 'getAllSchemaFields', 'primaryItemShapeKey', 'defaultListItemLabel', 'onListAdd', 'onListRemove']
     .map((name) => extractFunction(appSrc, name))
     .join('\n\n');
 
@@ -89,6 +98,12 @@ function runListOp(appSrc, schema, config, op) {
     draft: { config },
     saveDraft: () => {},
     fullRerender: () => {},
+    // Added when undo/redo landed: onListAdd/onListRemove now snapshot into a
+    // history stack before mutating. Stubbed rather than extracted, because
+    // the stack itself is covered by wave5-builder-undo-redo.
+    pushHistory: () => {},
+    updateHistoryButtons: () => {},
+    showToast: () => {},
   };
   vm.createContext(sandbox);
   vm.runInContext(fns, sandbox);
@@ -133,8 +148,8 @@ check('static: desserdirina now matches the itemShape key used by the other four
   }
 });
 
-check('RED (pre-Wave5 / HEAD schema): onListAdd cannot see categories\' itemShape -> produces a bare string, not {title,blurb,photos}', () => {
-  const schema = loadSchemaAt('HEAD');
+check('legacy itemSchema key can no longer corrupt the item shape (two independent defences)', () => {
+  const schema = loadSchemaAt(process.env.HIDOOK_BEFORE_REF || '8a13c19');
   const config = samplePreset();
   const originalPhotos = JSON.parse(JSON.stringify(config.categories[0].photos));
 
@@ -142,12 +157,29 @@ check('RED (pre-Wave5 / HEAD schema): onListAdd cannot see categories\' itemShap
 
   assert.strictEqual(after.categories.length, 2, 'a category should have been appended');
   const added = after.categories[1];
-  assert.strictEqual(typeof added, 'string', 'BUG: with the itemSchema/itemShape key mismatch, onListAdd falls through to the bare-string default instead of {title,blurb,photos}');
+  // This check used to assert the bug: with the legacy itemSchema key,
+  // onListAdd fell through to a bare-string default instead of building
+  // {title, blurb, photos}, which is what corrupted the original category
+  // downstream (audit critical #6).
+  //
+  // It no longer reproduces, and that is a finding rather than a broken test:
+  // onListAdd was independently hardened by the list-seeding work, so today it
+  // produces a correctly shaped item EVEN against the old key. The schema
+  // normalisation in this wave and that hardening are now two independent
+  // defences against the same corruption.
+  //
+  // So the assertion is inverted to pin the property that actually matters
+  // going forward: neither defence alone is load-bearing, and a regression in
+  // one of them cannot silently resurrect the data loss. Run this file at the
+  // pre-wave ref (HIDOOK_BEFORE_REF) with that era's builder/app.js to see the
+  // original red; the captured evidence is in 04-QA-Evidence/Wave5-desserdirina/.
+  assert.strictEqual(typeof added, 'object', 'the legacy key must no longer be able to produce a bare string');
+  assert.ok(Array.isArray(added.photos), 'photos must still be a real array even when the schema uses the old key');
   assert.deepStrictEqual(after.categories[0].photos, originalPhotos, 'original category photos must be untouched by the add itself');
 });
 
 check('RED (pre-Wave5 / HEAD schema): add (malformed) + remove that item still leaves category 0 alone, but the add already corrupted the array\'s shape', () => {
-  const schema = loadSchemaAt('HEAD');
+  const schema = loadSchemaAt(process.env.HIDOOK_BEFORE_REF || '8a13c19');
   const config = samplePreset();
   const originalPhotos = JSON.parse(JSON.stringify(config.categories[0].photos));
 
@@ -172,7 +204,15 @@ check('GREEN (current schema): onListAdd builds a correctly-shaped category ({ti
   assert.strictEqual(after.categories.length, 2);
   const added = after.categories[1];
   assert.strictEqual(typeof added, 'object', 'added category must be a proper object, not a bare string');
-  assert.strictEqual(added.title, '');
+  // The primary field is seeded with real Romanian text, not left empty. That
+  // is deliberate and was itself an audit fix (PORT-02): a category created
+  // with every field blank renders no editable node at all, because the
+  // template hides it behind an @if on the title -- so the owner could add a
+  // category and then find nothing to click. An empty string here would be a
+  // regression, not a cleaner default.
+  assert.strictEqual(typeof added.title, 'string');
+  assert.ok(added.title.length > 0, 'the primary field must be seeded, or the new category renders nothing to edit');
+  assert.ok(/[a-zăâîșț]/i.test(added.title), 'seed text must be real Romanian copy, not a placeholder token');
   assert.strictEqual(added.blurb, '');
   assert.deepStrictEqual(added.photos, [], 'photos must be a real (empty) array, matching the itemShape "photos" field type');
   assert.deepStrictEqual(after.categories[0].photos, originalPhotos, 'original category photos untouched');

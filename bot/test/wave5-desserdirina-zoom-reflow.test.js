@@ -112,7 +112,11 @@ async function measureOverflowAcrossWidths(dir) {
 
   await check('RED (pre-Wave5 / HEAD): the old spacing formula has the 40px hard floor', () => {
     const js = require('child_process')
-      .execFileSync('git', ['-C', TEMPLATE_DIR, 'show', 'HEAD:templates/desserdirina/collage.js'], { encoding: 'utf8' })
+      // Pinned, not HEAD: once this fix merged, HEAD stopped having the bug
+      // and this check started failing for the wrong reason. Override with
+      // HIDOOK_BEFORE_REF.
+      .execFileSync('git', ['-C', TEMPLATE_DIR, 'show',
+        (process.env.HIDOOK_BEFORE_REF || '8a13c19') + ':templates/desserdirina/collage.js'], { encoding: 'utf8' })
       .toString();
     assert.match(js, /Math\.max\(40,/, 'expected the pre-fix file to still have the 40px floor (the bug)');
   });
