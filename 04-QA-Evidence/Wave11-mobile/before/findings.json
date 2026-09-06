@@ -1,0 +1,244 @@
+[
+  {
+    "step": "cookie-banner",
+    "ok": false,
+    "detail": "Accept button size 89x38px (need >=44x44)",
+    "extra": null
+  },
+  {
+    "step": "template-start-button",
+    "ok": true,
+    "detail": "Start button size 171x44px",
+    "extra": null
+  },
+  {
+    "step": "editor-canvas-size",
+    "ok": true,
+    "detail": "canvas wrap {\"x\":0,\"y\":166,\"width\":390,\"height\":678} iframe {\"x\":0,\"y\":166,\"width\":390,\"height\":678}",
+    "extra": null
+  },
+  {
+    "step": "topbar-buttons-fit-viewport",
+    "ok": true,
+    "detail": "0 of 17 topbar buttons extend outside 0..390px",
+    "extra": [
+      {
+        "id": "btn-back-templates",
+        "box": {
+          "x": 12,
+          "y": 11.703125,
+          "width": 35.59375,
+          "height": 27.59375
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-account-menu",
+        "box": {
+          "x": 63.59375,
+          "y": 11.5,
+          "width": 28,
+          "height": 28
+        },
+        "visible": true
+      },
+      {
+        "id": "account-menu-projects",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "account-menu-logout",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "account-menu-logout-all",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "btn-undo",
+        "box": {
+          "x": 95.109375,
+          "y": 10.5,
+          "width": 30,
+          "height": 30
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-redo",
+        "box": {
+          "x": 128.296875,
+          "y": 10.5,
+          "width": 30,
+          "height": 30
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-preview-desktop",
+        "box": {
+          "x": 168.890625,
+          "y": 11.5,
+          "width": 32,
+          "height": 28
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-preview-mobile",
+        "box": {
+          "x": 200.890625,
+          "y": 11.5,
+          "width": 32,
+          "height": 28
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-save-retry",
+        "box": null,
+        "visible": false
+      },
+      {
+        "id": "btn-add-instagram",
+        "box": {
+          "x": 70.125,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-color-picker",
+        "box": {
+          "x": 111.90625,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-open-gallery",
+        "box": {
+          "x": 153.6875,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-open-drawer",
+        "box": {
+          "x": 195.46875,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-download-html",
+        "box": {
+          "x": 237.25,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-download-zip",
+        "box": {
+          "x": 279.03125,
+          "y": 11.40625,
+          "width": 36.1875,
+          "height": 28.1875
+        },
+        "visible": true
+      },
+      {
+        "id": "btn-publish",
+        "box": {
+          "x": 320.8125,
+          "y": 3.5,
+          "width": 57.1875,
+          "height": 44
+        },
+        "visible": true
+      }
+    ]
+  },
+  {
+    "step": "topbar-buttons-touch-target-44",
+    "ok": false,
+    "detail": "12 of 17 visible topbar buttons are under 44x44px",
+    "extra": [
+      "btn-back-templates",
+      "btn-account-menu",
+      "btn-undo",
+      "btn-redo",
+      "btn-preview-desktop",
+      "btn-preview-mobile",
+      "btn-add-instagram",
+      "btn-color-picker",
+      "btn-open-gallery",
+      "btn-open-drawer",
+      "btn-download-html",
+      "btn-download-zip"
+    ]
+  },
+  {
+    "step": "edit-field-visible-above-keyboard",
+    "ok": true,
+    "detail": "business.name field top/bottom {\"x\":16,\"y\":181.984375,\"width\":178.171875,\"height\":26.03125} vs simulated keyboard top y=508",
+    "extra": null
+  },
+  {
+    "step": "drawer-covers-most-of-viewport",
+    "ok": true,
+    "detail": "drawer width 367px of 390px viewport",
+    "extra": null
+  },
+  {
+    "step": "drawer-close-button-touch-target",
+    "ok": false,
+    "detail": "close button 34x34px",
+    "extra": null
+  },
+  {
+    "step": "drawer-photo-button-touch-target",
+    "ok": true,
+    "detail": "photo button height 44px",
+    "extra": null
+  },
+  {
+    "step": "photo-replace-from-file-chooser",
+    "ok": true,
+    "detail": "file chooser opened by tap and accepted a file",
+    "extra": null
+  },
+  {
+    "step": "color-popover-fits-viewport",
+    "ok": false,
+    "detail": "popover box {\"x\":-91.90625,\"y\":45.59375,\"width\":240,\"height\":248.46875} vs viewport 390x844",
+    "extra": null
+  },
+  {
+    "step": "preview-mobile-toggle-touch-target",
+    "ok": false,
+    "detail": "mobile toggle 32x28px",
+    "extra": null
+  },
+  {
+    "step": "FATAL",
+    "ok": false,
+    "detail": "locator.tap: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('#btn-preview-mobile')\n    - locator resolved to <button title=\"Mobil\" class=\"device-btn\" aria-pressed=\"false\" id=\"btn-preview-mobile\" aria-label=\"Vizualizare mobil\">…</button>\n  - attempting tap action\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <svg width=\"15\" height=\"15\" fill=\"none\" aria-hidden=\"true\" viewBox=\"0 0 15 15\">…</svg> from <div class=\"editor-topbar-right\">…</div> subtree intercepts pointer events\n    - retrying tap action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <svg width=\"15\" height=\"15\" fill=\"none\" aria-hidden=\"true\" viewBox=\"0 0 15 15\">…</svg> from <div class=\"editor-topbar-right\">…</div> subtree intercepts pointer events\n    - retrying tap action\n      - waiting 100ms\n    58 × waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <svg width=\"15\" height=\"15\" fill=\"none\" aria-hidden=\"true\" viewBox=\"0 0 15 15\">…</svg> from <div class=\"editor-topbar-right\">…</div> subtree intercepts pointer events\n     - retrying tap action\n       - waiting 500ms\n",
+    "extra": null
+  }
+]
