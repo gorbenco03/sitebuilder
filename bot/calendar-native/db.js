@@ -14,6 +14,7 @@ const {
     SCHEMA_SQL,
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
+    SCHEMA_SQL_V3,
     SCHEMA_VERSION,
 } = require('./schema');
 
@@ -48,6 +49,21 @@ function openCalendarDb(opts = {}) {
     db.exec('PRAGMA foreign_keys = ON;');
     db.exec('PRAGMA journal_mode = WAL;');
     migrate(db);
+
+    // VISION §8 PII retention: idempotent, self-contained, never blocks
+    // startup — one synchronous no-op-safe sweep now (usually anonymizes
+    // nothing since normal bookings are recent), then an unref'd periodic
+    // re-sweep. Any failure here must never take the server down.
+    if (opts.skipRetentionSweep !== true) {
+        try {
+            const retention = require('./retention');
+            retention.runRetentionSweep(db);
+            retention.startRetentionScheduler(db);
+        } catch (_) {
+            /* PII retention is best-effort housekeeping, not a startup gate */
+        }
+    }
+
     return db;
 }
 
@@ -87,6 +103,21 @@ function migrate(db) {
             ).run(2, ts);
             db.exec('COMMIT;');
             current = 2;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    if (current < 3) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V3);
+            db.prepare(
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(3, ts);
+            db.exec('COMMIT;');
+            current = 3;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

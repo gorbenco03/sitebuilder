@@ -15,6 +15,7 @@
 const engine = require('./engine');
 const { DEMO, TENANT_RE, parseTenant } = require('./public-api');
 const { addDaysLocal } = require('./time');
+const retention = require('./retention');
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const BOOKING_ID_RE = /^[a-zA-Z0-9_-]{4,80}$/;
@@ -294,6 +295,24 @@ function confirmOwnerBooking(db, customerId, siteId, bookingId) {
     }
 }
 
+/**
+ * Owner-triggered early deletion ("dreptul la ștergere", VISION §8) — scrubs
+ * one visitor's PII on this booking immediately, ahead of the 24-month
+ * default retention sweep. Tenant-scoped like every other owner mutation;
+ * idempotent (re-calling on an already-anonymized booking is a no-op).
+ */
+function eraseOwnerBookingPii(db, customerId, siteId, bookingId) {
+    if (!BOOKING_ID_RE.test(bookingId || '')) {
+        return { error: 'Programare invalidă.', code: 'VALIDATION', status: 400 };
+    }
+    const updated = retention.eraseBookingPii(db, customerId, siteId, bookingId);
+    if (!updated) {
+        return { error: 'Programarea nu a fost găsită.', code: 'NOT_FOUND', status: 404 };
+    }
+    const sm = serviceMapFor(db, customerId, siteId);
+    return { ok: true, booking: publicOwnerBooking(updated, sm) };
+}
+
 function getOwnerAvailability(db, customerId, siteId) {
     const settings = engine.getSettings(db, customerId, siteId);
     if (!settings) {
@@ -499,6 +518,7 @@ module.exports = {
     cancelOwnerBooking,
     rescheduleOwnerBooking,
     confirmOwnerBooking,
+    eraseOwnerBookingPii,
     getOwnerAvailability,
     putOwnerWeekly,
     addOwnerOverride,

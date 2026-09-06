@@ -745,6 +745,105 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
 }
 
 /**
+ * Shared reschedule core — assumes caller already holds BEGIN IMMEDIATE and
+ * has verified `row` is a non-cancelled booking for the correct tenant.
+ * Never mutates `row` in the database before all validation has passed, so a
+ * thrown error always leaves the existing booking exactly as it was.
+ *
+ * `onConflict`:
+ *  - 'demote' (owner path): a taken target slot still moves the booking there,
+ *    but status becomes reschedule_needed instead of confirmed (VISION: never
+ *    confirm over a conflict). Matches pre-existing owner behavior.
+ *  - 'reject' (visitor token path): a taken target slot throws SLOT_TAKEN and
+ *    leaves the booking (old slot) completely untouched — the visitor
+ *    self-service flow must not silently move a confirmed booking into limbo.
+ *
+ * @returns {object} updated booking row
+ */
+function applyReschedule(db, row, startMs, { onConflict = 'demote' } = {}) {
+    const customerId = row.customer_id;
+    const siteId = row.site_id;
+    const bookingId = row.id;
+
+    const service = getService(db, customerId, siteId, row.service_id);
+    if (!service || !service.active) {
+        const err = new Error('service not found');
+        err.code = 'SERVICE_NOT_FOUND';
+        throw err;
+    }
+    const settings = getSettings(db, customerId, siteId);
+    if (!settings) {
+        const err = new Error('calendar settings missing');
+        err.code = 'SETTINGS_MISSING';
+        throw err;
+    }
+    if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
+        const err = new Error('slot outside weekly availability or blackout');
+        err.code = 'SLOT_OUTSIDE_AVAILABILITY';
+        throw err;
+    }
+
+    const buffer = service.buffer_minutes != null
+        ? service.buffer_minutes
+        : settings.default_buffer_minutes;
+    const duration = service.duration_minutes;
+    const endMs = startMs + duration * 60000;
+    const startIso = toIsoUtc(startMs);
+    const endIso = toIsoUtc(endMs);
+
+    const overlap = listActiveBookings(db, customerId, siteId, {
+        serviceId: service.id,
+        fromUtc: startIso,
+        toUtc: toIsoUtc(endMs + buffer * 60000),
+    }).filter((b) => b.id !== row.id).filter((b) => {
+        const bStart = Date.parse(b.start_utc);
+        const bEnd = Date.parse(b.end_utc) + buffer * 60000;
+        return startMs < bEnd && (endMs + buffer * 60000) > bStart;
+    });
+
+    if (overlap.length) {
+        if (onConflict === 'reject') {
+            // Pre-write check caught the conflict — nothing written, old slot untouched.
+            const err = new Error('target slot already taken');
+            err.code = 'SLOT_TAKEN';
+            throw err;
+        }
+    }
+    let status = overlap.length ? STATUSES.RESCHEDULE_NEEDED : STATUSES.CONFIRMED;
+
+    const ts = nowIso();
+    try {
+        db.prepare(
+            `UPDATE calendar_bookings
+             SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+             WHERE id = ? AND customer_id = ? AND site_id = ?`
+        ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+    } catch (e) {
+        const msg = String(e && e.message || e);
+        if (/UNIQUE|unique/i.test(msg)) {
+            // Race: someone claimed the exact slot key between our check and write.
+            if (onConflict === 'reject') {
+                // Write never took effect (constraint violation) — old slot stays as-is.
+                const err = new Error('target slot already taken');
+                err.code = 'SLOT_TAKEN';
+                throw err;
+            }
+            status = STATUSES.RESCHEDULE_NEEDED;
+            // Keep the desired wall time; unique only covers requested+confirmed.
+            db.prepare(
+                `UPDATE calendar_bookings
+                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
+                 WHERE id = ? AND customer_id = ? AND site_id = ?`
+            ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+        } else {
+            throw e;
+        }
+    }
+
+    return getBooking(db, customerId, siteId, bookingId);
+}
+
+/**
  * Owner reschedule — moves start/end on the same booking row (history kept).
  * Old slot frees immediately via UNIQUE active-slot index + transactional update.
  * Instant confirm only when the new slot is free and inside availability.
@@ -778,81 +877,78 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
             throw err;
         }
 
-        const service = getService(db, customerId, siteId, row.service_id);
-        if (!service || !service.active) {
-            db.exec('ROLLBACK;');
-            const err = new Error('service not found');
-            err.code = 'SERVICE_NOT_FOUND';
-            throw err;
-        }
-        const settings = getSettings(db, customerId, siteId);
-        if (!settings) {
-            db.exec('ROLLBACK;');
-            const err = new Error('calendar settings missing');
-            err.code = 'SETTINGS_MISSING';
-            throw err;
-        }
-
-        if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
-            db.exec('ROLLBACK;');
-            const err = new Error('slot outside weekly availability or blackout');
-            err.code = 'SLOT_OUTSIDE_AVAILABILITY';
-            throw err;
-        }
-
-        const buffer = service.buffer_minutes != null
-            ? service.buffer_minutes
-            : settings.default_buffer_minutes;
-        const duration = service.duration_minutes;
-        const endMs = startMs + duration * 60000;
-        const startIso = toIsoUtc(startMs);
-        const endIso = toIsoUtc(endMs);
-
-        const overlap = listActiveBookings(db, customerId, siteId, {
-            serviceId: service.id,
-            fromUtc: startIso,
-            toUtc: toIsoUtc(endMs + buffer * 60000),
-        }).filter((b) => b.id !== row.id).filter((b) => {
-            const bStart = Date.parse(b.start_utc);
-            const bEnd = Date.parse(b.end_utc) + buffer * 60000;
-            return startMs < bEnd && (endMs + buffer * 60000) > bStart;
-        });
-
-        let status = STATUSES.CONFIRMED;
-        if (overlap.length) {
-            status = STATUSES.RESCHEDULE_NEEDED;
-        }
-
-        const ts = nowIso();
-        try {
-            db.prepare(
-                `UPDATE calendar_bookings
-                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
-                 WHERE id = ? AND customer_id = ? AND site_id = ?`
-            ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
-        } catch (e) {
-            const msg = String(e && e.message || e);
-            if (/UNIQUE|unique/i.test(msg)) {
-                status = STATUSES.RESCHEDULE_NEEDED;
-                // Keep the desired wall time; unique only covers requested+confirmed.
-                db.prepare(
-                    `UPDATE calendar_bookings
-                     SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL
-                     WHERE id = ? AND customer_id = ? AND site_id = ?`
-                ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
-            } else {
-                throw e;
-            }
-        }
-
-        const updated = getBooking(db, customerId, siteId, bookingId);
+        const previousStatus = row.status;
+        const updated = applyReschedule(db, row, startMs, { onConflict: 'demote' });
         db.exec('COMMIT;');
         emitBookingEmail(db, {
             booking: updated,
             kind: updated.status === STATUSES.CONFIRMED ? 'reschedule_confirmed' : 'rescheduled',
-            previousStatus: row.status,
+            previousStatus,
         });
         return updated;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+/**
+ * Visitor reschedule with manage token (hashed at rest). Scoped to a single
+ * booking, same as cancelBookingWithToken. VISION §8 "Anulare / reprogramare":
+ * visitor may reschedule only inside the owner-configured notice window
+ * (default >= 24h before the *current* slot start — same gate as cancel), and
+ * a reschedule onto an already-occupied slot is rejected outright, never
+ * silently downgraded — the existing booking must stay exactly as it was.
+ */
+function rescheduleBookingWithToken(db, rawToken, { startUtc, nowMs = Date.now() } = {}) {
+    const startMs = Date.parse(startUtc);
+    if (!Number.isFinite(startMs)) {
+        const err = new Error('invalid start_utc');
+        err.code = 'VALIDATION';
+        throw err;
+    }
+    if (startMs < nowMs - 60 * 1000) {
+        const err = new Error('slot is in the past');
+        err.code = 'SLOT_IN_PAST';
+        throw err;
+    }
+    const tokenHash = hashToken(rawToken);
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const row = db.prepare(
+            `SELECT * FROM calendar_bookings WHERE manage_token_hash = ?`
+        ).get(tokenHash);
+        if (!row) {
+            db.exec('ROLLBACK;');
+            const err = new Error('invalid token');
+            err.code = 'TOKEN';
+            throw err;
+        }
+        if (row.status === STATUSES.CANCELLED) {
+            db.exec('ROLLBACK;');
+            const err = new Error('cannot reschedule cancelled booking');
+            err.code = 'STATE';
+            throw err;
+        }
+        const settings = getSettings(db, row.customer_id, row.site_id);
+        const minHours = settings ? settings.min_cancel_hours : 24;
+        const oldStartMs = Date.parse(row.start_utc);
+        if (oldStartMs - nowMs < minHours * 3600000) {
+            db.exec('ROLLBACK;');
+            const err = new Error('too late to reschedule');
+            err.code = 'WINDOW';
+            throw err;
+        }
+
+        const previousStatus = row.status;
+        const updated = applyReschedule(db, row, startMs, { onConflict: 'reject' });
+        db.exec('COMMIT;');
+        emitBookingEmail(db, {
+            booking: updated,
+            kind: 'reschedule_confirmed',
+            previousStatus,
+        });
+        return { booking: updated, already: false };
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
         throw e;
@@ -961,6 +1057,7 @@ module.exports = {
     getBookingByManageToken,
     cancelBookingWithToken,
     rescheduleBookingAsOwner,
+    rescheduleBookingWithToken,
     confirmBookingAsOwner,
     hashToken,
     unsafeGetBookingByIdOnly,

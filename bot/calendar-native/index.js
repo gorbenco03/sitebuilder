@@ -19,6 +19,7 @@ const ownerApi = require('./owner-api');
 const email = require('./email');
 const cutover = require('./cutover');
 const manageApi = require('./manage-api');
+const retention = require('./retention');
 
 module.exports = {
     openCalendarDb,
@@ -31,4 +32,5 @@ module.exports = {
     email,
     cutover,
     manageApi,
+    retention,
 };
