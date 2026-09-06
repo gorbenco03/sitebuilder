@@ -370,12 +370,33 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
                     // 3. Remove on*= event-handler attributes (replace with harmless marker).
                     .replace(/\bon\w+\s*=/gi, 'data-removed=')
                     // 4. Strip dangerous URL protocols from attribute values.
-                    //    Matches: href="javascript:…", xlink:href='data:…', etc.
-                    //    Uses a lookahead to find the scheme anywhere inside an attribute
-                    //    value. We blank the scheme to "#" so the attribute stays valid SVG.
+                    //    The scheme is checked against the string the BROWSER will
+                    //    end up with, not the raw source, because two obfuscations
+                    //    reach a live javascript: URL while hiding the literal word
+                    //    from any blocklist (both re-verified executing in Chromium
+                    //    through the real publish pipeline):
+                    //
+                    //      jav<TAB>ascript:  — per WHATWG URL, a browser removes every
+                    //        ASCII tab and CR/LF from a URL wherever it occurs, not
+                    //        just at the ends, before parsing the scheme.
+                    //      &#106;avascript:  — the HTML parser decodes character
+                    //        references while parsing the attribute, so the DOM holds
+                    //        "javascript:" no matter what the source string spelled.
+                    //
+                    //    So: capture the whole attribute value, normalise it the way
+                    //    the browser will, and only then test the scheme. Blank to "#"
+                    //    on a hit, keeping the attribute valid SVG.
                     .replace(
-                        /((?:xlink:)?href|src|action|formaction)\s*=\s*(['"]?)\s*(?:javascript|data|vbscript)\s*:[^"'\s>]*/gi,
-                        '$1=$2#'
+                        /((?:xlink:)?href|src|action|formaction)\s*=\s*(['"]?)([^"'>]*)/gi,
+                        (match, attr, quote, rawUrl) => {
+                            const normalized = rawUrl
+                                .replace(/[\t\r\n]+/g, '')
+                                .replace(/&#(\d+);?/g, (_, dec) => String.fromCharCode(Number(dec)))
+                                .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+                            return /^\s*(?:javascript|data|vbscript)\s*:/i.test(normalized)
+                                ? attr + '=' + quote + '#'
+                                : match;
+                        }
                     );
                 return safe;
             }

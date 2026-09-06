@@ -42,7 +42,7 @@
   {
     "id": "plain-control",
     "label": "sanity: plain javascript: with no obfuscation (must already be blocked)",
-    "renderedHref": "# = (window.__xssFired||0) + 1;",
+    "renderedHref": "#",
     "xssFired": false,
     "navigationError": null,
     "verdict": "safe — neutralised"
