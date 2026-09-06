@@ -8,7 +8,7 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 
 - Builder: `https://lp.hidook.agency`
 - Customer sites: `https://{slug}.sites.hidook.agency`
-- Custom domains: concierge after launch; not required for the first happy path.
+- Custom domains: self-serve. The owner enters their domain, the product shows the exact DNS records to create at their registrar, polls propagation honestly (not visible yet / visible but wrong / verified), provisions TLS, and moves canonical, og:url, robots.txt and sitemap.xml onto the new domain. Disconnecting leaves the site reachable on its Hidook subdomain. Apex domains are pointed at www with a registrar-side forward, because the alternative needs account-specific fallback IPs.
 
 ## Commercial model
 

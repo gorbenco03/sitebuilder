@@ -1299,6 +1299,103 @@ async function handleRollback(req, res, siteId) {
     }
 }
 
+/**
+ * Custom domain routes (audit #47 — self-serve, replacing manual concierge).
+ *
+ * The whole state machine lives in bot/domains.js; these handlers only carry
+ * auth, ownership and rate limiting. The two polling routes make real outbound
+ * DNS and Cloudflare calls, so they are limited per site: nothing else stops a
+ * client from holding down the "Verifică" button while DNS propagates, which
+ * can take hours.
+ */
+function resolveOwnedSite(req, res, siteId) {
+    const userId = requireAuth(req, res);
+    if (!userId) return null;
+    const site = getRegistry().getSite(siteId);
+    if (!site) { sendJson(res, 404, { error: 'Site not found.' }); return null; }
+    if (site.userId !== userId) { sendJson(res, 403, { error: 'Access denied.' }); return null; }
+    return site;
+}
+
+function domainPollAllowed(req, res, siteId) {
+    const rl = ratelimit.allowAndConsume('domain_poll', `${getClientIp(req)}|${siteId}`, {
+        max: 12, windowMs: 60 * 1000,
+    });
+    if (!rl.ok) {
+        sendJson(res, 429, {
+            error: 'Prea multe verificări într-un timp scurt. Propagarea DNS poate dura ore — încearcă din nou peste un minut.',
+            code: 'RATE_LIMITED',
+        });
+        return false;
+    }
+    return true;
+}
+
+async function handleGetDomain(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    return sendJson(res, 200, { record: require('./domains.js').getDomainForSite(siteId) });
+}
+
+async function handleStartDomain(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    let body;
+    try {
+        body = await parseJson(req, 8 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    try {
+        return sendJson(res, 200, await require('./domains.js').startDomainConnection({
+            siteId,
+            projectName: site.projectName,
+            domain: (body || {}).domain,
+            currentOrigin: site.url,
+        }));
+    } catch (e) {
+        return sendJson(res, 400, { error: e.message, code: e.code });
+    }
+}
+
+async function handleVerifyDomain(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    if (!domainPollAllowed(req, res, siteId)) return;
+    const domains = require('./domains.js');
+    try {
+        const dns = await domains.checkDomainConnection({ siteId });
+        if (dns.status !== 'dns_verified') return sendJson(res, 200, dns);
+        // DNS just came good — chain into attach and the first TLS poll so the
+        // owner does not have to discover a second button.
+        return sendJson(res, 200, await domains.activateDomainConnection({ siteId }));
+    } catch (e) {
+        return sendJson(res, 400, { error: e.message, code: e.code });
+    }
+}
+
+async function handleDomainTlsStatus(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    if (!domainPollAllowed(req, res, siteId)) return;
+    try {
+        return sendJson(res, 200, await require('./domains.js').checkTlsStatus({ siteId }));
+    } catch (e) {
+        return sendJson(res, 400, { error: e.message, code: e.code });
+    }
+}
+
+async function handleDisconnectDomain(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    try {
+        return sendJson(res, 200, await require('./domains.js').disconnectDomainConnection({ siteId }));
+    } catch (e) {
+        return sendJson(res, 400, { error: e.message, code: e.code });
+    }
+}
+
+
 // ---------------------------------------------------------------------------
 // Appointments — local request store (no external calendar; status=requested only)
 // ---------------------------------------------------------------------------
@@ -3127,6 +3224,18 @@ function createHandler({ onStripeEvent } = {}) {
             if (req.method === 'POST' && checkoutMatch) {
                 return await handleSiteCheckout(req, res, checkoutMatch[1]);
             }
+
+            // /api/sites/:id/domain — self-serve custom domain (audit #47)
+            const domainMatch = url.match(/^\/api\/sites\/([^/]+)\/domain$/);
+            if (req.method === 'GET' && domainMatch)    return await handleGetDomain(req, res, domainMatch[1]);
+            if (req.method === 'POST' && domainMatch)   return await handleStartDomain(req, res, domainMatch[1]);
+            if (req.method === 'DELETE' && domainMatch) return await handleDisconnectDomain(req, res, domainMatch[1]);
+
+            const domainVerifyMatch = url.match(/^\/api\/sites\/([^/]+)\/domain\/verify$/);
+            if (req.method === 'POST' && domainVerifyMatch) return await handleVerifyDomain(req, res, domainVerifyMatch[1]);
+
+            const domainStatusMatch = url.match(/^\/api\/sites\/([^/]+)\/domain\/status$/);
+            if (req.method === 'POST' && domainStatusMatch) return await handleDomainTlsStatus(req, res, domainStatusMatch[1]);
 
             // /api/sites/:id/billing-portal — Cancel → Stripe Customer Portal
             const portalMatch = url.match(/^\/api\/sites\/([^/]+)\/billing-portal$/);
