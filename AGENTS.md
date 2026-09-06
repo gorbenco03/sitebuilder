@@ -1,6 +1,9 @@
 # AGENTS.md — Hidook Site Builder
 
-Read `VISION.md` first, then `PRODUCT.md`. Owner is the client. Do not Telegram the owner, do not ask them to test slices.
+Read `VISION.md` first, then `PRODUCT.md`. `ARCHITECTURE.md` documents how the
+system is actually built (entry points, data layer, publish pipeline) if you
+need that instead of product scope. Owner is the client. Do not Telegram the
+owner, do not ask them to test slices.
 
 ## Repo
 
@@ -19,7 +22,7 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 - `VISION.md` is the source of truth.
 - Browser builder is the commercial product. Telegram only creates/opens the same draft.
 - Current model: Stripe 7-day trial, card required, site live immediately, auto-charge day 7, price 99 EUR/GBP/USD bucket, renewal 29/year.
-- Template scope: four commercial systems + Desserdirina remake from the root bakery sample.
+- Template scope: **five** design systems total (`templates/registry.json`) — product-menu, local-service, portfolio, professionals, and the Desserdirina remake of the root bakery sample. Do not write "four" anywhere that counts templates; that miscount was an audit finding (docs medium #17) once fixed — don't reintroduce it.
 - Product language: Romanian for visible customer/site surfaces.
 - Every generated site template must include `Build by hidook.tech powered by hidook.agency` in a non-editable attribution.
 - Instafidget is included free for 12 months with Site Builder, then Instafidget Free with watermark. Open the Instafidget editor in a new tab in the same browser, not a popup/new window. Site Builder exposes a neutral slot and hides disconnected feed.
@@ -36,8 +39,105 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 
 ## Tests
 
-Existing: `node bot/test/*.test.js` (no npm test script). Do not weaken tests. Fake deploy (`HIDOOK_FAKE_DEPLOY`) is not the client journey.
+Run `npm test` (== `node --experimental-sqlite --test bot/test/*.test.js`). Plain
+`node bot/test/*.test.js` without `--test` only runs the first glob match and
+silently drops the rest — never use it. `--experimental-sqlite` is required on
+Node < 22.5 — without it, every registry/native-calendar test fails at import
+(`node:sqlite` not found), not at an assertion; do not mistake that for a real
+regression. Two Playwright oracles (`advocate-eed3ca0-repair.test.js`,
+`mobile-chrome-390-aabb.test.js`) fail on any machine without a Brave install at
+their hardcoded macOS path; that is a known non-portable gap, not a regression to
+chase. Do not weaken tests. Fake deploy (`HIDOOK_FAKE_DEPLOY`) is not the client journey.
 
 ## Git
 
 One task = one worktree/branch. No force-push, reset, or merge to main except integrator after independent review acceptance.
+
+- **Never use `git stash` in this repo.** `git stash` writes to a single ref
+  (`refs/stash`) that is **shared across every worktree of this repository**,
+  not one per worktree. On 2026-09-06, 8 agents working in parallel worktrees
+  hit this directly: four of them ran `git stash pop` and got back *another
+  agent's* stashed changes instead of their own. Nobody lost work — each
+  agent noticed the mismatch, labeled the foreign diff `RECOVERED-NOT-MINE`,
+  and reconstructed their own change — but it cost real time and could have
+  gone the other way. For any before/after file comparison, use
+  `git show HEAD:<path> > /tmp/before` or a targeted `git checkout -- <path>`
+  instead. There is no scenario in a shared-worktree studio where `git stash`
+  is the right tool.
+  - The shared `refs/stash` reflog still carries entries as of 2026-09-06
+    (`git stash list`) — **do not drop any of them**. None of the three
+    present right now carry a message naming the specific 8-agent round-1
+    collision described above; that recovery ("labeled it
+    `RECOVERED-NOT-MINE`, rebuilt their own") likely already consumed
+    whatever those agents had mis-popped. What is actually in the stack
+    today (inspected read-only with `git stash show`, never applied/popped):
+    - `stash@{0}` — `On wt/audit-05-sterge-unpublish: temporary local build
+      artifacts from audit-05 verification`. Contains only **untracked**
+      files at the repo root: `cookie-banner.css`, `cookie-banner.js`,
+      `cookies.html`, `privacy.html`, `terms.html` (696 lines total). These
+      match a pattern called out repeatedly elsewhere in this repo's history
+      (`PROJECT_STATUS.md`'s remediation log) as side-effect files a local
+      test/build run drops at the repo root — not product source. Low risk,
+      but not confirmed disposable by this agent (docs-only scope; not mine
+      to judge bot/ output).
+    - `stash@{1}` — `On preserve/main-dirty-1788477198:
+      preserve-main-dirty-verified-hash-ee6fd2e`. Touches 30 PNGs under
+      `04-QA-Evidence/FullPass-63230d2/`, each with an identical filename but
+      a few bytes' difference in size (e.g. 913291→913294 bytes) — looks like
+      a re-encode/re-save of the same screenshots, not new content. The
+      branch-name pattern (`preserve/main-dirty-<unix-timestamp>`) reads like
+      an automated "preserve dirty `main` before an operation" safety stash,
+      not a human task — likely unrelated to the round-1 collision.
+    - `stash@{2}` — `On main: before-sync-from-hermes-integrate-20260825-114619`.
+      Touches `.claude/launch.json`, `bot/email.js`, `bot/server.js`,
+      `builder/app.css`, `builder/app.js`, `builder/index.html` (216
+      insertions / 73 deletions). The branch-name timestamp
+      (`20260825-114619`) is **2026-08-25** — nearly two weeks before the
+      2026-09-06 collision this rule documents — so this is an older,
+      separate "before a Hermes-integrate sync" safety stash, not from that
+      incident either.
+    - In short: verified via `git stash list` + read-only `git stash show`
+      that 3 entries exist, none demonstrably tied to the round-1 collision
+      by name/content; all left untouched. Confirm with whoever owns
+      `bot/`/`builder/` or the QA-evidence directories before dropping any
+      of them — this agent's scope (root docs) is not authority to judge
+      product-code or evidence-file disposability.
+
+## Repository weight — QA evidence policy (forward-only)
+
+The 2026-09-06 audit flagged 358MB of QA screenshots/video already committed
+to git (`.git` was 282MB at that point); by the time this rule was written
+`04-QA-Evidence/` alone had grown to **532MB across 1,261 files** and the
+shared `.git` object store to **639MB** — nearly 2x growth in one day, because
+every wave added more evidence and nothing was ever removed. **Git history is
+not being rewritten to fix this** — this repo has 100+ active worktrees on
+this machine and rewriting history would break every one of them. This
+section is the policy so it stops getting worse, not a fix for what is
+already there.
+
+**Before committing anything under `04-QA-Evidence/` (or any evidence
+directory), ask: can this be regenerated by re-running the product?** If yes,
+it should usually not be committed at all.
+
+- **Never commit, for QA evidence:** full `export.html` / `export.zip` dumps
+  (multi-MB, 100% reproducible by running the export flow again — several
+  already committed are 4-9MB *each*); raw video (`.webm`/`.mp4`); more than
+  one full-page screenshot per template per defect (a before/after pair is
+  usually enough — not a before/after **at every viewport** **and** a
+  standalone "fixed" duplicate of the same shot).
+- **Worth committing, capped:** a small number of downscaled/cropped
+  screenshots that are the actual proof of a specific fixed defect (aim for
+  low hundreds of KB each, not multi-MB full-page desktop captures), plus a
+  `findings.json`/`summary.json` manifest (pass/fail, file paths, hashes) —
+  the manifest is what makes evidence auditable; the pixels are supporting
+  detail, not the record of truth.
+- If a wave genuinely needs to preserve a large evidence set (full advocate
+  walkthroughs, video proof-of-flow), zip it and hand it to the owner/Kanban
+  attachment system, or store it outside this git repo entirely. Do not
+  default to "commit it, we'll clean up later" — no wave so far has cleaned
+  up later.
+- `.gitignore` and `.gitattributes` at the repo root carry the mechanical
+  side of this (patterns for regenerable evidence file types); this section
+  is the policy those patterns implement. If you add a new evidence file type
+  that should never be committed, add the pattern too — don't just remember
+  the rule.

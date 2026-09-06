@@ -25,3 +25,29 @@ dist-gallery/
 builder/generated/
 # Local git worktrees used by the sprint workflow
 .worktrees/
+# Worktrees created by Claude Code agents (isolation: worktree)
+.claude/worktrees/
+
+# Runtime SQLite stores (registry + native calendar). Both default to living
+# under DATA_DIR, but bot/registry-db.js and bot/calendar-native/db.js fall
+# back to writing next to their own source file when DATA_DIR is unset — e.g.
+# running the server locally from bot/ without DATA_DIR creates bot/registry.sqlite
+# right there. This is exactly how bot/registry.sqlite ended up committed on
+# main (see HANDOFF-docs.md) — ignore the pattern everywhere so it can't
+# happen again, including WAL/SHM/journal sidecars.
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+
+# QA evidence: never commit regenerable, multi-MB proof-of-flow artifacts.
+# See AGENTS.md "Repository weight — QA evidence policy" for what belongs
+# here instead (small capped screenshots + a findings/summary manifest).
+# `git add -f` still works for the rare evidence file that genuinely needs
+# to be tracked — this is a default, not a hard block.
+04-QA-Evidence/**/export.html
+04-QA-Evidence/**/export.zip
+04-QA-Evidence/**/*.webm
+04-QA-Evidence/**/*.mp4
+04-Deliverables/**/*.webm
+04-Deliverables/**/*.mp4

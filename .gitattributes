@@ -1,0 +1,28 @@
+# .gitattributes — Hidook Site Builder
+#
+# Forward-only repository-hygiene policy (see AGENTS.md "Repository weight —
+# QA evidence policy"). This does not shrink the ~590MB already committed on
+# main (04-QA-Evidence alone is ~532MB across 1,261 files as of 2026-09-06) —
+# git history is not being rewritten, since 100+ active worktrees on this
+# machine would break. This only stops git from wasting effort on binary
+# diffs/merges for files that were never diffable in the first place, and
+# gives future evidence commits a place to declare themselves binary.
+
+# Never diff or attempt a text merge on QA/deliverable media — these are
+# always whole-file replacements, and a text diff on a PNG/MP4 is wasted CPU
+# and a nonsense line in `git diff --check` / `git log -p` output.
+04-QA-Evidence/**/*.png -diff -merge binary
+04-QA-Evidence/**/*.jpg -diff -merge binary
+04-QA-Evidence/**/*.jpeg -diff -merge binary
+04-QA-Evidence/**/*.webp -diff -merge binary
+04-QA-Evidence/**/*.webm -diff -merge binary
+04-QA-Evidence/**/*.mp4 -diff -merge binary
+04-QA-Evidence/**/*.zip -diff -merge binary
+04-Deliverables/**/*.png -diff -merge binary
+04-Deliverables/**/*.webm -diff -merge binary
+04-Deliverables/**/*.mp4 -diff -merge binary
+
+# SQLite files (should not be committed at all going forward — see
+# .gitignore — but marked binary in case one is ever force-added on purpose
+# as a deliberate fixture).
+*.sqlite -diff -merge binary

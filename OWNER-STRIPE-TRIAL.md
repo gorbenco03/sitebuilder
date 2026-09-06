@@ -119,6 +119,7 @@ Instagram feed is provided by Instafidget, a partner product (not Hidook Site Bu
 
 ## Out of this how-to
 
-- Fifth design system, Telegram checkout.
+- Telegram checkout (all five design systems, including Desserdirina, already ship —
+  see `templates/registry.json`; this is a Stripe/billing how-to, not a design-scope doc).
 - Real charges without your explicit go-live of live keys.
 - Legal counsel text beyond the product placeholders already shipped.
