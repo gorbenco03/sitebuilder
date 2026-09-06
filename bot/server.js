@@ -51,10 +51,12 @@ const http   = require('http');
 const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
+const zlib   = require('zlib');
 
 const payments = require('./payments.js');
 const pricing  = require('./pricing.js');
 const calendarBoundary = require('./calendar-boundary.js');
+const ratelimit = require('./ratelimit.js');
 const { log }  = require('./logger.js');
 
 // These are loaded lazily so we never crash at require-time in tests without stubs.
@@ -76,6 +78,26 @@ const CAL_NATIVE_OWNER_DIR = path.join(__dirname, 'calendar-native', 'owner');
 const CAL_NATIVE_MANAGE_DIR = path.join(__dirname, 'calendar-native', 'manage');
 
 const SLUG_RE = /^[a-z0-9-]{3,40}$/;
+
+/**
+ * BE-04 (2026-09-06 audit): in production the slug becomes a literal DNS
+ * subdomain of the operator's brand domain (see bot/deploy-cloudflare.js
+ * ensureSubdomain, `${projectName}.${brandDomain}`). Without a blocklist a
+ * user (or a trial-abusing attacker) can publish to admin.<brand>, www.<brand>,
+ * api.<brand>, etc. — brand-confusion / phishing risk on an official-looking
+ * subdomain. Format/uniqueness alone (SLUG_RE, isSlugAvailable) don't cover this.
+ */
+const RESERVED_SLUGS = new Set([
+    'admin', 'api', 'app', 'live', 'www', 'mail', 'ftp', 'ns1', 'ns2', 'smtp',
+    'stripe', 'support', 'help', 'status', 'blog', 'dev', 'staging', 'test',
+    'cdn', 'assets', 'static', 'docs',
+    // Also the bot server's own path namespace, for consistency.
+    'auth', 'webhooks', 'health', 'calendar-native',
+]);
+
+function isReservedSlug(slug) {
+    return RESERVED_SLUGS.has(String(slug || '').toLowerCase());
+}
 
 /**
  * Origin for redirects/portal return when PUBLIC_URL is unset.
@@ -104,6 +126,20 @@ function requestPublicOrigin(req) {
         proto = 'http';
     }
     return proto + '://' + host;
+}
+
+/**
+ * Best-effort client IP for abuse throttling (BE-01). Prefer X-Forwarded-For
+ * (set by the Cloudflare/production reverse proxy) else the raw socket peer.
+ * Not used for anything security-critical beyond rate-limit bucketing.
+ */
+function getClientIp(req) {
+    const xff = req && req.headers && req.headers['x-forwarded-for'];
+    if (xff) {
+        const first = String(Array.isArray(xff) ? xff[0] : xff).split(',')[0].trim();
+        if (first) return first;
+    }
+    return (req && req.socket && req.socket.remoteAddress) || 'unknown';
 }
 
 const MIME_TYPES = {
@@ -141,9 +177,21 @@ function getCachedStatic(filePath, stat) {
         size: stat.size,
         etag,
         lastModified: stat.mtime.toUTCString(),
+        gzipBuf: null, // PERF-03: computed lazily on first gzip-eligible request, see getGzipBuf()
     };
     staticFileCache.set(filePath, entry);
     return entry;
+}
+
+/**
+ * Lazily gzip-compress a cached static/live file and memoize the result on the
+ * same cache entry as the raw buffer (PERF-03) — so repeat requests never
+ * recompress, and the cache still invalidates naturally via getCachedStatic's
+ * mtime/size check (a changed file gets a brand-new entry with gzipBuf: null).
+ */
+function getGzipBuf(entry) {
+    if (!entry.gzipBuf) entry.gzipBuf = zlib.gzipSync(entry.buf);
+    return entry.gzipBuf;
 }
 
 function cacheControlForPath(targetPath) {
@@ -163,13 +211,23 @@ function sendCachedFile(req, res, targetPath, stat) {
     const ext = path.extname(targetPath).toLowerCase();
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     const cached = getCachedStatic(targetPath, stat);
+
+    // PERF-03: gzip text-ish assets when the client advertises support. Same ETag
+    // is used for both representations (a common, deliberate simplification —
+    // the resource is unchanged, only its transfer encoding differs); Vary tells
+    // any downstream cache the body depends on Accept-Encoding.
+    const useGzip = COMPRESSIBLE_MIME_RE.test(mime) && cached.buf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
+    const bodyBuf = useGzip ? getGzipBuf(cached) : cached.buf;
+
     const headers = {
         'Content-Type': mime,
-        'Content-Length': cached.buf.length,
+        'Content-Length': bodyBuf.length,
         'ETag': cached.etag,
         'Last-Modified': cached.lastModified,
         'Cache-Control': cacheControlForPath(targetPath),
+        'Vary': 'Accept-Encoding',
     };
+    if (useGzip) headers['Content-Encoding'] = 'gzip';
 
     const inm = req.headers['if-none-match'];
     if (inm) {
@@ -180,6 +238,7 @@ function sendCachedFile(req, res, targetPath, stat) {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
+                'Vary': 'Accept-Encoding',
             });
             res.end();
             return;
@@ -193,6 +252,7 @@ function sendCachedFile(req, res, targetPath, stat) {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
+                'Vary': 'Accept-Encoding',
             });
             res.end();
             return;
@@ -205,7 +265,7 @@ function sendCachedFile(req, res, targetPath, stat) {
         return;
     }
     res.writeHead(200, headers);
-    res.end(cached.buf);
+    res.end(bodyBuf);
 }
 
 
@@ -253,15 +313,135 @@ async function parseJson(req, limit = MAX_BODY_BYTES) {
 // Response helpers
 // ---------------------------------------------------------------------------
 
+/** Compressible response types worth gzip'ing (PERF-03). */
+const COMPRESSIBLE_MIME_RE = /^(text\/|application\/javascript|application\/json|image\/svg\+xml)/i;
+const GZIP_MIN_BYTES = 256; // below this, gzip framing overhead isn't worth it
+
+function clientAcceptsGzip(req) {
+    const ae = String((req && req.headers && req.headers['accept-encoding']) || '');
+    return /\bgzip\b/i.test(ae);
+}
+
+/** Case-insensitive header lookup on a res.getHeaders()-style object. */
+function getHeaderCI(headersObj, name) {
+    const want = name.toLowerCase();
+    for (const k of Object.keys(headersObj || {})) {
+        if (k.toLowerCase() === want) return headersObj[k];
+    }
+    return undefined;
+}
+
+/** Add a token to an existing Vary header (case-insensitively) instead of clobbering it. */
+function mergeVary(priorHeaders, addition) {
+    const existing = getHeaderCI(priorHeaders, 'vary');
+    const parts = new Set(String(existing || '').split(',').map((s) => s.trim()).filter(Boolean));
+    parts.add(addition);
+    return Array.from(parts).join(', ');
+}
+
 function sendJson(res, status, obj) {
     const body = JSON.stringify(obj);
+    const bodyBuf = Buffer.from(body, 'utf8');
+    // Node sets response.req back to the originating request — read it instead of
+    // threading `req` through every one of this function's ~190 call sites.
+    const req = res.req;
     const prior = typeof res.getHeaders === 'function' ? res.getHeaders() : {};
+    const useGzip = !!req && req.method !== 'HEAD' && bodyBuf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
+    const outBuf = useGzip ? zlib.gzipSync(bodyBuf) : bodyBuf;
     const headers = Object.assign({}, prior, {
         'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
+        'Content-Length': outBuf.length,
+        'Vary': mergeVary(prior, 'Accept-Encoding'),
     });
+    if (useGzip) headers['Content-Encoding'] = 'gzip';
     res.writeHead(status, headers);
-    res.end(body);
+    res.end(outBuf);
+}
+
+/**
+ * BE-02 (2026-09-06 audit): no response ever set a security header beyond
+ * X-Content-Type-Options on the two export routes — no CSP, X-Frame-Options,
+ * HSTS, Referrer-Policy or Permissions-Policy anywhere. Called once per request
+ * at the top of createHandler, before routing: headers set here via setHeader()
+ * survive into every later res.writeHead() call (sendJson, sendCachedFile,
+ * serveLive, sendRedirect, the few raw writeHead calls) because Node merges
+ * setHeader() state with the headers object passed to writeHead().
+ *
+ * /app/ (the editor — holds the session cookie and the pay-before-publish flow)
+ * gets a real, working CSP:
+ *   - script-src needs 'unsafe-inline' (builder/index.html has one inline
+ *     bootstrap <script>) AND 'unsafe-eval' (builder/app.js uses `new
+ *     Function(src)` — twice — to run same-origin, lazily-fetched template
+ *     payloads: /app/generated/templates-data.js and
+ *     /app/generated/templates/<id>.js. Without unsafe-eval the 5-template
+ *     catalog and "open in editor" both break).
+ *   - style-src needs 'unsafe-inline' (inline style="" attributes + a <style>
+ *     block in index.html).
+ *   - img-src allows data:/blob: (pasted/exported image previews).
+ *   - font-src/style-src allow Google Fonts (the two <link> tags in index.html).
+ *   - frame-ancestors 'none' + X-Frame-Options: DENY block clickjacking of the
+ *     editor — the audit's specific concern. Neither affects the sandboxed
+ *     srcdoc <iframe id="preview-iframe"> the app creates itself: frame-ancestors
+ *     governs who may embed THIS document, not iframes this document creates.
+ *
+ * /live/<slug>/* (published customer sites) and every other route get a lighter,
+ * deliberately permissive baseline — the audit explicitly says this one "can
+ * start permissive". object-src 'none' + base-uri 'self' close the classic
+ * plugin/base-tag injection vectors without touching anything the 5 templates
+ * actually use (verified: no <object>/<embed>/<base> in templates/*), and
+ * frame-ancestors 'self' stops a customer's published site from being framed by
+ * an unrelated attacker domain. `default-src * data: blob: 'unsafe-inline'`
+ * deliberately stays permissive on everything else because build.js (frozen —
+ * out of scope for this fix) already emits, per template, a cross-origin
+ * Instagram embed <iframe>/embed.js, a same-origin calendar-native widget
+ * <script src="{{appointment.nativeApiBase}}/...">, Google Fonts, and inline
+ * bootstrap <script>/<style> blocks — a strict allowlist here would need to
+ * chase every current and future template's external hosts to avoid breaking
+ * customer sites, which is a bigger change than this pass's fix-minim scope.
+ */
+const APP_CSP = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self'",
+    "frame-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+].join('; ');
+
+const DEFAULT_CSP = [
+    "default-src * data: blob: 'unsafe-inline'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "frame-ancestors 'self'",
+].join('; ');
+
+function applySecurityHeaders(req, res, url) {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+
+    // Only claim HTTPS-only when the request actually arrived over HTTPS (direct
+    // TLS or a trusted proxy header) — isolated/local plain-HTTP servers must not lie.
+    const fwdProto = String((req && req.headers && req.headers['x-forwarded-proto']) || '')
+        .split(',')[0].trim().toLowerCase();
+    const isHttps = fwdProto === 'https' || !!(req && req.socket && req.socket.encrypted);
+    if (isHttps) {
+        res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
+
+    const isApp = url === '/app' || url === '/app/' || url.startsWith('/app/');
+    if (isApp) {
+        res.setHeader('Content-Security-Policy', APP_CSP);
+        res.setHeader('X-Frame-Options', 'DENY');
+    } else {
+        res.setHeader('Content-Security-Policy', DEFAULT_CSP);
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    }
 }
 
 /**
@@ -783,15 +963,23 @@ function serveLive(req, res, urlPath) {
 
     const ext  = path.extname(realFile).toLowerCase();
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
-    const content = fs.readFileSync(realFile);
-    const headers = { 'Content-Type': mime, 'Content-Length': content.length };
+    // PERF-03: reuse the same size/mtime-keyed cache as /app/ static files, so a
+    // published site's HTML/CSS/JS is read from disk once and gzip'd once (not
+    // per request). Only Content-Type/Content-Length/Vary/Content-Encoding are
+    // emitted here — deliberately not ETag/Last-Modified, to keep /live/'s
+    // response shape unchanged beyond adding compression.
+    const cached = getCachedStatic(realFile, stat);
+    const useGzip = COMPRESSIBLE_MIME_RE.test(mime) && cached.buf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
+    const bodyBuf = useGzip ? getGzipBuf(cached) : cached.buf;
+    const headers = { 'Content-Type': mime, 'Content-Length': bodyBuf.length, 'Vary': 'Accept-Encoding' };
+    if (useGzip) headers['Content-Encoding'] = 'gzip';
     if (req.method === 'HEAD') {
         res.writeHead(200, headers);
         res.end();
         return;
     }
     res.writeHead(200, headers);
-    res.end(content);
+    res.end(bodyBuf);
 }
 
 // ---------------------------------------------------------------------------
@@ -823,6 +1011,9 @@ async function handleSlugCheck(req, res, query) {
     if (!SLUG_RE.test(slug)) {
         return sendJson(res, 200, { available: false, slug, error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
     }
+    if (isReservedSlug(slug)) {
+        return sendJson(res, 200, { available: false, slug, error: 'Această adresă este rezervată de platformă. Alege alta.' });
+    }
     const available = isSlugAvailable(slug);
     sendJson(res, 200, { available, slug });
 }
@@ -838,6 +1029,17 @@ async function handleAuthEmail(req, res) {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return sendJson(res, 400, { error: 'Introdu o adresă de email validă.' });
     }
+
+    // BE-01 (2026-09-06 audit): this is a public, unauthenticated endpoint that both
+    // sends real email and grows the login-token store — throttle per email AND per IP
+    // before doing either, so a flood can't spam an inbox or an anonymous caller.
+    const clientIp = getClientIp(req);
+    const rl = ratelimit.allowAuthEmail(email, clientIp);
+    if (!rl.ok) {
+        res.setHeader('Retry-After', String(rl.retryAfterSec));
+        return sendJson(res, 429, { error: rl.reason });
+    }
+    ratelimit.consumeAuthEmail(email, clientIp);
 
     const reg = getRegistry();
     let token;
@@ -1979,7 +2181,7 @@ async function handleSaveDraft(req, res) {
         if (!site) {
             let slug = slugify((config.business && config.business.name) || 'site');
             if (!SLUG_RE.test(slug)) slug = 'site-' + crypto.randomBytes(4).toString('hex');
-            if (!isSlugAvailable(slug)) {
+            if (isReservedSlug(slug) || !isSlugAvailable(slug)) {
                 slug = (slug.slice(0, 30).replace(/-+$/, '') || 'site') + '-' + crypto.randomBytes(3).toString('hex');
             }
             site = await reg.createSite({
@@ -2484,6 +2686,9 @@ async function handlePublish(req, res) {
             if (!SLUG_RE.test(slug)) {
                 return sendJson(res, 422, { error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
             }
+            if (isReservedSlug(slug)) {
+                return sendJson(res, 409, { error: 'Această adresă este rezervată de platformă. Alege alta.' });
+            }
             if (!isSlugAvailable(slug)) {
                 return sendJson(res, 409, { error: 'Această adresă este deja folosită. Încearcă alta.' });
             }
@@ -2587,6 +2792,10 @@ function createHandler({ onStripeEvent } = {}) {
         const qIdx   = rawUrl.indexOf('?');
         const url    = qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl;
         const query  = new URLSearchParams(qIdx >= 0 ? rawUrl.slice(qIdx + 1) : '');
+
+        // BE-02: set once, before any route handler; every writeHead()/sendJson()
+        // downstream merges these in via Node's header-merge behavior.
+        applySecurityHeaders(req, res, url);
 
         try {
             // ── Redirect root → /app/ ──────────────────────────────────────
