@@ -109,6 +109,11 @@ function unpublishSite(siteOrId, meta = {}) {
             // Keep paid/paidUntil history; cancel does not invent a charge.
             canceledAt: site.canceledAt || new Date().toISOString(),
             stripeSubscriptionStatus: nextSubscriptionStatus,
+            // Keep the legacy compatibility field in sync with the Stripe status.
+            // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
+            // through the plain persist path, which set this field; skipping it here
+            // would silently desynchronise the two.
+            subscriptionStatus: nextSubscriptionStatus,
         });
     } catch (e) {
         log('webpublish.unpublish.update_failed', { siteId: site.id, err: e.message }, 'error');
