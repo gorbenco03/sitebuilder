@@ -534,5 +534,42 @@
         }
       ]
     }
+  ],
+  "pageSections": [
+    {
+      "id": "gallery",
+      "label": "Galerie lucrări",
+      "removable": true
+    },
+    {
+      "id": "about",
+      "label": "Despre noi",
+      "removable": false
+    },
+    {
+      "id": "services",
+      "label": "Servicii și prețuri",
+      "removable": true
+    },
+    {
+      "id": "schedule",
+      "label": "Program",
+      "removable": true
+    },
+    {
+      "id": "team",
+      "label": "Echipă",
+      "removable": true
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram",
+      "removable": true
+    },
+    {
+      "id": "contact",
+      "label": "Programări și contact",
+      "removable": false
+    }
   ]
 }

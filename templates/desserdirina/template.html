@@ -65,7 +65,7 @@
             <!-- @endif -->
             <!-- @if showWordmark --><h1 class="hero-wordmark">{{business.name}}</h1><!-- @endif -->
             <p class="hero-tagline">{{business.tagline}}</p>
-            <a href="#order" class="hero-cta">
+            <a href="#contact" class="hero-cta">
                 <span>{{hero.ctaLabel}}</span>
                 <svg class="hero-cta-arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
@@ -79,9 +79,17 @@
     <!-- Main Content -->
     <main class="main-content">
         <div class="content-wrapper">
-            <!-- About + Contact -->
-            <section class="about-section fade-in-section" aria-labelledby="about-heading">
-                <div class="about-card">
+            <!-- WAVE-SECTIONS: about + contact used to be two <div>s inside one
+                 <section class="about-section"> grid. The page-sections feature
+                 needs both as independent top-level sections, so the grid moved
+                 up onto .content-wrapper itself (see styles.css) and each card
+                 became its own <section> — true siblings with only whitespace
+                 between them, so reorderSections() in build.js can actually
+                 reorder/hide them (a wrapping element's stray closing tag
+                 between two top-level sections makes it refuse to touch ANY
+                 section in the template — see desserdirina's gallery/instagram
+                 boundary below, which still has exactly that problem). -->
+            <section class="about-card fade-in-section" id="about" aria-labelledby="about-heading">
                     <p class="section-eyebrow"<!-- @if business.taglineRo --> data-en="{{business.tagline}}" data-ro="{{business.taglineRo}}"<!-- @endif -->>{{business.tagline}}</p>
                     <h2 class="section-title" id="about-heading"<!-- @if labels.aboutRo --> data-en="{{labels.about}}" data-ro="{{labels.aboutRo}}"<!-- @endif -->>{{labels.about}}</h2>
                     <p class="about-text"<!-- @if business.aboutRo --> data-en="{{business.about}}" data-ro="{{business.aboutRo}}"<!-- @endif -->>{{business.about}}</p>
@@ -151,11 +159,10 @@
                         </div>
                     </div>
                     <!-- @endif -->
-                </div>
+            </section>
 
-                <!-- Contact Card -->
-                <div class="contact-card" id="order">
-                    <h2 class="section-title"<!-- @if contact.titleRo --> data-en="{{contact.title}}" data-ro="{{contact.titleRo}}"<!-- @endif -->>{{contact.title}}</h2>
+            <section class="contact-card fade-in-section" id="contact" aria-labelledby="contact-heading">
+                    <h2 class="section-title" id="contact-heading"<!-- @if contact.titleRo --> data-en="{{contact.title}}" data-ro="{{contact.titleRo}}"<!-- @endif -->>{{contact.title}}</h2>
                     <p class="contact-intro"<!-- @if contact.introRo --> data-en="{{contact.intro}}" data-ro="{{contact.introRo}}"<!-- @endif -->>{{contact.intro}}</p>
                     <div class="contact-info">
                         <!-- Order: phone → WhatsApp → Instagram → Facebook → address (Google Maps) -->
@@ -190,11 +197,9 @@
                         </a>
                         <!-- @endif -->
                     </div>
-                </div>
             </section>
 
-            <!-- Gallery Categories -->
-            <section class="gallery-section fade-in-section" aria-labelledby="gallery-heading">
+            <section class="gallery-section fade-in-section" id="gallery" aria-labelledby="gallery-heading">
                 <div class="gallery-header">
                     <p class="section-eyebrow">Fotografii</p>
                     <h2 class="section-title gallery-heading" id="gallery-heading">{{galleryTitle}}</h2>
@@ -217,7 +222,7 @@
 
         <!-- Instagram Widget Section -->
         <!-- @if instagram.handle -->
-        <section class="instagram-section fade-in-section<!-- @if instagram.embedUrl --> instagram-section--embed<!-- @endif -->" aria-labelledby="instagram-heading">
+        <section id="instagram" class="instagram-section fade-in-section<!-- @if instagram.embedUrl --> instagram-section--embed<!-- @endif -->" aria-labelledby="instagram-heading">
             <div class="instagram-header">
                 <span class="instagram-logo" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="currentColor">

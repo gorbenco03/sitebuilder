@@ -282,6 +282,12 @@ ul { list-style: none; }
 .pm-items { padding: 0 0 14px 0; color: var(--ink-soft); }
 .pm-items li { padding: 4px 0; font-size: 0.95rem; }
 
+/* WAVE-SECTIONS: .pm-contact is now the sole child of its own top-level
+   section (id="contact") instead of being stacked inside .pm-story — see
+   template.html. Give the section itself the page's usual content width and
+   a bottom rhythm to match the sections around it; .pm-contact keeps its own
+   top rule/spacing so it doesn't look naked. */
+.pm-contact-sec { max-width: var(--max); margin: 0 auto; padding: 0 22px clamp(2.5rem, 7vw, 4.5rem); }
 .pm-contact { margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid rgba(26, 20, 16, 0.1); }
 .pm-contact__list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1rem; }
 .pm-link, .contact-item {
