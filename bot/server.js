@@ -853,16 +853,20 @@ async function handleAuthEmail(req, res) {
 
     let sent = false;
     let devLink;
-    try {
-        const result = await getEmail().sendMagicLink(email, verifyUrl);
-        sent    = result.sent !== false;
-        devLink = result.devLink;
-    } catch (e) {
-        log('server.auth.email.send_error', { err: e.message }, 'error');
+    if (process.env.NODE_ENV === 'production' && !process.env.RESEND_API_KEY) {
+        log('server.auth.email.no_provider_in_production', {}, 'error');
+    } else {
+        try {
+            const result = await getEmail().sendMagicLink(email, verifyUrl);
+            sent    = result.sent !== false;
+            devLink = result.devLink;
+        } catch (e) {
+            log('server.auth.email.send_error', { err: e.message }, 'error');
+        }
     }
 
     const resp = { ok: true, sent };
-    if (devLink) resp.devLink = devLink;
+    if (devLink && process.env.NODE_ENV !== 'production') resp.devLink = devLink;
     sendJson(res, 200, resp);
 }
 
