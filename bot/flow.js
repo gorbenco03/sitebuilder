@@ -908,8 +908,10 @@ async function handleSterge(ctx) {
         const tgUser = registry.getOrCreateUserByTelegram(chatId);
         const regSites = registry.listSites(tgUser.id);
         for (const site of regSites) {
-            if (site.status === 'deleted') continue;
-            registry.updateSite(site.id, { status: 'deleted', url: null });
+            try {
+                webpublish.unpublishSite(site, { reason: 'gdpr_data_deletion' });
+                registry.updateSite(site.id, { status: 'deleted', url: null });
+            } catch (_) {}
         }
     } catch (_) {}
     // 5) Session itself — remove entirely (not just reset) and flush durably.
