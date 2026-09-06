@@ -55,8 +55,20 @@
                 <a href="#faq">{{labels.navFaq}}</a>
                 <a href="#contact">{{labels.navContact}}</a>
             </nav>
-            <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+            <div class="pr-nav__actions">
+                <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+                <button type="button" class="pr-nav__toggle" id="pr-nav-toggle" aria-expanded="false" aria-controls="pr-nav-mobile" aria-label="Deschide meniul">
+                    <span class="pr-nav__toggle-bars" aria-hidden="true"></span>
+                </button>
+            </div>
         </div>
+        <nav class="pr-nav__mobile" id="pr-nav-mobile" aria-label="Navigație mobilă" hidden>
+            <a href="#services">{{labels.navServices}}</a>
+            <a href="#about">{{labels.navAbout}}</a>
+            <a href="#faq">{{labels.navFaq}}</a>
+            <a href="#contact">{{labels.navContact}}</a>
+            <a href="#appointment" class="pr-nav__mobile-cta">{{labels.navBook}}</a>
+        </nav>
     </header>
 
     <section class="pr-hero" aria-labelledby="hero-heading">
@@ -283,6 +295,19 @@
                         <!-- @endif -->
                     </p>
                 </form>
+
+                <div class="pr-appt__fail" id="pr-appt-fail" role="alert" hidden>
+                    <h3 class="pr-appt__fail-title">Cererea nu a ajuns la noi</h3>
+                    <p class="pr-copy">Site-ul nu a putut contacta serverul de programări. Sună-ne sau scrie-ne pe WhatsApp — te ajutăm imediat cu o programare.</p>
+                    <div class="pr-appt__fail-actions">
+                        <!-- @if contact.phone -->
+                        <a class="pr-btn pr-btn--primary" href="tel:{{contact.phone}}">Sună la {{contact.phoneDisplay}}</a>
+                        <!-- @endif -->
+                        <!-- @if contact.waHref -->
+                        <a class="pr-btn pr-btn--ghost" href="{{contact.waHref}}" target="_blank" rel="noopener">Scrie pe WhatsApp</a>
+                        <!-- @endif -->
+                    </div>
+                </div>
 
                 <div class="pr-appt-done" id="pr-appt-done" hidden>
                     <h3 class="pr-appt-done__title">{{labels.apptDoneTitle}}</h3>
