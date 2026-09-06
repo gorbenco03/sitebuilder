@@ -33,7 +33,7 @@ assert.match(
 );
 assert.match(
     script,
-    /['"]Nu am putut trimite cererea\. Încearcă din nou sau folosește emailul de contact\.['"]/,
+    /['"]Cererea NU a fost trimisă\. Formularul rămâne completat — încearcă din nou sau folosește telefonul ori WhatsApp de mai jos\.['"]/,
     'Failed appointment requests must have a Romanian retry hint'
 );
 assert.doesNotMatch(
