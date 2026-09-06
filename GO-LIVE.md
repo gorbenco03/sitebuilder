@@ -121,6 +121,27 @@ Alternatives, in the order the code falls back through
 
 ---
 
+## 2.7 One-time effects of this deploy
+
+Two things change for existing users the first time this version goes out.
+Neither is a fault; both are surprising if you do not expect them.
+
+**Everyone signs in again, once.** Sessions are now revocable: the signed
+cookie carries a session id and the server checks it against a `sessions`
+table. Cookies issued before this deploy have no such id and are refused. That
+is the point of the change — the previous "Deconectare" left a captured cookie
+working for up to 30 days — but it means every signed-in owner is asked for a
+fresh magic link on their next visit. Expect a burst of sign-in emails on
+deploy day; `RESEND_API_KEY` must be working, or nobody can get back in (see
+§3.1).
+
+**The manage links in already-sent booking emails stay broken.** Those emails
+were generated with a base URL that resolved to `http://127.0.0.1:0`. New
+emails are correct as soon as this deploys, because the link now falls back to
+`PUBLIC_URL`, which production sets. Emails already in visitors' inboxes
+cannot be repaired — if any bookings were made before this deploy, assume
+those visitors cannot cancel or reschedule themselves and handle it manually.
+
 ## 3. Failure modes that are silent
 
 These are the ones that will cost you customers, because nothing errors visibly.
