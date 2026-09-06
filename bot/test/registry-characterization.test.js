@@ -295,15 +295,21 @@ check('createSite: auto slug base is truncated to 40 chars before the id suffix 
     assert.strictEqual(site.slug, `${'a'.repeat(40)}-${suffix}`);
 });
 
-check('createSite: QUIRK — an explicit slug is used verbatim and collisions are NOT prevented', () => {
-    // Two different sites, same explicit slug: no uniqueness check exists anywhere
-    // in createSite, so both records end up with the identical slug. Pinned as-is,
-    // not fixed. See report.
+// DELIBERATE CHANGE (1 of 4, storage rewrite): an explicit slug that collides
+// with an existing site is now rejected with a clear error instead of being
+// silently allowed. Two sites could previously take the same public /live
+// address — a real bug, reproduced independently, not just a QUIRK to pin.
+// A real database gives us a UNIQUE constraint for free, so it is fixed now.
+// bot/server.js already checks slug availability before calling createSite
+// (isSlugAvailable), so this does not change its happy path.
+check('createSite: FIXED — an explicit slug colliding with an existing site is rejected', () => {
     const s1 = registry.createSite({ userId: ownerA.id, templateId: 't', slug: 'taken-slug' });
-    const s2 = registry.createSite({ userId: ownerA.id, templateId: 't', slug: 'taken-slug' });
-    assert.notStrictEqual(s1.id, s2.id, 'two distinct site records');
     assert.strictEqual(s1.slug, 'taken-slug');
-    assert.strictEqual(s2.slug, 'taken-slug', 'collision silently allowed');
+    assert.throws(
+        () => registry.createSite({ userId: ownerA.id, templateId: 't', slug: 'taken-slug' }),
+        /taken-slug/,
+        'a second createSite with the same explicit slug must be rejected, not silently allowed'
+    );
 });
 
 check('createSite: returns a copy, not a live reference', () => {
@@ -374,11 +380,20 @@ check('updateSite: partial patch overwrites given keys, preserves the rest', () 
     assert.strictEqual(persisted.paid, true, 'change is persisted, not just returned');
 });
 
-check('updateSite: QUIRK — patch can inject keys outside the original schema (plain Object.assign)', () => {
+// DELIBERATE CHANGE (4 of 4, storage rewrite): a patch key outside the known
+// site schema is now dropped instead of being persisted via a raw
+// Object.assign. The original let any caller silently pollute stored site
+// records with arbitrary keys — a real bug, reproduced independently, not
+// just a QUIRK to pin. The known-field allowlist (bot/registry-shared.js)
+// was built by enumerating every updateSite call site across the codebase,
+// so no real caller's happy path loses a field it actually uses.
+check('updateSite: FIXED — a patch key outside the known site schema is dropped, not persisted', () => {
+    const before = registry.getSite(siteA1.id);
     const updated = registry.updateSite(siteA1.id, { totallyNewField: 'surprise' });
-    assert.strictEqual(updated.totallyNewField, 'surprise');
+    assert.strictEqual(updated.totallyNewField, undefined, 'unknown field must not appear on the returned record');
     const persisted = registry.getSite(siteA1.id);
-    assert.strictEqual(persisted.totallyNewField, 'surprise', 'unknown field is persisted too');
+    assert.strictEqual(persisted.totallyNewField, undefined, 'unknown field must not be persisted');
+    assert.strictEqual(persisted.status, before.status, 'known fields are untouched by a patch that carries only unknown keys');
 });
 
 check('updateSite: returns a copy, not a live reference', () => {
@@ -572,12 +587,18 @@ check('getOrder: returns a copy, not a live reference', () => {
 // 20. claimStripeEvent
 // =============================================================================
 
-check('claimStripeEvent: falsy or non-string eventId always returns true and is never remembered', () => {
-    assert.strictEqual(registry.claimStripeEvent(null), true);
-    assert.strictEqual(registry.claimStripeEvent(null), true, 'QUIRK: repeated null never blocks (nothing was stored)');
-    assert.strictEqual(registry.claimStripeEvent(undefined), true);
-    assert.strictEqual(registry.claimStripeEvent(''), true);
-    assert.strictEqual(registry.claimStripeEvent(12345), true, 'QUIRK: non-string ids are treated like missing ids');
+// DELIBERATE CHANGE (3 of 4, storage rewrite): a falsy or non-string eventId
+// is now rejected explicitly instead of always returning true and recording
+// nothing. The original silently disabled webhook idempotency for malformed
+// events — a real bug, reproduced independently, not just a QUIRK to pin.
+// Both real call sites (bot/webpublish.js) already guard with
+// `if (eventId && ...)` before calling claimStripeEvent, so this does not
+// change their happy path.
+check('claimStripeEvent: FIXED — a falsy or non-string eventId is rejected explicitly', () => {
+    assert.throws(() => registry.claimStripeEvent(null), /eventId/);
+    assert.throws(() => registry.claimStripeEvent(undefined), /eventId/);
+    assert.throws(() => registry.claimStripeEvent(''), /eventId/);
+    assert.throws(() => registry.claimStripeEvent(12345), /eventId/);
 });
 
 check('claimStripeEvent: idempotent — first claim true, repeat claims of the same id false', () => {
@@ -639,10 +660,16 @@ check('addMonthsIso: null/undefined fromIso uses "now" as the base', () => {
     assert.strictEqual(result, expected.toISOString());
 });
 
-check('addMonthsIso: QUIRK — an unparseable fromIso string silently falls back to "now" instead of throwing/NaN', () => {
-    const fixedNow = 1_700_000_000_000;
-    const result = withFakeNow(fixedNow, () => registry.addMonthsIso('not-a-real-date', 0));
-    assert.strictEqual(result, new Date(fixedNow).toISOString(), 'invalid input is silently treated as "now", not rejected');
+// DELIBERATE CHANGE (2 of 4, storage rewrite): an unparseable fromIso string
+// is now rejected explicitly instead of silently falling back to "now". The
+// original could silently grant a year of paid commercial hosting from
+// "now" on bad input — a real billing bug, reproduced independently, not
+// just a QUIRK to pin. Both real call sites (bot/webpublish.js) only ever
+// pass a value already known to be a valid ISO string, so this does not
+// change their happy path. null/undefined (and other falsy values) still
+// mean "use now" — that branch is untouched.
+check('addMonthsIso: FIXED — an unparseable fromIso string is rejected explicitly', () => {
+    assert.throws(() => registry.addMonthsIso('not-a-real-date', 0), /fromIso/);
 });
 
 // =============================================================================
