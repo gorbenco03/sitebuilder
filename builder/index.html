@@ -562,6 +562,25 @@
   </div>
 </div>
 
+<!-- ===== MODAL: CUSTOM DOMAIN (Wave 8 — self-serve BYO domain, audit #47) ===== -->
+<div id="modal-domain" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-domain-title" style="display:none">
+  <div class="modal-box modal-box--domain">
+    <button class="modal-close" id="btn-close-domain" aria-label="Închide">&times;</button>
+    <h2 id="modal-domain-title" class="modal-title">Domeniul tău propriu</h2>
+    <p class="modal-sub">Conectează un domeniu pe care îl deții deja (ex: afacereamea.ro) direct la site-ul tău Hidook — fără concierge, fără să cumperi un domeniu nou aici.</p>
+    <div id="domain-modal-body" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: INVOICES / BILLING HISTORY (Wave 8 reachability) ===== -->
+<div id="modal-invoices" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-invoices-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-invoices" aria-label="Închide">&times;</button>
+    <h2 id="modal-invoices-title" class="modal-title">Facturi și plăți</h2>
+    <div id="invoices-list" class="invoices-list" aria-live="polite"></div>
+  </div>
+</div>
+
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
 

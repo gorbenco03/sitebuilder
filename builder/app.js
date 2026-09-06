@@ -3429,6 +3429,24 @@ async function apiPost(url, body) {
   if (!r.ok) {
     throw Object.assign(new Error(json.error || 'Eroare server'), {
       status: r.status,
+      code: json.code,
+      fromServer: true,
+    });
+  }
+  return json;
+}
+
+/**
+ * DELETE with a JSON response, same error contract as apiPost/apiGet — used
+ * by the custom-domain "Deconectează" action (DELETE /api/sites/:id/domain).
+ */
+async function apiDelete(url) {
+  const r = await fetch(url, { method: 'DELETE', credentials: 'include' });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw Object.assign(new Error(json.error || 'Eroare server'), {
+      status: r.status,
+      code: json.code,
       fromServer: true,
     });
   }
@@ -3504,6 +3522,7 @@ function formatHostingUntilDate(iso) {
     return day + '.' + month + '.' + year;
   }
 }
+
 
 /**
  * Live trial/site URL: absolute http(s) OR same-origin isolated /live/<slug>/.
@@ -4896,15 +4915,25 @@ function buildSiteCard(site) {
     }
   }
 
-  // Wave8 audit finding #2: getDunningState() produced correct, actionable
-  // Romanian messages that nothing ever showed the owner. Render it whenever
-  // present — the terminal "site oprit" case included, since that owner most
-  // needs to see why (the badge above already flags it, this line explains it).
+  // The server attaches its own getDunningState() output to every site, so
+  // this reads that rather than recomputing it. A hand-kept client mirror of
+  // the same rules arrived with this UI; it is deleted below, because two
+  // implementations of "is this customer in trouble with their card" drift,
+  // and the one that drifts is the one telling a paying customer whether
+  // their site is about to go dark.
+  //
+  // role="alert" and the "Actualizează cardul" action come from that UI and
+  // are kept: a critical dunning site has already been unpublished, so none
+  // of the pay/renew/cancel branches below fire and the card otherwise offers
+  // no action at all.
   if (dunning && dunning.messageRo) {
-    const dunningLine = document.createElement('div');
-    dunningLine.className = 'site-dunning-line site-dunning-' + (dunning.severity === 'critical' ? 'critical' : 'warning');
-    dunningLine.textContent = dunning.messageRo;
-    info.appendChild(dunningLine);
+    const banner = document.createElement('div');
+    banner.className = 'site-dunning-line dunning-banner dunning-banner--'
+      + (dunning.severity === 'critical' ? 'critical' : 'warning')
+      + ' site-dunning-' + (dunning.severity === 'critical' ? 'critical' : 'warning');
+    banner.setAttribute('role', 'alert');
+    banner.textContent = dunning.messageRo;
+    info.appendChild(banner);
   }
 
   const actions = document.createElement('div');
@@ -4973,12 +5002,70 @@ function buildSiteCard(site) {
     actions.appendChild(cancelBtn);
   }
 
+  // "Actualizează cardul" (Wave 8 reachability sweep) — independent of the
+  // pay/renew/cancel branches above: a 'critical' dunning site has already
+  // been unpublished by a failed renewal (status flips away from live/active,
+  // so neither of those branches fires above and this card previously showed
+  // NO primary action at all), while a 'warning' one is still live and shows
+  // this ALONGSIDE Anulează. Same billing-portal route Anulează already
+  // uses — Stripe's customer portal covers both cancel and update-card.
+  if (dunning) {
+    const updateCardBtn = document.createElement('button');
+    updateCardBtn.className = 'btn-primary btn-sm';
+    updateCardBtn.textContent = 'Actualizează cardul';
+    updateCardBtn.setAttribute('aria-label', 'Actualizează cardul pentru ' + (site.projectName || site.slug || 'acest site'));
+    updateCardBtn.addEventListener('click', async () => {
+      try {
+        setBtnLoading(updateCardBtn, true, 'Se deschide…');
+        const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
+        const portalUrl = data.portalUrl || data.url;
+        if (portalUrl) {
+          window.location.href = portalUrl;
+        } else {
+          showToast('Portalul de facturare nu este disponibil acum.', 'error');
+        }
+      } catch (e) {
+        showToast('Eroare: ' + e.message, 'error');
+      } finally {
+        setBtnLoading(updateCardBtn, false);
+      }
+    });
+    actions.appendChild(updateCardBtn);
+  }
+
   const versBtn = document.createElement('button');
   versBtn.className = 'btn-ghost btn-sm';
   versBtn.textContent = 'Istoric';
   versBtn.setAttribute('aria-label', 'Istoric versiuni pentru ' + (site.projectName || site.slug || ''));
   versBtn.addEventListener('click', () => loadVersions(site.id));
   actions.appendChild(versBtn);
+
+  // Custom domain (Wave 8 reachability fix): bot/domains.js's whole
+  // self-serve BYO-domain state machine and its five auth-gated routes
+  // (bot/server.js) existed with nothing in the product ever linking to
+  // them. Same gate as the native-booking link above — a real Cloudflare
+  // Pages project only exists once the site has actually been deployed.
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    const domainBtn = document.createElement('button');
+    domainBtn.className = 'btn-ghost btn-sm';
+    domainBtn.textContent = 'Domeniu';
+    domainBtn.setAttribute('aria-label', 'Conectează domeniul tău propriu pentru ' + (site.projectName || site.slug || 'acest site'));
+    domainBtn.addEventListener('click', () => openDomainModal(site));
+    actions.appendChild(domainBtn);
+  }
+
+  // Invoices / billing history (Wave 8 reachability fix): GET /api/sites/:id
+  // /invoices returns the full ledger-backed history but nothing ever
+  // rendered it. `site.paid` covers a canceled/expired site too — past
+  // invoices remain a legitimate thing an owner looks up.
+  if (site.paid) {
+    const invoicesBtn = document.createElement('button');
+    invoicesBtn.className = 'btn-ghost btn-sm';
+    invoicesBtn.textContent = 'Facturi';
+    invoicesBtn.setAttribute('aria-label', 'Facturi și istoric plăți pentru ' + (site.projectName || site.slug || 'acest site'));
+    invoicesBtn.addEventListener('click', () => openInvoicesModal(site.id));
+    actions.appendChild(invoicesBtn);
+  }
 
   // Native Hidook booking dashboard link (Wave 8 reachability fix): the owner
   // dashboard exists and its API is fully authenticated + tenant-isolated
@@ -5108,6 +5195,411 @@ async function loadVersions(siteId) {
       });
       list.appendChild(item);
     });
+  } catch (e) {
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 22b. Custom domain (Wave 8 — self-serve BYO domain, audit #47 reachability)
+// ---------------------------------------------------------------------------
+//
+// bot/domains.js implements the whole state machine and bot/server.js mounts
+// five auth-gated routes for it (GET/POST/DELETE /api/sites/:id/domain, POST
+// .../domain/verify, POST .../domain/status). None of it was reachable from
+// any UI. This panel lives in the "Proiectele mele" site card — the same
+// place the Wave 8 calendar fix put its own reachability link — because
+// that's where an owner already goes to manage a live site.
+//
+// GET /api/sites/:id/domain returns the RAW stored record (domain,
+// targetHost, pagesHost, verificationToken, isApex, status, …), not the
+// human-readable {records, note, instructiuni} shape bot/domains.js only
+// builds inside startDomainConnection()'s response. Re-POSTing /domain just
+// to re-fetch that shape would be wrong — startDomainConnection()
+// unconditionally resets status back to 'awaiting_dns', which would silently
+// regress an already-active connection back to "waiting". So the DNS
+// records table below is (a) cached verbatim from the one POST response
+// that ever carries it, in localStorage keyed by siteId, and (b)
+// reconstructed client-side from the raw record as a fallback (same two
+// records/apex-note bot/domains.js#_dnsInstructionsFor builds — see
+// HANDOFF-owner-ui.md for the follow-up: ideally GET would return the same
+// shape so this duplication is unnecessary).
+
+let domainModalSiteId = null;
+let domainModalProjectName = null;
+let domainModalCurrentOrigin = null;
+
+function domainInstructionsCacheKey(siteId) { return 'hb.domainDns.' + siteId; }
+
+function cacheDomainInstructions(siteId, instructions) {
+  try { localStorage.setItem(domainInstructionsCacheKey(siteId), JSON.stringify(instructions)); } catch (_) {}
+}
+
+function readCachedDomainInstructions(siteId, domain) {
+  try {
+    const raw = localStorage.getItem(domainInstructionsCacheKey(siteId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.domain === domain) return parsed;
+  } catch (_) {}
+  return null;
+}
+
+/** Same wording as bot/domains.js#_messageForStatus — GET /domain returns
+ *  only the raw record (no message), so this keeps the waiting states
+ *  reading as normal/expected instead of blank or alarming. */
+function domainMessageForStatus(status) {
+  switch (status) {
+    case 'awaiting_dns':
+      return 'Nu am găsit încă înregistrările DNS. E normal — propagarea poate dura de la câteva minute până la câteva ore. Revino mai târziu și apasă din nou "Verifică".';
+    case 'dns_partial':
+      return 'Am găsit o parte din înregistrări, dar nu toate (sau au altă valoare decât cea indicată). Mai verifică o dată peste câteva minute.';
+    case 'dns_verified':
+      return 'Înregistrările DNS sunt corecte. Urmează activarea certificatului de securitate (HTTPS) — de obicei durează câteva minute.';
+    case 'provisioning':
+      return 'Certificatul de securitate (HTTPS) se activează. De obicei durează câteva minute, uneori până la o oră.';
+    case 'active':
+      return 'Domeniul tău este conectat și activ.';
+    case 'error':
+      return 'A apărut o problemă la conectarea domeniului. Poți încerca din nou.';
+    case 'disconnected':
+      return 'Domeniul a fost deconectat. Site-ul tău rămâne disponibil pe subdomeniul Hidook.';
+    default:
+      return '';
+  }
+}
+
+function domainStatusBadge(status) {
+  if (status === 'active') return { cls: 'status-live', label: 'Activ' };
+  if (status === 'error') return { cls: 'status-expired', label: 'Eroare' };
+  if (status === 'dns_verified' || status === 'provisioning') return { cls: 'status-draft', label: status === 'provisioning' ? 'Se activează certificatul' : 'DNS verificat' };
+  if (status === 'dns_partial') return { cls: 'status-draft', label: 'DNS parțial' };
+  if (status === 'awaiting_dns') return { cls: 'status-draft', label: 'Se așteaptă DNS' };
+  return { cls: 'status-draft', label: 'Neconectat' };
+}
+
+/** Client-side rebuild of bot/domains.js#_dnsInstructionsFor from the raw
+ *  record fields alone — see the module-doc comment above for why this
+ *  can't just re-call the server. */
+function buildDnsRecordsFromRecord(record) {
+  const records = [
+    {
+      tip: 'TXT',
+      nume: '_hidook-challenge.' + record.targetHost,
+      valoare: 'hidook-verify=' + record.verificationToken,
+      ttl: 'Auto (sau 300)',
+    },
+    {
+      tip: 'CNAME',
+      nume: record.targetHost,
+      valoare: record.pagesHost,
+      ttl: 'Auto (sau 300)',
+    },
+  ];
+  const note = record.isApex
+    ? `Domeniul principal "${record.domain}" nu poate avea o înregistrare CNAME — este o limitare a ` +
+      `standardului DNS, nu a Hidook. Adaugă cele două înregistrări de mai jos pentru ` +
+      `"${record.targetHost}", apoi la panoul domeniului tău configurează o redirecționare ` +
+      `(forwarding) de la "${record.domain}" către "https://${record.targetHost}" — astfel vizitatorii ` +
+      `care scriu "${record.domain}" ajung automat pe site.`
+    : null;
+  return { records, note };
+}
+
+function domainRecordsTableHtml(records) {
+  const rows = records.map((r) => `
+    <tr>
+      <td class="dns-col-type">${escHtml(r.tip)}</td>
+      <td>
+        <div class="dns-copy-field">
+          <code>${escHtml(r.nume)}</code>
+          <button type="button" class="btn-copy-dns" data-copy="${escHtmlForAttr(r.nume)}">Copiază</button>
+        </div>
+      </td>
+      <td>
+        <div class="dns-copy-field">
+          <code>${escHtml(r.valoare)}</code>
+          <button type="button" class="btn-copy-dns" data-copy="${escHtmlForAttr(r.valoare)}">Copiază</button>
+        </div>
+      </td>
+      <td class="dns-col-ttl">${escHtml(r.ttl)}</td>
+    </tr>`).join('');
+  return `
+    <div class="dns-records-wrap">
+      <table class="dns-records-table">
+        <thead><tr><th>Tip</th><th>Nume</th><th>Valoare</th><th>TTL</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function wireDnsCopyButtons(container) {
+  container.querySelectorAll('.btn-copy-dns').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const text = btn.dataset.copy || '';
+      try {
+        await navigator.clipboard.writeText(text);
+        const orig = btn.textContent;
+        btn.textContent = 'Copiat!';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+      } catch (_) {
+        showToast('Nu am putut copia. Selectează textul manual.', 'error');
+      }
+    });
+  });
+}
+
+function domainConnectFormHtml(hasExisting) {
+  return `
+    <form id="domain-connect-form" class="domain-connect-form">
+      <div class="field-group">
+        <label class="field-label" for="domain-input">${hasExisting ? 'Domeniu nou' : 'Domeniul tău'}</label>
+        <input class="field-input" id="domain-input" type="text" placeholder="ex: afacereamea.ro" autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <div class="field-hint">Introdu domeniul pe care îl deții deja la alt furnizor — nu este nevoie să-l cumperi de la Hidook.</div>
+      </div>
+      <div id="domain-connect-error" class="field-error" role="alert" style="display:none"></div>
+      <button type="submit" class="btn-primary btn-sm" id="btn-domain-connect-submit">Conectează domeniul</button>
+    </form>`;
+}
+
+function wireDomainConnectForm() {
+  const form = $('domain-connect-form');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('domain-input');
+    const errEl = $('domain-connect-error');
+    const btn = $('btn-domain-connect-submit');
+    const domain = input ? input.value.trim() : '';
+    if (errEl) hide(errEl);
+    if (!domain) {
+      if (errEl) { errEl.textContent = 'Introdu domeniul tău (ex: myshop.com).'; show(errEl); }
+      return;
+    }
+    try {
+      setBtnLoading(btn, true, 'Se conectează…');
+      const instructions = await apiPost(
+        '/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain',
+        { domain }
+      );
+      cacheDomainInstructions(domainModalSiteId, instructions);
+      await refreshDomainModal();
+    } catch (err) {
+      if (errEl) { errEl.textContent = err.message || 'Nu am putut conecta domeniul.'; show(errEl); }
+    } finally {
+      setBtnLoading(btn, false);
+    }
+  });
+}
+
+/** Renders the whole domain panel from the raw record + last poll detail. */
+function renderDomainModal(record, lastPoll) {
+  const body = $('domain-modal-body');
+  if (!body) return;
+
+  if (!record || record.status === 'disconnected') {
+    body.innerHTML = domainConnectFormHtml(!!record);
+    wireDomainConnectForm();
+    return;
+  }
+
+  const status = record.status;
+  const badge = domainStatusBadge(status);
+  const message = (lastPoll && lastPoll.message) || domainMessageForStatus(status);
+  const messageCls = status === 'error' ? 'domain-message--error' : (status === 'active' ? 'domain-message--active' : '');
+
+  let html = `
+    <div class="domain-status-row">
+      <span class="status-badge ${badge.cls}">${escHtml(badge.label)}</span>
+      <span class="domain-current-host">${escHtml(record.domain)}</span>
+    </div>
+    <p class="domain-message ${messageCls}">${escHtml(message)}</p>`;
+
+  if (status === 'active') {
+    const liveHref = 'https://' + record.targetHost;
+    html += `<p class="modal-sub"><a href="${escHtmlForAttr(liveHref)}" target="_blank" rel="noopener noreferrer">${escHtml(liveHref)}</a></p>`;
+    if (record.isApex) {
+      html += `<div class="domain-apex-note">Domeniul principal "${escHtml(record.domain)}" e nevoie să aibă o redirecționare (forwarding) către "${escHtml(liveHref)}" configurată la furnizorul tău de domeniu — CNAME nu funcționează pe domeniul principal.</div>`;
+    }
+    html += `
+      <div class="domain-actions">
+        <button type="button" class="btn-ghost btn-sm" id="btn-domain-disconnect">Deconectează</button>
+        <button type="button" class="domain-switch-link" id="btn-domain-switch" style="margin:0">Folosește alt domeniu</button>
+      </div>`;
+  } else {
+    // awaiting_dns / dns_partial / dns_verified / provisioning / error — show
+    // the DNS records (cached instructions if we have them, else rebuilt from
+    // the raw record) so the owner can always see/copy what to paste.
+    const cached = readCachedDomainInstructions(domainModalSiteId, record.domain);
+    const built = cached || buildDnsRecordsFromRecord(record);
+    if (status !== 'provisioning' && status !== 'dns_verified') {
+      html += domainRecordsTableHtml(built.records);
+      if (built.note) html += `<div class="domain-apex-note">${escHtml(built.note)}</div>`;
+    }
+    const verifyLabel = (status === 'dns_verified' || status === 'provisioning') ? 'Verifică certificatul' : 'Verifică';
+    html += `
+      <div class="domain-actions">
+        <button type="button" class="btn-primary btn-sm" id="btn-domain-verify">${escHtml(verifyLabel)}</button>
+        <button type="button" class="btn-ghost btn-sm" id="btn-domain-disconnect">Deconectează</button>
+        <button type="button" class="domain-switch-link" id="btn-domain-switch" style="margin:0">Folosește alt domeniu</button>
+      </div>`;
+    if (record.lastCheck && record.lastCheck.checkedAt) {
+      html += `<p class="domain-last-check">Ultima verificare: ${escHtml(formatHostingUntilDate(record.lastCheck.checkedAt) || record.lastCheck.checkedAt)}</p>`;
+    }
+  }
+
+  body.innerHTML = html;
+  wireDnsCopyButtons(body);
+
+  const verifyBtn = $('btn-domain-verify');
+  if (verifyBtn) {
+    verifyBtn.addEventListener('click', async () => {
+      setBtnLoading(verifyBtn, true, 'Se verifică…');
+      try {
+        // Already past raw DNS checking → poll TLS only (bot/domains.js's own
+        // checkDomainConnection doc: "Use checkTlsStatus to poll those states
+        // instead"). Otherwise /verify (which auto-chains into attach once
+        // DNS comes back verified, so the owner never needs a second button).
+        const route = (status === 'dns_verified' || status === 'provisioning') ? '/domain/status' : '/domain/verify';
+        const result = await apiPost('/api/sites/' + encodeURIComponent(domainModalSiteId) + route, {});
+        await refreshDomainModal(result);
+      } catch (err) {
+        if (err && err.code === 'RATE_LIMITED') {
+          showToast(err.message, 'error', 6000);
+        } else {
+          showToast(err.message || 'Eroare la verificare.', 'error');
+          await refreshDomainModal();
+        }
+      } finally {
+        setBtnLoading(verifyBtn, false);
+      }
+    });
+  }
+
+  const disconnectBtn = $('btn-domain-disconnect');
+  if (disconnectBtn) {
+    disconnectBtn.addEventListener('click', async () => {
+      const confirmed = window.confirm(
+        'Sigur vrei să deconectezi domeniul „' + record.domain + '"? Site-ul tău rămâne disponibil pe subdomeniul Hidook.'
+      );
+      if (!confirmed) return;
+      try {
+        setBtnLoading(disconnectBtn, true, 'Se deconectează…');
+        await apiDelete('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
+        try { localStorage.removeItem(domainInstructionsCacheKey(domainModalSiteId)); } catch (_) {}
+        showToast('Domeniul a fost deconectat.', 'success');
+        await refreshDomainModal();
+      } catch (err) {
+        showToast(err.message || 'Nu am putut deconecta domeniul.', 'error');
+      } finally {
+        setBtnLoading(disconnectBtn, false);
+      }
+    });
+  }
+
+  const switchBtn = $('btn-domain-switch');
+  if (switchBtn) {
+    switchBtn.addEventListener('click', () => {
+      body.innerHTML = domainConnectFormHtml(true);
+      wireDomainConnectForm();
+    });
+  }
+}
+
+async function refreshDomainModal(lastPoll) {
+  const body = $('domain-modal-body');
+  if (!body || !domainModalSiteId) return;
+  try {
+    const data = await apiGet('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
+    renderDomainModal(data.record, lastPoll);
+  } catch (e) {
+    body.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
+  }
+}
+
+async function openDomainModal(site) {
+  domainModalSiteId = site.id;
+  domainModalProjectName = site.projectName;
+  domainModalCurrentOrigin = site.url || null;
+  const body = $('domain-modal-body');
+  if (body) body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
+  openModal('modal-domain');
+  await refreshDomainModal();
+}
+
+// ---------------------------------------------------------------------------
+// 22c. Invoices / billing history (Wave 8 reachability)
+// ---------------------------------------------------------------------------
+//
+// GET /api/sites/:id/invoices returns the ledger-backed history (newest
+// first already); each entry carries kind ('publish' | 'renewal'),
+// amountCents, currency, ts and — for a real Stripe renewal invoice —
+// hostedInvoiceUrl/invoicePdf. Same "findable" placement as the domain
+// panel: the "Proiectele mele" site card.
+
+function invoiceKindLabel(kind) {
+  if (kind === 'renewal') return 'Reînnoire hosting';
+  if (kind === 'publish') return 'Publicare (primul an)';
+  return kind || 'Plată';
+}
+
+function formatInvoiceAmount(amountCents, currency) {
+  if (amountCents == null) return '—';
+  const amount = amountCents / 100;
+  const cur = String(currency || '').toUpperCase();
+  try {
+    return new Intl.NumberFormat('ro-RO', { style: 'currency', currency: cur || 'USD' }).format(amount);
+  } catch (_) {
+    return amount.toFixed(2) + (cur ? ' ' + cur : '');
+  }
+}
+
+function formatInvoiceDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (!Number.isFinite(d.getTime())) return '';
+  try {
+    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch (_) {
+    return iso.slice(0, 10);
+  }
+}
+
+function renderInvoicesList(invoices) {
+  const list = $('invoices-list');
+  if (!list) return;
+  if (!invoices || invoices.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">Nu există încă nicio factură pentru acest site.</p>';
+    return;
+  }
+  list.innerHTML = invoices.map((inv) => {
+    let links = '';
+    if (inv.hostedInvoiceUrl) {
+      links += `<a class="btn-ghost btn-sm" href="${escHtmlForAttr(inv.hostedInvoiceUrl)}" target="_blank" rel="noopener noreferrer">Vezi factura</a>`;
+    }
+    if (inv.invoicePdf) {
+      links += `<a class="btn-ghost btn-sm" href="${escHtmlForAttr(inv.invoicePdf)}" target="_blank" rel="noopener noreferrer">PDF</a>`;
+    }
+    return `
+      <div class="invoice-item">
+        <div class="invoice-item-main">
+          <span class="invoice-date">${escHtml(formatInvoiceDate(inv.ts))}</span>
+          <span class="invoice-kind">${escHtml(invoiceKindLabel(inv.kind))}</span>
+        </div>
+        <span class="invoice-amount">${escHtml(formatInvoiceAmount(inv.amountCents, inv.currency))}</span>
+        ${links ? `<div class="invoice-links">${links}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function openInvoicesModal(siteId) {
+  const list = $('invoices-list');
+  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
+  openModal('modal-invoices');
+  try {
+    const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/invoices');
+    renderInvoicesList(data.invoices || []);
   } catch (e) {
     if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
   }
@@ -5399,6 +5891,8 @@ function wireStaticButtons() {
   wireModalClose('btn-close-success',  'modal-success');
   wireModalClose('btn-close-versions', 'modal-versions');
   wireModalClose('btn-close-gallery',  'modal-gallery');
+  wireModalClose('btn-close-domain',   'modal-domain');
+  wireModalClose('btn-close-invoices', 'modal-invoices');
 
   const successCloseBtn = $('btn-success-close');
   if (successCloseBtn) {

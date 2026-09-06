@@ -1,0 +1,66 @@
+RED (before this wave) — builder/app.js, builder/app.css and builder/index.html
+on commit 68c9dc8 (the parent of this branch's builder/ change, cc99530) had
+no "Facturi" button anywhere and no modal-invoices markup at all.
+GET /api/sites/:id/invoices already returned the full ledger-backed payment
+history, but nothing in the product ever rendered it.
+
+Reproduced by checking out builder/app.js, builder/app.css and
+builder/index.html from 68c9dc8 (git checkout 68c9dc8 -- builder/app.js
+builder/app.css builder/index.html — no git stash involved) and re-running
+this exact same test file unmodified:
+
+  node --experimental-sqlite --test bot/test/wave8-owner-ui-invoices-reachable-e2e.test.js
+
+Result: FAIL — the test times out looking for a "Facturi" button on the
+just-published (and just-charged) site's dashboard card:
+
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-inv-97413e8d' }).locator('button').filter({ hasText: 'Facturi' }) to be visible
+
+Full run output below.
+  engine.js written (125793 bytes)
+  templates/product-menu.js written (78267 bytes)
+  templates/local-service.js written (101068 bytes)
+  templates/portfolio.js written (92869 bytes)
+  templates/professionals.js written (104714 bytes)
+  templates/desserdirina.js written (101916 bytes)
+  templates-data.js written (1852 bytes) [light registry]
+build:app done — builder/generated/ ready.
+(node:51415) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:15:31.727Z","event":"server.started","port":49468}
+🌐 HTTP server on :49468 (health + webhooks + API)
+{"ts":"2026-09-06T16:15:34.911Z","event":"email.magic_link.dev","email":"w***@example.com#698375cf","devLink":"/auth/verify?token=8120e684bb8215fa6a3d3fd80f7566f37bb7a4f7d8b6c53581f49c91a554b239"}
+{"ts":"2026-09-06T16:15:35.319Z","event":"webpublish.stripe_paid.published","siteId":"ebc91b93-7a56-42ab-b1be-8fcd4083c01f","orderId":"2cb0e338-979f-4d9c-80d1-e30eaef41591","url":"/live/wave8-owner-ui-inv-97413e8d/","source":"pending-draft"}
+✖ a site that has been paid for shows its invoice in the dashboard "Facturi" panel (48795.30875ms)
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-inv-97413e8d' }).locator('button').filter({ hasText: 'Facturi' }) to be visible
+  
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abbef268152b132dc/bot/test/wave8-owner-ui-invoices-reachable-e2e.test.js:123:27) {
+    name: 'TimeoutError',
+    log: [ "  - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-inv-97413e8d' }).locator('button').filter({ hasText: 'Facturi' }) to be visible" ]
+  }
+
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49318.815542
+
+✖ failing tests:
+
+test at bot/test/wave8-owner-ui-invoices-reachable-e2e.test.js:35:1
+✖ a site that has been paid for shows its invoice in the dashboard "Facturi" panel (48795.30875ms)
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-inv-97413e8d' }).locator('button').filter({ hasText: 'Facturi' }) to be visible
+  
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abbef268152b132dc/bot/test/wave8-owner-ui-invoices-reachable-e2e.test.js:123:27) {
+    name: 'TimeoutError',
+    log: [ "  - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-inv-97413e8d' }).locator('button').filter({ hasText: 'Facturi' }) to be visible" ]
+  }
