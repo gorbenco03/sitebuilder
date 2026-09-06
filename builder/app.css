@@ -1537,6 +1537,27 @@ body.details-drawer-open .editor-tpl-name {
   white-space: normal;
 }
 
+/* Dunning banner (Wave 8 reachability sweep) — a declined renewal charge,
+   surfaced on the site's own dashboard card for the first time. */
+.dunning-banner {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  border: 1px solid;
+}
+.dunning-banner--warning {
+  background: var(--warning-bg);
+  border-color: #F3D9A8;
+  color: #92600A;
+}
+.dunning-banner--critical {
+  background: var(--error-bg);
+  border-color: #F3C6C6;
+  color: var(--error);
+}
+
 .site-card-meta {
   font-size: 0.8rem;
   color: var(--text-muted);

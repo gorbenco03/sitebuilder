@@ -3515,6 +3515,47 @@ function formatHostingUntilDate(iso) {
 }
 
 /**
+ * Wave 8 reachability sweep — client-side mirror of bot/webpublish.js's
+ * getDunningState(site). A failed renewal charge was already fully tracked
+ * server-side (paymentFailedAt/paymentFailedCount/stripeSubscriptionStatus,
+ * all returned verbatim by GET /api/sites — see that function's own doc
+ * comment, which names this dashboard as where it should render) and even
+ * notified an admin over Telegram, but an owner on the web-only deployment
+ * had literally nothing in their own dashboard telling them their card was
+ * declined — same "server-complete, nothing to click" defect as the domain
+ * and invoices panels above, just for a warning instead of a feature.
+ * A literal copy (not an import — the builder is a static browser bundle
+ * with no access to bot/ modules) kept in sync by hand; see
+ * HANDOFF-owner-ui.md.
+ *
+ * @param {object} site
+ * @returns {{severity:'warning'|'critical', messageRo:string}|null}
+ */
+function computeDunningBanner(site) {
+  if (!site) return null;
+  const subSt = String(site.stripeSubscriptionStatus || site.subscriptionStatus || '').toLowerCase();
+  const hasFailureOnRecord = !!site.paymentFailedAt;
+
+  if (subSt === 'unpaid' || subSt === 'incomplete_expired') {
+    return {
+      severity: 'critical',
+      messageRo:
+        'Site-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. ' +
+        'Adaugă un card nou din tabloul de bord ca să repornești site-ul.',
+    };
+  }
+  if (subSt === 'past_due' || hasFailureOnRecord) {
+    return {
+      severity: 'warning',
+      messageRo:
+        `Card refuzat la încercarea ${site.paymentFailedCount || 1}. Stripe reîncearcă automat cardul; site-ul rămâne live. ` +
+        'Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.',
+    };
+  }
+  return null;
+}
+
+/**
  * Live trial/site URL: absolute http(s) OR same-origin isolated /live/<slug>/.
  * Relative /live/… must count as live so success chrome is not the unpaid pay CTA.
  */
@@ -4861,6 +4902,18 @@ function buildSiteCard(site) {
     }
   }
 
+  // Dunning banner (Wave 8 reachability sweep) — a declined renewal charge
+  // was tracked server-side and notified an admin, but never shown to the
+  // owner themselves anywhere in the product.
+  const dunning = computeDunningBanner(site);
+  if (dunning) {
+    const banner = document.createElement('div');
+    banner.className = 'dunning-banner dunning-banner--' + dunning.severity;
+    banner.setAttribute('role', 'alert');
+    banner.textContent = dunning.messageRo;
+    info.appendChild(banner);
+  }
+
   const actions = document.createElement('div');
   actions.className = 'site-card-actions';
 
@@ -4925,6 +4978,37 @@ function buildSiteCard(site) {
       }
     });
     actions.appendChild(cancelBtn);
+  }
+
+  // "Actualizează cardul" (Wave 8 reachability sweep) — independent of the
+  // pay/renew/cancel branches above: a 'critical' dunning site has already
+  // been unpublished by a failed renewal (status flips away from live/active,
+  // so neither of those branches fires above and this card previously showed
+  // NO primary action at all), while a 'warning' one is still live and shows
+  // this ALONGSIDE Anulează. Same billing-portal route Anulează already
+  // uses — Stripe's customer portal covers both cancel and update-card.
+  if (dunning) {
+    const updateCardBtn = document.createElement('button');
+    updateCardBtn.className = 'btn-primary btn-sm';
+    updateCardBtn.textContent = 'Actualizează cardul';
+    updateCardBtn.setAttribute('aria-label', 'Actualizează cardul pentru ' + (site.projectName || site.slug || 'acest site'));
+    updateCardBtn.addEventListener('click', async () => {
+      try {
+        setBtnLoading(updateCardBtn, true, 'Se deschide…');
+        const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
+        const portalUrl = data.portalUrl || data.url;
+        if (portalUrl) {
+          window.location.href = portalUrl;
+        } else {
+          showToast('Portalul de facturare nu este disponibil acum.', 'error');
+        }
+      } catch (e) {
+        showToast('Eroare: ' + e.message, 'error');
+      } finally {
+        setBtnLoading(updateCardBtn, false);
+      }
+    });
+    actions.appendChild(updateCardBtn);
   }
 
   const versBtn = document.createElement('button');
