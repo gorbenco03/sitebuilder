@@ -110,6 +110,29 @@ button, input, select, textarea { font: inherit; color: inherit; }
     font-size: 1.05rem;
     font-weight: 500;
     letter-spacing: 0.01em;
+    /* WAVE8-02: a long, legitimate business name (law/consulting firm names
+       routinely run 60-80 chars — schema.json's own maxLen for business.name)
+       used to wrap onto several lines inside this flex row. Flex items default
+       to min-width:auto, which refuses to shrink below the text's intrinsic
+       width, so the wrap pushed .pr-nav__inner (and therefore the whole sticky
+       <header class="pr-nav">, z-index:40) taller with every extra line. On a
+       short viewport (a phone in landscape, or one with browser chrome eating
+       vertical space) a 2-3 line name grew the header past 250px — enough to
+       structurally overlap and swallow clicks meant for the fixed WhatsApp
+       button (z-index:30) sitting near the bottom-right of the SAME short
+       viewport. Truncating to one line with an ellipsis keeps the header at
+       its intended ~59px in every case, so it can never grow into the
+       WhatsApp button's territory this way again.
+       min-width:0 is required here specifically because this is a flex child
+       (.pr-nav__inner) — without it, text-overflow:ellipsis has no effect and
+       the browser falls back to the old wrapping/overflow behaviour. */
+    display: inline-flex;
+    align-items: center;
+    min-width: 0;
+    max-width: 60vw;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .pr-nav__logo { height: 22px; width: auto; }
 .pr-nav__links {
@@ -769,7 +792,22 @@ a.pr-contact__row:hover { border-color: var(--accent); }
     position: fixed;
     right: 1rem;
     bottom: 1rem;
-    z-index: 30;
+    /* WAVE8-02: this is the product's headline contact channel — a visitor
+       who clicks it and gets nothing (no error, no feedback) silently costs
+       the business an enquiry. z-index:30 used to sit BELOW .pr-nav (40) and
+       .pr-nav__mobile (39): harmless while the header stays a normal ~59px
+       strip, but on a short viewport a header that grows for any reason
+       (long business name wrapping was the confirmed one — see
+       .pr-nav__brand above, now fixed; there may be others we haven't found)
+       silently wins every click at this button's screen position instead of
+       opening WhatsApp. Sitting above the page chrome (41) makes that whole
+       class of failure structurally impossible, not just the one trigger we
+       found. Still below .wa-qr (50): the QR modal this button itself can
+       open must stay on top of it.
+       .pr-nav is only ~59px tall in the vast majority of real layouts, so
+       this ordering change has no visible effect there — it only matters in
+       the rare case something makes the header taller. */
+    z-index: 41;
     width: 48px; height: 48px;
     border-radius: 50%;
     display: grid; place-items: center;
