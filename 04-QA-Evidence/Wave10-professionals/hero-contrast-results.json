@@ -75,7 +75,7 @@
   },
   "worstCaseBlack": {
     "hero kicker (business.profession)": {
-      "ratio": 13.13702934181021,
+      "ratio": 13.009731582936553,
       "required": 4.5,
       "isLarge": false,
       "fg": [
@@ -84,9 +84,9 @@
         15
       ],
       "bg": [
-        219,
-        216,
-        209
+        218,
+        215,
+        208
       ],
       "text": "Avocat — drept civil și comercial",
       "fontSize": 11.52,

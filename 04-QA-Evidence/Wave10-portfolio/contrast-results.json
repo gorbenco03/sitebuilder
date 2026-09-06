@@ -2,22 +2,22 @@
   {
     "label": "hero tagline over photo veil",
     "selector": ".pf-hero__tag",
-    "ratio": 3.73552270130113,
-    "required": 3,
-    "isLarge": true,
+    "ratio": 10.433083147227018,
+    "required": 4.5,
+    "isLarge": false,
     "fg": [
-      251,
-      252,
-      253
+      255,
+      255,
+      255
     ],
     "bg": [
-      136,
-      129,
-      123
+      61,
+      64,
+      67
     ],
     "text": "Păr, îngrijirea tenului și manichiură — cu răbdare și precizie",
-    "fontSize": 54.4,
-    "fontWeight": 500
+    "fontSize": 20.8,
+    "fontWeight": 400
   },
   {
     "label": "sticky nav link (blurred dark chrome over hero)",

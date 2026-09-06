@@ -149,5 +149,23 @@
         "empty": false
       }
     ]
-  }
+  },
+  "sections": [
+    {
+      "id": "about",
+      "removed": false
+    },
+    {
+      "id": "contact",
+      "removed": false
+    },
+    {
+      "id": "gallery",
+      "removed": false
+    },
+    {
+      "id": "instagram",
+      "removed": false
+    }
+  ]
 }

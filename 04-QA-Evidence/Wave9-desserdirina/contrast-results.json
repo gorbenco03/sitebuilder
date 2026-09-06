@@ -18,7 +18,7 @@
     "fontWeight": 500
   },
   "language toggle, inactive (\"EN\")": {
-    "ratio": 6.047259939246105,
+    "ratio": 6.891523263528134,
     "required": 4.5,
     "isLarge": false,
     "fg": [
@@ -27,9 +27,9 @@
       89.25
     ],
     "bg": [
-      240,
-      240,
-      240
+      255,
+      255,
+      255
     ],
     "text": "EN",
     "fontSize": 13.6,

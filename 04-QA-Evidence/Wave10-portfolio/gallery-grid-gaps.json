@@ -21,13 +21,13 @@
         "count": 4,
         "rowCount": 2,
         "lastRowItems": 1,
-        "emptyFraction": 0.000010850694444397568
+        "emptyFraction": 0
       },
       {
         "count": 4,
         "rowCount": 2,
         "lastRowItems": 1,
-        "emptyFraction": 0.000010850694444397568
+        "emptyFraction": 0
       }
     ],
     "preset1": [
@@ -35,13 +35,13 @@
         "count": 4,
         "rowCount": 2,
         "lastRowItems": 1,
-        "emptyFraction": 0.000010850694444397568
+        "emptyFraction": 0
       },
       {
         "count": 3,
         "rowCount": 1,
         "lastRowItems": 3,
-        "emptyFraction": 0.01112196180555558
+        "emptyFraction": 0.011235955056179803
       }
     ],
     "preset2": [
@@ -49,13 +49,13 @@
         "count": 4,
         "rowCount": 2,
         "lastRowItems": 1,
-        "emptyFraction": 0.000010850694444397568
+        "emptyFraction": 0
       },
       {
         "count": 4,
         "rowCount": 2,
         "lastRowItems": 1,
-        "emptyFraction": 0.000010850694444397568
+        "emptyFraction": 0
       }
     ]
   }

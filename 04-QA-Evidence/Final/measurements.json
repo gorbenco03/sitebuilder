@@ -1,0 +1,171 @@
+{
+  "generatedAt": "2026-09-06T23:29:21.932Z",
+  "commit": "8c1c853",
+  "templates": {
+    "desserdirina": {
+      "viewports": {
+        "desktop": {
+          "cls": 0,
+          "targets": {
+            "total": 17,
+            "under24": 0,
+            "under44": 5
+          },
+          "heroContrast": {
+            "selector": ".hero-wordmark",
+            "p10": 3.68,
+            "worst": 3.1
+          },
+          "firstLoadBytes": 78110
+        },
+        "mobile": {
+          "cls": 0,
+          "targets": {
+            "total": 17,
+            "under24": 0,
+            "under44": 5
+          },
+          "heroContrast": {
+            "selector": ".hero-wordmark",
+            "p10": 3.92,
+            "worst": 3.42
+          },
+          "firstLoadBytes": 70064
+        }
+      },
+      "exportBytes": 3912647
+    },
+    "local-service": {
+      "viewports": {
+        "desktop": {
+          "cls": 0,
+          "targets": {
+            "total": 30,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".ls-hero__tag",
+            "p10": 17.49,
+            "worst": 16.37
+          },
+          "firstLoadBytes": 27013
+        },
+        "mobile": {
+          "cls": 0,
+          "targets": {
+            "total": 30,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".ls-hero__tag",
+            "p10": 17.07,
+            "worst": 16.55
+          },
+          "firstLoadBytes": 314886
+        }
+      },
+      "exportBytes": 7596432
+    },
+    "portfolio": {
+      "viewports": {
+        "desktop": {
+          "cls": 0,
+          "targets": {
+            "total": 20,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".pf-hero__word",
+            "p10": 9.99,
+            "worst": 8.19
+          },
+          "firstLoadBytes": 64882
+        },
+        "mobile": {
+          "cls": 0,
+          "targets": {
+            "total": 18,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".pf-hero__word",
+            "p10": 10,
+            "worst": 9.39
+          },
+          "firstLoadBytes": 64882
+        }
+      },
+      "exportBytes": 7296112
+    },
+    "product-menu": {
+      "viewports": {
+        "desktop": {
+          "cls": 0,
+          "targets": {
+            "total": 22,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".pm-hero__tag",
+            "p10": 18.68,
+            "worst": 18.68
+          },
+          "firstLoadBytes": 71838
+        },
+        "mobile": {
+          "cls": 0,
+          "targets": {
+            "total": 20,
+            "under24": 0,
+            "under44": 3
+          },
+          "heroContrast": {
+            "selector": ".pm-hero__tag",
+            "p10": 18.68,
+            "worst": 18.68
+          },
+          "firstLoadBytes": 71838
+        }
+      },
+      "exportBytes": 6450602
+    },
+    "professionals": {
+      "viewports": {
+        "desktop": {
+          "cls": 0,
+          "targets": {
+            "total": 19,
+            "under24": 0,
+            "under44": 4
+          },
+          "heroContrast": {
+            "selector": ".pr-display",
+            "p10": 14.05,
+            "worst": 13.91
+          },
+          "firstLoadBytes": 338134
+        },
+        "mobile": {
+          "cls": 0,
+          "targets": {
+            "total": 15,
+            "under24": 0,
+            "under44": 4
+          },
+          "heroContrast": {
+            "selector": ".pr-display",
+            "p10": 14.64,
+            "worst": 14.07
+          },
+          "firstLoadBytes": 338134
+        }
+      },
+      "exportBytes": 524417
+    }
+  }
+}
