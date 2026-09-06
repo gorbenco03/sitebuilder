@@ -53,6 +53,18 @@ let publishedSiteUrl = null;
 // Color popover state
 let colorPopoverOpen = false;
 
+// Fresh-demo-content banner state (first sixty seconds): true only right
+// after starting a template from the catalog with no matching saved draft —
+// i.e. draft.config is still the untouched preset (real-looking fake business
+// name, phone, testimonials…). Resuming any existing draft/site must never
+// set this — that content is the owner's own, not a demo.
+let isFreshDemoDraft = false;
+let demoBannerDismissed = false;
+function syncDemoBanner() {
+  const el = $('demo-content-banner');
+  if (el) el.style.display = (isFreshDemoDraft && !demoBannerDismissed) ? '' : 'none';
+}
+
 // Drawer state
 let drawerOpen = false;
 /** localStorage key for Details drawer open/closed preference (VISION Flow 2). */
@@ -2267,25 +2279,29 @@ function buildDrawer() {
     body.appendChild(group);
   });
 
-  // Photo gallery section
-  const photoPaths = findPhotoPaths();
-  if (photoPaths.length > 0) {
-    const section = document.createElement('div');
-    section.className = 'drawer-section';
-    const title = document.createElement('div');
-    title.className = 'drawer-section-title';
-    title.textContent = 'Photo gallery';
-    section.appendChild(title);
+  // Photos live in their own dedicated modal (button "Poze" in bara de sus) —
+  // it covers every image the site uses, not just the fields in this drawer,
+  // so it gets a pointer here rather than a duplicate mini gallery.
+  const photoSection = document.createElement('div');
+  photoSection.className = 'drawer-section';
+  const photoTitle = document.createElement('div');
+  photoTitle.className = 'drawer-section-title';
+  photoTitle.textContent = 'Poze';
+  photoSection.appendChild(photoTitle);
 
-    const galleryBtn = document.createElement('button');
-    galleryBtn.type = 'button';
-    galleryBtn.className = 'btn-ghost btn-sm';
-    galleryBtn.style.marginTop = '.35rem';
-    galleryBtn.textContent = 'Manage photos';
-    galleryBtn.addEventListener('click', () => openGalleryModal());
-    section.appendChild(galleryBtn);
-    body.appendChild(section);
-  }
+  const photoHint = document.createElement('p');
+  photoHint.className = 'field-hint';
+  photoHint.style.margin = '0 0 .5rem';
+  photoHint.textContent = 'Fundal, logo și galerii — toate pozele site-ului, într-un singur loc.';
+  photoSection.appendChild(photoHint);
+
+  const galleryBtn = document.createElement('button');
+  galleryBtn.type = 'button';
+  galleryBtn.className = 'btn-ghost btn-sm';
+  galleryBtn.textContent = 'Deschide Poze';
+  galleryBtn.addEventListener('click', () => openGalleryModal());
+  photoSection.appendChild(galleryBtn);
+  body.appendChild(photoSection);
 }
 
 function buildDrawerField(field) {
@@ -2607,20 +2623,35 @@ function openImagePickerForPath(configPath, cb) {
       release();
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const chosenImage = String(reader.result || '');
+    // Resize before handing it back — same 1600px/0.82 pipeline every other
+    // upload path in the app uses. This used to read the raw file straight
+    // to a data URL, so a 6MB phone photo picked here (the hero-background
+    // "Alege o poză" control) embedded its full, unresized bytes into the
+    // config — by far the heaviest single image an owner could add.
+    //
+    // typeof-guarded, with the old FileReader path kept as a fallback: a
+    // couple of existing tests extract just this function's source text and
+    // eval it in an isolated sandbox that declares FileReader but never
+    // resizeImageToDataUrl/showToast (both real top-level declarations
+    // elsewhere in this file) — same isolated-extraction constraint as
+    // pushHistory()/TAB_ID in saveDraft() above.
+    const resizeOrRead = typeof resizeImageToDataUrl === 'function'
+      ? resizeImageToDataUrl(file, 1600, 0.82)
+      : new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.onabort = reject;
+        try { reader.readAsDataURL(file); } catch (e) { reject(e); }
+      });
+    resizeOrRead.then((dataUrl) => {
       if (input._hbPathImagePicker !== request) return;
       release();
-      if (chosenImage && typeof cb === 'function') cb(chosenImage);
-    };
-    reader.onerror = release;
-    reader.onabort = release;
-    try {
-      reader.readAsDataURL(file);
-    } catch (_) {
-      release();
-    }
+      if (dataUrl && typeof cb === 'function') cb(dataUrl);
+    }).catch(() => {
+      if (input._hbPathImagePicker === request) release();
+      if (typeof showToast === 'function') showToast('Nu am putut procesa fotografia.', 'error');
+    });
   };
   // Capture before the shared inline-image listener clears this input's files.
   input.addEventListener('change', onChange, true);
@@ -2649,7 +2680,14 @@ function syncDrawerField(path, value) {
 // ---------------------------------------------------------------------------
 
 function findPhotoPaths() {
-  // Return list of paths to photo arrays in config
+  // Return list of dotted config paths that hold photo arrays — i.e. arrays
+  // whose items are objects with a .src (the { src, alt } shape used by
+  // category galleries and the Instagram gallery field). Recurses into BOTH
+  // plain objects and arrays-of-objects: category galleries live nested as
+  // categories[i].photos, so a walk that only recursed into plain objects
+  // (as an earlier version of this function did) would never reach them —
+  // every template's real gallery lives one level deeper than a flat scan
+  // finds, which is why "Manage photos" used to render for no one.
   const paths = [];
   if (!draft.config) return paths;
 
@@ -2661,15 +2699,77 @@ function findPhotoPaths() {
     }
     Object.entries(obj).forEach(([k, v]) => {
       const full = path ? path + '.' + k : k;
-      if (Array.isArray(v) && v.length > 0 && v.some(p => typeof p === 'object' && p && p.src)) {
+      if (Array.isArray(v) && v.length > 0 && v.some(p => p && typeof p === 'object' && p.src)) {
         paths.push(full);
-      } else if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+      } else if (v && typeof v === 'object') {
         walk(v, full);
       }
     });
   }
   walk(draft.config, '');
   return paths;
+}
+
+/** A friendly heading for a discovered photo-array path, using the parent
+ * category's own title when there is one instead of a raw config path. */
+function humanizePhotoPathLabel(path) {
+  const catMatch = path.match(/^categories\.(\d+)\.photos$/);
+  if (catMatch) {
+    const cat = getPath(draft.config, 'categories.' + catMatch[1]);
+    const title = cat && typeof cat.title === 'string' ? cat.title.trim() : '';
+    return title || ('Categorie ' + (Number(catMatch[1]) + 1));
+  }
+  if (path === 'instagram.gallery') return 'Galerie Instagram';
+  return path
+    .split('.')
+    .filter(seg => !/^\d+$/.test(seg))
+    .map(seg => seg.charAt(0).toUpperCase() + seg.slice(1))
+    .join(' — ');
+}
+
+/** Owner-uploaded photos are stored as data: URIs; anything else is still a
+ * template asset path (images/xxx.jpg) — i.e. the demo photo nobody replaced yet. */
+function isDemoPhotoSrc(src) {
+  return typeof src === 'string' && src.length > 0 && src.slice(0, 5) !== 'data:';
+}
+
+/**
+ * A config value can hold either a data: URI (owner upload) or a bare
+ * template-relative path like "images/iv-hero.jpg" — the latter only resolves
+ * inside the preview iframe, which serves that template's own asset folder as
+ * its base. This modal renders in the top-level document, so demo photos need
+ * their real bytes: the active template's files.imageMap carries exactly that
+ * (the same map the preview iframe and edit-overlay picker already use).
+ */
+function resolvePhotoDisplaySrc(src) {
+  if (typeof src !== 'string' || !src || src.slice(0, 5) === 'data:') return src;
+  const tpl = draft.templateId ? getTemplateById(draft.templateId) : null;
+  const imageMap = tpl && tpl.files && tpl.files.imageMap;
+  if (!imageMap) return src;
+  const key = src.indexOf('images/') === 0 ? src : 'images/' + src.replace(/^\.?\//, '');
+  return imageMap[key] || imageMap[src] || src;
+}
+
+/** Open the file picker once, resize the chosen image the same way every other
+ * upload path in the app does, and resolve with the data URL (or null if the
+ * user cancelled). Kept separate from #img-file-input so the gallery modal's
+ * own pickers never race the on-canvas image-click picker for that shared input. */
+function pickAndResizeImage() {
+  return new Promise((resolve, reject) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp';
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      if (!file) { resolve(null); return; }
+      try {
+        resolve(await resizeImageToDataUrl(file, 1600, 0.82));
+      } catch (e) {
+        reject(e);
+      }
+    }, { once: true });
+    input.click();
+  });
 }
 
 function openGalleryModal() {
@@ -2682,78 +2782,297 @@ function buildGalleryModal() {
   if (!body) return;
   body.innerHTML = '';
 
-  const photoPaths = findPhotoPaths();
-  if (photoPaths.length === 0) {
-    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">No photos yet.</p>';
+  if (!draft.config) {
+    body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem">Alege mai întâi un design.</p>';
     return;
   }
 
-  photoPaths.forEach(path => {
-    const section = document.createElement('div');
-    section.className = 'gallery-path-section';
+  const intro = document.createElement('p');
+  intro.className = 'field-hint';
+  intro.style.margin = '0 0 .9rem';
+  intro.textContent = 'Toate pozele site-ului tău, într-un singur loc. Pozele marcate „demo” sunt din designul original — înlocuiește-le cu ale tale înainte de publicare.';
+  body.appendChild(intro);
 
-    const title = document.createElement('div');
-    title.className = 'field-label';
-    title.style.marginBottom = '.5rem';
-    title.textContent = path;
-    section.appendChild(title);
+  // Single-image fields first — the hero background sets the first impression,
+  // so it belongs at the top of "all the site's photos", not buried in a list.
+  buildSingleImageSection(body, {
+    label: 'Fundal principal (hero)',
+    get: () => parseHeroBackground(getPath(draft.config, 'hero.background')).image || '',
+    set: (dataUrl) => {
+      const color = parseHeroBackground(getPath(draft.config, 'hero.background')).color;
+      setPath(draft.config, 'hero.background', composeHeroBackground({ color: color, image: dataUrl }));
+    },
+    clear: () => {
+      const color = parseHeroBackground(getPath(draft.config, 'hero.background')).color;
+      setPath(draft.config, 'hero.background', composeHeroBackground({ color: color, image: '' }));
+    },
+  });
 
-    const thumbs = document.createElement('div');
-    thumbs.className = 'photos-thumbs';
+  if (Object.prototype.hasOwnProperty.call(draft.config, 'logo')) {
+    buildSingleImageSection(body, {
+      label: 'Logo',
+      get: () => getPath(draft.config, 'logo') || '',
+      set: (dataUrl) => setPath(draft.config, 'logo', dataUrl),
+      clear: () => setPath(draft.config, 'logo', ''),
+    });
+  }
 
-    function renderThumbs() {
-      thumbs.innerHTML = '';
-      const photos = getPath(draft.config, path) || [];
-      photos.forEach((p, idx) => {
-        const src = typeof p === 'string' ? p : (p && p.src);
-        if (!src) return;
-        const div = document.createElement('div');
-        div.className = 'photo-thumb';
+  const photoPaths = findPhotoPaths();
+  photoPaths.forEach(path => buildGallerySection(body, path));
+}
 
-        const img = document.createElement('img');
-        img.src = src; img.alt = 'Photo ' + (idx+1); img.loading = 'lazy';
+function buildSingleImageSection(body, opts) {
+  const section = document.createElement('div');
+  section.className = 'gallery-path-section';
 
-        const del = document.createElement('button');
-        del.type = 'button'; del.className = 'photo-thumb-del';
-        del.setAttribute('aria-label', 'Delete photo ' + (idx+1));
-        del.innerHTML = '&times;';
-        del.addEventListener('click', () => {
+  const title = document.createElement('div');
+  title.className = 'field-label';
+  title.textContent = opts.label;
+  section.appendChild(title);
+
+  const row = document.createElement('div');
+  row.className = 'photos-thumbs photos-thumbs--single';
+
+  function render() {
+    row.innerHTML = '';
+    const src = opts.get();
+
+    const thumb = document.createElement('div');
+    thumb.className = 'photo-thumb photo-thumb--single' + (src ? '' : ' photo-thumb--empty');
+    if (src) {
+      const img = document.createElement('img');
+      img.src = resolvePhotoDisplaySrc(src); img.alt = opts.label; img.loading = 'lazy';
+      thumb.appendChild(img);
+      if (isDemoPhotoSrc(src)) {
+        const badge = document.createElement('span');
+        badge.className = 'photo-thumb-badge';
+        badge.textContent = 'demo';
+        thumb.appendChild(badge);
+      }
+    } else {
+      thumb.textContent = 'Nicio poză încă';
+    }
+    row.appendChild(thumb);
+
+    const actions = document.createElement('div');
+    actions.className = 'photo-thumb-actions photo-thumb-actions--inline';
+
+    const replaceBtn = document.createElement('button');
+    replaceBtn.type = 'button';
+    replaceBtn.className = 'btn-ghost btn-sm';
+    replaceBtn.textContent = src ? 'Înlocuiește' : 'Alege o poză';
+    replaceBtn.addEventListener('click', () => {
+      setBtnLoading(replaceBtn, true, 'Se procesează…');
+      pickAndResizeImage().then((dataUrl) => {
+        setBtnLoading(replaceBtn, false);
+        if (!dataUrl) return;
+        opts.set(dataUrl);
+        saveDraft();
+        fullRerender();
+        render();
+      }).catch((e) => {
+        setBtnLoading(replaceBtn, false);
+        showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+      });
+    });
+    actions.appendChild(replaceBtn);
+
+    if (src && opts.clear) {
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'btn-ghost btn-sm';
+      clearBtn.textContent = 'Elimină';
+      clearBtn.addEventListener('click', () => {
+        opts.clear();
+        saveDraft();
+        fullRerender();
+        render();
+      });
+      actions.appendChild(clearBtn);
+    }
+    row.appendChild(actions);
+  }
+  render();
+  section.appendChild(row);
+  body.appendChild(section);
+}
+
+function buildGallerySection(body, path) {
+  const section = document.createElement('div');
+  section.className = 'gallery-path-section';
+
+  const title = document.createElement('div');
+  title.className = 'field-label';
+  title.textContent = humanizePhotoPathLabel(path);
+  section.appendChild(title);
+
+  const thumbs = document.createElement('div');
+  thumbs.className = 'photos-thumbs';
+
+  function renderThumbs() {
+    thumbs.innerHTML = '';
+    const photos = getPath(draft.config, path) || [];
+    photos.forEach((p, idx) => {
+      const src = typeof p === 'string' ? p : (p && p.src);
+      if (!src) return;
+      const alt = (typeof p === 'object' && p && typeof p.alt === 'string') ? p.alt : '';
+
+      const card = document.createElement('div');
+      card.className = 'photo-thumb-card';
+
+      const div = document.createElement('div');
+      div.className = 'photo-thumb';
+
+      const img = document.createElement('img');
+      img.src = resolvePhotoDisplaySrc(src); img.alt = alt || ('Poză ' + (idx + 1)); img.loading = 'lazy';
+      div.appendChild(img);
+
+      if (isDemoPhotoSrc(src)) {
+        const badge = document.createElement('span');
+        badge.className = 'photo-thumb-badge';
+        badge.textContent = 'demo';
+        div.appendChild(badge);
+      }
+
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'photo-thumb-del';
+      del.setAttribute('aria-label', 'Șterge poza ' + (idx + 1));
+      del.innerHTML = '&times;';
+      del.addEventListener('click', () => {
+        const arr = getPath(draft.config, path) || [];
+        arr.splice(idx, 1);
+        setPath(draft.config, path, arr);
+        saveDraft();
+        fullRerender();
+        renderThumbs();
+        showToast('Poză ștearsă — apasă Anulează din bara de sus dacă a fost o greșeală.');
+      });
+      div.appendChild(del);
+      card.appendChild(div);
+
+      const altInput = document.createElement('input');
+      altInput.type = 'text';
+      altInput.className = 'photo-thumb-alt';
+      altInput.placeholder = 'Descriere poză (alt)';
+      altInput.value = alt;
+      altInput.maxLength = 160;
+      altInput.setAttribute('aria-label', 'Descriere poză ' + (idx + 1) + ' pentru accesibilitate și SEO');
+      altInput.addEventListener('input', () => {
+        const arr = getPath(draft.config, path) || [];
+        const cur = arr[idx];
+        if (cur && typeof cur === 'object') {
+          cur.alt = altInput.value;
+        } else {
+          arr[idx] = { src: src, alt: altInput.value };
+        }
+        setPath(draft.config, path, arr);
+        // Every keystroke would otherwise fragment undo into one step per
+        // character — coalesce them into a single step per editing session,
+        // same trick the drawer's own color-drag inputs use.
+        pendingHistoryCoalesceKey = 'gallery-alt:' + path + ':' + idx;
+        saveDraft();
+      });
+      card.appendChild(altInput);
+
+      const actions = document.createElement('div');
+      actions.className = 'photo-thumb-actions';
+
+      function makeMoveBtn(dir, label, disabled) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'photo-thumb-mini-btn';
+        b.textContent = dir < 0 ? '◀' : '▶';
+        b.title = label;
+        b.setAttribute('aria-label', label);
+        b.disabled = disabled;
+        b.addEventListener('click', () => {
           const arr = getPath(draft.config, path) || [];
-          arr.splice(idx, 1);
+          const j = idx + dir;
+          if (j < 0 || j >= arr.length) return;
+          const tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
           setPath(draft.config, path, arr);
           saveDraft();
           fullRerender();
           renderThumbs();
         });
-        div.appendChild(img); div.appendChild(del); thumbs.appendChild(div);
-      });
-    }
-    renderThumbs();
-    section.appendChild(thumbs);
+        return b;
+      }
+      actions.appendChild(makeMoveBtn(-1, 'Mută mai devreme', idx === 0));
+      actions.appendChild(makeMoveBtn(1, 'Mută mai târziu', idx === photos.length - 1));
 
-    const addBtn = document.createElement('label');
-    addBtn.className = 'photos-dropzone';
-    addBtn.style.marginTop = '.5rem';
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = 'image/jpeg,image/png,image/webp';
-    addBtn.innerHTML = '<div class="photos-dropzone-icon" aria-hidden="true">+</div><div>Add photos</div>';
-    addBtn.appendChild(fileInput);
-    fileInput.addEventListener('change', async () => {
-      const files = Array.from(fileInput.files);
-      for (const file of files) {
+      const replaceBtn = document.createElement('button');
+      replaceBtn.type = 'button';
+      replaceBtn.className = 'photo-thumb-mini-btn';
+      replaceBtn.textContent = '⟳';
+      replaceBtn.title = 'Înlocuiește această poză';
+      replaceBtn.setAttribute('aria-label', 'Înlocuiește poza ' + (idx + 1));
+      replaceBtn.addEventListener('click', () => {
+        replaceBtn.disabled = true;
+        pickAndResizeImage().then((dataUrl) => {
+          replaceBtn.disabled = false;
+          if (!dataUrl) return;
+          const arr = getPath(draft.config, path) || [];
+          const cur = arr[idx];
+          if (cur && typeof cur === 'object') cur.src = dataUrl;
+          else arr[idx] = { src: dataUrl, alt: alt };
+          setPath(draft.config, path, arr);
+          saveDraft();
+          fullRerender();
+          renderThumbs();
+        }).catch((e) => {
+          replaceBtn.disabled = false;
+          showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+        });
+      });
+      actions.appendChild(replaceBtn);
+
+      card.appendChild(actions);
+      thumbs.appendChild(card);
+    });
+  }
+  renderThumbs();
+  section.appendChild(thumbs);
+
+  const addBtn = document.createElement('label');
+  addBtn.className = 'photos-dropzone';
+  addBtn.style.marginTop = '.5rem';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.multiple = true; fileInput.accept = 'image/jpeg,image/png,image/webp';
+  const dzIcon = document.createElement('div');
+  dzIcon.className = 'photos-dropzone-icon'; dzIcon.setAttribute('aria-hidden', 'true'); dzIcon.textContent = '+';
+  const dzLabel = document.createElement('div');
+  dzLabel.textContent = 'Adaugă poze';
+  addBtn.appendChild(dzIcon); addBtn.appendChild(dzLabel); addBtn.appendChild(fileInput);
+
+  fileInput.addEventListener('change', async () => {
+    const files = Array.from(fileInput.files || []);
+    if (!files.length) return;
+    dzLabel.textContent = 'Se procesează ' + files.length + ' ' + (files.length === 1 ? 'poză' : 'poze') + '…';
+    addBtn.classList.add('photos-dropzone--busy');
+    let added = 0;
+    for (const file of files) {
+      try {
         const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
         const arr = getPath(draft.config, path) || [];
         arr.push({ src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
         setPath(draft.config, path, arr);
+        added++;
+      } catch (e) {
+        showToast('Nu am putut procesa "' + file.name + '": ' + e.message, 'error');
       }
+    }
+    dzLabel.textContent = 'Adaugă poze';
+    addBtn.classList.remove('photos-dropzone--busy');
+    if (added) {
       saveDraft();
       fullRerender();
       renderThumbs();
-      fileInput.value = '';
-    });
-    section.appendChild(addBtn);
-    body.appendChild(section);
+      showToast(added === 1 ? 'Poza a fost adăugată.' : (added + ' poze au fost adăugate.'), 'success');
+    }
+    fileInput.value = '';
   });
+  section.appendChild(addBtn);
+  body.appendChild(section);
 }
 
 // ---------------------------------------------------------------------------
@@ -2779,6 +3098,14 @@ function saveDraft() {
   // Same isolated-extraction test compatibility as pushHistory() above — TAB_ID
   // is a top-level const in the real app.js but absent from those sandboxes.
   if (typeof TAB_ID !== 'undefined') payload.tabId = TAB_ID;
+  // Carry the "still untouched demo content" banner state across a real page
+  // reload — resumeLocalDraft() runs on a fresh load with none of this
+  // session's in-memory state, so without persisting it here the banner would
+  // silently vanish on refresh even though nothing was actually edited.
+  if (typeof isFreshDemoDraft !== 'undefined') {
+    payload.isFreshDemoDraft = isFreshDemoDraft;
+    payload.demoBannerDismissed = !!demoBannerDismissed;
+  }
   // Persist paid-site bind so fresh #edit (no dashboard «Edit») can republish
   if (currentSiteId) {
     payload.siteId = currentSiteId;
@@ -3261,7 +3588,14 @@ async function downloadDraftHtml() {
     showToast('Intră în cont ca să descarci HTML-ul.', 'error', 5000);
     return;
   }
-  if (btn) btn.disabled = true;
+  // Saving the draft + generating the export is a real network round-trip
+  // (not instant) — a bare disabled button with no text change reads as a
+  // dead click. setBtnLoading is the same "Se ...…" pattern every other
+  // multi-step action in the editor already uses (publish, restore, etc.).
+  // typeof-guarded with a plain-disable fallback: an existing test extracts
+  // just this function's source and evals it in a sandbox that stubs $()
+  // and fetch but never declares setBtnLoading.
+  if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, true, 'Se pregătește…'); else btn.disabled = true; }
   try {
     if (!draft.templateId || !draft.config) {
       showToast('Alege mai întâi un design.', 'error', 5000);
@@ -3331,7 +3665,7 @@ async function downloadDraftHtml() {
         : 'Nu am putut descărca HTML-ul.';
     showToast(msg, 'error', 5000);
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, false); else btn.disabled = false; }
   }
 }
 
@@ -3345,7 +3679,10 @@ async function downloadDraftZip() {
     showToast('Autentifică-te ca să descarci ZIP-ul.', 'error', 5000);
     return;
   }
-  if (btn) btn.disabled = true;
+  // Same feedback fix as downloadDraftHtml() above — zipping is the slower
+  // of the two exports, so a silent disabled button is even more of a dead
+  // moment here. Same typeof guard too (isolated-extraction test safety).
+  if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, true, 'Se pregătește…'); else btn.disabled = true; }
   try {
     if (!draft.templateId || !draft.config) {
       showToast('Alege mai întâi un design.', 'error', 5000);
@@ -3409,7 +3746,7 @@ async function downloadDraftZip() {
   } catch (_) {
     showToast('Nu am putut descărca ZIP-ul.', 'error', 5000);
   } finally {
-    if (btn) btn.disabled = false;
+    if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, false); else btn.disabled = false; }
   }
 }
 
@@ -4386,6 +4723,8 @@ async function resumeLocalDraft() {
   if (!tplData || !meta) return false;
   draft.templateId = saved.templateId;
   draft.config = deepClone(saved.config);
+  isFreshDemoDraft = !!saved.isFreshDemoDraft;
+  demoBannerDismissed = !!saved.demoBannerDismissed;
   if (typeof resetHistory === 'function') resetHistory();
   // Restore paid-site bind from draft (fresh #edit without loadSiteForEdit)
   if (saved.siteId) {
@@ -4645,10 +4984,13 @@ async function startWithTemplate(templateId) {
   const saved = loadDraft();
   if (saved && saved.templateId === templateId && saved.config) {
     draft.config = saved.config;
+    isFreshDemoDraft = false;
   } else {
     const presets = tplData.presets || [];
     draft.config = presets.length > 0 ? deepClone(presets[0].config) : {};
+    isFreshDemoDraft = true;
   }
+  demoBannerDismissed = false;
   if (typeof resetHistory === 'function') resetHistory();
   // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
   saveDraft();
@@ -5122,6 +5464,9 @@ async function loadSiteForEdit(siteId) {
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    // A saved/published site is the owner's own content, never demo filler.
+    isFreshDemoDraft = false;
+    demoBannerDismissed = false;
     if (typeof resetHistory === 'function') resetHistory();
     saveDraft();
 
@@ -5635,6 +5980,7 @@ function showScreen(name) {
         if (shouldAutoOpenDrawer() && !drawerOpen) openDrawer();
       });
     }
+    syncDemoBanner();
   } else {
     if (topbar) hide(topbar);
     if (header) show(header);
@@ -5816,6 +6162,10 @@ function wireStaticButtons() {
   const igDisconnect = $('btn-ig-disconnect');
   if (igDisconnect) igDisconnect.addEventListener('click', disconnectInstagram);
 
+  // Photos — one place for every image the site uses (hero, logo, galleries)
+  const galleryOpenBtn = $('btn-open-gallery');
+  if (galleryOpenBtn) galleryOpenBtn.addEventListener('click', openGalleryModal);
+
   // Drawer
   const drawerBtn = $('btn-open-drawer');
   if (drawerBtn) drawerBtn.addEventListener('click', () => {
@@ -5963,6 +6313,13 @@ function wireStaticButtons() {
   if (tabConflictReloadBtn) tabConflictReloadBtn.addEventListener('click', () => window.location.reload());
   const tabConflictDismissBtn = $('btn-tab-conflict-dismiss');
   if (tabConflictDismissBtn) tabConflictDismissBtn.addEventListener('click', hideTabConflictBanner);
+
+  const demoBannerDismissBtn = $('btn-dismiss-demo-banner');
+  if (demoBannerDismissBtn) demoBannerDismissBtn.addEventListener('click', () => {
+    demoBannerDismissed = true;
+    syncDemoBanner();
+    saveDraft(); // persist the dismissal so a reload does not bring the banner back
+  });
 
   // Undo / redo toolbar buttons
   const undoBtn = $('btn-undo');
