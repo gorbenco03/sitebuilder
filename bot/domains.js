@@ -29,6 +29,14 @@ const REGISTRAR_BASE = '/v1/registrar/domains'; // availability, price, buy live
 // TLDs to probe in suggestDomains — ordered by general e-commerce relevance.
 const SUGGEST_TLDS = ['.com', '.shop', '.store', '.bakery', '.ro'];
 
+/**
+ * DI-05: this module's own vercelRequest (domain availability/price/buy) had
+ * no timeout either, same defect as deploy-vercel.js's copy. Kept as its own
+ * constant/env var since the two modules are intentionally independent
+ * copies, not a shared dependency.
+ */
+const VERCEL_API_TIMEOUT_MS = Number(process.env.VERCEL_API_TIMEOUT_MS) || 15000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -58,14 +66,23 @@ async function vercelRequest(method, urlPath, bodyObj) {
     if (!token) throw new Error('VERCEL_TOKEN is not set. Cannot call Vercel API.');
 
     const url = VERCEL_API + teamQuery(urlPath);
-    const res = await fetch(url, {
-        method,
-        headers: {
-            Authorization: 'Bearer ' + token,
-            ...(bodyObj ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: bodyObj ? JSON.stringify(bodyObj) : undefined,
-    });
+    let res;
+    try {
+        res = await fetch(url, {
+            method,
+            headers: {
+                Authorization: 'Bearer ' + token,
+                ...(bodyObj ? { 'Content-Type': 'application/json' } : {}),
+            },
+            body: bodyObj ? JSON.stringify(bodyObj) : undefined,
+            signal: AbortSignal.timeout(VERCEL_API_TIMEOUT_MS),
+        });
+    } catch (e) {
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            throw new Error(`Vercel ${method} ${urlPath} timed out after ${VERCEL_API_TIMEOUT_MS}ms`);
+        }
+        throw e;
+    }
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {
