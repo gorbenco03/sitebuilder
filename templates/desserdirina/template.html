@@ -111,38 +111,41 @@
                         <div class="menu-panel" data-menu-panel="en" hidden>
                             <div class="menu-groups">
                                 <!-- @each menu.en -->
-                                <!-- @if items -->
+                                <!--
+                                    DSD-03: the heading renders unconditionally, and only the
+                                    dish list itself is gated on `items` being non-empty — a
+                                    category an owner has cleared down to zero dishes (a
+                                    normal, single realistic action: "we don't make this
+                                    anymore") still shows its own name instead of vanishing
+                                    from the page outright. An older version of this block
+                                    gated the WHOLE <details> (heading included) on `items`,
+                                    with a `menu-group--plain` fallback for an `empty` flag
+                                    that no code anywhere ever set — so a category emptied out
+                                    through the editor's own "remove item" control disappeared
+                                    completely, live, with no trace (see HANDOFF-desserdirina.md).
+                                -->
                                 <details class="menu-group" open>
                                     <summary class="menu-cat">{{category}}</summary>
+                                    <!-- @if items -->
                                     <ul class="menu-items">
                                         <!-- @each items --><li>{{.}}</li><!-- @end -->
                                     </ul>
+                                    <!-- @endif -->
                                 </details>
-                                <!-- @endif -->
-                                <!-- @if empty -->
-                                <div class="menu-group menu-group--plain">
-                                    <span class="menu-cat">{{category}}</span>
-                                </div>
-                                <!-- @endif -->
                                 <!-- @end -->
                             </div>
                         </div>
                         <div class="menu-panel" data-menu-panel="ro">
                             <div class="menu-groups">
                                 <!-- @each menu.ro -->
-                                <!-- @if items -->
                                 <details class="menu-group" open>
                                     <summary class="menu-cat">{{category}}</summary>
+                                    <!-- @if items -->
                                     <ul class="menu-items">
                                         <!-- @each items --><li>{{.}}</li><!-- @end -->
                                     </ul>
+                                    <!-- @endif -->
                                 </details>
-                                <!-- @endif -->
-                                <!-- @if empty -->
-                                <div class="menu-group menu-group--plain">
-                                    <span class="menu-cat">{{category}}</span>
-                                </div>
-                                <!-- @endif -->
                                 <!-- @end -->
                             </div>
                         </div>

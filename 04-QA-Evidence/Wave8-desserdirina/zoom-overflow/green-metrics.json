@@ -1,0 +1,22 @@
+{
+  "r1440": {
+    "before": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440
+    },
+    "after": {
+      "scrollWidth": 1440,
+      "clientWidth": 1440
+    }
+  },
+  "r390": {
+    "before": {
+      "scrollWidth": 390,
+      "clientWidth": 390
+    },
+    "after": {
+      "scrollWidth": 390,
+      "clientWidth": 390
+    }
+  }
+}

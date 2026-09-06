@@ -801,6 +801,49 @@
   }
 
   /**
+   * Does `node` contain a data-hb-edit element that does NOT belong to the
+   * item at `itemPath` (its path is neither itemPath itself nor a sub-path
+   * of it, e.g. "itemPath.label")? General boundary test for climbing up
+   * from an item's own fields to its true repeated-item root.
+   *
+   * containsOtherListIndex (above) only catches a SIBLING item's field, and
+   * a list root with exactly one surviving index has no sibling to find --
+   * it always returns false, so the climb in findListItemContainer never
+   * found a reason to stop. On a single-level list (services, pricing, ...)
+   * that is harmless in practice, because the loop is capped at 4 levels and
+   * a lone item's <li>/<ul>/list-wrapper/section chain rarely has 4 more
+   * ancestors worth annexing before hitting the section/body guard.
+   *
+   * desserdirina's menu is the one list in this product that nests two
+   * levels deep (a bilingual `menu.ro`/`menu.en` array of categories, each
+   * holding its own `items` array) — so climbing from a category's LAST
+   * remaining dish (root "menu.ro.N.items", one surviving index) walks
+   * <li> -> <ul> -> the category's own <details> (which owns an unrelated
+   * "menu.ro.N.category" field) -> the shared <div class="menu-groups"> ->
+   * the whole <div class="menu-panel"> in just 4 hops, ballooning the
+   * "container" — and therefore the remove control — from one dish up to
+   * the ENTIRE RO or EN menu (DSD-03: an owner who clears a category down to
+   * its last dish gets a stray, misplaced remove button spanning every
+   * category, instead of one scoped to the dish or its category).
+   *
+   * This check is a strict superset of containsOtherListIndex: any sibling
+   * item's field is, by construction, also "not under itemPath". So OR-ing
+   * it into the existing check changes nothing for a list that already has
+   * 2+ items anywhere in this product (the old check already stops the
+   * climb at the same point) — it only makes single-remaining-item (and, on
+   * desserdirina's nested items, deeper) lists stop where they always should
+   * have.
+   */
+  function containsForeignField(node, itemPath) {
+    var all = node.querySelectorAll('[data-hb-edit]');
+    for (var i = 0; i < all.length; i++) {
+      var p = all[i].getAttribute('data-hb-edit');
+      if (p !== itemPath && p.indexOf(itemPath + '.') !== 0) return true;
+    }
+    return false;
+  }
+
+  /**
    * Find the most appropriate container element for a group of list-item elements
    * (root cause of PM-02 / prof-02: PM-02, prof-01, prof-02).
    *
@@ -846,6 +889,7 @@
     // hard at body/html — so a list that currently has only one item (no
     // sibling to bump into) can never balloon the "container" up to the
     // whole page.
+    var itemPath = root + '.' + idx;
     var best = candidate;
     var climb = candidate;
     for (var depth2 = 0; depth2 < 4; depth2++) {
@@ -853,7 +897,12 @@
       var up = climb.parentElement;
       if (up === document.body || up === document.documentElement) break;
       if (up.tagName === 'SECTION' || up.tagName === 'MAIN') break;
-      if (containsOtherListIndex(up, root, idx)) break;
+      // See containsForeignField's doc comment (DSD-03): containsOtherListIndex
+      // alone misses the case where this item is the ONLY surviving index of
+      // `root`, letting the climb balloon into unrelated ancestors. OR-ing in
+      // the general "any foreign field" check closes that gap without moving
+      // the stopping point for any list that already has 2+ items.
+      if (containsOtherListIndex(up, root, idx) || containsForeignField(up, itemPath)) break;
       climb = up;
       best = climb;
     }

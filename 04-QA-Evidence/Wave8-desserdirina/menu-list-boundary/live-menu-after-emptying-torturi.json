@@ -1,0 +1,41 @@
+{
+  "afterEmptying": [
+    {
+      "heading": "Torturi",
+      "itemCount": 0
+    },
+    {
+      "heading": "La comandă",
+      "itemCount": 6
+    },
+    {
+      "heading": "Servicii și Evenimente",
+      "itemCount": 3
+    }
+  ],
+  "liveMenu": [
+    {
+      "heading": "Torturi",
+      "items": []
+    },
+    {
+      "heading": "La comandă",
+      "items": [
+        "Torturi",
+        "Colaci",
+        "Sarmale",
+        "Mâncare la cutie",
+        "Plăcinte și brânzoaice",
+        "Prăjituri și platouri cu prăjituri"
+      ]
+    },
+    {
+      "heading": "Servicii și Evenimente",
+      "items": [
+        "Catering și mâncare la comandă",
+        "Zile de naștere în local",
+        "Evenimente"
+      ]
+    }
+  ]
+}

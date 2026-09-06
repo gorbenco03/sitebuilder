@@ -941,10 +941,22 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     margin-bottom: var(--space-section);
     text-align: center;
     /* break out a bit wider than the content wrapper (symmetrically centered) so the
-       big photos get more breathing room without shifting off-centre */
-    width: min(1320px, 94vw);
-    max-width: 100vw;
-    margin-left: calc((100% - min(1320px, 94vw)) / 2);
+       big photos get more breathing room without shifting off-centre.
+       DSD-05: this used to be `94vw`/`100vw`. `vw` is defined against the real
+       browser viewport and does NOT shrink under the CSS `zoom` property (the
+       standard headless-browser stand-in for real pinch/ctrl-zoom — Chromium's
+       own `document.documentElement.style.zoom` scales rendering without
+       touching viewport-unit math), so at zoom:2 this section kept computing
+       as ~94% of the FULL, un-zoomed viewport and then got rendered at 2x
+       on top of that — the single largest contributor to this template's
+       200%-zoom overflow (42% at 1440px, worse than every other template).
+       `.main-content` (this section's parent) is a plain, unconstrained
+       block that already reflows correctly under zoom, so sizing against
+       it with %, not vw, tracks the section's ACTUAL available width
+       instead of the raw viewport. */
+    width: min(1320px, 94%);
+    max-width: 100%;
+    margin-left: calc((100% - min(1320px, 94%)) / 2);
     /* Defense-in-depth for WCAG 1.4.10 reflow (no horizontal scrolling at 200% zoom):
        the scatter deck below is absolutely positioned and must never bleed past
        this section's edges, even if a future edit reintroduces a spacing bug. */
