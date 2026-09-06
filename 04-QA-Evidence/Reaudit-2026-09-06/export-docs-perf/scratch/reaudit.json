@@ -1,0 +1,300 @@
+{
+  "label": "reaudit",
+  "generatedAt": "2026-09-06T15:29:15.388Z",
+  "sections": {
+    "perTemplateStart": {
+      "product-menu": {
+        "wallTimeToIframeLoadMs": 1777,
+        "requestCountSinceClick": 4,
+        "totalTransferBytesSinceClick": 241707,
+        "breakdown": {
+          "apiTemplatesMs": null,
+          "apiTemplatesBytes": 0,
+          "heavyJsMs": 293,
+          "heavyJsBytes": 19646,
+          "imagesMs": 1779,
+          "imagesBytes": 210206
+        },
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/product-menu.js",
+            "bytes": 19646,
+            "encoding": "gzip"
+          },
+          {
+            "url": "/app/generated/template-assets/product-menu/images/cn-hero.jpg",
+            "bytes": 210206,
+            "encoding": null
+          }
+        ]
+      },
+      "local-service": {
+        "wallTimeToIframeLoadMs": 2277,
+        "requestCountSinceClick": 4,
+        "totalTransferBytesSinceClick": 346178,
+        "breakdown": {
+          "apiTemplatesMs": null,
+          "apiTemplatesBytes": 0,
+          "heavyJsMs": 307,
+          "heavyJsBytes": 23742,
+          "imagesMs": 2278,
+          "imagesBytes": 310581
+        },
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/local-service.js",
+            "bytes": 23742,
+            "encoding": "gzip"
+          },
+          {
+            "url": "/app/generated/template-assets/local-service/images/pr-hero.jpg",
+            "bytes": 310581,
+            "encoding": null
+          }
+        ]
+      },
+      "portfolio": {
+        "wallTimeToIframeLoadMs": 1882,
+        "requestCountSinceClick": 4,
+        "totalTransferBytesSinceClick": 264355,
+        "breakdown": {
+          "apiTemplatesMs": null,
+          "apiTemplatesBytes": 0,
+          "heavyJsMs": 289,
+          "heavyJsBytes": 20394,
+          "imagesMs": 1884,
+          "imagesBytes": 232106
+        },
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/portfolio.js",
+            "bytes": 20394,
+            "encoding": "gzip"
+          },
+          {
+            "url": "/app/generated/template-assets/portfolio/images/iv-hero.jpg",
+            "bytes": 232106,
+            "encoding": null
+          }
+        ]
+      },
+      "professionals": {
+        "wallTimeToIframeLoadMs": 2358,
+        "requestCountSinceClick": 4,
+        "totalTransferBytesSinceClick": 363765,
+        "breakdown": {
+          "apiTemplatesMs": null,
+          "apiTemplatesBytes": 0,
+          "heavyJsMs": 315,
+          "heavyJsBytes": 24878,
+          "imagesMs": 2359,
+          "imagesBytes": 327032
+        },
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/professionals.js",
+            "bytes": 24878,
+            "encoding": "gzip"
+          },
+          {
+            "url": "/app/generated/template-assets/professionals/images/hero.jpg",
+            "bytes": 327032,
+            "encoding": null
+          }
+        ]
+      },
+      "desserdirina": {
+        "wallTimeToIframeLoadMs": 1354,
+        "requestCountSinceClick": 4,
+        "totalTransferBytesSinceClick": 140711,
+        "breakdown": {
+          "apiTemplatesMs": null,
+          "apiTemplatesBytes": 0,
+          "heavyJsMs": 303,
+          "heavyJsBytes": 21854,
+          "imagesMs": 1356,
+          "imagesBytes": 107002
+        },
+        "newAssetsSinceClick": [
+          {
+            "url": "/app/generated/templates/desserdirina.js",
+            "bytes": 21854,
+            "encoding": "gzip"
+          },
+          {
+            "url": "/app/generated/template-assets/desserdirina/images/hero.jpg",
+            "bytes": 107002,
+            "encoding": null
+          }
+        ]
+      }
+    },
+    "buildSizes": {
+      "builderGeneratedTotalMB": 25.36,
+      "templateAssetsTotalMB": 23.45,
+      "templatesSourceImagesTotalMB": 25.13,
+      "engineJsBytes": 127473,
+      "appJsBytes": 203277,
+      "appCssBytes": 52977,
+      "perTemplateHeavyJsBytes": {
+        "desserdirina.js": 102473,
+        "local-service.js": 102117,
+        "portfolio.js": 93741,
+        "product-menu.js": 79368,
+        "professionals.js": 106064
+      }
+    },
+    "liveSite_desktop-1440": {
+      "wallTimeToLoadMs": 2114,
+      "lcp": 2124,
+      "cls": 0,
+      "requestCount": 14,
+      "totalTransferBytes": 358840,
+      "totalTransferKB": 350,
+      "images": [
+        {
+          "src": "cn-d1-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 475,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-d2-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 475,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-d3-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 475,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r1-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 317,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r2-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 475,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r3-480w.webp",
+          "naturalWidth": 475,
+          "naturalHeight": 317,
+          "displayWidth": 341,
+          "displayHeight": 256,
+          "loading": "eager"
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto"
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto"
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": []
+    },
+    "liveSite_mobile-390": {
+      "wallTimeToLoadMs": 2113,
+      "lcp": 2124,
+      "cls": 0,
+      "requestCount": 14,
+      "totalTransferBytes": 358840,
+      "totalTransferKB": 350,
+      "images": [
+        {
+          "src": "cn-d1-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 366,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-d2-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 366,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-d3-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 366,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r1-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 245,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r2-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 366,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "cn-r3-480w.webp",
+          "naturalWidth": 366,
+          "naturalHeight": 245,
+          "displayWidth": 169,
+          "displayHeight": 127,
+          "loading": "eager"
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto"
+        },
+        {
+          "src": "",
+          "naturalWidth": 0,
+          "naturalHeight": 0,
+          "displayWidth": 0,
+          "displayHeight": 0,
+          "loading": "auto"
+        }
+      ],
+      "consoleErrors": [],
+      "failedRequests": []
+    }
+  }
+}

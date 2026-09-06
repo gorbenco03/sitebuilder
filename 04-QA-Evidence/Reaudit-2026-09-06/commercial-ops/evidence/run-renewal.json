@@ -1,0 +1,71 @@
+{
+  "startedAt": "2026-09-06T15:31:41.661Z",
+  "steps": [
+    {
+      "name": "after_first_pay",
+      "data": {
+        "paid": true,
+        "paidUntil": "2027-09-06T15:31:41.706Z",
+        "subId": "sub_test_cs_test_1113792225002f8d075133e7",
+        "custId": "cus_test_cs_test_1113792225002f8d075133e7"
+      }
+    },
+    {
+      "name": "forced_almost_due",
+      "data": {
+        "paidUntil": "2026-09-16T15:31:41.720Z"
+      }
+    },
+    {
+      "name": "after_genuine_cycle_renewal",
+      "data": {
+        "paidUntilBefore": "2026-09-16T15:31:41.720Z",
+        "paidUntilAfter": "2027-09-16T15:31:41.720Z",
+        "approxMonthsExtended": 12.166666666666666
+      }
+    },
+    {
+      "name": "after_replay_same_event_id",
+      "data": {
+        "unchanged": true,
+        "paidUntil": "2027-09-16T15:31:41.720Z"
+      }
+    },
+    {
+      "name": "after_replay_same_invoice_id_different_event_id",
+      "data": {
+        "unchanged": true,
+        "paidUntil": "2027-09-16T15:31:41.720Z"
+      }
+    },
+    {
+      "name": "final_invoice_ledger",
+      "data": {
+        "invoices": [
+          {
+            "event": "invoice",
+            "siteId": "9788e70a-b875-4e8e-9e73-f8385360b7a4",
+            "subscriptionId": "sub_test_cs_test_1113792225002f8d075133e7",
+            "kind": "renewal",
+            "invoiceId": "in_test_cycle_4aab6f99fef4",
+            "amountCents": 2900,
+            "currency": "eur",
+            "hostedInvoiceUrl": null,
+            "invoicePdf": null,
+            "ts": "2026-09-06T15:31:41.722Z"
+          },
+          {
+            "event": "invoice",
+            "siteId": "9788e70a-b875-4e8e-9e73-f8385360b7a4",
+            "orderId": "685da251-abb7-4c61-8168-36fb46d8ff15",
+            "kind": "publish",
+            "invoiceId": null,
+            "amountCents": 9900,
+            "currency": "eur",
+            "ts": "2026-09-06T15:31:41.706Z"
+          }
+        ]
+      }
+    }
+  ]
+}

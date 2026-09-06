@@ -1,0 +1,166 @@
+{
+  "startedAt": "2026-09-06T15:32:20.179Z",
+  "steps": [
+    {
+      "name": "clean_baseline_live_active",
+      "data": {
+        "status": "live",
+        "paid": true,
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "stripeSubscriptionStatus": "active"
+      }
+    },
+    {
+      "name": "dashboard_badge_baseline",
+      "data": {
+        "badgeLabel": "Activ",
+        "hostingExpired": false,
+        "rawStatus": "live",
+        "rawPaid": true,
+        "rawPaidUntil": "2027-09-06T15:32:20.224Z"
+      }
+    },
+    {
+      "name": "after_first_decline",
+      "data": {
+        "status": "live",
+        "paid": true,
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "stripeSubscriptionStatus": "past_due",
+        "paymentFailedAt": "2026-09-06T15:32:20.275Z",
+        "paymentFailedCount": 1
+      }
+    },
+    {
+      "name": "server_side_getDunningState_result",
+      "data": {
+        "severity": "warning",
+        "code": "PAYMENT_RETRY_IN_PROGRESS",
+        "attemptCount": 1,
+        "lastFailedAt": "2026-09-06T15:32:20.275Z",
+        "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+      }
+    },
+    {
+      "name": "raw_api_GET_sites_after_first_decline",
+      "data": {
+        "id": "cad7aa2f-0134-419b-8047-38038faadecd",
+        "userId": "7131ccf9-d7ff-4f6e-bacf-8e6afcce3199",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "dunning-test-1788708740215",
+        "projectName": "dunning-test-1788708740215",
+        "platform": "web",
+        "status": "live",
+        "paid": true,
+        "url": "/live/dunning-test-1788708740215/",
+        "createdAt": "2026-09-06T15:32:20.218Z",
+        "stripeCustomerId": "cus_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "stripeSubscriptionId": "sub_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "stripeSubscriptionStatus": "past_due",
+        "subscriptionStatus": "past_due",
+        "paymentFailedAt": "2026-09-06T15:32:20.275Z",
+        "paymentFailedCount": 1
+      }
+    },
+    {
+      "name": "dashboard_badge_after_first_decline_STILL_SHOWS",
+      "data": {
+        "badgeLabel": "Activ",
+        "hostingExpired": false,
+        "rawStatus": "live",
+        "rawPaid": true,
+        "rawPaidUntil": "2027-09-06T15:32:20.224Z"
+      }
+    },
+    {
+      "name": "is_dunning_info_present_in_ANY_api_response_field_the_UI_reads",
+      "data": {
+        "note": "buildSiteCard() in builder/app.js never reads paymentFailedAt/paymentFailedCount/stripeSubscriptionStatus for warning UI (grep confirmed 0 references); getDunningState() is exported by webpublish.js but is not called from bot/server.js or builder/app.js anywhere (grep confirmed) -- it exists only in bot/test/wave7-payments-dunning.test.js unit tests."
+      }
+    },
+    {
+      "name": "raw_api_GET_single_site_after_decline",
+      "data": {
+        "id": "cad7aa2f-0134-419b-8047-38038faadecd",
+        "userId": "7131ccf9-d7ff-4f6e-bacf-8e6afcce3199",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "dunning-test-1788708740215",
+        "projectName": "dunning-test-1788708740215",
+        "platform": "web",
+        "status": "live",
+        "paid": true,
+        "url": "/live/dunning-test-1788708740215/",
+        "createdAt": "2026-09-06T15:32:20.218Z",
+        "stripeCustomerId": "cus_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "stripeSubscriptionId": "sub_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "stripeSubscriptionStatus": "past_due",
+        "subscriptionStatus": "past_due",
+        "paymentFailedAt": "2026-09-06T15:32:20.275Z",
+        "paymentFailedCount": 1
+      }
+    },
+    {
+      "name": "after_retries_exhausted",
+      "data": {
+        "status": "unpublished",
+        "paid": true,
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "url": null,
+        "stripeSubscriptionStatus": "unpaid"
+      }
+    },
+    {
+      "name": "raw_api_GET_sites_after_unpaid_unpublish",
+      "data": {
+        "id": "cad7aa2f-0134-419b-8047-38038faadecd",
+        "userId": "7131ccf9-d7ff-4f6e-bacf-8e6afcce3199",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "dunning-test-1788708740215",
+        "projectName": "dunning-test-1788708740215",
+        "platform": "web",
+        "status": "unpublished",
+        "paid": true,
+        "url": null,
+        "createdAt": "2026-09-06T15:32:20.218Z",
+        "stripeCustomerId": "cus_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "stripeSubscriptionId": "sub_test_cs_test_ff7e1bd8b4c17e4da1302a0d",
+        "paidUntil": "2027-09-06T15:32:20.224Z",
+        "stripeSubscriptionStatus": "unpaid",
+        "subscriptionStatus": "unpaid",
+        "paymentFailedAt": "2026-09-06T15:32:20.275Z",
+        "paymentFailedCount": 1,
+        "canceledAt": "2026-09-06T15:32:20.315Z"
+      }
+    },
+    {
+      "name": "dashboard_badge_after_unpaid_unpublish",
+      "data": {
+        "badgeLabel": "Ciornă (DEFAULT/FALLTHROUGH — no branch matched)",
+        "hostingExpired": false,
+        "rawStatus": "unpublished",
+        "rawPaid": true,
+        "rawPaidUntil": "2027-09-06T15:32:20.224Z"
+      }
+    },
+    {
+      "name": "server_side_getDunningState_at_terminal_state",
+      "data": {
+        "severity": "critical",
+        "code": "SITE_DOWN_PAYMENT_FAILED",
+        "messageRo": "Site-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. Adaugă un card nou din tabloul de bord ca să repornești site-ul."
+      }
+    },
+    {
+      "name": "live_site_http_status_after_unpublish",
+      "data": {
+        "status": 404,
+        "slug": "dunning-test-1788708740215"
+      }
+    }
+  ]
+}

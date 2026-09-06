@@ -1,0 +1,451 @@
+{
+  "startedAt": "2026-09-06T15:30:01.771Z",
+  "dataDir": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/hb-reaudit-j6uLp6",
+  "steps": [
+    {
+      "name": "server_booted",
+      "at": "2026-09-06T15:30:01.787Z",
+      "data": {
+        "base": "http://127.0.0.1:56524"
+      }
+    },
+    {
+      "name": "auth_email",
+      "at": "2026-09-06T15:30:01.806Z",
+      "data": {
+        "status": 200,
+        "devLink": "/auth/verify?token=1100d010ef633abc3176b8b0ec576161abf8d752b5704af75f37367e617c9cad"
+      }
+    },
+    {
+      "name": "auth_verify",
+      "at": "2026-09-06T15:30:01.810Z",
+      "data": {
+        "status": 302,
+        "location": "/app/#dashboard",
+        "gotCookie": true
+      }
+    },
+    {
+      "name": "me",
+      "at": "2026-09-06T15:30:01.812Z",
+      "data": {
+        "status": 200,
+        "user": {
+          "id": "b8274338-0457-41c3-b6a4-1e853db5a4ad",
+          "createdAt": "2026-09-06T15:30:01.809Z",
+          "email": "audit-customer@example.com"
+        }
+      }
+    },
+    {
+      "name": "templates_list",
+      "at": "2026-09-06T15:30:01.821Z",
+      "data": {
+        "count": 5,
+        "ids": [
+          "product-menu",
+          "local-service",
+          "portfolio",
+          "professionals",
+          "desserdirina"
+        ]
+      }
+    },
+    {
+      "name": "publish_unpaid_draft",
+      "at": "2026-09-06T15:30:01.826Z",
+      "data": {
+        "status": 200,
+        "site": {
+          "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+          "status": "draft",
+          "paid": false
+        },
+        "paymentUrl": "/app/#test-checkout=cs_test_35028c32e2af1de200550295"
+      }
+    },
+    {
+      "name": "test_pay_complete_first",
+      "at": "2026-09-06T15:30:01.845Z",
+      "data": {
+        "status": 200,
+        "site": {
+          "ok": true,
+          "site": {
+            "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+            "slug": "audit-cabinet-1788708601821",
+            "paid": true,
+            "status": "live",
+            "url": "/live/audit-cabinet-1788708601821/",
+            "paidUntil": "2027-09-06T15:30:01.828Z"
+          }
+        }
+      }
+    },
+    {
+      "name": "site_after_first_pay",
+      "at": "2026-09-06T15:30:01.845Z",
+      "data": {
+        "paid": true,
+        "status": "live",
+        "paidUntil": "2027-09-06T15:30:01.828Z",
+        "stripeSubscriptionId": "sub_test_cs_test_35028c32e2af1de200550295",
+        "stripeCustomerId": "cus_test_cs_test_35028c32e2af1de200550295",
+        "stripeSubscriptionStatus": null
+      }
+    },
+    {
+      "name": "webhook_subscription_created",
+      "at": "2026-09-06T15:30:01.846Z",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "name": "site_after_subscription_created",
+      "at": "2026-09-06T15:30:01.896Z",
+      "data": {
+        "stripeSubscriptionStatus": "active",
+        "subscriptionStatus": "active"
+      }
+    },
+    {
+      "name": "webhook_invoice_paid_1",
+      "at": "2026-09-06T15:30:01.898Z",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "name": "site_after_renewal_1",
+      "at": "2026-09-06T15:30:01.948Z",
+      "data": {
+        "paidUntilBefore": "2027-09-06T15:30:01.828Z",
+        "paidUntilAfter": "2027-09-06T15:30:01.828Z"
+      }
+    },
+    {
+      "name": "webhook_invoice_paid_1_REPLAY_same_event_id",
+      "at": "2026-09-06T15:30:01.951Z",
+      "data": {
+        "status": 200
+      }
+    },
+    {
+      "name": "site_after_renewal_1_replay",
+      "at": "2026-09-06T15:30:02.000Z",
+      "data": {
+        "paidUntilAfterReplay": "2027-09-06T15:30:01.828Z",
+        "unchanged": true
+      }
+    },
+    {
+      "name": "site_after_renewal_2_distinct_invoice",
+      "at": "2026-09-06T15:30:02.054Z",
+      "data": {
+        "before": "2027-09-06T15:30:01.828Z",
+        "after": "2027-09-06T15:30:01.828Z"
+      }
+    },
+    {
+      "name": "forced_stale_expired_while_active",
+      "at": "2026-09-06T15:30:02.054Z",
+      "data": {
+        "paidUntil": "2026-09-05T15:30:02.054Z",
+        "stripeSubscriptionStatus": "active",
+        "isHostingExpiredClientSide": true
+      }
+    },
+    {
+      "name": "ATTEMPT_A_renewal_checkout_while_active",
+      "at": "2026-09-06T15:30:02.055Z",
+      "data": {
+        "status": 409,
+        "body": {
+          "error": "Acest site are deja un abonament activ. Nu deschidem un al doilea abonament — dacă hostingul pare oprit din greșeală, te rugăm să ne contactezi înainte de a plăti din nou.",
+          "code": "SUBSCRIPTION_STILL_ACTIVE"
+        }
+      }
+    },
+    {
+      "name": "ATTEMPT_B_edit_and_republish_while_active_but_stale",
+      "at": "2026-09-06T15:30:02.058Z",
+      "data": {
+        "status": 200,
+        "paymentUrl": "/app/#test-checkout=cs_test_c997b824103a6d147472e22c",
+        "site": {
+          "status": "draft",
+          "paid": false
+        },
+        "fullBody": {
+          "site": {
+            "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+            "userId": "b8274338-0457-41c3-b6a4-1e853db5a4ad",
+            "templateId": "professionals",
+            "templateVersion": 1,
+            "slug": "audit-cabinet-1788708601821",
+            "projectName": "audit-cabinet-1788708601821",
+            "platform": "web",
+            "status": "draft",
+            "paid": false,
+            "url": null,
+            "createdAt": "2026-09-06T15:30:01.823Z",
+            "stripeCustomerId": "cus_test_cs_test_35028c32e2af1de200550295",
+            "stripeSubscriptionId": "sub_test_cs_test_35028c32e2af1de200550295",
+            "paidUntil": "2026-09-05T15:30:02.054Z",
+            "stripeSubscriptionStatus": "active",
+            "subscriptionStatus": "active"
+          },
+          "paymentUrl": "/app/#test-checkout=cs_test_c997b824103a6d147472e22c"
+        }
+      }
+    },
+    {
+      "name": "ATTEMPT_C_concurrent_renewal_checkout",
+      "at": "2026-09-06T15:30:02.060Z",
+      "data": {
+        "ra1": {
+          "status": 200
+        },
+        "ra2": {
+          "status": 200
+        }
+      }
+    },
+    {
+      "name": "dashboard_api_state_while_stale_but_active",
+      "at": "2026-09-06T15:30:02.061Z",
+      "data": {
+        "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+        "userId": "b8274338-0457-41c3-b6a4-1e853db5a4ad",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "audit-cabinet-1788708601821",
+        "projectName": "audit-cabinet-1788708601821",
+        "platform": "web",
+        "status": "draft",
+        "paid": false,
+        "url": "/live/audit-cabinet-1788708601821/",
+        "createdAt": "2026-09-06T15:30:01.823Z",
+        "stripeCustomerId": "cus_test_cs_test_35028c32e2af1de200550295",
+        "stripeSubscriptionId": "sub_test_cs_test_35028c32e2af1de200550295",
+        "paidUntil": "2026-09-05T15:30:02.054Z",
+        "stripeSubscriptionStatus": "active",
+        "subscriptionStatus": "active"
+      }
+    },
+    {
+      "name": "site_after_invoice_payment_failed",
+      "at": "2026-09-06T15:30:02.114Z",
+      "data": {
+        "paymentFailedAt": "2026-09-06T15:30:02.062Z",
+        "paymentFailedCount": 1,
+        "status": "draft",
+        "stripeSubscriptionStatus": "active"
+      }
+    },
+    {
+      "name": "site_after_past_due",
+      "at": "2026-09-06T15:30:02.165Z",
+      "data": {
+        "status": "draft",
+        "stripeSubscriptionStatus": "past_due",
+        "paidUntil": "2027-07-03T15:30:02.061Z"
+      }
+    },
+    {
+      "name": "dashboard_api_state_during_past_due",
+      "at": "2026-09-06T15:30:02.167Z",
+      "data": {
+        "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+        "userId": "b8274338-0457-41c3-b6a4-1e853db5a4ad",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "audit-cabinet-1788708601821",
+        "projectName": "audit-cabinet-1788708601821",
+        "platform": "web",
+        "status": "draft",
+        "paid": false,
+        "url": "/live/audit-cabinet-1788708601821/",
+        "createdAt": "2026-09-06T15:30:01.823Z",
+        "stripeCustomerId": "cus_test_cs_test_35028c32e2af1de200550295",
+        "stripeSubscriptionId": "sub_test_cs_test_35028c32e2af1de200550295",
+        "paidUntil": "2027-07-03T15:30:02.061Z",
+        "stripeSubscriptionStatus": "past_due",
+        "subscriptionStatus": "past_due",
+        "paymentFailedAt": "2026-09-06T15:30:02.062Z",
+        "paymentFailedCount": 1
+      }
+    },
+    {
+      "name": "invoice_history_during_past_due",
+      "at": "2026-09-06T15:30:02.167Z",
+      "data": {
+        "invoices": [
+          {
+            "event": "invoice",
+            "siteId": "7b494194-478f-4fe2-93fa-70461185d39b",
+            "orderId": "e6c99ae9-ab98-49b8-9ff8-b74e0e9fd0f5",
+            "kind": "publish",
+            "invoiceId": null,
+            "amountCents": 9900,
+            "currency": "eur",
+            "ts": "2026-09-06T15:30:01.828Z"
+          }
+        ]
+      }
+    },
+    {
+      "name": "site_after_retries_exhausted_unpaid",
+      "at": "2026-09-06T15:30:02.220Z",
+      "data": {
+        "status": "unpublished",
+        "paid": false,
+        "paidUntil": "2027-07-03T15:30:02.061Z",
+        "stripeSubscriptionStatus": "unpaid",
+        "url": null
+      }
+    },
+    {
+      "name": "dashboard_api_state_after_unpaid_unpublish",
+      "at": "2026-09-06T15:30:02.221Z",
+      "data": {
+        "id": "7b494194-478f-4fe2-93fa-70461185d39b",
+        "userId": "b8274338-0457-41c3-b6a4-1e853db5a4ad",
+        "templateId": "professionals",
+        "templateVersion": 1,
+        "slug": "audit-cabinet-1788708601821",
+        "projectName": "audit-cabinet-1788708601821",
+        "platform": "web",
+        "status": "unpublished",
+        "paid": false,
+        "url": null,
+        "createdAt": "2026-09-06T15:30:01.823Z",
+        "stripeCustomerId": "cus_test_cs_test_35028c32e2af1de200550295",
+        "stripeSubscriptionId": "sub_test_cs_test_35028c32e2af1de200550295",
+        "paidUntil": "2027-07-03T15:30:02.061Z",
+        "stripeSubscriptionStatus": "unpaid",
+        "subscriptionStatus": "unpaid",
+        "paymentFailedAt": "2026-09-06T15:30:02.062Z",
+        "paymentFailedCount": 1,
+        "canceledAt": "2026-09-06T15:30:02.169Z"
+      }
+    },
+    {
+      "name": "client_badge_simulation_after_unpaid",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "badgeLabel": "Neplătit",
+        "hostingExpired": false,
+        "rawStatus": "unpublished",
+        "rawPaid": false,
+        "rawPaidUntil": "2027-07-03T15:30:02.061Z"
+      }
+    },
+    {
+      "name": "pricing_isolated_dev_boot_no_cf_header",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "RO",
+        "currency": "eur",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "pricing_isolated_dev_boot_ro_accept_language",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "RO",
+        "currency": "eur",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "pricing_PROD_LIKE_no_cf_header_no_accept_language",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "US",
+        "currency": "usd",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "pricing_PROD_LIKE_no_cf_header_english_accept_language",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "US",
+        "currency": "usd",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "pricing_PROD_LIKE_no_cf_header_romanian_accept_language",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "RO",
+        "currency": "eur",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "pricing_PROD_LIKE_with_cf_header_RO",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "countryCode": "RO",
+        "currency": "eur",
+        "amountCents": 9900,
+        "renewalCents": 2900,
+        "amount": 99,
+        "renewal": 29
+      }
+    },
+    {
+      "name": "vat_automatic_tax_enabled_flag",
+      "at": "2026-09-06T15:30:02.222Z",
+      "data": {
+        "STRIPE_AUTOMATIC_TAX_env": null
+      }
+    },
+    {
+      "name": "site_after_real_cancel",
+      "at": "2026-09-06T15:30:02.275Z",
+      "data": {
+        "status": "unpublished",
+        "url": null,
+        "paid": true,
+        "paidUntil": "2027-07-03T15:30:02.222Z",
+        "stripeSubscriptionStatus": "canceled",
+        "canceledAt": "2026-09-06T15:30:02.169Z"
+      }
+    },
+    {
+      "name": "come_back_after_real_cancel_should_be_allowed",
+      "at": "2026-09-06T15:30:02.277Z",
+      "data": {
+        "status": 200,
+        "body": {
+          "paymentUrl": "/app/#test-checkout=cs_test_8efd74489820c8b2577100d7",
+          "kind": "renewal",
+          "amountCents": 2900,
+          "paidUntil": "2027-07-03T15:30:02.222Z"
+        }
+      }
+    }
+  ]
+}
