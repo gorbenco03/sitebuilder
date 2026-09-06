@@ -19,6 +19,12 @@ package.json
 scripts
 # Production Dockerfile RUN node scripts/build-builder.js after COPY . .
 !scripts/build-builder.js
+# Wave 6 ops audit (2026-09-06): backup/restore/health-check/secret-scan
+# tooling the owner runs INSIDE the production container against the
+# Railway volume (DATA_DIR) — e.g. `railway run node scripts/ops-backup.js`.
+# Without this exception `scripts` above would silently ship a container
+# with no backup command in it. See HANDOFF-ops.md.
+!scripts/ops-*.js
 wrangler.toml
 dist
 CLOUDFLARE-DEPLOY.md

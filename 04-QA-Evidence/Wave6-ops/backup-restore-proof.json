@@ -1,0 +1,10 @@
+{
+  "ranAt": "2026-09-06T11:15:27.663Z",
+  "registryDbPath": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-H0fbNz/data/registry.sqlite",
+  "snapshot": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/wave6-ops-backup-H0fbNz/data/backups/registry-2026-09-06T11-15-27-632Z.sqlite",
+  "snapshotSha256": "bf1fbe5bf733573399c2a2049fd39b088a571ab2f9a5ca3c41da4ca3dc5c6a60",
+  "contentDigestBeforeDisaster": "d52983ce2c8d4a8c10066522673f5fe02ba1f5d279e3e0250d780a207f474e91",
+  "contentDigestAfterRestore": "d52983ce2c8d4a8c10066522673f5fe02ba1f5d279e3e0250d780a207f474e91",
+  "byteForByteMatch": true,
+  "contentMatch": true
+}
