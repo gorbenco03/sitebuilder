@@ -634,6 +634,104 @@ function expandEach(str, scope, editOpts) {
 }
 
 /**
+ * Section ids that must always render regardless of what `config.sections`
+ * claims — Wave 7 guardrail (site owners can add/remove/reorder page
+ * sections, but some sections are structural to the product, not
+ * decorative). This is enforced HERE, in the render pipeline itself, not
+ * only by disabling a button in the builder UI: a hand-edited config.json
+ * (a customer's local draft, or a ZIP re-imported by hand) must not be able
+ * to drop these sections either.
+ *
+ * "about" carries the site owner's identity/credentials — a professional
+ * services site with no about content reads as fake. "contact" is the
+ * entire reason a visitor lands on the page. The legal footer and cookie
+ * banner are never candidates for removal in the first place: they are not
+ * part of the addressable/removable section set at all (see
+ * REORDERABLE_SECTION note below), so no config value can touch them.
+ */
+const NON_REMOVABLE_SECTION_IDS = new Set(['about', 'contact']);
+
+/**
+ * Reorder/remove the top-level `<section id="…">` blocks inside the
+ * already-fully-rendered `html` string, according to `sectionsMeta` — an
+ * ordered array of `{ id, removed }` read from `config.sections`.
+ *
+ * Backward compatibility (Wave 7 requirement): a config saved before this
+ * feature existed has no `sections` key at all. `renderHtml()` only calls
+ * this function when `cfg.sections` is a non-empty array, so such a config
+ * takes the exact same code path it always did and produces BYTE-IDENTICAL
+ * output — see bot/test/wave7-sections-backward-compat.test.js.
+ *
+ * Only sections that are (a) present in the rendered HTML as a top-level
+ * `<section id="…">…</section>` block AND (b) named in `sectionsMeta` are
+ * moved/hidden. Everything else — the hero (no id, always first), the
+ * footer/legal/cookie-banner markup (no id, always last/fixed), and any
+ * section id NOT mentioned in `sectionsMeta` — is left exactly where the
+ * template already puts it. A section marked removed is skipped UNLESS its
+ * id is in NON_REMOVABLE_SECTION_IDS, in which case the removal is ignored
+ * and the section renders anyway (server-side guardrail).
+ *
+ * Implemented as a post-process over the rendered string (not a template
+ * change) because templates/*\/template.html is owned by a different wave
+ * this cycle; see HANDOFF-sections.md.
+ */
+function reorderSections(html, sectionsMeta) {
+    if (!Array.isArray(sectionsMeta) || sectionsMeta.length === 0) return html;
+
+    // Locate every top-level <section id="…">…</section> block, tracking
+    // nested <section> depth generically (today's templates never nest
+    // sections, but this stays correct if one ever does).
+    const openRe = /<section\b[^>]*\bid="([a-zA-Z0-9_-]+)"[^>]*>/g;
+    const tagRe = /<section\b[^>]*>|<\/section\s*>/gi;
+    const blocks = []; // [{ id, start, end }], in document order
+    let m;
+    while ((m = openRe.exec(html))) {
+        const id = m[1];
+        const start = m.index;
+        let depth = 1;
+        tagRe.lastIndex = openRe.lastIndex;
+        let end = -1;
+        let t;
+        while ((t = tagRe.exec(html))) {
+            if (/^<\/section/i.test(t[0])) {
+                depth--;
+                if (depth === 0) { end = tagRe.lastIndex; break; }
+            } else {
+                depth++;
+            }
+        }
+        if (end === -1) { openRe.lastIndex = m.index + m[0].length; continue; } // malformed — leave untouched
+        blocks.push({ id, start, end });
+        openRe.lastIndex = end; // resume scanning after this whole block
+    }
+
+    if (blocks.length === 0) return html;
+
+    const byId = new Map(blocks.map((b) => [b.id, b]));
+    const spanStart = blocks[0].start;
+    const spanEnd = blocks[blocks.length - 1].end;
+
+    const seen = new Set();
+    const ordered = [];
+    sectionsMeta.forEach((entry) => {
+        if (!entry || typeof entry.id !== 'string') return;
+        const block = byId.get(entry.id);
+        if (!block || seen.has(entry.id)) return;
+        seen.add(entry.id);
+        const removed = !!entry.removed && !NON_REMOVABLE_SECTION_IDS.has(entry.id);
+        if (!removed) ordered.push(block);
+    });
+    // Any rendered section NOT mentioned in sectionsMeta (older config saved
+    // before a template gained a new section, or a section id the config
+    // never listed) keeps rendering, appended in its original position —
+    // never silently dropped by an incomplete section list.
+    blocks.forEach((b) => { if (!seen.has(b.id)) ordered.push(b); });
+
+    const replacement = ordered.map((b) => html.slice(b.start, b.end)).join('\n\n        ');
+    return html.slice(0, spanStart) + replacement + html.slice(spanEnd);
+}
+
+/**
  * renderHtml(templateHtml, config, opts={}) — pure render pipeline, no fs.
  *
  * Applies derived fields (contact.addressNoHref), expands @each/@if blocks,
@@ -671,6 +769,12 @@ function renderHtml(templateHtml, config, opts) {
         true,
         editOpts
     );
+    // 3) Wave 7: honour config.sections (add/remove/reorder page sections).
+    // Only touches output when the config actually carries section metadata
+    // — see reorderSections()'s doc comment for the backward-compat guarantee.
+    if (Array.isArray(cfg.sections) && cfg.sections.length > 0) {
+        html = reorderSections(html, cfg.sections);
+    }
     return html;
 }
 
@@ -705,6 +809,8 @@ module.exports = {
     renderHtml,
     isConnectedSocialFeedEmbed,
     normalizeInstagramForPublic,
+    reorderSections,
+    NON_REMOVABLE_SECTION_IDS,
 };
 
 // Run from CLI:  node build.js [siteDir]

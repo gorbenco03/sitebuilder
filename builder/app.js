@@ -1930,6 +1930,176 @@ function closeDrawer() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 14b. Page sections — add / remove / reorder (Wave 7, audit finding #44)
+// ---------------------------------------------------------------------------
+//
+// `schema.pageSections` (templates/<id>/schema.json) is the CANONICAL list of
+// page sections this template offers: [{ id, label, removable }]. It never
+// changes at runtime.
+//
+// `draft.config.sections` is the PER-SITE override: an ordered array of
+// [{ id, removed }] mirroring build.js's reorderSections(). Its array order
+// IS the display order. A config saved before this feature has no `sections`
+// key at all — build.js only reorders when that key is a non-empty array, so
+// an untouched site keeps rendering in the template's original order forever
+// (see bot/test/wave7-sections-backward-compat.test.js).
+//
+// Every mutation here goes through the ordinary draft.config write +
+// saveDraft() choke point, exactly like a text edit or a list add/remove —
+// so undo/redo (7b above) covers section add/remove/reorder for free, with
+// no special-casing.
+
+/** Lazily seed draft.config.sections from the template's canonical list, in
+ * memory only (does not call saveDraft()) — so merely opening the drawer
+ * never fabricates a history step. Also appends any canonical id the config
+ * predates (template gained a section since this site was last saved). */
+function ensurePageSectionsInitialized(schema) {
+  if (!schema || !Array.isArray(schema.pageSections) || schema.pageSections.length === 0) return null;
+  if (!draft.config) return null;
+  if (!Array.isArray(draft.config.sections)) {
+    draft.config.sections = schema.pageSections.map(s => ({ id: s.id, removed: false }));
+  } else {
+    const known = new Set(draft.config.sections.filter(e => e && e.id).map(e => e.id));
+    schema.pageSections.forEach(s => {
+      if (!known.has(s.id)) draft.config.sections.push({ id: s.id, removed: false });
+    });
+  }
+  return draft.config.sections;
+}
+
+function pageSectionDef(schema, id) {
+  return (schema.pageSections || []).find(s => s.id === id) || null;
+}
+
+/** Move the section with `id` one slot up (dir=-1) or down (dir=+1) in the
+ * order array. Keyboard-operable: called from plain <button> click handlers,
+ * never requires a drag gesture. */
+function movePageSection(schema, id, dir) {
+  const order = ensurePageSectionsInitialized(schema);
+  if (!order) return;
+  const idx = order.findIndex(e => e && e.id === id);
+  const swapWith = idx + dir;
+  if (idx < 0 || swapWith < 0 || swapWith >= order.length) return;
+  const tmp = order[idx];
+  order[idx] = order[swapWith];
+  order[swapWith] = tmp;
+  saveDraft();
+  fullRerender();
+  buildDrawer();
+}
+
+/** Toggle a section's visibility. `removable === false` sections ignore an
+ * attempt to remove them here (button is not even rendered for them — see
+ * buildPageSectionsPanel — but this is a second guard in case of stale DOM),
+ * and build.js enforces the same rule server-side regardless of this UI. */
+function togglePageSectionRemoved(schema, id, removed) {
+  const order = ensurePageSectionsInitialized(schema);
+  if (!order) return;
+  const def = pageSectionDef(schema, id);
+  if (removed && def && def.removable === false) return;
+  const entry = order.find(e => e && e.id === id);
+  if (!entry) return;
+  entry.removed = !!removed;
+  saveDraft();
+  fullRerender();
+  buildDrawer();
+}
+
+function buildPageSectionsPanel(body, schema) {
+  if (!schema || !Array.isArray(schema.pageSections) || schema.pageSections.length === 0) return;
+  const order = ensurePageSectionsInitialized(schema);
+  if (!order || order.length === 0) return;
+
+  const group = document.createElement('div');
+  group.className = 'drawer-section';
+
+  const title = document.createElement('div');
+  title.className = 'drawer-section-title';
+  title.textContent = 'Secțiuni pagină';
+  group.appendChild(title);
+
+  const hint = document.createElement('p');
+  hint.className = 'field-hint';
+  hint.textContent = 'Alege ordinea secțiunilor de pe site și ascunde-le pe cele pe care nu le folosești.';
+  group.appendChild(hint);
+
+  const list = document.createElement('div');
+  list.className = 'hb-sections-list';
+  list.setAttribute('role', 'list');
+
+  order.forEach((entry, idx) => {
+    if (!entry || !entry.id) return;
+    const def = pageSectionDef(schema, entry.id);
+    if (!def) return; // id not part of this template's canonical set — nothing to show
+    const removable = def.removable !== false;
+    const removed = !!entry.removed;
+    const label = def.label || entry.id;
+
+    const row = document.createElement('div');
+    row.className = 'hb-secrow' + (removed ? ' hb-secrow--removed' : '');
+    row.setAttribute('role', 'listitem');
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'hb-secrow__label';
+    labelEl.textContent = label;
+    row.appendChild(labelEl);
+
+    if (!removable) {
+      const lock = document.createElement('span');
+      lock.className = 'hb-secrow__lock';
+      lock.textContent = 'Obligatorie';
+      lock.title = 'Această secțiune nu poate fi eliminată';
+      row.appendChild(lock);
+    } else if (removed) {
+      const tag = document.createElement('span');
+      tag.className = 'hb-secrow__tag';
+      tag.textContent = 'Ascunsă';
+      row.appendChild(tag);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'hb-secrow__actions';
+
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'hb-secrow__btn';
+    upBtn.setAttribute('aria-label', 'Mută secțiunea „' + label + '” mai sus');
+    upBtn.textContent = '↑';
+    upBtn.disabled = idx === 0;
+    upBtn.addEventListener('click', () => movePageSection(schema, entry.id, -1));
+    actions.appendChild(upBtn);
+
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'hb-secrow__btn';
+    downBtn.setAttribute('aria-label', 'Mută secțiunea „' + label + '” mai jos');
+    downBtn.textContent = '↓';
+    downBtn.disabled = idx === order.length - 1;
+    downBtn.addEventListener('click', () => movePageSection(schema, entry.id, 1));
+    actions.appendChild(downBtn);
+
+    if (removable) {
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'hb-secrow__btn hb-secrow__btn--wide';
+      toggleBtn.textContent = removed ? 'Adaugă' : 'Elimină';
+      toggleBtn.setAttribute(
+        'aria-label',
+        (removed ? 'Adaugă înapoi secțiunea „' : 'Elimină secțiunea „') + label + '”'
+      );
+      toggleBtn.addEventListener('click', () => togglePageSectionRemoved(schema, entry.id, !removed));
+      actions.appendChild(toggleBtn);
+    }
+
+    row.appendChild(actions);
+    list.appendChild(row);
+  });
+
+  group.appendChild(list);
+  body.appendChild(group);
+}
+
 function buildDrawer() {
   const body = $('drawer-body');
   if (!body) return;
@@ -1941,6 +2111,7 @@ function buildDrawer() {
   }
 
   const schema = currentTemplate.data.schema;
+  buildPageSectionsPanel(body, schema);
   const allFields = getAllSchemaFields(schema);
 
   // Group drawer fields by section
