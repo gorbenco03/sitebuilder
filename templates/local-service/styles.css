@@ -65,9 +65,21 @@ ul, ol { list-style: none; }
 .ls-hero { background: var(--void); color: #fff; }
 .ls-hero__cut { position: relative; min-height: 74vh; display: grid; place-items: end start; }
 .ls-hero__media { position: absolute; inset: 0; background-size: cover !important; background-position: center !important; }
+/* Legibility haze — same reasoning as portfolio's veil.
+   0.2 at the top rising to 0.78 at the very bottom meant the contrast behind
+   the headline depended on where the copy block happened to land, and it
+   lands high, in the thin end. With the dark photograph this template ships
+   the tagline measures a comfortable 10.08:1 at the 10th percentile; with a
+   light one the same pixels drop to 1.84:1, under the 3:1 AA floor. The
+   template passes today because of its stock photo, which the editor invites
+   the owner to replace on the first screen. */
 .ls-hero__haze {
     position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(15,23,32,0.2) 0%, rgba(15,23,32,0.78) 100%);
+    background: linear-gradient(180deg,
+        rgba(12, 18, 26, 0.30) 0%,
+        rgba(12, 18, 26, 0.70) 10%,
+        rgba(12, 18, 26, 0.86) 26%,
+        rgba(12, 18, 26, 0.90) 100%);
 }
 .ls-hero__copy { position: relative; z-index: 1; padding: clamp(3rem, 10vw, 6rem) 22px 3rem; max-width: var(--max); }
 .ls-hero__name {
