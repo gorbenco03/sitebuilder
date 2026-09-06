@@ -31,6 +31,7 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SCRIPT_PATH = path.join(ROOT, 'templates', 'local-service', 'script.js');
+const SHARED_QR_PATH = path.join(__dirname, '..', '..', 'templates', 'shared', 'qrcode.js');
 const PRESETS_PATH = path.join(ROOT, 'templates', 'local-service', 'presets.json');
 
 let failed = false;
@@ -248,17 +249,45 @@ function decodeMatrix(m) {
 // rendered template's own <script> tag.
 // ---------------------------------------------------------------------------
 function loadProductionEncoder() {
-  const src = fs.readFileSync(SCRIPT_PATH, 'utf8');
+  // The template's own <script> tag loads the vendored MIT qrcode.js first,
+  // then script.js overrides window.generateQRSVG with a wrapper around it.
+  // Load them in the same order and into the same sandbox, so this oracle
+  // exercises the exact encoder, version and error-correction level that a
+  // published site uses.
+  //
+  // This used to read an internal __qrEncode from script.js instead. That
+  // function was the hand-rolled encoder whose corrupted finder patterns are
+  // the audit's finding #1 -- it had already been overridden by the vendored
+  // library and never ran in production, so the oracle was decoding a matrix
+  // no visitor's phone would ever see.
   const sandbox = { window: {}, document: { addEventListener: function () {} }, console };
+  sandbox.self = sandbox;
   vm.createContext(sandbox);
-  vm.runInContext(src, sandbox, { filename: 'templates/local-service/script.js' });
+  vm.runInContext(fs.readFileSync(SHARED_QR_PATH, 'utf8'), sandbox, { filename: 'templates/shared/qrcode.js' });
+  vm.runInContext(fs.readFileSync(SCRIPT_PATH, 'utf8'), sandbox, { filename: 'templates/local-service/script.js' });
   assert.strictEqual(typeof sandbox.window.generateQRSVG, 'function', 'script.js must expose window.generateQRSVG');
-  assert.strictEqual(typeof sandbox.window.__qrEncode, 'function', 'script.js must expose window.__qrEncode for this oracle');
+  assert.strictEqual(typeof sandbox.qrcode, 'function', 'the vendored MIT qrcode.js must load alongside it');
+
+  // Build the matrix the way the production wrapper does, then hand it to the
+  // independent decoder below.
+  sandbox.window.__matrixFor = function (text) {
+    const qr = sandbox.qrcode(0, 'M');
+    sandbox.qrcode.stringToBytes = sandbox.qrcode.stringToBytesFuncs['UTF-8'];
+    qr.addData(String(text || ''), 'Byte');
+    qr.make();
+    const n = qr.getModuleCount();
+    const m = [];
+    for (let r = 0; r < n; r++) {
+      m[r] = [];
+      for (let c = 0; c < n; c++) m[r][c] = qr.isDark(r, c) ? 1 : 0;
+    }
+    return m;
+  };
   return sandbox.window;
 }
 
-function toBoolMatrix(int8Matrix) {
-  return int8Matrix.map((row) => Array.from(row));
+function toBoolMatrix(matrix) {
+  return matrix.map((row) => Array.from(row));
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +302,7 @@ check('production encoder decodes the real default-preset WhatsApp link (version
   const waHref = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(contact.waMessage);
 
   const win = loadProductionEncoder();
-  const matrix = win.__qrEncode(waHref);
+  const matrix = win.__matrixFor(waHref);
   assert.ok(matrix, 'encoder must not return null for the real preset message');
   const version = (matrix.length - 17) / 4;
   assert.ok(version >= 7, 'expected this fixture to require version >= 7 (the previously-broken version-info path); got v' + version);
@@ -285,7 +314,7 @@ check('production encoder decodes the real default-preset WhatsApp link (version
 check('production encoder decodes a short custom WhatsApp message (version 1-3)', () => {
   const win = loadProductionEncoder();
   const text = 'https://wa.me/40745123456?text=' + encodeURIComponent('Bună ziua! Aș dori o ofertă, mulțumesc.');
-  const matrix = win.__qrEncode(text);
+  const matrix = win.__matrixFor(text);
   assert.ok(matrix);
   const decoded = decodeMatrix(toBoolMatrix(matrix));
   assert.strictEqual(decoded, text);
@@ -296,7 +325,7 @@ check('production encoder decodes a long custom message needing a multi-group ve
   const text = 'https://wa.me/40745123456?text=' + encodeURIComponent(
     'Bună ziua! Aș dori o ofertă pentru renovare baie și bucătărie, cu instalații noi, mulțumesc.'
   );
-  const matrix = win.__qrEncode(text);
+  const matrix = win.__matrixFor(text);
   assert.ok(matrix, 'encoder must not return null (this fixture is sized to fit within version 10 capacity)');
   const version = (matrix.length - 17) / 4;
   assert.ok(version >= 9, 'expected a multi-group-block version for this length; got v' + version);
