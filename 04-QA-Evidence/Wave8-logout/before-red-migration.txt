@@ -1,0 +1,21 @@
+PASS pre-migration: seeded DB really is at schema version 1
+FAIL migration ran: schema version is now 2 - Expected values to be strictly equal:
+
+1 !== 2
+
+FAIL migration is additive: sessions table now exists - sessions table must exist after migration
+PASS pre-existing user row survived the migration unchanged
+PASS pre-existing site row survived the migration unchanged
+FAIL new session functions work against the migrated database - registrySqlite.createSession is not a function
+FAIL re-running the migration path (server restart) is a no-op, not an error - schema stays at version 2, not reapplied
+
+1 !== 2
+
+PASS JSON backend: old file has no "sessions" key (test setup sanity)
+PASS JSON backend: pre-existing user survives once session functions run
+PASS JSON backend: pre-existing site survives
+FAIL JSON backend: session functions work against a file with no prior "sessions" key - registryJson.createSession is not a function
+FAIL JSON backend: user/site data still intact after the sessions key was created - sessions key should now exist
+
+wave8-logout-migration.test.js: 6 FAILED
+exit=1

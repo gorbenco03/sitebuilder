@@ -17,6 +17,8 @@
  *   POST /api/auth/email     → send magic link
  *   GET  /auth/verify        → consume login token, set session cookie
  *   POST /api/auth/telegram  → verify Telegram initData, set session cookie
+ *   POST /api/auth/logout    → clear + revoke the current session (Wave 8 / AUDIT-07)
+ *   POST /api/auth/logout-everywhere → revoke every session for the user
  *   GET  /api/me             → current user or 401
  *   GET  /api/sites          → user's sites (includes status/paid)
  *   GET  /api/sites/:id      → single site + latest config
@@ -1230,6 +1232,56 @@ async function handleAuthTelegram(req, res) {
 
     res.writeHead(200, { 'Set-Cookie': cookie, 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, user }));
+}
+
+/**
+ * POST /api/auth/logout — clears the browser cookie AND revokes the session
+ * server-side, so a copy of the old cookie value (captured before logout)
+ * is refused on every subsequent request instead of staying valid for up to
+ * 30 more days. See bot/auth.js#revokeSession / bot/registry-schema.js
+ * SCHEMA_SQL_V2 for the revocation design.
+ *
+ * Best-effort and always 200: an already-expired, already-revoked, or
+ * missing cookie is not an error — the caller's goal (be logged out) is
+ * already true either way.
+ */
+async function handleAuthLogout(req, res) {
+    let auth;
+    try { auth = getAuth(); } catch { auth = null; }
+
+    if (auth) {
+        try {
+            const raw = auth.getSessionCookieValue(req);
+            if (raw) auth.revokeSession(raw);
+        } catch (_) {
+            // Still clear the cookie below even if revocation failed.
+        }
+    }
+
+    const clearCookie = auth
+        ? auth.buildClearSessionCookie()
+        : 'hb_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0';
+
+    res.setHeader('Set-Cookie', clearCookie);
+    sendJson(res, 200, { ok: true });
+}
+
+/**
+ * POST /api/auth/logout-everywhere — ends every session for the signed-in
+ * user, not just this browser. Exists for the emailed-magic-link recovery
+ * flow: someone who suspects their inbox was read needs a way to end every
+ * session at once, including devices they no longer have access to.
+ */
+async function handleAuthLogoutEverywhere(req, res) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const auth = getAuth();
+    let revoked = 0;
+    try { revoked = auth.revokeAllSessionsForUser(userId); } catch (_) { revoked = 0; }
+
+    res.setHeader('Set-Cookie', auth.buildClearSessionCookie());
+    sendJson(res, 200, { ok: true, revoked });
 }
 
 async function handleGetMe(req, res) {
@@ -3363,6 +3415,14 @@ function createHandler({ onStripeEvent } = {}) {
 
             if (req.method === 'POST' && url === '/api/auth/telegram') {
                 return await handleAuthTelegram(req, res);
+            }
+
+            if (req.method === 'POST' && url === '/api/auth/logout') {
+                return await handleAuthLogout(req, res);
+            }
+
+            if (req.method === 'POST' && url === '/api/auth/logout-everywhere') {
+                return await handleAuthLogoutEverywhere(req, res);
             }
 
             if (req.method === 'GET' && url === '/api/me') {

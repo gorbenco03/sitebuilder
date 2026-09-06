@@ -167,10 +167,19 @@ function openModal(id) {
     state.handler = (e) => trapModalTab(e, el);
     el.addEventListener('keydown', state.handler);
   }
-  requestAnimationFrame(() => {
-    const first = el.querySelector('button,input,a,[tabindex]:not([tabindex="-1"])');
-    if (first) first.focus();
-  });
+  // Move focus into the modal synchronously (not via requestAnimationFrame):
+  // el.style.display was already cleared above, so the modal is already
+  // focusable — deferring one more frame just leaves a window, between
+  // "modal visible" and "focus actually inside it", where a Tab keypress
+  // starts from whatever had focus BEFORE the modal opened (outside its
+  // subtree). trapModalTab()'s keydown listener is bound to the modal
+  // element, so it never even fires for that keypress (the event bubbles
+  // from the still-focused outside element, not through the modal) and the
+  // browser's native tab order — which depends on the rest of the page's
+  // DOM — decides where focus goes instead. Focusing immediately closes
+  // that window instead of relying on timing.
+  const first = el.querySelector('button,input,a,[tabindex]:not([tabindex="-1"])');
+  if (first) first.focus();
 }
 function closeModal(id) {
   const el = $(id);
@@ -3642,16 +3651,19 @@ function updateUserUI(user) {
   const logoutBtn = $('btn-logout');
   const navDash = $('nav-dashboard');
   const acctLogoutItem = $('account-menu-logout');
+  const acctLogoutAllItem = $('account-menu-logout-all');
   if (user) {
     if (badge) { badge.textContent = user.email || ('ID: ' + String(user.id).slice(0,8)); show(badge); }
     if (logoutBtn) show(logoutBtn);
     if (navDash) show(navDash);
     if (acctLogoutItem) show(acctLogoutItem);
+    if (acctLogoutAllItem) show(acctLogoutAllItem);
   } else {
     if (badge) hide(badge);
     if (logoutBtn) hide(logoutBtn);
     if (navDash) hide(navDash);
     if (acctLogoutItem) hide(acctLogoutItem);
+    if (acctLogoutAllItem) hide(acctLogoutAllItem);
   }
 }
 
@@ -3659,11 +3671,32 @@ function updateUserUI(user) {
  * Shared logout — used by the header "Deconectare" button (visible outside the
  * editor) AND the editor topbar account menu (audit medium #7: there was no
  * way to reach logout, or the project list, once inside the editor).
+ *
+ * Wave 8 (AUDIT-07 re-audit): this now also revokes the session server-side
+ * (bot/server.js POST /api/auth/logout), not just clears client-side state —
+ * see bot/auth.js#revokeSession.
  */
 async function doLogout() {
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
   showToast('Te-ai deconectat.', '', 3000);
+  window.location.hash = '#templates';
+}
+
+/**
+ * "Deconectare de pe toate dispozitivele" — ends every session for this
+ * account, not just the current browser (Wave 8 / AUDIT-07 re-audit). Meant
+ * for the case where the account's magic-link email may have been read by
+ * someone else: one click ends every device's access, not only this one.
+ */
+async function doLogoutEverywhere() {
+  const confirmed = window.confirm(
+    'Sigur vrei să te deconectezi de pe toate telefoanele și calculatoarele conectate la acest cont?'
+  );
+  if (!confirmed) return;
+  try { await fetch('/api/auth/logout-everywhere', { method: 'POST', credentials: 'include' }); } catch (_) {}
+  updateUserUI(null);
+  showToast('Te-ai deconectat de pe toate dispozitivele.', '', 3000);
   window.location.hash = '#templates';
 }
 
@@ -5465,6 +5498,8 @@ function wireStaticButtons() {
   }
   const acctLogoutBtn = $('account-menu-logout');
   if (acctLogoutBtn) acctLogoutBtn.addEventListener('click', () => { closeAccountMenu(); doLogout(); });
+  const acctLogoutAllBtn = $('account-menu-logout-all');
+  if (acctLogoutAllBtn) acctLogoutAllBtn.addEventListener('click', () => { closeAccountMenu(); doLogoutEverywhere(); });
 
   // Color picker
   initColorPicker();

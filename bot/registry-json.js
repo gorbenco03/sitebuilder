@@ -40,7 +40,7 @@ function _load() {
     try {
         return JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf8'));
     } catch {
-        return { users: {}, tokens: {}, sites: {}, versions: {}, orders: {} };
+        return { users: {}, tokens: {}, sites: {}, versions: {}, orders: {}, sessions: {} };
     }
 }
 
@@ -353,6 +353,65 @@ function listAllOrders() {
     return Object.values(db.orders || {}).map((o) => ({ ...o }));
 }
 
+// ---------------------------------------------------------------------------
+// Sessions (Wave 8 / AUDIT-07 re-audit: server-side logout revocation)
+//
+// Mirrors registry-sqlite.js's sessions table/functions exactly (same
+// contract on both backends — see bot/registry-schema.js#SCHEMA_SQL_V2 for
+// the design rationale) so REGISTRY_BACKEND=json stays a real fallback.
+// ---------------------------------------------------------------------------
+
+function createSession(sid, userId, exp) {
+    if (!sid || typeof sid !== 'string') throw new Error('sid is required');
+    if (userId == null) throw new Error('userId is required');
+    const db = _load();
+    db.sessions = db.sessions || {};
+    db.sessions[sid] = { userId, createdAt: new Date().toISOString(), exp, revokedAt: null };
+    // Bound growth: sweep rows past their own natural expiry on every sign-in.
+    const now = Math.floor(Date.now() / 1000);
+    for (const [k, s] of Object.entries(db.sessions)) {
+        if (s.exp < now) delete db.sessions[k];
+    }
+    _save(db);
+}
+
+function isSessionValid(sid) {
+    if (!sid || typeof sid !== 'string') return false;
+    const db = _load();
+    const s = (db.sessions || {})[sid];
+    if (!s) return false;
+    if (s.revokedAt) return false;
+    if (Number(s.exp) < Math.floor(Date.now() / 1000)) return false;
+    return true;
+}
+
+function revokeSession(sid) {
+    if (!sid || typeof sid !== 'string') return false;
+    const db = _load();
+    db.sessions = db.sessions || {};
+    const s = db.sessions[sid];
+    if (!s || s.revokedAt) return false;
+    s.revokedAt = new Date().toISOString();
+    _save(db);
+    return true;
+}
+
+function revokeAllSessionsForUser(userId) {
+    if (userId == null) return 0;
+    const db = _load();
+    db.sessions = db.sessions || {};
+    const revokedAt = new Date().toISOString();
+    let count = 0;
+    for (const s of Object.values(db.sessions)) {
+        if (s.userId === userId && !s.revokedAt) {
+            s.revokedAt = revokedAt;
+            count++;
+        }
+    }
+    if (count) _save(db);
+    return count;
+}
+
 /**
  * DELIBERATE FIX (3 of 4): see bot/registry-shared.js#assertValidStripeEventId.
  */
@@ -399,4 +458,8 @@ module.exports = {
     listAllOrders,
     claimStripeEvent,
     addMonthsIso,
+    createSession,
+    isSessionValid,
+    revokeSession,
+    revokeAllSessionsForUser,
 };
