@@ -50,13 +50,30 @@ const ACTION_MIN = 44;    // WCAG 2.5.5 / iOS + Android platform guidance
 
 // The primary actions, named explicitly so this file says what it protects
 // rather than guessing from class-name substrings.
-const PRIMARY_ACTIONS = [
-    '.pf-chrome__nav a', '.pf-hero__cta', '.pf-appt__wa', '.pf-row', '.contact-item',
-    '.pm-mast__nav a', '.pm-mast__pill', '.pm-hero__cta', '.pm-link', '.menu-lang-btn',
-    '.ls-util__cta', '.ls-util__phone', '.ls-btn', '.hero-cta', '.ls-lead__row', '.ls-foot__soc a',
-    '.pr-nav__links a', '.pr-nav__cta', '.pr-btn',
-    '.hb-cookie-actions button', '.hb-cookie-actions .hb-cookie-link',
-].join(', ');
+//
+// Split per template on purpose. An earlier version was one flat list with a
+// single "did anything match?" guard, and an adversarial audit defeated it:
+// rename every one of portfolio's own action selectors, shrink its CTA to
+// 38px, and the oracle still reported green — because the SHARED consent-card
+// selector matched on every page and kept the guard satisfied. A guard that
+// any template can satisfy on behalf of all of them guards nothing.
+const OWN_ACTIONS = {
+    portfolio: ['.pf-chrome__nav a', '.pf-hero__cta', '.pf-appt__wa', '.pf-row'],
+    'product-menu': ['.pm-mast__nav a', '.pm-mast__pill', '.pm-hero__cta', '.pm-link', '.menu-lang-btn'],
+    'local-service': ['.ls-util__cta', '.ls-util__phone', '.ls-btn', '.ls-lead__row', '.ls-foot__soc a'],
+    professionals: ['.pr-nav__links a', '.pr-nav__cta', '.pr-btn'],
+    desserdirina: ['.contact-item', '.menu-lang-btn'],
+};
+// Chrome injected into every generated site. Measured, but never allowed to
+// stand in for a template's own controls.
+const SHARED_ACTIONS = ['.hb-cookie-actions button', '.hb-cookie-actions .hb-cookie-link', '.hero-cta'];
+
+function ownSelector(tpl) {
+    const own = OWN_ACTIONS[tpl];
+    assert.ok(own && own.length, `${tpl}: no primary actions declared — add them to OWN_ACTIONS`);
+    return own.join(', ');
+}
+const PRIMARY_ACTIONS = (tpl) => [...(OWN_ACTIONS[tpl] || []), ...SHARED_ACTIONS].join(', ');
 
 function templates() {
     return fs.readdirSync(TEMPLATES_DIR).filter((t) =>
@@ -64,7 +81,7 @@ function templates() {
         fs.existsSync(path.join(TEMPLATES_DIR, t, 'template.html')));
 }
 
-async function collect(browser, tpl, viewport, primarySel) {
+async function collect(browser, tpl, viewport, primarySel, ownSel) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'touch-'));
     try {
         const cfg = JSON.parse(
@@ -75,7 +92,7 @@ async function collect(browser, tpl, viewport, primarySel) {
         const page = await browser.newPage({ viewport });
         await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
         await page.waitForTimeout(500);
-        const rows = await page.evaluate((sel) => {
+        const rows = await page.evaluate(({ sel, ownSel: ownSelector }) => {
             const out = [];
             const interactive = 'a[href], button, [role="button"]';
             for (const el of document.querySelectorAll(interactive)) {
@@ -93,6 +110,7 @@ async function collect(browser, tpl, viewport, primarySel) {
                 out.push({
                     inline,
                     primary: el.matches(sel),
+                    own: ownSelector ? el.matches(ownSelector) : false,
                     tag: el.tagName.toLowerCase(),
                     cls: String(el.className || '').slice(0, 34),
                     text: String(el.innerText || el.getAttribute('aria-label') || '').replace(/\s+/g, ' ').slice(0, 30),
@@ -101,7 +119,7 @@ async function collect(browser, tpl, viewport, primarySel) {
                 });
             }
             return out;
-        }, primarySel);
+        }, { sel: primarySel, ownSel });
         await page.close();
         return rows;
     } finally {
@@ -115,7 +133,7 @@ test('every standalone target meets the WCAG 2.5.8 AA minimum of 24x24', async (
     try {
         for (const tpl of templates()) {
             for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-                const rows = await collect(browser, tpl, viewport, PRIMARY_ACTIONS);
+                const rows = await collect(browser, tpl, viewport, PRIMARY_ACTIONS(tpl), ownSelector(tpl));
                 assert.ok(rows.length > 5, `${tpl}: expected interactive elements to be found`);
                 for (const r of rows) {
                     if (r.inline) continue;
@@ -141,12 +159,14 @@ test('primary actions and navigation meet the 44x44 platform floor', async () =>
     try {
         for (const tpl of templates()) {
             for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-                const rows = await collect(browser, tpl, viewport, PRIMARY_ACTIONS);
+                const rows = await collect(browser, tpl, viewport, PRIMARY_ACTIONS(tpl), ownSelector(tpl));
                 const primaries = rows.filter((r) => r.primary && !r.inline);
+                const ownMatched = rows.filter((r) => r.own && !r.inline);
                 assert.ok(
-                    primaries.length > 0,
-                    `${tpl} @${viewport.width}: no primary action matched — the selector list has gone ` +
-                    `stale and this test would pass by measuring nothing`
+                    ownMatched.length > 0,
+                    `${tpl} @${viewport.width}: none of THIS template's own action selectors matched ` +
+                    `(${OWN_ACTIONS[tpl].join(', ')}). The shared consent-card controls do not count: ` +
+                    `they match on every page and would let a stale list pass by measuring nothing.`
                 );
                 for (const r of primaries) {
                     if (r.h < ACTION_MIN - 0.5) {
