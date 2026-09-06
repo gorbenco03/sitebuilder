@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMenuLangToggle();
     initIgEmbedAutoResize();
     initWhatsAppQR();
+    initMobileNav();
 });
 
 // ── WhatsApp QR modal ─────────────────────────────────────
@@ -432,6 +433,60 @@ function initContactRipple() {
             setTimeout(() => ripple.remove(), 620);
         });
     });
+}
+
+// ── Mobile navigation (hamburger) ─────────────────────────
+// Toggles the same anchors used on desktop as a dropdown panel below the
+// sticky mast. Accessible: aria-expanded/aria-controls, closes on Escape,
+// on outside click, on link activation, and if the viewport grows past the
+// desktop breakpoint while open.
+function initMobileNav() {
+    const burger = document.getElementById('pm-mast-burger');
+    const nav = document.getElementById('pm-mast-nav');
+    if (!burger || !nav) return;
+
+    const LABEL_OPEN = 'Deschide meniul de navigație';
+    const LABEL_CLOSE = 'Închide meniul de navigație';
+    const desktopMq = window.matchMedia('(min-width: 834px)');
+
+    function isOpen() { return nav.classList.contains('is-open'); }
+
+    function open() {
+        nav.classList.add('is-open');
+        burger.setAttribute('aria-expanded', 'true');
+        burger.setAttribute('aria-label', LABEL_CLOSE);
+    }
+
+    function close(focusBurger) {
+        nav.classList.remove('is-open');
+        burger.setAttribute('aria-expanded', 'false');
+        burger.setAttribute('aria-label', LABEL_OPEN);
+        if (focusBurger) burger.focus();
+    }
+
+    burger.addEventListener('click', () => {
+        if (isOpen()) close(false); else open();
+    });
+
+    nav.querySelectorAll('a').forEach((a) => {
+        a.addEventListener('click', () => close(false));
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen()) close(true);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!isOpen()) return;
+        if (nav.contains(e.target) || burger.contains(e.target)) return;
+        close(false);
+    });
+
+    if (desktopMq.addEventListener) {
+        desktopMq.addEventListener('change', (e) => { if (e.matches) close(false); });
+    } else if (desktopMq.addListener) {
+        desktopMq.addListener((e) => { if (e.matches) close(false); });
+    }
 }
 
 // ── Scroll-indicator button scrolls to main content ──────
