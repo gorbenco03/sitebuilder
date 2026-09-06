@@ -125,6 +125,8 @@ ul { list-style: none; }
     .pf-chrome__mark, .pf-chrome__logo { order: 1; }
     .pf-chrome__cta { order: 2; }
     .pf-chrome__toggle { display: inline-flex; }
+}
+@media (max-width: 719.98px) {
 
     .pf-mobile-nav {
         display: flex; position: fixed; inset: 0; z-index: 45;
@@ -155,6 +157,32 @@ ul { list-style: none; }
     transition: transform 140ms var(--ease-out);
 }
 .pf-chrome__cta:active { transform: scale(0.97); }
+/* Below ~420px the masthead cannot hold all three: the wordmark is 98px, the
+   booking button 204px (the seed label is "Programează o vizită") and the menu
+   toggle 44px, which with gaps and gutters needs about 414px. The row wrapped,
+   the header grew to 91px, and the order shuffled between widths — at 390 the
+   toggle dropped under the wordmark, at 360 the wordmark sat alone above the
+   other two. Drop the masthead button here: the same call to action is the
+   first thing in the hero directly below it, and the menu drawer carries it
+   too, so nothing becomes unreachable. */
+@media (max-width: 419.98px) {
+    /* Not display:none, though that was the first thing I reached for. On a
+       salon's site the masthead booking button is the highest-value control on
+       the page, and wave5-portfolio-a11y checks it is a real target — rightly.
+       Make it fit instead: the seed label ("Programează o vizită") is unusually
+       long, so cap the width and let an over-long one ellipsise rather than
+       force the row to wrap. */
+    .pf-chrome__cta {
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        padding: 10px 12px;
+        max-width: 38vw;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pf-chrome__mark { max-width: 26vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 
 .pf-hero {
     position: relative;
