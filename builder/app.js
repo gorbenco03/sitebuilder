@@ -10,6 +10,11 @@
 // ---------------------------------------------------------------------------
 
 const DRAFT_KEY = 'hb.draft.v1';
+// Where a draft goes when starting a different design replaces it. Switching
+// design is one of the first things a new visitor does, and that visitor is
+// usually not signed in yet, so the account backup cannot catch them. Keeping
+// the replaced draft here means the recovery banner can still offer it back.
+const REPLACED_DRAFT_KEY = 'hb.draft.replaced.v1';
 const PUBLISH_SLUG_COLLISION_MESSAGE = 'Această adresă este deja folosită. Încearcă alta.';
 
 const draft = { templateId: null, config: null };
@@ -1187,9 +1192,22 @@ function hideRecoveryBanner() {
   if (banner) { banner.style.display = 'none'; banner.setAttribute('aria-hidden', 'true'); }
 }
 
+/** The draft a design switch replaced, if it is still worth offering back. */
+function loadReplacedDraft() {
+  const r = lsGet(REPLACED_DRAFT_KEY);
+  if (!r || !r.templateId || !r.config) return null;
+  // A week is long enough to cover "I'll come back to it tomorrow" and short
+  // enough that we are not offering someone a draft they have forgotten.
+  if (r.replacedAt && (Date.now() - r.replacedAt) > 7 * 24 * 60 * 60 * 1000) return null;
+  return r;
+}
+
 function maybeShowRecoveryBanner() {
   if (recoveryBannerDismissedThisSession) { hideRecoveryBanner(); return; }
-  const saved = loadDraft();
+  // An interrupted draft comes first; a design the owner deliberately moved on
+  // from is the weaker claim on their attention, so it is only offered when
+  // there is nothing more recent to resume.
+  const saved = loadDraft() || loadReplacedDraft();
   if (!saved || !saved.templateId || !saved.config) { hideRecoveryBanner(); return; }
   // Already the draft loaded in this tab — not "interrupted", just navigation.
   if (draft.templateId && draft.templateId === saved.templateId) { hideRecoveryBanner(); return; }
@@ -1208,13 +1226,31 @@ function maybeShowRecoveryBanner() {
 function discardLocalDraft() {
   recoveryBannerDismissedThisSession = true;
   try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
+  try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
   hideRecoveryBanner();
 }
 
 function initRecoveryBanner() {
   const resumeBtn = $('btn-recovery-resume');
   const discardBtn = $('btn-recovery-discard');
-  if (resumeBtn) resumeBtn.addEventListener('click', () => { window.location.hash = '#edit'; });
+  if (resumeBtn) resumeBtn.addEventListener('click', () => {
+    // #edit resumes from DRAFT_KEY. When the banner is offering a draft that a
+    // design switch replaced, that slot holds the NEWER draft, so it has to be
+    // promoted first -- otherwise the button offers one thing and delivers
+    // another, which is worse than not offering it at all.
+    if (!loadDraft()) {
+      const replaced = loadReplacedDraft();
+      if (replaced) {
+        lsSet(DRAFT_KEY, {
+          templateId: replaced.templateId,
+          config: replaced.config,
+          siteId: replaced.siteId || null,
+        });
+        try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
+      }
+    }
+    window.location.hash = '#edit';
+  });
   if (discardBtn) discardBtn.addEventListener('click', discardLocalDraft);
 }
 
@@ -5014,6 +5050,19 @@ async function startWithTemplate(templateId) {
         config: existingDraftForSwitch.config,
       }).catch(() => { /* best-effort only — the toast below already tells the owner what happened */ });
     }
+    // Keep the replaced draft recoverable. The account backup above only runs
+    // for a signed-in owner; an anonymous first-time visitor trying a second
+    // design would otherwise lose their work outright, and trying designs is
+    // exactly what a first-time visitor does.
+    try {
+      lsSet(REPLACED_DRAFT_KEY, {
+        templateId: existingDraftForSwitch.templateId,
+        config: existingDraftForSwitch.config,
+        siteId: existingDraftForSwitch.siteId || null,
+        replacedAt: Date.now(),
+      });
+    } catch (_) { /* storage full: the toast below still tells them */ }
+
     const switchNoticeSignedIn = typeof currentUser !== 'undefined' && !!currentUser;
     showToast(
       'Proiectul pe designul „' + existingName + '” a fost înlocuit aici' +
