@@ -358,6 +358,29 @@ body {
         );
 }
 
+/* A soft light bloom behind the hero copy.
+   The wordmark is the owner's --color-primary-dark, so it cannot be darkened
+   to buy contrast without overriding their brand — the only lever left is the
+   background. That lever is real but bounded: at the seed pink rgb(209,68,119)
+   the ratio against PURE WHITE is 4.37:1, so no amount of lightening gets past
+   that. Measured on rendered pixels the wordmark sat at 3.23:1 against its 3:1
+   large-text floor, with a worst pixel of 2.77 — passing, but a fifth of a
+   point of headroom on the brand's own name at 86px is not headroom.
+   A wide, soft radial that fades out well inside its own box: it lifts the
+   darker parts of the cake that sit behind the glyphs without flattening the
+   photograph, and it has no edge to give itself away. */
+.hero-content::before {
+    content: '';
+    position: absolute;
+    inset: -12% -8%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(ellipse 62% 58% at 50% 46%,
+        rgba(255, 255, 255, 0.82) 0%,
+        rgba(255, 255, 255, 0.62) 42%,
+        rgba(255, 255, 255, 0.24) 70%,
+        transparent 100%);
+}
 .hero-content {
     position: relative;
     z-index: 1;

@@ -54,6 +54,12 @@ const CASES = [
     ['portfolio', ['.pf-hero__word', '.pf-hero__tag'], '.pf-hero__bg'],
     ['local-service', ['.ls-hero__name, .ls-hero__tag', '.ls-hero__tag'], '.ls-hero__media'],
     ['professionals', ['.pr-display', '.pr-lede'], '.pr-hero__bg'],
+    // Added after the final evidence run put desserdirina's wordmark at 3.24:1
+    // — over its 3:1 large-text bar, but by a margin thin enough that nobody
+    // should have to find out about it from a screenshot. Covering all five
+    // means the two that were left out are no longer the two nobody measures.
+    ['desserdirina', ['.hero-wordmark', '.hero-tagline'], '.hero-background'],
+    ['product-menu', ['.pm-hero__tag', '.pm-kicker'], '.pm-hero__frame'],
 ];
 
 const PERCENTILE = 0.10;
