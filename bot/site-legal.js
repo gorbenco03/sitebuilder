@@ -219,6 +219,30 @@ function cookiesHtml(config) {
  * Open state is class-driven (html/body.hb-cookie-open) AND :has() so clearance
  * still applies if either signal is missing in a preview paint.
  */
+/*
+ * A note on .hb-cookie-banner button, whose values below look arbitrary.
+ *
+ * It used to be `background: #25d366; color: #06210f` — WhatsApp green,
+ * borrowed from the chat FAB that sits in the opposite corner of the same
+ * page. This is the single most prominent control on the first screen of
+ * EVERY site this product generates, so it painted the same neon green over
+ * an advocate's paper-and-brass palette, a dessert brand's pinks and a
+ * monochrome salon alike. Paper-on-ink instead (#f5f5f5 on #111, 20.4:1): it
+ * reads as belonging to the dark consent card rather than to some other
+ * product's brand, on all five templates.
+ *
+ * The min-height/min-width are not cosmetic. Measured on rendered pixels, the
+ * button came out 88x35 at 1440px and 83x33 at 390px — under the 44px WCAG
+ * 2.5.8 minimum target size, on every site the product has ever exported,
+ * while every template's own buttons honour 48px. See
+ * bot/test/waveB-consent-control-quality.test.js.
+ *
+ * Kept out here rather than inside the template literal below: everything in
+ * that string is copied verbatim into cookie-banner.css on every published
+ * site, so a comment there is bytes every visitor downloads — and, as the
+ * s56/s58 commercial-preview oracles proved, prose shipped into the payload
+ * is prose the product's own content contracts have to police.
+ */
 const COOKIE_BANNER_CSS = `/* Hidook generated-site bottom chrome + cookie consent (shared layout rule). */
 :root {
   --hb-fab-size: 3.25rem;
@@ -525,16 +549,6 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
   align-items: center;
   pointer-events: auto;
 }
-/* The accept control.
- * It used to be #25d366 on #06210f — WhatsApp green, borrowed from the chat
- * FAB that sits in the opposite corner. It is the single most prominent
- * control on the first screen of EVERY generated site, so it put the same
- * neon green on an advocate's paper-and-brass palette, a patisserie's pinks
- * and a monochrome portfolio alike. Paper-on-ink instead: it belongs to the
- * dark consent card rather than to any one brand, reads as considered on all
- * five templates, and lands at 20.4:1 against the card.
- * The min-height is not cosmetic — the button measured 35px tall, under the
- * 44px WCAG 2.5.8 target minimum, on every site the product has ever shipped. */
 .hb-cookie-banner button {
   appearance: none;
   border: 0;
@@ -561,7 +575,6 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
 }
 .hb-cookie-banner .hb-cookie-link {
   font-size: 0.88rem;
-  /* Was a pale green tint from the same borrowed WhatsApp palette. */
   color: #e6e6e6;
   text-underline-offset: 2px;
 }
