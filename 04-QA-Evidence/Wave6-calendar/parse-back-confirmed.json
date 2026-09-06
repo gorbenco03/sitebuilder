@@ -39,14 +39,14 @@
     {
       "name": "UID",
       "params": "",
-      "value": "bk_e6332af696751e2920fe171c@calendar.hidook.invalid",
-      "raw": "UID:bk_e6332af696751e2920fe171c@calendar.hidook.invalid"
+      "value": "bk_65d689e7febf05c5c6bfe08e@calendar.hidook.invalid",
+      "raw": "UID:bk_65d689e7febf05c5c6bfe08e@calendar.hidook.invalid"
     },
     {
       "name": "DTSTAMP",
       "params": "",
-      "value": "20260906T134254Z",
-      "raw": "DTSTAMP:20260906T134254Z"
+      "value": "20260906T175403Z",
+      "raw": "DTSTAMP:20260906T175403Z"
     },
     {
       "name": "DTSTART",

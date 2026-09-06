@@ -152,6 +152,87 @@ Rămân netratate din audit (ordine sugerată din §9): #14b security headers, #
 
 **Rămân netratate din audit, în ordinea recomandată:** calendarul nativ care nu pornește pe imaginea Docker de producție (Node 20 fără `node:sqlite`); primul load al unui șablon la 8-12s față de ținta de 3s; fonturile Google încărcate fără consimțământ pe desserdirina (expunere GDPR reală în UE); emailul scris în clar în loguri la fiecare autentificare; CORS deschis fără rate-limit pe `/api/calendar-native/*`; `invoice.payment_failed` netratat; etichetele greșite din `/admin` pentru `past_due`/`unpaid` (descrise exact în raportul agentului comercial, în `bot/server.js:423-486`); registry-ul pe un singur fișier JSON; 358MB de capturi QA comise în git.
 
+## Ultimul eveniment integrat (2026-09-06, valurile 4-8 + re-audit independent)
+
+**80 de commit-uri locale pe `main`, fără push.** Suita: **330/331**, singurul eșec fiind
+`flow3-legal-export`, oracle-ul deliberat specific Brave, roșu și la începutul zilei. Suita a
+crescut de la 172 la 331 de teste.
+
+### Re-auditul independent — scoruri măsurate
+
+Cinci lentile, fiecare reproducând în browser real sau pe suprafața HTTP reală, fiecare cu o
+listă explicită a ce **nu** a apucat să acopere. Rapoartele: `04-QA-Evidence/Reaudit-2026-09-06/`.
+
+| Zonă | Audit 2225ca7 | Re-audit |
+|---|---|---|
+| Performanță | 4 | **9** |
+| local-service | 6 | **9** |
+| product-menu | 4 | **8** |
+| Builder UX | 6 | **8** |
+| Backend | 6 | **7** |
+| Export/renderer | 6 | **7** |
+| Documentație | 4 | **6** |
+| Deploy/infra | 3 | **6** |
+| Accesibilitate | 5 | **6** |
+| Plăți | 3 | **5** |
+| Securitate | 4 | **5** |
+
+Performanța: **1,35–2,36s** de la click pe „Start" la editor funcțional, față de 7,8–11,7s la
+audit și o țintă de 3s. LCP 2,1s, CLS 0.
+
+**Notă de onestitate:** desserdirina (4), portfolio (6) și professionals (7) au fost punctate
+**înainte** de valul care le-a reparat defectele. Nu au fost re-măsurate; nu li se atribuie
+scoruri noi aici.
+
+### Ce a demonstrat re-auditul
+
+**Patru constatări raportate ca reparate nu erau.** XSS-ul din sink-ul de iconițe (spart printr-un
+bypass cu entități denumite la o oră după fixul din aceeași zi — al treilea fix pe același loc,
+rezolvat acum prin **listă albă de scheme** în loc de listă neagră); `POST /api/auth/logout` care
+nu exista deloc; garda contra dublei facturări, prezentă pe calea butonului de reînnoire și absentă
+pe calea de republicare; țintele de atingere de 24px, reparate în CSS-ul unui șablon în loc de
+componenta partajată.
+
+**Patru funcționalități plătite, inaccesibile oricărui client:** calendarul nativ (patru valuri de
+lucru, niciun comutator și niciun panou), domeniul custom, istoricul de facturi, starea de plată
+eșuată. Două dintre ele livrate în aceeași zi. Toate cu suita verde, pentru că testele apelau API-ul.
+Regula scrisă în `AGENTS.md`.
+
+### Defecte latente găsite la integrare, nu de agentul care scria codul
+
+- **Selectorul cu prefix de text** din `edit-overlay.js`: `[data-hb-edit^="pricing.1"]` prinde și
+  `pricing.10`. Orice listă, pe orice șablon, se strica la al unsprezecelea element. Portfolio
+  livrează exact 10 rânduri de preț, deci acolo a devenit vizibil primul.
+- **Injecția scriptului de preview** folosea `replace('</body>')` — prima potrivire. Un comentariu
+  care cita eticheta a capturat injecția și a omorât **întregul editor inline** pe professionals,
+  fără niciun log.
+- **1244 de linii de encoder QR mort** pe toate cele 5 șabloane, livrate pe fiecare site publicat.
+- **Republicarea ștergea tăcut domeniul custom** din canonical, og:url, robots.txt și sitemap.xml.
+- **Linkul de anulare din emailurile de rezervare** pleca spre `http://127.0.0.1:0`. Confirmat viu
+  în producție: `PUBLIC_URL` e setat, `CALENDAR_PUBLIC_BASE_URL` nu.
+- **`GO-LIVE.md` cerea backup la `.registry.json`**, fișier șters de migrarea pe SQLite.
+- **Un oracle care pica mereu** (`wave5-builder-undo-redo`, selector greșit) a fost înregistrat de
+  trei valuri ca „instabilitate cunoscută". Un test care pică mereu îi învață pe oameni să-l ignore.
+
+### Producție, citită din serviciul viu
+
+Workspace `My Projects`, proiect `grateful-fascination`, serviciu `lp-builder1-hidook-agency`.
+Build **Dockerfile**. `DATA_DIR=/data` pe volum montat. `PUBLIC_URL=https://lp.hidook.agency`.
+`DEPLOY_PROVIDER=cloudflare`. Ultimul deploy: **2026-09-05 23:54** — producția rulează codul de
+dinaintea acestei zile. Detalii în `ARCHITECTURE.md` §10b.
+
+### Curățenie
+
+213 → 31 worktree-uri, **39 GB recuperați**, după verificarea celor 20 de branch-uri nemerge-uite,
+care au fost păstrate. Regula de ordine e în `AGENTS.md`.
+
+### Ce rămâne pentru 9/10
+
+1. Re-audit al zonelor reparate după măsurătoare: desserdirina, portfolio, professionals, securitate, plăți.
+2. Securitate: rate-limiting ocolibil prin `X-Forwarded-For` (fără listă de proxy de încredere); CSP permisiv pe site-urile publicate.
+3. Plăți: TVA rămâne oprit până la configurarea Stripe Tax în Dashboard; patru întrebări pentru contabil în `OWNER-STRIPE-TRIAL.md`.
+4. Un deploy. Nimic din ziua asta nu a ajuns la clienți.
+
 ## Ultimul eveniment integrat (2026-09-06, valul 3 de remediere audit — 12 agenți)
 
 **12 branch-uri integrate local pe `main`** (`8b82280`..`5a2e0f1`, fără push). Agenți Sonnet în
