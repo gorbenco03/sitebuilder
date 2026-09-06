@@ -203,9 +203,26 @@ ul { list-style: none; }
     min-width: 0;
 }
 .pf-hero__logo { height: 40px; margin-bottom: 1rem; }
-.pf-hero__word, .pf-hero__tag, .hero-tagline {
-    font-family: var(--display); font-size: clamp(2.2rem, 6.5vw, 3.4rem);
-    font-weight: 500; line-height: 1.1; letter-spacing: -0.01em;
+/* Hero type hierarchy.
+   The salon name and the tagline used to share one rule — same family, same
+   54px, same weight, stacked with no gap — so "Atelier Ivoire" and "Păr,
+   îngrijirea tenului și manichiură — cu răbdare și precizie" read as one
+   run-on sentence rather than as a name and a promise. The name is the <h1>
+   and keeps the display scale; the tagline becomes the lede it actually is. */
+.pf-hero__word {
+    font-family: var(--display); font-size: clamp(2.4rem, 6.8vw, 3.6rem);
+    font-weight: 500; line-height: 1.06; letter-spacing: -0.02em;
+    margin: 0;
+}
+.pf-hero__tag, .hero-tagline {
+    font-family: var(--body, inherit);
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0;
+    max-width: 36rem;
+    margin-top: 1.1rem;
+    color: rgba(255, 255, 255, 0.94);
 }
 .pf-hero__cta, .hero-cta {
     display: inline-flex; margin-top: 1.35rem; padding: 10px 20px;

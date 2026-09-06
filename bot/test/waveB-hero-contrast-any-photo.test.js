@@ -44,11 +44,16 @@ const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
 const siteExport = require(path.join(ROOT, 'bot', 'site-export.js'));
 
-// [templateId, headline selector, hero photo layer selector]
+// [templateId, [every hero text selector, not just the headline], hero photo layer]
+// The lede matters as much as the headline and has a STRICTER bar: at under
+// 24px it is normal text, so WCAG asks 4.5:1 rather than 3:1. A hierarchy pass
+// that shrinks a tagline from display size to lede size therefore raises the
+// bar it has to clear, which is exactly the kind of change that quietly
+// regresses contrast if nothing measures it.
 const CASES = [
-    ['portfolio', '.pf-hero__word, .pf-hero__tag, .hero-tagline', '.pf-hero__bg'],
-    ['local-service', '.ls-hero__name, .ls-hero__tag, .hero-tagline', '.ls-hero__media'],
-    ['professionals', '.pr-display', '.pr-hero__bg'],
+    ['portfolio', ['.pf-hero__word', '.pf-hero__tag'], '.pf-hero__bg'],
+    ['local-service', ['.ls-hero__name, .ls-hero__tag', '.ls-hero__tag'], '.ls-hero__media'],
+    ['professionals', ['.pr-display', '.pr-lede'], '.pr-hero__bg'],
 ];
 
 const PERCENTILE = 0.10;
@@ -129,7 +134,7 @@ test('hero headlines clear WCAG AA over the seed photo AND over a light one', as
     const failures = [];
     const report = [];
     try {
-        for (const [tpl, textSel, bgSel] of CASES) {
+        for (const [tpl, textSels, bgSel] of CASES) {
             const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hero-ct-'));
             try {
                 const cfg = JSON.parse(
@@ -162,18 +167,20 @@ test('hero headlines clear WCAG AA over the seed photo AND over a light one', as
                         );
                         await page.waitForTimeout(250);
                     }
-                    const m = await measure(page, textSel);
-                    assert.ok(m, `${tpl}: headline "${textSel}" not found`);
-                    report.push(
-                        `${tpl} / ${condition}: p10 ${m.p10.toFixed(2)}:1, worst ${m.worst.toFixed(2)}:1 ` +
-                        `(bar ${m.bar}:1, ${Math.round(m.fontPx)}px)`
-                    );
-                    if (m.p10 < m.bar) {
-                        failures.push(
-                            `${tpl} over a ${condition}: headline contrast is ${m.p10.toFixed(2)}:1 at the ` +
-                            `10th percentile (worst pixel ${m.worst.toFixed(2)}:1), under the ${m.bar}:1 ` +
-                            `WCAG AA floor for ${Math.round(m.fontPx)}px text`
+                    for (const textSel of textSels) {
+                        const m = await measure(page, textSel);
+                        assert.ok(m, `${tpl}: hero text "${textSel}" not found`);
+                        report.push(
+                            `${tpl} / ${condition} / ${textSel}: p10 ${m.p10.toFixed(2)}:1, ` +
+                            `worst ${m.worst.toFixed(2)}:1 (bar ${m.bar}:1, ${Math.round(m.fontPx)}px)`
                         );
+                        if (m.p10 < m.bar) {
+                            failures.push(
+                                `${tpl} "${textSel}" over a ${condition}: contrast is ${m.p10.toFixed(2)}:1 at ` +
+                                `the 10th percentile (worst pixel ${m.worst.toFixed(2)}:1), under the ${m.bar}:1 ` +
+                                `WCAG AA floor for ${Math.round(m.fontPx)}px text`
+                            );
+                        }
                     }
                 }
                 await page.close();
