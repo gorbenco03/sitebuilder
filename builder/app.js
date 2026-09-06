@@ -1186,6 +1186,47 @@ function onImageChangeRequest(path, src, alt) {
   }
 }
 
+/**
+ * Romanian, vertical-aware default text for the primary field of a newly added
+ * list item. A new item seeded with '' renders as a blank card the customer can
+ * neither read nor (on some templates) delete, and templates that guard fields
+ * with `<!-- @if title -->` render no editable node at all, so the inline editor
+ * has nothing to attach to. Seeding the primary field keeps every new item
+ * visible, editable and deletable, and carries the text into draft.config so it
+ * survives preview, publish and export.
+ */
+function defaultListItemLabel(listPath) {
+  const p = String(listPath || '');
+  if (/^menu\.en/.test(p)) return 'New category';
+  if (/^menu\.ro/.test(p)) return 'Categorie nouă';
+  if (/categories$/.test(p)) return 'Categorie nouă';
+  if (/^services$/.test(p)) {
+    const id = (currentTemplate && currentTemplate.meta && currentTemplate.meta.id)
+      || (currentTemplate && currentTemplate.data && currentTemplate.data.schema
+          && currentTemplate.data.schema.templateId)
+      || (draft && draft.templateId);
+    return id === 'product-menu' ? 'Specialitate nouă' : 'Serviciu nou';
+  }
+  if (/^pricing$/.test(p)) return 'Serviciu nou';
+  if (/^trust$/.test(p)) return 'Punct forte nou';
+  if (/^certifications$/.test(p)) return 'Certificare nouă';
+  if (/^schedule\.rows$/.test(p)) return 'Zi nouă';
+  if (/^team\.members$/.test(p)) return 'Nume și prenume';
+  if (/^process\.steps$/.test(p)) return 'Pas nou';
+  if (/^credentials\.items$/.test(p)) return 'Calificare nouă';
+  if (/^faq\.items$/.test(p)) return 'Întrebare nouă';
+  return 'Titlu nou';
+}
+
+/** Pick the field of an itemShape that renders as the item's visible headline. */
+function primaryItemShapeKey(itemShape) {
+  const keys = Object.keys(itemShape || {}).filter(k => itemShape[k] === 'text');
+  if (!keys.length) return null;
+  const preferred = ['label', 'title', 'name', 'category', 'q', 'day', 'weekday'];
+  for (const want of preferred) if (keys.includes(want)) return want;
+  return keys[0];
+}
+
 function onListAdd(listPath) {
   if (!listPath) return;
   const tpl = currentTemplate && currentTemplate.data;
@@ -1208,16 +1249,20 @@ function onListAdd(listPath) {
     }
     if (!Array.isArray(draft.config.menu.en)) draft.config.menu.en = [];
     if (!Array.isArray(draft.config.menu.ro)) draft.config.menu.ro = [];
-    newItem = { category: 'New section', items: ['New item'] };
+    newItem = /^menu\.en$/.test(listPath)
+      ? { category: 'New category', items: ['New dish'] }
+      : { category: 'Categorie nouă', items: ['Preparat nou'] };
   } else if (/^menu\.(en|ro)\.\d+\.items$/.test(listPath)) {
-    newItem = 'New item';
+    newItem = /^menu\.en\./.test(listPath) ? 'New dish' : 'Preparat nou';
   } else if (typeof itemShape === 'string') {
-    newItem = itemShape === 'photos' ? [] : '';
+    newItem = itemShape === 'photos' ? [] : defaultListItemLabel(listPath);
   } else if (typeof itemShape === 'object' && itemShape !== null) {
     newItem = {};
+    const primaryKey = primaryItemShapeKey(itemShape);
     Object.keys(itemShape).forEach(k => {
       if (itemShape[k] === 'photos') newItem[k] = [];
       else if (itemShape[k] === 'list' || k === 'items') newItem[k] = [''];
+      else if (k === primaryKey) newItem[k] = defaultListItemLabel(listPath);
       else newItem[k] = '';
     });
   } else {
