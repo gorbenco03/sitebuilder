@@ -213,7 +213,8 @@ ul { list-style: none; }
        `background-position: 0% 0%`, so the restaurant's photograph rendered at
        its natural resolution from its top-left corner: an arbitrary crop in a
        534x460 frame rather than the framed shot the layout is built around.
-       Same trap that tiled the desserdirina hero. */
+       Locked by bot/test/waveB-hero-photo-fills-frame.test.js, which checks
+       computed style across every template — the source always read fine. */
     background-size: cover !important;
     background-position: center !important;
     background-repeat: no-repeat !important;

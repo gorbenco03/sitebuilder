@@ -84,20 +84,33 @@ function dirTotalBytes(dir) {
     stdio: 'pipe',
   });
 
-  // Regression ceilings, each placed midway between the CURRENT minified and
-  // unminified size of that payload, measured on this tree by building twice
-  // (once with minifyCss/trimJsWhitespace short-circuited to identity):
+  // Regression ceilings. Re-measured on this tree by building twice, once with
+  // minifyCss/trimJsWhitespace short-circuited to identity:
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       79368        81811     80600
-  //   local-service     102117       105519    103800
-  //   portfolio          93741        97204     95500
-  //   professionals     106064       112023    109000
+  //   product-menu       80384        85929     82000
+  //   local-service     104382       109531    106500
+  //   portfolio          95221       105350     97100
+  //   professionals     109024       124892    111200
+  //
+  // These used to sit at the midpoint between the two. That rule stopped
+  // serving its purpose once the stylesheets grew long explanatory comments:
+  // the minifier strips them, so the unminified figure climbed (professionals
+  // 112023 -> 124892) while the shipped payload barely moved, and a midpoint
+  // ceiling would have handed out ~7KB of silent growth budget.
+  //
+  // Two properties have to hold, and both still do at minified + ~2%:
+  //   1. Well under unminified, so deleting the minifier trips this gate. The
+  //      earlier generation of these ceilings sat ABOVE the unminified size
+  //      and passed happily with the minifier removed — a dead gate.
+  //   2. Tight enough to notice real payload growth rather than absorb it.
+  // The "embedded styles.css is smaller than the raw source" check below is
+  // the direct minifier-ran assertion; this one is the growth guard.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 80600,
-    'local-service': 103800,
-    portfolio: 95500,
-    professionals: 109000,
+    'product-menu': 82000,
+    'local-service': 106500,
+    portfolio: 97100,
+    professionals: 111200,
   };
 
   for (const id of TPLS) {

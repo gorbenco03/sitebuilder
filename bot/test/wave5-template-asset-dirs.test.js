@@ -69,7 +69,12 @@ test('every @font-face src in a template resolves to a file that template ships'
     for (const tpl of fs.readdirSync(TEMPLATES_DIR)) {
         const cssPath = path.join(TEMPLATES_DIR, tpl, 'styles.css');
         if (!fs.existsSync(cssPath)) continue;
-        const css = fs.readFileSync(cssPath, 'utf8');
+        // Strip comments first. A comment is not a declaration, and a stylesheet
+        // that documents the shape of a rule — "the markup sets it with
+        // style=\"background: url(…)\"" — is not referencing a file called "…".
+        // The Google Fonts check just above already strips HTML comments for the
+        // same reason; this one did not, and read prose as a broken asset path.
+        const css = fs.readFileSync(cssPath, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
         const refs = [...css.matchAll(/url\((['"]?)([^'")]+)\1\)/g)]
             .map((m) => m[2].trim())
             .filter((u) => !/^(data:|https?:|\/\/)/i.test(u));
