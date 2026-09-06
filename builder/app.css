@@ -1365,6 +1365,65 @@ body.details-drawer-open .editor-tpl-name {
 .drawer-section { display: flex; flex-direction: column; gap: 0.75rem; }
 
 /* ============================================================
+   PAGE SECTIONS PANEL (Wave 7 — add / remove / reorder sections)
+   ============================================================ */
+
+.hb-sections-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.hb-secrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.hb-secrow--removed { opacity: 0.6; }
+
+.hb-secrow__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hb-secrow__lock,
+.hb-secrow__tag {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+.hb-secrow__actions { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
+
+.hb-secrow__btn {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.hb-secrow__btn:hover:not(:disabled) { background: var(--bg); color: var(--text); border-color: var(--text-light); }
+.hb-secrow__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.hb-secrow__btn:disabled { opacity: 0.35; cursor: default; }
+.hb-secrow__btn--wide { min-width: 64px; }
+
+/* ============================================================
    GALLERY MODAL
    ============================================================ */
 

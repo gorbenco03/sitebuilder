@@ -763,5 +763,42 @@
         }
       ]
     }
+  ],
+  "pageSections": [
+    {
+      "id": "services",
+      "label": "Servicii / expertiză",
+      "removable": true
+    },
+    {
+      "id": "process",
+      "label": "Cum lucrezi",
+      "removable": true
+    },
+    {
+      "id": "about",
+      "label": "Despre / credențiale",
+      "removable": false
+    },
+    {
+      "id": "appointment",
+      "label": "Programări",
+      "removable": true
+    },
+    {
+      "id": "faq",
+      "label": "Întrebări frecvente",
+      "removable": true
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram",
+      "removable": true
+    },
+    {
+      "id": "contact",
+      "label": "Contact și locație",
+      "removable": false
+    }
   ]
 }
