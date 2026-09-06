@@ -366,3 +366,71 @@ Plus: `updateSite` acceptă și persistă orice cheie străină; `kind` necunosc
 9/10 mutanți prinși) și de reparat în etapa 2 a stocării, ca schimbări explicite de comportament.
 
 **Telegram rămâne înghețat** prin decizia owner-ului din 2026-09-06 — niciun fișier atins în acest val.
+
+---
+
+## Noaptea 2026-09-06 → 07 — Valul B: aspect, accesibilitate, secțiuni
+
+Obiectivul owner-ului: constructorul să arate și să se simtă de nivel top, gata de push dimineața.
+
+### Ce s-a reparat, cu măsurători
+
+**Contrastul eroului peste fotografia proprietarului.** Trei șabloane pun text alb direct pe o poză
+și se bazează pe un văl de gradient. Un văl potrivit pe poza din depozit nu e o garanție de contrast
+— e un pariu pe acea poză, iar editorul îl invită pe proprietar s-o înlocuiască pe primul ecran.
+Măsurat pe pixeli randați, în spatele glifelor:
+
+| | înainte | după |
+|---|---|---|
+| portfolio, poza proprie | **1,94:1** (p10) | 7,20:1 |
+| portfolio, poză deschisă | 1,40:1 | 5,28:1 |
+| local-service, poza proprie | 10,08:1 | 15,97:1 |
+| local-service, poză deschisă | **1,84:1** | 7,98:1 |
+
+Pragul WCAG 1.4.3 pentru text de mărimea asta e 3:1. **portfolio pica pe fotografia din propriul
+depozit** — prin două audituri, o notă de 6/10 și un oracol de contrast care eșantiona o zonă mai
+întunecată a aceluiași erou și trecea. Reparat prin greutatea vălului existent, nu printr-un scrim
+pe blocul de text: acela măsura impecabil și arăta ca un dreptunghi negru lipit pe poză.
+`waveB-hero-contrast-any-photo` măsoară ambele condiții și ține `professionals` ca martor pozitiv.
+
+**Ținte de atingere.** Fiecare șablon avea între 11 și 19 elemente interactive sub 44px, iar câteva
+sub pragul de conformitate: linkurile din bara de navigație randau **17px înălțime** — text fără
+padding — sub minimul de 24×24 din WCAG 2.5.8 (nivel AA), pe navigația principală a site-ului unui
+client plătitor. Butonul de consimțământ măsura 83×33 pe telefon și era vopsit în verdele WhatsApp,
+împrumutat de la butonul de chat din colțul opus, pe orice paletă. Acum 24px podea dură pentru orice
+țintă de sine stătătoare, 44px pentru navigație și butoanele de acțiune. Linkurile inline într-o
+frază sunt lăsate în pace — 2.5.8 le exceptează, iar încadrarea lor ar rupe paragraful.
+
+*Corecție proprie:* am scris inițial că 44px e minimul din WCAG 2.5.8. Nu e — 2.5.8 e nivel AA la
+24×24, iar 44×44 e 2.5.5, nivel AAA (și cifra din ghidurile iOS/Android). Reparația rămâne validă,
+formularea a fost corectată în cod și în oracol.
+
+**Secțiuni de pagină pe toate cele cinci șabloane.** Funcționalitatea era construită complet — motor,
+panou în sertar, metadate în schemă — și accesibilă pe **un singur** șablon din cinci. Celelalte patru
+nu aveau `id` pe secțiunile de nivel superior. Două au cerut restructurare reală: `reorderSections()`
+refuză să reordoneze dacă găsește conținut între secțiuni (altfel l-ar șterge tăcut), deci markup-ul
+unui `<div>` învelitor era destul ca funcționalitatea să fie moartă în liniște.
+
+**Editorul pe telefon.** Prima oară când cineva l-a condus la 390×844 cu atingeri reale: butoanele
+barei se suprapuneau peste cele din stânga, iar o apăsare pe comutatorul de previzualizare **expira
+după 30 de secunde** fiindcă un `<svg>` suprapus îi înghițea evenimentul. Pe un telefon adevărat,
+asta e un client care apasă și nu se întâmplă nimic.
+
+**Professionals pe mobil.** Bannerul de cookie-uri acoperea ultima linie a eroului. Prima încercare
+— degajarea partajată — a mutat cutia cu 0px. Măsurătoarea a explicat de ce: degajarea funcționează
+adăugând spațiu *sub* copy, ceea ce ridică textul doar la eroii care își centrează conținutul.
+Acesta e ancorat sus și mai înalt decât ecranul. Cauza reală era `padding-top: 5rem` de desktop,
+purtat neschimbat pe un ecran de 678px.
+
+### Lecții care merită păstrate
+
+- Un oracol care își verifică propriul RED citind `git show HEAD:` e verde exact o dată: în arborele
+  în care a fost scris. La primul commit, HEAD devine noua versiune și RED-ul se inversează. Se
+  fixează un SHA.
+- Comentariile din `COOKIE_BANNER_CSS` se livrează **verbatim pe fiecare site publicat**. Un cuvânt
+  dintr-un comentariu despre culoarea unui buton a picat un contract de conținut pe previzualizare.
+  Explicațiile stau în modul, nu în șirul livrat.
+- Cromul editorului nu are voie să re-așeze tăcut ceea ce previzualizează: înălțimea iframe-ului
+  *este* viewport-ul în care se așază site-ul generat, deci un padding pe canvas mută în sus tot ce
+  e fixat de jos.
+
