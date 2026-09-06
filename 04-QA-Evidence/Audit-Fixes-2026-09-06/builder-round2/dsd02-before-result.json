@@ -1,0 +1,23 @@
+{
+  "label": "before",
+  "editorBefore": {
+    "cats": 1,
+    "photos": 4
+  },
+  "editorAfterAdd": {
+    "cats": 2,
+    "photos": 4
+  },
+  "editorAfterRemove": {
+    "cats": 1,
+    "photos": 0
+  },
+  "liveCategories": 1,
+  "livePhotos": 0,
+  "firstPhotoOk": false,
+  "eachWarnings": [
+    "  ⚠️  @each \"photos\" is not an array — skipping",
+    "  ⚠️  @each \"photos\" is not an array — skipping"
+  ],
+  "liveUrl": "http://127.0.0.1:57264/live/dsd02-before-dbd2e2aa/"
+}

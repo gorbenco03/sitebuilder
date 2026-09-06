@@ -1,0 +1,8 @@
+{
+  "label": "before",
+  "bannerVisibleInitial": true,
+  "hiddenAfterAccept": true,
+  "visibleAfterColorChange": true,
+  "visibleAfterImageChange": true,
+  "passed": false
+}
