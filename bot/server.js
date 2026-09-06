@@ -60,6 +60,9 @@ const pricing  = require('./pricing.js');
 const calendarBoundary = require('./calendar-boundary.js');
 const ratelimit = require('./ratelimit.js');
 const { log }  = require('./logger.js');
+// Readiness checks for /health/ready. Lives under scripts/ because it is
+// also used by the ops CLI, not only by the server.
+const opsHealth = require('../scripts/ops-health-lib.js');
 
 // These are loaded lazily so we never crash at require-time in tests without stubs.
 function getRegistry() { return require('./registry.js'); }
@@ -2945,13 +2948,33 @@ function createHandler({ onStripeEvent } = {}) {
                 return sendRedirect(res, '/app/');
             }
 
-            // ── Health ─────────────────────────────────────────────────────
+            // ── Health (liveness: the process can execute, no I/O) ─────────
+            // Deliberately kept dependency-free. railway.json points
+            // healthcheckPath here, and that gates container RESTARTS -- a
+            // briefly slow database must not cause a restart loop. Use
+            // /health/ready below for alerting instead.
             if ((req.method === 'GET' || req.method === 'HEAD') && url === '/health') {
                 if (req.method === 'HEAD') {
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     return res.end();
                 }
                 return sendJson(res, 200, { ok: true, service: 'hidook-bot', uptimeSec: Math.round(process.uptime()) });
+            }
+
+            // ── Readiness (real dependencies) ──────────────────────────────
+            // Until this existed, /health answered 200 {ok:true} even with a
+            // corrupted registry database -- proven in
+            // bot/test/wave6-ops-health.test.js. A healthcheck that reports
+            // healthy while the store is unreadable is worse than none,
+            // because it converts an outage into a silent one.
+            if ((req.method === 'GET' || req.method === 'HEAD') && url === '/health/ready') {
+                const readiness = opsHealth.checkReadiness();
+                const status = readiness.ok ? 200 : 503;
+                if (req.method === 'HEAD') {
+                    res.writeHead(status, { 'Content-Type': 'application/json' });
+                    return res.end();
+                }
+                return sendJson(res, status, readiness);
             }
 
             // ── Operator admin (token-gated; missing/wrong → plain 404) ──
