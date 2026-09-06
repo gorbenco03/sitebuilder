@@ -150,12 +150,16 @@
       weekly: [],
       overrides: [],
       services: [],
+      resources: [], // Wave 7 (audit #25): staff/rooms for this tenant
+      selectedAvailResourceId: '', // which resource's hours the Disponibilitate tab is editing
       settings: null,
       msg: null,
       authBlocked: false,
       reschedule: null,
       slots: [],
       pickSlot: null,
+      pickResourceId: null, // resource chosen in the reschedule/reassign modal
+      reassignBookingId: null, // set when the modal is a plain reassign (no time change)
     };
 
     root.innerHTML =
@@ -171,11 +175,13 @@
       '  <div class="hod-tabs" role="tablist">' +
       '    <button type="button" class="hod-tab is-on" data-hod-tab="bookings">Programări</button>' +
       '    <button type="button" class="hod-tab" data-hod-tab="avail">Disponibilitate</button>' +
+      '    <button type="button" class="hod-tab" data-hod-tab="resources">Personal</button>' +
       '    <button type="button" class="hod-tab" data-hod-tab="services">Servicii</button>' +
       '    <button type="button" class="hod-tab" data-hod-tab="settings">Setări</button>' +
       '  </div>' +
       '  <div class="hod-panel is-on" data-hod-panel="bookings"></div>' +
       '  <div class="hod-panel" data-hod-panel="avail"></div>' +
+      '  <div class="hod-panel" data-hod-panel="resources"></div>' +
       '  <div class="hod-panel" data-hod-panel="services"></div>' +
       '  <div class="hod-panel" data-hod-panel="settings"></div>' +
       '  <div data-hod-modal-host></div>' +
@@ -231,11 +237,13 @@
       var stEl = $('[data-hod-status]', root);
       var fromEl = $('[data-hod-from]', root);
       var toEl = $('[data-hod-to]', root);
+      var resEl = $('[data-hod-res-filter]', root);
       var params = {
         q: qEl ? qEl.value : '',
         status: stEl ? stEl.value : '',
         fromDateLocal: fromEl ? parseRoDate(fromEl.value) : '',
         toDateLocal: toEl ? parseRoDate(toEl.value) : '',
+        resourceId: resEl ? resEl.value : '',
       };
       var r = await api('GET', '/api/calendar-native/owner/bookings', null, params);
       if (r.status === 401) {
@@ -261,7 +269,9 @@
     }
 
     async function loadAvailability() {
-      var r = await api('GET', '/api/calendar-native/owner/availability');
+      var r = await api('GET', '/api/calendar-native/owner/availability', null, {
+        resourceId: state.selectedAvailResourceId || undefined,
+      });
       if (r.status === 401) {
         state.authBlocked = true;
         paintAll();
@@ -276,7 +286,19 @@
       state.weekly = r.data.weekly || [];
       state.overrides = r.data.overrides || [];
       state.services = r.data.services || [];
+      state.resources = r.data.resources || [];
+      if (!state.selectedAvailResourceId && state.resources.length) {
+        // First load: nothing selected yet — pick the first resource and
+        // re-fetch so `state.weekly` is scoped to it (not the merged
+        // all-resources view the first, resourceId-less call returned).
+        state.selectedAvailResourceId = state.resources[0].id;
+        return loadAvailability();
+      }
+      // Bookings panel shows the resource filter/badges only once resources
+      // are known — repaint it here too (loadBookings() usually runs first).
+      paintBookings();
       paintAvail();
+      paintResources();
       paintServices();
       paintSettings();
     }
@@ -326,6 +348,17 @@
         '<input type="text" inputmode="numeric" data-hod-from placeholder="zz.ll.aaaa" aria-label="De la" maxlength="10" autocomplete="off" />';
       html +=
         '<input type="text" inputmode="numeric" data-hod-to placeholder="zz.ll.aaaa" aria-label="Până la" maxlength="10" autocomplete="off" />';
+      // Wave 7 (audit #25): resource filter — hidden for a single-resource
+      // tenant so nothing changes visually before a second person exists.
+      if (state.resources.length > 1) {
+        html += '<select data-hod-res-filter aria-label="Persoană">';
+        html += '<option value="">Toată echipa</option>';
+        html += '<option value="__unassigned__">Nealocate</option>';
+        state.resources.forEach(function (r) {
+          html += '<option value="' + esc(r.id) + '">' + esc(r.name) + '</option>';
+        });
+        html += '</select>';
+      }
       html += '<button type="button" class="hod-btn hod-btn--ghost" data-hod-refresh>Filtrează</button>';
       html += '</div>';
 
@@ -361,6 +394,11 @@
             esc(b.visitorEmail) +
             (b.visitorPhone ? ' · ' + esc(b.visitorPhone) : '') +
             '</div>';
+          if (state.resources.length > 1) {
+            html += b.resourceName
+              ? '<div class="hod-booking__meta">Cu: <strong>' + esc(b.resourceName) + '</strong></div>'
+              : '<div class="hod-booking__meta"><span class="hod-badge hod-badge--wait">Nealocat</span></div>';
+          }
           if (b.note) html += '<div class="hod-booking__note">' + esc(b.note) + '</div>';
           html += '</div>';
           html += '<div class="hod-booking__acts">';
@@ -371,12 +409,18 @@
               '" data-svc="' +
               esc(b.serviceId || '') +
               '">Reprogramează</button>';
+            if (state.resources.length > 1) {
+              html +=
+                '<button type="button" class="hod-btn hod-btn--small hod-btn--ghost" data-hod-act="reassign" data-id="' +
+                esc(b.id) +
+                '">Reatribuie</button>';
+            }
             html +=
               '<button type="button" class="hod-btn hod-btn--small hod-btn--danger" data-hod-act="cancel" data-id="' +
               esc(b.id) +
               '">Anulează</button>';
           }
-          if (b.status === 'requested') {
+          if (b.status === 'requested' && b.resourceId) {
             html +=
               '<button type="button" class="hod-btn hod-btn--small" data-hod-act="confirm" data-id="' +
               esc(b.id) +
@@ -397,6 +441,7 @@
           if (act === 'cancel') onCancel(id, btn);
           if (act === 'confirm') onConfirm(id, btn);
           if (act === 'reschedule') openReschedule(id, btn.getAttribute('data-svc'));
+          if (act === 'reassign') openReassign(id);
         });
       });
     }
@@ -415,6 +460,18 @@
       var html = '';
       html += '<div class="hod-card">';
       html += '<h2>Program săptămânal</h2>';
+      // Wave 7 (audit #25): each resource keeps its own weekly hours. The
+      // selector is hidden when there's only the one implicit resource, so
+      // a single-person business sees no change from before this wave.
+      if (state.resources.length > 1) {
+        html += '<div class="hod-field" style="margin-bottom:10px">Program pentru' +
+          '<select data-hod-avail-res>';
+        state.resources.forEach(function (r) {
+          var sel = r.id === state.selectedAvailResourceId ? ' selected' : '';
+          html += '<option value="' + esc(r.id) + '"' + sel + '>' + esc(r.name) + '</option>';
+        });
+        html += '</select></div>';
+      }
       html +=
         '<p class="hod-hint">Fus orar: ' +
         esc((state.settings && state.settings.timezone) || state.timezone) +
@@ -523,11 +580,130 @@
       if (saveW) saveW.addEventListener('click', saveWeekly);
       var addOv = $('[data-hod-add-ov]', panel);
       if (addOv) addOv.addEventListener('click', addOverride);
+      var availResSel = $('[data-hod-avail-res]', panel);
+      if (availResSel) {
+        availResSel.addEventListener('change', function () {
+          state.selectedAvailResourceId = availResSel.value;
+          loadAvailability();
+        });
+      }
       $all('[data-hod-del-ov]', panel).forEach(function (btn) {
         btn.addEventListener('click', function () {
           removeOverride(btn.getAttribute('data-hod-del-ov'), btn);
         });
       });
+    }
+
+    function paintResources() {
+      var panel = $('[data-hod-panel="resources"]', root);
+      if (!panel) return;
+      if (state.authBlocked) {
+        panel.innerHTML = '';
+        return;
+      }
+      var html = '<div class="hod-card"><h2>Personal / resurse</h2>';
+      html +=
+        '<p class="hod-hint">Fiecare persoană sau cabinet/sală are propriul program și propriile zile libere. ' +
+        'Un client poate alege pe cineva anume sau „Oricine disponibil” pe site-ul public.</p>';
+      html += '<ul class="hod-svc-list" data-hod-res-list>';
+      if (!state.resources.length) {
+        html += '<li class="hod-hint">Niciun membru al personalului configurat încă.</li>';
+      }
+      state.resources.forEach(function (r) {
+        html += '<li data-res-id="' + esc(r.id) + '">';
+        html +=
+          '<div><strong>' +
+          esc(r.name) +
+          '</strong>' +
+          (r.active ? '' : ' · <span class="hod-badge hod-badge--cancelled">inactiv</span>') +
+          (r.isDefault ? ' · <span class="hod-hint" style="display:inline">implicit</span>' : '') +
+          '</div>';
+        html += '<div class="hod-svc-edit">';
+        html +=
+          '<div class="hod-field">Nume<input type="text" data-hod-res-name value="' +
+          esc(r.name) +
+          '" maxlength="80" /></div>';
+        html +=
+          '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin:8px 0">' +
+          '<input type="checkbox" data-hod-res-active ' +
+          (r.active ? 'checked' : '') +
+          ' /> Activ (apare pe site-ul public)</label>';
+        if (state.services.length) {
+          html += '<div class="hod-hint" style="margin-bottom:6px">Servicii oferite de ' + esc(r.name) + ':</div>';
+          state.services.forEach(function (s) {
+            var checked = (r.serviceIds || []).indexOf(s.id) >= 0;
+            html +=
+              '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:4px">' +
+              '<input type="checkbox" data-hod-res-svc="' +
+              esc(s.id) +
+              '" ' +
+              (checked ? 'checked' : '') +
+              ' /> ' +
+              esc(s.name) +
+              '</label>';
+          });
+        }
+        html +=
+          '<button type="button" class="hod-btn hod-btn--small" data-hod-save-res="' +
+          esc(r.id) +
+          '">Salvează</button>';
+        html += '</div></li>';
+      });
+      html += '</ul>';
+      html +=
+        '<div class="hod-ov-form">' +
+        '<div class="hod-field">Nume persoană/resursă nouă<input type="text" data-hod-res-new-name maxlength="80" placeholder="ex. Ana Popescu" /></div>' +
+        '<button type="button" class="hod-btn hod-btn--ghost" data-hod-add-res>+ Adaugă persoană/resursă</button>' +
+        '</div>';
+      html += '</div>';
+      panel.innerHTML = html;
+
+      $all('[data-hod-save-res]', panel).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          saveResource(btn.getAttribute('data-hod-save-res'), btn);
+        });
+      });
+      var addRes = $('[data-hod-add-res]', panel);
+      if (addRes) addRes.addEventListener('click', addResource);
+    }
+
+    async function saveResource(id, btn) {
+      var li = btn.closest('li');
+      var serviceIds = $all('[data-hod-res-svc]:checked', li).map(function (cb) {
+        return cb.getAttribute('data-hod-res-svc');
+      });
+      var body = {
+        name: $('[data-hod-res-name]', li).value,
+        active: $('[data-hod-res-active]', li).checked,
+        serviceIds: serviceIds,
+      };
+      btn.disabled = true;
+      var r = await api('PUT', '/api/calendar-native/owner/resources/' + encodeURIComponent(id), body);
+      btn.disabled = false;
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut salva.', 'err');
+        return;
+      }
+      setMsg('Persoană/resursă actualizată.', 'ok');
+      await loadAvailability();
+    }
+
+    async function addResource() {
+      var panel = $('[data-hod-panel="resources"]', root);
+      var nameEl = $('[data-hod-res-new-name]', panel);
+      var name = (nameEl.value || '').trim();
+      if (!name) {
+        setMsg('Completează un nume.', 'err');
+        return;
+      }
+      var r = await api('POST', '/api/calendar-native/owner/resources', { name: name });
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut adăuga.', 'err');
+        return;
+      }
+      nameEl.value = '';
+      setMsg('Persoană/resursă adăugată. Setează-i acum programul în tabul „Disponibilitate”.', 'ok');
+      await loadAvailability();
     }
 
     function paintServices() {
@@ -691,6 +867,7 @@
       paintTabs();
       paintBookings();
       paintAvail();
+      paintResources();
       paintServices();
       paintSettings();
     }
@@ -712,6 +889,7 @@
       });
       var r = await api('PUT', '/api/calendar-native/owner/availability/weekly', {
         windows: windows,
+        resourceId: state.selectedAvailResourceId || undefined,
       });
       if (!r.data || !r.data.ok) {
         setMsg((r.data && r.data.error) || 'Nu am putut salva programul.', 'err');
@@ -731,7 +909,12 @@
       }
       var kind = $('[data-hod-ov-kind]', panel).value;
       var note = $('[data-hod-ov-note]', panel).value;
-      var body = { dateLocal: dateLocal, kind: kind, note: note || null };
+      var body = {
+        dateLocal: dateLocal,
+        kind: kind,
+        note: note || null,
+        resourceId: state.selectedAvailResourceId || undefined,
+      };
       if (kind === 'special_hours') {
         body.startMinute = timeToMinutes($('[data-hod-ov-start]', panel).value);
         body.endMinute = timeToMinutes($('[data-hod-ov-end]', panel).value);
@@ -816,6 +999,8 @@
     }
 
     async function openReschedule(bookingId, serviceId) {
+      state.reassignBookingId = null;
+      state.pickResourceId = null;
       state.reschedule = { bookingId: bookingId, serviceId: serviceId };
       state.pickSlot = null;
       state.slots = [];
@@ -849,15 +1034,110 @@
       state.reschedule = null;
       state.slots = [];
       state.pickSlot = null;
+      state.reassignBookingId = null;
+      state.pickResourceId = null;
       var host = $('[data-hod-modal-host]', root);
       if (host) host.innerHTML = '';
+    }
+
+    /**
+     * Wave 7 (audit #25) — "reassign a booking": move it onto a different
+     * resource WITHOUT touching its time. Deliberately a separate, much
+     * simpler modal than the slot-picking reschedule flow above — the owner
+     * is choosing a person, not a time.
+     */
+    function openReassign(bookingId) {
+      state.reschedule = null;
+      state.slots = [];
+      state.pickSlot = null;
+      state.reassignBookingId = bookingId;
+      state.pickResourceId = null;
+      paintReassignModal();
+    }
+
+    function paintReassignModal() {
+      var host = $('[data-hod-modal-host]', root);
+      if (!host) return;
+      if (!state.reassignBookingId) {
+        if (!state.reschedule) host.innerHTML = '';
+        return;
+      }
+      var booking = state.bookings.filter(function (b) { return b.id === state.reassignBookingId; })[0];
+      var html =
+        '<div class="hod-modal-bg" data-hod-modal-bg><div class="hod-modal" role="dialog" aria-modal="true">';
+      html += '<h3>Reatribuie programarea</h3>';
+      html +=
+        '<p class="hod-hint">Ora rămâne aceeași — alegi doar cine preia programarea' +
+        (booking ? ' pentru ' + esc(booking.visitorName) : '') +
+        '. Dacă persoana e liberă la acea oră, programarea se confirmă imediat.</p>';
+      html += '<div class="hod-svc-list" style="border:0;padding:0">';
+      state.resources.forEach(function (r) {
+        var on = state.pickResourceId === r.id ? ' is-on' : '';
+        var current = booking && booking.resourceId === r.id;
+        html +=
+          '<button type="button" class="hod-slot' + on + '" style="width:100%;text-align:left;margin-bottom:6px" ' +
+          'data-hod-pick-res="' + esc(r.id) + '">' +
+          esc(r.name) + (current ? ' (curent)' : '') +
+          '</button>';
+      });
+      html += '</div>';
+      html +=
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">' +
+        '<button type="button" class="hod-btn" data-hod-do-reassign ' +
+        (state.pickResourceId ? '' : 'disabled') +
+        '>Reatribuie</button>' +
+        '<button type="button" class="hod-btn hod-btn--ghost" data-hod-close-modal>Închide</button>' +
+        '</div>';
+      html += '</div></div>';
+      host.innerHTML = html;
+      var bg = $('[data-hod-modal-bg]', host);
+      if (bg) {
+        bg.addEventListener('click', function (e) {
+          if (e.target === bg) closeModal();
+        });
+      }
+      $all('[data-hod-pick-res]', host).forEach(function (b) {
+        b.addEventListener('click', function () {
+          state.pickResourceId = b.getAttribute('data-hod-pick-res');
+          paintReassignModal();
+        });
+      });
+      var close = $('[data-hod-close-modal]', host);
+      if (close) close.addEventListener('click', closeModal);
+      var go = $('[data-hod-do-reassign]', host);
+      if (go) {
+        go.addEventListener('click', async function () {
+          if (!state.pickResourceId || !state.reassignBookingId) return;
+          go.disabled = true;
+          var r = await api(
+            'POST',
+            '/api/calendar-native/owner/bookings/' +
+              encodeURIComponent(state.reassignBookingId) +
+              '/reassign',
+            { resourceId: state.pickResourceId }
+          );
+          go.disabled = false;
+          if (!r.data || !r.data.ok) {
+            setMsg((r.data && r.data.error) || 'Nu am putut reatribui.', 'err');
+            return;
+          }
+          setMsg(
+            r.data.booking.status === 'confirmed'
+              ? 'Programare reatribuită și confirmată.'
+              : 'Programare reatribuită — necesită confirmare (persoana era ocupată la acea oră).',
+            'ok'
+          );
+          closeModal();
+          await loadBookings();
+        });
+      }
     }
 
     function paintModal() {
       var host = $('[data-hod-modal-host]', root);
       if (!host) return;
       if (!state.reschedule) {
-        host.innerHTML = '';
+        if (!state.reassignBookingId) host.innerHTML = '';
         return;
       }
       var html =

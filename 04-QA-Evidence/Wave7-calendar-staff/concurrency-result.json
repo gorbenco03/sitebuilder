@@ -1,0 +1,19 @@
+{
+  "scenario": "N resources, K genuinely concurrent \"any available\" requests for the same instant",
+  "mechanism": "worker_threads, one node:sqlite connection per worker, shared WAL-mode sqlite file, PRAGMA busy_timeout=5000",
+  "nResources": 5,
+  "kRequests": 20,
+  "confirmed": 5,
+  "requested": 15,
+  "confirmedResourceIds": [
+    "res_146eb4f1b295913c5a12e008",
+    "res_6475e419eefedda9f3d4fff2",
+    "res_8b5357b8c435c9d471e75a38",
+    "res_e1466221d471d6f89b2b0947",
+    "res_f51b482e3091cc8b2c664053"
+  ],
+  "doubleBooked": 0,
+  "allWorkersResolvedWithoutError": true,
+  "targetStartUtc": "2031-03-03T10:00:00.000Z",
+  "generatedAt": "2026-09-06T13:37:13.378Z"
+}

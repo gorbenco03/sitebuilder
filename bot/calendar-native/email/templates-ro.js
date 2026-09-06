@@ -54,6 +54,7 @@ function statusLabelRo(bookingStatus) {
  *   visitorEmail?: string,
  *   visitorPhone?: string|null,
  *   serviceName: string,
+ *   resourceName?: string|null,
  *   startOwnerLocal: string,
  *   startUtc: string,
  *   bookingStatus: string,
@@ -73,6 +74,14 @@ function render(p) {
     const visitorEmail = String(p.visitorEmail || '').trim();
     const visitorPhone = p.visitorPhone != null ? String(p.visitorPhone).trim() : '';
     const service = String(p.serviceName || 'Serviciu').trim() || 'Serviciu';
+    // Wave 7 (audit #25): who the appointment is with. Empty string for a
+    // legacy single-resource tenant or a still-unresolved booking — callers
+    // (email/index.js loadResourceName) already suppress it in exactly those
+    // cases, so every template body below only grows a "cu <nume>" clause
+    // when it is genuinely meaningful, leaving single-resource tenants'
+    // copy byte-identical to before this wave.
+    const resourceName = p.resourceName ? String(p.resourceName).trim() : '';
+    const withResource = resourceName ? ' cu ' + resourceName : '';
     const when = String(p.startOwnerLocal || p.startUtc || '').trim();
     const status = String(p.bookingStatus || '');
     const label = statusLabelRo(status);
@@ -119,7 +128,7 @@ function render(p) {
             headline = 'Programarea ta este confirmată';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Programarea ta la ' + site + ' pentru „' + service + '” a fost confirmată.\n' +
+                'Programarea ta la ' + site + ' pentru „' + service + '”' + withResource + ' a fost confirmată.\n' +
                 'Data și ora (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
@@ -128,7 +137,7 @@ function render(p) {
             headline = 'Cererea ta de programare a fost înregistrată';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Am înregistrat cererea ta pentru „' + service + '” la ' + site + '.\n' +
+                'Am înregistrat cererea ta pentru „' + service + '”' + withResource + ' la ' + site + '.\n' +
                 'Data și ora solicitate (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.\n\n' +
                 'Aceasta NU este o confirmare finală. Te anunțăm pe email când programarea ' +
@@ -139,7 +148,7 @@ function render(p) {
             headline = 'Intervalul ales nu mai este disponibil';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Cererea ta pentru „' + service + '” la ' + site + ' necesită reprogramare.\n' +
+                'Cererea ta pentru „' + service + '”' + withResource + ' la ' + site + ' necesită reprogramare.\n' +
                 'Data și ora solicitate (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.\n\n' +
                 'Programarea NU este confirmată. Te rugăm să alegi un alt interval.';
@@ -149,7 +158,7 @@ function render(p) {
             headline = 'Programarea a fost anulată';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Programarea ta pentru „' + service + '” la ' + site + ' a fost anulată.\n' +
+                'Programarea ta pentru „' + service + '”' + withResource + ' la ' + site + ' a fost anulată.\n' +
                 'Data și ora (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
@@ -158,7 +167,7 @@ function render(p) {
             headline = 'Noul interval este confirmat';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Programarea ta pentru „' + service + '” la ' + site + ' a fost reprogramată și confirmată.\n' +
+                'Programarea ta pentru „' + service + '”' + withResource + ' la ' + site + ' a fost reprogramată și confirmată.\n' +
                 'Noua dată și oră (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
@@ -167,7 +176,7 @@ function render(p) {
             headline = 'Reamintire pentru programarea ta';
             bodyLead =
                 'Salut, ' + name + '.\n\n' +
-                'Îți reamintim de programarea ta la ' + site + ' pentru „' + service + '”.\n' +
+                'Îți reamintim de programarea ta la ' + site + ' pentru „' + service + '”' + withResource + '.\n' +
                 'Data și ora (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.\n\n' +
                 'Dacă nu mai poți ajunge, te rugăm să anulezi sau să reprogramezi din timp.';
@@ -181,6 +190,7 @@ function render(p) {
                 (visitorEmail ? ' (' + visitorEmail + ')' : '') +
                 (visitorPhone ? ' · ' + visitorPhone : '') + '.\n' +
                 'Serviciu: ' + service + '.\n' +
+                (resourceName ? 'Cu: ' + resourceName + '.\n' : '') +
                 'Data și ora (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
@@ -234,6 +244,7 @@ function render(p) {
         '<p>', escapeHtml(leadHtml), '</p>',
         '<p><strong>Stare:</strong> ', escapeHtml(label), '</p>',
         '<p><strong>Serviciu:</strong> ', escapeHtml(service), '<br>',
+        resourceName ? '<strong>Cu:</strong> ' + escapeHtml(resourceName) + '<br>' : '',
         '<strong>Data/ora (cabinet):</strong> ', escapeHtml(when), '</p>',
         manageHtml,
         '<p style="font-size:12px;color:#888;margin-top:32px">Hidook Site Builder — mesaj tranzacțional</p>',

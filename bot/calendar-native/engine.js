@@ -228,25 +228,211 @@ function listServices(db, customerId, siteId, { activeOnly = true } = {}) {
     ).all(customerId, siteId);
 }
 
-function setWeeklyAvailability(db, customerId, siteId, windows) {
+/**
+ * Wave 7 (audit #25) — staff/resource model. A "resource" is a named
+ * bookable unit: a stylist, a room, a bay. Every tenant that never touches
+ * resources gets exactly one, created lazily on first use, so every
+ * pre-existing single-calendar call path (and every pre-Wave-7 test) keeps
+ * behaving exactly as before. See schema.js v5 doc comment.
+ */
+
+/**
+ * Returns the tenant's implicit default resource id, creating it if this
+ * tenant has never had one (lazy — covers both brand-new tenants and any
+ * legacy path that calls availability/booking functions without a
+ * resourceId). Idempotent: never creates a second default per tenant.
+ */
+function getOrCreateDefaultResourceId(db, customerId, siteId) {
     assertTenant(customerId, siteId);
-    if (!Array.isArray(windows)) throw new Error('windows must be an array');
+    const existing = db.prepare(
+        `SELECT id FROM calendar_resources WHERE customer_id = ? AND site_id = ? AND is_default = 1`
+    ).get(customerId, siteId);
+    if (existing) return existing.id;
+    const id = newId('res');
+    const ts = nowIso();
     db.prepare(
-        `DELETE FROM calendar_weekly_availability WHERE customer_id = ? AND site_id = ?`
-    ).run(customerId, siteId);
-    const ins = db.prepare(
-        `INSERT INTO calendar_weekly_availability
-            (id, customer_id, site_id, weekday, start_minute, end_minute)
-         VALUES (?, ?, ?, ?, ?, ?)`
-    );
-    for (const w of windows) {
-        ins.run(newId('wav'), customerId, siteId, w.weekday, w.start_minute, w.end_minute);
-    }
-    return listWeeklyAvailability(db, customerId, siteId);
+        `INSERT INTO calendar_resources
+            (id, customer_id, site_id, name, active, sort_order, is_default, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 1, 0, 1, ?, ?)`
+    ).run(id, customerId, siteId, 'Personal implicit', ts, ts);
+    return id;
 }
 
-function listWeeklyAvailability(db, customerId, siteId) {
+function upsertResource(db, customerId, siteId, resource) {
     assertTenant(customerId, siteId);
+    if (!resource || !resource.name) throw new Error('resource.name required');
+    const id = resource.id || newId('res');
+    const ts = nowIso();
+    const existing = db.prepare(
+        `SELECT id FROM calendar_resources WHERE id = ? AND customer_id = ? AND site_id = ?`
+    ).get(id, customerId, siteId);
+    if (existing) {
+        db.prepare(
+            `UPDATE calendar_resources SET
+                name = ?, active = ?, sort_order = ?, updated_at = ?
+             WHERE id = ? AND customer_id = ? AND site_id = ?`
+        ).run(
+            resource.name,
+            resource.active === 0 ? 0 : 1,
+            resource.sort_order != null ? resource.sort_order : 0,
+            ts,
+            id,
+            customerId,
+            siteId
+        );
+    } else {
+        db.prepare(
+            `INSERT INTO calendar_resources
+                (id, customer_id, site_id, name, active, sort_order, is_default, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)`
+        ).run(
+            id,
+            customerId,
+            siteId,
+            resource.name,
+            resource.active === 0 ? 0 : 1,
+            resource.sort_order != null ? resource.sort_order : 0,
+            ts,
+            ts
+        );
+    }
+    return getResource(db, customerId, siteId, id);
+}
+
+function getResource(db, customerId, siteId, resourceId) {
+    assertTenant(customerId, siteId);
+    return db.prepare(
+        `SELECT * FROM calendar_resources WHERE id = ? AND customer_id = ? AND site_id = ?`
+    ).get(resourceId, customerId, siteId) || null;
+}
+
+function listResources(db, customerId, siteId, { activeOnly = true } = {}) {
+    assertTenant(customerId, siteId);
+    if (activeOnly) {
+        return db.prepare(
+            `SELECT * FROM calendar_resources
+             WHERE customer_id = ? AND site_id = ? AND active = 1
+             ORDER BY sort_order ASC, name ASC`
+        ).all(customerId, siteId);
+    }
+    return db.prepare(
+        `SELECT * FROM calendar_resources
+         WHERE customer_id = ? AND site_id = ?
+         ORDER BY sort_order ASC, name ASC`
+    ).all(customerId, siteId);
+}
+
+/**
+ * True once a tenant has configured more than its one implicit resource.
+ * Used everywhere a "cu <nume>" / "Cu cine" line would otherwise leak a
+ * purely internal detail ("Personal implicit") into visitor-facing copy for
+ * every legacy single-resource tenant — see email/index.js loadResourceName,
+ * manage-api.js publicBookingView, public-api.js createPublicBooking.
+ */
+function hasMultipleResources(db, customerId, siteId) {
+    assertTenant(customerId, siteId);
+    const row = db.prepare(
+        `SELECT COUNT(*) AS n FROM calendar_resources WHERE customer_id = ? AND site_id = ?`
+    ).get(customerId, siteId);
+    return !!row && Number(row.n) > 1;
+}
+
+/**
+ * Replace the full set of resources eligible for a service (explicit
+ * assignment). An empty array is a valid, meaningful state — "no resource
+ * currently offers this service" — distinct from "never assigned" (see
+ * listResourcesForService).
+ */
+function setServiceResources(db, customerId, siteId, serviceId, resourceIds) {
+    assertTenant(customerId, siteId);
+    if (!Array.isArray(resourceIds)) throw new Error('resourceIds must be an array');
+    const ts = nowIso();
+    db.prepare(
+        `DELETE FROM calendar_service_resources
+         WHERE customer_id = ? AND site_id = ? AND service_id = ?`
+    ).run(customerId, siteId, serviceId);
+    const ins = db.prepare(
+        `INSERT OR IGNORE INTO calendar_service_resources
+            (customer_id, site_id, service_id, resource_id, created_at)
+         VALUES (?, ?, ?, ?, ?)`
+    );
+    for (const rid of resourceIds) {
+        ins.run(customerId, siteId, serviceId, rid, ts);
+    }
+    return listResourcesForService(db, customerId, siteId, serviceId);
+}
+
+/**
+ * Resources eligible to perform a service. Zero explicit assignment rows
+ * (this service_id was never touched by setServiceResources) falls back to
+ * "every active resource of this tenant" — the permissive default that lets
+ * a brand-new service or a never-touched single-resource tenant work with
+ * no owner action. Once at least one row exists for the service, only
+ * assigned + active resources are eligible (an explicit empty assignment
+ * correctly yields zero eligible resources, not "all").
+ */
+function listResourcesForService(db, customerId, siteId, serviceId) {
+    assertTenant(customerId, siteId);
+    const assigned = db.prepare(
+        `SELECT r.* FROM calendar_service_resources sr
+         JOIN calendar_resources r
+           ON r.id = sr.resource_id AND r.customer_id = sr.customer_id AND r.site_id = sr.site_id
+         WHERE sr.customer_id = ? AND sr.site_id = ? AND sr.service_id = ? AND r.active = 1
+         ORDER BY r.sort_order ASC, r.name ASC`
+    ).all(customerId, siteId, serviceId);
+    if (assigned.length) return assigned;
+    const anyAssignment = db.prepare(
+        `SELECT 1 FROM calendar_service_resources
+         WHERE customer_id = ? AND site_id = ? AND service_id = ? LIMIT 1`
+    ).get(customerId, siteId, serviceId);
+    if (anyAssignment) return []; // explicit assignment exists, all now inactive
+    return listResources(db, customerId, siteId, { activeOnly: true });
+}
+
+function listServicesForResource(db, customerId, siteId, resourceId) {
+    assertTenant(customerId, siteId);
+    return db.prepare(
+        `SELECT s.* FROM calendar_service_resources sr
+         JOIN calendar_services s
+           ON s.id = sr.service_id AND s.customer_id = sr.customer_id AND s.site_id = sr.site_id
+         WHERE sr.customer_id = ? AND sr.site_id = ? AND sr.resource_id = ?
+         ORDER BY s.sort_order ASC, s.name ASC`
+    ).all(customerId, siteId, resourceId);
+}
+
+/**
+ * @param {object} [opts]
+ * @param {string} [opts.resourceId] Scope to one resource. Omitted (legacy
+ *   callers) means "the tenant's implicit default resource" on write, and
+ *   "every resource of this tenant" on read — see call sites below.
+ */
+function setWeeklyAvailability(db, customerId, siteId, windows, opts = {}) {
+    assertTenant(customerId, siteId);
+    if (!Array.isArray(windows)) throw new Error('windows must be an array');
+    const resourceId = opts.resourceId || getOrCreateDefaultResourceId(db, customerId, siteId);
+    db.prepare(
+        `DELETE FROM calendar_weekly_availability WHERE customer_id = ? AND site_id = ? AND resource_id = ?`
+    ).run(customerId, siteId, resourceId);
+    const ins = db.prepare(
+        `INSERT INTO calendar_weekly_availability
+            (id, customer_id, site_id, resource_id, weekday, start_minute, end_minute)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+    );
+    for (const w of windows) {
+        ins.run(newId('wav'), customerId, siteId, resourceId, w.weekday, w.start_minute, w.end_minute);
+    }
+    return listWeeklyAvailability(db, customerId, siteId, { resourceId });
+}
+
+function listWeeklyAvailability(db, customerId, siteId, opts = {}) {
+    assertTenant(customerId, siteId);
+    if (opts.resourceId) {
+        return db.prepare(
+            `SELECT * FROM calendar_weekly_availability
+             WHERE customer_id = ? AND site_id = ? AND resource_id = ?
+             ORDER BY weekday ASC, start_minute ASC`
+        ).all(customerId, siteId, opts.resourceId);
+    }
     return db.prepare(
         `SELECT * FROM calendar_weekly_availability
          WHERE customer_id = ? AND site_id = ?
@@ -257,14 +443,17 @@ function listWeeklyAvailability(db, customerId, siteId) {
 function addDateOverride(db, customerId, siteId, override) {
     assertTenant(customerId, siteId);
     const id = override.id || newId('ov');
+    const resourceId = override.resourceId || override.resource_id
+        || getOrCreateDefaultResourceId(db, customerId, siteId);
     db.prepare(
         `INSERT INTO calendar_date_overrides
-            (id, customer_id, site_id, date_local, kind, start_minute, end_minute, note)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            (id, customer_id, site_id, resource_id, date_local, kind, start_minute, end_minute, note)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).run(
         id,
         customerId,
         siteId,
+        resourceId,
         override.date_local,
         override.kind,
         override.start_minute != null ? override.start_minute : null,
@@ -289,33 +478,35 @@ function removeDateOverride(db, customerId, siteId, overrideId) {
     return r.changes > 0;
 }
 
-function listDateOverrides(db, customerId, siteId, { fromDate, toDate } = {}) {
+function listDateOverrides(db, customerId, siteId, { fromDate, toDate, resourceId } = {}) {
     assertTenant(customerId, siteId);
-    if (fromDate && toDate) {
-        return db.prepare(
-            `SELECT * FROM calendar_date_overrides
-             WHERE customer_id = ? AND site_id = ?
-               AND date_local >= ? AND date_local <= ?
-             ORDER BY date_local ASC`
-        ).all(customerId, siteId, fromDate, toDate);
+    let sql = `SELECT * FROM calendar_date_overrides WHERE customer_id = ? AND site_id = ?`;
+    const params = [customerId, siteId];
+    if (resourceId) {
+        sql += ' AND resource_id = ?';
+        params.push(resourceId);
     }
-    return db.prepare(
-        `SELECT * FROM calendar_date_overrides
-         WHERE customer_id = ? AND site_id = ?
-         ORDER BY date_local ASC`
-    ).all(customerId, siteId);
+    if (fromDate && toDate) {
+        sql += ' AND date_local >= ? AND date_local <= ?';
+        params.push(fromDate, toDate);
+    }
+    sql += ' ORDER BY date_local ASC';
+    return db.prepare(sql).all(...params);
 }
 
 /**
- * Open minute ranges for a local civil date after weekly + blackout rules.
+ * Open minute ranges for a local civil date after weekly + blackout rules,
+ * scoped to one resource (defaults to the tenant's implicit resource so
+ * every pre-Wave-7 call site keeps its exact old behavior).
  * @returns {{ start_minute: number, end_minute: number }[]}
  */
-function openRangesForDate(db, customerId, siteId, dateLocal) {
+function openRangesForDate(db, customerId, siteId, dateLocal, opts = {}) {
     assertTenant(customerId, siteId);
+    const resourceId = opts.resourceId || getOrCreateDefaultResourceId(db, customerId, siteId);
     const overrides = db.prepare(
         `SELECT * FROM calendar_date_overrides
-         WHERE customer_id = ? AND site_id = ? AND date_local = ?`
-    ).all(customerId, siteId, dateLocal);
+         WHERE customer_id = ? AND site_id = ? AND date_local = ? AND resource_id = ?`
+    ).all(customerId, siteId, dateLocal, resourceId);
 
     if (overrides.some((o) => o.kind === 'blackout')) {
         return [];
@@ -330,9 +521,9 @@ function openRangesForDate(db, customerId, siteId, dateLocal) {
     const weekday = isoWeekdayForDateLocal(dateLocal);
     return db.prepare(
         `SELECT start_minute, end_minute FROM calendar_weekly_availability
-         WHERE customer_id = ? AND site_id = ? AND weekday = ?
+         WHERE customer_id = ? AND site_id = ? AND resource_id = ? AND weekday = ?
          ORDER BY start_minute ASC`
-    ).all(customerId, siteId, weekday);
+    ).all(customerId, siteId, resourceId, weekday);
 }
 
 /**
@@ -340,7 +531,7 @@ function openRangesForDate(db, customerId, siteId, dateLocal) {
  * Optionally filter by service for slot-lock uniqueness; overlap uses same service
  * for engine lock per VISION (tenant/site + service + slot).
  */
-function listActiveBookings(db, customerId, siteId, { serviceId, fromUtc, toUtc } = {}) {
+function listActiveBookings(db, customerId, siteId, { serviceId, resourceId, fromUtc, toUtc } = {}) {
     assertTenant(customerId, siteId);
     const statuses = ACTIVE_BOOKING_STATUSES;
     let sql = `
@@ -353,6 +544,10 @@ function listActiveBookings(db, customerId, siteId, { serviceId, fromUtc, toUtc 
         sql += ' AND service_id = ?';
         params.push(serviceId);
     }
+    if (resourceId) {
+        sql += ' AND resource_id = ?';
+        params.push(resourceId);
+    }
     if (fromUtc && toUtc) {
         // overlap: start < to AND end > from
         sql += ' AND start_utc < ? AND end_utc > ?';
@@ -363,20 +558,12 @@ function listActiveBookings(db, customerId, siteId, { serviceId, fromUtc, toUtc 
 }
 
 /**
- * Generate free slot starts (UTC ISO) for a local date.
+ * Free slot starts for ONE resource on a local date. Occupancy is checked
+ * against that resource's own active bookings (any service — a resource is
+ * a physical person/room that can only do one thing at a time), never the
+ * service label. Internal helper for generateSlots.
  */
-function generateSlots(db, customerId, siteId, {
-    serviceId,
-    dateLocal,
-    nowMs = Date.now(),
-    minLeadMinutes = 0,
-} = {}) {
-    assertTenant(customerId, siteId);
-    const settings = getSettings(db, customerId, siteId);
-    if (!settings) throw new Error('calendar settings missing for tenant');
-    const service = getService(db, customerId, siteId, serviceId);
-    if (!service || !service.active) throw new Error('service not found');
-
+function generateSlotsForResource(db, customerId, siteId, settings, service, dateLocal, resourceId, nowMs, minLeadMinutes) {
     const tz = settings.timezone;
     const interval = settings.slot_interval_minutes;
     const buffer = service.buffer_minutes != null
@@ -384,19 +571,7 @@ function generateSlots(db, customerId, siteId, {
         : settings.default_buffer_minutes;
     const duration = service.duration_minutes;
 
-    // Booking-window policy (owner-configurable, VISION §8 / audit #26):
-    // enforced here too (defense in depth) so any caller of generateSlots —
-    // not just public-api's listPublicSlots — stays inside the window.
-    if (settings.max_advance_days != null) {
-        const capParts = getZonedParts(new Date(nowMs + settings.max_advance_days * 86400000), tz);
-        const capDateLocal =
-            String(capParts.year).padStart(4, '0') + '-' +
-            String(capParts.month).padStart(2, '0') + '-' +
-            String(capParts.day).padStart(2, '0');
-        if (dateLocal > capDateLocal) return [];
-    }
-
-    const ranges = openRangesForDate(db, customerId, siteId, dateLocal);
+    const ranges = openRangesForDate(db, customerId, siteId, dateLocal, { resourceId });
     if (!ranges.length) return [];
 
     const { year, month, day } = parseDateLocal(dateLocal);
@@ -404,7 +579,7 @@ function generateSlots(db, customerId, siteId, {
     const dayEndMs = zonedWallTimeToUtcMs(year, month, day, 23, 59, tz) + 60 * 1000;
 
     const occupied = listActiveBookings(db, customerId, siteId, {
-        serviceId,
+        resourceId,
         fromUtc: toIsoUtc(dayStartMs - buffer * 60000),
         toUtc: toIsoUtc(dayEndMs + buffer * 60000),
     });
@@ -434,10 +609,77 @@ function generateSlots(db, customerId, siteId, {
                 return startMs < bEnd && slotEndWithBuffer > bStart;
             });
             if (blocked) continue;
-            slots.push({ start_utc: startIso, end_utc: endIso, date_local: dateLocal });
+            slots.push({ start_utc: startIso, end_utc: endIso });
         }
     }
     return slots;
+}
+
+/**
+ * Generate free slot starts (UTC ISO) for a local date.
+ *
+ * @param {string} [opts.resourceId] Scope to one resource. Omitted means
+ *   "any available": every resource eligible for this service (see
+ *   listResourcesForService) is checked and a start_utc is returned once if
+ *   at least one of them is free there — resource_id on the returned slot
+ *   is a representative free resource, resource_ids lists all of them.
+ *   A legacy single-resource tenant always has exactly one eligible
+ *   resource, so this is byte-identical to pre-Wave-7 output plus the two
+ *   new fields.
+ */
+function generateSlots(db, customerId, siteId, {
+    serviceId,
+    dateLocal,
+    nowMs = Date.now(),
+    minLeadMinutes = 0,
+    resourceId,
+} = {}) {
+    assertTenant(customerId, siteId);
+    const settings = getSettings(db, customerId, siteId);
+    if (!settings) throw new Error('calendar settings missing for tenant');
+    const service = getService(db, customerId, siteId, serviceId);
+    if (!service || !service.active) throw new Error('service not found');
+
+    const tz = settings.timezone;
+
+    // Booking-window policy (owner-configurable, VISION §8 / audit #26):
+    // enforced here too (defense in depth) so any caller of generateSlots —
+    // not just public-api's listPublicSlots — stays inside the window.
+    if (settings.max_advance_days != null) {
+        const capParts = getZonedParts(new Date(nowMs + settings.max_advance_days * 86400000), tz);
+        const capDateLocal =
+            String(capParts.year).padStart(4, '0') + '-' +
+            String(capParts.month).padStart(2, '0') + '-' +
+            String(capParts.day).padStart(2, '0');
+        if (dateLocal > capDateLocal) return [];
+    }
+
+    const resourceIds = resourceId
+        ? [resourceId]
+        : listResourcesForService(db, customerId, siteId, serviceId).map((r) => r.id);
+    if (!resourceIds.length) return [];
+
+    const merged = new Map();
+    for (const rid of resourceIds) {
+        const perResource = generateSlotsForResource(
+            db, customerId, siteId, settings, service, dateLocal, rid, nowMs, minLeadMinutes
+        );
+        for (const s of perResource) {
+            const existing = merged.get(s.start_utc);
+            if (existing) {
+                if (!existing.resource_ids.includes(rid)) existing.resource_ids.push(rid);
+            } else {
+                merged.set(s.start_utc, {
+                    start_utc: s.start_utc,
+                    end_utc: s.end_utc,
+                    date_local: dateLocal,
+                    resource_id: rid,
+                    resource_ids: [rid],
+                });
+            }
+        }
+    }
+    return Array.from(merged.values()).sort((a, b) => (a.start_utc < b.start_utc ? -1 : a.start_utc > b.start_utc ? 1 : 0));
 }
 
 /**
@@ -453,6 +695,7 @@ function generateSlotsRange(db, customerId, siteId, opts) {
             dateLocal: d,
             nowMs: opts.nowMs,
             minLeadMinutes: opts.minLeadMinutes,
+            resourceId: opts.resourceId,
         }));
         d = addDaysLocal(d, 1);
     }
@@ -461,9 +704,11 @@ function generateSlotsRange(db, customerId, siteId, opts) {
 
 /**
  * True when startMs..startMs+duration fits an open range on that civil date
- * after weekly + blackout + special_hours rules (owner timezone).
+ * after weekly + blackout + special_hours rules (owner timezone), for the
+ * given resource (defaults to the tenant's implicit resource — see
+ * openRangesForDate — so every pre-Wave-7 caller keeps its exact behavior).
  */
-function slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs) {
+function slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs, resourceId) {
     const tz = settings.timezone;
     const parts = getZonedParts(new Date(startMs), tz);
     const dateLocal =
@@ -475,7 +720,7 @@ function slotFitsOpenAvailability(db, customerId, siteId, settings, service, sta
     const startMinute = parts.hour * 60 + parts.minute;
     const endMinute = startMinute + service.duration_minutes;
     if (endMinute > 24 * 60) return false;
-    const ranges = openRangesForDate(db, customerId, siteId, dateLocal);
+    const ranges = openRangesForDate(db, customerId, siteId, dateLocal, { resourceId });
     return ranges.some(
         (r) => startMinute >= r.start_minute && endMinute <= r.end_minute
     );
@@ -486,6 +731,47 @@ function slotFitsOpenAvailability(db, customerId, siteId, settings, service, sta
  * Returns { booking, manageToken } — token only on create (hashed at rest).
  * Rejects starts outside weekly availability / blackout (SLOT_OUTSIDE_AVAILABILITY).
  */
+/**
+ * True when a booking row `b` (already buffer-widened) overlaps
+ * [startMs, endMs] widened by `buffer` on the querying side too. Shared by
+ * every "is this resource busy right now" check in this file.
+ */
+function overlapsBuffered(b, startMs, endMs, buffer) {
+    const bStart = Date.parse(b.start_utc);
+    const bEnd = Date.parse(b.end_utc) + buffer * 60000;
+    const slotEnd = endMs + buffer * 60000;
+    return startMs < bEnd && slotEnd > bStart;
+}
+
+/**
+ * Resolve which resource a booking should land on.
+ *
+ * - `resourceId` given (visitor/owner picked a specific person or room):
+ *   that resource only, if it is eligible for the service (schema.js v5 —
+ *   listResourcesForService); throws RESOURCE_NOT_FOUND otherwise.
+ * - `resourceId` omitted ("any available", the Wave 7 default): every
+ *   resource eligible for the service, in stable sort_order/name order —
+ *   createBooking tries each in turn inside the write transaction and
+ *   confirms on the first free one.
+ *
+ * A legacy single-resource tenant always has exactly one eligible
+ * resource, so "any available" degrades to the old single-calendar
+ * behavior with no visible change.
+ */
+function resolveEligibleResources(db, customerId, siteId, service, resourceId) {
+    if (resourceId) {
+        const all = listResourcesForService(db, customerId, siteId, service.id);
+        const match = all.find((r) => r.id === resourceId);
+        if (!match) {
+            const err = new Error('resource not available for this service');
+            err.code = 'RESOURCE_NOT_FOUND';
+            throw err;
+        }
+        return [match];
+    }
+    return listResourcesForService(db, customerId, siteId, service.id);
+}
+
 function createBooking(db, customerId, siteId, input) {
     assertTenant(customerId, siteId);
     const service = getService(db, customerId, siteId, input.serviceId);
@@ -498,6 +784,13 @@ function createBooking(db, customerId, siteId, input) {
     if (!settings) {
         const err = new Error('calendar settings missing');
         err.code = 'SETTINGS_MISSING';
+        throw err;
+    }
+    const requestedResourceId = input.resourceId || input.resource_id || null;
+    const eligibleResources = resolveEligibleResources(db, customerId, siteId, service, requestedResourceId);
+    if (!eligibleResources.length) {
+        const err = new Error('no resource offers this service');
+        err.code = 'RESOURCE_NOT_FOUND';
         throw err;
     }
 
@@ -539,10 +832,15 @@ function createBooking(db, customerId, siteId, input) {
     const startIso = toIsoUtc(startMs);
     const endIso = toIsoUtc(endMs);
 
-    // HARD gate: never confirm (or accept) a start outside weekly + blackout walls.
-    // generateSlots already filters; createBooking must re-validate so a forged
-    // start_utc cannot land as confirmed outside open ranges.
-    if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
+    // HARD gate: never confirm (or accept) a start outside weekly + blackout walls
+    // of EVERY eligible resource. generateSlots already filters; createBooking
+    // must re-validate so a forged start_utc cannot land as confirmed outside
+    // open ranges. A resource whose own hours don't fit is dropped from the
+    // "any available" candidate set entirely (never even considered below).
+    const fittingResources = eligibleResources.filter((r) =>
+        slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs, r.id)
+    );
+    if (!fittingResources.length) {
         const err = new Error('slot outside weekly availability or blackout');
         err.code = 'SLOT_OUTSIDE_AVAILABILITY';
         throw err;
@@ -553,109 +851,102 @@ function createBooking(db, customerId, siteId, input) {
     const id = newId('bk');
     const ts = nowIso();
 
+    function insertRow(resourceIdForRow, statusForRow) {
+        db.prepare(
+            `INSERT INTO calendar_bookings (
+                id, customer_id, site_id, service_id, resource_id, start_utc, end_utc, status,
+                visitor_name, visitor_email, visitor_phone, note,
+                manage_token_hash, created_at, updated_at, cancelled_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`
+        ).run(
+            id,
+            customerId,
+            siteId,
+            service.id,
+            resourceIdForRow,
+            startIso,
+            endIso,
+            statusForRow,
+            visitorName,
+            visitorEmail,
+            visitorPhone || null,
+            note || null,
+            tokenHash,
+            ts,
+            ts
+        );
+    }
+
     // Prefer confirm when free; on conflict → requested/reschedule_needed never confirmed.
     let status = STATUSES.CONFIRMED;
+    let chosenResourceId = null;
     let booking = null;
 
+    // BEGIN IMMEDIATE (VISION §8): SQLite serializes every writer behind this
+    // reserved lock, so by the time each concurrent "any available" request's
+    // transaction runs, it sees every previously committed booking — this is
+    // what makes the per-resource loop below race-safe without extra locking,
+    // and is the mechanism the Wave 7 concurrency oracle exercises directly
+    // (see bot/test/wave7-calendar-resources-concurrency.test.js).
     db.exec('BEGIN IMMEDIATE;');
     try {
-        const overlap = listActiveBookings(db, customerId, siteId, {
-            serviceId: service.id,
-            fromUtc: startIso,
-            toUtc: toIsoUtc(endMs + buffer * 60000),
-        }).filter((b) => {
-            const bStart = Date.parse(b.start_utc);
-            const bEnd = Date.parse(b.end_utc) + buffer * 60000;
-            const slotEnd = endMs + buffer * 60000;
-            return startMs < bEnd && slotEnd > bStart;
-        });
-
-        if (overlap.length) {
-            status = input.preferRescheduleOnConflict
-                ? STATUSES.RESCHEDULE_NEEDED
-                : STATUSES.REQUESTED;
+        if (requestedResourceId) {
+            // Visitor/owner asked for one specific resource — never silently
+            // reassign; a conflict there demotes to requested/reschedule_needed
+            // exactly like the pre-Wave-7 single-calendar behavior did.
+            const r = fittingResources[0];
+            const overlap = listActiveBookings(db, customerId, siteId, {
+                resourceId: r.id,
+                fromUtc: startIso,
+                toUtc: toIsoUtc(endMs + buffer * 60000),
+            }).filter((b) => overlapsBuffered(b, startMs, endMs, buffer));
+            chosenResourceId = r.id;
+            if (overlap.length) {
+                status = input.preferRescheduleOnConflict
+                    ? STATUSES.RESCHEDULE_NEEDED
+                    : STATUSES.REQUESTED;
+            }
+        } else {
+            // "Any available": try each eligible+fitting resource in stable
+            // order and confirm on the first one with no active overlap.
+            for (const r of fittingResources) {
+                const overlap = listActiveBookings(db, customerId, siteId, {
+                    resourceId: r.id,
+                    fromUtc: startIso,
+                    toUtc: toIsoUtc(endMs + buffer * 60000),
+                }).filter((b) => overlapsBuffered(b, startMs, endMs, buffer));
+                if (!overlap.length) {
+                    chosenResourceId = r.id;
+                    status = STATUSES.CONFIRMED;
+                    break;
+                }
+            }
+            if (!chosenResourceId) {
+                // Every eligible resource is busy at this instant — store the
+                // desired time unassigned (resource_id NULL) rather than pin
+                // it to a busy resource. An owner can reassign it later (see
+                // reassignBookingAsOwner) once a resource frees up.
+                status = input.preferRescheduleOnConflict
+                    ? STATUSES.RESCHEDULE_NEEDED
+                    : STATUSES.REQUESTED;
+            }
         }
 
         // For conflicted "requested" we still store the desired start; unique index
         // only covers requested+confirmed — two requested same start would still
-        // collide on unique. If unique would fire on requested same slot, second
-        // becomes reschedule_needed without claiming the slot key: we only INSERT
-        // confirmed/requested when no exact active start exists; else reschedule_needed
-        // with a synthetic start offset is wrong. Instead: on exact unique conflict,
-        // catch and insert as reschedule_needed after cancelling uniqueness by...
-        // Actually UNIQUE includes requested. So two people requesting same slot:
-        // first gets requested or confirmed, second hits unique → we convert to
-        // reschedule_needed WITHOUT the same start_utc? That would lose the desired time.
-        // Better approach: unique only on confirmed? VISION says lock on slot for
-        // requested+confirmed. Two concurrent confirms: one wins.
-        // Two requests same slot: unique blocks second — treat second as reschedule_needed
-        // with SAME start_utc by first deleting uniqueness... can't.
-        //
-        // Fix: partial unique only WHERE status = 'confirmed'.
-        // Plus transactional overlap for both requested+confirmed.
-        // Re-read VISION: "constraint unic la nivel de DB și/sau lock tranzacțional"
-        // So transactional lock alone is enough; unique is belt. Having unique on
-        // both requested+confirmed means only one active row per start.
-        // Second concurrent book → catch SQLITE_CONSTRAINT → status reschedule_needed
-        // and use start_utc with micro-perturbation? Bad.
-        //
-        // Cleaner: on unique failure, INSERT with status=reschedule_needed and
-        // start_utc unchanged — but unique includes requested. So exclude
-        // reschedule_needed from unique (already excluded). For second request on
-        // same slot while first is requested: unique fails. Then we INSERT as
-        // reschedule_needed — still same start_utc — unique does NOT include
-        // reschedule_needed, so OK!
-
+        // collide on unique IF they share the same resource_id (NULL resource_id
+        // rows never collide with each other — SQLite treats NULL != NULL in a
+        // unique index, which is exactly right: an unresolved "any available"
+        // request doesn't occupy any real resource yet). On unique failure
+        // (a resource was claimed between our check and this write), fall back
+        // to reschedule_needed at the same desired time, same resource.
         try {
-            db.prepare(
-                `INSERT INTO calendar_bookings (
-                    id, customer_id, site_id, service_id, start_utc, end_utc, status,
-                    visitor_name, visitor_email, visitor_phone, note,
-                    manage_token_hash, created_at, updated_at, cancelled_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`
-            ).run(
-                id,
-                customerId,
-                siteId,
-                service.id,
-                startIso,
-                endIso,
-                status,
-                visitorName,
-                visitorEmail,
-                visitorPhone || null,
-                note || null,
-                tokenHash,
-                ts,
-                ts
-            );
+            insertRow(chosenResourceId, status);
         } catch (e) {
             const msg = String(e && e.message || e);
             if (/UNIQUE|unique/i.test(msg)) {
-                // Slot taken between check and write — never confirm.
                 status = STATUSES.RESCHEDULE_NEEDED;
-                db.prepare(
-                    `INSERT INTO calendar_bookings (
-                        id, customer_id, site_id, service_id, start_utc, end_utc, status,
-                        visitor_name, visitor_email, visitor_phone, note,
-                        manage_token_hash, created_at, updated_at, cancelled_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`
-                ).run(
-                    id,
-                    customerId,
-                    siteId,
-                    service.id,
-                    startIso,
-                    endIso,
-                    status,
-                    visitorName,
-                    visitorEmail,
-                    visitorPhone || null,
-                    note || null,
-                    tokenHash,
-                    ts,
-                    ts
-                );
+                insertRow(chosenResourceId, status);
             } else {
                 throw e;
             }
@@ -815,7 +1106,7 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
  *
  * @returns {object} updated booking row
  */
-function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date.now() } = {}) {
+function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date.now(), resourceId } = {}) {
     const customerId = row.customer_id;
     const siteId = row.site_id;
     const bookingId = row.id;
@@ -832,12 +1123,39 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date
         err.code = 'SETTINGS_MISSING';
         throw err;
     }
-    if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs)) {
-        const err = new Error('slot outside weekly availability or blackout');
-        err.code = 'SLOT_OUTSIDE_AVAILABILITY';
-        throw err;
+    // Keep the booking's current resource unless the caller explicitly moves
+    // it (owner reassignment). A still-unresolved "any available" request
+    // (resource_id NULL) stays unresolved through a plain time move — moving
+    // its desired time is not the same as assigning it a resource.
+    const targetResourceId = resourceId !== undefined ? resourceId : row.resource_id;
+
+    if (targetResourceId) {
+        if (!slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs, targetResourceId)) {
+            const err = new Error('slot outside weekly availability or blackout');
+            err.code = 'SLOT_OUTSIDE_AVAILABILITY';
+            throw err;
+        }
+    } else {
+        // Unresolved booking: the new desired time must still fit at least
+        // one resource eligible for this service, or it's not a real slot.
+        const eligible = listResourcesForService(db, customerId, siteId, service.id);
+        const fits = eligible.some((r) =>
+            slotFitsOpenAvailability(db, customerId, siteId, settings, service, startMs, r.id)
+        );
+        if (!fits) {
+            const err = new Error('slot outside weekly availability or blackout');
+            err.code = 'SLOT_OUTSIDE_AVAILABILITY';
+            throw err;
+        }
     }
-    assertBookingWindow(settings, startMs, nowMs);
+    // Only re-enforce the booking-window policy when the time itself is
+    // moving. A pure reassignment (same start_utc, new resource — e.g. an
+    // owner swapping staff shortly before an appointment) must not fail
+    // min-notice just because "now" has crept closer to an already-accepted
+    // time.
+    if (startMs !== Date.parse(row.start_utc)) {
+        assertBookingWindow(settings, startMs, nowMs);
+    }
 
     const buffer = service.buffer_minutes != null
         ? service.buffer_minutes
@@ -847,15 +1165,13 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date
     const startIso = toIsoUtc(startMs);
     const endIso = toIsoUtc(endMs);
 
-    const overlap = listActiveBookings(db, customerId, siteId, {
-        serviceId: service.id,
-        fromUtc: startIso,
-        toUtc: toIsoUtc(endMs + buffer * 60000),
-    }).filter((b) => b.id !== row.id).filter((b) => {
-        const bStart = Date.parse(b.start_utc);
-        const bEnd = Date.parse(b.end_utc) + buffer * 60000;
-        return startMs < bEnd && (endMs + buffer * 60000) > bStart;
-    });
+    const overlap = targetResourceId
+        ? listActiveBookings(db, customerId, siteId, {
+            resourceId: targetResourceId,
+            fromUtc: startIso,
+            toUtc: toIsoUtc(endMs + buffer * 60000),
+        }).filter((b) => b.id !== row.id).filter((b) => overlapsBuffered(b, startMs, endMs, buffer))
+        : []; // no resource occupied yet — nothing to conflict with
 
     if (overlap.length) {
         if (onConflict === 'reject') {
@@ -865,16 +1181,20 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date
             throw err;
         }
     }
-    let status = overlap.length ? STATUSES.RESCHEDULE_NEEDED : STATUSES.CONFIRMED;
+    // Never promote an unresolved (resource_id NULL) booking to confirmed
+    // just by moving its desired time — only explicit reassignment does that.
+    let status = overlap.length
+        ? STATUSES.RESCHEDULE_NEEDED
+        : (targetResourceId ? STATUSES.CONFIRMED : STATUSES.REQUESTED);
 
     const ts = nowIso();
     try {
         db.prepare(
             `UPDATE calendar_bookings
-             SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL,
+             SET start_utc = ?, end_utc = ?, status = ?, resource_id = ?, updated_at = ?, cancelled_at = NULL,
                  visitor_reminder_sent_at = NULL, owner_reminder_sent_at = NULL
              WHERE id = ? AND customer_id = ? AND site_id = ?`
-        ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+        ).run(startIso, endIso, status, targetResourceId, ts, bookingId, customerId, siteId);
     } catch (e) {
         const msg = String(e && e.message || e);
         if (/UNIQUE|unique/i.test(msg)) {
@@ -889,10 +1209,10 @@ function applyReschedule(db, row, startMs, { onConflict = 'demote', nowMs = Date
             // Keep the desired wall time; unique only covers requested+confirmed.
             db.prepare(
                 `UPDATE calendar_bookings
-                 SET start_utc = ?, end_utc = ?, status = ?, updated_at = ?, cancelled_at = NULL,
+                 SET start_utc = ?, end_utc = ?, status = ?, resource_id = ?, updated_at = ?, cancelled_at = NULL,
                      visitor_reminder_sent_at = NULL, owner_reminder_sent_at = NULL
                  WHERE id = ? AND customer_id = ? AND site_id = ?`
-            ).run(startIso, endIso, status, ts, bookingId, customerId, siteId);
+            ).run(startIso, endIso, status, targetResourceId, ts, bookingId, customerId, siteId);
         } else {
             throw e;
         }
@@ -936,7 +1256,66 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
         }
 
         const previousStatus = row.status;
-        const updated = applyReschedule(db, row, startMs, { onConflict: 'demote', nowMs });
+        const requestedResourceId = input.resourceId || input.resource_id;
+        const updated = applyReschedule(db, row, startMs, {
+            onConflict: 'demote',
+            nowMs,
+            resourceId: requestedResourceId !== undefined ? requestedResourceId : undefined,
+        });
+        db.exec('COMMIT;');
+        emitBookingEmail(db, {
+            booking: updated,
+            kind: updated.status === STATUSES.CONFIRMED ? 'reschedule_confirmed' : 'rescheduled',
+            previousStatus,
+        });
+        return updated;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+/**
+ * Owner reassignment (audit #25 — "reassign a booking"): move a booking to a
+ * different resource WITHOUT changing its time. Never silently overwrites a
+ * busy resource — confirms only if the new resource is free and eligible for
+ * the service at that time, else demotes to reschedule_needed exactly like
+ * every other conflict path in this file.
+ */
+function reassignBookingAsOwner(db, customerId, siteId, bookingId, resourceId) {
+    assertTenant(customerId, siteId);
+    if (!resourceId) {
+        const err = new Error('resourceId required');
+        err.code = 'VALIDATION';
+        throw err;
+    }
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const row = getBooking(db, customerId, siteId, bookingId);
+        if (!row) {
+            db.exec('ROLLBACK;');
+            return null;
+        }
+        if (row.status === STATUSES.CANCELLED) {
+            db.exec('ROLLBACK;');
+            const err = new Error('cannot reassign a cancelled booking');
+            err.code = 'STATE';
+            throw err;
+        }
+        const resource = getResource(db, customerId, siteId, resourceId);
+        if (!resource || !resource.active) {
+            db.exec('ROLLBACK;');
+            const err = new Error('resource not found');
+            err.code = 'RESOURCE_NOT_FOUND';
+            throw err;
+        }
+        const startMs = Date.parse(row.start_utc);
+        const previousStatus = row.status;
+        const updated = applyReschedule(db, row, startMs, {
+            onConflict: 'demote',
+            nowMs: Date.now(),
+            resourceId,
+        });
         db.exec('COMMIT;');
         emitBookingEmail(db, {
             booking: updated,
@@ -1035,6 +1414,16 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
             err.code = 'STATE';
             throw err;
         }
+        if (!row.resource_id) {
+            // Wave 7 (audit #25): an unresolved "any available" request has
+            // no physical resource yet — confirming it would claim nothing.
+            // The owner must reassign it to a resource first (see
+            // reassignBookingAsOwner), which itself confirms when free.
+            db.exec('ROLLBACK;');
+            const err = new Error('booking has no resource assigned yet — reassign it first');
+            err.code = 'RESOURCE_REQUIRED';
+            throw err;
+        }
         const service = getService(db, customerId, siteId, row.service_id);
         const settings = getSettings(db, customerId, siteId);
         const buffer = (service && service.buffer_minutes != null)
@@ -1043,7 +1432,7 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
         const startMs = Date.parse(row.start_utc);
         const endMs = Date.parse(row.end_utc);
         const overlap = listActiveBookings(db, customerId, siteId, {
-            serviceId: row.service_id,
+            resourceId: row.resource_id,
             fromUtc: row.start_utc,
             toUtc: toIsoUtc(endMs + buffer * 60000),
         }).filter((b) => b.id !== row.id).filter((b) => {
@@ -1098,6 +1487,14 @@ module.exports = {
     upsertService,
     getService,
     listServices,
+    getOrCreateDefaultResourceId,
+    upsertResource,
+    getResource,
+    listResources,
+    hasMultipleResources,
+    setServiceResources,
+    listResourcesForService,
+    listServicesForResource,
     setWeeklyAvailability,
     listWeeklyAvailability,
     addDateOverride,
@@ -1115,6 +1512,7 @@ module.exports = {
     getBookingByManageToken,
     cancelBookingWithToken,
     rescheduleBookingAsOwner,
+    reassignBookingAsOwner,
     rescheduleBookingWithToken,
     confirmBookingAsOwner,
     hashToken,

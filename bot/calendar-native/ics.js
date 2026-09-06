@@ -90,6 +90,14 @@ function contentLine(name, value) {
  *   method: 'REQUEST'|'CANCEL',
  *   sequence: number,                // RFC 5545 SEQUENCE — monotonic per UID
  *   nowMs?: number,                  // DTSTAMP instant (defaults to Date.now())
+ *   resourceName?: string,           // Wave 7 (audit #25) — who the appointment
+ *                                    // is with (a stylist, a room). Omitted for
+ *                                    // a legacy single-resource tenant or a
+ *                                    // still-unresolved booking — SUMMARY /
+ *                                    // DESCRIPTION stay exactly as before this
+ *                                    // wave when absent. No ATTENDEE line is
+ *                                    // added for the resource (no real staff
+ *                                    // email exists to put there) — text only.
  * }} p
  * @returns {string} CRLF-terminated VCALENDAR text
  */
@@ -104,10 +112,16 @@ function buildBookingIcs(p) {
     const status = method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED';
     const serviceName = p.serviceName || 'Serviciu';
     const siteLabel = p.siteLabel || 'Hidook';
+    const resourceName = p.resourceName ? String(p.resourceName).trim() : '';
 
-    const summary = escapeIcsText('Programare: ' + serviceName + ' — ' + siteLabel);
+    const summary = escapeIcsText(
+        resourceName
+            ? 'Programare: ' + serviceName + ' cu ' + resourceName + ' — ' + siteLabel
+            : 'Programare: ' + serviceName + ' — ' + siteLabel
+    );
     const description = escapeIcsText(
-        'Programare la ' + siteLabel + ' pentru „' + serviceName + '”.' +
+        'Programare la ' + siteLabel + ' pentru „' + serviceName + '”' +
+        (resourceName ? ', cu ' + resourceName + '.' : '.') +
         (method === 'CANCEL' ? '\nAceastă programare a fost anulată.' : '')
     );
     const location = escapeIcsText(siteLabel);

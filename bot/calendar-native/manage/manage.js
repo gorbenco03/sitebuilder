@@ -130,6 +130,17 @@
       card.appendChild(svc);
     }
 
+    // Wave 7 (audit #25): who the appointment is with. Absent for a
+    // single-resource tenant (manage-api.js only surfaces it once there are
+    // 2+ resources) or a still-unresolved "any available" request, so this
+    // row simply doesn't render — same as before this wave.
+    if (booking.resourceName) {
+      var withWhom = el('div', 'hm__row');
+      withWhom.appendChild(el('dt', '', 'Cu cine'));
+      withWhom.appendChild(el('dd', '', booking.resourceName));
+      card.appendChild(withWhom);
+    }
+
     var who = el('div', 'hm__row');
     who.appendChild(el('dt', '', 'Pe numele'));
     who.appendChild(el('dd', '', booking.visitorName || '—'));
