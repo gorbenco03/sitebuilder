@@ -222,3 +222,46 @@ objects. So the rewrite, if it ever happens, is the **last** step: after the
 final audit, after every branch is merged, after every worktree is gone. Not
 before, and never while agents are running.
 
+
+---
+
+## Everything you write in a template is shipped to the customer
+
+`templates/<id>/styles.css` and `templates/<id>/template.html` are copied
+**verbatim** into every exported ZIP, every downloaded HTML file and every
+published site. Comments included. So a comment in one of those files is:
+
+- bytes every visitor of every generated site downloads;
+- text the product's own content contracts inspect (`s56`, `s58`,
+  `wave11-html-export` all grep the rendered output for foreign brands and
+  factory words);
+- and, if it names another template's brand, somebody else's business name in a
+  paying customer's file.
+
+The same applies to `COOKIE_BANNER_CSS` and `COOKIE_BANNER_JS` in
+`bot/site-legal.js`: those template literals become `cookie-banner.css` and
+`cookie-banner.js` on every site.
+
+On 2026-09-07 this cost three red oracles in one night, in three different
+files, all from explanatory prose written with the best intentions:
+
+- a comment contrasting palettes named a forbidden persona word → `s56` red on
+  a template it had nothing to do with, and because that check aborts on the
+  first failure, two more templates looked like rendering bugs;
+- a comment about CLS named another template → `s56` red again;
+- a comment saying "same trap that tiled the *X* hero" → `wave11-html-export`
+  red, because the customer's downloaded HTML now carried *X*'s brand name.
+
+**The rule:** keep comments in shipped files short and about the rule they sit
+next to. The reasoning, the measurements and the story go in the commit
+message, in `PROJECT_STATUS.md`, or in the oracle's header — none of which ship.
+A one-line pointer to the oracle is worth more to the next reader than ten
+lines of narrative, and costs the customer nothing.
+
+`waveB-no-foreign-brand-in-shipped-files` enforces the brand half of this.
+Nothing enforces brevity; that is on you.
+
+**And the mirror image, for oracles:** a scanner that reads a stylesheet must
+strip comments first. `wave5-template-asset-dirs` regexed `url(...)` across
+whole files and read a comment describing a rule — `style="background: url(…)"`
+— as a reference to a file named `…`. A comment is not a declaration.
