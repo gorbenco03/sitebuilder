@@ -47,7 +47,12 @@ async function onStripeEvent(event) {
         const type = event && event.type;
         if (
             type === 'customer.subscription.deleted' ||
-            type === 'customer.subscription.updated'
+            type === 'customer.subscription.updated' ||
+            // Without .created, a subscription that goes straight to active and
+            // never changes status again leaves stripeSubscriptionStatus empty
+            // forever -- and the renewal guard treats "empty" as allow, so the
+            // double-billing check would never fire on the most common case.
+            type === 'customer.subscription.created'
         ) {
             await webpublish.handleStripeSubscriptionEvent(event);
             log('webhook.stripe.handled', { type });

@@ -1331,6 +1331,15 @@ function domainPollAllowed(req, res, siteId) {
     return true;
 }
 
+async function handleSiteInvoices(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    // Sourced from the durable ledger rather than a live Stripe call, so an
+    // owner can see their history even while Stripe is unreachable, and so it
+    // works identically under HIDOOK_TEST_PAY.
+    return sendJson(res, 200, { invoices: require('./webpublish.js').getInvoiceHistory(site) });
+}
+
 async function handleGetDomain(req, res, siteId) {
     const site = resolveOwnedSite(req, res, siteId);
     if (!site) return;
@@ -2227,12 +2236,29 @@ async function handleSiteCheckout(req, res, siteId) {
     if (!userId) return;
 
     const reg  = getRegistry();
-    const site = await reg.getSite(siteId);
+    let site = await reg.getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site not found.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
 
     if (!payments.isConfigured()) {
         return sendJson(res, 503, { error: payments.RO_ERRORS.NOT_CONFIGURED });
+    }
+
+    // The audit's worst payments finding: this handler decided "renewal" from
+    // the LOCAL paidUntil and opened a new Checkout without asking whether the
+    // site already had a live subscription. A customer whose dashboard read
+    // "Expirat" because of webhook lag could open a second subscription that
+    // billed alongside the first, and _storeStripeBillingIds then overwrote
+    // the id, orphaning the original. Heal from Stripe's own truth first, then
+    // refuse outright if a subscription is still open.
+    const wp = require('./webpublish.js');
+    site = await wp.reconcileSiteFromStripe(site);
+    const renewalGuard = wp.canStartRenewalCheckout(site);
+    if (!renewalGuard.allowed) {
+        return sendJson(res, 409, {
+            error: renewalGuard.reasonRo || payments.RO_ERRORS.ALREADY_ACTIVE_SUBSCRIPTION,
+            code: renewalGuard.reasonCode,
+        });
     }
 
     const p         = pricing.getPricingFromRequest(req);
@@ -3224,6 +3250,10 @@ function createHandler({ onStripeEvent } = {}) {
             if (req.method === 'POST' && checkoutMatch) {
                 return await handleSiteCheckout(req, res, checkoutMatch[1]);
             }
+
+            // /api/sites/:id/invoices — billing history from the ledger
+            const invoicesMatch = url.match(/^\/api\/sites\/([^/]+)\/invoices$/);
+            if (req.method === 'GET' && invoicesMatch) return await handleSiteInvoices(req, res, invoicesMatch[1]);
 
             // /api/sites/:id/domain — self-serve custom domain (audit #47)
             const domainMatch = url.match(/^\/api\/sites\/([^/]+)\/domain$/);
