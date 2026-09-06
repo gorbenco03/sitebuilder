@@ -151,18 +151,92 @@ Checkout Session creation **fail outright** on any Stripe account that has
 not configured Stripe Tax (Dashboard → Tax → origin address +
 registrations). Turning it on unconditionally the day this ships would take
 down 100% of checkout on an unconfigured account — a strictly worse outcome
-than today's VAT gap. Flip the env var only after the Dashboard steps below.
+than today's VAT gap. Flip the env var only after the Dashboard steps below,
+**in this order** — each step depends on the one before it, and skipping
+ahead is exactly how "flip a flag" turns into "checkout is down in
+production":
 
-### Before you set `STRIPE_AUTOMATIC_TAX=1`
+### Runbook: turning `STRIPE_AUTOMATIC_TAX=1` on
 
-1. **Stripe Dashboard → Tax** → enable Stripe Tax, set your business's
-   origin address, and add a tax registration for Romania (and any other
-   country you are obligated to collect VAT in).
-2. Test in Stripe **test mode** first (`sk_test_…` + `STRIPE_AUTOMATIC_TAX=1`)
-   and run a checkout with a test card from an EU billing address to confirm
-   Stripe actually computes and shows a tax line before doing this in live
-   mode.
-3. Only then set `STRIPE_AUTOMATIC_TAX=1` alongside `sk_live_…` in production.
+**0. Decide the two accountant questions that block this (see below) before
+you start.** Specifically: is pricing staying VAT-exclusive (99/29 + VAT on
+top, the code's current behavior) or moving to VAT-inclusive (same 99/29
+regardless of buyer country)? That decision changes `tax_behavior` in
+`bot/payments.js` (currently hardcoded `'exclusive'` on every inline
+`price_data` — both the Checkout line and the renewal-phase Price) and is
+not reversible after real customers have been charged under one model
+without a pricing communication to them — decide it first, not after
+step 4's first live charge.
+
+1. **Stripe Dashboard → Tax → enable Stripe Tax.** Set your business's
+   origin address (this is what Stripe treats as "where you are selling
+   from" for the calculation) and add a tax registration for Romania. Add a
+   registration for any other country you are separately obligated to
+   collect VAT in (see the OSS question below — most single-country sellers
+   under the threshold only need the one Romanian registration here).
+2. **Confirm the registration is active before touching any env var.**
+   Dashboard → Tax → Registrations must show Romania as **Active**, not
+   *Pending*. `automatic_tax` calls Stripe's tax engine at Checkout-creation
+   time; a pending registration behaves like no registration and still
+   fails the session create the same way an unconfigured account does — this
+   is the step people skip and then wrongly conclude the code is broken.
+3. **Test in Stripe test mode — never skip straight to live.** In test mode,
+   set `STRIPE_SECRET_KEY=sk_test_…` and `STRIPE_AUTOMATIC_TAX=1`, restart
+   the app (this is a `process.env` read at Checkout-creation time, not
+   hot-reloaded — a running process keeps the old behavior until restarted),
+   and run one real Checkout with a **Stripe test card** and a **test EU
+   billing address** (Stripe's test mode still validates the tax
+   calculation path even though nothing is charged).
+4. **Verify it actually worked — do not eyeball the Checkout page alone.**
+   Two independent checks, both against the **test-mode** session you just
+   created:
+   - On the Stripe-hosted Checkout page itself, a "Tax" line must appear
+     above the total, priced in the buyer's currency — if it does not
+     appear, `automatic_tax` silently did not compute (a resolved billing
+     address is required for Stripe to show anything; an unresolved one
+     shows $0 tax without erroring).
+   - Pull the session back via the API and check it directly:
+     `GET https://api.stripe.com/v1/checkout_sessions/<id>?expand[]=total_details`
+     with your test secret key. Confirm `automatic_tax.status` is
+     `"complete"` (not `"failed"` or `"requires_location_inputs"`) and
+     `total_details.amount_tax` is a positive integer (cents), not `0`.
+     `payments.getCheckoutStatus()` in this repo does not surface these
+     fields today — this is a manual `curl`/Dashboard check, not something
+     to script against this codebase without adding a call for it first.
+5. **Only after step 4 passes**, set `STRIPE_AUTOMATIC_TAX=1` alongside
+   `STRIPE_SECRET_KEY=sk_live_…` in production, and repeat step 4's live-mode
+   equivalent on the very first real customer checkout after the flip
+   (Dashboard → Payments → that Checkout Session → confirm a real tax amount
+   was collected) rather than assuming test mode's result carries over
+   unchanged.
+
+### Rolling back `STRIPE_AUTOMATIC_TAX`
+
+If step 4 or 5 fails, or a registration lapses later and checkout starts
+failing in production: **unset the env var first, then investigate the
+Dashboard state** — not the reverse order. Sequence matters here too:
+
+1. Set `STRIPE_AUTOMATIC_TAX=0` (or unset it) and redeploy/restart
+   immediately. This alone restores every Checkout call to the pre-VAT code
+   path (`automatic_tax`/`billing_address_collection`/`tax_id_collection`
+   are simply omitted from the request again — nothing else in
+   `bot/payments.js` branches on this flag), so checkout stops failing the
+   moment the new process boots. This is the single highest-leverage action
+   if checkout is failing in production right now — do it before debugging
+   Stripe Tax configuration, not after.
+2. Only then debug the Dashboard side (expired/removed registration,
+   changed origin address) at your own pace, without live checkout being
+   down while you do.
+3. Nothing needs to be undone in Stripe itself: rolling back the flag does
+   not retroactively touch Checkout Sessions or invoices already created
+   with tax computed on them — those remain exactly as issued. There is no
+   database migration and no code path in this repo that depends on the
+   flag's history, only its current value at the next Checkout call.
+4. If accountant guidance changes `tax_behavior` from `'exclusive'` to
+   `'inclusive'` (or back) at any point, that is an unrelated one-line change
+   in `bot/payments.js` (`buildSubscriptionLineItems` / `ensureRenewalPriceId`)
+   — it is not part of turning the flag on/off, and changing it does not by
+   itself require touching `STRIPE_AUTOMATIC_TAX` either way.
 
 ### Questions for your accountant (this repo does not guess these)
 
@@ -201,38 +275,63 @@ for existing checkout.
 
 ## Dunning: the sequence a customer (and the owner) can act on
 
-**Audit:** "a failed invoice currently records a ledger entry and one
-Romanian notification." Wave7 built out the rest of the sequence:
+**Audit (2026-09-06 re-audit, "C2"):** the dunning data and the dashboard
+badge were both correct, but the owner was told nothing unless they happened
+to be logged into the dashboard when it mattered — a card that expires is
+the single most common way a small business loses its site by accident,
+because they do not know and do not log in. Wave10 gives the sequence a real
+notification, not just a database row:
 
 | Day | Stripe state | What the code does | What the owner sees |
 |-----|--------------|---------------------|----------------------|
-| 0 | Charge declines | `invoice.payment_failed` → `webpublish.handleStripeInvoicePaymentFailed`: records `paymentFailedAt`/`paymentFailedCount` on the site, appends a ledger `payment_failed` entry (with Stripe's own `next_payment_attempt`), best-effort notifies. | Site stays live. Notification names the attempt number and either the next scheduled retry date or, if none, says plainly retries are exhausted. |
-| Stripe subscription flips to `past_due` around the same time | `customer.subscription.updated status=past_due` → status persisted, **not** unpublished (past_due is recoverable — Stripe keeps retrying on its own schedule). | Dashboard: `webpublish.getDunningState(site)` returns a `warning`-severity state — see §2 of `HANDOFF-payments.md` for the exact dashboard wiring (this agent doesn't own `builder/**`). |
-| Retries 2, 3, 4… (Stripe's own Smart Retries schedule — not configured by this codebase) | Each failed attempt repeats the row above with an incrementing `attemptCount`. | Same warning, updated attempt count. |
-| All retries exhausted | Stripe flips the subscription to `unpaid` (or `incomplete_expired` for a first invoice that never got paid) → `handleStripeSubscriptionEvent` unpublishes the site **and now notifies the owner** ("Site oprit: …") — this used to be completely silent. | `getDunningState` returns a `critical`-severity state: the site is down, add a new card to bring it back. |
+| 0 | Charge declines | `invoice.payment_failed` → `webpublish.handleStripeInvoicePaymentFailed`: records `paymentFailedAt`/`paymentFailedCount` on the site, appends a ledger `payment_failed` entry (with Stripe's own `next_payment_attempt`), best-effort-notifies Telegram (when wired) **and now sends a Romanian email** to the account's sign-in address (`registry.getUser(site.userId).email`). | Site stays live. Both the Telegram notice and the email name the attempt number and either the concrete next retry date or, once none is left, say plainly the site is about to go dark. |
+| Stripe subscription flips to `past_due` around the same time | `customer.subscription.updated status=past_due` → status persisted, **not** unpublished (past_due is recoverable — Stripe keeps retrying on its own schedule). No email fires for this transition by itself — the `invoice.payment_failed` event above already covered it; this event only keeps the dashboard label truthful. | Dashboard: `webpublish.getDunningState(site)` returns a `warning`-severity state (already wired into `buildSiteCard()` in `builder/app.js`). |
+| Retries 2, 3, 4… (Stripe's own Smart Retries schedule — not configured by this codebase) | Each failed attempt repeats row 1 with an incrementing `attemptCount` and its own email. | Same warning, updated attempt count, one new email per retry. |
+| All retries exhausted | Stripe flips the subscription to `unpaid` (or `incomplete_expired` for a first invoice that never got paid) → `handleStripeSubscriptionEvent` unpublishes the site, best-effort-notifies Telegram, **and sends the critical "site is down" email** — the one notification in this sequence that must never be missed. | `getDunningState` returns a `critical`-severity state: the site is down, add a new card to bring it back. The email says the same thing in the inbox they actually check. |
+
+**Exactly once, never for the wrong account:** every row above is gated on
+the same Stripe event-id claim (`registry.claimStripeEvent`) already used
+for entitlement idempotency, so a webhook redelivery of the same event never
+re-sends the same email — confirmed in
+`bot/test/wave10-payments-notify-email.test.js`. A customer-initiated cancel
+(`customer.subscription.deleted`, or `.updated status=canceled`) sends
+**no** payment-failure email at all — they already know, they clicked
+Cancel in the Customer Portal.
+
+**Where the email actually goes:** the same address the owner signs into
+the dashboard with (magic-link auth). A site with no web account on file
+(e.g. a Telegram-origin site with no email registered) logs the attempt with
+`reason: 'no_recipient'` in the ledger and moves on — this is a known gap,
+not a silent failure: see "Out of this how-to" below.
+
+**No RESEND_API_KEY configured:** every send call still runs and is
+recorded in the ledger (`event: 'owner_notified', channel: 'email', sent:
+false, reason: 'dev_no_api_key'`) — the same dev-fallback contract as
+`bot/email.js#sendMagicLink`. This is what `HIDOOK_TEST_PAY`/local dev
+exercises; nothing about the notification logic is skipped, only the actual
+HTTP POST to Resend.
 
 **Stripe Dashboard settings this code does not control:** Smart Retries
 schedule (how many attempts, how spaced) and "Email customers about failed
 invoices" live in **Stripe Dashboard → Settings → Subscriptions and
-emails**. This codebase has no customer email channel of its own — on the
-web platform there is currently no owner-facing notification channel at all
-(`bot/web.js` passes `notifyAdmin: undefined` throughout; see
-`HANDOFF-payments.md` §2). Until a real channel exists, enable those Stripe
-Dashboard settings so the *customer* gets Stripe's own dunning emails, and
-treat the dashboard card as the *owner's* notice.
+emails**. Those are Stripe's own emails to the *customer* as cardholder
+(receipt-shaped, not this product's copy); the emails described above are
+this product's own channel, addressed to the *owner* of the Hidook site, and
+the two are complementary — enable Stripe's setting too, it costs nothing
+and is a second independent chance for the message to land.
 
 ---
 
 ## Invoice history ("Facturi")
 
 **Audit:** "an owner paying yearly has no way to see or download past
-invoices." `webpublish.getInvoiceHistory(site)` now returns every charge
+invoices." `webpublish.getInvoiceHistory(site)` returns every charge
 (first-year and renewal, `HIDOOK_TEST_PAY` and real Stripe alike) from a
 durable ledger record this branch appends on every successful payment —
 provable without real Stripe credentials. Real-Stripe renewals also carry
-Stripe's own `hostedInvoiceUrl`/`invoicePdf` links. See `HANDOFF-payments.md`
-§4 for the `GET /api/sites/:id/invoices` route and the "Facturi" button this
-agent could not add directly (does not own `bot/server.js`/`builder/**`).
+Stripe's own `hostedInvoiceUrl`/`invoicePdf` links. `GET
+/api/sites/:id/invoices` is wired and reachable from the dashboard as of the
+2026-09-06 re-audit fixes — this is no longer a pending wiring step.
 
 ---
 
@@ -240,11 +339,7 @@ agent could not add directly (does not own `bot/server.js`/`builder/**`).
 
 **Audit's worst payments finding:** "a paying customer labelled 'Expirat'
 and pushed into opening a second subscription that billed alongside the
-first." Re-verified end to end in
-`bot/test/wave7-payments-no-double-subscription.test.js` (active
-subscription → renewal paid → dashboard label stays correct → the guard
-refuses a second Checkout). Two new functions, both need one wiring step in
-`bot/server.js` — see `HANDOFF-payments.md` §1:
+first." Two functions carry the fix:
 
 - `webpublish.reconcileSiteFromStripe(site)` — heals a stale local
   `paidUntil` from Stripe's own subscription status before anything else
@@ -252,6 +347,33 @@ refuses a second Checkout). Two new functions, both need one wiring step in
 - `webpublish.canStartRenewalCheckout(site)` — refuses to open a Checkout
   Session while Stripe still reports the site's subscription as
   active/trialing/past_due.
+
+Both are wired into `bot/server.js` on **every** entry point that can open a
+Checkout Session for an already-paid site, not only the dashboard's
+"Reînnoiește hosting" button — the 2026-09-06 re-audit's own adversarial
+pass found and confirmed fixed the harder case: the ordinary
+edit-and-republish flow (`POST /api/publish` with an existing `siteId`)
+walking past the same guard through a different code path
+(`hasActiveCommercialEntitlement`). Re-verified end to end in
+`bot/test/wave7-payments-no-double-subscription.test.js` (active
+subscription → renewal paid → dashboard label stays correct → the guard
+refuses a second Checkout) and by adversarial re-walk (see
+`04-QA-Evidence/Wave10-payments/` for the 2026-09-06 confirmation that the
+republish path now calls the same guard).
+
+---
+
+## Known gap: no owner email on file
+
+The Wave10 payment-failure emails (see "Dunning" above) are addressed to
+`registry.getUser(site.userId).email` — the dashboard sign-in address. A
+site created through the Telegram flow, or any account that never completed
+magic-link sign-in with a real address, has no email on file: the
+notification is still attempted, still logged (ledger `reason:
+'no_recipient'`), and never throws, but the owner genuinely receives
+nothing for that site. There is no in-app prompt today asking such an owner
+to add a contact email — closing that gap needs a `builder/**`/`bot/server.js`
+change this agent does not own; see `HANDOFF-payments-notify.md`.
 
 ---
 
