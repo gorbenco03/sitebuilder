@@ -616,14 +616,60 @@ body.details-drawer-open .editor-tpl-name {
 
 .demo-content-banner-dismiss {
   background: none;
-  border: none;
-  font-size: 1.1rem;
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
   line-height: 1;
   color: inherit;
   cursor: pointer;
-  padding: 0.15rem 0.4rem;
+  padding: 0.4rem 0.65rem;
   flex-shrink: 0;
 }
+
+/* ---------- Quick-start form (Wave 11) — name/phone/town, one sitting ---------- */
+.quickstart-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+.quickstart-form-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.quickstart-input {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  width: 9.5rem;
+  max-width: 40vw;
+}
+.quickstart-input:focus {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 1px;
+}
+.quickstart-submit {
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.4rem 0.85rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--text);
+  color: var(--bg);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.quickstart-submit:hover { opacity: 0.88; }
 
 /* Checklist indicator */
 .checklist-indicator {
