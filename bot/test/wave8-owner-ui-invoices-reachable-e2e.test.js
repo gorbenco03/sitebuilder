@@ -66,6 +66,10 @@ test('a site that has been paid for shows its invoice in the dashboard "Facturi"
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);
+        // Details drawer auto-opens on a fresh design and its overlay covers
+        // the topbar publish button — close it first, same as a real owner
+        // would (and the same step the Wave 8 calendar oracle already takes).
+        await page.locator('#btn-close-drawer').click().catch(() => {});
 
         const runSlug = 'wave8-owner-ui-inv-' + crypto.randomBytes(4).toString('hex');
         const ownerEmail = 'wave8-owner-ui-invoices@example.com';

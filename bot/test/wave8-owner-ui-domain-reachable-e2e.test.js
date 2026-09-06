@@ -151,6 +151,10 @@ test('owner connects a custom domain to active, and disconnects, entirely from t
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);
+        // Details drawer auto-opens on a fresh design and its overlay covers
+        // the topbar publish button — close it first, same as a real owner
+        // would (and the same step the Wave 8 calendar oracle already takes).
+        await page.locator('#btn-close-drawer').click().catch(() => {});
 
         const runSlug = 'wave8-owner-ui-dom-' + crypto.randomBytes(4).toString('hex');
         const ownerEmail = 'wave8-owner-ui-domain@example.com';
