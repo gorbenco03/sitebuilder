@@ -22,3 +22,17 @@ scripts
 wrangler.toml
 dist
 CLOUDFLARE-DEPLOY.md
+# DI-01: internal QA/governance/deliverables paperwork — tracked in git (so
+# Railway's clone includes it) but never read by bot/ at runtime. ~140MB of
+# screenshots and docs with no business being in the production image.
+04-QA-Evidence
+00-Governance
+04-Deliverables
+AGENTS.md
+PROJECT_STATUS.md
+OWNER-*.md
+# DI-08: not in .git (Railway never sees it), but bot/DEPLOY.md documents a
+# local `docker build .` that would otherwise send this — gigabytes of local
+# git worktrees — to the Docker daemon as build context and let COPY . . bake
+# other branches' working trees into the image.
+.worktrees
