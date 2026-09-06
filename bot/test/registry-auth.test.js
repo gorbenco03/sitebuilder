@@ -119,13 +119,26 @@ check('consumeLoginToken returns null for unknown token', () => {
 });
 
 check('consumeLoginToken returns null for expired token', () => {
-    // Create a token then manually set its expiry in the past
+    // Create a token then force its expiry into the past. There is no clock
+    // to fake and no registry-API setter for exp (by design — createLoginToken's
+    // TTL is fixed), so this pokes storage directly, adapted to whichever
+    // backend is active: the JSON file under the JSON backend, or the same
+    // SQLite database registry-sqlite.js itself opens (via bot/registry-db.js)
+    // under the default SQLite backend. Either way this is the registry's own
+    // storage module, not a guessed file path.
     const { token } = registry.createLoginToken({ purpose: 'login', email: 'exp@x.com' });
     const hash = crypto.createHash('sha256').update(token).digest('hex');
-    const REGISTRY_FILE = path.join(tmpDir, '.registry.json');
-    const db = JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf8'));
-    db.tokens[hash].exp = Date.now() - 1000; // expired 1 second ago
-    fs.writeFileSync(REGISTRY_FILE, JSON.stringify(db));
+    const registryBackend = String(process.env.REGISTRY_BACKEND || 'sqlite').trim().toLowerCase();
+    if (registryBackend === 'json') {
+        const REGISTRY_FILE = path.join(tmpDir, '.registry.json');
+        const db = JSON.parse(fs.readFileSync(REGISTRY_FILE, 'utf8'));
+        db.tokens[hash].exp = Date.now() - 1000; // expired 1 second ago
+        fs.writeFileSync(REGISTRY_FILE, JSON.stringify(db));
+    } else {
+        const { openRegistryDb } = require('../registry-db.js');
+        const rawDb = openRegistryDb({ dataDir: tmpDir });
+        rawDb.prepare('UPDATE tokens SET exp = ? WHERE hash = ?').run(Date.now() - 1000, hash);
+    }
 
     const result = registry.consumeLoginToken(token);
     assert.strictEqual(result, null, 'expired token should return null');

@@ -2,7 +2,7 @@
 /**
  * bot/registry.js — Central data registry for the web platform.
  *
- * This file is now a thin backend switcher. The 21 functions it re-exports,
+ * This file is now a thin backend switcher. The 23 functions it re-exports,
  * their signatures, return shapes and error messages are unchanged from
  * before this rewrite — every consumer (bot/server.js, bot/webpublish.js,
  * bot/flow.js, bot/calendar-native/email/index.js, ...) keeps working

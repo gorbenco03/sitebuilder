@@ -53,7 +53,7 @@ async function waitForServer(base, child) {
     delete env.PUBLIC_URL;
     delete env.HIDOOK_FAKE_DEPLOY;
 
-    const child = spawn(process.execPath, ['bot/web.js'], {
+    const child = spawn(process.execPath, [...process.execArgv, 'bot/web.js'], {
         cwd: ROOT,
         env,
         stdio: ['ignore', 'pipe', 'pipe'],

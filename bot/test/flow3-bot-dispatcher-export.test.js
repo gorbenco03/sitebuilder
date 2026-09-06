@@ -72,7 +72,7 @@ module.exports = { Bot };
 function startCombinedBot() {
     installFakeGrammy();
     return new Promise((resolve, reject) => {
-        const child = childProcess.spawn(process.execPath, [path.join(ROOT, 'bot', 'bot.js')], {
+        const child = childProcess.spawn(process.execPath, [...process.execArgv, path.join(ROOT, 'bot', 'bot.js')], {
             cwd: ROOT,
             env: {
                 ...process.env,
