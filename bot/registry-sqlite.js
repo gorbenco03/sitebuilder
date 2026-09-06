@@ -2,7 +2,7 @@
 /**
  * bot/registry-sqlite.js — Central data registry, SQLite backend.
  *
- * Implements the same 21 functions as bot/registry-json.js, signature for
+ * Implements the same 23 functions as bot/registry-json.js, signature for
  * signature, return-shape for return-shape, against separate indexed SQLite
  * tables instead of one dict-of-dicts JSON file. Every mutation now costs
  * roughly the size of the row it touches, not the size of the whole
@@ -352,6 +352,23 @@ function getOrder(orderId) {
     return row ? orderRowToObj(row) : null;
 }
 
+/**
+ * All orders for a site, oldest-created first. Introspection helper used by
+ * tests that used to read .registry.json directly to check for orphan rows
+ * or find the pending/paid order for a site; the registry API had no such
+ * listing before, so this closes that gap for both backends.
+ */
+function listOrdersBySite(siteId) {
+    if (siteId == null) return []; // node:sqlite cannot bind undefined
+    return db.prepare('SELECT * FROM orders WHERE site_id = ? ORDER BY seq ASC').all(siteId).map(orderRowToObj);
+}
+
+/** Every order across every site — mirrors listAllSites(). Introspection
+ *  helper for tests that need a global "no orders were created" count. */
+function listAllOrders() {
+    return db.prepare('SELECT * FROM orders ORDER BY seq ASC').all().map(orderRowToObj);
+}
+
 // ---------------------------------------------------------------------------
 // Stripe event idempotency
 // ---------------------------------------------------------------------------
@@ -404,6 +421,8 @@ module.exports = {
     markOrderPaid,
     getOrderBySession,
     getOrder,
+    listOrdersBySite,
+    listAllOrders,
     claimStripeEvent,
     addMonthsIso,
 };

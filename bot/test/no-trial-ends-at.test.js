@@ -20,10 +20,18 @@ process.env.DATA_DIR = tmpDir;
 
 const registry = require('../registry.js');
 
-const registryPath = path.join(__dirname, '..', 'registry.js');
+// createSite is implemented once per storage backend (bot/registry-sqlite.js,
+// bot/registry-json.js) behind the bot/registry.js switcher — it is no longer
+// defined in registry.js itself, so both backend sources are checked here;
+// REGISTRY_BACKEND can select either one at runtime and both must uphold the
+// invariant.
+const registryBackendPaths = [
+    path.join(__dirname, '..', 'registry-sqlite.js'),
+    path.join(__dirname, '..', 'registry-json.js'),
+];
 const serverPath = path.join(__dirname, '..', 'server.js');
 const flowPath = path.join(__dirname, '..', 'flow.js');
-const registrySrc = fs.readFileSync(registryPath, 'utf8');
+const registryBackendSrcs = registryBackendPaths.map((p) => ({ path: p, src: fs.readFileSync(p, 'utf8') }));
 const serverSrc = fs.readFileSync(serverPath, 'utf8');
 const flowSrc = fs.readFileSync(flowPath, 'utf8');
 
@@ -38,25 +46,29 @@ function check(name, fn) {
     }
 }
 
-check('createSite does not accept trialEndsAt in its parameter list', () => {
-    // Function signature must not name trialEndsAt
-    const m = registrySrc.match(/function\s+createSite\s*\(\s*\{([^}]*)\}/);
-    assert.ok(m, 'createSite destructuring signature not found');
-    assert.ok(
-        !/\btrialEndsAt\b/.test(m[1]),
-        'createSite must not accept trialEndsAt parameter'
-    );
-});
+for (const { path: backendPath, src: registrySrc } of registryBackendSrcs) {
+    const label = path.basename(backendPath);
 
-check('createSite source does not assign trialEndsAt or reminded on new sites', () => {
-    // Locate createSite body roughly (until next top-level function)
-    const start = registrySrc.indexOf('function createSite');
-    assert.ok(start >= 0, 'createSite not found');
-    const nextFn = registrySrc.indexOf('\nfunction ', start + 1);
-    const body = registrySrc.slice(start, nextFn > 0 ? nextFn : undefined);
-    assert.ok(!/\btrialEndsAt\b/.test(body), 'createSite body must not reference trialEndsAt');
-    assert.ok(!/\breminded\b/.test(body), 'createSite body must not reference reminded');
-});
+    check(`${label}: createSite does not accept trialEndsAt in its parameter list`, () => {
+        // Function signature must not name trialEndsAt
+        const m = registrySrc.match(/function\s+createSite\s*\(\s*\{([^}]*)\}/);
+        assert.ok(m, 'createSite destructuring signature not found');
+        assert.ok(
+            !/\btrialEndsAt\b/.test(m[1]),
+            'createSite must not accept trialEndsAt parameter'
+        );
+    });
+
+    check(`${label}: createSite source does not assign trialEndsAt or reminded on new sites`, () => {
+        // Locate createSite body roughly (until next top-level function)
+        const start = registrySrc.indexOf('function createSite');
+        assert.ok(start >= 0, 'createSite not found');
+        const nextFn = registrySrc.indexOf('\nfunction ', start + 1);
+        const body = registrySrc.slice(start, nextFn > 0 ? nextFn : undefined);
+        assert.ok(!/\btrialEndsAt\b/.test(body), 'createSite body must not reference trialEndsAt');
+        assert.ok(!/\breminded\b/.test(body), 'createSite body must not reference reminded');
+    });
+}
 
 check('createSite runtime record has neither trialEndsAt nor reminded', () => {
     const user = registry.getOrCreateUserByEmail(`s26-${crypto.randomUUID()}@example.com`);

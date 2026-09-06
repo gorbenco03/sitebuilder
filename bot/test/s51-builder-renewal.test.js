@@ -143,8 +143,7 @@ function withBusinessName(config, name) {
 }
 
 function readOrdersForSite(siteId) {
-    const db = JSON.parse(fs.readFileSync(path.join(tmpDir, '.registry.json'), 'utf8'));
-    return Object.values(db.orders || {}).filter((o) => o.siteId === siteId);
+    return registry.listOrdersBySite(siteId);
 }
 
 (async () => {

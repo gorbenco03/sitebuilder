@@ -332,6 +332,28 @@ function getOrder(orderId) {
 }
 
 /**
+ * All orders for a site, oldest-created first. Introspection helper used by
+ * tests that used to read .registry.json directly to check for orphan rows
+ * or find the pending/paid order for a site; the registry API had no such
+ * listing before, so this closes that gap for both backends.
+ */
+function listOrdersBySite(siteId) {
+    if (!siteId) return [];
+    const db = _load();
+    return Object.values(db.orders || {})
+        .filter((o) => o && o.siteId === siteId)
+        .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')))
+        .map((o) => ({ ...o }));
+}
+
+/** Every order across every site — mirrors listAllSites(). Introspection
+ *  helper for tests that need a global "no orders were created" count. */
+function listAllOrders() {
+    const db = _load();
+    return Object.values(db.orders || {}).map((o) => ({ ...o }));
+}
+
+/**
  * DELIBERATE FIX (3 of 4): see bot/registry-shared.js#assertValidStripeEventId.
  */
 function claimStripeEvent(eventId) {
@@ -373,6 +395,8 @@ module.exports = {
     markOrderPaid,
     getOrderBySession,
     getOrder,
+    listOrdersBySite,
+    listAllOrders,
     claimStripeEvent,
     addMonthsIso,
 };

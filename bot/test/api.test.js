@@ -486,7 +486,7 @@ const MINIMAL_CONFIG = {
         if (!fs.existsSync(suitePath)) { console.log('SKIP (not found):', suite); continue; }
         try {
             const { spawnSync } = require('child_process');
-            const result = spawnSync(process.execPath, [suitePath], {
+            const result = spawnSync(process.execPath, [...process.execArgv, suitePath], {
                 stdio: 'inherit',
                 env: { ...process.env, DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'suite-')), HIDOOK_FAKE_DEPLOY: '1' },
             });

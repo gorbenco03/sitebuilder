@@ -68,7 +68,11 @@ function makeSession(overrides = {}) {
         phase: 'wizard',
         data: { name: 'Cafe Ana' },
         siteDir,
-        siteSlug: 'cafe-ana-test',
+        // Unique per call: the registry now enforces a real UNIQUE constraint on
+        // sites.slug (deliberate SQLite-backend fix), so every finish() call in
+        // this suite needs its own slug — a shared literal here would collide
+        // across the several test cases that each call finish() once.
+        siteSlug: 'cafe-ana-test-' + crypto.randomBytes(4).toString('hex'),
         siteConfig: config,
         gallery: [],
         ...overrides,
@@ -362,15 +366,13 @@ function extractFnSrc(src, name) {
             const replies = [];
             const ctx = makeCtx(chatId, replies);
             const session = makeSession({ templateId: 'product-menu' });
-            // Snapshot order count via registry file
-            const regFile = path.join(tmpDir, '.registry.json');
-            const before = fs.existsSync(regFile) ? JSON.parse(fs.readFileSync(regFile, 'utf8')) : {};
-            const ordersBefore = Object.keys(before.orders || {}).length;
+            // Snapshot order count via the registry API (no siteId exists yet
+            // pre-finish, so this needs the global list, not listOrdersBySite).
+            const ordersBefore = registry.listAllOrders().length;
 
             await finish(ctx, session, chatId);
 
-            const after = JSON.parse(fs.readFileSync(regFile, 'utf8'));
-            const ordersAfter = Object.keys(after.orders || {}).length;
+            const ordersAfter = registry.listAllOrders().length;
             assert.strictEqual(ordersAfter, ordersBefore, 'no new payment orders on Telegram finish');
         });
     }

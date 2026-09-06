@@ -384,8 +384,7 @@ async function loginClient(base, email) {
         assert.strictEqual(liveUnpaid.status, 404, `${label} unpaid /live must 404`);
 
         // Pending draft must retain images for first-pay deploy
-        const db = JSON.parse(fs.readFileSync(path.join(tmpDir, '.registry.json'), 'utf8'));
-        const orders = Object.values(db.orders || {}).filter((o) => o.siteId === siteId);
+        const orders = registry.listOrdersBySite(siteId);
         assert.ok(orders.length >= 1, 'pending order');
         const pending = orders.find((o) => o.status === 'pending') || orders[0];
         assert.strictEqual(pending.amountCents, pricing.PRICE_CENTS);

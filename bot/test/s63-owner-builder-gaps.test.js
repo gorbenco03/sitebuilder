@@ -49,6 +49,7 @@ delete process.env.NODE_ENV;
 const payments   = require('../payments.js');
 const pricing    = require('../pricing.js');
 const webpublish = require('../webpublish.js');
+const registry   = require('../registry.js');
 const { startServer } = require('../server.js');
 
 let failed = 0;
@@ -585,8 +586,7 @@ async function loginClient(base, email) {
         assert.ok(matchedBytes, 'live image bytes reachable for replaced asset; refs=' + [...refs].join(','));
 
         // Amount still commercial
-        const db = JSON.parse(fs.readFileSync(path.join(tmpDir, '.registry.json'), 'utf8'));
-        const orders = Object.values(db.orders || {}).filter((o) => o.siteId === siteId);
+        const orders = registry.listOrdersBySite(siteId);
         assert.ok(orders.length >= 1);
         const paid = orders.find((o) => o.status === 'paid') || orders[0];
         assert.strictEqual(paid.amountCents, pricing.PRICE_CENTS);

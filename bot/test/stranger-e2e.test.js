@@ -324,8 +324,7 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 8000, inte
         assert.ok(!/\.test\.local\b/i.test(String(body.site.url || '')), 'must not be *.test.local');
 
         // Capture checkout session from durable order
-        const db = JSON.parse(fs.readFileSync(path.join(tmpDir, '.registry.json'), 'utf8'));
-        const orders = Object.values(db.orders || {}).filter((o) => o.siteId === siteId);
+        const orders = registry.listOrdersBySite(siteId);
         assert.ok(orders.length >= 1, 'pending order exists');
         const pending = orders.find((o) => o.status === 'pending') || orders[0];
         orderId = pending.id;
@@ -387,9 +386,19 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 8000, inte
     });
 
     await check('path traversal on /live denied', async () => {
+        // Registry storage file at the DATA_DIR root — .registry.json under the
+        // JSON backend, registry.sqlite under the (default) SQLite backend. Must
+        // actually exist so this proves traversal is blocked, not that the
+        // target happens to be missing.
+        const registryBackend = String(process.env.REGISTRY_BACKEND || 'sqlite').trim().toLowerCase();
+        const registryStoreFile = registryBackend === 'json' ? '.registry.json' : 'registry.sqlite';
+        assert.ok(
+            fs.existsSync(path.join(tmpDir, registryStoreFile)),
+            `expected ${registryStoreFile} to exist under DATA_DIR for this traversal check to be meaningful`
+        );
         const tries = [
             `/live/../${path.basename(tmpDir)}/`,
-            `/live/${slug}/../../.registry.json`,
+            `/live/${slug}/../../${registryStoreFile}`,
             `/live/%2e%2e/${slug}/`,
         ];
         for (const p of tries) {

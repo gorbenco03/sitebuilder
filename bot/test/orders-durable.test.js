@@ -128,11 +128,7 @@ async function withPublishCounter(fn) {
         assert.strictEqual(bySession.id, order.id);
 
         // No orphan second row for same attach
-        const dbPath = path.join(tmpDir, '.registry.json');
-        const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-        const rows = Object.values(db.orders || {}).filter(
-            (o) => o.siteId === site.id && o.userId === user.id
-        );
+        const rows = registry.listOrdersBySite(site.id).filter((o) => o.userId === user.id);
         assert.strictEqual(rows.length, 1, 'exactly one order row after attach');
     });
 
