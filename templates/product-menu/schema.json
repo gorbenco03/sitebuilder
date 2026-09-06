@@ -308,6 +308,7 @@
           "key": "instagram.url",
           "type": "url",
           "label": "URL Instagram (https://www.instagram.com/...)",
+          "hint": "Folosește exact același link ca la „Instagram (secțiune contact)” din secțiunea Contact — cele două butoane trebuie să ducă la același profil.",
           "required": false
         },
         {
@@ -379,6 +380,7 @@
           "key": "contact.instagram.url",
           "type": "url",
           "label": "Instagram (secțiune contact)",
+          "hint": "Folosește exact același link ca la „URL Instagram” din secțiunea Instagram de mai sus — cele două butoane trebuie să ducă la același profil.",
           "required": false
         },
         {

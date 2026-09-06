@@ -13,7 +13,7 @@
 
     --ink:        #1a1410;
     --ink-soft:   rgba(26, 20, 16, 0.78);
-    --ink-mute:   rgba(26, 20, 16, 0.5);
+    --ink-mute:   rgba(26, 20, 16, 0.62);
     --paper:      var(--color-cream, #f3eee8);
     --void:       #0a0a0a;
     --snow:       #faf8f5;
@@ -64,10 +64,12 @@ ul { list-style: none; }
     -webkit-backdrop-filter: saturate(140%) blur(16px);
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
+.pm-mast__brand { min-width: 0; overflow: hidden; }
 .pm-mast__word {
     font-family: var(--font-display);
     font-weight: 500; font-size: 1.05rem; letter-spacing: 0.04em;
     line-height: 1.2; text-transform: none;
+    display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pm-mast__logo { height: 28px; width: auto; }
 .pm-mast__nav {
@@ -84,6 +86,7 @@ ul { list-style: none; }
 /* Mobile nav — hamburger reveals the same anchors as a dropdown panel */
 .pm-mast__burger {
     display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
     width: 44px; height: 44px; margin: -6px -6px -6px 0;
     background: transparent; border: 0; padding: 0;
     color: var(--snow); cursor: pointer;
@@ -132,6 +135,7 @@ ul { list-style: none; }
 }
 .pm-mast__pill {
     display: inline-flex; align-items: center; justify-content: center;
+    text-align: center;
     min-height: 34px; padding: 8px 16px;
     background: var(--cta); color: var(--void);
     border-radius: var(--r); font-family: var(--font-ui);
@@ -139,6 +143,17 @@ ul { list-style: none; }
     transition: transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
 }
 .pm-mast__pill:active { transform: scale(0.97); }
+
+/* Very narrow viewports (small phones, or ~200% zoom on mobile widths) —
+   tighten the mast bar so brand + burger + persistent CTA never force
+   horizontal scroll (WCAG 1.4.10 reflow). The wordmark truncates with an
+   ellipsis; burger and CTA keep their tap-target size, only their own
+   padding shrinks. */
+@media (max-width: 360px) {
+    .pm-mast__bar { padding: 0 12px; gap: 0.5rem; }
+    .pm-mast__word { max-width: 28vw; }
+    .pm-mast__pill { padding: 8px 10px; font-size: 11px; }
+}
 
 .pm-mast__stage { padding: clamp(2.5rem, 8vw, 5.5rem) 22px 2.5rem; }
 .pm-hero {
@@ -182,7 +197,7 @@ ul { list-style: none; }
 .pm-scroll, .scroll-indicator {
     display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
     width: 100%; padding: 0 0 2rem;
-    background: var(--void); color: rgba(255,255,255,0.42);
+    background: var(--void); color: rgba(255,255,255,0.52);
     font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.12em;
     text-transform: uppercase; border: 0; cursor: pointer;
 }
@@ -354,7 +369,12 @@ ul { list-style: none; }
     display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; justify-content: space-between;
 }
 .pm-foot__logo { height: 28px; }
-.pm-foot__soc { display: flex; gap: 1rem; color: var(--link); font-weight: 600; }
+.pm-foot__soc { display: flex; gap: 0.35rem; color: var(--link); font-weight: 600; margin: -10px; }
+.pm-foot__soc a {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; min-height: 44px; border-radius: 50%;
+}
+.pm-foot__soc a:hover { background: rgba(26, 20, 16, 0.06); }
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 18px; z-index: 30;

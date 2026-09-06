@@ -89,7 +89,7 @@ function dirTotalBytes(dir) {
   // (once with minifyCss/trimJsWhitespace short-circuited to identity):
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       72793        74868     73800
+  //   product-menu       74808        77251     76000
   //   local-service      96621       100023     98300
   //   portfolio          87455        90918     89100
   //   professionals     105449       110453    107900
@@ -104,7 +104,7 @@ function dirTotalBytes(dir) {
   // MINIFIER SAVINGS, not the payload size -- use bot/test/wave1-perf-theme
   // and the measured evidence under 04-QA-Evidence for the latter.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 73800,
+    'product-menu': 76000,
     'local-service': 98300,
     portfolio: 89100,
     professionals: 107900,
