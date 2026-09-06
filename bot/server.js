@@ -1648,6 +1648,27 @@ async function handleCalendarNativeServices(req, res, query) {
     }
 }
 
+async function handleCalendarNativeResources(req, res, query) {
+    applyPublicCalendarCors(req, res);
+    try {
+        const api = getCalendarNativeApi();
+        const { customerId, siteId } = api.parseTenant({
+            customerId: query.get('customerId') || query.get('customer_id'),
+            siteId: query.get('siteId') || query.get('site_id'),
+        });
+        const db = resolveCalendarNativeDb();
+        maybeSeedDemoTenant(db, customerId, siteId);
+        const out = api.listPublicResources(db, customerId, siteId, {
+            serviceId: query.get('serviceId') || query.get('service_id') || undefined,
+        });
+        if (out.error) return sendJson(res, out.status || 400, out);
+        return sendJson(res, 200, out);
+    } catch (e) {
+        const status = e.status || 400;
+        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+    }
+}
+
 async function handleCalendarNativeSlots(req, res, query) {
     applyPublicCalendarCors(req, res);
     try {
@@ -1662,6 +1683,9 @@ async function handleCalendarNativeSlots(req, res, query) {
             serviceId: query.get('serviceId') || query.get('service_id'),
             fromDateLocal: query.get('from') || query.get('fromDate'),
             toDateLocal: query.get('to') || query.get('toDate'),
+            // Absent means "anyone", which is what every caller sent before
+            // resources existed -- so an existing widget keeps working.
+            resourceId: query.get('resourceId') || query.get('resource_id') || undefined,
         });
         if (out.error) return sendJson(res, out.status || 400, out);
         return sendJson(res, 200, out);
@@ -1937,6 +1961,7 @@ async function handleOwnerListBookings(req, res, query) {
         fromDateLocal: query.get('fromDateLocal') || query.get('from') || undefined,
         toDateLocal: query.get('toDateLocal') || query.get('to') || undefined,
         q: query.get('q') || undefined,
+        resourceId: query.get('resourceId') || undefined,
     });
     if (out.error) return sendJson(res, out.status || 400, out);
     return sendJson(res, 200, out);
@@ -2003,7 +2028,9 @@ async function handleOwnerGetAvailability(req, res, query) {
     const ownerApi = getCalendarOwnerApi();
     const db = resolveCalendarNativeDb();
     if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
-    const out = ownerApi.getOwnerAvailability(db, tenant.customerId, tenant.siteId);
+    const out = ownerApi.getOwnerAvailability(db, tenant.customerId, tenant.siteId, {
+        resourceId: query.get('resourceId') || undefined,
+    });
     if (out.error) return sendJson(res, out.status || 400, out);
     return sendJson(res, 200, out);
 }
@@ -2021,6 +2048,73 @@ async function handleOwnerPutWeekly(req, res) {
     const db = resolveCalendarNativeDb();
     if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
     const out = ownerApi.putOwnerWeekly(db, tenant.customerId, tenant.siteId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerListResources(req, res, query) {
+    const src = {
+        customerId: query.get('customerId') || query.get('customer_id'),
+        siteId: query.get('siteId') || query.get('site_id'),
+    };
+    const tenant = resolveOwnerTenantOrReject(req, res, src);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.listOwnerResources(db, tenant.customerId, tenant.siteId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerCreateResource(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    // No id => create, mirroring putOwnerService's create-vs-update shape.
+    const out = ownerApi.putOwnerResource(db, tenant.customerId, tenant.siteId, null, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerPutResource(req, res, resourceId) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.putOwnerResource(db, tenant.customerId, tenant.siteId, resourceId, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+async function handleOwnerReassignBooking(req, res, bookingId) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.reassignOwnerBooking(db, tenant.customerId, tenant.siteId, bookingId, body || {});
     if (out.error) return sendJson(res, out.status || 400, out);
     return sendJson(res, 200, out);
 }
@@ -3331,6 +3425,7 @@ function createHandler({ onStripeEvent } = {}) {
             if (
                 req.method === 'OPTIONS' &&
                 (url === '/api/calendar-native/services' ||
+                    url === '/api/calendar-native/resources' ||
                     url === '/api/calendar-native/slots' ||
                     url === '/api/calendar-native/bookings' ||
                     url === '/api/calendar-native/manage' ||
@@ -3347,6 +3442,27 @@ function createHandler({ onStripeEvent } = {}) {
             }
             if (req.method === 'GET' && url === '/api/calendar-native/slots') {
                 return await handleCalendarNativeSlots(req, res, query);
+            }
+
+            // Wave 7 — staff/resources (audit medium #25)
+            if (req.method === 'GET' && url === '/api/calendar-native/resources') {
+                return await handleCalendarNativeResources(req, res, query);
+            }
+            if (req.method === 'GET' && url === '/api/calendar-native/owner/resources') {
+                return await handleOwnerListResources(req, res, query);
+            }
+            if (req.method === 'POST' && url === '/api/calendar-native/owner/resources') {
+                return await handleOwnerCreateResource(req, res);
+            }
+            {
+                const mRes = /^\/api\/calendar-native\/owner\/resources\/([^/]+)$/.exec(url);
+                if (req.method === 'PUT' && mRes) {
+                    return await handleOwnerPutResource(req, res, decodeURIComponent(mRes[1]));
+                }
+                const mReassign = /^\/api\/calendar-native\/owner\/bookings\/([^/]+)\/reassign$/.exec(url);
+                if (req.method === 'POST' && mReassign) {
+                    return await handleOwnerReassignBooking(req, res, decodeURIComponent(mReassign[1]));
+                }
             }
             if (req.method === 'POST' && url === '/api/calendar-native/bookings') {
                 return await handleCalendarNativeBookings(req, res);
