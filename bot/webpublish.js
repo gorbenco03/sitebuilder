@@ -10,7 +10,13 @@
  *     notify owner on owner's channel + concierge domain msg.
  *     Also stores stripeCustomerId + stripeSubscriptionId for cancel → unpublish.
  *   - handleStripeSubscriptionEvent: persist subscription.updated lifecycle status;
- *     customer.subscription.deleted or status=canceled → unpublishSite (idempotent).
+ *     customer.subscription.deleted, or updated with status one of
+ *     canceled/cancelled/unpaid/incomplete_expired → unpublishSite (idempotent).
+ *     PC-03: 'unpaid' is Stripe's terminal dunning state (all retries exhausted)
+ *     and can persist indefinitely without ever sending .deleted, so it must be
+ *     a trigger on its own, not just canceled/deleted. Other statuses (active,
+ *     trialing, past_due) only update the stored status — no unpublish, no new
+ *     grace-window state invented.
  *   - unpublishSite: stop serving isolated $DATA_DIR/published/<slug>/; registry not live.
  *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
  *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
@@ -94,13 +100,23 @@ function unpublishSite(siteOrId, meta = {}) {
     if (site.slug) _removeIsolatedPublished(site.slug);
 
     const alreadyDown = site.status !== 'live' && site.status !== 'active';
+    // PC-03: keep the real Stripe status (e.g. 'unpaid', 'incomplete_expired')
+    // instead of always forcing 'canceled', so an operator/dashboard fix can
+    // later tell "customer canceled" apart from "card kept failing" — the
+    // commercial outcome (not public) is the same either way.
+    const nextSubscriptionStatus = meta.subscriptionStatus || 'canceled';
     try {
         registry.updateSite(site.id, {
             status: 'unpublished',
             url: null,
             // Keep paid/paidUntil history; cancel does not invent a charge.
             canceledAt: site.canceledAt || new Date().toISOString(),
-            stripeSubscriptionStatus: 'canceled',
+            stripeSubscriptionStatus: nextSubscriptionStatus,
+            // Keep the legacy compatibility field in sync with the Stripe status.
+            // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
+            // through the plain persist path, which set this field; skipping it here
+            // would silently desynchronise the two.
+            subscriptionStatus: nextSubscriptionStatus,
         });
     } catch (e) {
         log('webpublish.unpublish.update_failed', { siteId: site.id, err: e.message }, 'error');
@@ -146,6 +162,14 @@ async function handleStripeSubscriptionEvent(event) {
     const isCanceledUpdate =
         isUpdated &&
         (status === 'canceled' || status === 'cancelled');
+    // PC-03: 'unpaid' is Stripe's terminal state once every dunning retry has
+    // failed — it can stay 'unpaid' forever without ever firing .deleted.
+    // 'incomplete_expired' is the equivalent terminal failure for a
+    // subscription whose very first invoice never got paid. Both must
+    // unpublish; no other status (active/trialing/past_due) does.
+    const isUnpaidUpdate =
+        isUpdated &&
+        (status === 'unpaid' || status === 'incomplete_expired');
 
     if (!isDeleted && (!isUpdated || !status)) {
         log('webpublish.subscription.ignored', { type, status, subscriptionId: sub.id });
@@ -177,10 +201,13 @@ async function handleStripeSubscriptionEvent(event) {
         }
     }
 
-    if (isDeleted || isCanceledUpdate) {
+    if (isDeleted || isCanceledUpdate || isUnpaidUpdate) {
         return unpublishSite(site, {
-            reason: isDeleted ? 'subscription_deleted' : 'subscription_canceled',
+            reason: isDeleted
+                ? 'subscription_deleted'
+                : (isCanceledUpdate ? 'subscription_canceled' : `subscription_${status}`),
             subscriptionId: sub.id,
+            subscriptionStatus: status || 'canceled',
         });
     }
 
@@ -380,6 +407,91 @@ async function _isolatedDeploy(siteDir, slug) {
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
     const url = publicUrl ? `${publicUrl}/live/${safe}/` : `/live/${safe}/`;
     return { url, provider: 'isolated' };
+}
+
+// ---------------------------------------------------------------------------
+// F3 — absolute og:image / twitter:image on the published site
+// ---------------------------------------------------------------------------
+//
+// build.js -> deriveSocialImage() intentionally returns a path relative to the
+// site root (e.g. "images/hero.jpg") — it must, since it also runs for the
+// offline export where there is no public host yet. Link-preview crawlers
+// (WhatsApp/Facebook/Telegram/X) require a fully-qualified absolute URL, so
+// webpublish.js rewrites the *built* index.html on disk using the real public
+// origin of THIS deploy, once it is known. Never touches build.js/template.html.
+
+/** True when `src` is already a fully-qualified absolute URL. */
+function _isAbsoluteImageUrl(src) {
+    return /^https?:\/\//i.test(String(src || '')) || /^\/\//.test(String(src || ''));
+}
+
+/**
+ * Rewrite <meta property="og:image" ...> and <meta name="twitter:image" ...>
+ * content in the given built index.html from a relative path to an absolute
+ * URL under `baseUrl`. No-ops (returns false) when baseUrl is not itself a
+ * fully-qualified http(s) URL, or the file has no such meta tag, or the
+ * content is already absolute. Idempotent.
+ *
+ * @param {string} indexPath
+ * @param {string} baseUrl  origin (+ optional path prefix), no trailing slash
+ * @returns {boolean} true if the file was rewritten
+ */
+function absolutizeSocialImageMeta(indexPath, baseUrl) {
+    if (!baseUrl || !/^https?:\/\//i.test(baseUrl)) return false;
+    if (!fs.existsSync(indexPath)) return false;
+    let html;
+    try {
+        html = fs.readFileSync(indexPath, 'utf8');
+    } catch (_) {
+        return false;
+    }
+    const base = String(baseUrl).replace(/\/+$/, '');
+    let changed = false;
+    const patterns = [
+        /(<meta\s+property=["']og:image["']\s+content=)(["'])([^"']*)\2/i,
+        /(<meta\s+name=["']twitter:image["']\s+content=)(["'])([^"']*)\2/i,
+    ];
+    for (const re of patterns) {
+        html = html.replace(re, (full, prefix, quote, value) => {
+            if (!value || _isAbsoluteImageUrl(value)) return full;
+            changed = true;
+            const rel = value.replace(/^\.?\//, '');
+            return `${prefix}${quote}${base}/${rel}${quote}`;
+        });
+    }
+    if (!changed) return false;
+    try {
+        fs.writeFileSync(indexPath, html, 'utf8');
+    } catch (_) {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Best-effort predicted public origin for a site BEFORE deploy runs, for the
+ * two cases where it is deterministic ahead of time:
+ *   - HIDOOK_ISOLATED_DEPLOY=1: identical formula to _isolatedDeploy()'s own
+ *     return url, so the copy that lands in $DATA_DIR/published/<slug>/ is
+ *     already correct.
+ *   - BRAND_DOMAIN + DEPLOY_PROVIDER=cloudflare: identical to the
+ *     <slug>.<BRAND_DOMAIN> subdomain _deploy() attaches below.
+ * Returns '' when the real host is only known after the deploy call returns
+ * (plain Cloudflare Pages / Vercel) — the post-deploy pass in publishSite()
+ * covers that case using the actual returned url instead.
+ *
+ * @param {string} slug
+ * @returns {string}
+ */
+function predictedPublicOrigin(slug) {
+    if (process.env.BRAND_DOMAIN && String(process.env.DEPLOY_PROVIDER || '').toLowerCase() === 'cloudflare') {
+        return `https://${slug}.${process.env.BRAND_DOMAIN}`;
+    }
+    if (_isIsolatedDeploy()) {
+        const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
+        return publicUrl ? `${publicUrl}/live/${slug}` : '';
+    }
+    return '';
 }
 
 // ---------------------------------------------------------------------------
@@ -777,13 +889,26 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // 5. Isolated live oracle: make local seed photos load before inspection.
     prepareIsolatedLiveHtml(siteDir);
 
+    // 5b. F3: absolutize og:image/twitter:image ahead of deploy when the final
+    // host is deterministic (isolated /live/ or BRAND_DOMAIN+cloudflare) so the
+    // copy that actually gets served/uploaded already has the fix.
+    const slugForUrl = site.slug || site.projectName;
+    const indexPath = path.join(siteDir, 'index.html');
+    try {
+        absolutizeSocialImageMeta(indexPath, predictedPublicOrigin(slugForUrl));
+    } catch (e) {
+        log('webpublish.social_image.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
+    }
+
     // 6. Deploy
     let url;
+    let deployProvider;
     try {
         const result = await _deploy(siteDir, site.projectName, site.userId, {
-            slug: site.slug || site.projectName,
+            slug: slugForUrl,
         });
         url = result && result.url;
+        deployProvider = result && result.provider;
     } catch (e) {
         try { registry.updateSite(site.id, { status: 'needs-retry' }); } catch (_) {}
         throw e;
@@ -792,6 +917,21 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     if (!url) {
         registry.updateSite(site.id, { status: 'needs-retry' });
         throw new Error('The hosting provider did not return a URL.');
+    }
+
+    // 6b. F3 fallback: for providers whose host is only known after deploy
+    // (plain Cloudflare Pages / Vercel without BRAND_DOMAIN), the pre-deploy
+    // pass above could not predict it. Rewrite with the real url now and, only
+    // if that just changed something on a genuine remote push, re-deploy once
+    // so the LIVE copy also gets the absolute image (not just local disk).
+    // Best-effort: never blocks or fails the publish itself.
+    try {
+        const fixedNow = absolutizeSocialImageMeta(indexPath, url);
+        if (fixedNow && deployProvider && deployProvider !== 'isolated' && deployProvider !== 'fake') {
+            await _deploy(siteDir, site.projectName, site.userId, { slug: slugForUrl });
+        }
+    } catch (e) {
+        log('webpublish.social_image.postdeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
 
     // 7. Mark live
@@ -1159,4 +1299,6 @@ module.exports = {
     savePendingDraft,
     loadPendingDraft,
     resolvePublishPayload,
+    absolutizeSocialImageMeta,
+    predictedPublicOrigin,
 };
