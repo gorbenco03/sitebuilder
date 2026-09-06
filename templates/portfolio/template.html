@@ -50,6 +50,11 @@
             <!-- @endif -->
             <!-- @if showWordmark --><!-- @if !logo --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
             <!-- @if !logo --><!-- @if !showWordmark --><span class="pf-chrome__mark">{{business.name}}</span><!-- @endif --><!-- @endif -->
+            <button type="button" class="pf-chrome__toggle" id="pf-nav-toggle" aria-expanded="false" aria-controls="pf-mobile-nav" aria-label="Deschide meniul">
+                <span class="pf-chrome__toggle-bar"></span>
+                <span class="pf-chrome__toggle-bar"></span>
+                <span class="pf-chrome__toggle-bar"></span>
+            </button>
             <nav class="pf-chrome__nav" aria-label="Navigație">
                 <a href="#gallery-heading">{{labels.navGallery}}</a>
                 <a href="#services-heading">{{labels.navServices}}</a>
@@ -58,6 +63,16 @@
             <a href="#booking" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
         </div>
     </div>
+
+    <!-- Mobile nav drawer — a sibling of .pf-chrome (not nested inside it), because
+         .pf-chrome uses backdrop-filter, and a backdrop-filter/filter ancestor creates
+         a new containing block that would confine a nested position:fixed element to
+         the header's own box instead of the full viewport. Same links as .pf-chrome__nav. -->
+    <nav class="pf-mobile-nav" id="pf-mobile-nav" aria-label="Navigație mobilă">
+        <a href="#gallery-heading">{{labels.navGallery}}</a>
+        <a href="#services-heading">{{labels.navServices}}</a>
+        <a href="#booking">{{labels.navBooking}}</a>
+    </nav>
 
     <header class="hero pf-hero">
         <div class="pf-hero__frame">
