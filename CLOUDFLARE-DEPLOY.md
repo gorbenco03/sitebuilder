@@ -51,6 +51,7 @@ When the owner enables production Cloudflare, ops env and Railway notes live in 
 
 ## Related docs
 
+- `VISION.md` — source of truth; wins over every doc listed here on conflict
 - `PRODUCT.md` — product contract and owner-only launch gates
 - `bot/DEPLOY.md` — Railway bot + builder 24/7, env vars including Cloudflare for trial/paid client sites
 - `bot/README.md` — operator overview of bot + builder

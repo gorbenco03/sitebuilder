@@ -5,14 +5,15 @@ Everything you need to configure before you can sell the product to real custome
 Scope: the **web application** (browser builder + its backend). The Telegram bot is
 optional and is not required for any step here.
 
-Related docs: [`PRODUCT.md`](PRODUCT.md) (product contract), [`LAUNCH.md`](LAUNCH.md)
+Related docs: [`VISION.md`](VISION.md) (source of truth — wins over everything below
+on conflict), [`PRODUCT.md`](PRODUCT.md) (product contract), [`LAUNCH.md`](LAUNCH.md)
 (positioning), [`bot/DEPLOY.md`](bot/DEPLOY.md) (Railway specifics).
 
 ---
 
 ## 0. What the customer journey actually is
 
-1. Customer opens the builder → picks one of four designs → edits copy and photos.
+1. Customer opens the builder → picks one of five designs → edits copy and photos.
 2. Signs in with a **magic link** sent by email (no password).
 3. Starts a **Stripe subscription** with a **7-day trial** (**card required**).
 4. Their site goes **live immediately after a valid card** (trial period; no charge yet).
@@ -150,6 +151,24 @@ If none of Cloudflare / Vercel / Netlify is configured, `deployBuiltSite` return
 
 Mount a real volume. This is the single most destructive misconfiguration here.
 
+Everything the product owns lives under that one volume, as plain files — there is
+**no backup tooling in this repo**, so back up the volume itself (host/provider
+snapshot, or a periodic `rsync`/`tar` of the whole directory) on whatever schedule
+your host supports, and test a restore at least once before taking real payments:
+
+| Path under `DATA_DIR` | Contents |
+|---|---|
+| `.registry.json` | Every account and site record (draft/paid/live status) |
+| `.sessions.json` | Builder login sessions |
+| `.ledger.jsonl` | Append-only payment/audit ledger |
+| `.ratelimit.json` | Rate-limit counters (safe to lose) |
+| `calendar-native.sqlite` | Native calendar bookings/availability (opt-in sites only) |
+| `published/<slug>/` | The static files each live customer site actually serves |
+
+Losing this volume with no backup means losing every paying customer's site and
+billing history at once — treat the backup schedule as a launch blocker, not a
+later nice-to-have.
+
 ### 3.4 Webhook not configured → trial/card never flips live; charges may not settle cleanly
 
 The webhook is what records card-on-file / trial start and later paid status. Without it,
@@ -212,7 +231,7 @@ failure above.
 
 - [ ] `GET /health` returns OK
 - [ ] Builder loads at `PUBLIC_URL/app/`
-- [ ] All four designs open in the editor (Restaurant, Trades, Salon, Professional services)
+- [ ] All five designs open in the editor (Restaurant, Trades, Salon, Professional services, Desserdirina)
 - [ ] Editing text on the page updates the preview
 - [ ] **Replacing a photo works** and the new photo appears
 - [ ] Sign-in email actually **arrives in a real inbox** (not just the server log)

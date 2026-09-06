@@ -1,5 +1,8 @@
 # Hidook Site Builder — bot & server ops
 
+Authority: `../VISION.md` is the synchronized source of truth for product scope and
+commercial rules; this file documents the operator/ops surface and defers to it on conflict.
+
 Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers complete **payment before first public publish** in the builder as a **Stripe subscription with a 7-day trial** (**card required**) — site is **live immediately after a valid card**. There is no unpaid free live window and no second Telegram checkout/deploy happy path.
 
 Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** in the same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
@@ -46,6 +49,12 @@ Local/staging may use test Stripe and `HIDOOK_FAKE_DEPLOY=1` (refused when `NODE
 ## Start locally
 
 ```bash
+# From the repo root, once (and again after editing builder/*.js or templates/*):
+# npm run build:app   — builds builder/generated/, gitignored, not shipped in
+#                        git. Without it /app/ loads but the template catalog
+#                        is silently empty (no error, no 404 — the server
+#                        answers with the SPA shell for any missing asset).
+
 cd bot
 npm install      # once
 
@@ -131,7 +140,9 @@ Commercial amounts come from `bot/pricing.js`. Do not set `BUILD_FEE_EUR=49` to 
 
 ```
 bot/
-  bot.js             — Telegram Bot wiring
+  bot.js             — Telegram Bot wiring + HTTP server (adds Telegram intake)
+  web.js             — Web-only entry point (no Telegram) — this is what the
+                       Dockerfile actually starts by default; see DEPLOY.md
   flow.js            — Telegram intake / draft finish
   server.js          — HTTP: health, webhooks, builder API
   pricing.js         — Single commercial pricing source (99 / renewal 29)
@@ -142,4 +153,5 @@ bot/
   email.js           — Magic-link mail (Hidook brand)
 ```
 
-For Railway / Docker operator setup, see `DEPLOY.md`.
+For Railway / Docker operator setup, including how to enable Telegram in
+production, see `DEPLOY.md`.

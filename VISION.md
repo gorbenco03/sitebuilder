@@ -353,7 +353,7 @@ Acceptare:
 - card test → trial live imediat;
 - cancel trial → comportament clar;
 - renewal 29/an reflectat corect;
-- clientul Professional poate lipi un link Cal.com valid, iar site-ul public deschide rezervarea în tab nou;
+- clientul Professional fie optează în calendarul nativ Hidook (`appointment.nativeBooking`, §8) și booking-ul se face direct pe site-ul public, fie — dacă nu optează — poate lipi un link Cal.com valid, iar site-ul public deschide rezervarea în tab nou; formularul local de cerere rămâne fallback-ul când niciuna nu e configurată;
 - LP nu intră până nu există brand tokens.
 
 ## 12. Reguli pentru studio

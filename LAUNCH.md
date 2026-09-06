@@ -1,5 +1,8 @@
 # Hidook Site Builder — team launch notes
 
+Authority: `VISION.md` is the synchronized source of truth for product scope and
+commercial rules; if anything here conflicts with it, `VISION.md` wins.
+
 Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, start a **Stripe subscription with a 7-day trial** (**card required**; **payment before first public publish** = card-on-file trial, not a one-shot prepay), then go **live immediately after a valid card** on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
 
 **Price:** after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
@@ -36,7 +39,8 @@ Happy path a stranger can complete (team verifies end-to-end; client does not QA
 
 - Local bot + builder API with **test** Stripe keys (`sk_test_…`) and webhook signing secrets for staging.
 - Fake-or-isolated deploy (`HIDOOK_FAKE_DEPLOY=1`) for automated tests — **refused in production**; not the client journey.
-- Running `node bot/test/*.test.js` and fixing regressions.
+- Running `npm test` (`node --test bot/test/*.test.js` — the `--test` flag is
+  required, plain `node` on that glob only runs the first file) and fixing regressions.
 - Ops docs: `bot/README.md`, `bot/DEPLOY.md`.
 
 See `bot/DEPLOY.md` for env tables. Commercial amounts always come from `bot/pricing.js`.
@@ -70,7 +74,10 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 
 ## 7. Product backlog (when you have traction)
 
-- Three design systems (product/menu, local service/lead-gen, portfolio/beauty/events) — current sample template look is not the approved commercial design.
+- All five design systems (product/menu, local service/lead-gen, portfolio/beauty/events,
+  professional services, and the bakery/patisserie remake) already ship in
+  `templates/registry.json` — the backlog item here is deeper polish, not building a
+  missing vertical from scratch.
 - Neutral `socialFeed` slot: Instafidget included free for 12 months with Site Builder, then Instafidget Free with watermark (upgrade in Instafidget).
 - Clearer admin/history tooling for operators.
 

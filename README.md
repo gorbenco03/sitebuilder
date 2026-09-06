@@ -64,7 +64,12 @@ Writes `index.html` from `template.html` + `config.json`. Zero npm dependencies 
 ## Local development
 
 ```bash
-# Bot + builder API (see bot/README.md for full env)
+# 1. Build the browser builder engine once (fast, zero network calls;
+#    builder/generated/ is gitignored and not shipped in git — /app/ loads an
+#    empty template catalog without this step, with no visible error)
+npm run build:app
+
+# 2. Bot + builder API (see bot/README.md for full env)
 cd bot && npm install
 TELEGRAM_BOT_TOKEN=xxxxx \
   SERVER_SECRET=$(openssl rand -hex 32) \
@@ -72,6 +77,8 @@ TELEGRAM_BOT_TOKEN=xxxxx \
   STRIPE_SECRET_KEY=sk_test_... \
   npm start
 ```
+
+Re-run `npm run build:app` (from the repo root) after any change under `builder/*.js` or `templates/*` — the server serves the static bundle it produced, not the source files live.
 
 Local/staging may use **test** Stripe and fake-or-isolated deploy (`HIDOOK_FAKE_DEPLOY=1`, refused when `NODE_ENV=production`). Fake deploy is not the client journey. Production Stripe, live DNS for hidook.agency, and owner launch gates are **owner-only** — see `PRODUCT.md` and `bot/DEPLOY.md`.
 
@@ -83,16 +90,29 @@ node .claude/serve.js   # http://localhost:4173
 ## Tests
 
 ```bash
-node bot/test/*.test.js
+npm test
+# equivalent to: node --test bot/test/*.test.js
 ```
 
-No `npm test` script; run the Node tests directly. Do not weaken assertions.
+Do not run `node bot/test/*.test.js` without `--test` — the shell expands the glob
+to ~140 file arguments, but plain `node` only executes the first one and silently
+ignores the rest as `process.argv` strings (no error). The `--test` flag is what
+tells Node to run every matched file as a test suite.
+
+Two tests are expected to fail on machines without a local Brave browser install
+at a hardcoded macOS path (`test/advocate-eed3ca0-repair.test.js`,
+`test/mobile-chrome-390-aabb.test.js`) — they are Playwright oracles wired to a
+specific browser binary path, not portable across machines. That is a known gap,
+not a regression.
+
+Do not weaken assertions.
 
 ## Docs map
 
 | Doc | Audience |
 |---|---|
-| `PRODUCT.md` | Product truth |
+| `VISION.md` | **Source of truth** — takes priority over every other doc, including `PRODUCT.md`, when they disagree |
+| `PRODUCT.md` | Compact product contract for workers (defers to `VISION.md` on conflict) |
 | `bot/README.md` | Bot/server operator surface |
 | `bot/DEPLOY.md` | Deploy env and staging notes |
 | `LAUNCH.md` | Commercial positioning for the team (not live production checklist) |
