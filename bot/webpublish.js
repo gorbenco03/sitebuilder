@@ -9,19 +9,47 @@
  *     republish last version; if pending draft → first public publish after pay;
  *     notify owner on owner's channel + concierge domain msg.
  *     Also stores stripeCustomerId + stripeSubscriptionId for cancel → unpublish.
- *   - handleStripeSubscriptionEvent: persist subscription.updated lifecycle status;
- *     customer.subscription.deleted, or updated with status one of
- *     canceled/cancelled/unpaid/incomplete_expired → unpublishSite (idempotent).
- *     PC-03: 'unpaid' is Stripe's terminal dunning state (all retries exhausted)
- *     and can persist indefinitely without ever sending .deleted, so it must be
- *     a trigger on its own, not just canceled/deleted. Other statuses (active,
- *     trialing, past_due) only update the stored status — no unpublish, no new
- *     grace-window state invented.
+ *   - handleStripeSubscriptionEvent: persist subscription lifecycle status from
+ *     both customer.subscription.created and .updated; either with status one
+ *     of canceled/cancelled/unpaid/incomplete_expired → unpublishSite
+ *     (idempotent). PC-03: 'unpaid' is Stripe's terminal dunning state (all
+ *     retries exhausted) and can persist indefinitely without ever sending
+ *     .deleted, so it must be a trigger on its own, not just canceled/deleted.
+ *     Other statuses (active, trialing, past_due) only update the stored
+ *     status — no unpublish, no new grace-window state invented.
+ *     Wave7: .created is handled the same way as .updated (not just ignored)
+ *     so stripeSubscriptionStatus is populated the moment Stripe creates the
+ *     subscription, not only on its first later transition. Without this, a
+ *     subscription whose status never changes after creation (the common
+ *     case — e.g. trial_period_days=0 straight to 'active') would leave
+ *     stripeSubscriptionStatus empty forever, which is exactly the blind spot
+ *     canStartRenewalCheckout() below depends on NOT having: an empty status
+ *     cannot be told apart from "no subscription exists", so the orphaned-
+ *     double-billing guard would never fire on it (audit finding #8).
+ *   - canStartRenewalCheckout: refuses to let a site open a second Checkout
+ *     Session while Stripe still considers an existing subscription current
+ *     (active/trialing/past_due) — see HANDOFF-payments.md for the exact
+ *     bot/server.js call site.
+ *   - reconcileSiteFromStripe: when a site's local paidUntil looks expired but
+ *     it still has a stripeSubscriptionId, asks Stripe directly whether the
+ *     subscription is actually still active/trialing and heals paidUntil from
+ *     Stripe's own current_period_end — the fix for a dashboard that would
+ *     otherwise say "Expirat" on a paying customer because of webhook lag.
  *   - unpublishSite: stop serving isolated $DATA_DIR/published/<slug>/; registry not live.
- *   - handleStripeInvoicePaymentFailed: BE-06 — records a failed dunning
- *     attempt (ledger + best-effort owner notification) and never unpublishes;
+ *   - handleStripeInvoicePaymentFailed: BE-06/Wave7 — records a failed dunning
+ *     attempt (ledger + best-effort owner notification, now including
+ *     Stripe's own next_payment_attempt so the message is concrete: which
+ *     attempt this is and when the next one lands) and never unpublishes;
  *     'past_due' stays live while Stripe retries, and the existing
- *     unpaid/incomplete_expired path above is what eventually unpublishes.
+ *     unpaid/incomplete_expired path above is what eventually unpublishes —
+ *     which is where the site actually goes dark. getDunningState() below is
+ *     the read side: what a dashboard renders from a site record alone.
+ *   - getDunningState / getInvoiceHistory: Wave7 read helpers for the owner
+ *     dashboard (a route/UI change server.js/builder own — see
+ *     HANDOFF-payments.md). Invoice history is sourced from the durable
+ *     ledger 'invoice' entries this module now appends on every successful
+ *     charge (test-pay and real Stripe alike), so it is provable without real
+ *     Stripe credentials.
  *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
  *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
  *
@@ -169,14 +197,24 @@ function unpublishSite(siteOrId, meta = {}) {
 /**
  * Handle Stripe subscription lifecycle for entitlement + cancel → unpublish.
  * - customer.subscription.deleted → always unpublish
- * - customer.subscription.updated with status=canceled → unpublish
- * - other customer.subscription.updated statuses → persist for entitlement checks
+ * - customer.subscription.created / .updated with status=canceled → unpublish
+ * - customer.subscription.created / .updated with status one of
+ *   unpaid/incomplete_expired → unpublish (PC-03 terminal dunning failure)
+ * - other customer.subscription.created / .updated statuses → persist for
+ *   entitlement checks (and for canStartRenewalCheckout's orphaned-double-
+ *   billing guard — see Wave7 note on .created in the file-level docblock)
  * Idempotent via unpublishSite.
  *
  * @param {object} event Stripe event
+ * @param {{notifyAdmin?: Function}} [opts] fn(text) — best-effort owner
+ *   notification, called only when this event just took the site's public
+ *   entitlement away because Stripe gave up on the card (unpaid /
+ *   incomplete_expired) — the "your site is now dark" case the owner must
+ *   never be surprised by. Not called for a customer-initiated cancel (they
+ *   already know — they clicked Cancel in the portal).
  * @returns {Promise<object|null>}
  */
-async function handleStripeSubscriptionEvent(event) {
+async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
     if (!event || !event.type) return null;
     const type = event.type;
     const sub = event.data && event.data.object;
@@ -184,9 +222,14 @@ async function handleStripeSubscriptionEvent(event) {
 
     const status = String(sub.status || '').toLowerCase();
     const isDeleted = type === 'customer.subscription.deleted';
-    const isUpdated = type === 'customer.subscription.updated';
+    // Wave7: .created is handled identically to .updated for persistence and
+    // for the (unlikely but not impossible) case Stripe hands us an already-
+    // terminal status at creation time. See the file-level docblock.
+    const isLifecycleEvent =
+        type === 'customer.subscription.updated' ||
+        type === 'customer.subscription.created';
     const isCanceledUpdate =
-        isUpdated &&
+        isLifecycleEvent &&
         (status === 'canceled' || status === 'cancelled');
     // PC-03: 'unpaid' is Stripe's terminal state once every dunning retry has
     // failed — it can stay 'unpaid' forever without ever firing .deleted.
@@ -194,10 +237,10 @@ async function handleStripeSubscriptionEvent(event) {
     // subscription whose very first invoice never got paid. Both must
     // unpublish; no other status (active/trialing/past_due) does.
     const isUnpaidUpdate =
-        isUpdated &&
+        isLifecycleEvent &&
         (status === 'unpaid' || status === 'incomplete_expired');
 
-    if (!isDeleted && (!isUpdated || !status)) {
+    if (!isDeleted && (!isLifecycleEvent || !status)) {
         log('webpublish.subscription.ignored', { type, status, subscriptionId: sub.id });
         return null;
     }
@@ -228,13 +271,29 @@ async function handleStripeSubscriptionEvent(event) {
     }
 
     if (isDeleted || isCanceledUpdate || isUnpaidUpdate) {
-        return unpublishSite(site, {
+        const result = unpublishSite(site, {
             reason: isDeleted
                 ? 'subscription_deleted'
                 : (isCanceledUpdate ? 'subscription_canceled' : `subscription_${status}`),
             subscriptionId: sub.id,
             subscriptionStatus: status || 'canceled',
         });
+        // Wave7: the owner must never be surprised by their site going dark.
+        // isUnpaidUpdate is the ONE path here that is not the owner's own
+        // action (they didn't click Cancel) — Stripe exhausted every dunning
+        // retry and gave up. That is exactly the moment a silent unpublish is
+        // unacceptable, so notify (best-effort; web-only deployments have no
+        // channel yet — see bot/web.js and HANDOFF-payments.md).
+        if (isUnpaidUpdate && typeof notifyAdmin === 'function' && result) {
+            try {
+                notifyAdmin(
+                    `🔴 Site oprit: „${site.slug || site.projectName}” nu mai este public. ` +
+                    `Stripe a renunțat la reîncercări după eșecul repetat al plății (status abonament: ${status}). ` +
+                    'Adaugă un card nou din tabloul de bord ca să repornești site-ul — hostingul rămâne al tău, doar plata a eșuat.'
+                );
+            } catch (_) { /* best-effort — never let a notify failure block the unpublish */ }
+        }
+        return result;
     }
 
     const patch = {
@@ -264,6 +323,117 @@ async function handleStripeSubscriptionEvent(event) {
         }, 'error');
         return null;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Wave7 PC-01 follow-up — no second live subscription for a site that has one
+// ---------------------------------------------------------------------------
+//
+// Audit's worst payments finding: a paying customer was labelled "Expirat"
+// on the dashboard and pushed into opening a SECOND subscription that billed
+// alongside the first. The stale label is one half of that bug (fixed by
+// reconcileSiteFromStripe below, which heals paidUntil from Stripe's own
+// truth); the other half — nothing ever stopped a renewal Checkout from
+// firing while a subscription was still open — is this guard. Both read the
+// exact same fields bot/server.js#adminBillingLabel already uses for the
+// operator dashboard (stripeSubscriptionStatus / subscriptionStatus), so
+// there is one definition of "still has a live subscription", not two.
+
+/**
+ * True for a Stripe subscription status under which Stripe still considers
+ * the subscription current (see payments.SUBSCRIPTION_ENTITLED_STATUSES).
+ * @param {object} site
+ * @returns {boolean}
+ */
+function _hasEntitledSubscriptionStatus(site) {
+    const subSt = String(
+        (site && (site.stripeSubscriptionStatus || site.subscriptionStatus)) || ''
+    ).toLowerCase();
+    return !!subSt && payments.SUBSCRIPTION_ENTITLED_STATUSES.has(subSt);
+}
+
+/**
+ * Wave7 — must be called before opening a Checkout Session for an already-
+ * paid site (renewal / reactivation). Refuses when the site's own record
+ * says Stripe still considers its subscription current: opening a second
+ * Checkout there would create a second live subscription billing alongside
+ * the first (audit finding — orphaned double billing), not "fix" an expired
+ * one. When stripeSubscriptionStatus is empty (no .created/.updated webhook
+ * has landed yet — e.g. HIDOOK_TEST_PAY offline flows, or a first checkout
+ * whose webhook hasn't arrived), this allows the checkout: we have no
+ * positive signal of a conflicting subscription, and refusing on silence
+ * would block every legitimate first reactivation after a real cancel.
+ *
+ * See HANDOFF-payments.md for the exact bot/server.js#handleSiteCheckout
+ * call site — this module cannot enforce it on its own, since the HTTP route
+ * lives in a file this agent does not own.
+ *
+ * @param {object} site
+ * @returns {{allowed: boolean, reasonCode?: string, reasonRo?: string}}
+ */
+function canStartRenewalCheckout(site) {
+    if (!site) return { allowed: false, reasonCode: 'NO_SITE' };
+    if (!site.paid) return { allowed: true }; // first publish/trial start — no prior subscription to conflict with
+    if (_hasEntitledSubscriptionStatus(site)) {
+        return {
+            allowed: false,
+            reasonCode: 'SUBSCRIPTION_STILL_ACTIVE',
+            reasonRo: payments.RO_ERRORS.ALREADY_ACTIVE_SUBSCRIPTION,
+        };
+    }
+    return { allowed: true };
+}
+
+/**
+ * Wave7 — heal a site whose local paidUntil looks expired but Stripe may
+ * already have renewed it (webhook lag, or a missed/late invoice.paid
+ * delivery). Only touches Stripe when there is a concrete reason to doubt
+ * the local state (paid site, has a subscription id, paidUntil is in the
+ * past) — never on every dashboard load. HIDOOK_TEST_PAY / no configured key
+ * → no-op (nothing to reconcile against; returns the site unchanged), so
+ * this is always safe to call unconditionally from a caller like
+ * bot/server.js#handleSiteCheckout before applying canStartRenewalCheckout.
+ *
+ * @param {object} site
+ * @returns {Promise<object>} the (possibly updated) site — always a value, never null
+ */
+async function reconcileSiteFromStripe(site) {
+    if (!site || !site.paid || !site.stripeSubscriptionId) return site;
+    if (process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') return site;
+    if (!process.env.STRIPE_SECRET_KEY) return site;
+
+    const paidUntilMs = Date.parse(site.paidUntil || '');
+    const looksExpired = !Number.isFinite(paidUntilMs) || paidUntilMs <= Date.now();
+    if (!looksExpired) return site;
+
+    let sub;
+    try {
+        sub = await payments.getSubscription(site.stripeSubscriptionId);
+    } catch (e) {
+        log('webpublish.reconcile.fetch_failed', { siteId: site.id, err: e.message }, 'warn');
+        return site;
+    }
+    if (!sub || !sub.status) return site;
+
+    const status = String(sub.status).toLowerCase();
+    const patch = { stripeSubscriptionStatus: status, subscriptionStatus: status };
+    if (status === 'active' || status === 'trialing') {
+        const periodEndMs = sub.current_period_end ? sub.current_period_end * 1000 : null;
+        if (periodEndMs && periodEndMs > Date.now()) {
+            patch.paidUntil = new Date(periodEndMs).toISOString();
+            if (site.status !== 'live' && site.status !== 'active') patch.status = 'live';
+        }
+    }
+    try {
+        registry.updateSite(site.id, patch);
+        log('webpublish.reconcile.applied', {
+            siteId: site.id, status, paidUntil: patch.paidUntil || null,
+        });
+    } catch (e) {
+        log('webpublish.reconcile.update_failed', { siteId: site.id, err: e.message }, 'error');
+        return site;
+    }
+    return registry.getSite(site.id);
 }
 
 /**
@@ -355,33 +525,51 @@ async function handleStripeInvoicePaid(event) {
         }
     }
 
+    // Wave7 — invoice history: this is the ONE place a real renewal invoice's
+    // own Stripe id/hosted URL/PDF link ever reaches this codebase (a first-
+    // year subscription_create invoice is deliberately ignored above; that
+    // year's record is written by handleStripePaid instead). Best-effort —
+    // never let a ledger write turn a successful renewal into a failure.
+    try {
+        ledger.append({
+            event: 'invoice',
+            siteId: site.id,
+            subscriptionId,
+            kind: 'renewal',
+            invoiceId: invoice.id || null,
+            amountCents: invoice.amount_paid != null ? invoice.amount_paid : null,
+            currency: invoice.currency || null,
+            hostedInvoiceUrl: invoice.hosted_invoice_url || null,
+            invoicePdf: invoice.invoice_pdf || null,
+        });
+    } catch (_) {}
+
     log('webpublish.invoice_paid.renewed', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, paidUntil });
     return registry.getSite(site.id);
 }
 
 /**
- * BE-06 — invoice.payment_failed was never handled at all: a subscription
- * whose charge got declined stayed live indefinitely with nobody told.
- * Stripe already flips the subscription's `status` to `past_due` around the
- * same time, which handleStripeSubscriptionEvent persists without
- * unpublishing (past_due is a recoverable dunning state — Stripe keeps
- * retrying the charge on its own schedule; 'unpaid'/'incomplete_expired' are
- * the terminal failures that already unpublish) — so this handler
+ * BE-06/Wave7 — invoice.payment_failed was never handled at all: a
+ * subscription whose charge got declined stayed live indefinitely with
+ * nobody told. Stripe already flips the subscription's `status` to
+ * `past_due` around the same time, which handleStripeSubscriptionEvent
+ * persists without unpublishing (past_due is a recoverable dunning state —
+ * Stripe keeps retrying the charge on its own schedule; 'unpaid'/
+ * 'incomplete_expired' are the terminal failures that already unpublish, and
+ * notify — see the isUnpaidUpdate branch above) — so this handler
  * deliberately does NOT unpublish or invent a second, competing entitlement
  * rule. Its job is the other half: make the failure visible instead of
- * silent — append it to the durable ledger (bot/ledger.js) and best-effort
- * notify the owner. `notifyAdmin` is the Telegram admin channel when wired
- * (bot.js); it is always undefined on the web-only deployment (bot/web.js),
- * which currently has no equivalent channel.
+ * silent, with enough detail for the owner to actually act — append it to
+ * the durable ledger (bot/ledger.js), persist it on the site record so a
+ * dashboard can read it directly (getDunningState below), and best-effort
+ * notify. `notifyAdmin` is the Telegram admin channel when wired (bot.js);
+ * it is always undefined on the web-only deployment (bot/web.js), which
+ * currently has no equivalent owner-facing channel — see HANDOFF-payments.md.
  *
- * NOTE: registry.updateSite() filters patches to a known site-field allowlist
- * (bot/registry-shared.js#KNOWN_SITE_FIELDS — a deliberate fix from the
- * storage rewrite). `paymentFailedAt`/`paymentFailedCount` are not on that
- * allowlist yet, so a patch carrying them is accepted but silently dropped —
- * this is why the durable record of a failed invoice lives in the ledger
- * (queryable via ledger.read()), not on the site record. See HANDOFF-seo.md
- * for the one-line registry-shared.js change that would let an /admin
- * dashboard read this straight off site.paymentFailedAt instead.
+ * `paymentFailedAt`/`paymentFailedCount` are on the updateSite() known-field
+ * allowlist (bot/registry-shared.js#SITE_EXTRA_FIELDS) as of the storage
+ * rewrite, so they now persist on the site record itself — getDunningState()
+ * reads them directly rather than scanning the ledger.
  *
  * @param {object} event Stripe invoice.payment_failed event
  * @param {Function} [notifyAdmin] fn(text) — owner notification, best-effort
@@ -415,8 +603,15 @@ async function handleStripeInvoicePaymentFailed(event, notifyAdmin) {
 
     // Stripe's own attempt_count already accumulates across dunning retries —
     // trust it rather than maintaining a second counter that cannot persist
-    // on the site record (see NOTE above).
+    // on the site record (see NOTE above). next_payment_attempt (unix
+    // seconds) is present while Stripe still has a retry scheduled; it is
+    // absent/null once retries are exhausted — the concrete signal
+    // getDunningState() needs to tell "still retrying" from "about to go
+    // dark" apart in the message it builds.
     const attemptCount = Number(invoice.attempt_count) || 1;
+    const nextPaymentAttempt = invoice.next_payment_attempt
+        ? new Date(invoice.next_payment_attempt * 1000).toISOString()
+        : null;
     try {
         registry.updateSite(site.id, {
             paymentFailedAt: new Date().toISOString(),
@@ -433,6 +628,7 @@ async function handleStripeInvoicePaymentFailed(event, notifyAdmin) {
             subscriptionId,
             invoiceId: invoice.id || null,
             attemptCount,
+            nextPaymentAttempt,
         });
     } catch (_) {}
 
@@ -442,17 +638,101 @@ async function handleStripeInvoicePaymentFailed(event, notifyAdmin) {
         subscriptionId,
         invoiceId: invoice.id || null,
         attemptCount,
+        nextPaymentAttempt,
     }, 'warn');
 
     if (typeof notifyAdmin === 'function') {
-        notifyAdmin(
-            `⚠️ Plată eșuată pentru site-ul "${site.slug || site.projectName}" (id ${site.id}). ` +
-            `Încercarea ${attemptCount}. Stripe reîncearcă automat cardul; site-ul rămâne live cât timp abonamentul e "past_due". ` +
-            'Dacă toate reîncercările eșuează, Stripe trece abonamentul pe "unpaid"/"incomplete_expired" și fluxul existent de anulare oprește site-ul.'
-        );
+        notifyAdmin(buildDunningNoticeRo(site, { attemptCount, nextPaymentAttempt }));
     }
 
     return registry.getSite(site.id);
+}
+
+/**
+ * Wave7 — the Romanian dunning notice sent to the owner on each failed
+ * invoice attempt. Pulled out of handleStripeInvoicePaymentFailed so
+ * getDunningState() (the dashboard read side) can build the exact same
+ * wording from a site record alone, without replaying the webhook.
+ * The literal substring "Plată eșuată" is asserted by existing tests — keep
+ * it verbatim if this copy changes again.
+ *
+ * @param {object} site
+ * @param {{attemptCount: number, nextPaymentAttempt: string|null}} info
+ * @returns {string}
+ */
+function buildDunningNoticeRo(site, { attemptCount, nextPaymentAttempt }) {
+    const label = site.slug || site.projectName || site.id;
+    const next = nextPaymentAttempt
+        ? `Următoarea reîncercare automată: ${new Date(nextPaymentAttempt).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}. `
+        : 'Stripe nu mai are altă reîncercare programată — următorul pas e ca abonamentul să treacă pe "unpaid" și site-ul să se oprească. ';
+    return (
+        `⚠️ Plată eșuată pentru site-ul "${label}" (id ${site.id}). ` +
+        `Încercarea ${attemptCount}. Site-ul rămâne live cât timp abonamentul e "past_due". ` +
+        next +
+        'Actualizează cardul din portalul de facturare (butonul din tabloul de bord) ca să eviți oprirea site-ului.'
+    );
+}
+
+/**
+ * Wave7 — dashboard read side of dunning: what to show an owner from a site
+ * record alone (no webhook replay, no ledger scan). Built from
+ * paymentFailedAt/paymentFailedCount and stripeSubscriptionStatus, which
+ * GET /api/sites already returns verbatim (bot/server.js#handleGetSites is a
+ * plain passthrough of the registry record) — see HANDOFF-payments.md for
+ * exactly where builder/app.js should render this.
+ *
+ * Returns null when there is nothing to show (no failure on record and the
+ * subscription is not past_due) — omit rather than invent, same convention
+ * as bot/server.js#adminBillingLabel.
+ *
+ * @param {object} site
+ * @returns {{severity:'warning'|'critical', code:string, messageRo:string, attemptCount?:number, lastFailedAt?:string}|null}
+ */
+function getDunningState(site) {
+    if (!site) return null;
+    const subSt = String(site.stripeSubscriptionStatus || site.subscriptionStatus || '').toLowerCase();
+    const hasFailureOnRecord = !!site.paymentFailedAt;
+
+    if (subSt === 'unpaid' || subSt === 'incomplete_expired') {
+        return {
+            severity: 'critical',
+            code: 'SITE_DOWN_PAYMENT_FAILED',
+            messageRo:
+                'Site-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. ' +
+                'Adaugă un card nou din tabloul de bord ca să repornești site-ul.',
+        };
+    }
+    if (subSt === 'past_due' || hasFailureOnRecord) {
+        return {
+            severity: 'warning',
+            code: 'PAYMENT_RETRY_IN_PROGRESS',
+            attemptCount: site.paymentFailedCount || 1,
+            lastFailedAt: site.paymentFailedAt || null,
+            messageRo:
+                `Card refuzat la încercarea ${site.paymentFailedCount || 1}. Stripe reîncearcă automat cardul; site-ul rămâne live. ` +
+                'Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.',
+        };
+    }
+    return null;
+}
+
+/**
+ * Wave7 — invoice history for the owner dashboard (an owner paying yearly
+ * previously had no way to see or download past invoices). Reads the
+ * durable ledger 'invoice' entries this module appends on every successful
+ * charge — handleStripePaid (first year, both HIDOOK_TEST_PAY and real
+ * Stripe) and handleStripeInvoicePaid (real-Stripe renewals) — so this is
+ * fully provable under HIDOOK_TEST_PAY without any real Stripe credentials.
+ * Newest first.
+ *
+ * @param {object} site
+ * @returns {Array<object>}
+ */
+function getInvoiceHistory(site) {
+    if (!site || !site.id) return [];
+    return ledger.read()
+        .filter((r) => r && r.event === 'invoice' && r.siteId === site.id)
+        .sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
 }
 
 // ---------------------------------------------------------------------------
@@ -1323,6 +1603,34 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     // Persist Stripe customer + subscription so cancel webhooks can unpublish.
     _storeStripeBillingIds(siteId, cs);
 
+    // Wave7 — invoice history record. This checkout.session.completed IS the
+    // first-year charge (subscription_create billing_reason, which
+    // handleStripeInvoicePaid deliberately ignores — see its docblock) as
+    // well as the HIDOOK_TEST_PAY path for a renewal (offline flows never
+    // send a real invoice.paid event). Best-effort: never let a ledger write
+    // turn a confirmed payment into a failure.
+    try {
+        ledger.append({
+            event: 'invoice',
+            siteId,
+            orderId,
+            kind,
+            invoiceId: (typeof cs.invoice === 'string' ? cs.invoice : (cs.invoice && cs.invoice.id)) || null,
+            amountCents: order.amountCents != null ? order.amountCents : null,
+            currency: order.currency || null,
+        });
+    } catch (_) {}
+
+    // Wave7 VAT — best-effort record of what the customer supplied at
+    // Checkout for legal-invoice / B2B-reverse-charge bookkeeping (only
+    // present when STRIPE_AUTOMATIC_TAX=1 turned on billing_address_collection
+    // + tax_id_collection — see payments.js#_automaticTaxEnabled). Absent on
+    // HIDOOK_TEST_PAY sessions and on any checkout created before that env
+    // flag was on; never blocks or fails the payment confirmation.
+    try {
+        _recordCheckoutTaxInfo(siteId, cs);
+    } catch (_) {}
+
     // Owner notification
     if (typeof notifyAdmin === 'function') {
         notifyAdmin(`💰 Payment confirmed! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
@@ -1463,6 +1771,37 @@ function _storeStripeBillingIds(siteId, cs) {
 }
 
 /**
+ * Wave7 VAT — best-effort ledger record of what a customer supplied at
+ * Checkout for tax/legal-invoice purposes: billing country (for the VAT rate
+ * Stripe applied) and any VAT id (for the B2B intra-EU reverse charge).
+ * Present only when STRIPE_AUTOMATIC_TAX=1 turned on billing_address_
+ * collection + tax_id_collection (see payments.js#_automaticTaxEnabled) —
+ * a no-op (nothing appended) otherwise, so this is always safe to call.
+ * Never throws.
+ *
+ * @param {string} siteId
+ * @param {object} cs checkout.session
+ */
+function _recordCheckoutTaxInfo(siteId, cs) {
+    if (!siteId || !cs) return;
+    const details = cs.customer_details;
+    if (!details) return;
+    const country = details.address && details.address.country ? details.address.country : null;
+    const vatIds = Array.isArray(details.tax_ids)
+        ? details.tax_ids.map((t) => ({ type: t.type, value: t.value })).filter((t) => t.value)
+        : [];
+    if (!country && vatIds.length === 0) return;
+    try {
+        ledger.append({
+            event: 'checkout_tax_info',
+            siteId,
+            country,
+            vatIds,
+        });
+    } catch (_) {}
+}
+
+/**
  * When checkout completed a first_then_renewal subscription, attach the
  * 99-then-29 Subscription Schedule (phase 0 = first year, phase 1 = renewal).
  * No-ops for pure renewal, offline test pay without a subscription id, or
@@ -1574,4 +1913,9 @@ module.exports = {
     absolutizeSocialImageMeta,
     predictedPublicOrigin,
     buildLocalBusinessJsonLd,
+    canStartRenewalCheckout,
+    reconcileSiteFromStripe,
+    getDunningState,
+    getInvoiceHistory,
+    buildDunningNoticeRo,
 };

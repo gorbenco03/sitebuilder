@@ -1,0 +1,56 @@
+{
+  "wave": "Wave7-payments",
+  "date": "2026-09-06",
+  "scope": "audit payments section (score 3/10) — VAT, dunning, invoice history, no-double-subscription re-verification",
+  "filesOwned": ["bot/payments.js", "bot/ledger.js", "bot/webpublish.js", "OWNER-STRIPE-TRIAL.md", "bot/test/wave7-payments-*.test.js"],
+  "filesNotEdited": ["bot/server.js", "bot/web.js", "builder/**", "bot/bot.js", "bot/flow.js", "bot/ai.js", "bot/template-steps.js"],
+  "handoff": "HANDOFF-payments.md",
+  "newTestFiles": [
+    "bot/test/wave7-payments-vat.test.js",
+    "bot/test/wave7-payments-dunning.test.js",
+    "bot/test/wave7-payments-invoices.test.js",
+    "bot/test/wave7-payments-no-double-subscription.test.js"
+  ],
+  "redBeforeGreenAfter": {
+    "method": "checked out pre-Wave7 bot/payments.js + bot/webpublish.js from HEAD via `git show HEAD:<path>`, ran the 4 new wave7 test files (all 4 files failed — see red-before.txt), then restored the Wave7 versions and re-ran (all pass — see wave7-new-tests.txt)",
+    "redResult": "4 files failed / 0 passed against pre-Wave7 code",
+    "greenResult": "4 files passed / 0 failed against Wave7 code"
+  },
+  "fullSuite": {
+    "command": "node --experimental-sqlite --test bot/test/*.test.js",
+    "before_baseline_stated_in_task": "245 pass / 2 fail (flow3-legal-export.test.js, Brave-specific oracle)",
+    "after_this_wave": "249 pass / 2 fail (251 total = 247 baseline + 4 new wave7 files)",
+    "failingTests": [
+      "bot/test/flow3-legal-export.test.js — pre-existing, deliberately Brave-specific oracle (unchanged)",
+      "bot/test/wave5-builder-undo-redo.test.js — pre-existing Playwright timeout on '.hb-add-btn', reproduced identically against unmodified HEAD (bot/payments.js + bot/webpublish.js reverted, test still fails identically) — not caused by this wave, unrelated files (builder/**, bot/server.js, bot/web.js were never touched)"
+    ],
+    "noNewFailuresIntroduced": true
+  },
+  "vat": {
+    "envFlag": "STRIPE_AUTOMATIC_TAX (default unset/off)",
+    "whenOn": ["automatic_tax.enabled=true", "billing_address_collection=required", "tax_id_collection.enabled=true (B2B VAT id / reverse charge)"],
+    "always": "tax_behavior=exclusive on every inline price_data (Checkout line + renewal-phase Price), flag-independent",
+    "whyGatedOff": "automatic_tax on an account without Stripe Tax configured makes Checkout Session creation fail outright — enabling unconditionally would be worse than the audit gap",
+    "openQuestionsForAccountant": [
+      "inclusive vs exclusive headline pricing",
+      "OSS registration / EU-wide 10000 EUR/year cross-border B2C digital-service threshold",
+      "Romanian invoicing requirements beyond VAT (e-Factura applicability)",
+      "comfort with Stripe's own VIES VAT-id validation as the sole reverse-charge gate"
+    ]
+  },
+  "dunning": {
+    "newFunctions": ["webpublish.getDunningState(site)", "webpublish.buildDunningNoticeRo(site, info)"],
+    "changedFunctions": ["webpublish.handleStripeInvoicePaymentFailed (now captures next_payment_attempt, richer RO message)", "webpublish.handleStripeSubscriptionEvent (now notifies owner on the unpaid/incomplete_expired dark-site transition; also handles customer.subscription.created)"],
+    "timeline": "declined charge -> ledger+dashboard warning with attempt number and next retry date -> repeat per Stripe retry -> retries exhausted -> subscription unpaid/incomplete_expired -> site unpublished AND owner notified (previously silent) -> dashboard shows critical 'site is down' state"
+  },
+  "invoiceHistory": {
+    "newFunctions": ["webpublish.getInvoiceHistory(site)", "payments.listCustomerInvoices(customerId)"],
+    "source": "durable ledger 'invoice' events appended on every successful charge (HIDOOK_TEST_PAY and real Stripe alike) — provable with zero real Stripe credentials"
+  },
+  "noDoubleSubscription": {
+    "auditFinding": "a paying customer labelled Expirat and pushed into opening a second subscription that billed alongside the first",
+    "newFunctions": ["webpublish.canStartRenewalCheckout(site)", "webpublish.reconcileSiteFromStripe(site)"],
+    "serverJsWiringRequired": "yes — see HANDOFF-payments.md section 1 (bot/server.js#handleSiteCheckout), not applied here (file ownership)",
+    "endToEndTest": "bot/test/wave7-payments-no-double-subscription.test.js — active subscription -> renewal paid -> dashboard label (via sandboxed builder/app.js#isHostingExpired/isSiteInTrial, read-only) stays correct -> canStartRenewalCheckout refuses a second Checkout"
+  }
+}

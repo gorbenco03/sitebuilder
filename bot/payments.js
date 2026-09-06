@@ -33,6 +33,12 @@
  * After checkout.session.completed, call attachFirstThenRenewalSchedule(subscriptionId)
  * so year-2+ invoices use the renewal Price / RENEWAL_CENTS.
  *
+ * Wave7 VAT: STRIPE_AUTOMATIC_TAX=1 turns on Stripe Tax (automatic_tax,
+ * billing_address_collection, tax_id_collection for B2B reverse charge) on
+ * Checkout. Off by default — see _automaticTaxEnabled()'s docblock for why
+ * this must stay opt-in, and OWNER-STRIPE-TRIAL.md "VAT / EU tax compliance"
+ * for the Dashboard steps + accountant questions before flipping it on.
+ *
  * @module payments
  */
 
@@ -51,6 +57,34 @@ const STRIPE_API = 'https://api.stripe.com/v1';
  * failing well before a human gives up waiting.
  */
 const STRIPE_API_TIMEOUT_MS = Number(process.env.STRIPE_API_TIMEOUT_MS) || 15000;
+
+/**
+ * Wave7 VAT — Stripe Tax must be opt-in, not automatic.
+ *
+ * `automatic_tax: {enabled:true}` on a Checkout Session FAILS the session
+ * outright (Stripe rejects the create call) on any account that has not yet
+ * configured Stripe Tax (Dashboard → Tax → origin address + registrations).
+ * Turning this on unconditionally the day this ships would take down 100% of
+ * checkout on any account that has not done that Dashboard step first — a
+ * strictly worse outcome than today's VAT gap. So it stays behind an explicit
+ * env flag the owner flips only after Stripe Tax is configured (see
+ * OWNER-STRIPE-TRIAL.md "VAT / EU tax compliance").
+ */
+function _automaticTaxEnabled() {
+    return process.env.STRIPE_AUTOMATIC_TAX === '1';
+}
+
+/**
+ * Stripe subscription statuses under which Stripe still considers the
+ * subscription "current" — i.e. still billing this customer, still capable
+ * of auto-renewing, or mid-dunning-retry. A site whose stored
+ * stripeSubscriptionStatus is one of these must never be sent through a
+ * second Checkout Session for the same commercial entitlement: that opens a
+ * second live subscription (audit finding — orphaned double billing).
+ * Deliberately excludes canceled/unpaid/incomplete_expired, which are the
+ * terminal states a legitimate re-subscribe checkout is for.
+ */
+const SUBSCRIPTION_ENTITLED_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -250,6 +284,12 @@ function buildSubscriptionLineItems({ currency, productName, contract, priceId, 
                     unit_amount: renew,
                     recurring: { interval: 'year' },
                     product_data: { name: productName },
+                    // Wave7 VAT: explicit so a future automatic_tax enable (see
+                    // _automaticTaxEnabled) computes tax ON TOP of 29/99, not out
+                    // of it. Whether the headline price should instead be
+                    // VAT-inclusive is an owner+accountant call — see
+                    // OWNER-STRIPE-TRIAL.md "VAT / EU tax compliance".
+                    tax_behavior: 'exclusive',
                 },
                 quantity: 1,
             }],
@@ -267,6 +307,7 @@ function buildSubscriptionLineItems({ currency, productName, contract, priceId, 
                 unit_amount: first,
                 recurring: { interval: 'year' },
                 product_data: { name: productName },
+                tax_behavior: 'exclusive',
             },
             quantity: 1,
         }],
@@ -304,6 +345,9 @@ async function ensureRenewalPriceId({
         currency: String(currency || 'eur').toLowerCase(),
         unit_amount: Math.round(Number(renewalCents)),
         recurring: { interval: 'year' },
+        // Wave7 VAT: keep the renewal-phase Price consistent with the
+        // Checkout-time price_data above (see buildSubscriptionLineItems).
+        tax_behavior: 'exclusive',
     };
     if (productId) {
         params.product = productId;
@@ -550,6 +594,20 @@ async function createCheckout({
     }
     if (clientReferenceId) params.client_reference_id = String(clientReferenceId).slice(0, 200);
 
+    // Wave7 VAT — see _automaticTaxEnabled(): opt-in only, and only on the real
+    // Stripe path (this function already returned above for HIDOOK_TEST_PAY).
+    // automatic_tax needs a resolved customer location to compute anything, so
+    // billing_address_collection is required alongside it (also itself a legal
+    // requirement for a VAT-compliant invoice: customer address on file).
+    // tax_id_collection lets an EU business customer enter a VAT id, which
+    // Stripe validates and — once automatic_tax is on — applies the B2B
+    // intra-EU reverse charge (0% charged, customer self-assesses) for.
+    if (_automaticTaxEnabled()) {
+        params.automatic_tax = { enabled: true };
+        params.billing_address_collection = 'required';
+        params.tax_id_collection = { enabled: true };
+    }
+
     const body = encodeStripeBody(params);
     const session = await stripeRequest('POST', '/checkout/sessions', body);
     return { id: session.id, url: session.url, contract };
@@ -657,6 +715,66 @@ async function refund(sessionId, amountCents) {
     return stripeRequest('POST', '/refunds', encodeStripeBody(params));
 }
 
+/**
+ * Wave7 — fetch a subscription's live status from Stripe. Used to heal a
+ * dashboard that thinks hosting is "Expirat" (stale local paidUntil) while
+ * Stripe still has the subscription active/trialing — see
+ * webpublish.reconcileSiteFromStripe, which calls this before ever letting a
+ * customer open a second Checkout Session for the same site (audit: orphaned
+ * double billing).
+ *
+ * HIDOOK_TEST_PAY=1 (non-production): returns null — there is no live Stripe
+ * subscription to inspect offline, and callers must treat null as "nothing to
+ * reconcile", not as an error.
+ *
+ * @param {string} subscriptionId
+ * @returns {Promise<object|null>} Stripe Subscription object, or null offline.
+ */
+async function getSubscription(subscriptionId) {
+    if (!subscriptionId) throw new Error('subscriptionId is required.');
+    if (process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+        return null;
+    }
+    if (!process.env.STRIPE_SECRET_KEY) return null;
+    return stripeRequest('GET', '/subscriptions/' + encodeURIComponent(subscriptionId));
+}
+
+/**
+ * Wave7 — invoice history for a Stripe customer (owner-facing "Facturi" list;
+ * an owner paying yearly previously had no way to see or download past
+ * invoices). Normalizes to the fields a dashboard needs; the full Stripe
+ * object carries far more than that.
+ *
+ * webpublish.getInvoiceHistory() is the primary source of truth (it reads the
+ * durable ledger, which records an 'invoice' entry on every successful charge
+ * regardless of HIDOOK_TEST_PAY) — this function is a real-Stripe enrichment
+ * path for accounts with invoice history that predates the ledger records, or
+ * for a fuller list than the ledger alone. Returns [] offline / unconfigured
+ * rather than throwing, since callers use it as a best-effort supplement.
+ *
+ * @param {string} customerId
+ * @param {{limit?: number}} [opts]
+ * @returns {Promise<Array<{id:string, number:string|null, status:string, currency:string, amountPaid:number, created:string, hostedInvoiceUrl:string|null, invoicePdf:string|null}>>}
+ */
+async function listCustomerInvoices(customerId, { limit = 24 } = {}) {
+    if (!customerId) return [];
+    if (process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') return [];
+    if (!process.env.STRIPE_SECRET_KEY) return [];
+    const qs = `?customer=${encodeURIComponent(customerId)}&limit=${encodeURIComponent(String(Math.max(1, Math.min(100, limit))))}`;
+    const page = await stripeRequest('GET', '/invoices' + qs);
+    const rows = (page && page.data) || [];
+    return rows.map((inv) => ({
+        id: inv.id,
+        number: inv.number || null,
+        status: inv.status || null,
+        currency: inv.currency || null,
+        amountPaid: inv.amount_paid != null ? inv.amount_paid : null,
+        created: inv.created ? new Date(inv.created * 1000).toISOString() : null,
+        hostedInvoiceUrl: inv.hosted_invoice_url || null,
+        invoicePdf: inv.invoice_pdf || null,
+    }));
+}
+
 // ---------------------------------------------------------------------------
 // Webhooks (no SDK — pure node:crypto)
 // ---------------------------------------------------------------------------
@@ -744,6 +862,13 @@ const RO_ERRORS = {
     CHECKOUT_FAILED:  'Nu am putut deschide plata chiar acum. Te rugăm să încerci din nou în câteva minute.',
     BILLING_FAILED:   'Nu am putut deschide contul de facturare chiar acum. Te rugăm să încerci din nou în câteva minute.',
     NO_CUSTOMER_YET:  'Nu există încă un abonament activ pentru acest site. Pornește o plată înainte de a anula.',
+    // Wave7 — guard in webpublish.canStartRenewalCheckout(): this site already
+    // has a Stripe subscription Stripe still considers current (active /
+    // trialing / past_due). A second Checkout here would open a second live
+    // subscription billing alongside the first (audit: orphaned double
+    // billing) — refuse instead of guessing. See HANDOFF-payments.md for the
+    // exact bot/server.js call site.
+    ALREADY_ACTIVE_SUBSCRIPTION: 'Acest site are deja un abonament activ. Nu deschidem un al doilea abonament — dacă hostingul pare oprit din greșeală, te rugăm să ne contactezi înainte de a plăti din nou.',
 };
 
 /**
@@ -780,7 +905,10 @@ module.exports = {
     buildSubscriptionLineItems,
     attachFirstThenRenewalSchedule,
     ensureRenewalPriceId,
+    getSubscription,
+    listCustomerInvoices,
     SUBSCRIPTION_TRIAL_DAYS,
+    SUBSCRIPTION_ENTITLED_STATUSES,
     RO_ERRORS,
     toClientMessageRo,
 };

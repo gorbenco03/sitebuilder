@@ -1,0 +1,205 @@
+{"ts":"2026-09-06T13:12:06.968Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"613293ac-5595-4e26-a414-f182aa29a328","slug":"dun-retry-34defd13","subscriptionId":"sub_test_dun-retry_962b04d1","invoiceId":"in_8e282580","attemptCount":2,"nextPaymentAttempt":"2026-09-09T13:12:06.000Z"}
+(node:29426) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS failed invoice with a scheduled retry: notice names the attempt and the next retry date
+{"ts":"2026-09-06T13:12:06.981Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"78a5b980-48d7-4cde-82e5-ff754e3069de","slug":"dun-last-3a2cd972","subscriptionId":"sub_test_dun-last_30b026ed","invoiceId":"in_c0d70d5f","attemptCount":4,"nextPaymentAttempt":null}
+PASS failed invoice with NO further retry scheduled: notice says plainly the site is about to go dark
+PASS getDunningState: null for a healthy site (no failure, no bad status)
+{"ts":"2026-09-06T13:12:06.983Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"d2fc4f50-0f98-4ef4-bf9f-f9349e15f5f0","slug":"dun-warn-987a8d86","subscriptionId":"sub_test_dun-warn_0236afc1","invoiceId":"in_31bb0be0","attemptCount":1,"nextPaymentAttempt":"2026-09-07T13:12:06.000Z"}
+PASS getDunningState: warning + attempt info once a failure is on record (past_due)
+PASS getDunningState: critical + "site is down" once status is unpaid
+PASS getDunningState: null site → null (never throws)
+{"ts":"2026-09-06T13:12:06.986Z","event":"webpublish.unpublish.done","siteId":"87f8d70c-209f-4140-997b-e4a623d1afb0","slug":"dun-dark-cc454200","alreadyDown":false,"subscriptionId":"sub_test_dun-dark_0cf2ef02"}
+PASS customer.subscription.updated → unpaid: unpublishes AND notifies the owner in Romanian that the site went dark
+{"ts":"2026-09-06T13:12:06.987Z","event":"webpublish.unpublish.done","siteId":"655b38ed-83e6-47c0-a0fe-20b82188cb25","slug":"dun-cancel-2e1ee101","alreadyDown":false,"subscriptionId":"sub_test_dun-cancel_6b5f3573"}
+PASS customer.subscription.updated → canceled (owner-initiated via portal): unpublishes but does NOT notify — no surprise, they clicked Cancel
+{"ts":"2026-09-06T13:12:06.988Z","event":"webpublish.subscription.status_updated","siteId":"f13b3028-3ece-47e9-a036-96fe74e9a662","status":"past_due","subscriptionId":"sub_test_dun-noopts_3a2633ce"}
+PASS handleStripeSubscriptionEvent still works with no opts argument at all (backward compatible)
+{"ts":"2026-09-06T13:12:06.989Z","event":"webpublish.subscription.status_updated","siteId":"cd2d0131-d3af-4bbe-9f17-354c14f39831","status":"trialing","subscriptionId":"sub_test_dun-created_7c8dfa6f"}
+PASS customer.subscription.created persists stripeSubscriptionStatus (was previously silently ignored)
+{"ts":"2026-09-06T13:12:06.990Z","event":"webpublish.unpublish.done","siteId":"43facc24-eb4c-4251-a230-dc58582cf882","slug":"dun-created-term-0a168da8","alreadyDown":false,"subscriptionId":"sub_test_dun-created-term_6c6841f7"}
+PASS customer.subscription.created with an already-terminal status still unpublishes (defensive)
+
+All wave7-payments-dunning checks passed.
+✔ bot/test/wave7-payments-dunning.test.js (104.135334ms)
+(node:29427) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS getInvoiceHistory: unknown/null site → []
+{"ts":"2026-09-06T13:12:06.974Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-first_2102b7fa8d3d","subscriptionId":"sub_test_inv_1cba678a","scheduleId":"sub_sched_test_e3a0de5229578e8b","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:07.032Z","event":"webpublish.stripe_paid.published","siteId":"519dbad7-1c64-4f2b-9a67-fe43b949ae76","orderId":"344d9cf1-f1bc-49a9-9e70-fd2fe881a3f2","url":"http://127.0.0.1:0/live/inv-first-47e83191/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:07.032Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+PASS first-year payment (checkout.session.completed, test-pay) records an invoice history entry
+{"ts":"2026-09-06T13:12:07.034Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-renew_f55be1219d5c","subscriptionId":"sub_test_invr_8bac34de","scheduleId":"sub_sched_test_3425e92893e0e5d9","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:07.065Z","event":"webpublish.stripe_paid.published","siteId":"96758c18-8ef9-46e0-9bb4-809740cdcf52","orderId":"84173464-0f27-44f6-8763-8bf18b589118","url":"http://127.0.0.1:0/live/inv-renew-3331214e/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:07.065Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:07.066Z","event":"webpublish.stripe_paid.renewed","siteId":"96758c18-8ef9-46e0-9bb4-809740cdcf52","orderId":"7c37312e-9165-4478-8017-e84ddbc7960a","paidUntil":"2027-09-06T13:12:07.066Z"}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:07.101Z","event":"webpublish.stripe_paid.renewal_reactivated","siteId":"96758c18-8ef9-46e0-9bb4-809740cdcf52","orderId":"7c37312e-9165-4478-8017-e84ddbc7960a","url":"http://127.0.0.1:0/live/inv-renew-3331214e/"}
+{"ts":"2026-09-06T13:12:07.101Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+PASS renewal payment adds a second, newer invoice entry — newest first
+{"ts":"2026-09-06T13:12:07.110Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_inv-stripe_936c9c7fcbb5","subscriptionId":"sub_test_invs_3e856215","scheduleId":"sub_sched_test_82a67a529ed0efea","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:07.147Z","event":"webpublish.stripe_paid.published","siteId":"c2e0a90c-ba04-474c-b947-03ce1827bf07","orderId":"16eed18f-2b2c-4078-8e57-d37f70dd5057","url":"http://127.0.0.1:0/live/inv-stripe-9aae939a/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:07.147Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:07.148Z","event":"webpublish.invoice_paid.renewed","siteId":"c2e0a90c-ba04-474c-b947-03ce1827bf07","subscriptionId":"sub_test_invs_3e856215","invoiceId":"in_3f57d2e2","paidUntil":"2027-09-16T13:12:07.147Z"}
+PASS real-Stripe renewal path (invoice.payment_succeeded) records hosted invoice / PDF links
+PASS payments.listCustomerInvoices: offline/no key → [] (never throws, never blocks the dashboard)
+
+All wave7-payments-invoices checks passed.
+✔ bot/test/wave7-payments-invoices.test.js (280.037375ms)
+(node:29428) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS canStartRenewalCheckout: unpaid site (first publish/trial start) — always allowed
+PASS canStartRenewalCheckout: paid site with NO subscription-status signal — allowed (offline / webhook-not-arrived-yet flows unaffected)
+PASS canStartRenewalCheckout: paid site with stripeSubscriptionStatus=active — BLOCKED (this is the audit bug)
+PASS canStartRenewalCheckout: paid site with stripeSubscriptionStatus=trialing — BLOCKED (this is the audit bug)
+PASS canStartRenewalCheckout: paid site with stripeSubscriptionStatus=past_due — BLOCKED (this is the audit bug)
+PASS canStartRenewalCheckout: paid site with terminal status=canceled — allowed (legitimate resubscribe)
+PASS canStartRenewalCheckout: paid site with terminal status=cancelled — allowed (legitimate resubscribe)
+PASS canStartRenewalCheckout: paid site with terminal status=unpaid — allowed (legitimate resubscribe)
+PASS canStartRenewalCheckout: paid site with terminal status=incomplete_expired — allowed (legitimate resubscribe)
+PASS reconcileSiteFromStripe: HIDOOK_TEST_PAY offline → no-op (returns the same site, never touches network)
+{"ts":"2026-09-06T13:12:06.975Z","event":"webpublish.reconcile.applied","siteId":"1aa35bd2-16cd-45f4-a3e9-4e2204d67c97","status":"active","paidUntil":"2027-07-03T13:12:06.000Z"}
+PASS reconcileSiteFromStripe: real Stripe says still active — heals paidUntil from current_period_end, sets status live
+{"ts":"2026-09-06T13:12:06.977Z","event":"webpublish.reconcile.applied","siteId":"b944ae3b-ddba-4479-a584-b03c687570c3","status":"canceled","paidUntil":null}
+PASS reconcileSiteFromStripe: real Stripe agrees it is canceled — does not fabricate a live status, just persists the truth
+{"ts":"2026-09-06T13:12:06.979Z","event":"webpublish.stripe_paid.schedule_attached","sessionId":"cs_test_e2e_92ac5e0f96a4","subscriptionId":"sub_test_e2e_5d29cafb","scheduleId":"sub_sched_test_d7332ca3d6f4d221","offline":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:12:07.031Z","event":"webpublish.stripe_paid.published","siteId":"332bd972-bbdc-48f1-99e8-d231397a7d3b","orderId":"228a23f2-b2fa-4a03-bbee-0e46712e54a3","url":"http://127.0.0.1:0/live/e2e-a08c7e76/","source":"pending-draft"}
+{"ts":"2026-09-06T13:12:07.031Z","event":"webhook.stripe.handled","type":"checkout.session.completed"}
+{"ts":"2026-09-06T13:12:07.032Z","event":"webpublish.subscription.status_updated","siteId":"332bd972-bbdc-48f1-99e8-d231397a7d3b","status":"trialing","subscriptionId":"sub_test_e2e_5d29cafb"}
+{"ts":"2026-09-06T13:12:07.032Z","event":"webpublish.subscription.status_updated","siteId":"332bd972-bbdc-48f1-99e8-d231397a7d3b","status":"active","subscriptionId":"sub_test_e2e_5d29cafb"}
+{"ts":"2026-09-06T13:12:07.033Z","event":"webpublish.invoice_paid.renewed","siteId":"332bd972-bbdc-48f1-99e8-d231397a7d3b","subscriptionId":"sub_test_e2e_5d29cafb","invoiceId":"in_0e37b194","paidUntil":"2027-09-16T13:12:07.032Z"}
+PASS END TO END: active subscription + renewal paid → dashboard label stays correct AND a second Checkout is refused
+
+All wave7-payments-no-double-subscription checks passed.
+✔ bot/test/wave7-payments-no-double-subscription.test.js (159.002542ms)
+PASS automatic_tax OFF by default (no env flag) — Checkout body has none of the tax fields
+PASS STRIPE_AUTOMATIC_TAX=1 turns on automatic_tax + billing address + VAT id collection
+PASS inline price_data always carries tax_behavior:exclusive (Checkout line + renewal Price), flag-independent
+PASS HIDOOK_TEST_PAY offline checkout never calls Stripe — automatic_tax flag is inert there
+PASS RO_ERRORS.ALREADY_ACTIVE_SUBSCRIPTION exists, Romanian, with diacritics
+PASS SUBSCRIPTION_ENTITLED_STATUSES is exactly active/trialing/past_due
+
+All wave7-payments-vat checks passed.
+✔ bot/test/wave7-payments-vat.test.js (70.151958ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 286.474833
