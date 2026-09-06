@@ -141,3 +141,47 @@ it should usually not be committed at all.
   is the policy those patterns implement. If you add a new evidence file type
   that should never be committed, add the pattern too — don't just remember
   the rule.
+
+## Teardown after a wave is verified and integrated (owner rule, 2026-09-06)
+
+Evidence and worktrees are **scaffolding, not product**. They exist to prove a
+fix during the wave that made it. Once that wave is merged into `main` and the
+suite is green, they are dead weight. Measured on this machine the day the rule
+was written:
+
+| What | Size |
+|---|---|
+| Worktrees (`~/.hermes/worktrees`, `.worktrees`, `.claude/worktrees`) | **35.5 GB** across 210 worktrees |
+| `.git` object store | 656 MB |
+| `04-QA-Evidence/` in the working tree | 537 MB |
+
+The worktrees are two orders of magnitude bigger than everything else. They are
+the cleanup that matters.
+
+**The rule:** after a wave is integrated and verified, delete that wave's
+worktrees and collapse its evidence. At the end of a programme of work, exactly
+**one** evidence set survives — the final product's — and every intermediate
+per-wave evidence directory goes.
+
+**Order of operations, and why it matters:**
+
+1. **Never delete a worktree before proving its branch is merged.** Run
+   `git branch --no-merged main` and check every worktree branch against it.
+   This is not theoretical: on 2026-09-06 the CSS minifier for the performance
+   wave existed *only* as a commit on an unmerged worktree branch
+   (`8f5c788`). The working tree had a hand-copied partial version of that
+   work missing the minifier, and the oracle was red because of it. Deleting
+   worktrees "because they take space" would have destroyed the only copy.
+2. Then `git worktree remove` (or `git worktree prune` for stale entries), and
+   delete the merged branch.
+3. Then delete the wave's evidence directory, keeping only the manifest
+   (`summary.json` / `findings.json`) if the wave's conclusions are still
+   cited anywhere.
+
+**On reclaiming `.git`:** deleting evidence files from the working tree does
+**not** shrink `.git` — history still holds every blob. Only a history rewrite
+reclaims that, and a rewrite breaks every worktree that references the old
+objects. So the rewrite, if it ever happens, is the **last** step: after the
+final audit, after every branch is merged, after every worktree is gone. Not
+before, and never while agents are running.
+
