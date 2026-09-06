@@ -1,0 +1,48 @@
+{
+  "wave": "Wave 7 — self-serve custom domains",
+  "auditFinding": "#47 (high, rebuild) — no self-serve custom domain; bot/webpublish.js routed it through manual concierge contact",
+  "filesOwned": [
+    "bot/domains.js",
+    "bot/deploy-cloudflare.js",
+    "bot/webpublish.js",
+    "bot/site-export.js (read; no net change — reverted an unneeded export, see git diff)"
+  ],
+  "newTestFiles": [
+    "bot/test/wave7-domains-validation.test.js",
+    "bot/test/wave7-domains-dns-verify.test.js",
+    "bot/test/wave7-domains-cloudflare-attach.test.js",
+    "bot/test/wave7-domains-seo-origin.test.js"
+  ],
+  "stateMachine": [
+    "awaiting_dns — records shown, nothing verified yet (normal/expected wait state)",
+    "dns_partial — one of TXT/CNAME visible (right or wrong), the other still missing",
+    "dns_verified — both DNS records confirmed correct",
+    "provisioning — attached to Cloudflare Pages, TLS/verification in progress",
+    "active — Cloudflare confirms active; SEO origin flipped to the custom domain and redeployed",
+    "error — Cloudflare attach/status returned a hard failure; retryable",
+    "disconnected — detached from Cloudflare; SEO origin restored to the Hidook subdomain, which was never touched"
+  ],
+  "perRecordDnsStates": ["not_found (not yet visible)", "mismatch (visible but wrong value)", "ok (verified)", "error (resolver timeout/failure — treated as not-yet-visible for the coarse status, never as a false negative)"],
+  "realBugFoundAndFixedByThisWork": {
+    "location": "bot/webpublish.js publishSite() step 6b (F3/F5/F6 post-deploy origin correction)",
+    "description": "Before this fix, section 6b unconditionally rewrote seo.canonical/og:url/robots.txt/sitemap.xml from the pre-deploy predicted origin back to the raw deploy() return url whenever they differed. That was correct for its original purpose (PENDING_SEO_ORIGIN placeholder -> real host once known) but silently undid an ACTIVE custom domain on every republish, since the underlying Cloudflare Pages deploy call always returns the Hidook subdomain/pages.dev host, never the custom domain. Fixed by gating the whole correction block on `seoBuildOrigin === PENDING_SEO_ORIGIN` — it now only fires for its original purpose, never for a deliberately-predicted origin (BRAND_DOMAIN, isolated, or an active custom domain).",
+    "caughtBy": "bot/test/wave7-domains-seo-origin.test.js's republish assertion"
+  },
+  "testResults": {
+    "wave7NewTests": "15/15 pass — see green-after-wave7-tests.txt",
+    "fullSuiteBefore": "245/247 pass (2 pre-existing failures: flow3-legal-export.test.js is a documented Brave-only oracle; wave5-builder-undo-redo.test.js is a pre-existing Playwright-environment timeout, unrelated to this change and present before any edits in this session)",
+    "fullSuiteAfter": "260/262 pass — same 2 pre-existing failures, zero new failures — see full-suite-after.txt"
+  },
+  "whatTheStubCouldNotExpress": [
+    "Real Cloudflare Pages custom-hostname A/AAAA fallback IPs for an apex domain without Cloudflare-managed DNS — that requires a live 'Cloudflare for SaaS' account and the values are account-specific; this codebase instead targets the domain's www subdomain (CNAME-able everywhere) and asks the owner to add an apex->www forwarding rule at their registrar. See HANDOFF-domains.md section 3.",
+    "Cloudflare's exact live Pages custom-domain status enum (pending/pending_deployment/initializing/verifying/...) was not verified against a real account; mapCloudflareStatus() defaults anything not explicitly active/deactivated/blocked/error to 'provisioning', which is the safe default either way.",
+    "Real-world DNS propagation timing (minutes to ~48h in rare cases) cannot be sped up or simulated meaningfully; the fake resolver in tests answers instantly, and the product copy is written to make waiting read as normal regardless of how long it actually takes."
+  ],
+  "seoOriginConsistency": "bot/webpublish.js#predictedPublicOrigin(slug, {siteId}) now checks domains.getActiveDomainForSite(siteId) FIRST, before BRAND_DOMAIN/isolated-deploy formulas. Both publish-time paths (the pre-deploy seo.canonical/robots/sitemap generation AND the pre-deploy og:image absolutization) call it with the same {siteId}, so a single source of truth decides the origin every time a site is built or rebuilt. bot/site-export.js (offline ZIP/HTML export) already reused whatever seo.canonical ends up saved in config.json — since applyCustomDomainOrigin() forces that field to the real value on every connect/disconnect transition, a fresh export taken any time after picks up the correct origin automatically with no separate wiring needed there.",
+  "filesNotEdited": {
+    "bot/registry-shared.js / bot/registry-sqlite.js / bot/registry-json.js": "Deliberately untouched. updateSite()'s patch is filtered to a fixed field allowlist as one of that subsystem's own deliberate fixes; this wave keeps all domain-connection state in its own file ($DATA_DIR/custom-domains.json) instead of asking for a schema change on a file this agent does not own.",
+    "bot/server.js / bot/web.js": "Routes described in HANDOFF-domains.md, not implemented here per this wave's file-ownership rules.",
+    "builder/** / templates/**": "Owner-facing UI states described in HANDOFF-domains.md, not implemented here per this wave's file-ownership rules.",
+    "PRODUCT.md": "Still says 'Custom domains: concierge after launch' (line 11) — now stale given this feature. Left unedited since it isn't in this agent's file list and VISION.md is its stated source of truth; flagged here for whoever integrates this wave."
+  }
+}

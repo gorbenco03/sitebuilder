@@ -213,8 +213,9 @@ async function deploySite(siteDir, { name }) {
 /**
  * Attach a custom domain to a Pages project. NOTE: for the domain to actually
  * resolve, its DNS must point at the project — a CF zone on this account
- * (apex + www auto-wired) or an external CNAME for subdomains. That zone flow
- * is the Domain Service's job (roadmap F4); this call only registers the
+ * (apex + www auto-wired) or an external CNAME for subdomains pointed here by
+ * the customer themselves. That external-domain self-serve flow (Wave 7,
+ * audit finding #47) lives in bot/domains.js — this call only registers the
  * domain on the project (mirrors deploy-vercel.attachDomain).
  *
  * @param {string} projectName
@@ -230,6 +231,66 @@ async function attachDomain(projectName, domainName) {
         { name: domainName }
     );
     return { ok: true, raw };
+}
+
+/**
+ * Detach a custom domain from a Pages project (Wave 7 self-serve disconnect).
+ * Idempotent: a domain that is already gone (404) is treated as success, so a
+ * retried/duplicate disconnect never throws. The project itself (and its
+ * *.pages.dev / BRAND_DOMAIN subdomain) is untouched — only the extra
+ * hostname binding is removed, so the site keeps serving on its Hidook
+ * subdomain exactly as it did before the custom domain was ever attached.
+ *
+ * @param {string} projectName
+ * @param {string} domainName
+ * @returns {Promise<{ok: boolean}>}
+ */
+async function detachDomain(projectName, domainName) {
+    if (!projectName) throw new Error('projectName is required.');
+    if (!domainName)  throw new Error('domainName is required.');
+    try {
+        await cfRequest(
+            'DELETE',
+            `/accounts/{account}/pages/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domainName)}`
+        );
+    } catch (e) {
+        if (e && e.status !== 404) throw e;
+    }
+    return { ok: true };
+}
+
+/**
+ * Look up a custom domain's attach/verification/TLS status on a Pages
+ * project (Wave 7 self-serve connect — polled after attachDomain() so the
+ * owner can be told honestly whether DNS/TLS has finished, instead of ever
+ * claiming success before Cloudflare has actually issued the certificate).
+ *
+ * Returns null when the domain is not attached at all (404) rather than
+ * throwing, since "not attached yet" is an expected state while the owner is
+ * still working through DNS, not an error.
+ *
+ * NOTE: the exact shape of Cloudflare's response (status enum values,
+ * verification_data/validation_data fields) is per Cloudflare's live Pages
+ * API and cannot be exercised here without a real account — see
+ * bot/domains.js#mapCloudflareStatus for how the (small, defensive) set of
+ * fields this codebase actually depends on is interpreted, and
+ * bot/test/wave7-domains-cloudflare-attach.test.js for the fake shape the
+ * test double returns.
+ *
+ * @param {string} projectName
+ * @param {string} domainName
+ * @returns {Promise<object|null>}
+ */
+async function getDomainStatus(projectName, domainName) {
+    try {
+        return await cfRequest(
+            'GET',
+            `/accounts/{account}/pages/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domainName)}`
+        );
+    } catch (e) {
+        if (e && e.status === 404) return null;
+        throw e;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -417,7 +478,17 @@ async function ensureSubdomain(projectName) {
 // Module exports
 // ---------------------------------------------------------------------------
 
-module.exports = { isConfigured, ensureProject, deploySite, attachDomain, ensureSubdomain };
+module.exports = {
+    isConfigured, ensureProject, deploySite, attachDomain, detachDomain, getDomainStatus,
+    ensureSubdomain,
+    // Exported for bot/domains.js (Wave 7 self-serve custom domain connect):
+    // it needs the real *.pages.dev host to show the customer a correct
+    // CNAME target (never guessed — see pagesHostOf's own doc comment above
+    // for why that matters), and isAlreadyAttached to treat Cloudflare's
+    // inconsistent "already attached" error shapes as success rather than a
+    // hard failure when re-attaching an already-connected domain.
+    fetchPagesHost, isAlreadyAttached,
+};
 
 // ---------------------------------------------------------------------------
 // Self-test (run: node bot/deploy-cloudflare.js)

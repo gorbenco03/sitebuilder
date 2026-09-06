@@ -1,0 +1,13 @@
+RED (before this wave) — bot/domains.js on HEAD (commit 608d6be, before this branch) exported the Vercel domain-purchase API only. None of the self-serve custom-domain-connect functions existed:
+normalizeDomain: MISSING (undefined)
+startDomainConnection: MISSING (undefined)
+checkDomainConnection: MISSING (undefined)
+activateDomainConnection: MISSING (undefined)
+checkTlsStatus: MISSING (undefined)
+disconnectDomainConnection: MISSING (undefined)
+getDomainForSite: MISSING (undefined)
+getActiveDomainForSite: MISSING (undefined)
+
+Full export list on HEAD (pre-wave7): isConfigured, checkDomain, buyDomain, suggestDomains
+
+This matches audit finding #47: bot/webpublish.js only ever sent a manual concierge-contact message (see _notifyOwnerChannel, the old "want your own domain? contact us" string) — there was no code path an owner could complete themselves.
