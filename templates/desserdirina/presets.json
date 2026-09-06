@@ -39,11 +39,11 @@
         },
         "servicesTitle": "Specialitățile noastre",
         "services": [],
-        "galleryTitle": "",
+        "galleryTitle": "Galeria noastră",
         "categories": [
           {
-            "title": "",
-            "blurb": "",
+            "title": "Creațiile noastre",
+            "blurb": "O selecție din torturile, prăjiturile și preparatele pregătite în cofetăria noastră.",
             "photos": [
               {
                 "src": "images/torturi-1.jpg",
@@ -196,11 +196,11 @@
         },
         "servicesTitle": "Specialitățile noastre",
         "services": [],
-        "galleryTitle": "",
+        "galleryTitle": "Galeria noastră",
         "categories": [
           {
-            "title": "",
-            "blurb": "",
+            "title": "Creațiile noastre",
+            "blurb": "O selecție din torturile, prăjiturile și preparatele pregătite în cofetăria noastră.",
             "photos": [
               {
                 "src": "images/torturi-1.jpg",
