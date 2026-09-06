@@ -1,0 +1,50 @@
+{
+  "liveUrl": "http://127.0.0.1:63674/live/wave5prof-after-mtppnhci/",
+  "raw": "{\"@context\":\"https://schema.org\",\"@type\":\"LocalBusiness\",\"name\":\"Cabinet Juridic Ionescu\",\"description\":\"Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.\",\"url\":\"http://127.0.0.1:63674/live/wave5prof-after-mtppnhci/\",\"telephone\":\"+40721555014\",\"email\":\"contact@cabinetjuridicionescu.ro\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Academiei 12, etajul 4, București 010014\"},\"image\":\"http://127.0.0.1:63674/live/wave5prof-after-mtppnhci/images/hero.jpg\",\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"https://schema.org/Monday\",\"opens\":\"09:00\",\"closes\":\"17:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"https://schema.org/Tuesday\",\"opens\":\"09:00\",\"closes\":\"17:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"https://schema.org/Wednesday\",\"opens\":\"09:00\",\"closes\":\"17:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"https://schema.org/Thursday\",\"opens\":\"09:00\",\"closes\":\"17:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"https://schema.org/Friday\",\"opens\":\"09:00\",\"closes\":\"15:00\"}]}",
+  "parsed": {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    "name": "Cabinet Juridic Ionescu",
+    "description": "Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.",
+    "url": "http://127.0.0.1:63674/live/wave5prof-after-mtppnhci/",
+    "telephone": "+40721555014",
+    "email": "contact@cabinetjuridicionescu.ro",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Strada Academiei 12, etajul 4, București 010014"
+    },
+    "image": "http://127.0.0.1:63674/live/wave5prof-after-mtppnhci/images/hero.jpg",
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "https://schema.org/Monday",
+        "opens": "09:00",
+        "closes": "17:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "https://schema.org/Tuesday",
+        "opens": "09:00",
+        "closes": "17:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "https://schema.org/Wednesday",
+        "opens": "09:00",
+        "closes": "17:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "https://schema.org/Thursday",
+        "opens": "09:00",
+        "closes": "17:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "https://schema.org/Friday",
+        "opens": "09:00",
+        "closes": "15:00"
+      }
+    ]
+  }
+}

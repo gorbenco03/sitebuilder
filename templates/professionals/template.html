@@ -41,6 +41,27 @@
     </style></noscript>
 </head>
 <body class="pr-page">
+    <!-- Cookie banner is mounted first, before the hero, and its stylesheet
+         + script load here (synchronously) rather than at the end of body.
+         cookie-banner.js decides open/accepted state and toggles
+         html/body.hb-cookie-open the moment it runs; cookie-banner.css keys
+         .pr-hero/.pr-hero__copy padding off that class (see bot/site-legal.js
+         COOKIE_BANNER_CSS). Running this before the hero is ever laid out
+         means the hero gets its final padding on the FIRST layout pass —
+         previously the banner mounted just before </body>, so first-time
+         visitors got an initial hero layout WITHOUT the clearance padding,
+         then an immediate second layout WITH it the instant this script ran,
+         a real box-size change the browser counts as a layout shift (this
+         was the dominant source of this template's measured CLS). -->
+    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
+      <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
+      <div class="hb-cookie-actions">
+        <button type="button" id="hb-cookie-accept" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}">Acceptă</button>
+        <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
+      </div>
+    </div>
+    <link rel="stylesheet" href="cookie-banner.css">
+    <script src="cookie-banner.js"></script>
 
     <header class="pr-nav" id="top">
         <div class="pr-nav__inner">
@@ -55,8 +76,20 @@
                 <a href="#faq">{{labels.navFaq}}</a>
                 <a href="#contact">{{labels.navContact}}</a>
             </nav>
-            <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+            <div class="pr-nav__actions">
+                <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+                <button type="button" class="pr-nav__toggle" id="pr-nav-toggle" aria-expanded="false" aria-controls="pr-nav-mobile" aria-label="Deschide meniul">
+                    <span class="pr-nav__toggle-bars" aria-hidden="true"></span>
+                </button>
+            </div>
         </div>
+        <nav class="pr-nav__mobile" id="pr-nav-mobile" aria-label="Navigație mobilă" hidden>
+            <a href="#services">{{labels.navServices}}</a>
+            <a href="#about">{{labels.navAbout}}</a>
+            <a href="#faq">{{labels.navFaq}}</a>
+            <a href="#contact">{{labels.navContact}}</a>
+            <a href="#appointment" class="pr-nav__mobile-cta">{{labels.navBook}}</a>
+        </nav>
     </header>
 
     <section class="pr-hero" aria-labelledby="hero-heading">
@@ -176,6 +209,13 @@
             <div class="pr-shell">
                 <p class="pr-kicker">{{labels.bookEyebrow}}</p>
                 <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
+                <!-- @if appointment.weekly -->
+                <div id="pr-weekly" hidden aria-hidden="true">
+                    <!-- @each appointment.weekly -->
+                    <span data-w="{{weekday}}" data-s="{{start}}" data-e="{{end}}"></span>
+                    <!-- @end -->
+                </div>
+                <!-- @endif -->
                 <!-- @if appointment.nativeBooking -->
                 <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
                 <!-- @if appointment.confidentialityWarning -->
@@ -284,16 +324,23 @@
                     </p>
                 </form>
 
+                <div class="pr-appt__fail" id="pr-appt-fail" role="alert" hidden>
+                    <h3 class="pr-appt__fail-title">Cererea nu a ajuns la noi</h3>
+                    <p class="pr-copy">Site-ul nu a putut contacta serverul de programări. Sună-ne sau scrie-ne pe WhatsApp — te ajutăm imediat cu o programare.</p>
+                    <div class="pr-appt__fail-actions">
+                        <!-- @if contact.phone -->
+                        <a class="pr-btn pr-btn--primary" href="tel:{{contact.phone}}">Sună la {{contact.phoneDisplay}}</a>
+                        <!-- @endif -->
+                        <!-- @if contact.waHref -->
+                        <a class="pr-btn pr-btn--ghost" href="{{contact.waHref}}" target="_blank" rel="noopener">Scrie pe WhatsApp</a>
+                        <!-- @endif -->
+                    </div>
+                </div>
+
                 <div class="pr-appt-done" id="pr-appt-done" hidden>
                     <h3 class="pr-appt-done__title">{{labels.apptDoneTitle}}</h3>
                     <p class="pr-copy" id="pr-appt-done-body"></p>
                     <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
-                </div>
-
-                <div id="pr-weekly" hidden aria-hidden="true">
-                    <!-- @each appointment.weekly -->
-                    <span data-w="{{weekday}}" data-s="{{start}}" data-e="{{end}}"></span>
-                    <!-- @end -->
                 </div>
                 <!-- @endif -->
                 <!-- @endif -->
@@ -339,7 +386,7 @@
                 <div class="pr-ig-grid">
                     <!-- @each instagram.gallery -->
                     <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pr-ig-cell">
-                        <img src="{{.}}" alt="{{business.name}}" loading="lazy">
+                        <img src="{{.}}" alt="{{business.name}}" loading="lazy" decoding="async">
                     </a>
                     <!-- @end -->
                 </div>
@@ -360,25 +407,25 @@
                 </div>
                 <ul class="pr-contact__list" role="list">
                     <!-- @if contact.phone -->
-                    <li><a class="pr-contact__row" href="tel:{{contact.phone}}">{{contact.phoneDisplay}}</a></li>
+                    <li><a class="pr-contact__row" data-ld="phone" href="tel:{{contact.phone}}">{{contact.phoneDisplay}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.email -->
-                    <li><a class="pr-contact__row" href="mailto:{{contact.email}}">{{contact.email}}</a></li>
+                    <li><a class="pr-contact__row" data-ld="email" href="mailto:{{contact.email}}">{{contact.email}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.waHref -->
                     <li><a class="pr-contact__row" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.whatsapp}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.addressHref -->
-                    <li><a class="pr-contact__row" href="{{contact.addressHref}}" target="_blank" rel="noopener">{{& contact.address}}</a></li>
+                    <li><a class="pr-contact__row" data-ld="address" href="{{contact.addressHref}}" target="_blank" rel="noopener">{{& contact.address}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.address --><!-- @if !contact.addressHref -->
-                    <li><span class="pr-contact__row pr-contact__row--static">{{& contact.address}}</span></li>
+                    <li><span class="pr-contact__row pr-contact__row--static" data-ld="address">{{& contact.address}}</span></li>
                     <!-- @endif --><!-- @endif -->
                     <!-- @if contact.instagram.url -->
-                    <li><a class="pr-contact__row" href="{{contact.instagram.url}}" target="_blank" rel="noopener">{{contact.instagram.label}}</a></li>
+                    <li><a class="pr-contact__row" data-ld="instagram" href="{{contact.instagram.url}}" target="_blank" rel="noopener">{{contact.instagram.label}}</a></li>
                     <!-- @endif -->
                     <!-- @if contact.facebook.url -->
-                    <li><a class="pr-contact__row" href="{{contact.facebook.url}}" target="_blank" rel="noopener">{{contact.facebook.label}}</a></li>
+                    <li><a class="pr-contact__row" data-ld="facebook" href="{{contact.facebook.url}}" target="_blank" rel="noopener">{{contact.facebook.label}}</a></li>
                     <!-- @endif -->
                 </ul>
             </div>
@@ -388,7 +435,7 @@
     <footer class="pr-foot">
         <div class="pr-shell pr-foot__inner">
             <div>
-                <p class="pr-foot__name">{{business.name}}</p>
+                <p class="pr-foot__name" data-ld="name">{{business.name}}</p>
                 <!-- @if footer.address --><p class="pr-copy pr-copy--sm">{{footer.address}}</p><!-- @endif -->
             </div>
             <p class="pr-copy pr-copy--sm">&copy; {{footer.year}} {{business.name}}. <!-- @if footer.note -->{{footer.note}}<!-- @endif --></p>
@@ -414,15 +461,6 @@
     <a href="{{contact.waHref}}" class="whatsapp-float" target="_blank" rel="noopener" aria-label="{{labels.whatsapp}}"><svg class="wa-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
     <!-- @endif -->
 
-    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
-      <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
-      <div class="hb-cookie-actions">
-        <button type="button" id="hb-cookie-accept" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}">Acceptă</button>
-        <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
-      </div>
-    </div>
-    <link rel="stylesheet" href="cookie-banner.css">
-    <script src="cookie-banner.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

@@ -5,9 +5,166 @@
 document.addEventListener('DOMContentLoaded', () => {
     initReveal();
     initSmoothScroll();
+    initMobileNav();
     initAppointment();
     initWhatsAppQR();
+    initLocalBusinessJsonLd();
 });
+
+function initMobileNav() {
+    const toggle = document.getElementById('pr-nav-toggle');
+    const menu = document.getElementById('pr-nav-mobile');
+    if (!toggle || !menu) return;
+
+    function focusables() {
+        return Array.from(menu.querySelectorAll('a[href]'));
+    }
+
+    function openMenu() {
+        menu.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+        const first = focusables()[0];
+        if (first) first.focus();
+    }
+
+    function closeMenu(returnFocus) {
+        if (menu.hidden) return;
+        menu.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        if (returnFocus !== false) toggle.focus();
+    }
+
+    toggle.addEventListener('click', () => {
+        if (toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+        else openMenu();
+    });
+
+    menu.querySelectorAll('a').forEach((a) => {
+        a.addEventListener('click', () => closeMenu(false));
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (menu.hidden) return;
+        if (e.key === 'Escape') {
+            closeMenu();
+            return;
+        }
+        if (e.key === 'Tab') {
+            const items = focusables();
+            if (!items.length) return;
+            const firstEl = items[0];
+            const lastEl = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === firstEl) {
+                e.preventDefault();
+                lastEl.focus();
+            } else if (!e.shiftKey && document.activeElement === lastEl) {
+                e.preventDefault();
+                firstEl.focus();
+            }
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (menu.hidden) return;
+        if (menu.contains(e.target) || toggle.contains(e.target)) return;
+        closeMenu(false);
+    });
+
+    try {
+        const mq = window.matchMedia('(min-width: 820px)');
+        const onChange = (e) => { if (e.matches) closeMenu(false); };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else if (mq.addListener) mq.addListener(onChange);
+    } catch (_) { /* matchMedia unavailable — ignore */ }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   JSON-LD LocalBusiness — built client-side from the already-rendered
+   page (name/phone/email/address/hours/socials), so every publish path
+   (web builder, Telegram, self-hosted export) gets the same structured
+   data with no server-side changes. If a server-populated JSON-LD block
+   already exists (e.g. the Telegram flow's seo.jsonLd), that one wins —
+   this is strictly a fallback for the gap where nothing was generated.
+   ───────────────────────────────────────────────────────────── */
+function initLocalBusinessJsonLd() {
+    try {
+        if (document.querySelector('script[type="application/ld+json"]')) return;
+
+        const text = (sel) => {
+            const el = document.querySelector(sel);
+            return el ? el.textContent.trim() : '';
+        };
+        const attr = (sel, name) => {
+            const el = document.querySelector(sel);
+            return el ? (el.getAttribute(name) || '').trim() : '';
+        };
+
+        const name = text('[data-ld="name"]');
+        if (!name) return; // nothing reliable to publish
+
+        const data = { '@context': 'https://schema.org', '@type': 'LocalBusiness', name };
+
+        const description = attr('meta[name="description"]', 'content');
+        if (description) data.description = description;
+
+        const canonical = attr('link[rel="canonical"]', 'href');
+        data.url = canonical || (typeof location !== 'undefined' ? location.href : '');
+        if (!data.url) delete data.url;
+
+        const phoneHref = attr('[data-ld="phone"]', 'href');
+        if (phoneHref) data.telephone = phoneHref.replace(/^tel:/i, '');
+
+        const emailHref = attr('[data-ld="email"]', 'href');
+        if (emailHref) data.email = emailHref.replace(/^mailto:/i, '');
+
+        const addressEl = document.querySelector('[data-ld="address"]');
+        if (addressEl) {
+            const lines = addressEl.innerHTML
+                .split(/<br\s*\/?>/i)
+                .map((chunk) => chunk.replace(/<[^>]*>/g, '').trim())
+                .filter(Boolean);
+            if (lines.length) data.address = { '@type': 'PostalAddress', streetAddress: lines.join(', ') };
+        }
+
+        const sameAs = [];
+        const igHref = attr('[data-ld="instagram"]', 'href');
+        if (igHref) sameAs.push(igHref);
+        const fbHref = attr('[data-ld="facebook"]', 'href');
+        if (fbHref) sameAs.push(fbHref);
+        if (sameAs.length) data.sameAs = sameAs;
+
+        const heroBg = document.querySelector('.pr-hero__bg');
+        if (heroBg) {
+            const bgImage = getComputedStyle(heroBg).backgroundImage || '';
+            const m = /url\((['"]?)(.*?)\1\)/.exec(bgImage);
+            if (m && m[2] && !/^data:/i.test(m[2])) {
+                try { data.image = new URL(m[2], location.href).href; } catch (_) { data.image = m[2]; }
+            }
+        }
+
+        const DAY = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday', 7: 'Sunday' };
+        const weeklyRoot = document.getElementById('pr-weekly');
+        if (weeklyRoot) {
+            const spec = Array.from(weeklyRoot.querySelectorAll('[data-w]'))
+                .map((el) => {
+                    const day = DAY[String(el.getAttribute('data-w')).trim()];
+                    const opens = (el.getAttribute('data-s') || '').trim();
+                    const closes = (el.getAttribute('data-e') || '').trim();
+                    if (!day || !opens || !closes) return null;
+                    return { '@type': 'OpeningHoursSpecification', dayOfWeek: 'https://schema.org/' + day, opens, closes };
+                })
+                .filter(Boolean);
+            if (spec.length) data.openingHoursSpecification = spec;
+        }
+
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = JSON.stringify(data);
+        document.head.appendChild(script);
+    } catch (_) {
+        /* never let SEO best-effort break the page */
+    }
+}
 
 function initReveal() {
     const nodes = document.querySelectorAll('.pr-reveal');
@@ -148,6 +305,7 @@ function initAppointment() {
     const done = document.getElementById('pr-appt-done');
     const doneBody = document.getElementById('pr-appt-done-body');
     const doneConfirm = document.getElementById('pr-appt-done-confirm');
+    const fail = document.getElementById('pr-appt-fail');
     const weekly = loadWeekly();
 
     const typeInputs = () => Array.from(form.querySelectorAll('input[name="appt-type"]'));
@@ -304,6 +462,7 @@ function initAppointment() {
     async function sendRequest(e) {
         if (e) e.preventDefault();
         if (submitBtn && submitBtn.disabled) return;
+        if (fail) fail.hidden = true;
 
         const type = selectedType();
         const name = (form.querySelector('#pr-name') || {}).value || '';
@@ -345,7 +504,15 @@ function initAppointment() {
         let result = null;
         let localOnly = false;
 
-        if (payload.slug && /^https?:/i.test(location.origin || '')) {
+        // A real page (http/https origin) always tries the live backend first —
+        // whether it's /live/<slug>/ on Hidook or a self-hosted export with no
+        // backend at all. Only a sandboxed builder-preview document (opaque
+        // "null" origin from srcdoc) skips straight to the local-preview branch.
+        // This is what lets a self-hosted export be told apart from a real
+        // submission: if the fetch fails (404, network error, non-ok response —
+        // exactly what a static host with no /api/appointments route returns),
+        // we show an honest failure state instead of a fake success.
+        if (/^https?:/i.test(location.origin || '')) {
             try {
                 const res = await fetch(location.origin + '/api/appointments', {
                     method: 'POST',
@@ -363,6 +530,7 @@ function initAppointment() {
                     hint.hidden = false;
                     hint.textContent = 'Nu am putut trimite cererea. Încearcă din nou sau folosește emailul de contact.';
                 }
+                if (fail) fail.hidden = false;
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     const span = submitBtn.querySelector('span');
