@@ -129,9 +129,11 @@ function requestPublicOrigin(req) {
 }
 
 /**
- * Best-effort client IP for abuse throttling (BE-01). Prefer X-Forwarded-For
- * (set by the Cloudflare/production reverse proxy) else the raw socket peer.
- * Not used for anything security-critical beyond rate-limit bucketing.
+ * Best-effort caller IP for rate-limit bucketing only (BE-01). Prefer
+ * X-Forwarded-For (set by the Cloudflare/production reverse proxy) else the raw
+ * socket peer. Never used for access-control decisions — X-Forwarded-For is
+ * attacker-supplied unless a trusted proxy sets it. Good enough to slow down a
+ * single script hammering a public endpoint.
  */
 function getClientIp(req) {
     const xff = req && req.headers && req.headers['x-forwarded-for'];
@@ -444,15 +446,29 @@ function applySecurityHeaders(req, res, url) {
     }
 }
 
+// A single site can be published to Cloudflare Pages, Vercel, Netlify, or the
+// owner's own custom domain (see domains.js) — there is no fixed, enumerable
+// set of "legitimate" origins the platform controls, so a static allowlist
+// would break the booking widget on every customer's real site. Origin
+// reflection stays intentional (BE-11/SEC-05 audit): the mitigation for the
+// open-CORS surface is (a) no credentials are ever issued here — no cookie,
+// no Authorization is read on these routes, and Access-Control-Allow-Credentials
+// is never set, so a third-party page can only act as an anonymous visitor,
+// never as an authenticated owner — and (b) the per-IP/per-tenant rate limit
+// on bookings creation below (see handleCalendarNativeBookings), which is the
+// actual defense against calendar-spam from an arbitrary origin.
+const ORIGIN_RE = /^https?:\/\/[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?$/i;
+
 /**
  * CORS for public calendar-native API so a static published origin
- * (Cloudflare/Vercel/Netlify) can call the bot host via data-api-base.
- * Reflect Origin when present; no credentials on public write-mostly surface.
+ * (Cloudflare/Vercel/Netlify/custom domain) can call the bot host via
+ * data-api-base. Reflect Origin when present and well-formed; no credentials
+ * on this public write-mostly surface.
  */
 function applyPublicCalendarCors(req, res) {
     const origin = req && req.headers && (req.headers.origin || req.headers.Origin);
     if (!origin || typeof origin !== 'string' || origin.length > 200) return;
-    if (!/^https?:\/\//i.test(origin)) return;
+    if (!ORIGIN_RE.test(origin)) return;
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -597,13 +613,23 @@ function adminTokenOk(provided) {
 
 /**
  * Derive plain-English publish status for the ops table.
+ *
+ * PC-03: this must answer "is the operator's disk actually still serving this
+ * site right now", NOT "does this site currently hold a valid commercial
+ * entitlement". Those are different questions. unpublishSite() (webpublish.js)
+ * is the only thing that removes the isolated published files and flips
+ * `status` away from live/active — it runs on subscription delete/cancel, but
+ * NOT on past_due/unpaid (see hasActiveCommercialEntitlement below, which goes
+ * false there while the files are still on disk and GET /live/<slug>/ still
+ * answers 200). Gating this label on entitlement made the table lie exactly
+ * when it mattered: a past_due/unpaid site showed "Unpublished" while still
+ * being served for free. Billing risk belongs in adminBillingLabel, not here.
  * @param {object} site
  * @returns {'Live'|'Unpublished'}
  */
 function adminPublishLabel(site) {
     const st = String((site && site.status) || '').toLowerCase();
-    if ((st === 'live' || st === 'active') && hasActiveCommercialEntitlement(site)) return 'Live';
-    return 'Unpublished';
+    return (st === 'live' || st === 'active') ? 'Live' : 'Unpublished';
 }
 
 /**
@@ -638,9 +664,16 @@ function hasActiveCommercialEntitlement(site, nowMs = Date.now()) {
 /**
  * Billing label only when already present on the site/order record.
  * Omit rather than invent.
+ *
+ * PC-03: past_due/unpaid/incomplete/incomplete_expired must be their own
+ * explicit labels, not silently fall through to the live+paid+sub branch
+ * below (which always resolved to 'trial'). Those Stripe states are exactly
+ * the ones adminPublishLabel now reports as still "Live" (see above) — the
+ * operator needs this column to say *why* a live site might stop being paid
+ * for, not a generic 'trial' that hides a failing card.
  * @param {object} site
  * @param {object|null} order
- * @returns {string|null} trial | paid | canceled | null
+ * @returns {string|null} trial | paid | past_due | unpaid | incomplete | incomplete_expired | canceled | null
  */
 function adminBillingLabel(site, order) {
     const subSt = String(
@@ -648,6 +681,9 @@ function adminBillingLabel(site, order) {
     ).toLowerCase();
     if (subSt === 'canceled' || subSt === 'cancelled' || site && site.canceledAt) {
         return 'canceled';
+    }
+    if (subSt === 'past_due' || subSt === 'unpaid' || subSt === 'incomplete' || subSt === 'incomplete_expired') {
+        return subSt;
     }
     if (order && order.status === 'canceled') return 'canceled';
     // Trial start stores paid=true with no charge yet (payment_status no_payment_required).
@@ -807,6 +843,14 @@ function isSlugAvailable(slug) {
 // ---------------------------------------------------------------------------
 
 let _templateCache = null;
+// PERF-05: /api/templates served ~115KB with no Cache-Control/ETag at all, so
+// the browser re-fetched it in full on every "Start" click even though
+// _templateCache above never changes for the life of the process. Computed
+// lazily, once, right after _templateCache is first populated successfully —
+// never cached from a failed load (empty array), so a transient FS error on
+// the first request cannot wedge every later request behind a bogus ETag.
+let _templatesEtag = null;
+let _templatesJson = null;
 
 function loadTemplates() {
     if (_templateCache) return _templateCache;
@@ -826,6 +870,25 @@ function loadTemplates() {
         log('server.templates.load_error', { err: e.message }, 'error');
         return [];
     }
+}
+
+/**
+ * Serialized /api/templates body + a stable ETag, computed once and reused
+ * for every request (mirrors cacheControlForPath's 'public, max-age=0,
+ * must-revalidate' contract already used for /app/* generated assets).
+ */
+function getTemplatesResponsePayload() {
+    const templates = loadTemplates();
+    if (_templatesJson === null && _templateCache) {
+        _templatesJson = JSON.stringify({ templates });
+        _templatesEtag = '"' + crypto.createHash('sha256').update(_templatesJson).digest('hex').slice(0, 16) + '"';
+    }
+    if (_templatesJson === null) {
+        // Load failed (see log above) — serve without conditional headers rather
+        // than caching an empty result forever.
+        return { json: JSON.stringify({ templates }), etag: null };
+    }
+    return { json: _templatesJson, etag: _templatesEtag };
 }
 
 // ---------------------------------------------------------------------------
@@ -1019,8 +1082,25 @@ async function handleSlugCheck(req, res, query) {
 }
 
 async function handleGetTemplates(req, res) {
-    const templates = loadTemplates();
-    sendJson(res, 200, { templates });
+    const { json, etag } = getTemplatesResponsePayload();
+    const cacheControl = 'public, max-age=0, must-revalidate';
+    if (etag) {
+        const inm = req.headers['if-none-match'];
+        if (inm) {
+            const tags = String(inm).split(',').map((s) => s.trim());
+            if (tags.includes(etag) || tags.includes('W/' + etag)) {
+                res.writeHead(304, { 'ETag': etag, 'Cache-Control': cacheControl });
+                res.end();
+                return;
+            }
+        }
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', cacheControl);
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Length', Buffer.byteLength(json));
+    res.writeHead(200);
+    res.end(json);
 }
 
 async function handleAuthEmail(req, res) {
@@ -1478,6 +1558,35 @@ async function handleCalendarNativeBookings(req, res) {
     try {
         const api = getCalendarNativeApi();
         const { customerId, siteId } = api.parseTenant(body || {});
+
+        // SEC-05: CORS on this route intentionally reflects any Origin (booking
+        // widgets are embedded on arbitrary customer domains — see
+        // applyPublicCalendarCors), so a script on any third-party page can
+        // already call this endpoint. Without a limit that means unlimited fake
+        // bookings against one client's calendar. Two windows: a tight one per
+        // (IP, tenant) to stop a single script looping, and a looser one per
+        // tenant alone to cap damage from a botnet spreading the same requests
+        // across many IPs.
+        const tenantKey = `${customerId}|${siteId}`;
+        const perIp = ratelimit.allowAndConsume('cal_booking_ip', `${getClientIp(req)}|${tenantKey}`, {
+            max: 6, windowMs: 10 * 60 * 1000,
+        });
+        if (!perIp.ok) {
+            return sendJson(res, 429, {
+                error: 'Prea multe cereri de programare de la aceeași sursă. Încearcă din nou peste câteva minute.',
+                code: 'RATE_LIMITED',
+            });
+        }
+        const perTenant = ratelimit.allowAndConsume('cal_booking_tenant', tenantKey, {
+            max: 40, windowMs: 60 * 60 * 1000,
+        });
+        if (!perTenant.ok) {
+            return sendJson(res, 429, {
+                error: 'Prea multe cereri de programare pentru acest calendar în ultima oră. Încearcă din nou mai târziu.',
+                code: 'RATE_LIMITED',
+            });
+        }
+
         const db = resolveCalendarNativeDb();
         maybeSeedDemoTenant(db, customerId, siteId);
         const out = api.createPublicBooking(db, customerId, siteId, body || {});
@@ -1858,29 +1967,6 @@ function serveCalendarNativeOwner(req, res, urlPath) {
 }
 
 /**
- * GET /calendar-native/manage/* — visitor manage-link UI (token in query string).
- */
-function serveCalendarNativeManage(req, res, urlPath) {
-    let rel = urlPath.replace(/^\/calendar-native\/manage\/?/, '');
-    if (!rel || rel.endsWith('/')) rel = (rel || '') + 'index.html';
-    if (rel.includes('..') || path.isAbsolute(rel) || rel.includes('\0')) {
-        return sendJson(res, 403, { error: 'Forbidden' });
-    }
-    const target = path.resolve(path.join(CAL_NATIVE_MANAGE_DIR, rel));
-    if (!target.startsWith(CAL_NATIVE_MANAGE_DIR + path.sep) && target !== CAL_NATIVE_MANAGE_DIR) {
-        return sendJson(res, 403, { error: 'Forbidden' });
-    }
-    let st;
-    try {
-        st = fs.statSync(target);
-    } catch {
-        return sendNotFound(req, res, 'not found');
-    }
-    if (!st.isFile()) return sendNotFound(req, res, 'not found');
-    return sendCachedFile(req, res, target, st);
-}
-
-/**
  * HIDOOK_TEST_PAY only (non-production): complete an offline #test-checkout=cs_test_* return
  * with the same paid transition as the unsigned Stripe test webhook.
  * Auth required; order must belong to the session user.
@@ -2203,7 +2289,7 @@ async function handleSaveDraft(req, res) {
 /**
  * Resolve the caller's paid/trial-active draft site + latest config
  * (shared by export-html / export-zip).
- * Sends 401/400/402 itself on failure; returns null when response already written.
+ * Sends 401/403/404/400/402 itself on failure; returns null when response already written.
  */
 async function resolveExportDraft(req, res, query) {
     const userId = requireAuth(req, res);
@@ -2215,8 +2301,16 @@ async function resolveExportDraft(req, res, query) {
 
     if (siteIdHint) {
         site = await reg.getSite(siteIdHint);
-        if (!site || site.userId !== userId) {
-            sendJson(res, 400, { error: 'No draft to download.' });
+        // BE-09: same contract as handleGetSite/rollback/checkout — 404 when the
+        // site truly does not exist, 403 (not 400) when it exists but belongs to
+        // someone else. A generic "no draft" 400 for both cases used to hide an
+        // ownership mismatch behind the same status as an honest empty draft.
+        if (!site) {
+            sendJson(res, 404, { error: 'Site not found.' });
+            return null;
+        }
+        if (site.userId !== userId) {
+            sendJson(res, 403, { error: 'Access denied.' });
             return null;
         }
     } else {
