@@ -368,16 +368,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
    the hero, and the internal rhythm can tighten a little with it. That leaves
    ~30px of slack under the consent card and, unlike a clearance hack, it does
    not depend on :has() or on the banner being open at all. */
-@media (max-width: 899px) {
-    .pr-hero { padding-top: 2rem; }
-    .pr-kicker { margin-bottom: 0.5rem; }
-    .pr-lede { margin-top: 0.75rem; }
-    .pr-hero__actions { margin-top: 1.25rem; gap: 0.5rem; }
-    .pr-hero__meta { margin-top: 1rem; }
-}
-@media (max-width: 560px) {
-    .pr-hero__card { max-width: none; padding: 1.5rem 1.35rem 1.25rem; }
-}
 .pr-hero__actions {
     display: flex;
     flex-wrap: wrap;
@@ -389,6 +379,36 @@ button, input, select, textarea { font: inherit; color: inherit; }
     font-size: 0.88rem;
     color: var(--mute);
     letter-spacing: 0.02em;
+}
+/* These density blocks sit AFTER the base rules on purpose.
+   They used to sit before them, and at equal specificity the later rule wins:
+   .pr-hero__actions and .pr-hero__meta kept their desktop margins on every
+   viewport, so two of the five declarations in the mobile density pass were
+   inert the whole time. The pass still worked — the savings came from the
+   hero's top padding and the kicker/lede margins, whose base rules appear
+   earlier in the file — but half of what it claimed to do, it did not do. */
+@media (max-width: 899px) {
+    .pr-hero { padding-top: 2rem; }
+    .pr-kicker { margin-bottom: 0.5rem; }
+    .pr-lede { margin-top: 0.75rem; }
+    .pr-hero__actions { margin-top: 1.25rem; gap: 0.5rem; }
+    .pr-hero__meta { margin-top: 1rem; }
+}
+@media (max-width: 560px) {
+    .pr-hero__card { max-width: none; padding: 1.5rem 1.35rem 1.25rem; }
+}
+/* Short viewports. A laptop at 200% browser zoom reports about 720x450 CSS
+   pixels, and there the hero's own copy is taller than the band between the
+   masthead and the consent card — measured, the meta strip ran 16px under it.
+   Width-scoped density does not help: 720px is a wide viewport by every
+   breakpoint here. This is the height talking, so key off the height. */
+@media (max-height: 560px) {
+    .pr-hero { padding-top: 1.25rem; padding-bottom: 1.5rem; }
+    .pr-hero__card { padding: 1rem 1.25rem 1rem; }
+    .pr-kicker { margin-bottom: 0.35rem; }
+    .pr-lede { margin-top: 0.5rem; }
+    .pr-hero__actions { margin-top: 0.85rem; gap: 0.5rem; }
+    .pr-hero__meta { margin-top: 0.7rem; }
 }
 .pr-scroll {
     position: absolute;

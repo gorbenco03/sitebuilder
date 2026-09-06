@@ -317,6 +317,66 @@ html:has(.ls-dock) .whatsapp-float {
     bottom: 0.5rem;
   }
 }
+/* Short viewports — a laptop at 200% browser zoom reports about 720x450 CSS
+ * pixels, and a 117px consent card is then a quarter of everything the visitor
+ * can see. It pushed the professionals hero meta strip and the local-service
+ * tagline underneath itself with nowhere left to clear to: the hero copy alone
+ * is taller than the band between the masthead and the card. Compact the card
+ * instead of asking the page to find room that does not exist. */
+@media (max-height: 560px) {
+  .hb-cookie-banner {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.72rem;
+    line-height: 1.25;
+    gap: 0.3rem;
+    max-width: min(20rem, calc(100vw - var(--hb-fab-safe-right) - 0.85rem));
+  }
+  .hb-cookie-banner p { margin: 0; }
+  .hb-cookie-banner button {
+    min-height: 36px;
+    padding: 0.35rem 0.9rem;
+  }
+  .hb-cookie-actions .hb-cookie-link { min-height: 36px; }
+  html.hb-cookie-open,
+  body.hb-cookie-open,
+  body:has(#hb-cookie-banner:not([hidden])) {
+    --hb-cookie-clearance: 5.5rem;
+  }
+  /* Decorative scroll cues stand down while the card is up, the way .pr-scroll
+   * already does. They are hints with no action attached, and at this height
+   * the card sits exactly where they point. */
+  html.hb-cookie-open .scroll-indicator,
+  body.hb-cookie-open .scroll-indicator,
+  body:has(#hb-cookie-banner:not([hidden])) .scroll-indicator,
+  html.hb-cookie-open .pf-hint,
+  body.hb-cookie-open .pf-hint,
+  body:has(#hb-cookie-banner:not([hidden])) .pf-hint,
+  html.hb-cookie-open .ls-scroll,
+  body.hb-cookie-open .ls-scroll,
+  body:has(#hb-cookie-banner:not([hidden])) .ls-scroll {
+    display: none;
+  }
+}
+/* Wide viewports: the in-flow explore cues sit at the bottom-left of the hero,
+ * which is the corner the consent card occupies. The <=899px rules further
+ * down fix that for narrow canvases; nothing did for a plain 1440x900 desktop,
+ * where portfolio's "EXPLOREAZĂ" was measured overlapping the card by 232x21.
+ * Indent past the card rather than hiding the label: at this width there is
+ * room to the right of it, so the cue stays readable and simply moves. */
+@media (min-width: 900px) and (min-height: 561px) {
+  html.hb-cookie-open .pf-hint,
+  body.hb-cookie-open .pf-hint,
+  body:has(#hb-cookie-banner:not([hidden])) .pf-hint,
+  html.hb-cookie-open .ls-scroll,
+  body.hb-cookie-open .ls-scroll,
+  body:has(#hb-cookie-banner:not([hidden])) .ls-scroll,
+  html.hb-cookie-open .pm-scroll,
+  body.hb-cookie-open .pm-scroll,
+  body:has(#hb-cookie-banner:not([hidden])) .pm-scroll {
+    padding-inline-start: calc(var(--hb-cookie-width-cap) + 2.25rem);
+    box-sizing: border-box;
+  }
+}
 /* Clearance token — class + :has so preview paints cannot drop the lift. */
 html.hb-cookie-open,
 body.hb-cookie-open,
