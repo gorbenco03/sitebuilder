@@ -271,6 +271,30 @@ exists and why it is not part of the live architecture.
 - **`DATA_DIR`** — the one persistent volume the whole product depends on.
   Contents and backup guidance: `BACKUP-RESTORE.md`.
 
+## 10a. Image variants — a build artifact, not a build step
+
+Gallery and Instagram photos ship as committed WebP width-variants
+(`templates/<id>/images/*-{480,960}w.webp`) plus a `variants.json` manifest.
+`build.js#injectResponsiveImages()` reads that manifest and upgrades the
+matching `<img>` into a `<picture>` with `srcset`/`sizes` and intrinsic
+`width`/`height`.
+
+**The generator is not part of any build.** `scripts/generate-image-variants.js`
+is run by hand, and it needs macOS `sips` plus Homebrew's `cwebp` — neither
+exists on the CI runner or in the Docker image, and neither is an npm
+dependency. Nothing in `npm run build:app`, the publish path or CI invokes it,
+so a Linux machine can build, test and deploy the product normally; it just
+cannot regenerate the variants.
+
+Practical consequence: **adding or replacing a shipped template photo requires
+a Mac.** If that becomes a constraint worth removing, the honest options are a
+pure-JS encoder (a real dependency, against this repo's zero-dependency rule)
+or generating variants in CI on a runner that has `cwebp` available.
+
+Owner-uploaded photos arrive as base64 data URIs in the config and never pass
+through this generator. They get intrinsic `width`/`height` (decoded from the
+data URI) so they do not cause layout shift, but no WebP and no `srcset`.
+
 ## 11. Testing
 
 `bot/test/*.test.js`, run via `node --experimental-sqlite --test bot/test/*.test.js`

@@ -800,6 +800,121 @@ function renderHtml(templateHtml, config, opts) {
     return html;
 }
 
+/**
+ * Decode intrinsic width/height from a JPEG or PNG buffer. Returns null when
+ * the buffer isn't a recognizable raster image (never throws — callers treat
+ * that as "leave the <img> tag alone").
+ */
+function decodeRasterDims(buf) {
+    if (buf.length >= 24 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+        return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+    }
+    if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
+    let i = 2;
+    while (i + 9 < buf.length) {
+        if (buf[i] !== 0xff) { i += 1; continue; }
+        const marker = buf[i + 1];
+        if (marker === 0xd9 || marker === 0xda) break;
+        if (marker === 0x00 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd8)) { i += 2; continue; }
+        const seglen = buf.readUInt16BE(i + 2);
+        if (seglen < 2) break;
+        if (marker === 0xc0 || marker === 0xc1 || marker === 0xc2) {
+            return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+        }
+        i += 2 + seglen;
+    }
+    return null;
+}
+
+/**
+ * `sizes` for gallery/portfolio/Instagram photo-grid <img>s. Every template's
+ * grid is 1 column on mobile, 2 columns from ~640-720px, 3 columns from
+ * ~960-1024px, inside a ~1200-1280px max-width wrap — this is a deliberately
+ * generic value covering all five systems, not a per-template pixel-exact
+ * one. If a template owner wants tighter per-breakpoint values, that markup
+ * decision belongs with whoever owns template.html/styles.css — see
+ * HANDOFF-images.md.
+ */
+const RESPONSIVE_IMG_SIZES = '(min-width: 1024px) 33vw, (min-width: 640px) 48vw, 94vw';
+
+/** Read `<siteDir>/images/variants.json` (Wave7 responsive-image manifest), if present. */
+function loadImageManifest(siteDir) {
+    try {
+        const manifestPath = path.join(siteDir, 'images', 'variants.json');
+        if (!fs.existsSync(manifestPath)) return null;
+        return JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    } catch (e) {
+        console.warn('  ⚠️  could not read images/variants.json:', e && e.message ? e.message : e);
+        return null;
+    }
+}
+
+/**
+ * Node-only post-render pass — NOT part of renderHtml(), which must stay
+ * filesystem-free so it keeps working inside the browser-bundled builder
+ * (scripts/build-builder.js). Two independent things happen here, both
+ * scoped to <img> tags only (CSS `background: url(...)` hero images are
+ * untouched — see scripts/generate-image-variants.js's file header for why):
+ *
+ *  1. Every <img> whose intrinsic size can be determined — a local
+ *     images/*.jpg|png file, OR an owner's own photo embedded as a
+ *     data:image/...;base64 URI (uploaded photos never run through the
+ *     build-time variant generator, so this is the only pipeline coverage
+ *     they get) — gets width/height attributes, so the browser reserves
+ *     its box before the image loads (CLS).
+ *  2. Only images with a Wave7 manifest entry (scripts/generate-image-
+ *     variants.js output — currently the shipped demo/preset photos) are
+ *     additionally upgraded from a bare <img> into a <picture> offering
+ *     WebP srcset candidates at 480w/960w, with the original JPEG/PNG as
+ *     the universal fallback <img>.
+ */
+function injectResponsiveImages(html, siteDir) {
+    const manifest = loadImageManifest(siteDir);
+
+    return html.replace(/<img\b([^>]*?)\s*(\/?)>/gi, (full, attrs, selfClose) => {
+        const srcMatch = /\bsrc\s*=\s*"([^"]*)"/i.exec(attrs) || /\bsrc\s*=\s*'([^']*)'/i.exec(attrs);
+        if (!srcMatch) return full;
+        const src = srcMatch[1];
+        if (!src || src === '#') return full;
+        if (/\bwidth\s*=/i.test(attrs)) return full; // already sized — leave alone (idempotent)
+
+        const close = selfClose ? ' /' : '';
+
+        // Owner-uploaded photo embedded directly as a data: URI — no build-time
+        // variants exist for these, but we can still read the real dimensions
+        // straight out of the embedded bytes to stop it shifting layout.
+        const dataMatch = /^data:image\/(?:jpeg|jpg|png);base64,([A-Za-z0-9+/=]+)$/i.exec(src);
+        if (dataMatch) {
+            try {
+                const dims = decodeRasterDims(Buffer.from(dataMatch[1], 'base64'));
+                if (dims) return `<img${attrs} width="${dims.width}" height="${dims.height}"${close}>`;
+            } catch (e) { /* undecodable — leave the tag untouched */ }
+            return full;
+        }
+
+        if (!/^images\//.test(src) || !/\.(?:jpe?g|png)$/i.test(src)) return full;
+
+        const entry = manifest && manifest[src];
+        if (entry && Array.isArray(entry.variants) && entry.variants.length) {
+            const srcset = entry.variants.map((v) => `${v.webp} ${v.width}w`).join(', ');
+            const img = `<img${attrs} width="${entry.width}" height="${entry.height}"${close}>`;
+            return `<picture><source type="image/webp" srcset="${srcset}" sizes="${RESPONSIVE_IMG_SIZES}">${img}</picture>`;
+        }
+
+        // No manifest entry (hero/og/unreferenced file) — still size the <img>
+        // when the file is readable on disk, so every image with a knowable
+        // intrinsic size reserves its box, not just the ones with variants.
+        try {
+            const abs = path.join(siteDir, src);
+            if (fs.existsSync(abs)) {
+                const dims = decodeRasterDims(fs.readFileSync(abs));
+                if (dims) return `<img${attrs} width="${dims.width}" height="${dims.height}"${close}>`;
+            }
+        } catch (e) { /* unreadable/undecodable — leave the tag untouched */ }
+        return full;
+    });
+}
+
 function build(siteDir = ROOT) {
     const dir = path.resolve(siteDir);
     const configPath = path.join(dir, 'config.json');
@@ -809,7 +924,8 @@ function build(siteDir = ROOT) {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const templateHtml = fs.readFileSync(templatePath, 'utf8');
 
-    const html = renderHtml(templateHtml, config);
+    let html = renderHtml(templateHtml, config);
+    html = injectResponsiveImages(html, dir);
 
     fs.writeFileSync(outputPath, html, 'utf8');
 
@@ -833,6 +949,8 @@ module.exports = {
     normalizeInstagramForPublic,
     reorderSections,
     NON_REMOVABLE_SECTION_IDS,
+    injectResponsiveImages,
+    decodeRasterDims,
 };
 
 // Run from CLI:  node build.js [siteDir]

@@ -1,0 +1,82 @@
+{
+  "images/torturi-1.jpg": {
+    "width": 1280,
+    "height": 1280,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/torturi-1-480w.webp",
+        "bytes": 26376
+      },
+      {
+        "width": 960,
+        "webp": "images/torturi-1-960w.webp",
+        "bytes": 80822
+      }
+    ]
+  },
+  "images/catering-1.jpg": {
+    "width": 1280,
+    "height": 1276,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/catering-1-480w.webp",
+        "bytes": 25246
+      },
+      {
+        "width": 960,
+        "webp": "images/catering-1-960w.webp",
+        "bytes": 85848
+      }
+    ]
+  },
+  "images/placinte-1.jpg": {
+    "width": 1280,
+    "height": 1276,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/placinte-1-480w.webp",
+        "bytes": 37562
+      },
+      {
+        "width": 960,
+        "webp": "images/placinte-1-960w.webp",
+        "bytes": 126890
+      }
+    ]
+  },
+  "images/cupcakes-1.jpg": {
+    "width": 1280,
+    "height": 1276,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/cupcakes-1-480w.webp",
+        "bytes": 23550
+      },
+      {
+        "width": 960,
+        "webp": "images/cupcakes-1-960w.webp",
+        "bytes": 71132
+      }
+    ]
+  },
+  "images/hero.jpg": {
+    "width": 958,
+    "height": 1024,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/hero-480w.webp",
+        "bytes": 15634
+      },
+      {
+        "width": 958,
+        "webp": "images/hero-958w.webp",
+        "bytes": 47504
+      }
+    ]
+  }
+}

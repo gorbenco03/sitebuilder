@@ -1,0 +1,530 @@
+{
+  "images/iv-team-c.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-team-c-480w.webp",
+        "bytes": 12040
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-team-c-960w.webp",
+        "bytes": 34696
+      }
+    ]
+  },
+  "images/iv-team-d.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-team-d-480w.webp",
+        "bytes": 9712
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-team-d-960w.webp",
+        "bytes": 26972
+      }
+    ]
+  },
+  "images/iv-team-l.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-team-l-480w.webp",
+        "bytes": 13080
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-team-l-960w.webp",
+        "bytes": 44608
+      }
+    ]
+  },
+  "images/iv-par1.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-par1-480w.webp",
+        "bytes": 15424
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-par1-960w.webp",
+        "bytes": 58680
+      }
+    ]
+  },
+  "images/iv-par2.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-par2-480w.webp",
+        "bytes": 13874
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-par2-960w.webp",
+        "bytes": 46084
+      }
+    ]
+  },
+  "images/iv-par3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-par3-480w.webp",
+        "bytes": 13156
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-par3-960w.webp",
+        "bytes": 40926
+      }
+    ]
+  },
+  "images/iv-par4.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-par4-480w.webp",
+        "bytes": 23254
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-par4-960w.webp",
+        "bytes": 93662
+      }
+    ]
+  },
+  "images/iv-mani1.jpg": {
+    "width": 960,
+    "height": 643,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-mani1-480w.webp",
+        "bytes": 8236
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-mani1-960w.webp",
+        "bytes": 25118
+      }
+    ]
+  },
+  "images/iv-mani2.jpg": {
+    "width": 960,
+    "height": 643,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-mani2-480w.webp",
+        "bytes": 9018
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-mani2-960w.webp",
+        "bytes": 30924
+      }
+    ]
+  },
+  "images/iv-mani3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-mani3-480w.webp",
+        "bytes": 15724
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-mani3-960w.webp",
+        "bytes": 66744
+      }
+    ]
+  },
+  "images/iv-mani4.jpg": {
+    "width": 960,
+    "height": 643,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-mani4-480w.webp",
+        "bytes": 8188
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-mani4-960w.webp",
+        "bytes": 24988
+      }
+    ]
+  },
+  "images/iv-ig1.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig1-480w.webp",
+        "bytes": 18954
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig1-960w.webp",
+        "bytes": 58218
+      }
+    ]
+  },
+  "images/iv-ig2.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig2-480w.webp",
+        "bytes": 14546
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig2-960w.webp",
+        "bytes": 40842
+      }
+    ]
+  },
+  "images/iv-ig3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig3-480w.webp",
+        "bytes": 14732
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig3-960w.webp",
+        "bytes": 45160
+      }
+    ]
+  },
+  "images/iv-ig4.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig4-480w.webp",
+        "bytes": 10302
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig4-960w.webp",
+        "bytes": 28786
+      }
+    ]
+  },
+  "images/iv-ig5.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig5-480w.webp",
+        "bytes": 15928
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig5-960w.webp",
+        "bytes": 43716
+      }
+    ]
+  },
+  "images/iv-ig6.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/iv-ig6-480w.webp",
+        "bytes": 20142
+      },
+      {
+        "width": 960,
+        "webp": "images/iv-ig6-960w.webp",
+        "bytes": 56610
+      }
+    ]
+  },
+  "images/sf-team-m.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-team-m-480w.webp",
+        "bytes": 6414
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-team-m-960w.webp",
+        "bytes": 20406
+      }
+    ]
+  },
+  "images/sf-team-a.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-team-a-480w.webp",
+        "bytes": 8412
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-team-a-960w.webp",
+        "bytes": 26142
+      }
+    ]
+  },
+  "images/sf-team-o.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-team-o-480w.webp",
+        "bytes": 18378
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-team-o-960w.webp",
+        "bytes": 59840
+      }
+    ]
+  },
+  "images/sf-ext1.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ext1-480w.webp",
+        "bytes": 11796
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ext1-960w.webp",
+        "bytes": 48934
+      }
+    ]
+  },
+  "images/sf-ext2.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ext2-480w.webp",
+        "bytes": 17108
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ext2-960w.webp",
+        "bytes": 57818
+      }
+    ]
+  },
+  "images/sf-ext3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ext3-480w.webp",
+        "bytes": 21018
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ext3-960w.webp",
+        "bytes": 71244
+      }
+    ]
+  },
+  "images/sf-ext4.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ext4-480w.webp",
+        "bytes": 14280
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ext4-960w.webp",
+        "bytes": 50892
+      }
+    ]
+  },
+  "images/sf-mua1.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-mua1-480w.webp",
+        "bytes": 9174
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-mua1-960w.webp",
+        "bytes": 32958
+      }
+    ]
+  },
+  "images/sf-mua2.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-mua2-480w.webp",
+        "bytes": 9724
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-mua2-960w.webp",
+        "bytes": 36190
+      }
+    ]
+  },
+  "images/sf-mua3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-mua3-480w.webp",
+        "bytes": 13106
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-mua3-960w.webp",
+        "bytes": 47392
+      }
+    ]
+  },
+  "images/sf-ig1.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig1-480w.webp",
+        "bytes": 19986
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig1-960w.webp",
+        "bytes": 60198
+      }
+    ]
+  },
+  "images/sf-ig2.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig2-480w.webp",
+        "bytes": 11766
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig2-960w.webp",
+        "bytes": 33496
+      }
+    ]
+  },
+  "images/sf-ig3.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig3-480w.webp",
+        "bytes": 10550
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig3-960w.webp",
+        "bytes": 32394
+      }
+    ]
+  },
+  "images/sf-ig4.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig4-480w.webp",
+        "bytes": 22006
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig4-960w.webp",
+        "bytes": 70906
+      }
+    ]
+  },
+  "images/sf-ig5.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig5-480w.webp",
+        "bytes": 20966
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig5-960w.webp",
+        "bytes": 65068
+      }
+    ]
+  },
+  "images/sf-ig6.jpg": {
+    "width": 960,
+    "height": 960,
+    "variants": [
+      {
+        "width": 480,
+        "webp": "images/sf-ig6-480w.webp",
+        "bytes": 27870
+      },
+      {
+        "width": 960,
+        "webp": "images/sf-ig6-960w.webp",
+        "bytes": 85080
+      }
+    ]
+  }
+}
