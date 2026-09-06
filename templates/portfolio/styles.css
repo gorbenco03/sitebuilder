@@ -260,6 +260,14 @@ ul { list-style: none; }
 .pf-series { margin: 2.5rem 0 3.5rem; }
 .pf-series__t { font-family: var(--display); font-size: 1.35rem; font-weight: 500; }
 .pf-series__b { color: var(--soft); margin: 0.35rem 0 1rem; }
+/* The photo wall is deliberately full-bleed while its heading stays in the
+   980px text column — the contrast between the two is the section's whole
+   idea. But it ran to x=0 and x=1440 with an 8px gap between the photos, so
+   the outer edges were the only seams on the page that were not 8px, and the
+   rounded corners of the first and last photo in each row were sliced off by
+   the viewport. It read as a grid that had escaped its layout rather than one
+   placed edge to edge on purpose. Same gutter outside as inside. */
+.collage-stage { padding-inline: 8px; }
 .collage-deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 @media (min-width: 834px) {
     /* WAVE10: a category's photo count is owner-editable (add/remove via the
