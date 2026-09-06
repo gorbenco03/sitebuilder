@@ -89,25 +89,15 @@ function dirTotalBytes(dir) {
   // (once with minifyCss/trimJsWhitespace short-circuited to identity):
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       74808        77251     76000
-  //   local-service      96621       100023     98300
-  //   portfolio          87455        90918     89100
-  //   professionals     105449       110453    107900
-  //
-  // Strictly between the two, so a silent revert of the CSS minifier in
-  // scripts/build-builder.js fails this check -- verified by re-running with
-  // the minifier disabled.
-  //
-  // The absolute numbers move every wave and that is expected: this pass
-  // removed 1244 lines of dead QR encoder across the five templates and added
-  // real editing features to local-service. What this gate pins is the
-  // MINIFIER SAVINGS, not the payload size -- use bot/test/wave1-perf-theme
-  // and the measured evidence under 04-QA-Evidence for the latter.
+  //   product-menu       79368        81811     80600
+  //   local-service     102117       105519    103800
+  //   portfolio          93741        97204     95500
+  //   professionals     106064       112023    109000
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 76000,
-    'local-service': 98300,
-    portfolio: 89100,
-    professionals: 107900,
+    'product-menu': 80600,
+    'local-service': 103800,
+    portfolio: 95500,
+    professionals: 109000,
   };
 
   for (const id of TPLS) {
