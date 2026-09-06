@@ -296,6 +296,104 @@
     return counts;
   }
 
+  /**
+   * Romanian, vertical-appropriate default text for a freshly added (still empty)
+   * list-item text field. Never a generic factory placeholder ("Element nou" /
+   * "New item") — the product oracle rejects those. Returns null when we don't
+   * recognise the field, so the caller leaves it untouched rather than guessing.
+   *
+   * `root` is the list root as produced by listRoot() (e.g. "services",
+   * "categories", "pricing"). `fieldKey` is the path segment(s) after the item
+   * index (e.g. "label"). `contextEl` is the empty field's own element, used to
+   * sniff nearby template-specific class names when the same root name is
+   * reused by different verticals with different wording needs.
+   */
+  function defaultItemText(root, fieldKey, contextEl) {
+    function hasAncestorClass(re) {
+      var el = contextEl;
+      var depth = 0;
+      while (el && depth < 12) {
+        if (typeof el.className === 'string' && re.test(el.className)) return true;
+        el = el.parentElement;
+        depth++;
+      }
+      return false;
+    }
+
+    if (root === 'services' || /(^|\.)services$/.test(root)) {
+      if (fieldKey === 'label') {
+        if (hasAncestorClass(/\bpm-ticket\b/)) return 'Specialitate nouă';
+        return 'Serviciu nou';
+      }
+    }
+    if (root === 'pricing' || /(^|\.)pricing$/.test(root)) {
+      if (fieldKey === 'name') return 'Pachet nou';
+    }
+    if (root === 'packages' || /(^|\.)packages$/.test(root)) {
+      if (fieldKey === 'name' || fieldKey === 'label' || fieldKey === 'title') return 'Pachet nou';
+    }
+    if (root === 'categories' || /(^|\.)categories$/.test(root)) {
+      if (fieldKey === 'title') {
+        if (hasAncestorClass(/\bpm-catblock\b/)) return 'Categorie foto nouă';
+        if (hasAncestorClass(/\bpf-series\b/)) return 'Categorie de lucrări nouă';
+        return 'Categorie nouă';
+      }
+    }
+    if (root === 'steps' || /(^|\.)steps$/.test(root)) {
+      if (fieldKey === 'label' || fieldKey === 'title') return 'Pas nou';
+    }
+    if (root === 'reviews' || /(^|\.)reviews$/.test(root)) {
+      if (fieldKey === 'author' || fieldKey === 'name') return 'Client nou';
+      if (fieldKey === 'text' || fieldKey === 'quote' || fieldKey === 'body') return 'Recenzie nouă';
+    }
+    return null;
+  }
+
+  /**
+   * Root-cause fix for "+ Adaugă" producing invisible/empty cards (PM-02, prof-01):
+   * app.js's onListAdd seeds a brand-new repeatable item with empty strings for
+   * every itemShape field, so the freshly rendered card has literally no text.
+   * We cannot change onListAdd (out of scope here), so instead — right after the
+   * fresh render lands in the iframe and before wiring up list controls — we
+   * detect any list item in a safe list whose text fields are ALL still empty
+   * (i.e. it looks exactly like a just-created, never-touched item) and give it
+   * sensible Romanian text. We both paint it in locally (so it's visible at
+   * once) and echo it back to the parent via the existing {hb:'text'} protocol
+   * so draft.config — and therefore exports/publishes — carry the same value.
+   *
+   * Only items where *every* discovered text field is empty are touched, so a
+   * user who deliberately clears one field on an otherwise-filled item is left
+   * alone.
+   */
+  function fillEmptyListItemDefaults(groups) {
+    Object.keys(groups).forEach(function (root) {
+      Object.keys(groups[root]).forEach(function (idxKey) {
+        var idx = Number(idxKey);
+        var itemPath = root + '.' + idx;
+        var fields = Array.prototype.slice.call(
+          document.querySelectorAll(
+            '[data-hb-edit^="' + CSS.escape(itemPath + '.') + '"][data-hb-kind="text"], ' +
+            '[data-hb-edit="' + CSS.escape(itemPath) + '"][data-hb-kind="text"]'
+          )
+        );
+        if (fields.length === 0) return;
+        var allEmpty = fields.every(function (el) {
+          return el.textContent.replace(/\s+/g, '') === '';
+        });
+        if (!allEmpty) return;
+
+        fields.forEach(function (el) {
+          var path = el.getAttribute('data-hb-edit');
+          var fieldKey = path.length > itemPath.length ? path.slice(itemPath.length + 1) : '';
+          var text = defaultItemText(root, fieldKey, el);
+          if (!text) return;
+          el.textContent = text;
+          toParent({ hb: 'text', path: path, value: text });
+        });
+      });
+    });
+  }
+
   /* ─────────────────────────────────────────────────────────────────────────
      4. Make text fields editable
   ───────────────────────────────────────────────────────────────────────── */
@@ -604,6 +702,11 @@
   function setupListControls() {
     var groups = detectListGroups();
 
+    // Fix newly-added items that rendered with no text (see PM-02 / prof-01)
+    // before wiring up remove/add controls, so container sizing below is
+    // computed against the final, visible content.
+    fillEmptyListItemDefaults(groups);
+
     Object.keys(groups).forEach(function (root) {
       var indices = Object.keys(groups[root]).map(Number).sort(function (a, b) { return a - b; });
 
@@ -622,7 +725,7 @@
         // Find the most-ancestral DOM node shared by all item fields.
         // Simple approach: walk up from the first field until we find a container
         // that also contains all the other fields.
-        var container = findListItemContainer(itemEls);
+        var container = findListItemContainer(itemEls, root, idx);
         if (!container) return;
 
         // Avoid double-wrapping.
@@ -655,7 +758,7 @@
       );
       if (lastItemEls.length === 0) return;
 
-      var lastContainer = findListItemContainer(lastItemEls);
+      var lastContainer = findListItemContainer(lastItemEls, root, lastIdx);
       if (!lastContainer) return;
 
       var addBtn = document.createElement('button');
@@ -680,25 +783,80 @@
   }
 
   /**
-   * Find the most appropriate container element for a group of list-item elements.
-   * Walks up from the first element until the candidate contains all elements.
+   * Does `node` contain a data-hb-edit element belonging to a DIFFERENT index
+   * of the same list `root`? Used to find how far up the DOM an item's
+   * container can grow without spilling into a sibling item's markup.
    */
-  function findListItemContainer(els) {
+  function containsOtherListIndex(node, root, idx) {
+    if (!root) return false;
+    var others = node.querySelectorAll('[data-hb-edit^="' + CSS.escape(root + '.') + '"]');
+    for (var i = 0; i < others.length; i++) {
+      var p = others[i].getAttribute('data-hb-edit');
+      var rest = p.slice(root.length + 1);
+      var seg = rest.split('.')[0];
+      if (/^\d+$/.test(seg) && Number(seg) !== idx) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Find the most appropriate container element for a group of list-item elements
+   * (root cause of PM-02 / prof-02: PM-02, prof-01, prof-02).
+   *
+   * The old version returned the FIRST ancestor that happened to contain every
+   * field of the item — for an item with a single text field (e.g. a
+   * <span data-hb-edit="services.N.label"> nested one level inside its visual
+   * wrapper), that is the field's immediate parent, not the repeated "card"
+   * element the list is actually built from. Two visible bugs followed:
+   *  - When the field is empty, that immediate parent can be an empty inline
+   *    element with a 0x0 boundingClientRect, so the remove "×" button placed
+   *    inside it is unreachable by click (PM-02).
+   *  - The "+ Adaugă" button is inserted as `container.nextSibling` — if
+   *    `container` is that inner wrapper instead of the card, the button ends
+   *    up nested INSIDE the card/li instead of after it in the list (prof-02).
+   *
+   * Fix: after finding the lowest common ancestor of the item's own fields
+   * (unchanged first pass), keep climbing upward as long as the next ancestor
+   * still belongs EXCLUSIVELY to this item — i.e. it contains no data-hb-edit
+   * field from a different index of the same list root. That naturally stops
+   * right at the true repeated item root (e.g. the <li>), because its parent
+   * (the <ul>/<ol>/list wrapper) is the first ancestor shared with sibling
+   * items. This also fixes the 0x0-rect problem as a side effect: a real card
+   * root almost always has non-zero size even when its text is briefly empty.
+   */
+  function findListItemContainer(els, root, idx) {
     if (!els || els.length === 0) return null;
     var candidate = els[0].parentElement;
     if (!candidate) return els[0];
 
-    // Walk upward at most 8 levels.
+    // Pass 1 (unchanged): find the lowest ancestor containing every field.
     for (var depth = 0; depth < 8; depth++) {
       var allInside = els.every(function (el) {
         return candidate.contains(el);
       });
-      if (allInside) return candidate;
-      if (!candidate.parentElement) break;
+      if (allInside) break;
+      if (!candidate.parentElement) return els[0].parentElement || els[0];
       candidate = candidate.parentElement;
     }
-    // Fallback: return first element's parent.
-    return els[0].parentElement || els[0];
+
+    // Pass 2 (the fix): climb further while the ancestor is still exclusive
+    // to this item, so we land on the actual repeated item root rather than
+    // an inner field wrapper. Bounded to a handful of levels — and stopped
+    // hard at body/html — so a list that currently has only one item (no
+    // sibling to bump into) can never balloon the "container" up to the
+    // whole page.
+    var best = candidate;
+    var climb = candidate;
+    for (var depth2 = 0; depth2 < 4; depth2++) {
+      if (!climb.parentElement) break;
+      var up = climb.parentElement;
+      if (up === document.body || up === document.documentElement) break;
+      if (up.tagName === 'SECTION' || up.tagName === 'MAIN') break;
+      if (containsOtherListIndex(up, root, idx)) break;
+      climb = up;
+      best = climb;
+    }
+    return best;
   }
 
   /* ─────────────────────────────────────────────────────────────────────────

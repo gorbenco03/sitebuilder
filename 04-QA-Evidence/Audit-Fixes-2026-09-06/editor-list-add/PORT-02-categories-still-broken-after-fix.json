@@ -1,0 +1,12 @@
+{
+  "before": {
+    "seriesCount": 2,
+    "hbListItemCount": 18
+  },
+  "after": {
+    "seriesCount": 3,
+    "hbListItemCount": 18,
+    "lastSeriesOuterHTML": "<div class=\"pf-series\">\n                <div class=\"pf-shell pf-series__meta\">\n                    \n                    \n                </div>\n                <div class=\"collage-stage pf-series__stage\">\n                    <div class=\"collage-deck\">\n                        \n                    </div>\n                </div>\n            </div>",
+    "lastSeriesHasAnyDataHbEdit": false
+  }
+}
