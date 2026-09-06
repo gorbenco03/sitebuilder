@@ -83,7 +83,11 @@ test('no hero-sized background image tiles or renders at its natural size', asyn
                             const r = el.getBoundingClientRect();
                             // Hero-sized surfaces only: a repeating texture on a
                             // small chip is a legitimate design choice.
-                            if (r.width < 600 || r.height < 300) continue;
+                            // Media-sized surfaces. Not 600px: the
+                            // product-menu hero frame is 534x460 and was
+                            // showing an arbitrary natural-size crop, which a
+                            // 600px floor walked straight past.
+                            if (r.width < 300 || r.height < 250) continue;
                             const imgs = splitLayers(cs.backgroundImage);
                             const sizes = splitLayers(cs.backgroundSize);
                             const repeats = splitLayers(cs.backgroundRepeat);
@@ -95,7 +99,7 @@ test('no hero-sized background image tiles or renders at its natural size', asyn
                                 const size = sizes[i % sizes.length] || 'auto';
                                 const repeat = repeats[i % repeats.length] || 'repeat';
                                 const natural = size === 'auto' || size === 'auto auto';
-                                if (natural && repeat !== 'no-repeat') {
+                                if (natural) {
                                     out.push({
                                         cls: String(el.className || el.tagName).slice(0, 34),
                                         w: Math.round(r.width), h: Math.round(r.height),
@@ -112,7 +116,8 @@ test('no hero-sized background image tiles or renders at its natural size', asyn
                         failures.push(
                             `${tpl} @${width}: .${b.cls} is ${b.w}x${b.h}; its photo layer (#${b.layer}) has ` +
                             `background-size:${b.size} and background-repeat:${b.repeat} — it renders at its ` +
-                            `natural size and tiles. ` +
+                            `natural size — tiling if the source is smaller than the box, and showing an ` +
+                            `arbitrary top-left crop if it is larger. ` +
                             `The inline "background:" shorthand reset the longhands; the stylesheet needs ` +
                             `background-size/-repeat with !important, as .ls-hero__media and .pf-hero__bg have.`
                         );

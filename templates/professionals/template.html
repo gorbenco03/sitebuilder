@@ -26,14 +26,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="cookie-banner.css">
     <script>
-    // Pre-paint consent check (avoids CLS). This template already mounted the
-    // banner's stylesheet and script at the top of <body>, which measured
-    // 0.000 — but only because cookie-banner.js happens to run on
-    // DOMContentLoaded before the first paint of a document this size. That is
-    // parse timing, not a guarantee. The other four templates set the class
-    // synchronously in <head>; this makes all five use the same explicit
-    // mechanism, so waveB-cls-all-templates can check the cause rather than
-    // only the number.
+    // Pre-paint consent check. Sets the clearance class synchronously so the
+    // hero does not shift when cookie-banner.js runs after first paint.
+    // Why it matters, with the numbers: bot/test/waveB-cls-all-templates.test.js.
     (function () {
         try {
             var KEY = 'hb-cookie-consent', accepted = false;
