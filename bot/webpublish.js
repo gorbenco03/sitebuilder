@@ -46,6 +46,9 @@ const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
 const SITES_DIR     = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 
 const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
+// Checkout grants the first hosting year before Stripe's day-7 trial
+// collection. Only cycle invoices at/near the existing entitlement end renew.
+const RENEWAL_DUE_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
 
 /**
  * Remove isolated published files for a slug (stop serving /live/<slug>/).
@@ -243,6 +246,17 @@ async function handleStripeInvoicePaid(event) {
     if (!site) {
         log('webpublish.invoice_paid.no_site', { subscriptionId, invoiceId: invoice.id || null }, 'warn');
         return null;
+    }
+
+    const currentPaidUntilMs = Date.parse(site.paidUntil || '');
+    if (Number.isFinite(currentPaidUntilMs) && currentPaidUntilMs > Date.now() + RENEWAL_DUE_WINDOW_MS) {
+        log('webpublish.invoice_paid.first_year_cycle_ignored', {
+            siteId: site.id,
+            subscriptionId,
+            invoiceId: invoice.id || null,
+            paidUntil: site.paidUntil,
+        });
+        return site;
     }
 
     const eventId = event && event.id;

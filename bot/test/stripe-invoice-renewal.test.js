@@ -56,6 +56,27 @@ function expiredSubscribedSite() {
     return { site: registry.getSite(site.id), subscriptionId, paidUntil };
 }
 
+function liveFirstYearSubscribedSite() {
+    const user = registry.getOrCreateUserByEmail(`invoice-first-year-${crypto.randomUUID()}@example.com`);
+    const site = registry.createSite({
+        userId: user.id,
+        templateId: 'product-menu',
+        templateVersion: 1,
+        slug: 'invoice-first-year-' + crypto.randomUUID().slice(0, 8),
+        platform: 'web',
+    });
+    const subscriptionId = 'sub_invoice_first_year_' + crypto.randomUUID().slice(0, 12);
+    const paidUntil = registry.addMonthsIso(new Date().toISOString(), 12);
+    registry.updateSite(site.id, {
+        paid: true,
+        paidUntil,
+        status: 'live',
+        stripeSubscriptionId: subscriptionId,
+        stripeSubscriptionStatus: 'active',
+    });
+    return { site: registry.getSite(site.id), subscriptionId, paidUntil };
+}
+
 function invoiceEvent({ eventId, invoiceId, subscriptionId, billingReason, type = 'invoice.payment_succeeded' }) {
     return {
         id: eventId,
@@ -71,6 +92,18 @@ function invoiceEvent({ eventId, invoiceId, subscriptionId, billingReason, type 
 }
 
 (async () => {
+    await check('subscription_cycle invoice keeps a live first-year entitlement unchanged', async () => {
+        const { site, subscriptionId, paidUntil } = liveFirstYearSubscribedSite();
+        await onStripeEvent(invoiceEvent({
+            eventId: 'evt_invoice_first_year_cycle_' + crypto.randomUUID().slice(0, 12),
+            subscriptionId,
+            billingReason: 'subscription_cycle',
+        }));
+        const after = registry.getSite(site.id);
+        assert.strictEqual(after.paidUntil, paidUntil, 'day-7 first-year collection must not add another year');
+        assert.strictEqual(after.status, 'live', 'first-year collection must not alter a live site');
+    });
+
     await check('subscription_cycle invoice extends an expired entitlement and republishes it once', async () => {
         const { site, subscriptionId, paidUntil } = expiredSubscribedSite();
         const event = invoiceEvent({
