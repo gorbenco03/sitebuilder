@@ -94,3 +94,13 @@ Owner a declarat Produsul la commit `884ce76` pe `main` (calendar nativ pașii a
 
 **Acțiune:** Produsul rămâne **live** (nu s-a oprit/retras din producție — nicio acțiune destructivă), dar declarația de "gata" e retrasă până la un nou fullpass real care acoperă interacțiunile de mai sus. Remediere prioritizată: securitate + bani + funcția-vedetă (QR) + calendar Docker + GDPR delete întâi (0-4 săptămâni per foaia de parcurs din raport §9), apoi restul defectelor critice/high pe șabloane, apoi hardening. Fără Stripe live/DNS/secrete producție atinse de remediere.
 
+## Remediere audit — progres (2026-09-06)
+
+Integrat local pe `main` (ahead 6, fără push), verificat independent post-merge (`node --test bot/test/*.test.js` 143 pass / 2 fail preexistente flaky Brave — confirmate identice pe baza `675bc4a`, nicio regresie nouă; `node bot/test/fullpass-63230d2.mjs` → `FULLPASS defects=0 steps=46`; `git diff --check` curat pe range):
+
+- **Finding #14 (critical, cont oricui poate fi preluat)** — SEC-01: `POST /api/auth/email` fără `RESEND_API_KEY` în producție nu mai întoarce token-ul de login (`devLink`) în clar; producție fără provider → `{ok:true, sent:false}` fără token, log de eroare. ACCEPT independent (53f2a74), merge 1f04860.
+- **Finding #8 (critical, facturare dublă orfană)** — PC-01: reînnoirea automată reală Stripe (`invoice.payment_succeeded`/`invoice.paid`) extinde acum `paidUntil` idempotent, reactivează site-ul dacă era expirat; corectat ulterior (remediere v2, ACCEPT e284e57) să NU extindă un `paidUntil` deja neexpirat în primul an (ar fi dat ~24 luni de hosting pentru un ciclu de 12 luni). Merge 1f0effd.
+- **Finding #1 (critical, VERIFICAT independent, codul QR WhatsApp nu e valid)** — QR-01 dispatch-at (`t_9e49cb76`, builder-backend, worktree `qr-01-whatsapp-qr`): înlocuiește encoder-ul QR hand-rolled duplicat pe toate cele 5 șabloane cu unul corect + oracle care decodează efectiv QR-ul generat (nu doar verificare vizuală). Review independent blocat pregătit (`t_b2c81f5a`).
+
+Rămân din raport (netratate încă, ordine sugerată din §9 al raportului): calendar nativ nemobil pe imaginea Docker de producție (finding #4/#12), `/sterge` GDPR nu șterge site-ul de pe disc (finding #5/#13), lipsă rate-limiting + security headers + logout funcțional (findings #14b/#23/#24/#15), plus restul defectelor critice/high per șablon (galerie/lightbox, hero desserdirina, "+ Adaugă" corupe DOM, XSS portfolio, meniu mobil lipsă pe 3/5).
+
