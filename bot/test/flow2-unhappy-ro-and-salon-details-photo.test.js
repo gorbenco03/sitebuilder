@@ -49,12 +49,38 @@ const wireAuthForm = extractFunction(appSrc, 'wireAuthForm');
 const unpaidRomanian = 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.';
 
 check('auth email network failure copy', () => {
+  // This check originally banned showing err.message at all. Audit finding #6
+  // then asked for the opposite -- the server sends a specific reason and the
+  // UI was masking it behind one generic string. Both are right, about
+  // different errors, so the contract is now: show the reason the SERVER
+  // chose, fall back to Romanian for anything else.
+  //
+  // The distinction is not cosmetic. apiPost() only reaches its throw when the
+  // server actually responded; a fetch() rejection (offline, DNS, connection
+  // refused) produces a raw browser TypeError whose message is English
+  // technical text. Displaying that verbatim is the regression this guards.
   assert.ok(
-    wireAuthForm.includes("errorDiv.textContent = 'Nu am putut trimite linkul. Încearcă din nou.'"),
-    'auth email failure uses the fixed Romanian fallback'
+    wireAuthForm.includes("'Nu am putut trimite linkul. Încearcă din nou.'"),
+    'auth email failure still keeps the Romanian fallback'
   );
-  assert.ok(!/errorDiv\.textContent\s*=\s*(?:err|e)\.message/.test(wireAuthForm), 'auth error cannot expose an exception message');
+  assert.ok(
+    /err\s*&&\s*err\.fromServer/.test(wireAuthForm),
+    'auth error must gate the server reason on err.fromServer'
+  );
+  assert.ok(
+    !/errorDiv\.textContent\s*=\s*\(?\s*(?:err|e)\s*&&\s*(?:err|e)\.message\s*\)?\s*\|\|/.test(wireAuthForm),
+    'auth error cannot fall back through an ungated exception message'
+  );
   assert.ok(!wireAuthForm.includes('Something went wrong. Try again.'), 'auth error cannot retain the English fallback');
+});
+
+check('apiPost marks server-chosen errors so the UI can tell them apart', () => {
+  const apiPost = extractFunction(appSrc, 'apiPost');
+  assert.ok(/fromServer:\s*true/.test(apiPost), 'apiPost must flag errors that carry a server message');
+  assert.ok(
+    /if \(!r\.ok\)[\s\S]*?fromServer:\s*true/.test(apiPost),
+    'the flag must be set on the non-ok branch, where a server body exists'
+  );
 });
 
 check('publish network failure copy', () => {

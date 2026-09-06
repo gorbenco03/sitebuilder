@@ -3116,7 +3116,17 @@ async function apiPost(url, body) {
     body: JSON.stringify(body),
   });
   const json = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(json.error || 'Eroare server'), { status: r.status });
+  // fromServer marks an error whose text the SERVER chose and is safe to show
+  // the user. A rejection from fetch() itself (offline, DNS, connection
+  // refused) never reaches this line, so it never carries the flag and must
+  // not be displayed -- its message is a raw browser string like
+  // "Failed to fetch", in English, in a Romanian product.
+  if (!r.ok) {
+    throw Object.assign(new Error(json.error || 'Eroare server'), {
+      status: r.status,
+      fromServer: true,
+    });
+  }
   return json;
 }
 
@@ -3768,7 +3778,12 @@ function wireAuthForm(onAuthSuccess) {
         // audit medium #6: the server sends a specific reason (rate limit, invalid
         // email, service unavailable) — show it instead of masking it with a
         // generic string (apiPost() already gives us err.message from json.error).
-        if (errorDiv) { errorDiv.textContent = (err && err.message) || 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
+        // Audit finding #6 asked for the server's specific reason instead of
+        // one generic string. But only the server's -- a transport failure
+        // still gets the Romanian fallback, never the browser's own English
+        // exception text.
+        const serverReason = err && err.fromServer && err.message ? err.message : '';
+        if (errorDiv) { errorDiv.textContent = serverReason || 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
