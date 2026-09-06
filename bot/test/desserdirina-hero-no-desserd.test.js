@@ -19,7 +19,10 @@ const { execFileSync, spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+const BRAVE = (process.env.HIDOOK_BROWSER_PATH || '')  // opt-in only: these oracles ship
+    // pinned to Playwright's Chromium so they are portable and CI-runnable.
+    // Brave 150 renders the preview cookie banner at 0x0 on the second template
+    // opened in a session, which made these specs fail on this machine only.;
 const SEED_HERO = path.join(ROOT, 'templates/desserdirina/images/hero.jpg');
 const ROOT_HERO = path.join(ROOT, 'images/hero.jpg');
 const SWIFT_SRC = path.join(ROOT, 'scripts/ocr-vision.swift');

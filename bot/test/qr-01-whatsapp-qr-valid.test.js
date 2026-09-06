@@ -16,7 +16,10 @@ const ROOT = path.resolve(__dirname, '../..');
 const TEMPLATE_IDS = ['desserdirina', 'local-service', 'portfolio', 'product-menu', 'professionals'];
 const QR_TEXT = 'https://wa.me/40712345678?text=Salut%2C%20vreau%20o%20rezervare';
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+const BRAVE = (process.env.HIDOOK_BROWSER_PATH || '')  // opt-in only: these oracles ship
+    // pinned to Playwright's Chromium so they are portable and CI-runnable.
+    // Brave 150 renders the preview cookie banner at 0x0 on the second template
+    // opened in a session, which made these specs fail on this machine only.;
 
 function loadPlaywright() {
   for (const candidate of [path.join(ROOT, 'node_modules/playwright'), PW_PATH]) {

@@ -33,7 +33,10 @@ const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping
 const R8_PARENT_SHA = '56f7de08c909807320707d02f0d6140139abf2be'; // retained legal scroll + process copy
 const R10_PARENT_SHA = 'fa6f80c9fd005a2f8a89cf58cb758ded30708295'; // deferred ready commit crosses generations
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+const BRAVE = (process.env.HIDOOK_BROWSER_PATH || '')  // opt-in only: these oracles ship
+    // pinned to Playwright's Chromium so they are portable and CI-runnable.
+    // Brave 150 renders the preview cookie banner at 0x0 on the second template
+    // opened in a session, which made these specs fail on this machine only.;
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 
 const SERVER_SECRET = 'flow3-server-secret-' + crypto.randomBytes(8).toString('hex');

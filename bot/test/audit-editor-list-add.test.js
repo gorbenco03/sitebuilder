@@ -55,7 +55,10 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
+const BRAVE = (process.env.HIDOOK_BROWSER_PATH || '')  // opt-in only: these oracles ship
+    // pinned to Playwright's Chromium so they are portable and CI-runnable.
+    // Brave 150 renders the preview cookie banner at 0x0 on the second template
+    // opened in a session, which made these specs fail on this machine only.;
 
 // Forbidden, "factory" placeholder text the product oracle must never see on
 // a freshly created list item — the whole point of this fix is that new
