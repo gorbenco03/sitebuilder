@@ -28,7 +28,7 @@ templates/
 | `styles.css` | Complete CSS — color variables are injected via `<style>` in `<head>` |
 | `script.js` | Defensive vanilla JS (each `init*` early-returns if its elements are missing) |
 | `collage.js` | Drag-and-drop photo gallery + lightbox; works on any `.collage-deck` |
-| `schema.json` | Contract for the wizard: fields, types, validation, labels in English |
+| `schema.json` | Contract for the wizard: fields, types, validation, labels in Romanian (product language for all visible customer/site copy) |
 | `presets.json` | Demo examples with complete config — preview in the builder / intake |
 
 ## The config.json contract
@@ -72,7 +72,9 @@ footer{ address, year, note }
    cp templates/product-menu/collage.js   templates/<id>/collage.js
    ```
 3. Write `schema.json` — define the fields specific to the vertical (you can add extra keys beyond the standard contract, but they must be guarded with `@if` in the template)
-4. Write `presets.json` — 2 realistic demo configs with natural English copy and local demo images under `images/` (no external stock placeholders)
+4. Write `presets.json` — 2 realistic demo configs with natural Romanian copy (product
+   language for all visible customer/site surfaces) and local demo images under `images/`
+   (no external stock placeholders)
 5. Add the vertical to `templates/registry.json`
 
 ## schema.json format
@@ -82,7 +84,7 @@ footer{ address, year, note }
   "templateId": "<id>",
   "version": 1,
   "name": "<Name shown in the wizard>",
-  "language": "en",
+  "language": "ro",
   "wizardHints": {
     "vertical": "<product-menu|local-service|portfolio>",
     "aiStyle": "<tone for AI polish>"
@@ -104,6 +106,13 @@ footer{ address, year, note }
   ]
 }
 ```
+
+`language` documents intent only — it is not read by any wizard/builder code
+(`bot/*.js`, `builder/app.js`); do not rely on it to switch behavior. As of this
+writing `product-menu` and `desserdirina` correctly say `"ro"`; `local-service`,
+`portfolio` and `professionals` still say `"en"` even though their actual field
+labels are Romanian — that mismatch is stale metadata in those three schema.json
+files, not a real English variant.
 
 Supported field types: `text`, `textarea`, `color`, `list`, `photos`, `phone`, `url`.
 

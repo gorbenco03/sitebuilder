@@ -1,5 +1,17 @@
 # Deploy Hidook Site Builder (bot + browser builder) 24/7 on Railway
 
+Authority: `../VISION.md` is the synchronized source of truth for product scope and
+commercial rules; this file documents deploy/ops steps and defers to it on conflict.
+
+**Default container start command is web-only — no Telegram.** The `Dockerfile`'s
+`CMD` runs `node web.js`, not `node bot.js`. `web.js` serves the browser builder,
+`/api/*`, and Stripe webhooks; it never starts the Telegram poller. If you set
+`TELEGRAM_BOT_TOKEN` on Railway without also overriding the start command, Telegram
+intake stays **silently disabled** — the env var is simply unread by the process
+that's actually running. To enable Telegram draft intake, override the Railway
+service's **Start Command** to `node bot.js` (which boots the same HTTP server plus
+Telegram long-polling — keep replicas at 1, one poller per token).
+
 One process serves:
 
 - **Browser builder** (commercial product): static UI under `/app/*`, account/API, **payment before public publish** via Stripe **subscription + 7-day card trial**

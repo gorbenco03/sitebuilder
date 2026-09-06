@@ -36,7 +36,12 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 
 ## Tests
 
-Existing: `node bot/test/*.test.js` (no npm test script). Do not weaken tests. Fake deploy (`HIDOOK_FAKE_DEPLOY`) is not the client journey.
+Run `npm test` (== `node --test bot/test/*.test.js`). Plain `node bot/test/*.test.js`
+without `--test` only runs the first glob match and silently drops the rest — never
+use it. Two Playwright oracles (`advocate-eed3ca0-repair.test.js`,
+`mobile-chrome-390-aabb.test.js`) fail on any machine without a Brave install at
+their hardcoded macOS path; that is a known non-portable gap, not a regression to
+chase. Do not weaken tests. Fake deploy (`HIDOOK_FAKE_DEPLOY`) is not the client journey.
 
 ## Git
 

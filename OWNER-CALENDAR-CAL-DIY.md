@@ -1,5 +1,20 @@
 # Owner runbook — Professional calendar (cal.diy, option C)
 
+> **SUPERSEDAT — nu mai e planul curent.** Decizia „option C — cal.diy" descrisă
+> mai jos a fost suprascrisă de DOUĂ ori de decizii owner ulterioare: întâi de
+> Cal.com-link-only (2026-09-01), apoi de modulul **calendar nativ Hidook**
+> (LOCKED 2026-09-04), care e deja construit în `bot/calendar-native/` și livrat
+> opt-in per site via `appointment.nativeBooking`. Pentru arhitectura curentă,
+> vezi **`VISION.md` §8**. `bot/calendar-boundary.js`, la care se referă acest
+> document, e un stub vestigial separat de `bot/calendar-native/`: forțează
+> necondiționat `calDiyEnabled: false` și nu face parte din calendarul nativ real.
+> Pilotul Railway separat „Hidook Calendar" (cal.diy) rămâne un experiment izolat,
+> nelegat de Site Builder — acest document descrie doar acel experiment, nu
+> arhitectura de booking a produsului. Păstrat ca înregistrare istorică a
+> deciziei; nu urma pașii de mai jos ca plan activ.
+
+---
+
 **Audience:** product owner. Studio prepared the integration boundary and this stub; **hosting, DNS, spend, secrets, and production cutover stay owner-gate**.
 
 **Authority:** `VISION.md` §8 (Calendar Professional) and §10 (Owner gates).
