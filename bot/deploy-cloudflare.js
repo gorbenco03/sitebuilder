@@ -31,6 +31,18 @@ const { spawn } = require('child_process');
 
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
+/**
+ * DI-05: the Cloudflare REST API (project lookup/create — separate from the
+ * wrangler CLI upload below, which already has its own WRANGLER_TIMEOUT_MS)
+ * had no timeout at all: a slow or hung response left a client's publish
+ * request blocked indefinitely with no fallback. 15s is generous for a JSON
+ * metadata call while still failing fast enough that webpublish.js's
+ * needs-retry path kicks in (its `catch` around `_deploy()` already marks the
+ * site retriable on ANY thrown error, so a timeout here is enough — no
+ * separate wiring needed).
+ */
+const CF_API_TIMEOUT_MS = Number(process.env.CLOUDFLARE_API_TIMEOUT_MS) || 15000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -59,14 +71,23 @@ async function cfRequest(method, urlPath, body) {
         throw new Error('CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set. Cannot call Cloudflare API.');
     }
 
-    const res = await fetch(CF_API + urlPath.replace('{account}', encodeURIComponent(account)), {
-        method,
-        headers: {
-            Authorization: 'Bearer ' + token,
-            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+        res = await fetch(CF_API + urlPath.replace('{account}', encodeURIComponent(account)), {
+            method,
+            headers: {
+                Authorization: 'Bearer ' + token,
+                ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+            },
+            body: body !== undefined ? JSON.stringify(body) : undefined,
+            signal: AbortSignal.timeout(CF_API_TIMEOUT_MS),
+        });
+    } catch (e) {
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            throw new Error(`Cloudflare ${method} ${urlPath} timed out after ${CF_API_TIMEOUT_MS}ms`);
+        }
+        throw e;
+    }
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok || json.success === false) {

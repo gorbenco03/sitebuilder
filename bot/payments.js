@@ -43,6 +43,15 @@ const pricing = require('./pricing.js');
 
 const STRIPE_API = 'https://api.stripe.com/v1';
 
+/**
+ * DI-05: stripeRequest had no timeout — a slow/hung Stripe response left a
+ * checkout or billing-portal request blocked indefinitely (the customer
+ * stares at a spinner forever instead of getting a retriable error). 15s is
+ * generous for Stripe's own API (it is not a file upload) while still
+ * failing well before a human gives up waiting.
+ */
+const STRIPE_API_TIMEOUT_MS = Number(process.env.STRIPE_API_TIMEOUT_MS) || 15000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -96,14 +105,23 @@ async function stripeRequest(method, urlPath, body) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) throw new Error('STRIPE_SECRET_KEY is not set. Cannot call Stripe API.');
 
-    const res = await fetch(STRIPE_API + urlPath, {
-        method,
-        headers: {
-            Authorization: 'Bearer ' + key,
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body || undefined,
-    });
+    let res;
+    try {
+        res = await fetch(STRIPE_API + urlPath, {
+            method,
+            headers: {
+                Authorization: 'Bearer ' + key,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: body || undefined,
+            signal: AbortSignal.timeout(STRIPE_API_TIMEOUT_MS),
+        });
+    } catch (e) {
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            throw new Error(`Stripe ${method} ${urlPath} timed out after ${STRIPE_API_TIMEOUT_MS}ms`);
+        }
+        throw e;
+    }
 
     const json = await res.json();
     if (!res.ok) {
@@ -705,6 +723,45 @@ function constructWebhookEvent(rawBody, sigHeader, secret, opts) {
 }
 
 // ---------------------------------------------------------------------------
+// PC-04 — Romanian, client-safe error text
+// ---------------------------------------------------------------------------
+//
+// bot/server.js (out of scope here — a different agent owns it right now)
+// currently returns raw English strings straight from this module to the
+// browser, e.g. 'Payments are not configured.' and "We couldn't start
+// checkout: " + e.message, where e.message is often Stripe's own English API
+// error echoed verbatim (also a minor internal-detail leak). Hidook is a
+// 100%-Romanian product; every other client-facing message uses diacritics.
+// This is the reusable RO translation server.js should call instead of
+// concatenating e.message directly. Kept here (not in server.js) because this
+// is the module that actually knows what each failure means; server.js only
+// needs to import RO_ERRORS / toClientMessageRo and stop echoing e.message.
+// See HANDOFF-seo.md for the exact server.js call sites.
+
+/** Generic, client-safe Romanian strings for the payment failure classes below. */
+const RO_ERRORS = {
+    NOT_CONFIGURED:   'Plățile nu sunt configurate momentan. Te rugăm să încerci mai târziu sau să ne contactezi.',
+    CHECKOUT_FAILED:  'Nu am putut deschide plata chiar acum. Te rugăm să încerci din nou în câteva minute.',
+    BILLING_FAILED:   'Nu am putut deschide contul de facturare chiar acum. Te rugăm să încerci din nou în câteva minute.',
+    NO_CUSTOMER_YET:  'Nu există încă un abonament activ pentru acest site. Pornește o plată înainte de a anula.',
+};
+
+/**
+ * Map an Error thrown by createCheckout/createBillingPortalSession/isConfigured
+ * callers to a generic, client-safe Romanian message — never the raw e.message
+ * (which may be Stripe's own English text, or leak internal detail). The
+ * precise reason still belongs server-side in the log call, not in the
+ * response body.
+ *
+ * @param {Error} e
+ * @param {'checkout'|'billing'} context
+ * @returns {string}
+ */
+function toClientMessageRo(e, context) {
+    return context === 'billing' ? RO_ERRORS.BILLING_FAILED : RO_ERRORS.CHECKOUT_FAILED;
+}
+
+// ---------------------------------------------------------------------------
 // Module exports
 // ---------------------------------------------------------------------------
 
@@ -724,6 +781,8 @@ module.exports = {
     attachFirstThenRenewalSchedule,
     ensureRenewalPriceId,
     SUBSCRIPTION_TRIAL_DAYS,
+    RO_ERRORS,
+    toClientMessageRo,
 };
 
 // ---------------------------------------------------------------------------

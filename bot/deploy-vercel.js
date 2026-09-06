@@ -38,6 +38,16 @@ const DEPLOY_API_VER    = 'v13';  // POST /v13/deployments
 const DOMAIN_API_VER    = 'v10';  // POST /v10/projects/{name}/domains
 const PROJECTS_API_VER  = 'v9';   // PATCH /v9/projects/{id} (disable access protection)
 
+/**
+ * DI-05: vercelRequest had no timeout — a slow/hung Vercel response (metadata
+ * call or a file/deployment upload, both go through this one function) left a
+ * client's publish blocked indefinitely. 20s (a bit above deploy-cloudflare's
+ * 15s default since this path also carries file uploads, not just JSON) still
+ * fails fast enough for webpublish.js's `catch` around `_deploy()` to mark the
+ * site needs-retry instead of hanging the request forever.
+ */
+const VERCEL_API_TIMEOUT_MS = Number(process.env.VERCEL_API_TIMEOUT_MS) || 20000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -75,15 +85,24 @@ async function vercelRequest(method, urlPath, { body, rawBody, headers: extraHea
     const url = VERCEL_API + teamQuery(urlPath);
     const isJson = body !== undefined;
 
-    const res = await fetch(url, {
-        method,
-        headers: {
-            Authorization: 'Bearer ' + token,
-            ...(isJson ? { 'Content-Type': 'application/json' } : {}),
-            ...extraHeaders,
-        },
-        body: isJson ? JSON.stringify(body) : (rawBody || undefined),
-    });
+    let res;
+    try {
+        res = await fetch(url, {
+            method,
+            headers: {
+                Authorization: 'Bearer ' + token,
+                ...(isJson ? { 'Content-Type': 'application/json' } : {}),
+                ...extraHeaders,
+            },
+            body: isJson ? JSON.stringify(body) : (rawBody || undefined),
+            signal: AbortSignal.timeout(VERCEL_API_TIMEOUT_MS),
+        });
+    } catch (e) {
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            throw new Error(`Vercel ${method} ${urlPath} timed out after ${VERCEL_API_TIMEOUT_MS}ms`);
+        }
+        throw e;
+    }
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {

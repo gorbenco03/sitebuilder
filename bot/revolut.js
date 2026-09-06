@@ -23,6 +23,14 @@ const SANDBOX_BASE    = 'https://sandbox-merchant.revolut.com/api';
 const PRODUCTION_BASE  = 'https://merchant.revolut.com/api';
 const DEFAULT_API_VERSION = '2024-09-01';
 
+/**
+ * DI-05: same defect as payments.js (Stripe) / the deploy adapters — this
+ * request helper had no timeout, so a slow/hung Revolut response would block
+ * a checkout indefinitely. Only reachable when PAYMENT_PROVIDER=revolut (or
+ * Stripe is unconfigured and Revolut is), but the fix is the same either way.
+ */
+const REVOLUT_API_TIMEOUT_MS = Number(process.env.REVOLUT_API_TIMEOUT_MS) || 15000;
+
 function baseUrl() {
     return (process.env.REVOLUT_ENV || 'sandbox').toLowerCase() === 'production'
         ? PRODUCTION_BASE
@@ -41,16 +49,25 @@ async function revolutRequest(method, urlPath, bodyObj) {
     const key = process.env.REVOLUT_SECRET_KEY;
     if (!key) throw new Error('REVOLUT_SECRET_KEY is not set. Cannot call Revolut Merchant API.');
 
-    const res = await fetch(baseUrl() + urlPath, {
-        method,
-        headers: {
-            Authorization: 'Bearer ' + key,
-            'Revolut-Api-Version': process.env.REVOLUT_API_VERSION || DEFAULT_API_VERSION,
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-        },
-        body: bodyObj ? JSON.stringify(bodyObj) : undefined,
-    });
+    let res;
+    try {
+        res = await fetch(baseUrl() + urlPath, {
+            method,
+            headers: {
+                Authorization: 'Bearer ' + key,
+                'Revolut-Api-Version': process.env.REVOLUT_API_VERSION || DEFAULT_API_VERSION,
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+            },
+            body: bodyObj ? JSON.stringify(bodyObj) : undefined,
+            signal: AbortSignal.timeout(REVOLUT_API_TIMEOUT_MS),
+        });
+    } catch (e) {
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            throw new Error(`Revolut ${method} ${urlPath} timed out after ${REVOLUT_API_TIMEOUT_MS}ms`);
+        }
+        throw e;
+    }
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {

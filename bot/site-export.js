@@ -267,6 +267,58 @@ function appendStandaloneDocuments(html, documents) {
 }
 
 /**
+ * F6 — robots.txt / sitemap.xml content for a built site directory. Shared by
+ * this module's own exports (ZIP / standalone HTML) and required from
+ * bot/webpublish.js so the LIVE publish path gets byte-for-byte the same
+ * shape instead of a second hand-written copy.
+ *
+ * `origin` is the absolute "https://host" (no trailing slash, no path) the
+ * site is expected to be served from. When it is not yet known — an offline
+ * export that was never published through Hidook has no live URL to derive
+ * one from — callers pass '' and this falls back to an RFC 2606 "invalid"
+ * placeholder host. That keeps the sitemap syntactically valid XML with
+ * absolute <loc> values (the sitemap protocol requires them) without ever
+ * asking the client to type a domain (owner ruled that out, 2026-09-02
+ * feedback) — bot/webpublish.js's live path always predicts or corrects the
+ * real origin instead of ever shipping this placeholder to a live site.
+ *
+ * `pages` is the ordered list of page filenames known to exist in the site
+ * directory, e.g. ['index.html','privacy.html','terms.html','cookies.html'].
+ * A single-page site legitimately gets a single-entry sitemap.
+ *
+ * @param {string} origin
+ * @param {string[]} pages
+ * @returns {{ robotsTxt: string, sitemapXml: string, base: string }}
+ */
+const SEO_PLACEHOLDER_ORIGIN = 'https://export.invalid';
+
+function buildSeoFiles(origin, pages) {
+    const base = (origin && /^https?:\/\//i.test(origin))
+        ? origin.replace(/\/+$/, '')
+        : SEO_PLACEHOLDER_ORIGIN;
+    const locs = (pages || [])
+        .filter(Boolean)
+        .map((p) => (p === 'index.html' ? `${base}/` : `${base}/${p}`));
+    const robotsTxt = `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`;
+    const items = locs.map((loc) => `  <url><loc>${loc}</loc></url>`).join('\n');
+    const sitemapXml =
+        '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+        items + '\n</urlset>\n';
+    return { robotsTxt, sitemapXml, base };
+}
+
+/** Absolute origin (scheme+host, no path) from a config's seo.canonical, or ''. */
+function originFromCanonical(canonical) {
+    if (!canonical || !/^https?:\/\//i.test(String(canonical))) return '';
+    try {
+        return new URL(canonical).origin;
+    } catch (_) {
+        return '';
+    }
+}
+
+/**
  * Build a complete static site directory (HTML/CSS/JS/images/legal/badge).
  * @returns {{ siteDir: string, cleanup: function }}
  */
@@ -276,16 +328,45 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     copyTemplateTree(tpl, dir);
     const cfgCopy = JSON.parse(JSON.stringify(config || {}));
     materializeImages(cfgCopy, path.join(dir, 'images'), images || []);
+
+    // F5/F6: this config was already published through Hidook → its
+    // seo.canonical origin is the real live/custom domain, reuse it. Never
+    // published (fresh ZIP/HTML export) → fall back to the same RFC 2606
+    // placeholder buildSeoFiles uses, so the template's `@if seo.canonical`
+    // guard still emits <link rel="canonical">/<meta property="og:url">
+    // (own og:image stays relative — build.js's deriveSocialImage is
+    // deliberately host-agnostic for offline exports; see webpublish.js's F3
+    // section). README-EXPORT.txt below tells the client to regenerate the
+    // export after publishing so both correct themselves automatically.
+    cfgCopy.seo = (cfgCopy.seo && typeof cfgCopy.seo === 'object') ? cfgCopy.seo : {};
+    const exportOrigin = originFromCanonical(cfgCopy.seo.canonical) || SEO_PLACEHOLDER_ORIGIN;
+    if (!cfgCopy.seo.canonical) {
+        cfgCopy.seo.canonical = `${exportOrigin}/`;
+    }
+
     fs.writeFileSync(path.join(dir, 'config.json'), JSON.stringify(cfgCopy, null, 2), 'utf8');
     build(dir);
     // build.js already writes legal pages; ensure present even if older build
     writeLegalSiteFiles(dir, cfgCopy);
+
+    // F6: robots.txt + sitemap.xml — every export gets both (live publish
+    // path is bot/webpublish.js, wired the same way via buildSeoFiles), using
+    // the same origin as the canonical link above.
+    const seoPages = ['index.html'];
+    for (const p of ['privacy.html', 'terms.html', 'cookies.html']) {
+        if (fs.existsSync(path.join(dir, p))) seoPages.push(p);
+    }
+    const { robotsTxt, sitemapXml } = buildSeoFiles(exportOrigin, seoPages);
+    fs.writeFileSync(path.join(dir, 'robots.txt'), robotsTxt, 'utf8');
+    fs.writeFileSync(path.join(dir, 'sitemap.xml'), sitemapXml, 'utf8');
 
     // Self-host README (no secrets, no Hidook runtime required)
     const readme =
         '# Site static exportat din Hidook Site Builder\n\n' +
         'Deschide `index.html` pe orice host static (nginx, Netlify, Cloudflare Pages, S3…).\n' +
         'Nu este necesar runtime Hidook. Pagini legale: privacy.html, terms.html, cookies.html.\n' +
+        'robots.txt și sitemap.xml sunt incluse; dacă publici pe alt domeniu decât cel din\n' +
+        'sitemap.xml, regenerează exportul din Hidook după publicare ca să se actualizeze automat.\n' +
         'Mențiune: Build by hidook.tech powered by hidook.agency\n';
     fs.writeFileSync(path.join(dir, 'README-EXPORT.txt'), readme, 'utf8');
 
@@ -363,4 +444,5 @@ module.exports = {
     exportSiteHtml,
     exportSiteZip,
     materializeImages,
+    buildSeoFiles,
 };

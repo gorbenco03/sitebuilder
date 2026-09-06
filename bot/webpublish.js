@@ -18,8 +18,17 @@
  *     trialing, past_due) only update the stored status — no unpublish, no new
  *     grace-window state invented.
  *   - unpublishSite: stop serving isolated $DATA_DIR/published/<slug>/; registry not live.
+ *   - handleStripeInvoicePaymentFailed: BE-06 — records a failed dunning
+ *     attempt (ledger + best-effort owner notification) and never unpublishes;
+ *     'past_due' stays live while Stripe retries, and the existing
+ *     unpaid/incomplete_expired path above is what eventually unpublishes.
  *   - deployPlaceholder: documented no-op (pay-before-publish; historical unused
  *     expiry-placeholder entry). Kept exported so legacy callers do not throw.
+ *
+ * publishSite() also derives, at build time, an absolute canonical link/
+ * og:url, a LocalBusiness JSON-LD block (buildLocalBusinessJsonLd), and
+ * robots.txt/sitemap.xml (F5/F6) — see the "F5/F6" section below for how the
+ * pre-deploy prediction / post-deploy correction works.
  *
  * HIDOOK_FAKE_DEPLOY=1 (refused in production) → stub deploy returning
  * {url:'https://<slug>.test.local', provider:'fake'} — for offline unit tests.
@@ -46,6 +55,7 @@ const { log }           = require('./logger.js');
 const cfDeploy          = require('./deploy-cloudflare.js');
 const payments          = require('./payments.js');
 const pricing           = require('./pricing.js');
+const siteExport        = require('./site-export.js');
 
 const PROJECT_ROOT  = path.join(__dirname, '..');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
@@ -55,6 +65,22 @@ const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
 // Checkout grants the first hosting year before Stripe's day-7 trial
 // collection. Only cycle invoices at/near the existing entitlement end renew.
 const RENEWAL_DUE_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
+
+/**
+ * F5/F6 — placeholder origin used when a site's real public host is only
+ * known AFTER the deploy call returns (plain Cloudflare Pages / Vercel
+ * without BRAND_DOMAIN — see predictedPublicOrigin below). It has to be some
+ * syntactically valid https:// URL at build time so the template's
+ * `@if seo.canonical` guard actually emits the <link rel="canonical">/
+ * <meta property="og:url"> tags (and so robots.txt/sitemap.xml already have
+ * an origin to put in <loc>) — publishSite() always rewrites every occurrence
+ * of this string to the real origin once the deploy call returns (same
+ * pattern as absolutizeSocialImageMeta above, extended to
+ * canonical/robots/sitemap). RFC 2606 reserves the .invalid TLD for exactly
+ * this "never a real host" use, so it can never collide with an actual
+ * deploy target.
+ */
+const PENDING_SEO_ORIGIN = 'https://pending-deploy.hidook.invalid';
 
 /**
  * Remove isolated published files for a slug (stop serving /live/<slug>/).
@@ -333,6 +359,102 @@ async function handleStripeInvoicePaid(event) {
     return registry.getSite(site.id);
 }
 
+/**
+ * BE-06 — invoice.payment_failed was never handled at all: a subscription
+ * whose charge got declined stayed live indefinitely with nobody told.
+ * Stripe already flips the subscription's `status` to `past_due` around the
+ * same time, which handleStripeSubscriptionEvent persists without
+ * unpublishing (past_due is a recoverable dunning state — Stripe keeps
+ * retrying the charge on its own schedule; 'unpaid'/'incomplete_expired' are
+ * the terminal failures that already unpublish) — so this handler
+ * deliberately does NOT unpublish or invent a second, competing entitlement
+ * rule. Its job is the other half: make the failure visible instead of
+ * silent — append it to the durable ledger (bot/ledger.js) and best-effort
+ * notify the owner. `notifyAdmin` is the Telegram admin channel when wired
+ * (bot.js); it is always undefined on the web-only deployment (bot/web.js),
+ * which currently has no equivalent channel.
+ *
+ * NOTE: registry.updateSite() filters patches to a known site-field allowlist
+ * (bot/registry-shared.js#KNOWN_SITE_FIELDS — a deliberate fix from the
+ * storage rewrite). `paymentFailedAt`/`paymentFailedCount` are not on that
+ * allowlist yet, so a patch carrying them is accepted but silently dropped —
+ * this is why the durable record of a failed invoice lives in the ledger
+ * (queryable via ledger.read()), not on the site record. See HANDOFF-seo.md
+ * for the one-line registry-shared.js change that would let an /admin
+ * dashboard read this straight off site.paymentFailedAt instead.
+ *
+ * @param {object} event Stripe invoice.payment_failed event
+ * @param {Function} [notifyAdmin] fn(text) — owner notification, best-effort
+ * @returns {Promise<object|null>}
+ */
+async function handleStripeInvoicePaymentFailed(event, notifyAdmin) {
+    const invoice = event && event.data && event.data.object;
+    if (!invoice) return null;
+
+    const subscriptionId = typeof invoice.subscription === 'string'
+        ? invoice.subscription
+        : (invoice.subscription && invoice.subscription.id);
+    if (!subscriptionId) return null;
+
+    const site = findSiteBySubscriptionId(subscriptionId);
+    if (!site) {
+        log('webpublish.invoice_payment_failed.no_site', {
+            subscriptionId,
+            invoiceId: invoice.id || null,
+        }, 'warn');
+        return null;
+    }
+
+    // Event-level claim (duplicate webhooks) — same idempotency pattern as
+    // handleStripeSubscriptionEvent above.
+    const eventId = event && event.id;
+    if (eventId && typeof registry.claimStripeEvent === 'function' && !registry.claimStripeEvent(eventId)) {
+        log('webpublish.invoice_payment_failed.already_handled', { eventId, siteId: site.id });
+        return registry.getSite(site.id);
+    }
+
+    // Stripe's own attempt_count already accumulates across dunning retries —
+    // trust it rather than maintaining a second counter that cannot persist
+    // on the site record (see NOTE above).
+    const attemptCount = Number(invoice.attempt_count) || 1;
+    try {
+        registry.updateSite(site.id, {
+            paymentFailedAt: new Date().toISOString(),
+            paymentFailedCount: attemptCount,
+        });
+    } catch (e) {
+        log('webpublish.invoice_payment_failed.update_failed', { siteId: site.id, err: e.message }, 'error');
+    }
+
+    try {
+        ledger.append({
+            event: 'payment_failed',
+            siteId: site.id,
+            subscriptionId,
+            invoiceId: invoice.id || null,
+            attemptCount,
+        });
+    } catch (_) {}
+
+    log('webpublish.invoice_payment_failed.recorded', {
+        siteId: site.id,
+        slug: site.slug,
+        subscriptionId,
+        invoiceId: invoice.id || null,
+        attemptCount,
+    }, 'warn');
+
+    if (typeof notifyAdmin === 'function') {
+        notifyAdmin(
+            `⚠️ Plată eșuată pentru site-ul "${site.slug || site.projectName}" (id ${site.id}). ` +
+            `Încercarea ${attemptCount}. Stripe reîncearcă automat cardul; site-ul rămâne live cât timp abonamentul e "past_due". ` +
+            'Dacă toate reîncercările eșuează, Stripe trece abonamentul pe "unpaid"/"incomplete_expired" și fluxul existent de anulare oprește site-ul.'
+        );
+    }
+
+    return registry.getSite(site.id);
+}
+
 // ---------------------------------------------------------------------------
 // Fake-deploy stub (tests only) + isolated local publish
 // ---------------------------------------------------------------------------
@@ -492,6 +614,104 @@ function predictedPublicOrigin(slug) {
         return publicUrl ? `${publicUrl}/live/${slug}` : '';
     }
     return '';
+}
+
+// ---------------------------------------------------------------------------
+// F5/F6 — canonical/og:url + LocalBusiness JSON-LD + robots.txt/sitemap.xml
+// ---------------------------------------------------------------------------
+//
+// None of these were ever populated on the web-builder publish path: the
+// canonical/og:url template slot exists (build.js's URL_TOKENS + every
+// template's `@if seo.canonical` guard) but nothing on this path ever wrote
+// to it (F5), no LocalBusiness JSON-LD was built outside the Telegram flow
+// (bot/flow.js's buildSeo() is Telegram-only, not exported, and bot/flow.js
+// is frozen/out of scope here, so this is a second, web-builder-shaped
+// implementation — not a duplicate of an already-shared one), and
+// robots.txt/sitemap.xml were never written at all (F6). The owner has ruled
+// out ever asking the client to type a technical URL (2026-09-02 feedback),
+// so all of this is derived automatically at publish time, reusing the same
+// predictedPublicOrigin() this module already computes for F3.
+
+/**
+ * prof-06 — schema.org LocalBusiness JSON-LD from the web builder's config
+ * shape (business.name/metaDescription, contact.phone,
+ * contact.instagram.url/contact.facebook.url, footer.address as plain text —
+ * confirmed the common shape across all 5 templates' presets.json). Mirrors
+ * the *intent* of bot/flow.js's buildSeo() (same schema.org fields, same
+ * "only emit if there's something useful" rule, same </script>-breakout
+ * escaping) without importing it — flow.js is frozen and out of scope, and
+ * buildSeo() is not exported from it anyway. Only called when seo.jsonLd is
+ * not already set, so a site drafted through Telegram (which does populate
+ * it) is never overwritten.
+ *
+ * @param {object} cfg  web builder config (post materializeImages)
+ * @returns {string} JSON string for {{& seo.jsonLd}}, or '' if nothing useful
+ */
+function buildLocalBusinessJsonLd(cfg) {
+    const business = (cfg && cfg.business) || {};
+    const contact  = (cfg && cfg.contact) || {};
+    const footer   = (cfg && cfg.footer) || {};
+
+    const name        = String(business.name || '').trim();
+    const description = String(business.metaDescription || '').trim();
+    // footer.address is already plain text in every template's config shape;
+    // contact.address may carry a <br> from the address-formatting helper —
+    // strip it to plain text rather than leak markup into a JSON string value.
+    const addressRaw = footer.address || contact.address || '';
+    const address = String(addressRaw).replace(/<br\s*\/?>/gi, ', ').replace(/\s+/g, ' ').trim();
+    const phone = String(contact.phone || '').trim();
+    const sameAs = [
+        contact.instagram && contact.instagram.url,
+        contact.facebook && contact.facebook.url,
+    ].filter(Boolean);
+
+    const useful = name || description || address || phone || sameAs.length;
+    if (!useful) return '';
+
+    const ld = { '@context': 'https://schema.org', '@type': 'LocalBusiness' };
+    if (name) ld.name = name;
+    if (description) ld.description = description;
+    if (address) ld.address = address;
+    if (phone) ld.telephone = phone;
+    if (sameAs.length) ld.sameAs = sameAs;
+
+    // Neutralize a smuggled "</script>" the same way build.js's own
+    // sanitizeJsonLd() does for the raw {{& seo.jsonLd}} sink.
+    return JSON.stringify(ld).replace(/</g, '\\u003c');
+}
+
+/**
+ * Replace every occurrence of `oldOrigin` with `newOrigin` in a text file.
+ * Used post-deploy to correct the placeholder/predicted origin baked into
+ * index.html (canonical link + og:url meta share the same seo.canonical
+ * value, so one substring pass fixes both) and into robots.txt/sitemap.xml,
+ * once the real deploy url is known. No-op (false, no write) when the file
+ * is missing, the two origins are identical (nothing to fix — the common
+ * case for isolated/BRAND_DOMAIN, which predicted correctly up front), or
+ * the placeholder never actually made it into that file.
+ *
+ * @param {string} filePath
+ * @param {string} oldOrigin
+ * @param {string} newOrigin
+ * @returns {boolean} true if the file was rewritten
+ */
+function rewriteOriginInFile(filePath, oldOrigin, newOrigin) {
+    if (!oldOrigin || !newOrigin || oldOrigin === newOrigin) return false;
+    if (!fs.existsSync(filePath)) return false;
+    let text;
+    try {
+        text = fs.readFileSync(filePath, 'utf8');
+    } catch (_) {
+        return false;
+    }
+    if (!text.includes(oldOrigin)) return false;
+    text = text.split(oldOrigin).join(newOrigin);
+    try {
+        fs.writeFileSync(filePath, text, 'utf8');
+    } catch (_) {
+        return false;
+    }
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -792,6 +1012,14 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     const siteDir   = path.join(SITES_DIR, site.projectName);
     const imagesDir = path.join(siteDir, 'images');
 
+    // F5/F6: resolved once, up front, so the same origin string is used both
+    // when writing the pre-deploy placeholder/prediction (below) and when
+    // correcting it post-deploy (after the real url comes back). Independent
+    // of cfgCopy, so it is available even when siteDirAlreadyBuilt skips the
+    // build branch below (robots.txt/sitemap.xml still get written either way).
+    const slugForUrl    = site.slug || site.projectName;
+    const seoBuildOrigin = predictedPublicOrigin(slugForUrl) || PENDING_SEO_ORIGIN;
+
     if (!siteDirAlreadyBuilt) {
         fs.mkdirSync(imagesDir, { recursive: true });
 
@@ -874,6 +1102,22 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
             }
         }
 
+        // 3b. F5/prof-06: derive canonical/og:url + LocalBusiness JSON-LD
+        // automatically — must happen before build() renders the template's
+        // `@if seo.canonical` / `@if seo.jsonLd` guards. canonical uses the
+        // predicted origin when deterministic, else the placeholder that gets
+        // corrected post-deploy (see 6b below); jsonLd/canonical are only
+        // filled when not already set, so a Telegram-drafted config (which
+        // already carries real jsonLd, and never sets canonical) is never
+        // overwritten.
+        cfgCopy.seo = (cfgCopy.seo && typeof cfgCopy.seo === 'object') ? cfgCopy.seo : {};
+        if (!cfgCopy.seo.canonical) {
+            cfgCopy.seo.canonical = `${seoBuildOrigin}/`;
+        }
+        if (!cfgCopy.seo.jsonLd) {
+            cfgCopy.seo.jsonLd = buildLocalBusinessJsonLd(cfgCopy);
+        }
+
         // 4. Write config.json and build
         fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(cfgCopy, null, 2));
         build(siteDir);
@@ -892,12 +1136,27 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // 5b. F3: absolutize og:image/twitter:image ahead of deploy when the final
     // host is deterministic (isolated /live/ or BRAND_DOMAIN+cloudflare) so the
     // copy that actually gets served/uploaded already has the fix.
-    const slugForUrl = site.slug || site.projectName;
     const indexPath = path.join(siteDir, 'index.html');
     try {
         absolutizeSocialImageMeta(indexPath, predictedPublicOrigin(slugForUrl));
     } catch (e) {
         log('webpublish.social_image.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
+    }
+
+    // 5c. F6: robots.txt + sitemap.xml — written for every publish (both
+    // build branches, so a siteDirAlreadyBuilt republish still gets them even
+    // if the directory predates this fix), using the same predicted-origin/
+    // placeholder rule as F5 above; corrected post-deploy alongside it.
+    try {
+        const seoPages = ['index.html'];
+        for (const p of ['privacy.html', 'terms.html', 'cookies.html']) {
+            if (fs.existsSync(path.join(siteDir, p))) seoPages.push(p);
+        }
+        const { robotsTxt, sitemapXml } = siteExport.buildSeoFiles(seoBuildOrigin, seoPages);
+        fs.writeFileSync(path.join(siteDir, 'robots.txt'), robotsTxt, 'utf8');
+        fs.writeFileSync(path.join(siteDir, 'sitemap.xml'), sitemapXml, 'utf8');
+    } catch (e) {
+        log('webpublish.seo_files.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
 
     // 6. Deploy
@@ -919,19 +1178,28 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         throw new Error('The hosting provider did not return a URL.');
     }
 
-    // 6b. F3 fallback: for providers whose host is only known after deploy
-    // (plain Cloudflare Pages / Vercel without BRAND_DOMAIN), the pre-deploy
-    // pass above could not predict it. Rewrite with the real url now and, only
-    // if that just changed something on a genuine remote push, re-deploy once
-    // so the LIVE copy also gets the absolute image (not just local disk).
-    // Best-effort: never blocks or fails the publish itself.
+    // 6b. F3/F5/F6 fallback: for providers whose host is only known after
+    // deploy (plain Cloudflare Pages / Vercel / Netlify without
+    // BRAND_DOMAIN), the pre-deploy passes above could not predict it and
+    // og:image stayed relative / canonical+robots+sitemap kept the
+    // PENDING_SEO_ORIGIN placeholder. Rewrite every occurrence with the real
+    // origin now and, only if that actually changed something on a genuine
+    // remote push, redeploy once so the LIVE copy also carries the
+    // correction (not just local disk). Best-effort: never blocks or fails
+    // the publish itself. No-op for isolated/fake (already correct, or
+    // nothing external to re-push).
     try {
-        const fixedNow = absolutizeSocialImageMeta(indexPath, url);
-        if (fixedNow && deployProvider && deployProvider !== 'isolated' && deployProvider !== 'fake') {
+        const fixedImage    = absolutizeSocialImageMeta(indexPath, url);
+        const finalOrigin   = String(url || '').replace(/\/$/, '');
+        const fixedCanonical = rewriteOriginInFile(indexPath, seoBuildOrigin, finalOrigin);
+        const fixedRobots   = rewriteOriginInFile(path.join(siteDir, 'robots.txt'), seoBuildOrigin, finalOrigin);
+        const fixedSitemap  = rewriteOriginInFile(path.join(siteDir, 'sitemap.xml'), seoBuildOrigin, finalOrigin);
+        const anyFixed = fixedImage || fixedCanonical || fixedRobots || fixedSitemap;
+        if (anyFixed && deployProvider && deployProvider !== 'isolated' && deployProvider !== 'fake') {
             await _deploy(siteDir, site.projectName, site.userId, { slug: slugForUrl });
         }
     } catch (e) {
-        log('webpublish.social_image.postdeploy_failed', { siteId: site.id, err: e.message }, 'warn');
+        log('webpublish.seo_files.postdeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
 
     // 7. Mark live
@@ -1292,6 +1560,7 @@ module.exports = {
     makeLocalSeedImagesEager,
     handleStripePaid,
     handleStripeInvoicePaid,
+    handleStripeInvoicePaymentFailed,
     handleStripeSubscriptionEvent,
     unpublishSite,
     findSiteBySubscriptionId,
@@ -1301,4 +1570,5 @@ module.exports = {
     resolvePublishPayload,
     absolutizeSocialImageMeta,
     predictedPublicOrigin,
+    buildLocalBusinessJsonLd,
 };
