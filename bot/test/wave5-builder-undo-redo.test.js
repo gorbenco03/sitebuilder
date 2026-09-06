@@ -168,7 +168,14 @@ test('undo/redo covers text edit, colour change and list add — toolbar buttons
     const totalEditableNodes = async () => frame().locator('[data-hb-edit]').count();
     const beforeAdd = await totalEditableNodes();
 
-    const addBtn = frame().locator('.hb-add-btn').first();
+    // local-service ships its OWN list controls (.hb-ls-add) rather than the
+    // shared overlay's (.hb-add-btn), because the overlay's safe-list omits
+    // some of its lists. Waiting only for the shared class made this test hang
+    // for 30s and then fail on every run -- and because it failed constantly,
+    // several later waves recorded it as a known flake and stopped reading it.
+    // A test that always fails teaches people to ignore it.
+    const addBtn = frame().locator('.hb-add-btn, .hb-ls-add').first();
+    await addBtn.waitFor({ state: 'visible', timeout: 20000 });
     await addBtn.scrollIntoViewIfNeeded();
     await addBtn.click();
     await page.waitForTimeout(800);

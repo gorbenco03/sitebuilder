@@ -560,6 +560,14 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
   color: inherit;
   text-decoration: underline;
   opacity: 0.85;
+  /* WCAG 2.5.8 wants a 24x24 CSS px target. Default inline <a> sizing gives
+     these roughly 20px of height, so they failed on every template. The fix
+     was written once, into ONE template's own stylesheet, which left the other
+     four still failing -- the markup is generated here, so the rule belongs
+     here too and every template gets it at once. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
 }
 .hb-legal-links a:hover { opacity: 1; }
 `;
