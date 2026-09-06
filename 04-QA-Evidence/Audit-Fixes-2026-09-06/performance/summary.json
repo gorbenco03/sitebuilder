@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-09-06T09:49:09.610Z",
+  "perTemplateStart": {
+    "product-menu": {
+      "iframeLoadMs": {
+        "before": 7742,
+        "after": 7731
+      },
+      "imageBytes": {
+        "before": 210206,
+        "after": 210206
+      },
+      "heavyJsBytes": {
+        "before": 75906,
+        "after": 74477
+      }
+    },
+    "local-service": {
+      "iframeLoadMs": {
+        "before": 11635,
+        "after": 8393
+      },
+      "imageBytes": {
+        "before": 612774,
+        "after": 310581
+      },
+      "heavyJsBytes": {
+        "before": 92373,
+        "after": 90955
+      }
+    },
+    "portfolio": {
+      "iframeLoadMs": {
+        "before": 8250,
+        "after": 7974
+      },
+      "imageBytes": {
+        "before": 232106,
+        "after": 232106
+      },
+      "heavyJsBytes": {
+        "before": 89209,
+        "after": 88000
+      }
+    },
+    "professionals": {
+      "iframeLoadMs": {
+        "before": 10306,
+        "after": 8513
+      },
+      "imageBytes": {
+        "before": 405184,
+        "after": 327032
+      },
+      "heavyJsBytes": {
+        "before": 101587,
+        "after": 99020
+      }
+    },
+    "desserdirina": {
+      "iframeLoadMs": {
+        "before": 7764,
+        "after": 7573
+      },
+      "imageBytes": {
+        "before": 107002,
+        "after": 107002
+      },
+      "heavyJsBytes": {
+        "before": 111391,
+        "after": 100914
+      }
+    }
+  },
+  "buildSizes": {
+    "before": {
+      "builderGeneratedTotalMB": 28.32,
+      "templateAssetsTotalMB": 26.13,
+      "templatesSourceImagesTotalMB": 26.63,
+      "engineJsBytes": 102027,
+      "appJsBytes": 167742,
+      "appCssBytes": 48648,
+      "perTemplateHeavyJsBytes": {
+        "desserdirina.js": 111391,
+        "local-service.js": 92373,
+        "portfolio.js": 89209,
+        "product-menu.js": 75906,
+        "professionals.js": 101587
+      }
+    },
+    "after": {
+      "builderGeneratedTotalMB": 14.35,
+      "templateAssetsTotalMB": 12.55,
+      "templatesSourceImagesTotalMB": 13.04,
+      "engineJsBytes": 102021,
+      "appJsBytes": 167742,
+      "appCssBytes": 48648,
+      "perTemplateHeavyJsBytes": {
+        "desserdirina.js": 100914,
+        "local-service.js": 90955,
+        "portfolio.js": 88000,
+        "product-menu.js": 74477,
+        "professionals.js": 99020
+      }
+    }
+  },
+  "liveSite": {
+    "liveSite_desktop-1440": {
+      "lcpMs": {
+        "before": 6876,
+        "after": 3760
+      },
+      "cls": {
+        "before": 0.2000155596923828,
+        "after": 0.2000155596923828
+      },
+      "totalTransferBytes": {
+        "before": 1628954,
+        "after": 724020
+      }
+    },
+    "liveSite_mobile-390": {
+      "lcpMs": {
+        "before": 6880,
+        "after": 3756
+      },
+      "cls": {
+        "before": 0.1666056071219308,
+        "after": 0.1666056071219308
+      },
+      "totalTransferBytes": {
+        "before": 1628954,
+        "after": 724020
+      }
+    }
+  }
+}

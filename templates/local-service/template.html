@@ -248,7 +248,7 @@
                     <div class="ls-shots">
                         <!-- @each photos -->
                         <figure class="photo-card ls-shot">
-                            <img src="{{src}}" alt="{{alt}}" loading="lazy">
+                            <img src="{{src}}" alt="{{alt}}" loading="lazy" decoding="async">
                             <!-- @if caption -->
                             <figcaption class="ls-shot__cap">{{caption}}</figcaption>
                             <!-- @endif -->
@@ -286,7 +286,7 @@
                 <div class="ls-iggrid">
                     <!-- @each instagram.gallery -->
                     <a href="{{instagram.url}}" target="_blank" rel="noopener" class="ls-igcell">
-                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
+                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy" decoding="async">
                     </a>
                     <!-- @end -->
                 </div>

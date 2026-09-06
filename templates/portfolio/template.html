@@ -99,7 +99,7 @@
                     <div class="collage-deck">
                         <!-- @each photos -->
                         <figure class="collage-photo pf-frame">
-                            <img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy">
+                            <img src="{{src}}" alt="{{alt}}" draggable="false" loading="lazy" decoding="async">
                         </figure>
                         <!-- @end -->
                     </div>
@@ -182,7 +182,7 @@
                     <!-- @each team.members -->
                     <article class="pf-person">
                         <!-- @if photo -->
-                        <div class="pf-person__pic"><img src="{{photo}}" alt="{{name}}" loading="lazy"></div>
+                        <div class="pf-person__pic"><img src="{{photo}}" alt="{{name}}" loading="lazy" decoding="async"></div>
                         <!-- @endif -->
                         <h3 class="pf-person__name">{{name}}</h3>
                         <!-- @if role --><p class="pf-person__role">{{role}}</p><!-- @endif -->
@@ -213,7 +213,7 @@
                 <div class="pf-ig__grid">
                     <!-- @each instagram.gallery -->
                     <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pf-ig__cell">
-                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy">
+                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy" decoding="async">
                     </a>
                     <!-- @end -->
                 </div>
