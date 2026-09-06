@@ -121,6 +121,43 @@ function decodePng(buf) {
   return { width, height, channels, pixels };
 }
 
+/* The element's own fill, read off the screenshot.
+ *
+ * This used to be a single pixel 6px in from the element's top-left corner,
+ * "inside the element's own fill, away from centred glyphs". That holds for a
+ * rectangle and breaks for a rounded one: on a 52x44 pill with
+ * border-radius:999px the corner arc has a 22px radius, so (6,6) is outside
+ * the painted shape entirely and reads the page behind it. It reported the
+ * active language toggle at 1.57:1 — white on a pale antialiased edge — while
+ * the button's real fill is rgb(157,51,89), which gives white text 6.88:1.
+ * A wrong pixel is worse than no pixel: it fails a build for a defect that
+ * does not exist, and it would have passed a genuinely low-contrast fill just
+ * as happily if the geometry had landed differently.
+ *
+ * Read the modal colour along the element's horizontal midline instead. Mid-
+ * height misses every corner arc by construction, whatever the radius, and the
+ * mode survives the glyphs: text is centred and occupies a minority of that
+ * line, so the most common colour on it is the fill. Colours are bucketed to
+ * 8 levels per channel so antialiased near-matches count together rather than
+ * splitting the vote.
+ */
+function modalFillOnMidline(png, rect, dpr) {
+  const y = Math.round((rect.top + rect.height / 2) * dpr);
+  const x0 = Math.round((rect.left + 2) * dpr);
+  const x1 = Math.round((rect.left + rect.width - 2) * dpr);
+  const counts = new Map();
+  for (let x = x0; x <= x1; x++) {
+    const px = getPixel(png, x, y);
+    const key = (px[0] >> 5) + ',' + (px[1] >> 5) + ',' + (px[2] >> 5);
+    const entry = counts.get(key) || { n: 0, px };
+    entry.n++;
+    counts.set(key, entry);
+  }
+  let best = null;
+  for (const entry of counts.values()) if (!best || entry.n > best.n) best = entry;
+  return best ? best.px : getPixel(png, (rect.left + 6) * dpr, (rect.top + 6) * dpr);
+}
+
 function getPixel(png, x, y) {
   const cx = Math.max(0, Math.min(png.width - 1, Math.round(x)));
   const cy = Math.max(0, Math.min(png.height - 1, Math.round(y)));
@@ -218,16 +255,15 @@ async function measureContrast(page, selector, screenshotPath) {
   const dpr = await page.evaluate(() => window.devicePixelRatio || 1);
   const hasOwnFill = bgAlpha(info.backgroundColor) > 0;
   let sampleX, sampleY;
+  let bgPixel;
   if (hasOwnFill) {
-    // Sample inside the element's own corner, away from centred glyphs.
-    sampleX = info.rect.left + Math.min(6, info.rect.width / 4);
-    sampleY = info.rect.top + Math.min(6, info.rect.height / 4);
+    bgPixel = modalFillOnMidline(png, info.rect, dpr);
   } else {
-    // Sample just above the text, on the surface behind it.
+    // No fill of its own: sample just above the text, on the surface behind it.
     sampleX = info.rect.left + info.rect.width / 2;
     sampleY = info.rect.top - 3;
+    bgPixel = getPixel(png, sampleX * dpr, sampleY * dpr);
   }
-  const bgPixel = getPixel(png, sampleX * dpr, sampleY * dpr);
   const fgColor = parseRgb(info.color);
   const ratio = contrastRatio(fgColor, bgPixel);
 
