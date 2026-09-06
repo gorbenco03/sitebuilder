@@ -1,0 +1,68 @@
+RED (before this wave) — builder/app.js, builder/app.css and builder/index.html
+on commit 68c9dc8 (the parent of this branch's builder/ change, cc99530) had
+no "Domeniu" button anywhere and no modal-domain markup at all. bot/domains.js
+implements the entire self-serve custom-domain state machine and
+bot/server.js mounts and auth-gates all five routes for it (verified passing
+in bot/test/wave7-domains-*.test.js), but nothing in the product ever linked
+to any of it.
+
+Reproduced by checking out builder/app.js, builder/app.css and
+builder/index.html from 68c9dc8 (git checkout 68c9dc8 -- builder/app.js
+builder/app.css builder/index.html — no git stash involved) and re-running
+this exact same test file unmodified:
+
+  node --experimental-sqlite --test bot/test/wave8-owner-ui-domain-reachable-e2e.test.js
+
+Result: FAIL — the test times out looking for a "Domeniu" button on the
+just-published site's dashboard card:
+
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-dom-71441238' }).locator('button').filter({ hasText: 'Domeniu' }) to be visible
+
+Full run output below.
+  engine.js written (125793 bytes)
+  templates/product-menu.js written (78267 bytes)
+  templates/local-service.js written (101068 bytes)
+  templates/portfolio.js written (92869 bytes)
+  templates/professionals.js written (104714 bytes)
+  templates/desserdirina.js written (101916 bytes)
+  templates-data.js written (1852 bytes) [light registry]
+build:app done — builder/generated/ ready.
+(node:51149) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:14:36.240Z","event":"server.started","port":49391}
+🌐 HTTP server on :49391 (health + webhooks + API)
+{"ts":"2026-09-06T16:14:39.248Z","event":"email.magic_link.dev","email":"w***@example.com#f43986d7","devLink":"/auth/verify?token=d20ac3c4088d8b6b1722f978f575d211e4250609a9157b2994172c9ae1c6c26a"}
+{"ts":"2026-09-06T16:14:39.654Z","event":"webpublish.stripe_paid.published","siteId":"41d7d52f-0e23-4582-8b38-898df233d56d","orderId":"6a613405-4b6e-4b28-b673-ad5a936993d6","url":"/live/wave8-owner-ui-dom-71441238/","source":"pending-draft"}
+✖ owner connects a custom domain to active, and disconnects, entirely from the dashboard UI (48633.96325ms)
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-dom-71441238' }).locator('button').filter({ hasText: 'Domeniu' }) to be visible
+  
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abbef268152b132dc/bot/test/wave8-owner-ui-domain-reachable-e2e.test.js:200:25) {
+    name: 'TimeoutError',
+    log: [ "  - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-dom-71441238' }).locator('button').filter({ hasText: 'Domeniu' }) to be visible" ]
+  }
+
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 49194.271667
+
+✖ failing tests:
+
+test at bot/test/wave8-owner-ui-domain-reachable-e2e.test.js:101:1
+✖ owner connects a custom domain to active, and disconnects, entirely from the dashboard UI (48633.96325ms)
+  locator.waitFor: Timeout 15000ms exceeded.
+  Call log:
+    - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-dom-71441238' }).locator('button').filter({ hasText: 'Domeniu' }) to be visible
+  
+      at TestContext.<anonymous> (/Users/Work/Desktop/sitebuilder/.claude/worktrees/agent-abbef268152b132dc/bot/test/wave8-owner-ui-domain-reachable-e2e.test.js:200:25) {
+    name: 'TimeoutError',
+    log: [ "  - waiting for locator('.site-card').filter({ hasText: 'wave8-owner-ui-dom-71441238' }).locator('button').filter({ hasText: 'Domeniu' }) to be visible" ]
+  }
