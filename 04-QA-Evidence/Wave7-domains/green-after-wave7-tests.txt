@@ -1,0 +1,75 @@
+(node:20737) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ activateDomainConnection refuses to attach before DNS is verified (9.988167ms)
+✔ full lifecycle: dns_verified -> provisioning -> active flips SEO origin; then disconnect restores the subdomain (15.87275ms)
+✔ detachDomain (deploy-cloudflare.js) is idempotent: a domain already gone (404) is success, not an error (0.696333ms)
+✔ getDomainStatus (deploy-cloudflare.js) returns null (not a throw) for a domain that was never attached (0.43ms)
+✔ checkDomainConnection: not found -> wrong value -> verified, across three separate polls (10.834958ms)
+✔ checkDomainConnection: a DNS lookup that never answers times out instead of hanging forever (85.702417ms)
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:07:04.764Z","event":"webpublish.custom_domain.origin_applied","siteId":"8e355b13-6ead-40df-97ab-9787dff6308b","oldOrigin":"http://127.0.0.1:4242/live/wave7-seo-07243ea1","newOrigin":"https://www.myshop.com","anyFixed":true}
+  ⚠️  @each "categories" is not an array — skipping
+  ⚠️  unresolved token: {{labels.close}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxPrev}} (omitted)
+  ⚠️  unresolved token: {{labels.lightboxNext}} (omitted)
+  ⚠️  unresolved token: {{theme.primary}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryLight}} (omitted)
+  ⚠️  unresolved token: {{theme.primaryDark}} (omitted)
+  ⚠️  unresolved token: {{theme.cream}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{business.tagline}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{labels.scroll}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{servicesTitle}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{labels.about}} (omitted)
+  ⚠️  unresolved token: {{business.about}} (omitted)
+  ⚠️  unresolved token: {{contact.title}} (omitted)
+  ⚠️  unresolved token: {{contact.intro}} (omitted)
+  ⚠️  unresolved token: {{contact.phoneDisplay}} (omitted)
+  ⚠️  unresolved token: {{footer.year}} (omitted)
+  ⚠️  unresolved token: {{footer.note}} (omitted)
+{"ts":"2026-09-06T13:07:04.802Z","event":"webpublish.custom_domain.origin_applied","siteId":"8e355b13-6ead-40df-97ab-9787dff6308b","oldOrigin":"https://www.myshop.com","newOrigin":"http://127.0.0.1:4242/live/wave7-seo-07243ea1","anyFixed":true}
+(node:20739) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ publish -> connect custom domain -> activate flips canonical/og:url/robots/sitemap; disconnect restores the (still-live) subdomain (184.376833ms)
+✔ normalizeDomain: accepts a plain domain and detects apex vs subdomain (8.072583ms)
+✔ normalizeDomain: normalizes an accented IDN domain to punycode (0.592ms)
+✔ normalizeDomain: rejects empty input (0.920375ms)
+✔ normalizeDomain: rejects an IP address, not just a malformed domain (0.444083ms)
+✔ normalizeDomain: rejects garbage / malformed hostnames (0.387ms)
+✔ normalizeDomain: rejects the platform's own brand domain and its subdomains (1.167583ms)
+✔ startDomainConnection: rejects a domain already connected to a different site (3.006209ms)
+✔ startDomainConnection: shows a TXT + CNAME record with real values, and an apex-forwarding note only for apex domains (1.04ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 265.2945

@@ -590,22 +590,43 @@ function absolutizeSocialImageMeta(indexPath, baseUrl) {
     return true;
 }
 
+// bot/domains.js requires this module back (to flip the SEO origin the
+// moment a custom domain goes active/disconnected — see
+// applyCustomDomainOrigin below), so this side of the require loop has to be
+// lazy too, same pattern as getDeployBuiltSite() above for bot/flow.js.
+function getDomains() { return require('./domains.js'); }
+
 /**
- * Best-effort predicted public origin for a site BEFORE deploy runs, for the
- * two cases where it is deterministic ahead of time:
- *   - HIDOOK_ISOLATED_DEPLOY=1: identical formula to _isolatedDeploy()'s own
- *     return url, so the copy that lands in $DATA_DIR/published/<slug>/ is
- *     already correct.
- *   - BRAND_DOMAIN + DEPLOY_PROVIDER=cloudflare: identical to the
- *     <slug>.<BRAND_DOMAIN> subdomain _deploy() attaches below.
+ * Best-effort predicted public origin for a site BEFORE deploy runs.
+ *
+ * Checked in priority order:
+ *   1. Wave 7: an ACTIVE self-serve custom domain (bot/domains.js) always
+ *      wins — once an owner's own domain is live, every subsequent
+ *      publish/republish must keep canonical/og:url/robots/sitemap pointed
+ *      at it, not silently drift back to the Hidook subdomain.
+ *   2. HIDOOK_ISOLATED_DEPLOY=1: identical formula to _isolatedDeploy()'s own
+ *      return url, so the copy that lands in $DATA_DIR/published/<slug>/ is
+ *      already correct.
+ *   3. BRAND_DOMAIN + DEPLOY_PROVIDER=cloudflare: identical to the
+ *      <slug>.<BRAND_DOMAIN> subdomain _deploy() attaches below.
  * Returns '' when the real host is only known after the deploy call returns
  * (plain Cloudflare Pages / Vercel) — the post-deploy pass in publishSite()
  * covers that case using the actual returned url instead.
  *
  * @param {string} slug
+ * @param {{siteId?: string}} [opts]
  * @returns {string}
  */
-function predictedPublicOrigin(slug) {
+function predictedPublicOrigin(slug, opts) {
+    const siteId = opts && opts.siteId;
+    if (siteId) {
+        try {
+            const activeDomain = getDomains().getActiveDomainForSite(siteId);
+            if (activeDomain) return `https://${activeDomain}`;
+        } catch (_) {
+            // domains.js unavailable/broken must never block a publish.
+        }
+    }
     if (process.env.BRAND_DOMAIN && String(process.env.DEPLOY_PROVIDER || '').toLowerCase() === 'cloudflare') {
         return `https://${slug}.${process.env.BRAND_DOMAIN}`;
     }
@@ -712,6 +733,102 @@ function rewriteOriginInFile(filePath, oldOrigin, newOrigin) {
         return false;
     }
     return true;
+}
+
+// ---------------------------------------------------------------------------
+// Wave 7 — flip SEO origin on custom-domain connect/disconnect
+// ---------------------------------------------------------------------------
+
+/**
+ * Flip a site's SEO origin (canonical/og:url/og:image/robots.txt/sitemap.xml)
+ * between its Hidook subdomain and an owner-connected custom domain, then
+ * redeploy so the LIVE site matches, not just the on-disk copy. Called from
+ * bot/domains.js exactly twice per connection's lifetime: the moment
+ * Cloudflare first reports the custom domain active (domain = the new host),
+ * and on disconnect (domain = null, restoring fallbackOrigin/the subdomain).
+ *
+ * Unlike the normal publish-time origin prediction above (predictedPublicOrigin
+ * — only fills seo.canonical when it is NOT already set, so a Telegram-drafted
+ * canonical is never clobbered), this deliberately OVERWRITES an existing
+ * canonical: that is the entire point of a domain connect/disconnect
+ * transition, and is why it lives in its own function rather than reusing
+ * the "only fill if empty" publish-time logic.
+ *
+ * @param {object} opts
+ * @param {string} opts.siteId
+ * @param {string|null} opts.domain   new custom-domain host, or null to revert.
+ * @param {string} [opts.fallbackOrigin]  used only when domain is null and no
+ *   better origin can be derived (predictedPublicOrigin() / current site.url).
+ * @returns {Promise<{changed: boolean, origin: string|null}>}
+ */
+async function applyCustomDomainOrigin({ siteId, domain, fallbackOrigin }) {
+    const site = registry.getSite(siteId);
+    if (!site) throw new Error(`Site not found: ${siteId}`);
+
+    const siteDir     = path.join(SITES_DIR, site.projectName);
+    const configPath  = path.join(siteDir, 'config.json');
+    if (!fs.existsSync(siteDir) || !fs.existsSync(configPath)) {
+        throw new Error(`Built site not found for site ${siteId} — publish it before connecting a domain.`);
+    }
+
+    const slugForUrl = site.slug || site.projectName;
+    // Strip any trailing slash regardless of source — fallbackOrigin/site.url
+    // (registry's stored URL always carries one; predictedPublicOrigin()/the
+    // https://<domain> form never do) so seo.canonical's own `${newOrigin}/`
+    // below never doubles up into "//".
+    const rawNewOrigin = domain
+        ? `https://${domain}`
+        : (fallbackOrigin || predictedPublicOrigin(slugForUrl) || site.url || null);
+    const newOrigin = rawNewOrigin ? String(rawNewOrigin).replace(/\/+$/, '') : null;
+    if (!newOrigin) {
+        return { changed: false, origin: null };
+    }
+
+    let cfg;
+    try {
+        cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch (e) {
+        throw new Error(`Could not read config.json for site ${siteId}: ${e.message}`);
+    }
+    cfg.seo = (cfg.seo && typeof cfg.seo === 'object') ? cfg.seo : {};
+    // Deliberately NOT siteExport.originFromCanonical()'s `new URL().origin`
+    // parse: that collapses to scheme+host, dropping any path — fine for that
+    // module's own purpose, but wrong here, where the previously-embedded
+    // string can legitimately carry a path (predictedPublicOrigin()'s isolated
+    // formula is "<PUBLIC_URL>/live/<slug>", not a bare origin). What must be
+    // found-and-replaced in the built files is the EXACT string that was
+    // written into seo.canonical, byte for byte — same rule
+    // rewriteOriginInFile()'s own post-deploy correction already follows.
+    const oldOrigin = String(cfg.seo.canonical || '').replace(/\/+$/, '') || site.url || '';
+
+    if (oldOrigin === newOrigin) {
+        return { changed: false, origin: newOrigin }; // idempotent — nothing to flip
+    }
+
+    cfg.seo.canonical = `${newOrigin}/`;
+    fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf8');
+
+    const indexPath   = path.join(siteDir, 'index.html');
+    const robotsPath  = path.join(siteDir, 'robots.txt');
+    const sitemapPath = path.join(siteDir, 'sitemap.xml');
+    let anyFixed = false;
+    if (oldOrigin) {
+        // canonical link + og:url share the exact seo.canonical string (see
+        // rewriteOriginInFile's own doc comment), and any already-absolutized
+        // og:image/twitter:image also embeds oldOrigin — one substring pass
+        // across each file fixes all of them together.
+        if (rewriteOriginInFile(indexPath, oldOrigin, newOrigin))   anyFixed = true;
+        if (rewriteOriginInFile(robotsPath, oldOrigin, newOrigin))  anyFixed = true;
+        if (rewriteOriginInFile(sitemapPath, oldOrigin, newOrigin)) anyFixed = true;
+    }
+    // Covers the (rarer) case where og:image/twitter:image was still
+    // relative — e.g. this site was built before F3 ever ran on it.
+    if (absolutizeSocialImageMeta(indexPath, newOrigin)) anyFixed = true;
+
+    await _deploy(siteDir, site.projectName, site.userId, { slug: slugForUrl });
+
+    log('webpublish.custom_domain.origin_applied', { siteId, oldOrigin, newOrigin, anyFixed });
+    return { changed: true, origin: newOrigin };
 }
 
 // ---------------------------------------------------------------------------
@@ -1018,7 +1135,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // of cfgCopy, so it is available even when siteDirAlreadyBuilt skips the
     // build branch below (robots.txt/sitemap.xml still get written either way).
     const slugForUrl    = site.slug || site.projectName;
-    const seoBuildOrigin = predictedPublicOrigin(slugForUrl) || PENDING_SEO_ORIGIN;
+    const seoBuildOrigin = predictedPublicOrigin(slugForUrl, { siteId: site.id }) || PENDING_SEO_ORIGIN;
 
     if (!siteDirAlreadyBuilt) {
         fs.mkdirSync(imagesDir, { recursive: true });
@@ -1141,7 +1258,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // copy that actually gets served/uploaded already has the fix.
     const indexPath = path.join(siteDir, 'index.html');
     try {
-        absolutizeSocialImageMeta(indexPath, predictedPublicOrigin(slugForUrl));
+        absolutizeSocialImageMeta(indexPath, predictedPublicOrigin(slugForUrl, { siteId: site.id }));
     } catch (e) {
         log('webpublish.social_image.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
@@ -1191,18 +1308,30 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // correction (not just local disk). Best-effort: never blocks or fails
     // the publish itself. No-op for isolated/fake (already correct, or
     // nothing external to re-push).
-    try {
-        const fixedImage    = absolutizeSocialImageMeta(indexPath, url);
-        const finalOrigin   = String(url || '').replace(/\/$/, '');
-        const fixedCanonical = rewriteOriginInFile(indexPath, seoBuildOrigin, finalOrigin);
-        const fixedRobots   = rewriteOriginInFile(path.join(siteDir, 'robots.txt'), seoBuildOrigin, finalOrigin);
-        const fixedSitemap  = rewriteOriginInFile(path.join(siteDir, 'sitemap.xml'), seoBuildOrigin, finalOrigin);
-        const anyFixed = fixedImage || fixedCanonical || fixedRobots || fixedSitemap;
-        if (anyFixed && deployProvider && deployProvider !== 'isolated' && deployProvider !== 'fake') {
-            await _deploy(siteDir, site.projectName, site.userId, { slug: slugForUrl });
+    //
+    // Wave 7 guard: this must ONLY fire when seoBuildOrigin was actually the
+    // unresolved placeholder. Once predictedPublicOrigin() DID resolve a real
+    // origin ahead of deploy — BRAND_DOMAIN+cloudflare, isolated, or (Wave 7)
+    // an ACTIVE custom domain — seoBuildOrigin is deliberately allowed to
+    // differ from `url` (the underlying Cloudflare Pages/subdomain host the
+    // deploy call itself returns): a custom domain's whole point is to be the
+    // public-facing origin while the site keeps deploying to its ordinary
+    // host underneath. Correcting "back" to `url` in that case would silently
+    // undo domains.js's applyCustomDomainOrigin() on every single republish.
+    if (seoBuildOrigin === PENDING_SEO_ORIGIN) {
+        try {
+            const fixedImage    = absolutizeSocialImageMeta(indexPath, url);
+            const finalOrigin   = String(url || '').replace(/\/$/, '');
+            const fixedCanonical = rewriteOriginInFile(indexPath, seoBuildOrigin, finalOrigin);
+            const fixedRobots   = rewriteOriginInFile(path.join(siteDir, 'robots.txt'), seoBuildOrigin, finalOrigin);
+            const fixedSitemap  = rewriteOriginInFile(path.join(siteDir, 'sitemap.xml'), seoBuildOrigin, finalOrigin);
+            const anyFixed = fixedImage || fixedCanonical || fixedRobots || fixedSitemap;
+            if (anyFixed && deployProvider && deployProvider !== 'isolated' && deployProvider !== 'fake') {
+                await _deploy(siteDir, site.projectName, site.userId, { slug: slugForUrl });
+            }
+        } catch (e) {
+            log('webpublish.seo_files.postdeploy_failed', { siteId: site.id, err: e.message }, 'warn');
         }
-    } catch (e) {
-        log('webpublish.seo_files.postdeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
 
     // 7. Mark live
@@ -1574,4 +1703,6 @@ module.exports = {
     absolutizeSocialImageMeta,
     predictedPublicOrigin,
     buildLocalBusinessJsonLd,
+    // Wave 7 — self-serve custom domain connect (called from bot/domains.js)
+    applyCustomDomainOrigin,
 };

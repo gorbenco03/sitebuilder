@@ -1,0 +1,134 @@
+
+=== 1. Publish a site (isolated deploy stub — no live host) ===
+
+Published: http://127.0.0.1:4242/live/afacerea-mea-c86727/
+canonical: <link rel="canonical" href="http://127.0.0.1:4242/live/afacerea-mea-c86727/">
+og:url:    <meta property="og:url" content="http://127.0.0.1:4242/live/afacerea-mea-c86727/">
+sitemap:   <loc>http://127.0.0.1:4242/live/afacerea-mea-c86727/</loc>
+
+=== 2. Owner enters "afacereamea.ro" — an apex domain — records shown ===
+
+{
+  "domain": "afacereamea.ro",
+  "targetHost": "www.afacereamea.ro",
+  "isApex": true,
+  "status": "awaiting_dns",
+  "records": [
+    {
+      "tip": "TXT",
+      "nume": "_hidook-challenge.www.afacereamea.ro",
+      "valoare": "hidook-verify=c9881c3ecde70f08b3acfebf1cc1b534",
+      "ttl": "Auto (sau 300)",
+      "scop": "Dovedește că deții acest domeniu."
+    },
+    {
+      "tip": "CNAME",
+      "nume": "www.afacereamea.ro",
+      "valoare": "afacerea-mea-c86727.pages.dev",
+      "ttl": "Auto (sau 300)",
+      "scop": "Direcționează domeniul către site-ul tău Hidook."
+    }
+  ],
+  "note": "Domeniul principal \"afacereamea.ro\" nu poate avea o înregistrare CNAME — este o limitare a standardului DNS, nu a Hidook. Adaugă cele două înregistrări de mai sus pentru \"www.afacereamea.ro\", apoi la panoul domeniului tău configurează o redirecționare (forwarding) de la \"afacereamea.ro\" către \"https://www.afacereamea.ro\" — astfel vizitatorii care scriu \"afacereamea.ro\" ajung automat pe site.",
+  "instructiuni": "Adaugă aceste înregistrări în panoul DNS al furnizorului tău de domeniu (locul unde ai cumpărat domeniul), exact cum sunt scrise mai jos, apoi apasă „Verifică\". Propagarea DNS poate dura de la câteva minute până la câteva ore — este normal.",
+  "message": "Nu am găsit încă înregistrările DNS. E normal — propagarea poate dura de la câteva minute până la câteva ore. Revino mai târziu și apasă din nou \"Verifică\"."
+}
+
+=== 3. Verify DNS — poll 1: nothing set up yet (honest "not yet visible") ===
+
+{
+  "status": "awaiting_dns",
+  "txt": {
+    "state": "not_found",
+    "expected": "hidook-verify=c9881c3ecde70f08b3acfebf1cc1b534"
+  },
+  "cname": {
+    "state": "not_found",
+    "expected": "afacerea-mea-c86727.pages.dev"
+  },
+  "message": "Nu am găsit încă înregistrările DNS. E normal — propagarea poate dura de la câteva minute până la câteva ore. Revino mai târziu și apasă din nou \"Verifică\"."
+}
+
+=== 4. Verify DNS — poll 2: CNAME set up WRONG (copy-paste mistake), TXT still missing ===
+
+{
+  "status": "dns_partial",
+  "txt": {
+    "state": "not_found",
+    "expected": "hidook-verify=c9881c3ecde70f08b3acfebf1cc1b534"
+  },
+  "cname": {
+    "state": "mismatch",
+    "expected": "afacerea-mea-c86727.pages.dev",
+    "found": [
+      "some-other-project.pages.dev"
+    ]
+  },
+  "message": "Am găsit o parte din înregistrări, dar nu toate (sau au altă valoare decât cea indicată). Mai verifică o dată peste câteva minute."
+}
+
+=== 5. Verify DNS — poll 3: both records correct — verified ===
+
+{
+  "status": "dns_verified",
+  "txt": {
+    "state": "ok",
+    "expected": "hidook-verify=c9881c3ecde70f08b3acfebf1cc1b534",
+    "found": [
+      "hidook-verify=c9881c3ecde70f08b3acfebf1cc1b534"
+    ]
+  },
+  "cname": {
+    "state": "ok",
+    "expected": "afacerea-mea-c86727.pages.dev",
+    "found": [
+      "afacerea-mea-c86727.pages.dev"
+    ]
+  },
+  "message": "Înregistrările DNS sunt corecte. Urmează activarea certificatului de securitate (HTTPS) — de obicei durează câteva minute."
+}
+
+=== 6. Attach to Cloudflare — TLS provisioning in progress (honest "not active yet") ===
+
+{
+  "status": "provisioning",
+  "message": "Certificatul de securitate (HTTPS) se activează. De obicei durează câteva minute, uneori până la o oră.",
+  "raw": {
+    "name": "www.afacereamea.ro",
+    "status": "pending"
+  }
+}
+
+=== 7. Cloudflare finishes — domain goes active; SEO origin flips + redeploys ===
+
+{"ts":"2026-09-06T13:07:44.301Z","event":"webpublish.custom_domain.origin_applied","siteId":"26d5122b-bc78-4fac-bbb7-1e8f7ef40d19","oldOrigin":"http://127.0.0.1:4242/live/afacerea-mea-c86727","newOrigin":"https://www.afacereamea.ro","anyFixed":true}
+{
+  "status": "active",
+  "message": "Domeniul tău este conectat și activ.",
+  "raw": {
+    "name": "www.afacereamea.ro",
+    "status": "active"
+  }
+}
+
+-- site files after activation --
+canonical: <link rel="canonical" href="https://www.afacereamea.ro/">
+og:url:    <meta property="og:url" content="https://www.afacereamea.ro/">
+robots:    Sitemap: https://www.afacereamea.ro/sitemap.xml
+sitemap:   <loc>https://www.afacereamea.ro/</loc>
+
+=== 8. Disconnect — Cloudflare detached, SEO reverts, subdomain still serves ===
+
+{"ts":"2026-09-06T13:07:44.319Z","event":"webpublish.custom_domain.origin_applied","siteId":"26d5122b-bc78-4fac-bbb7-1e8f7ef40d19","oldOrigin":"https://www.afacereamea.ro","newOrigin":"http://127.0.0.1:4242/live/afacerea-mea-c86727","anyFixed":true}
+{
+  "status": "disconnected",
+  "message": "Domeniul a fost deconectat. Site-ul tău rămâne disponibil pe subdomeniul Hidook."
+}
+still attached on Cloudflare? false
+getActiveDomainForSite: null
+
+-- site files after disconnect --
+canonical: <link rel="canonical" href="http://127.0.0.1:4242/live/afacerea-mea-c86727/">
+og:url:    <meta property="og:url" content="http://127.0.0.1:4242/live/afacerea-mea-c86727/">
+sitemap:   <loc>http://127.0.0.1:4242/live/afacerea-mea-c86727/</loc>
+site still present on disk at its Hidook subdomain path: true
