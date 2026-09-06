@@ -29,6 +29,14 @@ let previewSpinTimer   = null;
 let previewFirstRender = false;
 let iframeReady        = false;   // did overlay send {hb:'ready'}?
 let pendingRender      = false;   // is a srcdoc re-render queued?
+// Has the visitor already dismissed the template's own cookie banner inside
+// THIS editing session? The srcdoc iframe has no allow-same-origin, so its
+// localStorage/document.cookie calls silently no-op — the template's normal
+// persisted-consent check can never survive a full re-render (F1: color,
+// image, and list edits all replace the iframe's srcdoc from scratch). We
+// track the "already accepted" state here, outside the iframe, and replay it
+// into every subsequent render instead.
+let previewCookieAccepted = false;
 
 // Pending image replacement request
 let pendingImagePath = null;
@@ -863,15 +871,40 @@ function showPreviewSpinner(vis) {
 let editorPreviewGeneration = 0;
 let clearEditorPreviewReadyListener = null;
 
-function prepareInteractivePreviewDocument(documentHtml, readyToken) {
+// Is a srcdoc navigation currently loading in the preview iframe? Full
+// re-renders are serialized against this instead of firing srcdoc a second
+// time before the previous navigation settles (PORT-05: a re-render started
+// while another is still loading — e.g. a color change fired right after an
+// image change whose base64 embed makes buildSrcdoc() slower — can abandon
+// the in-flight navigation mid-flight and leave the iframe visually stuck on
+// stale pixels even though the newer document's computed styles are already
+// correct). A render requested while one is in flight is queued via
+// `pendingRender` and replayed — reading draft.config fresh at that point,
+// so no edit is ever lost — once the current one settles.
+let renderInFlight = false;
+let renderInFlightSafetyTimer = null;
+
+function prepareInteractivePreviewDocument(documentHtml, readyToken, cookieAccepted) {
   // The preview is only ready once generated consent is bound and the first
   // animation-forcer pass has completed. This applies equally to catalog and
   // editor srcdoc documents.
+  //
+  // `cookieAccepted` (optional): when true, the visitor already dismissed the
+  // cookie banner earlier in this session (see previewCookieAccepted). The
+  // sandboxed srcdoc iframe has no allow-same-origin, so the template's own
+  // localStorage/cookie persistence silently no-ops on every fresh document —
+  // without this replay the banner would flash back on every full re-render
+  // (F1). We also forward the accept click to the parent (independent of the
+  // template's own window.__hbCookieAccept binding) so the NEXT re-render
+  // knows to keep it hidden.
   const readyScript = '<script data-hb-preview-ready>(function(){var token=' +
     JSON.stringify(readyToken) +
-    ';var sent=false;var send=function(){if(sent)return;sent=true;try{parent.postMessage({type:"hb-preview-ready",token:token},"*");}catch(e){}};' +
+    ';var accepted=' + JSON.stringify(!!cookieAccepted) + ';' +
+    'var sent=false;var send=function(){if(sent)return;sent=true;try{parent.postMessage({type:"hb-preview-ready",token:token},"*");}catch(e){}};' +
+    'document.addEventListener("click",function(e){var t=e.target;var target=t&&t.closest?t.closest("#hb-cookie-accept"):null;if(target){try{parent.postMessage({hb:"cookie-accept"},"*");}catch(e2){}}},true);' +
     'var ensureConsent=function(){var el=document.getElementById("hb-cookie-banner");var btn=document.getElementById("hb-cookie-accept");' +
     'if(!el||!btn)return true;' +
+    'if(accepted){try{el.hidden=true;el.setAttribute("hidden","");el.setAttribute("data-hb-consent-dismissed","true");el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
     'if(typeof window.__hbCookieAccept==="function"){try{if(btn.getAttribute("data-hb-bound")!=="1"){btn.setAttribute("data-hb-bound","1");btn._hbBound=true;btn.addEventListener("pointerdown",window.__hbCookieAccept);btn.addEventListener("click",window.__hbCookieAccept);btn.onclick=window.__hbCookieAccept;}if(el.hidden){el.hidden=false;try{el.removeAttribute("hidden");}catch(e){}}el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
     'return el.getAttribute("data-hb-consent-ready")==="true";};' +
     'var readyToSend=function(){return ensureConsent()&&document.documentElement.getAttribute("data-hb-forcer-done")==="1";};' +
@@ -883,7 +916,7 @@ function prepareInteractivePreviewDocument(documentHtml, readyToken) {
   return documentHtml.slice(0, closeBodyAt) + readyScript + documentHtml.slice(closeBodyAt);
 }
 
-function waitForInteractivePreview(target, readyToken) {
+function waitForInteractivePreview(target, readyToken, onSettled) {
   target.setAttribute('aria-busy', 'true');
   target.dataset.previewReady = 'false';
   target.classList.add('preview-iframe--loading');
@@ -901,6 +934,7 @@ function waitForInteractivePreview(target, readyToken) {
         if (cancelled || target.getAttribute('aria-busy') !== 'true') return;
         target.setAttribute('aria-busy', 'false');
         target.dataset.previewReady = 'true';
+        if (typeof onSettled === 'function') onSettled();
       });
     });
   };
@@ -915,19 +949,36 @@ function waitForInteractivePreview(target, readyToken) {
 // Full re-render: new srcdoc. Called for: initial load, image change, list add/remove, color change.
 function fullRerender() {
   if (!draft.config || !draft.templateId) return;
-  iframeReady = false;
+  if (renderInFlight) {
+    pendingRender = true;
+    return;
+  }
+  renderInFlight = true;
   pendingRender = false;
+  iframeReady = false;
 
   if (previewSpinTimer) clearTimeout(previewSpinTimer);
   previewSpinTimer = setTimeout(() => showPreviewSpinner(true), 200);
 
   const readyToken = 'hb-editor-preview-ready-' + (++editorPreviewGeneration);
-  const html = prepareInteractivePreviewDocument(buildSrcdoc(), readyToken);
+  const html = prepareInteractivePreviewDocument(buildSrcdoc(), readyToken, previewCookieAccepted);
   const iframe = getPreviewIframe();
-  if (!iframe) return;
+  if (!iframe) { renderInFlight = false; return; }
+
+  let settled = false;
+  const settleRender = () => {
+    if (settled) return;
+    settled = true;
+    if (renderInFlightSafetyTimer) { clearTimeout(renderInFlightSafetyTimer); renderInFlightSafetyTimer = null; }
+    renderInFlight = false;
+    if (pendingRender) { pendingRender = false; fullRerender(); }
+  };
+  // Safety net: a missing/late ready message (render error, etc.) must never
+  // permanently wedge future edits behind a render that will never settle.
+  renderInFlightSafetyTimer = setTimeout(settleRender, 4000);
 
   if (clearEditorPreviewReadyListener) clearEditorPreviewReadyListener();
-  clearEditorPreviewReadyListener = waitForInteractivePreview(iframe, readyToken);
+  clearEditorPreviewReadyListener = waitForInteractivePreview(iframe, readyToken, settleRender);
   iframe.srcdoc = html;
 
   if (!previewFirstRender) {
@@ -998,6 +1049,10 @@ function initPostMessageListener() {
         break;
       case 'focus':
         // Could highlight field in drawer — skip for now
+        break;
+      case 'cookie-accept':
+        // F1: remember consent across full re-renders (see previewCookieAccepted).
+        previewCookieAccepted = true;
         break;
     }
   });
@@ -1231,11 +1286,19 @@ function onListAdd(listPath) {
   if (!listPath) return;
   const tpl = currentTemplate && currentTemplate.data;
   const schema = tpl && tpl.schema;
-  // Find field definition for itemShape
+  // Find field definition for itemShape.
+  // Most templates' schema.json declare this as "itemShape", but at least one
+  // (desserdirina) spells it "itemSchema" — accept either key so the item
+  // built below always matches the field's real sub-shape (e.g. {title,
+  // blurb, photos:[]}) instead of silently falling through to a bare ''
+  // placeholder that desyncs the list from the edit-overlay's DOM tracking
+  // (DSD-02: an add+remove on such a list corrupts/removes the WRONG item).
   let itemShape = null;
   if (schema) {
     getAllSchemaFields(schema).forEach(f => {
-      if (f.key === listPath && f.type === 'list') itemShape = f.itemShape;
+      if (f.key === listPath && f.type === 'list') {
+        itemShape = f.itemShape !== undefined ? f.itemShape : f.itemSchema;
+      }
     });
   }
   const arr = Array.isArray(getPath(draft.config, listPath))
@@ -3615,6 +3678,7 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     currentTemplate = { meta, data: tplData };
     previewFirstRender = false;
     iframeReady = false;
+    previewCookieAccepted = false;
     const nameEl = $('editor-template-name');
     if (nameEl) nameEl.textContent = meta.name;
     saveDraft();
@@ -3654,6 +3718,7 @@ async function resumeLocalDraft() {
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;
   iframeReady = false;
+  previewCookieAccepted = false;
   const nameEl = $('editor-template-name');
   if (nameEl) nameEl.textContent = meta.name;
   return true;
@@ -3911,6 +3976,7 @@ async function startWithTemplate(templateId) {
   currentTemplate = { meta, data: tplData };
   previewFirstRender = false;
   iframeReady = false;
+  previewCookieAccepted = false;
 
   const nameEl = $('editor-template-name');
   if (nameEl) nameEl.textContent = meta.name;
@@ -4258,6 +4324,7 @@ async function loadSiteForEdit(siteId) {
 
     previewFirstRender = false;
     iframeReady = false;
+    previewCookieAccepted = false;
 
     window.location.hash = '#edit';
   } catch (e) {

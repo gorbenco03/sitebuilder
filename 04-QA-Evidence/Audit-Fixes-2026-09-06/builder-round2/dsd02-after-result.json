@@ -1,0 +1,20 @@
+{
+  "label": "after",
+  "editorBefore": {
+    "cats": 1,
+    "photos": 4
+  },
+  "editorAfterAdd": {
+    "cats": 2,
+    "photos": 4
+  },
+  "editorAfterRemove": {
+    "cats": 1,
+    "photos": 4
+  },
+  "liveCategories": 1,
+  "livePhotos": 4,
+  "firstPhotoOk": true,
+  "eachWarnings": [],
+  "liveUrl": "http://127.0.0.1:57279/live/dsd02-after-34c4a794/"
+}

@@ -1,0 +1,10 @@
+{
+  "label": "after",
+  "immediate": "rgb(29, 91, 121)",
+  "settled": "rgb(29, 91, 121)",
+  "expectedRgb": "rgb(29, 91, 121)",
+  "immediateMatchesExpected": true,
+  "settledMatchesExpected": true,
+  "previewNavCount": 2,
+  "overlapCount": 0
+}
