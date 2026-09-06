@@ -228,9 +228,42 @@ ul { list-style: none; }
 .pf-series__t { font-family: var(--display); font-size: 1.35rem; font-weight: 500; }
 .pf-series__b { color: var(--soft); margin: 0.35rem 0 1rem; }
 .collage-deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-@media (min-width: 834px) { .collage-deck { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 834px) {
+    /* WAVE10: a category's photo count is owner-editable (add/remove via the
+       drawer) and rarely divides evenly by 3. Left as a plain 3-column grid,
+       a remainder stranded a lone thumbnail (or a pair) next to a slab of
+       empty background on its own row — confirmed on this exact preset data
+       (4-photo categories) and, side-by-side against local-service/
+       product-menu, the single most "unfinished-looking" thing on the page.
+       A 6-unit sub-grid (each normal photo spans 2 of 6 = one visual column)
+       lets the trailing row's item(s) widen to fill the row completely
+       instead: a remainder of 1 becomes a deliberate wide feature shot, a
+       remainder of 2 becomes a paired diptych. Pure CSS, no JS/build.js
+       change, and it changes nothing when a category's count already
+       divides evenly by 3 (no :last-child in that case matches either rule). */
+    .collage-deck { grid-template-columns: repeat(6, 1fr); }
+    .pf-frame, .collage-photo { grid-column: span 2; }
+    .collage-deck > :nth-child(3n+1):last-child { grid-column: span 6; }
+    .collage-deck > :nth-child(3n+1):last-child img { aspect-ratio: 21 / 9; }
+    .collage-deck > :nth-child(3n+1):nth-last-child(2),
+    .collage-deck > :nth-child(3n+2):last-child {
+        grid-column: span 3;
+    }
+}
 .pf-frame, .collage-photo { margin: 0; border-radius: var(--r); overflow: hidden; }
-.pf-frame img, .collage-photo img { width: 100%; aspect-ratio: 4/5; object-fit: cover; }
+/* WAVE10: `height: auto` is required, not decorative — build.js's CLS-safety
+   pass (injectResponsiveImages) writes real width/height HTML ATTRIBUTES onto
+   every <img> from the source file's own intrinsic pixel size. Those attributes
+   map to a `height` (not `aspect-ratio`) presentational hint, so — despite
+   being lower-priority than any author rule — they fully satisfy the box's
+   `height` property (making it non-auto) and this rule's `aspect-ratio: 4/5`
+   is then never consulted at all (that only kicks in when height computes to
+   auto). Confirmed live: this category's own photos ship at mixed native
+   sizes (960x960 vs 960x643), and without `height: auto` here the two shapes
+   rendered at two different pixel heights side by side in the same row — a
+   real, visible defect, not merely an untidy intent. Same fix applied to
+   .pf-person__pic img and .pf-ig__cell img below, which share the pattern. */
+.pf-frame img, .collage-photo img { width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover; }
 
 .pf-about {
     background: var(--void); color: var(--snow);
@@ -295,7 +328,7 @@ ul { list-style: none; }
     border: 1px solid rgba(42, 51, 64, 0.06);
 }
 .pf-person__pic { border-radius: var(--r); overflow: hidden; margin-bottom: 0.85rem; }
-.pf-person__pic img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.pf-person__pic img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
 .pf-person__name { font-family: var(--display); font-size: 1.15rem; font-weight: 500; }
 .pf-person__role { font-size: 0.85rem; color: var(--mute); margin-top: 0.2rem; }
 
@@ -319,7 +352,7 @@ ul { list-style: none; }
 }
 @media (min-width: 640px) { .pf-ig__grid { grid-template-columns: repeat(3, 1fr); } }
 .pf-ig__cell img {
-    width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px;
+    width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 6px;
     transition: opacity 160ms var(--ease-out);
 }
 .pf-ig__cell:hover img { opacity: 0.88; }

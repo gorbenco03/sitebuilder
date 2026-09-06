@@ -1,0 +1,202 @@
+[
+  {
+    "label": "hero tagline over photo veil",
+    "selector": ".pf-hero__tag",
+    "ratio": 3.73552270130113,
+    "required": 3,
+    "isLarge": true,
+    "fg": [
+      251,
+      252,
+      253
+    ],
+    "bg": [
+      136,
+      129,
+      123
+    ],
+    "text": "Păr, îngrijirea tenului și manichiură — cu răbdare și precizie",
+    "fontSize": 54.4,
+    "fontWeight": 500
+  },
+  {
+    "label": "sticky nav link (blurred dark chrome over hero)",
+    "selector": ".pf-chrome__nav a",
+    "ratio": 16.04490743081672,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      255,
+      255,
+      255
+    ],
+    "bg": [
+      28,
+      34,
+      40
+    ],
+    "text": "Galerie",
+    "fontSize": 11,
+    "fontWeight": 600
+  },
+  {
+    "label": "gallery category kicker on --paper",
+    "selector": ".pf-gal .pf-kicker",
+    "ratio": 10.90097673456173,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      232,
+      238,
+      242
+    ],
+    "text": "Lucrările noastre",
+    "fontSize": 11,
+    "fontWeight": 600
+  },
+  {
+    "label": "gallery category blurb on --paper",
+    "selector": ".pf-series__b",
+    "ratio": 10.90097673456173,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      232,
+      238,
+      242
+    ],
+    "text": "De la balayage discret la culoare îndrăzneață — fiecare tunsoare poartă o semnătură.",
+    "fontSize": 17,
+    "fontWeight": 400
+  },
+  {
+    "label": "about section body copy on --void",
+    "selector": ".pf-about .pf-copy",
+    "ratio": 16.04490743081672,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      255,
+      255,
+      255
+    ],
+    "bg": [
+      28,
+      34,
+      40
+    ],
+    "text": "Atelier Ivoire este un studio mic din București. Lucrăm numai cu programare pentru culoare, tuns, manichiură și îngrijirea tenului. Folosim produse certificate și începem fiecare vizită cu o consultație.",
+    "fontSize": 17,
+    "fontWeight": 400
+  },
+  {
+    "label": "service chip price on --snow card",
+    "selector": ".pf-chip__price",
+    "ratio": 12.42055327613828,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      251,
+      252,
+      253
+    ],
+    "text": "de la 300 lei",
+    "fontSize": 14.4,
+    "fontWeight": 400
+  },
+  {
+    "label": "price list value on --paper",
+    "selector": ".pf-price__val",
+    "ratio": 10.90097673456173,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      232,
+      238,
+      242
+    ],
+    "text": "260–350 lei",
+    "fontSize": 17,
+    "fontWeight": 400
+  },
+  {
+    "label": "schedule hours on --paper",
+    "selector": ".pf-sched__hours",
+    "ratio": 10.90097673456173,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      232,
+      238,
+      242
+    ],
+    "text": "09:00 – 20:00",
+    "fontSize": 17,
+    "fontWeight": 400
+  },
+  {
+    "label": "team member role on --snow card",
+    "selector": ".pf-person__role",
+    "ratio": 12.42055327613828,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      251,
+      252,
+      253
+    ],
+    "text": "Stilist senior și colorist",
+    "fontSize": 13.6,
+    "fontWeight": 400
+  },
+  {
+    "label": "footer text on --paper",
+    "selector": ".pf-foot__inner > div > p",
+    "ratio": 10.90097673456173,
+    "required": 4.5,
+    "isLarge": false,
+    "fg": [
+      42,
+      51,
+      64
+    ],
+    "bg": [
+      232,
+      238,
+      242
+    ],
+    "text": "Strada Icoanei 18, București 020451",
+    "fontSize": 12,
+    "fontWeight": 400
+  }
+]
