@@ -306,8 +306,20 @@ body {
     width: 100%;
     height: 100vh;
     height: 100dvh;
-    background-size: cover;
-    background-position: center;
+    /* !important is load-bearing here, not defensive noise.
+       The markup sets the photo with the shorthand — style="background: url(…)"
+       — and the `background` shorthand RESETS every longhand it does not
+       mention, so it silently put background-size back to `auto` and
+       background-repeat back to `repeat`. Inline styles win over the
+       stylesheet, so the `cover` below never applied and the hero photograph
+       tiled: at 1440px the .hero-background box is 1556px wide and the cake
+       appeared twice, with a visible vertical seam around x=980, on the first
+       screen of the flagship brand's site. .ls-hero__media and .pf-hero__bg
+       already carry the same !important for the same reason; this one was
+       missed. */
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
     transform: scale(1.08);
     z-index: -2;
     animation: heroDrift 18s ease-in-out infinite alternate;
@@ -467,7 +479,19 @@ body {
     flex-direction: column;
     align-items: center;
     color: var(--color-text);
-    background: none;
+    /* Was background:none — 13px text laid straight on the cake photograph.
+       Measured on rendered pixels it sits at 3.74:1 at the 10th percentile
+       against the 4.5:1 AA floor for text this size: legible over the pale
+       icing, lost over the mid-tone pinks, and entirely at the mercy of
+       whatever photo the owner uploads. A soft light chip gives it a surface
+       of its own without turning a quiet scroll cue into a button. */
+    background: color-mix(in srgb, #fff 93%, transparent);
+    padding: 0.5rem 1rem 0.6rem;
+    /* Not 999px: this box is 121x90, so a pill radius turns it into an ellipse
+       and the label — which sits at the top of the column, above the stroke —
+       ends up outside the painted shape, floating on the photo with a white
+       blob beneath it. A modest radius keeps the whole cue on its surface. */
+    border-radius: 14px;
     border: none;
     cursor: pointer;
     font-family: inherit;
