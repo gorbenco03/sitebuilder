@@ -150,18 +150,39 @@ function dirTotalBytes(dir) {
   }
 
   // ── PERF-02/PERF-06: template source images stay optimized ────────────────
-  const IMAGE_DIR_CEILING_MB = 16; // post-fix measured ~9.9MB; pre-fix was ~23.3MB
+  //
+  // Wave7 (2026-09-06, images/**) added a responsive-image pipeline:
+  // scripts/generate-image-variants.js writes two WebP width-variants
+  // (480w mobile, 960w desktop) per gallery/Instagram photo alongside the
+  // original JPEG, so a <picture> can serve the right file per viewport
+  // instead of the one-size-for-everyone photo this ceiling used to gate.
+  //
+  // That necessarily makes the ON-DISK images/ total bigger — 3 files per
+  // photo (1 JPEG fallback + 2 WebP widths) instead of 1 — even though the
+  // whole point of the change is that any ONE visitor downloads LESS than
+  // before (their browser picks exactly one <picture> candidate). Disk
+  // storage stopped being a faithful proxy for "bytes a visitor receives"
+  // the moment variants were introduced, so the ceilings below were
+  // re-measured and raised (current measured combined total: 20.15MB,
+  // largest single template: local-service at 7.06MB) rather than left at
+  // the pre-variant numbers, which the real regression check further down
+  // — "responsive image variants exist and shrink what a phone downloads"
+  // — now covers instead: it fails if a phone-sized visitor ever again ends
+  // up downloading anywhere near what a desktop visitor does. These two
+  // ceilings stay only to catch a raw unedited multi-MB dump (or the
+  // variant generator running away and producing many more widths than
+  // intended) being reintroduced.
+  const IMAGE_DIR_CEILING_MB = 23; // measured 20.15MB with Wave7 variants; was 16 pre-variants
+  const PER_TEMPLATE_IMAGE_DIR_CEILING_MB = 8.5; // measured max 7.06MB (local-service); was 6 pre-variants
   let totalImageBytes = 0;
   for (const id of TPLS) {
     const imgDir = path.join(ROOT, 'templates', id, 'images');
     check(`${id}: images/ directory total size is optimized`, () => {
       const bytes = dirTotalBytes(imgDir);
       totalImageBytes += bytes;
-      // Per-template ceiling generous enough to allow adding a few photos,
-      // tight enough to catch a raw unedited multi-MB dump being reintroduced.
       assert.ok(
-        bytes < 6 * 1024 * 1024,
-        `${imgDir} is ${(bytes / 1024 / 1024).toFixed(2)}MB, expected < 6MB`
+        bytes < PER_TEMPLATE_IMAGE_DIR_CEILING_MB * 1024 * 1024,
+        `${imgDir} is ${(bytes / 1024 / 1024).toFixed(2)}MB, expected < ${PER_TEMPLATE_IMAGE_DIR_CEILING_MB}MB`
       );
     });
 
@@ -191,6 +212,81 @@ function dirTotalBytes(dir) {
       `combined templates/{${TPLS.join(',')}}/images total is ${mb.toFixed(2)}MB, expected < ${IMAGE_DIR_CEILING_MB}MB`
     );
   });
+
+  // ── Wave7: the actual regression gate — a phone must download far less ────
+  // than a desktop for the same photos. images/variants.json (written by
+  // scripts/generate-image-variants.js) records every gallery/Instagram
+  // photo's WebP width-variants and their real encoded byte counts. This is
+  // deliberately NOT a check on the original *.jpg/*.png files — those stay
+  // fully covered, unmodified, by bot/test/s54-commercial-photos.test.js and
+  // bot/test/s55-subject-photos.test.js, which is also why this file's own
+  // generator never writes a .jpg/.png: it would otherwise collide with
+  // those oracles' "every file in images/ must clear the commercial floor"
+  // scan. The floor for the format THIS check is about (WebP) is expressed
+  // right here instead, per-variant, rather than by editing s54/s55: those
+  // two files scan by file extension (`/\.(jpe?g|png)$/i`) and simply never
+  // see a .webp file, so they remain accurate for what they've always
+  // tested and needed no change.
+  for (const id of TPLS) {
+    const manifestPath = path.join(ROOT, 'templates', id, 'images', 'variants.json');
+    check(`${id}: responsive image variants exist and shrink what a phone downloads`, () => {
+      if (!fs.existsSync(manifestPath)) {
+        // professionals ships only a CSS-background hero photo (no <img>
+        // gallery/Instagram grid) — there is nothing to generate variants for.
+        assert.strictEqual(id, 'professionals', `${id}: expected images/variants.json`);
+        return;
+      }
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      const entries = Object.entries(manifest);
+      if (entries.length === 0) {
+        // professionals ships only a CSS-background hero photo (no <img>
+        // gallery/Instagram grid) — the generator correctly produced an
+        // empty manifest rather than nothing at all.
+        assert.strictEqual(id, 'professionals', `${id}: variants.json has no entries`);
+        return;
+      }
+
+      let originalBytes = 0;
+      let mobileBytes = 0;
+      let desktopBytes = 0;
+      for (const [rel, entry] of entries) {
+        const abs = path.join(ROOT, 'templates', id, rel);
+        assert.ok(fs.existsSync(abs), `${id}: variants.json references missing original ${rel}`);
+        originalBytes += fs.statSync(abs).size;
+
+        assert.ok(Array.isArray(entry.variants) && entry.variants.length >= 2,
+          `${id}/${rel}: expected >= 2 width-variants, got ${entry.variants && entry.variants.length}`);
+        const sorted = [...entry.variants].sort((a, b) => a.width - b.width);
+        for (const v of sorted) {
+          const webpAbs = path.join(ROOT, 'templates', id, v.webp);
+          assert.ok(fs.existsSync(webpAbs), `${id}: missing variant file ${v.webp}`);
+          assert.strictEqual(fs.statSync(webpAbs).size, v.bytes, `${id}/${v.webp}: manifest byte count is stale`);
+        }
+        mobileBytes += sorted[0].bytes;
+        desktopBytes += sorted[sorted.length - 1].bytes;
+
+        // The desktop/largest variant must stay real commercial scale — the
+        // same 960px-wide floor s54/s55 pin on the JPEG original, expressed
+        // here for the WebP a modern-browser desktop visitor actually gets.
+        assert.ok(
+          sorted[sorted.length - 1].width >= 960,
+          `${id}/${rel}: largest variant is only ${sorted[sorted.length - 1].width}w, expected >= 960w`
+        );
+      }
+
+      // The whole point of width-variants: a phone downloads far less than
+      // a desktop does for the same photo set, and far less than the single
+      // fixed-size JPEG every viewport used to receive pre-Wave7.
+      assert.ok(
+        mobileBytes < desktopBytes * 0.55,
+        `${id}: mobile bytes (${mobileBytes}) not meaningfully smaller than desktop bytes (${desktopBytes})`
+      );
+      assert.ok(
+        mobileBytes < originalBytes * 0.4,
+        `${id}: mobile bytes (${mobileBytes}) not meaningfully smaller than pre-Wave7 original JPEG bytes (${originalBytes})`
+      );
+    });
+  }
 
   // ── PERF-06: below-fold gallery/instagram images stay lazy + async-decoded ─
   for (const id of TPLS) {

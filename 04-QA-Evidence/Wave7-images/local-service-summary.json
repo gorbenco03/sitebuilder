@@ -1,0 +1,82 @@
+{
+  "templateId": "local-service",
+  "throttle": {
+    "latency": 150,
+    "download": 209715.2,
+    "upload": 96000,
+    "cpu": 4
+  },
+  "generatedAt": "2026-09-06T13:18:24.072Z",
+  "before": {
+    "390": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "lcpMs": 472,
+      "cls": 0.314288657319018,
+      "aboveFold": {
+        "imageBytes": 310581,
+        "totalBytes": 452248
+      },
+      "fullPage": {
+        "imageBytes": 1318377,
+        "totalBytes": 1460044
+      },
+      "requestCount": 15
+    },
+    "1440": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lcpMs": 472,
+      "cls": 0.22601591796875,
+      "aboveFold": {
+        "imageBytes": 1066846,
+        "totalBytes": 1208513
+      },
+      "fullPage": {
+        "imageBytes": 1318377,
+        "totalBytes": 1460044
+      },
+      "requestCount": 15
+    }
+  },
+  "after": {
+    "390": {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "lcpMs": 468,
+      "cls": 0.314288657319018,
+      "aboveFold": {
+        "imageBytes": 310581,
+        "totalBytes": 453886
+      },
+      "fullPage": {
+        "imageBytes": 792577,
+        "totalBytes": 935882
+      },
+      "requestCount": 15
+    },
+    "1440": {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "lcpMs": 464,
+      "cls": 0.22601591796875,
+      "aboveFold": {
+        "imageBytes": 399145,
+        "totalBytes": 542450
+      },
+      "fullPage": {
+        "imageBytes": 792577,
+        "totalBytes": 935882
+      },
+      "requestCount": 15
+    }
+  }
+}
