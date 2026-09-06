@@ -8,7 +8,58 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScrolling();
     initScrollIndicator();
     initWhatsAppQR();
+    initMobileNav();
 });
+
+/**
+ * Mobile navigation — hamburger toggle for the chrome nav below 720px.
+ * The nav itself is .pf-chrome__nav (same markup/links as desktop); CSS turns
+ * it into a fixed full-screen drawer on narrow viewports, this just toggles it.
+ */
+function initMobileNav() {
+    var toggle = document.getElementById('pf-nav-toggle');
+    var nav = document.getElementById('pf-mobile-nav');
+    if (!toggle || !nav) return;
+
+    var OPEN_LABEL = 'Deschide meniul';
+    var CLOSE_LABEL = 'Închide meniul';
+
+    function isOpen() { return nav.classList.contains('is-open'); }
+
+    function openNav() {
+        nav.classList.add('is-open');
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-label', CLOSE_LABEL);
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeNav(focusToggle) {
+        nav.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', OPEN_LABEL);
+        document.body.style.overflow = '';
+        if (focusToggle) toggle.focus();
+    }
+
+    toggle.addEventListener('click', function () {
+        if (isOpen()) closeNav(false); else openNav();
+    });
+
+    // Selecting a link closes the drawer so the smooth-scroll target is visible.
+    nav.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () { closeNav(false); });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && isOpen()) closeNav(true);
+    });
+
+    // Crossing back to desktop width with the drawer open would otherwise
+    // leave aria-expanded stuck true and scroll locked.
+    window.addEventListener('resize', function () {
+        if (isOpen() && window.matchMedia('(min-width: 720px)').matches) closeNav(false);
+    });
+}
 
 /**
  * WhatsApp QR modal — desktop only.

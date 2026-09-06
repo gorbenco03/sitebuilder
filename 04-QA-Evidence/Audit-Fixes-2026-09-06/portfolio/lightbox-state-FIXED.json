@@ -1,0 +1,12 @@
+{
+  "missing": false,
+  "top": 0,
+  "left": 0,
+  "width": 1440,
+  "height": 1000,
+  "display": "grid",
+  "position": "fixed",
+  "background": "rgba(28, 34, 40, 0.92)",
+  "zIndex": "100",
+  "bodyScrollHeight": 6926
+}
