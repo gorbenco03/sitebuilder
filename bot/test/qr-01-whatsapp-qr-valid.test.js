@@ -82,7 +82,11 @@ for imagePath in CommandLine.arguments.dropFirst() {
       const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
       page.setDefaultTimeout(30000);
       await page.goto(base + '/' + id + '/', { waitUntil: 'networkidle' });
-      const link = page.locator('a[href*="wa.me"]').first();
+      // Target the first VISIBLE WhatsApp control. Templates may carry extra
+      // wa.me anchors inside panels that stay hidden until something fails
+      // (professionals: the appointment-failure fallback), and a hidden
+      // anchor is not a control a visitor can click.
+      const link = page.locator('a[href*="wa.me"]:visible').first();
       await link.waitFor({ state: 'visible' });
       await link.evaluate((node, url) => { node.href = url; }, QR_TEXT);
       await link.click();
