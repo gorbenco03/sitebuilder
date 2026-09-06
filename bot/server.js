@@ -1240,11 +1240,27 @@ async function handleGetMe(req, res) {
     sendJson(res, 200, { user });
 }
 
+/**
+ * Wave8 audit finding #2: webpublish.getDunningState() produced correct,
+ * actionable Romanian dunning copy that nothing ever called — the dashboard
+ * said "Activ" through a real card decline and "Ciornă" once Stripe gave up
+ * and unpublished the site. GET /api/sites / GET /api/sites/:id are the only
+ * places the owner dashboard reads a site from, so this is the one place to
+ * attach it; builder/app.js#buildSiteCard is the read side.
+ * @param {object} site
+ * @returns {object} site with a `dunning` field (null when nothing to show)
+ */
+function withDunningState(site) {
+    if (!site) return site;
+    const webpublish = require('./webpublish.js');
+    return { ...site, dunning: webpublish.getDunningState(site) };
+}
+
 async function handleGetSites(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const sites = await getRegistry().listSites(userId);
-    sendJson(res, 200, { sites });
+    sendJson(res, 200, { sites: (sites || []).map(withDunningState) });
 }
 
 async function handleGetSite(req, res, siteId) {
@@ -1258,7 +1274,7 @@ async function handleGetSite(req, res, siteId) {
     if (versions.length > 0) {
         config = await getRegistry().getVersionConfig(siteId, versions[0].versionId);
     }
-    sendJson(res, 200, { site, config });
+    sendJson(res, 200, { site: withDunningState(site), config });
 }
 
 async function handleGetVersions(req, res, siteId) {
@@ -3090,8 +3106,15 @@ async function handlePublish(req, res) {
 
     const webpublish = require('./webpublish.js');
 
-    // Only a currently entitled site may publish directly (re-edit).
-    if (hasActiveCommercialEntitlement(site)) {
+    // Wave8 audit (re-audit finding #1 — "double billing through a different
+    // door"): heal a possibly-stale local paidUntil against Stripe's own
+    // truth before deciding entitlement below. Same call already proven at
+    // POST /api/sites/:id/checkout (handleSiteCheckout); no-op under
+    // HIDOOK_TEST_PAY / no configured Stripe key, so always safe here too.
+    site = await webpublish.reconcileSiteFromStripe(site);
+
+    // Republish directly for a currently entitled site (re-edit).
+    const directRepublish = async () => {
         try {
             const result = await webpublish.publishSite({ site, config, images: imgList });
             const updated = await reg.getSite(site.id);
@@ -3102,6 +3125,29 @@ async function handlePublish(req, res) {
             const updated = await reg.getSite(site.id);
             return sendJson(res, 500, { error: 'Publish failed: ' + e.message, site: updated });
         }
+    };
+
+    // Only a currently entitled site may publish directly (re-edit).
+    if (hasActiveCommercialEntitlement(site)) {
+        return await directRepublish();
+    }
+
+    // Wave8 audit: hasActiveCommercialEntitlement() treats an expired local
+    // paidUntil as a hard stop even when Stripe's own subscription status —
+    // refreshed above, or already persisted from a prior webhook — still says
+    // active/trialing/past_due. The re-audit reproduced exactly this: a
+    // stale paidUntil next to a genuinely active subscription fell through
+    // to the "unpaid" branch below, which opens a brand-new full-price
+    // Checkout Session (a second live subscription billing alongside the
+    // first) AND downgrades this already-paid site to paid:false/draft.
+    // Reuse the same one-definition-of-"Stripe still has a live subscription"
+    // guard already proven at POST /api/sites/:id/checkout
+    // (canStartRenewalCheckout) instead of inventing a second rule: whenever
+    // it would refuse a fresh Checkout Session for this paid site, that is
+    // proof a live subscription is already billing it, so republish the edit
+    // directly rather than touching payment/draft state at all.
+    if (site.paid === true && !webpublish.canStartRenewalCheckout(site).allowed) {
+        return await directRepublish();
     }
 
     // Unpaid path: persist draft only — never deploy, never set live

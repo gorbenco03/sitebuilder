@@ -4767,10 +4767,30 @@ function buildSiteCard(site) {
   }
 
   const hostingExpired = isHostingExpired(site);
+  // Wave8 audit finding #2: bot/server.js#withDunningState now attaches
+  // webpublish.getDunningState(site) verbatim to every site GET /api/sites
+  // and GET /api/sites/:id return — read it here so the badge can never lie
+  // about a real Stripe billing problem the owner needs to act on.
+  const dunning = site.dunning || null;
   let badgeClass = 'status-draft', badgeLabel = 'Ciornă';
 
   if (site.paid && hostingExpired) {
     badgeClass = 'status-expired'; badgeLabel = 'Expirat';
+  } else if (site.status === 'unpublished') {
+    // Wave8 audit: unpublishSite() (customer cancel, or Stripe exhausting
+    // every dunning retry) flips status to 'unpublished' while leaving
+    // site.paid true (payment history is kept on purpose) — no earlier
+    // branch here recognised that, so it fell through all the way to the
+    // generic 'Ciornă' draft badge even though this is neither an unfinished
+    // draft nor a healthy paid site. dunning.severity === 'critical' is the
+    // one path a card decline actually took the site down; anything else
+    // reaching 'unpublished' here is an owner-initiated cancel.
+    badgeClass = 'status-expired';
+    badgeLabel = (dunning && dunning.severity === 'critical') ? 'Plată eșuată — site oprit' : 'Anulat';
+  } else if (dunning && dunning.severity === 'warning' && site.paid && (site.status === 'live' || site.status === 'active')) {
+    // Wave8 audit: Stripe is actively retrying a declined card while the
+    // site stays live — must not read as a plain, healthy "Activ".
+    badgeClass = 'status-unpaid'; badgeLabel = 'Activ — card refuzat';
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
     badgeClass = 'status-live'; badgeLabel = 'Activ';
   } else if (site.status === 'live' && !site.paid) {
@@ -4841,6 +4861,17 @@ function buildSiteCard(site) {
         info.appendChild(hostLine);
       }
     }
+  }
+
+  // Wave8 audit finding #2: getDunningState() produced correct, actionable
+  // Romanian messages that nothing ever showed the owner. Render it whenever
+  // present — the terminal "site oprit" case included, since that owner most
+  // needs to see why (the badge above already flags it, this line explains it).
+  if (dunning && dunning.messageRo) {
+    const dunningLine = document.createElement('div');
+    dunningLine.className = 'site-dunning-line site-dunning-' + (dunning.severity === 'critical' ? 'critical' : 'warning');
+    dunningLine.textContent = dunning.messageRo;
+    info.appendChild(dunningLine);
   }
 
   const actions = document.createElement('div');
