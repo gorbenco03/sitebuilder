@@ -218,7 +218,13 @@ ul, ol { list-style: none; }
     margin: 0; background: var(--snow); border-radius: var(--r); overflow: hidden;
     border: 1px solid rgba(15,23,32,0.08);
 }
-.ls-shot img { width: 100%; aspect-ratio: 16/10; object-fit: cover; }
+/* height:auto is load-bearing, not tidiness. build.js bakes real width/height
+   HTML attributes onto every img from its source pixels (a CLS fix), and an
+   explicit height attribute satisfies the box before aspect-ratio is ever
+   consulted -- so the ratio below was silently ignored and these photos
+   rendered at their full 960px source height inside a 322px-wide column,
+   cropped to a sliver of blank wall. */
+.ls-shot img { width: 100%; height: auto; aspect-ratio: 16/10; object-fit: cover; }
 .ls-shot__cap {
     padding: 0.65rem 0.85rem 0.85rem; font-size: 12px; font-weight: 600;
     color: var(--mute); letter-spacing: 0.02em;
@@ -239,7 +245,8 @@ ul, ol { list-style: none; }
 }
 @media (min-width: 720px) { .ls-iggrid { grid-template-columns: repeat(3, 1fr); } }
 .ls-igcell img {
-    width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: var(--r);
+    /* See the note on .ls-shot img — the baked height attribute wins without this. */
+    width: 100%; height: auto; aspect-ratio: 16/10; object-fit: cover; border-radius: var(--r);
     transition: opacity 160ms var(--ease-out);
 }
 .ls-igcell:hover img { opacity: 0.88; }
