@@ -24,6 +24,28 @@
     <!-- @endif -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F3EFE8'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='%239A4030' stroke-width='2'/%3E%3C/svg%3E">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cookie-banner.css">
+    <script>
+    // Pre-paint consent check (avoids CLS). This template already mounted the
+    // banner's stylesheet and script at the top of <body>, which measured
+    // 0.000 — but only because cookie-banner.js happens to run on
+    // DOMContentLoaded before the first paint of a document this size. That is
+    // parse timing, not a guarantee. The other four templates set the class
+    // synchronously in <head>; this makes all five use the same explicit
+    // mechanism, so waveB-cls-all-templates can check the cause rather than
+    // only the number.
+    (function () {
+        try {
+            var KEY = 'hb-cookie-consent', accepted = false;
+            try { if (localStorage.getItem(KEY)) accepted = true; } catch (e) {}
+            if (!accepted) {
+                var m = document.cookie.match(/(?:^|; )hb-cookie-consent=([^;]*)/);
+                if (m && decodeURIComponent(m[1])) accepted = true;
+            }
+            if (!accepted) document.documentElement.classList.add('hb-cookie-open');
+        } catch (e) {}
+    })();
+    </script>
     <style>
         :root {
             --color-primary:       {{theme.primary}};
@@ -60,7 +82,8 @@
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
       </div>
     </div>
-    <link rel="stylesheet" href="cookie-banner.css">
+    <!-- The stylesheet now loads from <head> alongside the pre-paint consent
+         check; a second <link> to the same file here was redundant. -->
     <script src="cookie-banner.js"></script>
 
     <header class="pr-nav" id="top">

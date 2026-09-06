@@ -35,6 +35,31 @@
          files under fonts/) — no request to fonts.googleapis.com/fonts.gstatic.com,
          so no visitor IP is disclosed to Google before consent. -->
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cookie-banner.css">
+    <script>
+    // Pre-paint consent check (avoids CLS). cookie-banner.js decides the same
+    // thing later, but it loads as an external <script> at the end of body, so
+    // by the time it adds the open class the layout has already painted once
+    // without the banner's hero clearance (cookie-banner.css reserves space
+    // under "html.hb-cookie-open" so the fixed card never covers hero copy).
+    // Measured before this was added, with the stylesheet also loading late:
+    // CLS 0.226 desktop / 0.315 mobile on local-service and 0.042 / 0.089 on
+    // desserdirina — one big shift at ~25ms, the hero copy growing by the
+    // clearance and sliding up. Google calls anything over 0.25 poor.
+    // product-menu, portfolio and professionals already did this and measured
+    // 0.000 on both viewports, which is what pointed at the difference.
+    (function () {
+        try {
+            var KEY = 'hb-cookie-consent', accepted = false;
+            try { if (localStorage.getItem(KEY)) accepted = true; } catch (e) {}
+            if (!accepted) {
+                var m = document.cookie.match(/(?:^|; )hb-cookie-consent=([^;]*)/);
+                if (m && decodeURIComponent(m[1])) accepted = true;
+            }
+            if (!accepted) document.documentElement.classList.add('hb-cookie-open');
+        } catch (e) {}
+    })();
+    </script>
     <style>
         :root {
             --color-primary: {{theme.primary}};
@@ -334,7 +359,6 @@
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
       </div>
     </div>
-    <link rel="stylesheet" href="cookie-banner.css">
     <script src="cookie-banner.js"></script>
     <script src="qrcode.js"></script>
     <script src="script.js"></script>
