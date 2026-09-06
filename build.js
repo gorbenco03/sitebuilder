@@ -36,6 +36,65 @@ function resolve(obj, dotPath) {
  * is safe in both text and double/single-quoted attribute contexts (browsers decode
  * entities in attribute values, so e.g. url(&#39;...&#39;) still works in style="").
  */
+/**
+ * Decode the encodings a browser resolves before it parses a URL scheme, then
+ * decide whether what is left is a scheme this product will serve.
+ *
+ * Two separate layers conspire here, which is why naive checks keep failing:
+ *
+ *  - The HTML parser decodes character references while reading the attribute,
+ *    so the DOM can hold "javascript:" no matter what the source spelled --
+ *    numeric (&#106;, &#x6a;) or named (&colon;, &Tab;, &NewLine;).
+ *  - The URL parser then removes every ASCII tab and CR/LF wherever it occurs,
+ *    so "jav<TAB>ascript:" resolves to "javascript:".
+ *
+ * We reproduce both, repeatedly until the string stops changing so nested
+ * encodings cannot hide a layer, and only then look at the scheme.
+ */
+function normalizeUrlForSchemeCheck(raw) {
+    let value = String(raw == null ? '' : raw);
+    const NAMED = {
+        colon: ':', COLON: ':',
+        Tab: '\t', NewLine: '\n', newline: '\n',
+        sol: '/', SOL: '/',
+        lpar: '(', rpar: ')', apos: "'", quot: '"',
+        semi: ';', NUM: '#', amp: '&', AMP: '&',
+    };
+    for (let pass = 0; pass < 5; pass++) {
+        const before = value;
+        value = value
+            .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+            .replace(/&#(\d+);?/g, (_, dec) => String.fromCharCode(Number(dec)))
+            .replace(/&([a-zA-Z][a-zA-Z0-9]*);?/g, (whole, name) =>
+                Object.prototype.hasOwnProperty.call(NAMED, name) ? NAMED[name] : whole)
+            // Control characters a URL parser discards, plus the C0 range that
+            // browsers strip from the front of a URL.
+            .replace(/[\t\r\n\f\v\u0000-\u001F\u007F]/g, '');
+        if (value === before) break;
+    }
+    return value.trim();
+}
+
+/**
+ * Allowlist: a URL is safe when it carries no scheme at all (relative path,
+ * fragment, query) or carries one this product actually serves. Anything else
+ * -- javascript:, data:, vbscript:, and every scheme nobody has thought of --
+ * is refused by default rather than by enumeration.
+ */
+const SAFE_URL_SCHEMES = new Set(['http', 'https', 'mailto', 'tel', 'sms', 'ftp']);
+
+function isSafeAttributeUrl(rawUrl) {
+    const normalized = normalizeUrlForSchemeCheck(rawUrl);
+    if (normalized === '') return true;
+    // A scheme is [a-z][a-z0-9+.-]* before the first colon, and only counts as
+    // one when no /, ? or # appears first -- "foo/bar:baz" is a path.
+    const m = /^([a-zA-Z][a-zA-Z0-9+.\-]*):/.exec(normalized);
+    if (!m) return true;
+    const beforeColon = normalized.slice(0, m.index + m[1].length);
+    if (/[/?#]/.test(beforeColon)) return true;
+    return SAFE_URL_SCHEMES.has(m[1].toLowerCase());
+}
+
 function escapeHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -369,33 +428,25 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
                     .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
                     // 3. Remove on*= event-handler attributes (replace with harmless marker).
                     .replace(/\bon\w+\s*=/gi, 'data-removed=')
-                    // 4. Strip dangerous URL protocols from attribute values.
-                    //    The scheme is checked against the string the BROWSER will
-                    //    end up with, not the raw source, because two obfuscations
-                    //    reach a live javascript: URL while hiding the literal word
-                    //    from any blocklist (both re-verified executing in Chromium
-                    //    through the real publish pipeline):
+                    // 4. Only allow known-safe URL schemes in attribute values.
                     //
-                    //      jav<TAB>ascript:  — per WHATWG URL, a browser removes every
-                    //        ASCII tab and CR/LF from a URL wherever it occurs, not
-                    //        just at the ends, before parsing the scheme.
-                    //      &#106;avascript:  — the HTML parser decodes character
-                    //        references while parsing the attribute, so the DOM holds
-                    //        "javascript:" no matter what the source string spelled.
+                    //    This was a blocklist -- reject javascript:, data:,
+                    //    vbscript: -- and a blocklist keeps losing here. The
+                    //    first version missed tab/CR/LF inside the scheme word.
+                    //    The second decoded numeric character references and
+                    //    still missed NAMED ones, so `javascript&colon;alert(1)`
+                    //    and `jav&Tab;ascript:` both executed. Each fix closed
+                    //    the variants someone had thought of.
                     //
-                    //    So: capture the whole attribute value, normalise it the way
-                    //    the browser will, and only then test the scheme. Blank to "#"
-                    //    on a hit, keeping the attribute valid SVG.
+                    //    An allowlist inverts that: anything carrying a scheme
+                    //    this product has no use for is neutralised, whether or
+                    //    not anyone anticipated the spelling.
                     .replace(
                         /((?:xlink:)?href|src|action|formaction)\s*=\s*(['"]?)([^"'>]*)/gi,
                         (match, attr, quote, rawUrl) => {
-                            const normalized = rawUrl
-                                .replace(/[\t\r\n]+/g, '')
-                                .replace(/&#(\d+);?/g, (_, dec) => String.fromCharCode(Number(dec)))
-                                .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-                            return /^\s*(?:javascript|data|vbscript)\s*:/i.test(normalized)
-                                ? attr + '=' + quote + '#'
-                                : match;
+                            return isSafeAttributeUrl(rawUrl)
+                                ? match
+                                : attr + '=' + quote + '#';
                         }
                     );
                 return safe;
