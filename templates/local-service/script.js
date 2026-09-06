@@ -235,6 +235,18 @@ document.addEventListener('DOMContentLoaded', () => {
     root.generateQRSVG = function (text, size) { return toSVG(encode(text), size || 240); };
 })(window);
 
+// QR Code Generator for JavaScript — Kazuhiko Arase, MIT License (qrcode.js).
+// Published/exported sites load that local vendored asset before this script.
+window.generateQRSVG = function (text, size) {
+    var qr = qrcode(0, 'M');
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs['UTF-8'];
+    qr.addData(String(text || ''), 'Byte');
+    qr.make();
+    var target = Number(size) || 240;
+    var cell = target / (qr.getModuleCount() + 8);
+    return qr.createSvgTag({ cellSize: cell, margin: cell * 4, scalable: true, alt: 'Cod QR WhatsApp' });
+};
+
 function initWhatsAppQR() {
     var modal = document.getElementById('wa-qr');
     var img = document.getElementById('wa-qr-img');

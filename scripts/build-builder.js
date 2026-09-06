@@ -100,6 +100,13 @@ function renderPreview(files, config, opts) {
         '<style>' + (files.stylesCss || '') + '</style>'
     );
 
+    // Preview srcdoc has no template-relative base URL. Keep the QR encoder
+    // cacheable and shared instead of inflating every heavy template payload.
+    html = html.replace(
+        /<script\\s[^>]*src=["']qrcode\\.js["'][^>]*>\\s*<\\/script>/gi,
+        '<script src="/app/generated/qrcode.js"></script>'
+    );
+
     // Inline <script src="script.js"></script>
     html = html.replace(
         /<script\\s[^>]*src=["']script\\.js["'][^>]*>\\s*<\\/script>/gi,
@@ -353,6 +360,10 @@ function clearThumbsForId(id) {
 
 const lightEntries = [];
 
+// Shared MIT QR encoder for sandboxed builder previews. Published/exported
+// templates use their same-root qrcode.js symlink/copy instead.
+fs.copyFileSync(path.join(TEMPLATES, 'shared', 'qrcode.js'), path.join(GEN_DIR, 'qrcode.js'));
+
 for (const entry of registry.templates) {
     const id  = entry.id;
     const dir = path.join(TEMPLATES, id);
@@ -365,6 +376,7 @@ for (const entry of registry.templates) {
         stylesCss:    fs.readFileSync(path.join(dir, 'styles.css'),    'utf8'),
         scriptJs:     fs.readFileSync(path.join(dir, 'script.js'),     'utf8'),
     };
+
 
     const collageFile = path.join(dir, 'collage.js');
     if (fs.existsSync(collageFile)) {

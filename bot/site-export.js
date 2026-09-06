@@ -201,7 +201,7 @@ function inlineTreeAssets(html, siteDir) {
             '<style data-hb-inline="' + name + '">' + css + '</style>'
         );
     }
-    for (const name of ['script.js', 'collage.js', 'cookie-banner.js']) {
+    for (const name of ['qrcode.js', 'script.js', 'collage.js', 'cookie-banner.js']) {
         const file = path.join(siteDir, name);
         if (!fs.existsSync(file)) continue;
         const js = fs.readFileSync(file, 'utf8').replace(/<\/script/gi, '<\\/script');
