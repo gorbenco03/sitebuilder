@@ -142,6 +142,43 @@ it should usually not be committed at all.
   that should never be committed, add the pattern too — don't just remember
   the rule.
 
+## A feature is not done until a customer can reach it
+
+On 2026-09-06 this was found three times in one day, on three separate
+features, each of which had a complete and correctly tested server surface:
+
+- **The native booking calendar.** Four waves built reschedule, PII retention,
+  reminders, RFC 5545 `.ics`, booking windows and staff/resources on it. The
+  config flag that enables it was never writable from the builder, and the
+  owner dashboard was served only from a preview page hardcoded to a demo
+  tenant. No paying customer could switch it on or see it.
+- **Self-serve custom domains.** Full state machine, five auth-gated routes,
+  rate limiting, its own passing oracle. Nothing in the builder linked to it.
+- **Invoice history.** Working endpoint, ownership-gated, ledger-backed.
+  Nothing in the builder linked to it.
+
+Every one of these had green tests, because the tests called the API. The API
+was never the part that was broken.
+
+**The rule:** a task is finished when someone who paid for the product can
+find the feature, turn it on, and use it — in a real browser, starting from
+where they actually are, not from a URL you typed yourself. Until then it is
+server work, however complete.
+
+**How to check, before calling anything done:**
+
+1. Sign in as a customer. Not a demo tenant, not a preloaded session, not a
+   direct API call.
+2. Starting from the screen a customer actually lands on, find the feature.
+   If you cannot find it without knowing the route, neither can they.
+3. Turn it on, use it, and see the result on the published site.
+4. If a config flag gates it, grep the builder for that flag. If nothing
+   writes it, nothing can enable it — that is the whole defect, and it is one
+   grep away.
+
+A green test suite is not evidence against any of this. All three features
+above shipped with green suites.
+
 ## Teardown after a wave is verified and integrated (owner rule, 2026-09-06)
 
 Evidence and worktrees are **scaffolding, not product**. They exist to prove a
