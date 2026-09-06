@@ -530,6 +530,69 @@ body.details-drawer-open .editor-tpl-name {
   padding: 0.15rem 0.4rem;
 }
 
+/* ---------- Recovery banner (Wave 9 — offer an unfinished local draft back) ---------- */
+.recovery-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+  background: var(--accent-light);
+  color: var(--accent-hover);
+  border-bottom: 1px solid var(--accent-muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+.recovery-banner-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* ---------- Save status indicator (Wave 9 — visible saving/saved/failed) ----------
+   Same pill language as .checklist-indicator right next to it: calm by
+   default (hidden until the first edit), colour is the only thing that
+   changes state, no per-keystroke flicker. */
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-light);
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.save-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.save-status[data-state="saving"] { color: var(--text-muted); }
+.save-status[data-state="saving"] .save-status-dot {
+  background: transparent;
+  border: 2px solid var(--border);
+  border-top-color: var(--text-muted);
+  width: 9px;
+  height: 9px;
+  animation: spin 0.7s linear infinite;
+}
+.save-status[data-state="saved"] { color: var(--success); border-color: var(--success-bg); background: var(--success-bg); }
+.save-status[data-state="error"] { color: var(--error); border-color: var(--error-bg); background: var(--error-bg); }
+.save-status-retry {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.1rem;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* Checklist indicator */
 .checklist-indicator {
   display: flex;
