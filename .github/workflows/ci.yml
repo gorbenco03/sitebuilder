@@ -70,3 +70,38 @@ jobs:
           done
           echo "Running ${#run[@]} of ${#files[@]} test files (excluding ${#exclude[@]} known machine-specific Brave specs)."
           node --test "${run[@]}"
+
+  security:
+    runs-on: ubuntu-latest
+    # Wave 6 ops audit (2026-09-06, item 4): the round-1 audit found a
+    # critical bug where an auth fallback leaked login tokens. A scanner in
+    # CI is how that class of bug gets caught before it merges. Two checks,
+    # both required — neither is allowed to end in `|| true`; a finding here
+    # must fail the build, not get logged and ignored.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            bot/package-lock.json
+
+      - name: Secret scan
+        # In-repo, zero-dependency static scanner (scripts/ops-secret-scan.js)
+        # rather than a third-party Action: this repo ships zero runtime
+        # dependencies on purpose, and a scanner that's a few dozen lines of
+        # plain Node can be read and run locally by anyone, no network or
+        # installed tool required. Checks every git-tracked file for
+        # real-secret-shaped strings (cloud keys, live Stripe keys, private
+        # key blocks, platform tokens) and exits non-zero on any finding.
+        run: node scripts/ops-secret-scan.js
+
+      - name: Dependency audit — root (playwright, dev tooling)
+        run: npm ci && npm audit --audit-level=high
+
+      - name: Dependency audit — bot (grammy, runtime)
+        run: npm ci --omit=dev && npm audit --audit-level=high
+        working-directory: bot

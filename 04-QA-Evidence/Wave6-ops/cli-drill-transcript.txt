@@ -1,0 +1,72 @@
+Wave 6 ops — manual CLI backup/restore drill (2026-09-06)
+===========================================================
+Real commands run, real output, DATA_DIR=/tmp/wave6-cli-demo/data (throwaway, outside the repo).
+
+1) Seed a real registry.sqlite with one user + one published/paid site via the
+   actual bot/registry-sqlite.js API:
+
+   $ DATA_DIR=/tmp/wave6-cli-demo/data node --experimental-sqlite -e "..."
+   seeded site 600020db-f762-4b10-b2d2-f1fdcf74d349
+
+2) Back it up with the CLI (VACUUM INTO under the hood):
+
+   $ DATA_DIR=/tmp/wave6-cli-demo/data node --experimental-sqlite scripts/ops-backup.js --keep 5
+   ops-backup: dataDir=/tmp/wave6-cli-demo/data backupDir=/tmp/wave6-cli-demo/data/backups keep=5
+   {"ts":"2026-09-06T11:07:13.118Z","event":"ops.backup.snapshot_created","name":"registry","dbPath":"/tmp/wave6-cli-demo/data/registry.sqlite","snapshotPath":"/tmp/wave6-cli-demo/data/backups/registry-2026-09-06T11-07-13-116Z.sqlite","sizeBytes":106496,"sourceIntegrity":"ok"}
+   {"ts":"2026-09-06T11:07:13.119Z","event":"ops.backup.skipped_missing","name":"calendar-native","dbPath":"/tmp/wave6-cli-demo/data/calendar-native.sqlite"}
+     [ok] registry: /tmp/wave6-cli-demo/data/backups/registry-2026-09-06T11-07-13-116Z.sqlite (106496 bytes)
+     [skip] calendar-native: source database does not exist
+
+3) DESTROY the original — main file + WAL + SHM, actually deleted from disk:
+
+   $ rm -f /tmp/wave6-cli-demo/data/registry.sqlite /tmp/wave6-cli-demo/data/registry.sqlite-wal /tmp/wave6-cli-demo/data/registry.sqlite-shm
+   $ ls /tmp/wave6-cli-demo/data
+   backups          <- registry.sqlite is gone
+
+4) Restore CLI refuses to act without --yes (safety-by-default):
+
+   $ DATA_DIR=/tmp/wave6-cli-demo/data node --experimental-sqlite scripts/ops-restore.js --name registry
+   ops-restore: will restore
+     snapshot: /tmp/wave6-cli-demo/data/backups/registry-2026-09-06T11-07-13-116Z.sqlite
+     target:   /tmp/wave6-cli-demo/data/registry.sqlite
+   ops-restore: DRY RUN (no --yes given) — nothing was touched.
+   ops-restore: stop the app before re-running with --yes. See HANDOFF-ops.md "Restore procedure".
+   exit=1
+
+5) Restore for real:
+
+   $ DATA_DIR=/tmp/wave6-cli-demo/data node --experimental-sqlite scripts/ops-restore.js --name registry --yes
+   ops-restore: will restore
+     snapshot: /tmp/wave6-cli-demo/data/backups/registry-2026-09-06T11-07-13-116Z.sqlite
+     target:   /tmp/wave6-cli-demo/data/registry.sqlite
+   {"ts":"2026-09-06T11:07:29.406Z","event":"ops.restore.completed", ..., "integrity":"ok"}
+   ops-restore: OK — integrity=ok
+   exit=0
+
+6) Verify: the site is back, through the real application API, not a file check:
+
+   $ DATA_DIR=/tmp/wave6-cli-demo/data node --experimental-sqlite -e "console.log(JSON.stringify(registry.listAllSites()))"
+   [
+     {
+       "id": "600020db-f762-4b10-b2d2-f1fdcf74d349",
+       "userId": "e9920bd2-1898-45af-94fc-9225c3565156",
+       "templateId": "product-menu",
+       "templateVersion": 1,
+       "slug": "cli-site",
+       "projectName": "cli-site",
+       "platform": "web",
+       "status": "published",
+       "paid": true,
+       "url": null,
+       "createdAt": "2026-09-06T11:07:08.435Z"
+     }
+   ]
+
+Result: the exact site created in step 1 (same id, same fields) survived a
+full delete-the-file disaster via nothing but scripts/ops-backup.js and
+scripts/ops-restore.js.
+
+See also: bot/test/wave6-ops-backup-restore.test.js (automated version of
+this drill, plus retention pruning, corrupt-snapshot rejection, and
+pre-restore safety copies) and 04-QA-Evidence/Wave6-ops/backup-restore-proof.json
+(machine-readable digest/hash evidence written by that test).
