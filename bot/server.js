@@ -1099,10 +1099,22 @@ async function handleGetTemplates(req, res) {
         res.setHeader('ETag', etag);
         res.setHeader('Cache-Control', cacheControl);
     }
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Length', Buffer.byteLength(json));
-    res.writeHead(200);
-    res.end(json);
+    // Reuse the same gzip path as sendJson (PERF-03): this handler writes the
+    // body itself for the ETag/304 flow, so without this it would silently be
+    // the one JSON endpoint that never compresses — and it is the largest.
+    const bodyBuf = Buffer.from(json, 'utf8');
+    const useGzip =
+        req.method !== 'HEAD' && bodyBuf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
+    const outBuf = useGzip ? zlib.gzipSync(bodyBuf) : bodyBuf;
+    const prior = typeof res.getHeaders === 'function' ? res.getHeaders() : {};
+    const headers = Object.assign({}, prior, {
+        'Content-Type': 'application/json',
+        'Content-Length': outBuf.length,
+        'Vary': mergeVary(prior, 'Accept-Encoding'),
+    });
+    if (useGzip) headers['Content-Encoding'] = 'gzip';
+    res.writeHead(200, headers);
+    res.end(outBuf);
 }
 
 async function handleAuthEmail(req, res) {

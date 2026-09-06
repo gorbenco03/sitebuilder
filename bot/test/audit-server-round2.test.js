@@ -313,7 +313,12 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
             return registry.getSite(seed.site.id);
         }
 
-        for (const subStatus of ['past_due', 'unpaid']) {
+        // 'unpaid' and 'incomplete_expired' now unpublish the site (Stripe has given
+        // up retrying) — that enforcement landed with the commercial round-1 fix and
+        // is asserted separately below. 'past_due' is the state that legitimately
+        // stays served while Stripe retries, so it is the one that exercises the
+        // "still on disk but not commercially entitled" admin-label path.
+        for (const subStatus of ['past_due']) {
             const slugSafeStatus = subStatus.replace(/_/g, '-'); // SLUG_RE forbids underscores
             await check(`PC-03 (${subStatus}): subscription.updated does NOT unpublish — files stay served`, async () => {
                 const site = await seedAndDegrade('r2-' + slugSafeStatus, subStatus);
