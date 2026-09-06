@@ -33,13 +33,38 @@ function mintManageToken() {
 }
 
 /**
- * Public base for manage links (no secrets). Local default is loopback path only.
+ * Public base for manage links (no secrets).
+ *
+ * This used to read only CALENDAR_PUBLIC_BASE_URL / PUBLIC_BASE_URL, neither of
+ * which is set anywhere in this repo -- not in the Dockerfile, railway.json, CI
+ * or the deploy runbook -- while the rest of the application configures itself
+ * from PUBLIC_URL. So a deployment set up exactly as documented fell through to
+ * the loopback default, and every cancel/reschedule link mailed to a visitor
+ * pointed at http://127.0.0.1:0, a port that cannot be connected to at all.
+ *
+ * PUBLIC_URL is now the fallback before the loopback default, and choosing the
+ * loopback is logged as an error rather than happening quietly: a dead link in
+ * a customer's inbox is invisible to the business until someone who wanted to
+ * cancel simply does not turn up.
  */
 function manageBaseUrl() {
-    const fromEnv = process.env.CALENDAR_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL;
-    if (fromEnv && String(fromEnv).trim()) {
-        return String(fromEnv).trim().replace(/\/$/, '');
+    const candidates = [
+        process.env.CALENDAR_PUBLIC_BASE_URL,
+        process.env.PUBLIC_BASE_URL,
+        process.env.PUBLIC_URL,
+    ];
+    for (const candidate of candidates) {
+        if (candidate && String(candidate).trim()) {
+            return String(candidate).trim().replace(/\/$/, '');
+        }
     }
+    try {
+        require('../../logger.js').log(
+            'calendar.manage_url.unconfigured',
+            { detail: 'no CALENDAR_PUBLIC_BASE_URL / PUBLIC_BASE_URL / PUBLIC_URL — manage links in visitor emails will not resolve' },
+            'error'
+        );
+    } catch (_) { /* logging must never block sending */ }
     return 'http://127.0.0.1:0';
 }
 
