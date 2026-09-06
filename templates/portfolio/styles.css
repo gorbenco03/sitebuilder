@@ -5,14 +5,19 @@
    ============================================================ */
 
 :root {
-    --color-primary:       #6b7f5a;
+    --color-primary:       #5f7350;
     --color-primary-light: #8fa37a;
     --color-primary-dark:  #2a3340;
     --color-cream:         #e8eef2;
 
     --ink: #2a3340;
     --soft: rgba(42, 51, 64, 0.78);
-    --mute: rgba(42, 51, 64, 0.48);
+    /* WCAG AA: at 0.48 this was 2.5-2.7:1 against the light section backgrounds
+       it's used on (paper/snow/blush) — well under the 4.5:1 normal-text floor.
+       0.74 clears 4.5:1 against all three with margin (kicker labels, footer
+       text, chip/price/schedule meta all use this on light backgrounds only —
+       dark-section kickers use a separate literal rgba(255,255,255,…) already). */
+    --mute: rgba(42, 51, 64, 0.74);
     --paper: var(--color-cream, #e8eef2);
     --void: #1c2228;
     --snow: #fbfcfd;
@@ -51,11 +56,15 @@ ul { list-style: none; }
     border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .pf-chrome__inner {
-    max-width: 1120px; margin: 0 auto; min-height: 56px; padding: 0 22px;
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    max-width: 1120px; margin: 0 auto; min-height: 56px; padding: 0.5rem 22px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem;
 }
 .pf-chrome__mark, .pf-chrome__logo {
     font-family: var(--display); font-weight: 500; font-size: 1rem; letter-spacing: 0.02em;
+    /* A long business name or CTA label at very narrow widths (200% zoom on a
+       390px phone is ~195px) wraps onto its own line instead of forcing the
+       chrome row past the viewport (flex-wrap above), rather than being cut off. */
+    min-width: 0;
 }
 .pf-chrome__logo { height: 22px; width: auto; }
 .pf-chrome__nav {
@@ -108,9 +117,13 @@ ul { list-style: none; }
     .pf-mobile-nav a { font-family: var(--display); font-size: 1.4rem; letter-spacing: 0; text-transform: none; font-weight: 500; color: rgba(255,255,255,0.92); }
 }
 .pf-chrome__cta {
-    flex: 0 0 auto;
+    flex: 0 1 auto; max-width: 100%; box-sizing: border-box;
     display: inline-flex; align-items: center; justify-content: center;
-    min-height: 44px; white-space: nowrap;
+    text-align: center;
+    min-height: 44px;
+    /* No white-space:nowrap: a long custom CTA label (business-editable) must be
+       able to wrap onto a second line at very narrow widths (200% zoom on a
+       390px phone is ~195px) instead of forcing the pill past the viewport. */
     background: var(--cta); color: #fff; border-radius: var(--r-pill);
     padding: 10px 18px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
@@ -145,7 +158,15 @@ ul { list-style: none; }
     position: absolute; inset: 0;
     background: linear-gradient(180deg, rgba(28,34,40,0.08) 0%, rgba(28,34,40,0.45) 100%);
 }
-.pf-hero__copy { position: relative; z-index: 1; padding: 0 22px 4rem; max-width: var(--max); }
+.pf-hero__copy {
+    position: relative; z-index: 1; padding: 0 22px 4rem; max-width: var(--max);
+    /* Flex items default to min-width:auto (locked to their content's
+       min-content width) — at very narrow widths (200% zoom on a 390px phone
+       is ~195px) that held the wordmark/tagline to their longest unbreakable
+       word and pushed this past the viewport. min-width:0 lets it shrink and
+       actually wrap. */
+    min-width: 0;
+}
 .pf-hero__logo { height: 40px; margin-bottom: 1rem; }
 .pf-hero__word, .pf-hero__tag, .hero-tagline {
     font-family: var(--display); font-size: clamp(2.2rem, 6.5vw, 3.4rem);
@@ -231,7 +252,7 @@ ul { list-style: none; }
 
 .pf-price { margin-top: 2rem; max-width: 32rem; margin-left: auto; margin-right: auto; }
 .pf-price__row {
-    display: flex; align-items: baseline; gap: 0.5rem;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.5rem;
     padding: 0.65rem 0; border-bottom: 1px solid rgba(42, 51, 64, 0.1);
 }
 .pf-price__name { font-weight: 500; }
@@ -266,6 +287,7 @@ ul { list-style: none; }
 }
 .pf-ig__handle { color: var(--mute); margin-top: 0.25rem; }
 .pf-follow {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 4px 0;
     font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--link);
 }
@@ -292,6 +314,12 @@ ul { list-style: none; }
 .pf-appt .pf-copy { color: rgba(255,255,255,0.72); }
 .pf-appt__grid {
     display: grid; gap: 2rem;
+}
+.pf-appt__grid > * {
+    /* Grid items default to min-width:auto (locked to content's min-content
+       width) same as flex items — without this, a long WhatsApp CTA label
+       could hold this column wider than the viewport at very narrow widths. */
+    min-width: 0;
 }
 @media (min-width: 834px) {
     .pf-appt__grid { grid-template-columns: 1.2fr 0.8fr; align-items: start; }
@@ -327,7 +355,11 @@ ul { list-style: none; }
     justify-content: space-between; padding: 2rem 22px 3rem;
 }
 .pf-foot__logo { height: 24px; }
-.pf-foot__soc { display: flex; gap: 1rem; color: var(--link); font-weight: 600; }
+.pf-foot__soc { display: flex; gap: 0.5rem; color: var(--link); font-weight: 600; }
+.pf-foot__soc a {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; min-height: 44px;
+}
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 18px; width: 48px; height: 48px; border-radius: 50%;
