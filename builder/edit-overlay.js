@@ -430,6 +430,37 @@
         el.dispatchEvent(new Event('input', { bubbles: true }));
       });
 
+      /* Editing a label must not fire the control that label sits in.
+       *
+       * Most editable text in these templates is a <span data-hb-edit> INSIDE
+       * an <a> or a <button> -- the nav links, and the appointment CTA
+       * (`<a href="#appointment"><span data-hb-edit="labels.navBook">`). Making
+       * the span contenteditable does not stop the anchor: clicking the word
+       * to place a caret also followed the link, so trying to rename
+       * "Programare" scrolled the canvas down to the booking section and the
+       * owner lost their place.
+       *
+       * preventDefault on `click` (not mousedown) is deliberate: the caret is
+       * placed on mousedown, so suppressing that would make the text
+       * unselectable, while navigation happens on click. stopPropagation
+       * additionally keeps the template's own smooth-scroll and menu handlers
+       * from running -- they listen on ancestors.
+       *
+       * This applies only in the editor overlay, which never runs on a
+       * published site, so a real visitor's links behave normally.
+       */
+      el.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      /* Same for the keyboard: Enter inside a link activates it. */
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && el.closest && el.closest('a, button')) {
+          e.preventDefault();
+        }
+      }, true);
+
       /* Single-line: prevent Enter from inserting a line break */
       if (isSingleLine) {
         el.addEventListener('keydown', function (e) {
