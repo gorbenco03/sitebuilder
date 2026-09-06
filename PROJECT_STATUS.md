@@ -422,8 +422,41 @@ adăugând spațiu *sub* copy, ceea ce ridică textul doar la eroii care își c
 Acesta e ancorat sus și mai înalt decât ecranul. Cauza reală era `padding-top: 5rem` de desktop,
 purtat neschimbat pe un ecran de 678px.
 
+**Fotografii care nu-și umpleau cadrul.** Toate șabloanele pun poza proprietarului din markup cu
+scurtătura `style="background: url(…)"`. Scurtătura **resetează** fiecare longhand pe care nu-l
+menționează, deci `background-size` revine la `auto` și `background-repeat` la `repeat` — iar stilul
+inline bate foaia de stil, așa că `background-size: cover` scris în CSS nu s-a aplicat niciodată.
+Două șabloane aveau `!important` exact din acest motiv; două nu:
+
+- **desserdirina** — fotografia eroului se dubla. La 1440px cutia are 1556px lățime, poza se randa la
+  mărimea ei naturală și se repeta, cu o cusătură vizibilă în jurul lui x=980. Același tort, de două
+  ori, pe primul ecran al brandului-fanion, prin fiecare audit de până acum.
+- **product-menu** — cadrul de 534×460 al eroului afișa poza la rezoluție naturală din colțul
+  stânga-sus. Vizitatorul vedea o bucată de perete și o lampă; fotografia conține masa lungă,
+  candelabrele și fereastra spre oraș, adică exact ce a fost construit layout-ul să arate.
+
+Plus indicatorul „DERULEAZĂ" de pe desserdirina: 13px de text direct pe fotografie, 4,45:1 față de
+pragul de 4,5:1, salvat doar de icing-ul palid. Acum are suprafață proprie, la 13,26:1.
+
+**Două greșeli de măsurare, ale mele, aceeași formă.** Prima citire de contrast a fost luată la 1,5s,
+în mijlocul unei animații de fade-in la opacitate 0,36 — măsura o animație, nu un design. Iar proba
+mea ascunde elementul ca să vadă ce e în spatele lui: corect pentru text pe fotografie, greșit din
+clipa în care elementul are propriul fundal. După ce am adăugat chip-ul alb, încă citea tortul.
+Aceeași clasă de eroare pe care o reparasem în oracolul de contrast cu o oră înainte. Lecția nu e
+„atenție la pixeli", ci: **o metodă de măsurare are ipoteze, iar ipotezele se strică odată cu
+subiectul măsurat.**
+
 ### Lecții care merită păstrate
 
+- Comentariile din markup se livrează **verbatim în fiecare pagină publicată**, iar contractele de
+  conținut ale produsului le verifică. Mi-au picat două oracole în aceeași noapte pentru text din
+  comentarii — o dată un cuvânt dintr-o explicație despre culoarea unui buton, o dată numele altui
+  șablon într-o notă despre CLS. De două ori înseamnă tipar, nu accident.
+- Un oracol grosier produce fals-pozitive care par descoperiri: prima versiune a verificării de
+  fotografii raporta trei șabloane rupte, fiindcă `background-size: auto` pe un strat de **gradient**
+  e inofensiv — gradientul își umple cutia, deci `repeat` nu arată nicio cusătură. Doar straturile
+  raster pot să se repete. Verificarea trebuie făcută pe straturi, separate pe virgule de nivel
+  superior.
 - Un oracol care își verifică propriul RED citind `git show HEAD:` e verde exact o dată: în arborele
   în care a fost scris. La primul commit, HEAD devine noua versiune și RED-ul se inversează. Se
   fixează un SHA.
