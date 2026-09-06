@@ -192,14 +192,25 @@ CREATE INDEX IF NOT EXISTS idx_calendar_email_audit_tenant
     ON calendar_email_audit (customer_id, site_id, created_at);
 `;
 
+/**
+ * v3 — PII retention / GDPR erasure (VISION §8 "Date personale — minimizare
+ * și retenție"): marks a booking as anonymized without deleting the row, so
+ * aggregated history (counts, service load) survives while visitor_name /
+ * visitor_email / visitor_phone / note are scrubbed. NULL = never anonymized.
+ */
+const SCHEMA_SQL_V3 = `
+ALTER TABLE calendar_bookings ADD COLUMN anonymized_at TEXT;
+`;
+
 /** Full schema for brand-new databases. */
-const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2;
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3;
 
 module.exports = {
     SCHEMA_VERSION,
     SCHEMA_SQL,
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
+    SCHEMA_SQL_V3,
     BOOKING_STATUSES,
     ACTIVE_BOOKING_STATUSES,
     EMAIL_DELIVERY_STATUSES,

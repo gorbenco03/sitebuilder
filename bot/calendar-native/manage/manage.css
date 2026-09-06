@@ -135,3 +135,54 @@ html, body {
 @media (max-width: 420px) {
   .hm { padding: 18px 12px 40px; }
 }
+
+.hm__resched {
+  margin-top: 4px;
+}
+.hm__resched[hidden] {
+  display: none;
+}
+.hm__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hm-muted);
+  margin: 4px 0 10px;
+}
+.hm__day-label {
+  font-size: 13px;
+  color: var(--hm-muted);
+  margin: 0 0 8px;
+}
+.hm__slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.hm__slot {
+  border: 1px solid var(--hm-line);
+  background: #fff;
+  border-radius: 12px;
+  padding: 11px 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+.hm__slot:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.hm__loading {
+  color: var(--hm-muted);
+  font-size: 0.9rem;
+  margin: 6px 0 12px;
+}
+@media (max-width: 420px) {
+  .hm__slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
