@@ -432,6 +432,104 @@ body.details-drawer-open .editor-tpl-name {
   .btn-publish-top span { display: inline; }
 }
 
+/* ---------- Undo / redo (audit finding #45) ---------- */
+.history-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-right: 0.6rem;
+  flex-shrink: 0;
+}
+.btn-icon-history {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.btn-icon-history:hover:not(:disabled) { background: var(--surface); color: var(--text); border-color: #D1D5DB; }
+.btn-icon-history:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+/* ---------- Account menu (audit medium #7 — no logout/project-list from inside the editor) ---------- */
+.account-menu-wrap { position: relative; display: inline-flex; flex-shrink: 0; }
+.btn-icon-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.btn-icon-account:hover, .btn-icon-account[aria-expanded="true"] { background: var(--accent-light); color: var(--accent); border-color: var(--accent-muted); }
+
+.account-menu {
+  position: fixed;
+  z-index: 600;
+  min-width: 190px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  animation: fadeIn .12s ease;
+}
+.account-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.account-menu-item:hover { background: var(--bg); }
+.account-menu-item--danger:hover { background: var(--error-bg); color: var(--error); }
+
+/* ---------- Multi-tab draft conflict banner (audit medium #8) ---------- */
+.tab-conflict-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+  background: var(--warning-bg);
+  color: #92400E;
+  border-bottom: 1px solid #FDE68A;
+  font-size: 0.82rem;
+  text-align: center;
+}
+.tab-conflict-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.tab-conflict-dismiss {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: inherit;
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+}
+
 /* Checklist indicator */
 .checklist-indicator {
   display: flex;
