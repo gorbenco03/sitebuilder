@@ -148,11 +148,17 @@ function copyTemplateTree(templateId, siteDir) {
         const st = fs.statSync(src);
         if (st.isFile()) {
             fs.copyFileSync(src, path.join(siteDir, entry));
-        } else if (st.isDirectory() && entry === 'images') {
-            for (const img of fs.readdirSync(src)) {
-                const from = path.join(src, img);
+        } else if (st.isDirectory()) {
+            // Any asset directory a template ships, not just images/. This
+            // used to be `entry === 'images'`, which silently dropped
+            // desserdirina's self-hosted fonts/ -- the published site kept
+            // the @font-face rules and lost the files they point at.
+            const destDir = entry === 'images' ? imagesDir : path.join(siteDir, entry);
+            fs.mkdirSync(destDir, { recursive: true });
+            for (const asset of fs.readdirSync(src)) {
+                const from = path.join(src, asset);
                 if (fs.statSync(from).isFile()) {
-                    fs.copyFileSync(from, path.join(imagesDir, img));
+                    fs.copyFileSync(from, path.join(destDir, asset));
                 }
             }
         }
@@ -445,4 +451,8 @@ module.exports = {
     exportSiteZip,
     materializeImages,
     buildSeoFiles,
+    // Exported for bot/test/wave5-template-asset-dirs.test.js, which asserts
+    // that a template's asset directories (fonts/, not just images/) reach
+    // the copied site.
+    copyTemplateTree,
 };

@@ -1034,12 +1034,15 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
                 const st = fs.statSync(src);
                 if (st.isFile()) {
                     fs.copyFileSync(src, path.join(siteDir, entry));
-                } else if (st.isDirectory() && entry === 'images') {
-                    fs.mkdirSync(imagesDir, { recursive: true });
-                    for (const img of fs.readdirSync(src)) {
-                        const from = path.join(src, img);
+                } else if (st.isDirectory()) {
+                    // Any asset directory a template ships, not just images/.
+                    // See the matching comment in bot/site-export.js.
+                    const destDir = entry === 'images' ? imagesDir : path.join(siteDir, entry);
+                    fs.mkdirSync(destDir, { recursive: true });
+                    for (const asset of fs.readdirSync(src)) {
+                        const from = path.join(src, asset);
                         if (fs.statSync(from).isFile()) {
-                            fs.copyFileSync(from, path.join(imagesDir, img));
+                            fs.copyFileSync(from, path.join(destDir, asset));
                         }
                     }
                 }
