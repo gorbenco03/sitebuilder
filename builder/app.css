@@ -1324,7 +1324,12 @@ body.details-drawer-open .editor-tpl-name {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #E8E2D6; /* paper frame */
+  /* The desk the site sits on. This was #E8E2D6 — the warm beige straight out
+     of the professionals palette — so the editor chrome took a side: it sat
+     agreeably behind that template and fought desserdirina's pinks and
+     portfolio's cool greys. A neutral ground belongs to none of the five and
+     lets any of them read as the subject rather than as a colour clash. */
+  background: #E2E1DE;
 }
 
 /* Desktop: iframe fills the frame with a max-width "window" look */
@@ -1348,8 +1353,20 @@ body.details-drawer-open .editor-tpl-name {
 @media (min-width: 900px) {
   .editor-canvas-wrap:not(.mode-mobile) .preview-iframe--edit {
     max-width: 1100px;
-    box-shadow: 0 0 0 1px rgba(0,0,0,.08), var(--shadow-lg);
-    border-radius: var(--radius);
+    /* Elevation, not just a hairline: the point of the constrained window is
+       that the owner is looking at THEIR site sitting on the editor's desk.
+       A 1px ring and a soft shadow left it flush with the ground and reading
+       as a panel of the app. Deliberately no vertical inset — the preview
+       iframe's height is the viewport the generated site lays itself out in,
+       and shrinking it moves every fixed-to-bottom element (the consent card
+       above all) up the page, which is measured against template geometry by
+       advocate-eed3ca0-repair. Chrome polish must not silently re-lay-out the
+       thing being previewed. */
+    box-shadow:
+      0 0 0 1px rgba(20, 18, 15, .10),
+      0 2px 4px rgba(20, 18, 15, .06),
+      0 18px 48px rgba(20, 18, 15, .16);
+    border-radius: var(--radius-lg);
   }
 }
 
