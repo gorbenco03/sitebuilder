@@ -299,6 +299,26 @@ button, input, select, textarea { font: inherit; color: inherit; }
     padding-right: 6px;
 }
 
+/* The consent card is fixed to the bottom of the viewport. The shared
+   clearance in bot/site-legal.js lifts .pr-hero__copy, but this indicator is
+   positioned against the hero box itself, so it is not lifted with it. Once
+   the tap target was grown to meet WCAG 2.5.8 the two started overlapping at
+   390px, which the AABB chrome contract rejects. Scoped to the same
+   breakpoint as the mobile clearance so the desktop layout is untouched. */
+@media (max-width: 899px) {
+    html.hb-cookie-open .pr-scroll,
+    body.hb-cookie-open .pr-scroll,
+    body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
+        /* Lifting it is not enough: the indicator is anchored to the hero box,
+           which extends past the viewport bottom on a 390px screen, so no
+           bottom offset reliably clears a viewport-fixed card. It is a purely
+           decorative scroll hint with no action attached, and the consent card
+           occupies exactly the space it points at, so it stands down while the
+           card is up and returns the moment consent is given. */
+        display: none;
+    }
+}
+
 /* Buttons */
 .pr-btn {
     display: inline-flex;
