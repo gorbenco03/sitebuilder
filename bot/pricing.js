@@ -13,16 +13,33 @@
  *
  * Country resolution — resolveCountryCode(opts):
  *   1. Cloudflare CF-IPCountry request header when present and a real ISO code
- *      (ignores CF unknowns XX / T1)
+ *      (ignores CF unknowns XX / T1). Requires Cloudflare (orange-cloud DNS) in
+ *      front of the origin — NOT provided by Railway/Vercel by themselves.
  *   2. Explicit country or region on the request (opts.country, opts.region,
- *      or query.country / query.region)
- *   3. Isolated local boot (HIDOOK_ISOLATED_DEPLOY=1 + HIDOOK_TEST_PAY=1,
- *      non-production): Accept-Language ro/ro-* → RO; else default RO → EUR
- *      (Romanian stranger QA without CF country header must not see $99)
- *   4. Default US → USD bucket (production / non-isolated)
+ *      or query.country / query.region) — nothing in the current builder UI
+ *      sends this; it exists for future/manual callers.
+ *   3. PC-02 fallback (any environment, including production without a CF
+ *      proxy in front of Railway): coarse Accept-Language guess — an
+ *      EU-language region subtag (e.g. "en-GB", "de-AT") or bare EU language
+ *      primary tag (e.g. "ro", "fr") maps to that country; ambiguous tags
+ *      (e.g. bare "en") resolve to nothing so they fall through to USD rather
+ *      than guessing wrong. See countryFromAcceptLanguage().
+ *   4. Isolated local boot only (HIDOOK_ISOLATED_DEPLOY=1 + HIDOOK_TEST_PAY=1,
+ *      non-production) and steps 1-3 all found nothing: default RO → EUR
+ *      (Romanian stranger QA without CF country header must not see $99).
+ *   5. Default US → USD bucket (production / non-isolated, nothing matched).
+ *
+ * PC-02: without Cloudflare in front of the origin, step 1 never fires in
+ * production (Railway does not add CF-IPCountry). Step 3 keeps most real EU/UK
+ * visitors correctly bucketed from their browser's Accept-Language even then.
+ * A one-time startup-shaped warning is logged (see _warnMissingCfCountrySourceOnce)
+ * the first time production resolves a request without a CF-IPCountry header,
+ * so operators can see the gap and add the Cloudflare proxy (recommendation a).
  *
  * Callers must not hardcode BUILD_FEE / RETAINER defaults of 49.
  */
+
+const { log } = require('./logger.js');
 
 /** First-publish price in cents (99.00). */
 const PRICE_CENTS = 9900;
@@ -67,7 +84,29 @@ function isIsolatedDevBoot() {
 }
 
 /**
- * Map Accept-Language to a country code when the primary tag is Romanian.
+ * PC-02 fallback map: EU-language primary tag → one representative EU member
+ * state using that language, for coarse EUR/GBP/USD currency bucketing only
+ * (not a general locale→country resolver). Deliberately excludes 'en' — English
+ * is spoken far beyond the EU/UK, so a bare "en" tag must NOT guess GBP/EUR.
+ */
+const EU_LANGUAGE_TO_COUNTRY = {
+    ro: 'RO', bg: 'BG', hr: 'HR', cs: 'CZ', da: 'DK', nl: 'NL', et: 'EE',
+    fi: 'FI', fr: 'FR', de: 'DE', el: 'GR', ga: 'IE', it: 'IT', lv: 'LV',
+    lt: 'LT', mt: 'MT', pl: 'PL', pt: 'PT', sk: 'SK', sl: 'SI', es: 'ES',
+    sv: 'SE', hu: 'HU',
+};
+
+/**
+ * Map Accept-Language to a country code (PC-02 fallback — no CF-IPCountry, no
+ * explicit country). Pure guess from what the visitor's own browser sends, no
+ * external geolocation service or IP database.
+ *
+ * Precedence within the first (highest-preference) language tag:
+ *   1. Region subtag matching GB or an EU_COUNTRIES member (e.g. "en-GB" → GB,
+ *      "de-AT" → AT, "fr-CA" → null — CA is not EU/GB, correctly falls through).
+ *   2. Primary language tag in EU_LANGUAGE_TO_COUNTRY (e.g. bare "ro" → RO).
+ *   3. Otherwise null (notably bare "en" — ambiguous, must not guess).
+ *
  * @param {Record<string, string|string[]|undefined>} headers
  * @returns {string|null}
  */
@@ -76,23 +115,44 @@ function countryFromAcceptLanguage(headers) {
     if (raw == null || raw === '') return null;
     const parts = String(raw).split(',');
     for (const part of parts) {
-        const tag = part.split(';')[0].trim().toLowerCase();
+        const tag = part.split(';')[0].trim();
         if (!tag) continue;
-        if (tag === 'ro' || tag.startsWith('ro-')) return 'RO';
-        // First non-empty tag wins; only RO is special-cased for isolated EUR.
-        break;
+        const [langRaw, regionRaw] = tag.split('-');
+        const lang = String(langRaw || '').toLowerCase();
+        if (regionRaw) {
+            const region = normalizeCountryCode(regionRaw);
+            if (region && (region === 'GB' || EU_COUNTRIES.has(region))) return region;
+        }
+        if (EU_LANGUAGE_TO_COUNTRY[lang]) return EU_LANGUAGE_TO_COUNTRY[lang];
+        // First non-empty tag wins — do not average across the whole list.
+        return null;
     }
     return null;
+}
+
+/** Emit the PC-02 missing-CF-header production warning at most once per process. */
+let _warnedMissingCfCountrySource = false;
+function _warnMissingCfCountrySourceOnce() {
+    if (_warnedMissingCfCountrySource) return;
+    if (process.env.NODE_ENV !== 'production') return;
+    _warnedMissingCfCountrySource = true;
+    log('pricing.country_source.cf_header_missing', {
+        message: 'CF-IPCountry header absent on a production request — currency '
+            + 'bucketing fell back to Accept-Language / USD default. Put Cloudflare '
+            + '(orange-cloud DNS) in front of the origin so EU/UK visitors are billed '
+            + 'in EUR/GBP, not USD (VISION §2).',
+    }, 'warn');
 }
 
 /**
  * Resolve the customer country code used for currency bucketing.
  *
- * Precedence:
+ * Precedence (see the file-level docblock above for the full PC-02 rationale):
  *   1. CF-IPCountry header (case-insensitive header name)
  *   2. Explicit country / region (opts or query)
- *   3. Isolated local boot: Accept-Language ro → RO; else RO default
- *   4. 'US' (USD default)
+ *   3. Accept-Language coarse guess (any environment)
+ *   4. Isolated local boot only: RO default
+ *   5. 'US' (USD default)
  *
  * @param {object} [opts]
  * @param {Record<string, string|string[]|undefined>} [opts.headers]
@@ -122,12 +182,20 @@ function resolveCountryCode(opts = {}) {
     const explicit = normalizeCountryCode(opts.country || opts.region || qCountry || qRegion);
     if (explicit) return explicit;
 
+    // PC-02: no CF-IPCountry and no explicit country — Railway (the documented
+    // production target) never adds CF-IPCountry on its own, so this branch is
+    // the normal path for every real production visitor, not just an edge case.
+    // Try a coarse Accept-Language guess before giving up to USD.
+    const fromLang = countryFromAcceptLanguage(headers);
+    if (fromLang) return fromLang;
+
     if (isIsolatedDevBoot()) {
-        const fromLang = countryFromAcceptLanguage(headers);
-        if (fromLang) return fromLang;
+        // Romanian-stranger QA default: no CF header + no accept-language match
+        // still must not show $99 to a RO tester.
         return 'RO';
     }
 
+    _warnMissingCfCountrySourceOnce();
     return 'US';
 }
 
@@ -213,4 +281,5 @@ module.exports = {
     formatMoney,
     isIsolatedDevBoot,
     countryFromAcceptLanguage,
+    EU_LANGUAGE_TO_COUNTRY,
 };
