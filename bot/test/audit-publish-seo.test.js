@@ -19,20 +19,17 @@
  *
  * Every assertion below was re-verified against TODAY's main (post storage
  * round-3 rewrite), not carried over blindly from the original branch this
- * was ported from:
- *   - registry.updateSite() now filters patches to a known site-field
- *     allowlist (bot/registry-shared.js#KNOWN_SITE_FIELDS) — a site record's
- *     paymentFailedAt/paymentFailedCount are therefore NOT expected to
- *     persist on the site record read back via registry.getSite() (that file
- *     is out of scope for this branch; see HANDOFF-seo.md). BE-06's durable
- *     record instead lives in the ledger (bot/ledger.js), which is what the
- *     checks below assert against.
- *   - bot/web.js does not yet route invoice.payment_failed to
- *     webpublish.handleStripeInvoicePaymentFailed (bot/web.js is owned by a
- *     different in-flight branch) — so this file exercises the handler
- *     directly rather than asserting on a webhook dispatch path that does
- *     not exist yet. See HANDOFF-seo.md for the one-line wiring bot/web.js
- *     needs.
+ * was ported from.
+ *
+ * Two constraints this file was originally written under have since been
+ * lifted by the integrator, and the checks at the bottom now cover both:
+ *   - paymentFailedAt/paymentFailedCount were missing from the site-field
+ *     allowlist (bot/registry-shared.js#SITE_EXTRA_FIELDS), so updateSite()
+ *     accepted the dunning patch and silently dropped it. They are on the
+ *     allowlist now, so the record is durable on the site AND in the ledger.
+ *   - bot/web.js did not route invoice.payment_failed at all, so a real
+ *     Stripe webhook reached nothing. It is wired now, and the dispatch path
+ *     is asserted rather than only the handler being called directly.
  *
  * Run: node bot/test/audit-publish-seo.test.js
  * Exits non-zero on failure.
@@ -518,9 +515,8 @@ function installHangingFetch() {
             assert.match(notified[0], /Plată eșuată/, 'notification must be in Romanian');
             assert.ok(/[ăâîșț]/i.test(notified[0]), 'notification must carry Romanian diacritics');
 
-            // Durable record lives in the ledger — registry.updateSite() filters
-            // unknown fields (KNOWN_SITE_FIELDS in bot/registry-shared.js does not
-            // yet include paymentFailedAt/paymentFailedCount; see HANDOFF-seo.md).
+            // Durable record lives in the ledger AND, since the allowlist fix,
+            // on the site record itself (asserted separately below).
             const ledgerEntries = ledger.read().filter((r) => r.event === 'payment_failed' && r.invoiceId === invoiceId);
             assert.strictEqual(ledgerEntries.length, 1, 'exactly one ledger entry for this invoice');
             assert.strictEqual(ledgerEntries[0].siteId, seeded.site.id);
@@ -545,6 +541,48 @@ function installHangingFetch() {
                 data: { object: { id: 'in_unknown', subscription: 'sub_does_not_exist', attempt_count: 1 } },
             }, () => { throw new Error('must not notify for an unknown site'); });
             assert.strictEqual(result, null);
+        });
+
+        await check('BE-06: the dunning record persists on the site, not only in the ledger', async () => {
+            const seeded = seedLiveSiteConfig('dun1', 'Dunning Persist');
+            await publishViaTrialWebhook(seeded);
+            const invoiceId = 'in_persist_' + crypto.randomUUID().slice(0, 8);
+            await webpublish.handleStripeInvoicePaymentFailed({
+                id: 'evt_persist_' + crypto.randomUUID().slice(0, 10),
+                type: 'invoice.payment_failed',
+                data: { object: { id: invoiceId, subscription: seeded.subscriptionId, attempt_count: 2 } },
+            }, () => {});
+
+            // Before the allowlist fix in bot/registry-shared.js, updateSite()
+            // accepted this patch and dropped it, so both reads were undefined
+            // and a failed invoice was invisible to /admin without scanning the
+            // whole ledger.
+            const after = registry.getSite(seeded.site.id);
+            assert.ok(after.paymentFailedAt, 'paymentFailedAt must survive updateSite()');
+            assert.strictEqual(after.paymentFailedCount, 2, 'attempt count must survive updateSite()');
+        });
+
+        await check('BE-06: a real webhook reaches the handler through onStripeEvent', async () => {
+            const seeded = seedLiveSiteConfig('dun2', 'Dunning Dispatch');
+            await publishViaTrialWebhook(seeded);
+            const invoiceId = 'in_dispatch_' + crypto.randomUUID().slice(0, 8);
+
+            // Exercises the dispatch path, not the handler directly: before the
+            // wiring in bot/web.js, this event fell through to handleStripePaid
+            // and nothing recorded the failure.
+            await onStripeEvent({
+                id: 'evt_dispatch_' + crypto.randomUUID().slice(0, 10),
+                type: 'invoice.payment_failed',
+                data: { object: { id: invoiceId, subscription: seeded.subscriptionId, attempt_count: 1 } },
+            });
+
+            const entries = ledger.read().filter((r) => r.event === 'payment_failed' && r.invoiceId === invoiceId);
+            assert.strictEqual(entries.length, 1, 'onStripeEvent must route invoice.payment_failed');
+            assert.strictEqual(entries[0].siteId, seeded.site.id);
+
+            // Still live: dunning is not termination.
+            const site = registry.getSite(seeded.site.id);
+            assert.ok(site.status === 'live' || site.status === 'active', 'dunning must not unpublish');
         });
     } finally {
         await new Promise((r) => server.close(() => r()));

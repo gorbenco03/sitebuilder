@@ -35,6 +35,7 @@ function getFlow() { return require('./flow.js'); }
  * Web dispatcher: Stripe → webpublish.
  * - checkout.session.completed → handleStripePaid (trial + paid)
  * - invoice.payment_succeeded / invoice.paid → extend automatic renewal entitlement
+ * - invoice.payment_failed → record a dunning attempt, warn the owner, stay live
  * - customer.subscription.updated → persist entitlement status; canceled → unpublish
  * - customer.subscription.deleted → unpublish
  * Exported so focused tests can exercise the Docker/`web.js` path directly.
@@ -54,6 +55,14 @@ async function onStripeEvent(event) {
         }
         if (type === 'invoice.payment_succeeded' || type === 'invoice.paid') {
             await webpublish.handleStripeInvoicePaid(event);
+            log('webhook.stripe.handled', { type });
+            return;
+        }
+        if (type === 'invoice.payment_failed') {
+            // web-only entry: no Telegram admin channel to notify through.
+            // Records a dunning attempt and warns the owner; never unpublishes,
+            // because Stripe keeps retrying and past_due is not terminal.
+            await webpublish.handleStripeInvoicePaymentFailed(event, undefined);
             log('webhook.stripe.handled', { type });
             return;
         }

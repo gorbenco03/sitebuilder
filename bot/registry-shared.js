@@ -90,6 +90,10 @@ const SITE_EXTRA_FIELDS = Object.freeze([
     'ownerChatId', 'businessName', 'canceledAt', 'paidUntil',
     'stripeSubscriptionId', 'stripeSubscriptionStatus', 'subscriptionStatus',
     'stripeCustomerId',
+    // Dunning record written by handleStripeInvoicePaymentFailed. Without
+    // these two on the allowlist updateSite() accepts the patch and silently
+    // drops it, so a failed invoice would only ever exist in the ledger.
+    'paymentFailedAt', 'paymentFailedCount',
 ]);
 
 /** DELIBERATE FIX (4 of 4) allowlist: the union of the two field sets above.

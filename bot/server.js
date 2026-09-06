@@ -162,6 +162,7 @@ const MIME_TYPES = {
     '.woff2':'font/woff2',
     '.ttf':  'font/ttf',
     '.txt':  'text/plain; charset=utf-8',
+    '.xml':  'application/xml; charset=utf-8',
 };
 
 // In-memory static file cache: path → { buf, mtimeMs, size, etag, lastModified }
@@ -2111,7 +2112,7 @@ async function handleSiteCheckout(req, res, siteId) {
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
 
     if (!payments.isConfigured()) {
-        return sendJson(res, 503, { error: 'Payments are not configured.' });
+        return sendJson(res, 503, { error: payments.RO_ERRORS.NOT_CONFIGURED });
     }
 
     const p         = pricing.getPricingFromRequest(req);
@@ -2152,7 +2153,7 @@ async function handleSiteCheckout(req, res, siteId) {
         });
     } catch (e) {
         log('server.checkout.error', { siteId, err: e.message, kind }, 'error');
-        return sendJson(res, 503, { error: "We couldn't start checkout: " + e.message });
+        return sendJson(res, 503, { error: payments.toClientMessageRo(e, 'checkout') });
     }
 
     // Attach real Stripe session id to the same pending order (no second row)
@@ -2182,7 +2183,7 @@ async function handleSiteBillingPortal(req, res, siteId) {
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
 
     if (!payments.isConfigured()) {
-        return sendJson(res, 503, { error: 'Payments are not configured.' });
+        return sendJson(res, 503, { error: payments.RO_ERRORS.NOT_CONFIGURED });
     }
 
     let customerId = site.stripeCustomerId || null;
@@ -2194,9 +2195,7 @@ async function handleSiteBillingPortal(req, res, siteId) {
         } catch (_) {}
     }
     if (!customerId) {
-        return sendJson(res, 400, {
-            error: 'No billing customer on this site yet. Start a trial first, then cancel from the portal.',
-        });
+        return sendJson(res, 400, { error: payments.RO_ERRORS.NO_CUSTOMER_YET });
     }
 
     const publicUrl = requestPublicOrigin(req);
@@ -2214,7 +2213,7 @@ async function handleSiteBillingPortal(req, res, siteId) {
         });
     } catch (e) {
         log('server.billing_portal.error', { siteId, err: e.message }, 'error');
-        return sendJson(res, 503, { error: "We couldn't open billing: " + e.message });
+        return sendJson(res, 503, { error: payments.toClientMessageRo(e, 'billing') });
     }
 
     // HIDOOK_TEST_PAY offline: finishing cancel without network — apply unpublish now
