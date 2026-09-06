@@ -54,13 +54,16 @@
                 <!-- @if showWordmark --><!-- @if !logo --><h1 class="pm-mast__word">{{business.name}}</h1><!-- @endif --><!-- @endif -->
                 <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
             </div>
-            <nav class="pm-mast__nav" aria-label="Navigație">
+            <nav class="pm-mast__nav" id="pm-mast-nav" aria-label="Navigație">
                 <a href="#pm-menu-rail">{{servicesTitle}}</a>
                 <!-- @if menu -->
                 <a href="#pm-menu-block">{{menu.title}}</a>
                 <!-- @endif -->
                 <a href="#contact-card">{{contact.title}}</a>
             </nav>
+            <button type="button" class="pm-mast__burger" id="pm-mast-burger" aria-expanded="false" aria-controls="pm-mast-nav" aria-label="Deschide meniul de navigație">
+                <span class="pm-mast__burger-box" aria-hidden="true"><span></span><span></span><span></span></span>
+            </button>
             <a href="#contact-card" class="pm-mast__pill">{{hero.ctaLabel}}</a>
         </div>
         <div class="pm-mast__stage">
@@ -71,7 +74,7 @@
                     <!-- @endif -->
                     <p class="hero-tagline pm-hero__tag">{{business.tagline}}</p>
                     <div class="pm-hero__acts">
-                        <a href="#contact-card" class="hero-cta pm-hero__cta pm-hero__cta--fill">
+                        <a href="#contact-card" class="pm-hero__cta pm-hero__cta--fill">
                             <span>{{hero.ctaLabel}}</span>
                         </a>
                         <!-- @if menu -->

@@ -1,0 +1,65 @@
+{
+  "slug": "pm-fix-after-mtpgnuiw",
+  "liveHref": "http://127.0.0.1:52106/live/pm-fix-after-mtpgnuiw/",
+  "ctaDefault": "rgb(196, 165, 116)",
+  "colorResults": [
+    {
+      "hex": "#1D5B79",
+      "ctaBg": "rgb(29, 91, 121)",
+      "pillBg": "rgb(29, 91, 121)"
+    },
+    {
+      "hex": "#7C3AED",
+      "ctaBg": "rgb(124, 58, 237)",
+      "pillBg": "rgb(124, 58, 237)"
+    },
+    {
+      "hex": "#16A34A",
+      "ctaBg": "rgb(22, 163, 74)",
+      "pillBg": "rgb(22, 163, 74)"
+    }
+  ],
+  "burgerVisibleEditor": true,
+  "lbState": {
+    "position": "fixed",
+    "display": "flex",
+    "zIndex": "90",
+    "bg": "rgba(10, 10, 10, 0.94)",
+    "rect": {
+      "w": 1440,
+      "h": 900,
+      "x": 0,
+      "y": 0
+    },
+    "imgMaxWidth": "1324.8px",
+    "closeBtnSize": {
+      "w": 46,
+      "h": 46
+    }
+  },
+  "hiddenAfterEscape": true,
+  "navBoxClosed": {
+    "x": 0,
+    "y": 51,
+    "width": 390,
+    "height": 1
+  },
+  "ariaExpandedBefore": "false",
+  "ariaExpandedAfter": "true",
+  "navVisible": true,
+  "navLinkCount": 3,
+  "firstLinkBox": {
+    "x": 22,
+    "y": 57,
+    "width": 346,
+    "height": 44
+  },
+  "burgerBox": {
+    "x": 142.109375,
+    "y": 3.5,
+    "width": 44,
+    "height": 44
+  },
+  "navVisibleAfterEscape": false,
+  "ariaExpandedAfterEscape": "false"
+}

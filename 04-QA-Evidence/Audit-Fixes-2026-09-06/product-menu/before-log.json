@@ -1,0 +1,25 @@
+{
+  "slug": "pm-fix-before-mtpglnez",
+  "liveHref": "http://127.0.0.1:51998/live/pm-fix-before-mtpglnez/",
+  "ctaBefore": {
+    "bg": "rgba(0, 0, 0, 0)",
+    "border": "rgba(255, 255, 255, 0.55)"
+  },
+  "ctaAfter": {
+    "bg": "rgba(0, 0, 0, 0)"
+  },
+  "pillAfter": "rgb(29, 91, 121)",
+  "lbState": {
+    "position": "static",
+    "display": "block",
+    "zIndex": "auto",
+    "bg": "rgba(0, 0, 0, 0)",
+    "rect": {
+      "w": 1440,
+      "h": 1332.6875,
+      "y": 1160.671875
+    }
+  },
+  "navBox": null,
+  "burgerCount": 1
+}
