@@ -79,7 +79,12 @@
             const photoW = photos[0].getBoundingClientRect().width || 220;
             const maxSpacing = photoW * 1.02;   // more breathing room between photos
             const fitSpacing = n > 1 ? (deckW - photoW) / (n - 1) : 0;
-            const spacing = Math.max(40, Math.min(maxSpacing, fitSpacing));
+            // No hard-floor on spacing: a previous 40px minimum could force the row
+            // wider than the deck itself on a narrow/zoomed viewport with several
+            // photos, bleeding past the section and causing horizontal page scroll
+            // (WCAG 1.4.10 reflow failure at 200% zoom). Clamping the floor to 0
+            // instead lets photos overlap more tightly rather than ever overflow.
+            const spacing = Math.max(0, Math.min(maxSpacing, fitSpacing));
 
             base = photos.map((el, i) => {
                 const x = (i - (n - 1) / 2) * spacing;

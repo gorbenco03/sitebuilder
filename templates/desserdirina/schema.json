@@ -204,8 +204,8 @@
         {
           "key": "galleryTitle",
           "type": "text",
-          "label": "Titlu galerie (opțional)",
-          "required": false,
+          "label": "Titlu secțiune galerie foto",
+          "required": true,
           "maxLen": 60
         },
         {
@@ -213,7 +213,7 @@
           "type": "list",
           "label": "Categorii foto",
           "required": false,
-          "itemSchema": {
+          "itemShape": {
             "title": "text",
             "blurb": "text",
             "photos": "photos"
