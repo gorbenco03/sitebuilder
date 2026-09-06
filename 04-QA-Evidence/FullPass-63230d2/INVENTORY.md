@@ -1,9 +1,9 @@
 # Full-pass inventory — 63230d2
 
 Oracle: `bot/test/fullpass-63230d2.mjs`
-HEAD: 2225ca7f39f921470b99a5963e1de1b6b34e9b6d
-Started: 2026-09-06T09:45:31.542Z
-Completed: 2026-09-06T09:48:06.427Z
+HEAD: ebf5d6cf2c6c0f6de775e3543319d7b41d90596e
+Started: 2026-09-06T18:08:30.415Z
+Completed: 2026-09-06T18:11:04.515Z
 Steps captured: 46
 Mechanical defects: 0
 Walk finished.

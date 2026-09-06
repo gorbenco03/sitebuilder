@@ -474,7 +474,7 @@ async function run() {
       if (system === 'local-service' || system === 'product-menu' || system === 'portfolio') {
         await closeDrawer();
         await acceptPreviewCookie();
-        const addBtn = page.frameLocator('#preview-iframe').locator('.hb-add-btn').first();
+        const addBtn = page.frameLocator('#preview-iframe').locator('.hb-add-btn, .hb-ls-add').first();
         if (await addBtn.count()) {
           await addBtn.click({ timeout: 4000 }).catch((err) => {
             defect('medium', 'Add-item control failed on ' + system, String(err.message || err).split('\n')[0]);
@@ -492,7 +492,7 @@ async function run() {
         } else {
           await shot(system + '-add-item-absent', {
             action: 'inspect',
-            selector: '.hb-add-btn',
+            selector: '.hb-add-btn, .hb-ls-add',
             detail: 'no add button in preview overlay',
             ok: false,
           });
@@ -748,12 +748,20 @@ async function run() {
     // past_due allowlist: Stripe past_due must NOT export.
     let patched = 0;
     try {
-      const db = JSON.parse(fs.readFileSync(path.join(process.env.DATA_DIR, '.registry.json'), 'utf8'));
-      for (const site of Object.values(db.sites || {})) {
+      // Read through the registry API rather than the old .registry.json file,
+      // which the SQLite migration removed. Reaching for that path made this
+      // probe throw, so it reported a defect of its own and -- worse -- left
+      // `patched` at 0, which silently disables the past_due export assertion
+      // below. A broken probe that reports itself is recoverable; one that
+      // quietly stops checking is not.
+      for (const site of registry.listAllSites()) {
         if (site && site.paid && site.id) {
           registry.updateSite(site.id, { stripeSubscriptionStatus: 'past_due' });
           patched++;
         }
+      }
+      if (!patched) {
+        defect('medium', 'past_due export probe patched no sites', 'registry.listAllSites() returned nothing paid');
       }
     } catch (err) {
       defect('medium', 'Could not patch past_due entitlement for export probe', String(err.message || err));

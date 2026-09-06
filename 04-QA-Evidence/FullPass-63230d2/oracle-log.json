@@ -1,7 +1,7 @@
 {
   "oracle": "fullpass-63230d2",
   "version": 1,
-  "gitHead": "2225ca7f39f921470b99a5963e1de1b6b34e9b6d",
+  "gitHead": "ebf5d6cf2c6c0f6de775e3543319d7b41d90596e",
   "boot": {
     "HIDOOK_TEST_PAY": "1",
     "HIDOOK_ISOLATED_DEPLOY": "1",
@@ -9,7 +9,7 @@
     "HIDOOK_FAKE_DEPLOY": null,
     "liveStripeKeys": false
   },
-  "startedAt": "2026-09-06T09:45:31.542Z",
+  "startedAt": "2026-09-06T18:08:30.415Z",
   "entries": [
     {
       "index": 0,
@@ -18,8 +18,8 @@
       "selector": "#hb-cookie-banner",
       "screenshot": "01-landing-cookie-banner.png",
       "screenshotSha256": "cc82889826ec4c5f78d33e021704ec7ebc9edc20405f328b78555102e179c1ca",
-      "timestamp": "2026-09-06T09:45:33.520Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:32.346Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "cookie banner visible on first load"
@@ -32,8 +32,8 @@
       "selector": "#hb-cookie-accept",
       "screenshot": "02-accepted-cookie-landing.png",
       "screenshotSha256": "42792806000d4afdd36e23417f9ff86084ab70281046a73761f9cfa84a48da23",
-      "timestamp": "2026-09-06T09:45:33.682Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:32.490Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "banner dismissed; catalog landing"
@@ -46,8 +46,8 @@
       "selector": ".catalog-chip[data-filter=\"all\"]",
       "screenshot": "03-catalog-filter-all.png",
       "screenshotSha256": "42792806000d4afdd36e23417f9ff86084ab70281046a73761f9cfa84a48da23",
-      "timestamp": "2026-09-06T09:45:34.101Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:32.898Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip all"
@@ -60,8 +60,8 @@
       "selector": ".catalog-chip[data-filter=\"product-menu\"]",
       "screenshot": "04-catalog-filter-product-menu.png",
       "screenshotSha256": "713128dcdd077465305ddbb46b97953f22bdd399c1f6f99e7e5f29f2b3dc192b",
-      "timestamp": "2026-09-06T09:45:34.450Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:33.259Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip product-menu"
@@ -74,8 +74,8 @@
       "selector": ".catalog-chip[data-filter=\"portfolio\"]",
       "screenshot": "05-catalog-filter-portfolio.png",
       "screenshotSha256": "8adcaeeca1b261ace02616834278aef696a154e0b7d58c58e00e8dfd726677c6",
-      "timestamp": "2026-09-06T09:45:34.825Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:33.622Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip portfolio"
@@ -88,8 +88,8 @@
       "selector": ".catalog-chip[data-filter=\"local-service\"]",
       "screenshot": "06-catalog-filter-local-service.png",
       "screenshotSha256": "a8c6d61690d2c09977f4dc5eec361bcf98d8f941226100b92b2156feef330b8c",
-      "timestamp": "2026-09-06T09:45:35.191Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:33.977Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip local-service"
@@ -102,8 +102,8 @@
       "selector": ".catalog-chip[data-filter=\"professionals\"]",
       "screenshot": "07-catalog-filter-professionals.png",
       "screenshotSha256": "f9cbd6b78297136d386a1f4eae70d3be14aef7ce97b3d5df56ffed43352286fb",
-      "timestamp": "2026-09-06T09:45:35.558Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:34.336Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip professionals"
@@ -116,8 +116,8 @@
       "selector": ".catalog-chip[data-filter=\"desserdirina\"]",
       "screenshot": "08-catalog-filter-desserdirina.png",
       "screenshotSha256": "dcfacd30c6d43bcfca2cda073b29bcc5f1a0dcf499b829fcfb20810dca7bbc9d",
-      "timestamp": "2026-09-06T09:45:35.929Z",
-      "url": "http://127.0.0.1:62955/app/",
+      "timestamp": "2026-09-06T18:08:34.707Z",
+      "url": "http://127.0.0.1:49745/app/",
       "contentCheck": {
         "ok": true,
         "detail": "chip desserdirina"
@@ -130,11 +130,11 @@
       "selector": "/app/terms.html",
       "screenshot": "09-legal-terms.png",
       "screenshotSha256": "d6270d003401653c08fb39dd65317ea2f2eb31b904b7f8055c3263038a068978",
-      "timestamp": "2026-09-06T09:45:36.547Z",
-      "url": "http://127.0.0.1:62955/app/terms.html",
+      "timestamp": "2026-09-06T18:08:35.314Z",
+      "url": "http://127.0.0.1:49745/app/terms.html",
       "contentCheck": {
         "ok": true,
-        "detail": "http://127.0.0.1:62955/app/terms.html"
+        "detail": "http://127.0.0.1:49745/app/terms.html"
       }
     },
     {
@@ -144,11 +144,11 @@
       "selector": "/app/privacy.html",
       "screenshot": "10-legal-privacy.png",
       "screenshotSha256": "6066fe43e2f70359e97d7868177b55f32b607ed2dfd81b72600f01151633e298",
-      "timestamp": "2026-09-06T09:45:37.145Z",
-      "url": "http://127.0.0.1:62955/app/privacy.html",
+      "timestamp": "2026-09-06T18:08:35.909Z",
+      "url": "http://127.0.0.1:49745/app/privacy.html",
       "contentCheck": {
         "ok": true,
-        "detail": "http://127.0.0.1:62955/app/privacy.html"
+        "detail": "http://127.0.0.1:49745/app/privacy.html"
       }
     },
     {
@@ -158,11 +158,11 @@
       "selector": "/app/cookies.html",
       "screenshot": "11-legal-cookies.png",
       "screenshotSha256": "346ee036ac733582fab0d1bd290a7ad652de15e84bfeca5fcdf81cca06e59baf",
-      "timestamp": "2026-09-06T09:45:37.741Z",
-      "url": "http://127.0.0.1:62955/app/cookies.html",
+      "timestamp": "2026-09-06T18:08:36.494Z",
+      "url": "http://127.0.0.1:49745/app/cookies.html",
       "contentCheck": {
         "ok": true,
-        "detail": "http://127.0.0.1:62955/app/cookies.html"
+        "detail": "http://127.0.0.1:49745/app/cookies.html"
       }
     },
     {
@@ -171,9 +171,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
       "screenshot": "12-professionals-details-auto-open.png",
-      "screenshotSha256": "1ee3cb4b4304c2e278add51c59834cd43b4f96c8fbef7ee6bebc3c86b4897e46",
-      "timestamp": "2026-09-06T09:45:40.146Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "fbd5db5a02d4803a03f7d3921633b07562785caa30bcbd9cfbf4f3acc6141c04",
+      "timestamp": "2026-09-06T18:08:38.662Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true"
@@ -185,9 +185,9 @@
       "action": "click-loop",
       "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
       "screenshot": "13-professionals-pressed-editor-chrome.png",
-      "screenshotSha256": "b3ce28e15bf707a2991a943100dc8540effabb827ed44835f6c2c1ce19965074",
-      "timestamp": "2026-09-06T09:45:41.302Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "4543570bbb569064977499b05b426396ea920900a53639d377e0870704c7741e",
+      "timestamp": "2026-09-06T18:08:39.836Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "pressed device/color after closing Details"
@@ -199,9 +199,9 @@
       "action": "fill+close-drawer",
       "selector": "#dr_appointment_bookingUrl",
       "screenshot": "14-professionals-calcom-filled.png",
-      "screenshotSha256": "d2f12d60d80b469654bc1d1fa45ecfad0b85eae01f98bfccc8301fd805d2b20c",
-      "timestamp": "2026-09-06T09:45:43.829Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "36d9001b4b6628e3982d999a0621b78b90c5b5f38e925b6718c70c0d1406eb21",
+      "timestamp": "2026-09-06T18:08:42.344Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "bookingLinkCount=1"
@@ -213,9 +213,9 @@
       "action": "fill-empty+close-drawer",
       "selector": "#dr_appointment_bookingUrl",
       "screenshot": "15-professionals-calcom-cleared.png",
-      "screenshotSha256": "3ca3af3d82556125c2b106c722d61e054d826acdeecfca525da32d8953644fd2",
-      "timestamp": "2026-09-06T09:45:45.749Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "ae5997968cddcd2fb74b0796921f843fd5f3ab168ab4bd617f2b4fc7e7efba91",
+      "timestamp": "2026-09-06T18:08:44.189Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "leakedCalLinks=0"
@@ -227,9 +227,9 @@
       "action": "click",
       "selector": ".whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa",
       "screenshot": "16-professionals-whatsapp-qr.png",
-      "screenshotSha256": "9be3bc9886de0c7a07c27fab150bf5faa9044c366785ed7164aca526cf298836",
-      "timestamp": "2026-09-06T09:45:46.654Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "48cf5e0fa47e8838baa8d2e44b5f1975682882ff02b6005f6ee35da753aeb0cc",
+      "timestamp": "2026-09-06T18:08:45.078Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "qrVisible=true"
@@ -241,9 +241,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"local-service\"] .btn-start-tpl",
       "screenshot": "17-local-service-details-auto-open.png",
-      "screenshotSha256": "c9a910cf0eb7a82047b731eb9282e7d6abdea59b6b62b4735fc63543e557fc62",
-      "timestamp": "2026-09-06T09:46:08.361Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "8d8021fb13894f1e5afe570900e479fc41be38e7f4a0ccb04cbc07f7fd4061e3",
+      "timestamp": "2026-09-06T18:09:06.821Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true"
@@ -255,9 +255,9 @@
       "action": "click-loop",
       "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
       "screenshot": "18-local-service-pressed-editor-chrome.png",
-      "screenshotSha256": "b60c7ad784dd0f784e2322c51fe9d8ca6a90a90e0f515b55c9ba9a5c585235ad",
-      "timestamp": "2026-09-06T09:46:09.513Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "17ac60c7031f47639f0b681a3999ce86c3d3cfc81008bedc18d2685aeedc1f01",
+      "timestamp": "2026-09-06T18:09:07.980Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "pressed device/color after closing Details"
@@ -269,9 +269,9 @@
       "action": "click",
       "selector": "#preview-iframe .hb-add-btn",
       "screenshot": "19-local-service-add-item.png",
-      "screenshotSha256": "a9e1c1cfbf61ff91cbbde0433b5b7b23b62ef553364d4a37eccc64ef1ad870da",
-      "timestamp": "2026-09-06T09:46:13.806Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "2f2071c10faa83048f95555a12da10a7a45d82e189e86f00e4d9e24d430bcac0",
+      "timestamp": "2026-09-06T18:09:12.277Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "added repeatable item"
@@ -283,9 +283,9 @@
       "action": "click",
       "selector": ".whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa",
       "screenshot": "20-local-service-whatsapp-qr.png",
-      "screenshotSha256": "a6d38b0e155ded756d5ef5d3a7e5fb6099092ee291a345844381d939408bdeee",
-      "timestamp": "2026-09-06T09:46:14.706Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "6abb13eb83cd173d1ee7e46dfd74d95191b2972720f15f2c893dd59f8d8f01a3",
+      "timestamp": "2026-09-06T18:09:13.191Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "qrVisible=true"
@@ -297,9 +297,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"portfolio\"] .btn-start-tpl",
       "screenshot": "21-portfolio-details-auto-open.png",
-      "screenshotSha256": "ff0f275a6eecf57359740d56295b68aefaae51d5a6e79b827864657488a625e4",
-      "timestamp": "2026-09-06T09:46:36.466Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "628f9605a48b70beef8c21a805a5a453e5d016bc274e757fd09d0671ab2b5007",
+      "timestamp": "2026-09-06T18:09:34.918Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true"
@@ -311,9 +311,9 @@
       "action": "click-loop",
       "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
       "screenshot": "22-portfolio-pressed-editor-chrome.png",
-      "screenshotSha256": "9b213a971f2dff2f61fae1397b41ede1925466ad8e205198e106f8f335e9f20c",
-      "timestamp": "2026-09-06T09:46:37.643Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "92fc0cf080fcce03e44e096dca1a9c193124497ac71d1bac919c5ee1ce396663",
+      "timestamp": "2026-09-06T18:09:36.079Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "pressed device/color after closing Details"
@@ -325,9 +325,9 @@
       "action": "click",
       "selector": "#preview-iframe .hb-add-btn",
       "screenshot": "23-portfolio-add-item.png",
-      "screenshotSha256": "b8b96c290013671522c64efcc29034eb90e8e4b9e38a1e5f73626a4fafdb32e1",
-      "timestamp": "2026-09-06T09:46:42.212Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "8a5c20cc5046ac27d65020d1b82e783c17874864fa5082dba23bcb38388fc747",
+      "timestamp": "2026-09-06T18:09:40.672Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "added repeatable item"
@@ -339,9 +339,9 @@
       "action": "click",
       "selector": ".whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa",
       "screenshot": "24-portfolio-whatsapp-qr.png",
-      "screenshotSha256": "99b4f30a2522983fdfef537e1464dbdc636003d05b6e39c05f8581bd8fd3189d",
-      "timestamp": "2026-09-06T09:46:43.124Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "5403d897917e2570e13f5a483453b960f1f299b1dc250376899833cd696fe8bc",
+      "timestamp": "2026-09-06T18:09:41.590Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "qrVisible=true"
@@ -353,9 +353,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"product-menu\"] .btn-start-tpl",
       "screenshot": "25-product-menu-details-auto-open.png",
-      "screenshotSha256": "ef5e569b9157a26d1bdb0cb34ce7fe320edf71d091f03a765084a2c8bb21e12d",
-      "timestamp": "2026-09-06T09:47:04.822Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "c5b4501e783570907e69e700445fea976b709f60e7f769e336fdb1973a7c176d",
+      "timestamp": "2026-09-06T18:10:03.265Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true"
@@ -367,9 +367,9 @@
       "action": "click-loop",
       "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
       "screenshot": "26-product-menu-pressed-editor-chrome.png",
-      "screenshotSha256": "9e362c5bfd17d1a66b02061ded00174f487b0512ff33bbf916443558edaedcb1",
-      "timestamp": "2026-09-06T09:47:05.930Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "2c865075491e975586c822872593fa9164f1ad83a786460da83b7fe44a18b69f",
+      "timestamp": "2026-09-06T18:10:04.394Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "pressed device/color after closing Details"
@@ -381,9 +381,9 @@
       "action": "click",
       "selector": "#preview-iframe .hb-add-btn",
       "screenshot": "27-product-menu-add-item.png",
-      "screenshotSha256": "19f568c8f58d9eca6745c8f7f872641be06f30e165799d877c03050785a72186",
-      "timestamp": "2026-09-06T09:47:10.184Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "04761e0a63e981c81d8dcae1468b2f9c91f50839e42a8aa68d5ccf0f6e308d0e",
+      "timestamp": "2026-09-06T18:10:08.640Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "added repeatable item"
@@ -395,9 +395,9 @@
       "action": "click",
       "selector": ".whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa",
       "screenshot": "28-product-menu-whatsapp-qr.png",
-      "screenshotSha256": "23bc88eb46626775f56f40daf2bbdf29bbfbdc8952a058005ccb6b1e11bf1968",
-      "timestamp": "2026-09-06T09:47:11.033Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "00d0e5b2131ede91d71af3bbe5d5188d6223fb427881ae72667b07947563a8ef",
+      "timestamp": "2026-09-06T18:10:09.522Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "qrVisible=true"
@@ -409,9 +409,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"desserdirina\"] .btn-start-tpl",
       "screenshot": "29-desserdirina-details-auto-open.png",
-      "screenshotSha256": "30c0284504839751b89f99fcc5b13cc0740cdaed1ea1f75ca1968bf4730bb254",
-      "timestamp": "2026-09-06T09:47:32.723Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "0482f7915656faa726c7ecbba1587b14d27e2d5e2a6e0c28abea79d0fe72f033",
+      "timestamp": "2026-09-06T18:10:31.243Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true"
@@ -423,9 +423,9 @@
       "action": "click-loop",
       "selector": "#btn-preview-desktop,#btn-preview-mobile,#btn-color-picker",
       "screenshot": "30-desserdirina-pressed-editor-chrome.png",
-      "screenshotSha256": "959d454f1fc7fbbf5b79ad7e474548cc4dee1fabd8745bde401f6bf9a65b9570",
-      "timestamp": "2026-09-06T09:47:33.891Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "8fb11eb82605b3b6b2d9ce4e0b67ca1a922397664e2e36aca7a0e2262ef023d3",
+      "timestamp": "2026-09-06T18:10:32.402Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "pressed device/color after closing Details"
@@ -437,9 +437,9 @@
       "action": "click",
       "selector": ".whatsapp-float, #wa-fab, a.whatsapp-float, .ls-dock__wa",
       "screenshot": "31-desserdirina-whatsapp-qr.png",
-      "screenshotSha256": "850c54cee39a50fe02b4a01ce0c462ddf3c5a6ce38e245e7c67a14e342854e0b",
-      "timestamp": "2026-09-06T09:47:37.796Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "b312f903e76ada44dd74a7b2232b976951286a8a13ef547dadbc59db47cd75f4",
+      "timestamp": "2026-09-06T18:10:36.284Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "qrVisible=true"
@@ -451,9 +451,9 @@
       "action": "click",
       "selector": "#btn-download-html",
       "screenshot": "32-unpaid-export-html.png",
-      "screenshotSha256": "72d470a43c18b3e8ab4618da2563755fde74e8713f9fbe44bf6fc8e6824a0302",
-      "timestamp": "2026-09-06T09:47:58.597Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "9596970ca569a43c60a60a43c14ebdc2f50b78f42eba4caa4186365ddb2a87bc",
+      "timestamp": "2026-09-06T18:10:57.094Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "Intră în cont ca să descarci HTML-ul."
@@ -465,9 +465,9 @@
       "action": "click",
       "selector": "#btn-download-zip",
       "screenshot": "33-unpaid-export-zip.png",
-      "screenshotSha256": "d815dee44663ceac8ca91666cb8de11eeb4ee5a2a509ddb8284c9ed2374d412a",
-      "timestamp": "2026-09-06T09:47:59.379Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "6eb7fb24c77d3eb797142c03e6d9692924d05915efe7f0e01f01f342166295bc",
+      "timestamp": "2026-09-06T18:10:57.882Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "Autentifică-te ca să descarci ZIP-ul."
@@ -479,9 +479,9 @@
       "action": "click",
       "selector": "#btn-add-instagram",
       "screenshot": "34-instagram-modal-closed-connect.png",
-      "screenshotSha256": "af74dbdb3ac368aeb5fd9e213c58290744551ce827f18bba161cfa61f1615f51",
-      "timestamp": "2026-09-06T09:47:59.451Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "cd66c511f160e43763f149e8be8a0c36d5f6609ad872d52ebc624bf3dfc41374",
+      "timestamp": "2026-09-06T18:10:57.945Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "Instagram modal"
@@ -493,9 +493,9 @@
       "action": "click",
       "selector": "#btn-ig-send-magic",
       "screenshot": "35-instagram-empty-email-unhappy.png",
-      "screenshotSha256": "433195408aa993b4187ee8ea6691c3c0da032fbdc400d3bfb57e4283e0e72994",
-      "timestamp": "2026-09-06T09:48:00.112Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "d9c26593b88b793dd100ada3287ccae4ac6c74bf65b91ca1054638688501171c",
+      "timestamp": "2026-09-06T18:10:58.603Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "empty email submit"
@@ -507,9 +507,9 @@
       "action": "click",
       "selector": "#btn-publish",
       "screenshot": "36-open-publish.png",
-      "screenshotSha256": "7a244ce029ca0870231099b42fe5b9c5263dfbe837fc52d85daea86dad55b3e7",
-      "timestamp": "2026-09-06T09:48:00.240Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "f090be7bc5c39249b4d14a67acb02422b373d3682911fa6653dc01896a8c4f87",
+      "timestamp": "2026-09-06T18:10:58.714Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "publish dialog"
@@ -521,12 +521,12 @@
       "action": "fill+click",
       "selector": "#input-slug,#btn-publish-continue",
       "screenshot": "37-publish-address.png",
-      "screenshotSha256": "a0e47ef0c60c4f2bc0f14e9faed91106e048b3a2b6c91e624e98a502b8a2d399",
-      "timestamp": "2026-09-06T09:48:00.515Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "4ae85861a809f2accc25df450afce0e1b8a269a4797ebb0c9508d6ea7a3352ef",
+      "timestamp": "2026-09-06T18:10:58.989Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
-        "detail": "fullpass-mtpmp7qp"
+        "detail": "fullpass-mtq4o1lm"
       }
     },
     {
@@ -535,9 +535,9 @@
       "action": "fill+click",
       "selector": "#input-email,#btn-send-magic",
       "screenshot": "38-send-magic-link.png",
-      "screenshotSha256": "2a035dba27eed8ac7c15050113688a798d527f14f6a2697c6203f3fad3c556f7",
-      "timestamp": "2026-09-06T09:48:00.603Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "02d12094fd7a9b488c2bb0eb3bae4e7679422107be0b7b3bb4b50dd8a8b24163",
+      "timestamp": "2026-09-06T18:10:59.070Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "dev magic link"
@@ -549,9 +549,9 @@
       "action": "click",
       "selector": "#dev-link",
       "screenshot": "39-authenticated-unpaid-cta.png",
-      "screenshotSha256": "5a4a987741660649393dd221f04db877cd74a3c1f584253d544db7de6f602b60",
-      "timestamp": "2026-09-06T09:48:00.786Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "dbb821244c3e7d74914dedfe3110df13765ab5554506c8219c52859cc2cef787",
+      "timestamp": "2026-09-06T18:10:59.151Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "card CTA before test pay"
@@ -563,9 +563,9 @@
       "action": "click",
       "selector": "#btn-pay-publish",
       "screenshot": "40-trial-success-live.png",
-      "screenshotSha256": "170f73be8eeb921a08f33460580a0d0ac78024f40df290fa3c14df939e904bc8",
-      "timestamp": "2026-09-06T09:48:00.997Z",
-      "url": "http://127.0.0.1:62955/app/#dashboard",
+      "screenshotSha256": "106308fbd7ca17498aeb3207ed030568968b578d4efbeaccecf65e4e83750ed1",
+      "timestamp": "2026-09-06T18:10:59.360Z",
+      "url": "http://127.0.0.1:49745/app/#dashboard",
       "contentCheck": {
         "ok": true,
         "detail": "HIDOOK_TEST_PAY live"
@@ -577,12 +577,12 @@
       "action": "click",
       "selector": "#btn-success-close",
       "screenshot": "41-return-to-editor-canvas.png",
-      "screenshotSha256": "0e0b8dfedd063326e2f78e10bf8053a1248406e2e34621ef6c09102ef438f89b",
-      "timestamp": "2026-09-06T09:48:01.805Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "7ad624bd5a4efc642be378834903d3f6fcd827f880274e4ce2f4667d84bedae3",
+      "timestamp": "2026-09-06T18:11:00.180Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
-        "detail": "canvasVisible=true textLen=1425"
+        "detail": "canvasVisible=true textLen=1558"
       }
     },
     {
@@ -591,12 +591,12 @@
       "action": "click",
       "selector": "#btn-download-html",
       "screenshot": "42-paid-export-html.png",
-      "screenshotSha256": "defcae5ea4ed67087dd03e0bf9ff36dffdacf8d6d1e6c8dfe4e6032851e9d85b",
-      "timestamp": "2026-09-06T09:48:02.368Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "ba29668c28f1f39b16926f05b389a043247693d9dd0b52c8fe741141fa35aa2a",
+      "timestamp": "2026-09-06T18:11:00.772Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
-        "detail": "fullpass-mtpmp7qp.html"
+        "detail": "fullpass-mtq4o1lm.html"
       }
     },
     {
@@ -605,23 +605,23 @@
       "action": "click",
       "selector": "#btn-download-zip",
       "screenshot": "43-paid-export-zip.png",
-      "screenshotSha256": "0d336c86efda0ef1f0f83fe675259e93c3ff5fa96419bda9862b0f7ddc0e7113",
-      "timestamp": "2026-09-06T09:48:02.943Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "f5e1fea2d7b9b1536b62e312be38f60f19683d0aa081cc1d7dbb59ed3496883d",
+      "timestamp": "2026-09-06T18:11:01.378Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
-        "detail": "fullpass-mtpmp7qp.zip"
+        "detail": "fullpass-mtq4o1lm.zip"
       }
     },
     {
       "index": 43,
       "step": "live-site",
       "action": "open",
-      "selector": "http://127.0.0.1:62955/live/fullpass-mtpmp7qp/",
+      "selector": "http://127.0.0.1:49745/live/fullpass-mtq4o1lm/",
       "screenshot": "44-live-site.png",
-      "screenshotSha256": "f33f87580d0c2223de1f2886bc4e0be84b2ea65cda0a5e10c44871fdbbb7d0b4",
-      "timestamp": "2026-09-06T09:48:04.121Z",
-      "url": "http://127.0.0.1:62955/live/fullpass-mtpmp7qp/",
+      "screenshotSha256": "f7f51ff95ea8788663783e16ad53689ac5db9bcee67fa506032373c685a20c4f",
+      "timestamp": "2026-09-06T18:11:02.155Z",
+      "url": "http://127.0.0.1:49745/live/fullpass-mtq4o1lm/",
       "contentCheck": {
         "ok": true,
         "detail": "live HTML fetched"
@@ -633,9 +633,9 @@
       "action": "click",
       "selector": "#btn-download-html",
       "screenshot": "45-past-due-export-html.png",
-      "screenshotSha256": "9ce1d2fe5019d3b32ec0a3856b4ee9b184410086dc58dfd0a55ce49e70690731",
-      "timestamp": "2026-09-06T09:48:05.000Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "8c3730f423036e0b0a164abd8d2a9b7f547b325865e55842cc41f51e9a62d848",
+      "timestamp": "2026-09-06T18:11:03.055Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "patchedSites=1 toast=Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul."
@@ -647,9 +647,9 @@
       "action": "click",
       "selector": ".template-card[data-template-id=\"professionals\"] .btn-start-tpl",
       "screenshot": "46-details-reopen-on-new-design.png",
-      "screenshotSha256": "83db9cd528da7ef7ec8ec34f71fce2273f50fd5fbf312cf32a104c368709b0e4",
-      "timestamp": "2026-09-06T09:48:06.427Z",
-      "url": "http://127.0.0.1:62955/app/#edit",
+      "screenshotSha256": "7409976ba1bfbff6754b104a0e94261f142582b61e2a79c95f97997718857687",
+      "timestamp": "2026-09-06T18:11:04.515Z",
+      "url": "http://127.0.0.1:49745/app/#edit",
       "contentCheck": {
         "ok": true,
         "detail": "drawerVisible=true system=professionals"
@@ -658,6 +658,6 @@
   ],
   "defects": [],
   "verified": true,
-  "completedAt": "2026-09-06T09:48:06.427Z",
-  "liveHref": "http://127.0.0.1:62955/live/fullpass-mtpmp7qp/"
+  "completedAt": "2026-09-06T18:11:04.515Z",
+  "liveHref": "http://127.0.0.1:49745/live/fullpass-mtq4o1lm/"
 }
