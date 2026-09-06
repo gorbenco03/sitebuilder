@@ -1,0 +1,26 @@
+(node:45709) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-06T16:12:02.444Z","event":"server.started","port":64046}
+🌐 HTTP server on :64046 (health + webhooks + API)
+{"ts":"2026-09-06T16:12:02.459Z","event":"email.magic_link.dev","email":"w***@example.com#bcabe227","devLink":"http://127.0.0.1:64046/auth/verify?token=beb7071f404991b681d9d226a74233869e15eab67d3c903674ea5563289e3299"}
+{"ts":"2026-09-06T16:12:02.472Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_3569436d","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:02.510Z","event":"webpublish.stripe_paid.published","siteId":"93d11af4-dfc5-4875-b7dc-74324735dfce","orderId":"547d2298-a5c0-4852-bfba-4a08e7446838","url":"http://127.0.0.1:64046/live/w8-54e9ab21/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:02.513Z","event":"webpublish.subscription.status_updated","siteId":"93d11af4-dfc5-4875-b7dc-74324735dfce","status":"active","subscriptionId":"sub_w8_93d11af4"}
+PASS re-audit repro: stale paidUntil + Stripe-active subscription + republish must not open a duplicate Checkout Session or downgrade the site
+{"ts":"2026-09-06T16:12:02.552Z","event":"email.magic_link.dev","email":"w***@example.com#d5e4f6fd","devLink":"http://127.0.0.1:64046/auth/verify?token=20cdbeb628c59349c65918a86c60efce535ad0eb74296b691703386e3aa3d8ba"}
+PASS control: a genuinely unpaid new site still goes through the normal paid Checkout Session flow
+{"ts":"2026-09-06T16:12:02.556Z","event":"email.magic_link.dev","email":"w***@example.com#f31ab978","devLink":"http://127.0.0.1:64046/auth/verify?token=b6a986130a7459a0e7775a17f65dc6d6f4bf9d05e340aec039537420ef506206"}
+{"ts":"2026-09-06T16:12:02.559Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_05a8c777","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:02.591Z","event":"webpublish.stripe_paid.published","siteId":"af5f0dc5-9943-47ac-8cca-9337fbcd479f","orderId":"060e9d1e-efe5-4f12-8137-d2c0e3c5e1fb","url":"http://127.0.0.1:64046/live/w8-6f00c548/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:02.593Z","event":"webpublish.subscription.status_updated","siteId":"af5f0dc5-9943-47ac-8cca-9337fbcd479f","status":"past_due","subscriptionId":"sub_w8dun_af5f0dc5"}
+{"ts":"2026-09-06T16:12:02.593Z","event":"webpublish.invoice_payment_failed.recorded","siteId":"af5f0dc5-9943-47ac-8cca-9337fbcd479f","slug":"w8-6f00c548","subscriptionId":"sub_w8dun_af5f0dc5","invoiceId":null,"attemptCount":2,"nextPaymentAttempt":"2026-09-11T16:12:02.000Z"}
+PASS GET /api/sites and GET /api/sites/:id attach getDunningState for a past_due retry
+{"ts":"2026-09-06T16:12:02.596Z","event":"email.magic_link.dev","email":"w***@example.com#6ff2ea14","devLink":"http://127.0.0.1:64046/auth/verify?token=f114178454c0c6af0b411ccf878622ceb8785d98e75a1fa137f745bd216950e7"}
+{"ts":"2026-09-06T16:12:02.599Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_w8_34e76c7e","mode":"test-pay"}
+{"ts":"2026-09-06T16:12:02.629Z","event":"webpublish.stripe_paid.published","siteId":"da1b4354-0b1e-4855-a724-4bb5a2d5dc0b","orderId":"e5f7fb27-b149-4066-b78c-68e7b6fb552a","url":"http://127.0.0.1:64046/live/w8-500c8195/","source":"pending-draft"}
+{"ts":"2026-09-06T16:12:02.635Z","event":"webpublish.unpublish.done","siteId":"da1b4354-0b1e-4855-a724-4bb5a2d5dc0b","slug":"w8-500c8195","alreadyDown":false,"subscriptionId":"sub_w8term_da1b4354"}
+PASS GET /api/sites reports the terminal dunning state after Stripe exhausts retries and unpublishes
+PASS buildSiteCard reads site.dunning and distinguishes unpublished/retrying from a healthy paid site
+PASS control: HIDOOK_FAKE_DEPLOY not set; test-pay + isolated ready
+
+All wave8-billing-entitlement-agree tests passed.
