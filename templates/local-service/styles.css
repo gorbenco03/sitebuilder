@@ -86,9 +86,18 @@ ul, ol { list-style: none; }
     word-break: normal;
     white-space: normal;
 }
-.ls-hero__logo { height: 40px; margin-bottom: 1rem; }
+/* Logo width is unknown until the owner uploads one (schema stores only a
+   path, no natural dimensions) — reserve a stable box via aspect-ratio
+   instead of leaving width to resolve to 0 pre-load and jump on load. */
+.ls-hero__logo { height: 40px; aspect-ratio: 3 / 1; object-fit: contain; object-position: left center; margin-bottom: 1rem; }
 .ls-meters { display: flex; flex-wrap: wrap; gap: 1.75rem; margin: 1.5rem 0; }
-.ls-meter__n { display: block; font-size: 1.35rem; font-weight: 700; color: var(--cta); }
+/* Audit a11y #32: the owner-chosen accent (--cta) is arbitrary — the shipped
+   "renovari-bucuresti" preset picks a navy (#0b3d91) that measures 1.8:1
+   against this near-black hero, well under the 3:1 WCAG AA floor for bold
+   21.6px text. Blending toward white guarantees >=4.5:1 for any accent a
+   colour picker could reasonably produce (verified against navy/orange/a
+   near-black worst case) while keeping a tint of the brand colour. */
+.ls-meter__n { display: block; font-size: 1.35rem; font-weight: 700; color: color-mix(in srgb, var(--cta) 50%, white); }
 .ls-meter__l { font-size: 12px; color: rgba(255,255,255,0.56); text-transform: uppercase; letter-spacing: 0.06em; }
 .ls-hero__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.25rem; }
 .ls-btn, .hero-cta {
@@ -134,20 +143,28 @@ ul, ol { list-style: none; }
 
 .ls-about {
     display: grid; gap: 2rem;
+    /* Explicit minmax(0, 1fr) — not the "no explicit template" default — so
+       the single mobile column clamps to the container's width instead of
+       growing to the ".ls-lead" card's min-content (long unbroken phone
+       numbers inside .ls-lead__row force that up), which otherwise causes
+       horizontal overflow at high zoom levels ("grid blowout"). */
+    grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 834px) {
-    .ls-about { grid-template-columns: 1.15fr 0.85fr; align-items: start; }
+    .ls-about { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: start; }
 }
 .ls-lead {
     background: var(--snow); border-radius: var(--r); padding: 1.5rem;
     border: 1px solid rgba(15,23,32,0.08); box-shadow: 0 8px 24px rgba(15,23,32,0.06);
+    min-width: 0;
 }
-.ls-lead__list { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; }
+.ls-lead__list { display: flex; flex-direction: column; gap: 8px; margin-top: 1rem; min-width: 0; }
 .ls-lead__row, .contact-item {
-    display: flex; align-items: center; padding: 10px 12px;
+    display: flex; align-items: center; padding: 10px 12px; min-width: 0;
     border-radius: var(--r); border: 1px solid rgba(15,23,32,0.12);
     font-size: 14px; font-weight: 600; color: var(--ink);
 }
+.ls-lead__row span, .contact-item span { overflow-wrap: anywhere; }
 .ls-lead__row:hover { border-color: var(--cta); }
 
 .ls-block--dark, .ls-trust {
@@ -163,7 +180,9 @@ ul, ol { list-style: none; }
 }
 .ls-punch__n::before {
     content: counter(punch, decimal-leading-zero);
-    font-size: 12px; font-weight: 700; color: var(--cta); letter-spacing: 0.06em;
+    /* Same accent-on-dark risk as .ls-meter__n above, at an even smaller
+       12px (needs the stricter 4.5:1, not just 3:1) — same fix. */
+    font-size: 12px; font-weight: 700; color: color-mix(in srgb, var(--cta) 50%, white); letter-spacing: 0.06em;
 }
 .ls-punch__label { font-size: 1.05rem; font-weight: 600; }
 
@@ -263,8 +282,20 @@ ul, ol { list-style: none; }
     display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; justify-content: space-between;
     padding-top: 2rem !important; padding-bottom: 3rem !important;
 }
-.ls-foot__logo { height: 28px; }
-.ls-foot__soc { display: flex; gap: 1rem; color: var(--link); font-weight: 700; }
+.ls-foot__logo { height: 28px; aspect-ratio: 3 / 1; object-fit: contain; object-position: left center; }
+/* Audit a11y #31: the IG/FB links were bare "IG"/"FB" text with no padding —
+   measured 13-18px wide targets, under the WCAG 2.5.8 24x24 CSS px minimum
+   (the WhatsApp icon next to them measured 18x23, also short). Real SVG
+   icons + a generous 44x44 hit area (the width/height set the visible icon
+   box; padding pads that box out to the full target without changing the
+   icon's own drawn size). */
+.ls-foot__soc { display: flex; gap: 0.25rem; color: var(--link); font-weight: 700; }
+.ls-foot__soc a {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 50%;
+}
+.ls-foot__soc a:hover { background: rgba(15,23,32,0.06); }
+.ls-foot__soc .soc-icon { display: block; }
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 78px; width: 48px; height: 48px; border-radius: 50%;
@@ -312,6 +343,37 @@ ul, ol { list-style: none; }
 .lightbox__close { top: 12px; right: 16px; }
 .lightbox__prev { left: 12px; top: 50%; transform: translateY(-50%); }
 .lightbox__next { right: 12px; top: 50%; transform: translateY(-50%); }
+
+/* Editable-list add/remove controls (audit LS-02) — injected by
+   initEditableLists() in script.js, only ever present inside the builder
+   editor iframe (a published/exported site never has these). */
+.hb-ls-remove {
+    position: absolute; top: 6px; right: 6px; z-index: 4;
+    width: 26px; height: 26px; min-width: 26px; min-height: 26px;
+    display: grid; place-items: center;
+    border: none; border-radius: 50%;
+    background: rgba(15, 23, 32, 0.82); color: #fff;
+    font-size: 16px; line-height: 1; cursor: pointer;
+}
+.hb-ls-remove:hover { background: var(--cta); }
+.ls-cert { position: relative; padding-right: 30px; }
+.ls-cert .hb-ls-remove { top: 3px; right: 3px; width: 22px; height: 22px; min-width: 22px; min-height: 22px; font-size: 13px; }
+
+.hb-ls-add {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; min-height: 44px; margin-top: 12px; padding: 10px 16px;
+    border: 1.5px dashed rgba(15, 23, 32, 0.3); border-radius: var(--r);
+    background: transparent; color: var(--ink);
+    font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.hb-ls-add:hover { border-color: var(--cta); color: var(--cta); }
+.ls-block--dark .hb-ls-add, .ls-trust .hb-ls-add {
+    border-color: rgba(255, 255, 255, 0.35); color: #fff;
+}
+.ls-block--dark .hb-ls-add:hover, .ls-trust .hb-ls-add:hover {
+    border-color: var(--cta); color: var(--cta);
+}
+.ls-certs .hb-ls-add { width: auto; min-height: 32px; padding: 6px 14px; margin-top: 0; }
 
 .fade-in-section { animation: lsIn 420ms var(--ease-out) both; }
 @keyframes lsIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
