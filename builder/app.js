@@ -62,6 +62,18 @@ let drawerSaveTimer = null;
 // Device mode
 let deviceMode = 'desktop'; // 'desktop' | 'mobile'
 
+// Per-tab identity, used to tell OUR OWN writes to the draft apart from a
+// second tab editing the same draft (audit medium #8 — two tabs silently
+// overwrite the same draft with no warning).
+const TAB_ID = (function () {
+  try { if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID(); } catch (_) {}
+  return 'tab-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}());
+let tabConflictActive = false;
+
+// Account menu (editor topbar) state
+let accountMenuOpen = false;
+
 // ---------------------------------------------------------------------------
 // 2. Helpers — DOM
 // ---------------------------------------------------------------------------
@@ -652,6 +664,228 @@ function updateChecklist() {
 }
 
 // ---------------------------------------------------------------------------
+// 7b. Undo / redo history (audit finding #45 — builder had no undo/redo at all)
+// ---------------------------------------------------------------------------
+//
+// A linear history of full snapshots of draft.config (JSON strings). This is
+// the same "document model" the rest of the editor already reads and writes
+// (draft.config — see 04-QA-Evidence/Audit-2026-09-06-2225ca7/CORECTII.md,
+// PS-01: it is a real structured document, not regex-over-HTML), so a plain
+// snapshot stack covers EVERY mutation for free — inline text edits, colour
+// changes, photo replacement, list add/remove and the business-name cascade
+// all end up as ordinary writes to draft.config, funnelled through the single
+// saveDraft() choke point below.
+//
+// Memory cap: a template config can carry several photos as base64 data: URIs
+// (each several hundred KB to a few MB once base64-inflated), so an
+// undo stack bounded ONLY by entry count could hold many megabytes per entry
+// after a photo-heavy editing session and blow past what a phone browser tab
+// tolerates. We bound on BOTH axes, whichever is hit first:
+//   • HISTORY_MAX_ENTRIES = 40 steps — generous for "I made a mistake, back up
+//     a few actions" (real editing sessions rarely chain more than a handful
+//     of undoable actions before moving on); and
+//   • HISTORY_MAX_BYTES = 15MB combined — keeps worst-case stack memory in the
+//     tens-of-MB range even for a template stuffed with several multi-MB
+//     photos, instead of scaling unboundedly with session length. 15MB was
+//     picked as roughly "a handful of full-size photo configs" — enough steps
+//     back to matter, small enough that mobile Safari/Chrome tabs (which start
+//     evicting well before ~300-400MB of JS heap) never notice it.
+// Oldest entries are evicted first when a cap is exceeded; the pointer never
+// drops below the oldest surviving entry.
+const HISTORY_MAX_ENTRIES = 40;
+const HISTORY_MAX_BYTES   = 15 * 1024 * 1024; // 15MB combined serialized snapshot budget
+const HISTORY_COALESCE_MS = 800; // rapid keystrokes/drags within this gap merge into one undo step
+
+const historyState = {
+  stack: [],          // [{ json: string, size: number }], oldest first
+  index: -1,          // pointer into stack — the CURRENT state
+  coalesceKey: null,  // last coalescing key used (e.g. 'text:business.name')
+  coalesceAt: 0,       // Date.now() of the last coalesced push
+};
+
+/** Set right before a saveDraft() call whose resulting push should try to
+ * coalesce with the previous one (rapid keystrokes/drags). Consumed (reset to
+ * null) by pushHistory() on every call, discrete mutations simply never set it. */
+let pendingHistoryCoalesceKey = null;
+
+function historySnapshotBytes() {
+  let total = 0;
+  for (let i = 0; i < historyState.stack.length; i++) total += historyState.stack[i].size;
+  return total;
+}
+
+function historyTrim() {
+  while (
+    historyState.stack.length > 1 &&
+    (historyState.stack.length > HISTORY_MAX_ENTRIES || historySnapshotBytes() > HISTORY_MAX_BYTES)
+  ) {
+    historyState.stack.shift();
+    historyState.index--;
+  }
+  if (historyState.index < 0) historyState.index = 0;
+}
+
+function updateHistoryButtons() {
+  const undoBtn = $('btn-undo');
+  const redoBtn = $('btn-redo');
+  if (undoBtn) undoBtn.disabled = historyState.index <= 0;
+  if (redoBtn) redoBtn.disabled = historyState.index < 0 || historyState.index >= historyState.stack.length - 1;
+}
+
+/**
+ * Record the CURRENT draft.config as a history entry — called from the single
+ * saveDraft() choke point so no mutation site has to remember to call it.
+ *
+ * `coalesceKey` (optional): when non-null and equal to the key used by the
+ * previous push, AND that previous push is still the top of the stack, AND it
+ * happened within HISTORY_COALESCE_MS, the top entry is replaced in place
+ * instead of pushing a new one. This is how a burst of debounced keystrokes in
+ * one contenteditable field, or a dragged color-picker gesture, becomes ONE
+ * undo step rather than one per keystroke/pixel.
+ *
+ * No-op (does not push, does not disturb coalescing) when the serialized
+ * config is byte-identical to the current top-of-stack entry — this makes it
+ * safe for saveDraft() to call pushHistory() unconditionally even from call
+ * sites that persist bookkeeping (siteId binding, slug) without actually
+ * changing draft.config, and is also what makes undo/redo's own saveDraft()
+ * call (see applyHistoryEntry) a no-op instead of re-recording the state it
+ * just restored.
+ */
+function pushHistory(coalesceKey) {
+  if (!draft.config) return;
+  const json = JSON.stringify(draft.config);
+  if (historyState.index >= 0 && historyState.stack[historyState.index] &&
+      historyState.stack[historyState.index].json === json) {
+    return; // nothing actually changed — do not record a redundant step
+  }
+  const size = json.length;
+  const now = Date.now();
+  const canCoalesce = coalesceKey != null &&
+    historyState.coalesceKey === coalesceKey &&
+    historyState.index === historyState.stack.length - 1 &&
+    (now - historyState.coalesceAt) < HISTORY_COALESCE_MS;
+
+  if (canCoalesce) {
+    historyState.stack[historyState.index] = { json, size };
+  } else {
+    // A new step discards any redo branch — standard undo/redo semantics.
+    historyState.stack = historyState.stack.slice(0, historyState.index + 1);
+    historyState.stack.push({ json, size });
+    historyState.index = historyState.stack.length - 1;
+  }
+  historyState.coalesceKey = coalesceKey || null;
+  historyState.coalesceAt = now;
+  historyTrim();
+  updateHistoryButtons();
+}
+
+/** Start a brand-new undo/redo session — called whenever a fresh draft.config
+ * is loaded (new design chosen, dashboard "Editează", resumed local draft,
+ * paid-site bind). The freshly loaded state becomes the undoable baseline. */
+function resetHistory() {
+  // Normalize BEFORE snapshotting the baseline: saveDraft() always runs
+  // deriveWaHref() first, which can ADD a contact.waHref field the very
+  // first time it runs on a freshly chosen preset. If the baseline snapshot
+  // were taken before that normalization, the next ordinary saveDraft() call
+  // would look like a real edit (the json would differ), spuriously pushing
+  // a second history entry and leaving Undo enabled on a draft nobody has
+  // touched yet. deriveWaHref is idempotent, so calling it again here is
+  // always safe even when saveDraft() already normalized this exact config.
+  if (draft.config && typeof deriveWaHref === 'function') {
+    try { deriveWaHref(draft.config); } catch (_) { /* ignore */ }
+  }
+  historyState.stack = [];
+  historyState.index = -1;
+  historyState.coalesceKey = null;
+  historyState.coalesceAt = 0;
+  pendingHistoryCoalesceKey = null;
+  if (draft.config) pushHistory(null);
+  updateHistoryButtons();
+  hideTabConflictBanner();
+}
+
+/** Re-sync every piece of editor UI that caches a copy of draft.config values
+ * after undo/redo jumps the whole document to a different snapshot. */
+function refreshEditorUIFromConfig() {
+  updateChecklist();
+  fullRerender();
+  if (drawerOpen) buildDrawer();
+  const galleryModal = $('modal-gallery');
+  if (galleryModal && galleryModal.style.display !== 'none') buildGalleryModal();
+  if (colorPopoverOpen) {
+    const curColor = (draft.config && getPath(draft.config, 'theme.primary')) || '#5B5BD6';
+    const curBg = (draft.config && getPath(draft.config, 'theme.cream')) || '#F3EFE8';
+    const sw = $('color-custom-swatch'); const ti = $('color-custom-text');
+    if (sw) sw.value = curColor;
+    if (ti) ti.value = curColor;
+    const bgSw = $('color-bg-swatch'); const bgTi = $('color-bg-text');
+    if (bgSw && /^#[0-9a-fA-F]{6}$/.test(curBg)) bgSw.value = curBg;
+    if (bgTi && /^#[0-9a-fA-F]{6}$/.test(curBg)) bgTi.value = curBg;
+  }
+}
+
+function applyHistoryEntry() {
+  const entry = historyState.stack[historyState.index];
+  if (!entry) return;
+  try { draft.config = JSON.parse(entry.json); }
+  catch (_) { return; }
+  historyState.coalesceKey = null; // undo/redo never coalesces with what follows
+  saveDraft(); // persists to localStorage; its pushHistory() call is a no-op here (json === pointer)
+  refreshEditorUIFromConfig();
+  updateHistoryButtons();
+}
+
+function undo() {
+  if (historyState.index <= 0) return;
+  historyState.index--;
+  applyHistoryEntry();
+}
+
+function redo() {
+  if (historyState.index < 0 || historyState.index >= historyState.stack.length - 1) return;
+  historyState.index++;
+  applyHistoryEntry();
+}
+
+// ---------------------------------------------------------------------------
+// 7c. Multi-tab draft conflict warning (audit medium #8)
+// ---------------------------------------------------------------------------
+//
+// Two tabs editing the same draft both write to the same localStorage key —
+// the second save silently clobbers the first with no warning. We cannot
+// merge (there's no server-side draft yet to reconcile against, and silently
+// picking a "winner" would just move the surprise elsewhere per the task's
+// explicit instruction), so instead we detect it honestly: the `storage`
+// event fires in every OTHER tab of this origin whenever one tab writes to
+// localStorage, which is exactly "another tab just changed this draft".
+
+function showTabConflictBanner() {
+  tabConflictActive = true;
+  const banner = $('tab-conflict-banner');
+  if (banner) { banner.style.display = ''; banner.setAttribute('aria-hidden', 'false'); }
+}
+
+function hideTabConflictBanner() {
+  tabConflictActive = false;
+  const banner = $('tab-conflict-banner');
+  if (banner) { banner.style.display = 'none'; banner.setAttribute('aria-hidden', 'true'); }
+}
+
+function initTabConflictWatcher() {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== DRAFT_KEY || !e.newValue) return;
+    if (!draft.templateId) return; // nothing open in this tab yet
+    let incoming;
+    try { incoming = JSON.parse(e.newValue); } catch (_) { return; }
+    if (!incoming || incoming.tabId === TAB_ID) return; // our own write (storage never fires for it, but be safe)
+    const sameDraft = incoming.templateId === draft.templateId &&
+      (!currentSiteId || !incoming.siteId || incoming.siteId === currentSiteId);
+    if (!sameDraft) return;
+    showTabConflictBanner();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // 8. Iframe / preview rendering
 // ---------------------------------------------------------------------------
 
@@ -1054,6 +1288,19 @@ function initPostMessageListener() {
         // F1: remember consent across full re-renders (see previewCookieAccepted).
         previewCookieAccepted = true;
         break;
+      case 'undo':
+      case 'redo':
+        // Ctrl+Z/Ctrl+Shift+Z pressed while focus is inside a contenteditable
+        // canvas field — the iframe forwards it here instead of letting the
+        // browser's native per-field text undo run (see edit-overlay.js), so
+        // it hits the same app-level history as every other mutation.
+        // `msg.flush` (optional) carries a still-in-flight debounced edit for
+        // the focused field — apply it (and let it push its own history step)
+        // BEFORE undo()/redo(), all within this one synchronous handler, so
+        // there is no separate message whose delivery order could be in doubt.
+        if (msg.flush && msg.flush.path) onInlineTextEdit(msg.flush.path, msg.flush.value);
+        if (msg.hb === 'undo') undo(); else redo();
+        break;
     }
   });
 }
@@ -1169,6 +1416,8 @@ function onInlineTextEdit(path, value) {
     prevName = getPath(draft.config, 'business.name');
   }
   setPath(draft.config, path, value);
+  // Coalesce a burst of debounced keystrokes into ONE undo step (see saveDraft/pushHistory).
+  pendingHistoryCoalesceKey = 'text:' + path;
   if (path === 'business.name' && prevName != null) {
     cascadeBusinessNameIdentity(draft.config, prevName, value);
     // Re-render so about + social chips pick up cascaded identity immediately
@@ -1588,6 +1837,8 @@ function applyThemeColor(hex) {
   setPath(draft.config, 'theme.primary', hex);
   setPath(draft.config, 'theme.primaryLight', derived.primaryLight);
   setPath(draft.config, 'theme.primaryDark', derived.primaryDark);
+  // A dragged color-picker gesture fires many times a second — coalesce into one undo step.
+  pendingHistoryCoalesceKey = 'color:primary';
   saveDraft();
   // Re-render needed for color changes
   fullRerender();
@@ -1598,6 +1849,7 @@ function applyThemeBackground(hex) {
   if (!draft.config) return;
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
   setPath(draft.config, 'theme.cream', hex);
+  pendingHistoryCoalesceKey = 'color:bg';
   saveDraft();
   fullRerender();
 }
@@ -1815,6 +2067,8 @@ function buildDrawerField(field) {
       }
       const value = composeHeroBackground({ color: colorInput.value, image: image });
       setPath(draft.config, key, value);
+      // Native <input type=color> drag fires repeatedly — coalesce into one undo step.
+      pendingHistoryCoalesceKey = 'drawer-bg:' + key;
       saveDraft();
       updateChecklist();
       scheduleRerender(true);
@@ -1946,6 +2200,8 @@ function buildDrawerField(field) {
         'contact.email',
       ].forEach((p) => syncDrawerField(p, getPath(draft.config, p)));
     }
+    // Every keystroke fires this handler — coalesce into one undo step per field.
+    pendingHistoryCoalesceKey = 'drawer:' + key;
     saveDraft();
     updateChecklist();
     // Try chirurgical update if field has a visible representation
@@ -2202,7 +2458,22 @@ function buildGalleryModal() {
 function saveDraft() {
   if (!draft.templateId || !draft.config) return;
   deriveWaHref(draft.config);
+  // Record the undo/redo step BEFORE persisting — pushHistory() itself is a
+  // no-op when draft.config hasn't actually changed (see its doc comment),
+  // so bookkeeping-only saves (siteId bind, slug scrub) never pollute history.
+  // Guarded: several existing tests extract just this function's source text
+  // and eval it in an isolated sandbox that never declares pushHistory —
+  // typeof-checking (rather than calling the bare identifier) keeps that a
+  // silent no-op there instead of a ReferenceError, with no effect on the
+  // real app where pushHistory is always defined alongside it.
+  if (typeof pushHistory === 'function') {
+    pushHistory(pendingHistoryCoalesceKey);
+    pendingHistoryCoalesceKey = null;
+  }
   const payload = { templateId: draft.templateId, config: draft.config };
+  // Same isolated-extraction test compatibility as pushHistory() above — TAB_ID
+  // is a top-level const in the real app.js but absent from those sandboxes.
+  if (typeof TAB_ID !== 'undefined') payload.tabId = TAB_ID;
   // Persist paid-site bind so fresh #edit (no dashboard «Edit») can republish
   if (currentSiteId) {
     payload.siteId = currentSiteId;
@@ -3064,15 +3335,55 @@ function updateUserUI(user) {
   const badge = $('user-badge');
   const logoutBtn = $('btn-logout');
   const navDash = $('nav-dashboard');
+  const acctLogoutItem = $('account-menu-logout');
   if (user) {
     if (badge) { badge.textContent = user.email || ('ID: ' + String(user.id).slice(0,8)); show(badge); }
     if (logoutBtn) show(logoutBtn);
     if (navDash) show(navDash);
+    if (acctLogoutItem) show(acctLogoutItem);
   } else {
     if (badge) hide(badge);
     if (logoutBtn) hide(logoutBtn);
     if (navDash) hide(navDash);
+    if (acctLogoutItem) hide(acctLogoutItem);
   }
+}
+
+/**
+ * Shared logout — used by the header "Deconectare" button (visible outside the
+ * editor) AND the editor topbar account menu (audit medium #7: there was no
+ * way to reach logout, or the project list, once inside the editor).
+ */
+async function doLogout() {
+  try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
+  updateUserUI(null);
+  showToast('Te-ai deconectat.', '', 3000);
+  window.location.hash = '#templates';
+}
+
+/** Editor-topbar account menu: "Proiectele mele" + "Deconectare" (audit medium #7). */
+function openAccountMenu() {
+  const menu = $('account-menu');
+  const btn = $('btn-account-menu');
+  if (!menu || !btn) return;
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 6) + 'px';
+  menu.style.left = rect.left + 'px';
+  menu.style.display = '';
+  accountMenuOpen = true;
+  btn.setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => {
+    const first = menu.querySelector('button:not([style*="display: none"])');
+    if (first) first.focus();
+  });
+}
+
+function closeAccountMenu() {
+  const menu = $('account-menu');
+  const btn = $('btn-account-menu');
+  if (menu) menu.style.display = 'none';
+  accountMenuOpen = false;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
 }
 
 function tryTelegramAuth() {
@@ -3454,7 +3765,10 @@ function wireAuthForm(onAuthSuccess) {
           });
         }
       } catch (err) {
-        if (errorDiv) { errorDiv.textContent = 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
+        // audit medium #6: the server sends a specific reason (rate limit, invalid
+        // email, service unavailable) — show it instead of masking it with a
+        // generic string (apiPost() already gives us err.message from json.error).
+        if (errorDiv) { errorDiv.textContent = (err && err.message) || 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
@@ -3662,6 +3976,7 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     if (site.url) publishedSiteUrl = site.url;
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    if (typeof resetHistory === 'function') resetHistory();
 
     let tplData = null;
     try {
@@ -3708,6 +4023,7 @@ async function resumeLocalDraft() {
   if (!tplData || !meta) return false;
   draft.templateId = saved.templateId;
   draft.config = deepClone(saved.config);
+  if (typeof resetHistory === 'function') resetHistory();
   // Restore paid-site bind from draft (fresh #edit without loadSiteForEdit)
   if (saved.siteId) {
     currentSiteId = saved.siteId;
@@ -3970,6 +4286,7 @@ async function startWithTemplate(templateId) {
     const presets = tplData.presets || [];
     draft.config = presets.length > 0 ? deepClone(presets[0].config) : {};
   }
+  if (typeof resetHistory === 'function') resetHistory();
   // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
   saveDraft();
 
@@ -4307,6 +4624,7 @@ async function loadSiteForEdit(siteId) {
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    if (typeof resetHistory === 'function') resetHistory();
     saveDraft();
 
     let tplData = null;
@@ -4427,6 +4745,8 @@ function showScreen(name) {
       if (btn) btn.setAttribute('aria-expanded', 'false');
     }
     if (colorPopoverOpen) closeColorPopover();
+    if (accountMenuOpen) closeAccountMenu();
+    hideTabConflictBanner();
   }
 }
 
@@ -4656,14 +4976,7 @@ function wireStaticButtons() {
 
   // Logout
   const logoutBtn = $('btn-logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-      try { await fetch('/api/auth/logout', { method:'POST', credentials:'include' }); } catch (_) {}
-      updateUserUI(null);
-      showToast('Te-ai deconectat.', '', 3000);
-      window.location.hash = '#templates';
-    });
-  }
+  if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
 
   // Modal closes
   function wireModalClose(btnId, modalId) {
@@ -4716,8 +5029,64 @@ function wireStaticButtons() {
       });
       if (drawerOpen) closeDrawer();
       if (colorPopoverOpen) closeColorPopover();
+      if (accountMenuOpen) closeAccountMenu();
     }
   });
+
+  // Undo / redo keyboard shortcuts (Ctrl+Z / Ctrl+Shift+Z, Cmd on macOS).
+  // Left to the browser's native per-field undo when focus is in a plain
+  // input/textarea/contenteditable OUTSIDE the preview iframe (drawer fields,
+  // modal forms, the color hex box) — the app-level history is still reachable
+  // there via the visible Undo/Redo buttons. Inside the sandboxed preview
+  // iframe (the canvas contenteditable text), edit-overlay.js intercepts the
+  // same shortcut itself and forwards it here via postMessage (see
+  // initPostMessageListener's 'undo'/'redo' cases) since keydown never
+  // bubbles out of an iframe.
+  document.addEventListener('keydown', (e) => {
+    if ((e.key || '').toLowerCase() !== 'z' || !(e.ctrlKey || e.metaKey)) return;
+    const active = document.activeElement;
+    const tag = active && active.tagName;
+    const isNativeEditableField = tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable);
+    if (isNativeEditableField) return;
+    e.preventDefault();
+    if (e.shiftKey) redo(); else undo();
+  });
+
+  // Multi-tab draft conflict warning (audit medium #8)
+  initTabConflictWatcher();
+  const tabConflictReloadBtn = $('btn-tab-conflict-reload');
+  if (tabConflictReloadBtn) tabConflictReloadBtn.addEventListener('click', () => window.location.reload());
+  const tabConflictDismissBtn = $('btn-tab-conflict-dismiss');
+  if (tabConflictDismissBtn) tabConflictDismissBtn.addEventListener('click', hideTabConflictBanner);
+
+  // Undo / redo toolbar buttons
+  const undoBtn = $('btn-undo');
+  if (undoBtn) undoBtn.addEventListener('click', undo);
+  const redoBtn = $('btn-redo');
+  if (redoBtn) redoBtn.addEventListener('click', redo);
+
+  // Account menu (audit medium #7 — no way to reach logout/project list from the editor)
+  const acctBtn = $('btn-account-menu');
+  if (acctBtn) {
+    acctBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (accountMenuOpen) closeAccountMenu(); else openAccountMenu();
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (!accountMenuOpen) return;
+    const menu = $('account-menu');
+    if (menu && !menu.contains(e.target) && e.target !== acctBtn) closeAccountMenu();
+  });
+  const acctProjectsBtn = $('account-menu-projects');
+  if (acctProjectsBtn) {
+    acctProjectsBtn.addEventListener('click', () => {
+      closeAccountMenu();
+      window.location.hash = '#dashboard';
+    });
+  }
+  const acctLogoutBtn = $('account-menu-logout');
+  if (acctLogoutBtn) acctLogoutBtn.addEventListener('click', () => { closeAccountMenu(); doLogout(); });
 
   // Color picker
   initColorPicker();

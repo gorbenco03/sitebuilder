@@ -17,6 +17,7 @@
  *     {hb:'list-add', listPath}              — add new list item
  *     {hb:'list-remove', path}               — remove list item at path
  *     {hb:'focus', path}                     — a field received focus
+ *     {hb:'undo'} / {hb:'redo'}              — Ctrl+Z / Ctrl+Shift+Z pressed on the canvas
  *
  *   parent → iframe:
  *     {hb:'set', path, value}               — surgical text update (no re-render)
@@ -858,6 +859,52 @@
     }
     return best;
   }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     6b. Undo / redo — forward Ctrl+Z / Ctrl+Shift+Z to the parent
+  ───────────────────────────────────────────────────────────────────────── */
+
+  /*
+   * A keydown fired inside this document (the sandboxed srcdoc iframe) never
+   * bubbles out to the parent window — each document has its own event loop —
+   * so the parent's own Ctrl+Z listener (builder/app.js) never sees it while
+   * focus is on a canvas contenteditable field. Left alone, the browser would
+   * instead run ITS native per-field undo on the contenteditable, which only
+   * rewinds DOM text and never touches draft.config — one Ctrl+Z would desync
+   * the canvas from the document model.
+   *
+   * So: intercept it here. If the focused field has a debounced {hb:'text'}
+   * send still pending (the user is mid-keystroke, blur hasn't fired), FLUSH
+   * it — attach its current value to the SAME undo/redo message as `flush`,
+   * so the parent applies it and pushes the history step BEFORE calling
+   * undo()/redo(), all inside one synchronous message handler. (An earlier
+   * version sent the flush as its own {hb:'text'} message immediately before
+   * {hb:'undo'} — postMessage delivery order is spec-guaranteed, but tying
+   * both to one message removes any doubt and is simpler to reason about.)
+   * Without this, Ctrl+Z pressed right after typing a character would either
+   * discard that keystroke unrecorded and undo the PREVIOUS edit instead
+   * (jumping back two steps from the user's perspective), or race a separate
+   * flush message. Any OTHER field's leftover debounce timer (not the
+   * focused one) is simply cleared — its real value was already sent on blur
+   * when focus moved away from it.
+   */
+  document.addEventListener('keydown', function (e) {
+    var key = (e.key || '').toLowerCase();
+    if (key !== 'z' || !(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+
+    var active = document.activeElement;
+    var activePath = active && active.getAttribute ? active.getAttribute('data-hb-edit') : null;
+    var flush = null;
+    if (activePath && active.getAttribute('data-hb-kind') === 'text') {
+      flush = { path: activePath, value: active.textContent };
+    }
+    Object.keys(debounceTimers).forEach(function (p) {
+      clearTimeout(debounceTimers[p]);
+      delete debounceTimers[p];
+    });
+    toParent({ hb: e.shiftKey ? 'redo' : 'undo', flush: flush });
+  }, true);
 
   /* ─────────────────────────────────────────────────────────────────────────
      7. Handle inbound messages from parent
