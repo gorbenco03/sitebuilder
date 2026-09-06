@@ -108,7 +108,7 @@
     </header>
 
     <main id="main-content" class="ls-main">
-        <section class="ls-block fade-in-section" aria-labelledby="about-heading">
+        <section class="ls-block fade-in-section" id="about" aria-labelledby="about-heading">
             <div class="ls-wrap ls-about">
                 <div class="ls-about__copy">
                     <p class="ls-eyebrow">{{business.tagline}}</p>
@@ -129,7 +129,15 @@
                     <!-- @endif -->
                 </div>
 
-                <div class="ls-lead" id="contact">
+                <!-- WAVE-SECTIONS: this panel used to carry the "contact" id.
+                     The page-sections feature (config.sections) needs "contact"
+                     to name a real TOP-LEVEL section, and the genuine
+                     contact-equivalent section on this page is the closing CTA
+                     band at the bottom of the template. Renamed this inner
+                     panel to avoid a duplicate id; the hero CTA above now
+                     targets the band instead — see build.js
+                     NON_REMOVABLE_SECTION_IDS. -->
+                <div class="ls-lead" id="lead-panel">
                     <h2 class="ls-h ls-h--sm">{{contact.title}}</h2>
                     <p class="ls-text">{{contact.intro}}</p>
                     <div class="ls-lead__list">
@@ -157,7 +165,7 @@
         </section>
 
         <!-- @if services -->
-        <section class="ls-block ls-block--dark fade-in-section" aria-labelledby="services-heading">
+        <section class="ls-block ls-block--dark fade-in-section" id="services" aria-labelledby="services-heading">
             <div class="ls-wrap">
                 <p class="ls-eyebrow ls-eyebrow--hi">{{labels.servicesEyebrow}}</p>
                 <h2 class="ls-h ls-h--light" id="services-heading">{{servicesTitle}}</h2>
@@ -174,7 +182,7 @@
         <!-- @endif -->
 
         <!-- @if steps -->
-        <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
+        <section class="ls-block fade-in-section" id="steps" aria-labelledby="steps-heading">
             <div class="ls-wrap">
                 <p class="ls-eyebrow">{{labels.processEyebrow}}</p>
                 <h2 class="ls-h" id="steps-heading">{{labels.processTitle}}</h2>
@@ -191,7 +199,7 @@
         </section>
         <!-- @endif -->
         <!-- @if !steps -->
-        <section class="ls-block fade-in-section" aria-labelledby="steps-heading">
+        <section class="ls-block fade-in-section" id="steps" aria-labelledby="steps-heading">
             <div class="ls-wrap">
                 <p class="ls-eyebrow">{{labels.processEyebrow}}</p>
                 <h2 class="ls-h" id="steps-heading">{{labels.processTitle}}</h2>
@@ -217,7 +225,7 @@
         <!-- @endif -->
 
         <!-- @if trust -->
-        <section class="ls-trust fade-in-section" aria-labelledby="trust-heading">
+        <section class="ls-trust fade-in-section" id="trust" aria-labelledby="trust-heading">
             <div class="ls-wrap">
                 <p class="ls-eyebrow ls-eyebrow--hi">{{labels.trustEyebrow}}</p>
                 <h2 class="ls-h ls-h--light" id="trust-heading">{{labels.trustTitle}}</h2>
@@ -234,7 +242,7 @@
         <!-- @endif -->
 
         <!-- @if categories -->
-        <section class="ls-block fade-in-section" aria-labelledby="gallery-heading">
+        <section class="ls-block fade-in-section" id="gallery" aria-labelledby="gallery-heading">
             <div class="ls-wrap">
                 <!-- @if galleryTitle -->
                 <p class="ls-eyebrow">{{labels.galleryEyebrow}}</p>
@@ -266,7 +274,7 @@
         <!-- @endif -->
 
         <!-- @if instagram.handle -->
-        <section class="ls-block ls-ig fade-in-section" aria-labelledby="instagram-heading">
+        <section class="ls-block ls-ig fade-in-section" id="instagram" aria-labelledby="instagram-heading">
             <div class="ls-wrap">
                 <div class="ls-ighead">
                     <div>
@@ -295,7 +303,7 @@
         </section>
         <!-- @endif -->
 
-        <section class="ls-band fade-in-section" aria-label="{{labels.contactBandAria}}">
+        <section class="ls-band fade-in-section" id="contact" aria-label="{{labels.contactBandAria}}">
             <div class="ls-wrap ls-band__inner">
                 <div>
                     <h2 class="ls-h ls-h--light">{{labels.contactBandTitle}}</h2>

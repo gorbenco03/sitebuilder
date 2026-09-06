@@ -60,9 +60,9 @@
             <nav class="pf-chrome__nav" aria-label="Navigație">
                 <a href="#gallery-heading">{{labels.navGallery}}</a>
                 <a href="#services-heading">{{labels.navServices}}</a>
-                <a href="#booking">{{labels.navBooking}}</a>
+                <a href="#contact">{{labels.navBooking}}</a>
             </nav>
-            <a href="#booking" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
+            <a href="#contact" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
         </div>
     </div>
 
@@ -73,7 +73,7 @@
     <nav class="pf-mobile-nav" id="pf-mobile-nav" aria-label="Navigație mobilă">
         <a href="#gallery-heading">{{labels.navGallery}}</a>
         <a href="#services-heading">{{labels.navServices}}</a>
-        <a href="#booking">{{labels.navBooking}}</a>
+        <a href="#contact">{{labels.navBooking}}</a>
     </nav>
 
     <header class="hero pf-hero">
@@ -88,7 +88,7 @@
                 <!-- @if showWordmark --><!-- @if !logo --><h1 class="pf-hero__word">{{business.name}}</h1><!-- @endif --><!-- @endif -->
                 <!-- @if !logo --><!-- @if !showWordmark --><h1 class="sr-only">{{business.name}}</h1><!-- @endif --><!-- @endif -->
                 <p class="hero-tagline pf-hero__tag">{{business.tagline}}</p>
-                <a href="#booking" class="hero-cta pf-hero__cta"><span>{{hero.ctaLabel}}</span></a>
+                <a href="#contact" class="hero-cta pf-hero__cta"><span>{{hero.ctaLabel}}</span></a>
             </div>
         </div>
         <button class="scroll-hint pf-hint" type="button" aria-label="{{labels.scroll}}">
@@ -99,7 +99,7 @@
 
     <main class="pf-main">
         <!-- Work gallery first — editorial magazine crops -->
-        <section class="pf-gal fade-in-section" aria-labelledby="gallery-heading">
+        <section class="pf-gal fade-in-section" id="gallery" aria-labelledby="gallery-heading">
             <div class="pf-shell pf-gal__head">
                 <!-- @if galleryTitle -->
                 <p class="pf-kicker">{{labels.galleryEyebrow}}</p>
@@ -125,7 +125,7 @@
             <!-- @end -->
         </section>
 
-        <section class="pf-about fade-in-section" aria-labelledby="about-heading">
+        <section class="pf-about fade-in-section" id="about" aria-labelledby="about-heading">
             <div class="pf-shell pf-about__grid">
                 <div class="pf-about__quote">
                     <p class="pf-kicker">{{business.tagline}}</p>
@@ -143,7 +143,7 @@
         </section>
 
         <!-- @if services -->
-        <section class="pf-svc fade-in-section" aria-labelledby="services-heading">
+        <section class="pf-svc fade-in-section" id="services" aria-labelledby="services-heading">
             <div class="pf-shell">
                 <p class="pf-kicker pf-kicker--center">{{labels.servicesEyebrow}}</p>
                 <h2 class="pf-display pf-display--center" id="services-heading">{{servicesTitle}}</h2>
@@ -174,7 +174,7 @@
         <!-- @endif -->
 
         <!-- @if schedule.rows -->
-        <section class="pf-sched fade-in-section" aria-labelledby="schedule-heading">
+        <section class="pf-sched fade-in-section" id="schedule" aria-labelledby="schedule-heading">
             <div class="pf-shell">
                 <p class="pf-kicker pf-kicker--center">{{labels.scheduleEyebrow}}</p>
                 <h2 class="pf-display pf-display--center" id="schedule-heading">{{schedule.title}}</h2>
@@ -191,7 +191,7 @@
         <!-- @endif -->
 
         <!-- @if team.members -->
-        <section class="pf-team fade-in-section" aria-labelledby="team-heading">
+        <section class="pf-team fade-in-section" id="team" aria-labelledby="team-heading">
             <div class="pf-shell">
                 <p class="pf-kicker pf-kicker--center">{{labels.teamEyebrow}}</p>
                 <h2 class="pf-display pf-display--center" id="team-heading">{{team.title}}</h2>
@@ -212,7 +212,7 @@
         <!-- @endif -->
 
         <!-- @if instagram.handle -->
-        <section class="pf-ig fade-in-section" aria-labelledby="insta-heading">
+        <section class="pf-ig fade-in-section" id="instagram" aria-labelledby="insta-heading">
             <div class="pf-shell pf-ig__head">
                 <div>
                     <h2 class="pf-display" id="insta-heading">{{labels.instaTitle}}</h2>
@@ -239,7 +239,7 @@
         </section>
         <!-- @endif -->
 
-        <section class="pf-appt fade-in-section" aria-labelledby="booking-heading" id="booking">
+        <section class="pf-appt fade-in-section" aria-labelledby="booking-heading" id="contact">
             <div class="pf-shell pf-appt__grid">
                 <div>
                     <p class="pf-kicker">{{labels.bookingEyebrow}}</p>

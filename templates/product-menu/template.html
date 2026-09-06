@@ -115,8 +115,11 @@
         </button>
     </header>
 
+    <!-- WAVE-SECTIONS: "contact" below is its own top-level section (was a
+         <div> stacked in "about") so it's independently reorderable; see
+         .pm-contact-sec in styles.css and FINDINGS. -->
     <main class="main-content pm-shell">
-        <section class="pm-split fade-in-section" aria-labelledby="about-heading">
+        <section class="pm-split fade-in-section" id="about" aria-labelledby="about-heading">
             <aside class="pm-rail" id="pm-menu-rail" aria-label="{{servicesTitle}}">
                 <p class="pm-rail__label">{{servicesTitle}}</p>
                 <!-- @if services -->
@@ -180,35 +183,37 @@
                     </div>
                     <!-- @endif -->
                 </div>
+            </div>
+        </section>
 
-                <div class="pm-contact" id="contact-card">
-                    <h2 class="pm-title pm-title--sm">{{contact.title}}</h2>
-                    <p class="pm-prose">{{contact.intro}}</p>
-                    <div class="pm-contact__list">
-                        <!-- @if contact.phone -->
-                        <a href="tel:{{contact.phone}}" class="contact-item pm-link"><span>{{contact.phoneDisplay}}</span></a>
-                        <!-- @endif -->
-                        <!-- @if contact.whatsapp -->
-                        <a href="{{contact.waHref}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{labels.whatsapp}}</span></a>
-                        <!-- @endif -->
-                        <!-- @if contact.instagram.url -->
-                        <a href="{{contact.instagram.url}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{contact.instagram.label}}</span></a>
-                        <!-- @endif -->
-                        <!-- @if contact.facebook.url -->
-                        <a href="{{contact.facebook.url}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{contact.facebook.label}}</span></a>
-                        <!-- @endif -->
-                        <!-- @if contact.addressHref -->
-                        <a href="{{contact.addressHref}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{& contact.address}}</span></a>
-                        <!-- @endif -->
-                        <!-- @if contact.addressNoHref -->
-                        <span class="contact-item pm-link pm-link--static"><span>{{& contact.address}}</span></span>
-                        <!-- @endif -->
-                    </div>
+        <section class="pm-contact-sec fade-in-section" id="contact" aria-labelledby="contact-heading">
+            <div class="pm-contact" id="contact-card">
+                <h2 class="pm-title pm-title--sm" id="contact-heading">{{contact.title}}</h2>
+                <p class="pm-prose">{{contact.intro}}</p>
+                <div class="pm-contact__list">
+                    <!-- @if contact.phone -->
+                    <a href="tel:{{contact.phone}}" class="contact-item pm-link"><span>{{contact.phoneDisplay}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if contact.whatsapp -->
+                    <a href="{{contact.waHref}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{labels.whatsapp}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if contact.instagram.url -->
+                    <a href="{{contact.instagram.url}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{contact.instagram.label}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if contact.facebook.url -->
+                    <a href="{{contact.facebook.url}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{contact.facebook.label}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if contact.addressHref -->
+                    <a href="{{contact.addressHref}}" class="contact-item pm-link" target="_blank" rel="noopener"><span>{{& contact.address}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if contact.addressNoHref -->
+                    <span class="contact-item pm-link pm-link--static"><span>{{& contact.address}}</span></span>
+                    <!-- @endif -->
                 </div>
             </div>
         </section>
 
-        <section class="pm-gallery fade-in-section" aria-labelledby="gallery-heading">
+        <section class="pm-gallery fade-in-section" id="gallery" aria-labelledby="gallery-heading">
             <!-- @if galleryTitle -->
             <h2 class="pm-title pm-title--center" id="gallery-heading">{{galleryTitle}}</h2>
             <!-- @endif -->
@@ -230,7 +235,7 @@
         </section>
 
         <!-- @if instagram.handle -->
-        <section class="pm-social fade-in-section<!-- @if instagram.embedUrl --> pm-social--embed<!-- @endif -->" aria-labelledby="instagram-heading">
+        <section id="instagram" class="pm-social fade-in-section<!-- @if instagram.embedUrl --> pm-social--embed<!-- @endif -->" aria-labelledby="instagram-heading">
             <div class="pm-social__head">
                 <div>
                     <h2 id="instagram-heading">{{labels.instaTitle}}</h2>

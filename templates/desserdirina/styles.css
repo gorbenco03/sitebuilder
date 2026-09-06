@@ -508,19 +508,26 @@ body {
     box-shadow: 0 -20px 50px rgba(45, 45, 45, 0.06);
 }
 
+/* WAVE-SECTIONS: the about/contact two-card layout used to live on a nested
+   ".about-section" grid, with ".gallery-section" as a plain sibling below it.
+   The page-sections feature needs "about" and "contact" to be independent
+   top-level <section id="…"> elements (see template.html), and reorderSections()
+   in build.js refuses to reorder anything in a template if it finds
+   non-whitespace content (like a wrapping <div>'s own closing tag) between
+   two top-level sections. So the grid now lives directly on .content-wrapper
+   itself — about/contact/gallery are true DOM siblings with nothing but
+   whitespace between them — and .gallery-section spans both columns to sit
+   full-width in its own row underneath. (align-items:stretch still makes
+   the about/contact cards share the tallest height, any language.) */
 .content-wrapper {
     max-width: 1200px;
     margin: 0 auto;
     padding: var(--space-section) 2rem;
-}
-
-/* About Section */
-.about-section {
     display: grid;
     grid-template-columns: 1.05fr 0.95fr;
-    gap: 1.75rem;
-    margin-bottom: var(--space-section);
-    align-items: stretch;   /* both cards share the tallest height, any language */
+    column-gap: 1.75rem;
+    row-gap: var(--space-section);
+    align-items: stretch;
 }
 
 .about-card,
@@ -974,6 +981,10 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
    GALLERY CATEGORIES
    ============================================================ */
 .gallery-section {
+    /* WAVE-SECTIONS: now a grid sibling of #about/#contact on .content-wrapper
+       (see that rule) instead of a plain block sibling of ".about-section" —
+       span both columns so it still renders full-row, underneath. */
+    grid-column: 1 / -1;
     margin-bottom: var(--space-section);
     text-align: center;
     /* break out a bit wider than the content wrapper (symmetrically centered) so the
@@ -1657,7 +1668,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
    RESPONSIVE
    ============================================================ */
 @media (max-width: 992px) {
-    .about-section {
+    .content-wrapper {
         grid-template-columns: 1fr;
     }
 

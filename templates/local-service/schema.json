@@ -598,5 +598,42 @@
         }
       ]
     }
+  ],
+  "pageSections": [
+    {
+      "id": "about",
+      "label": "Despre noi și date de contact",
+      "removable": false
+    },
+    {
+      "id": "services",
+      "label": "Servicii",
+      "removable": true
+    },
+    {
+      "id": "steps",
+      "label": "Cum lucrăm",
+      "removable": true
+    },
+    {
+      "id": "trust",
+      "label": "De ce noi",
+      "removable": true
+    },
+    {
+      "id": "gallery",
+      "label": "Galerie lucrări",
+      "removable": true
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram",
+      "removable": true
+    },
+    {
+      "id": "contact",
+      "label": "Bandă finală de contact",
+      "removable": false
+    }
   ]
 }

@@ -390,5 +390,27 @@
         }
       ]
     }
+  ],
+  "pageSections": [
+    {
+      "id": "about",
+      "label": "Despre noi",
+      "removable": false
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "removable": false
+    },
+    {
+      "id": "gallery",
+      "label": "Galerie",
+      "removable": true
+    },
+    {
+      "id": "instagram",
+      "label": "Instagram",
+      "removable": true
+    }
   ]
 }
