@@ -12,6 +12,28 @@ Not exhaustive — the full history is `git log main`. This file covers
 user-visible or architecturally significant changes, the way the audit
 expected a changelog to.
 
+## 2026-09-07 — Native calendar on statically-exported sites
+
+`b725a10` (`fix: the native calendar could never load on a statically-exported
+site`).
+
+`resolveNativeApiBase()` read only `CALENDAR_PUBLIC_BASE_URL` /
+`PUBLIC_BASE_URL`, neither of which production sets, so every static publish
+carried `data-api-base=""`. Cloudflare Pages answers the widget bundle, its
+stylesheet and the booking API with the site's own `index.html` (200
+`text/html`), so the calendar never booted and nothing errored — confirmed live
+on a real customer site. `PUBLIC_URL` joins the chain (after the two more
+specific names), and an unresolved origin now logs
+`calendar.native_api_base.unconfigured` at error level. Same root cause as the
+`http://127.0.0.1:0` manage links, which were fixed at one call site only.
+
+Sites already published must be republished — the origin is baked into the HTML
+at publish time.
+
+New oracles: `wave13-native-calendar-static-export` and
+`wave13-native-calendar-cross-origin-e2e` (publishes a real site, serves it from
+a second origin with Pages' index.html fallback, drives Chromium against it).
+
 ## 2026-09-07 — Dashboard card layout + shell cache-busting
 
 `aeb088e` (`fix: the dashboard card starved its own name column, and deploys
