@@ -198,9 +198,36 @@
     var brandEl = $('[data-hod-brand]', root);
     if (brandEl) brandEl.textContent = cfg.brand || 'Calendar';
 
+    /* A confirmation should confirm and then get out of the way.
+     *
+     * "Programul săptămânal a fost salvat." stayed on screen until something
+     * else replaced it, so an owner who saved once in the morning still had the
+     * banner sitting above their tabs an hour later — at which point it says
+     * nothing about the present and only crowds the page.
+     *
+     * Errors do NOT auto-dismiss. A message telling someone their save failed
+     * is the one they most need time to read, and it is the one most likely to
+     * be missed by a reader who is slower than a timer. It stays until the next
+     * action replaces it. */
+    var msgTimer = null;
+    var MSG_DISMISS_MS = 6000;
+
     function setMsg(text, kind) {
+      if (msgTimer) { clearTimeout(msgTimer); msgTimer = null; }
       state.msg = text ? { text: text, kind: kind || 'ok' } : null;
       paintFlash();
+      if (state.msg && state.msg.kind !== 'err') {
+        var mine = state.msg;
+        msgTimer = setTimeout(function () {
+          msgTimer = null;
+          // Only clear the message this timer was started for — a later one
+          // must not be wiped early by an earlier timer still in flight.
+          if (state.msg === mine) {
+            state.msg = null;
+            paintFlash();
+          }
+        }, MSG_DISMISS_MS);
+      }
     }
 
     function paintFlash() {

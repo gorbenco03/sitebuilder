@@ -334,6 +334,10 @@ body.hod {
   font-size: 14px;
   line-height: 1.45;
 }
+/* The flash sits directly above the tab row, and had no space beneath it — the
+   confirmation and the tabs touched. On the wrapper's child rather than the
+   wrapper itself, so an empty flash contributes no gap at all. */
+.hod-msg { margin-bottom: 14px; }
 .hod-msg--err {
   border-style: solid;
   border-color: #f0c4c4;
