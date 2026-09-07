@@ -61,8 +61,30 @@ sqlite3 "$DATA_DIR/calendar-native.sqlite" ".backup '/backup/calendar-native-$(d
 
 This produces a single self-contained, consistent file — no separate `-wal`/
 `-shm` to manage — and does not block the running application beyond a brief
-lock during the copy. This repo does not currently ship a wrapper script for
-this; the commands above are the whole procedure.
+lock during the copy.
+
+**You do not have to run these by hand.** The repository ships two CLIs that do
+exactly this, and they are kept in the production Docker image on purpose (see
+`.dockerignore`), so they are available inside a running container:
+
+```bash
+# Snapshot every known database, prune to a retention count.
+node --experimental-sqlite scripts/ops-backup.js [--data-dir DIR] [--backup-dir DIR] [--keep N]
+
+# Restore one, from the latest snapshot or a named file. Refuses to act
+# without --yes, and takes a pre-restore snapshot of the live file first.
+node --experimental-sqlite scripts/ops-restore.js --name registry --yes
+node --experimental-sqlite scripts/ops-restore.js --name calendar-native --snapshot /data/backups/... --yes
+```
+
+`ops-backup.js` runs an integrity check on the source before copying and
+reports each database as backed up or legitimately absent; it exits non-zero
+only if an attempt actually threw. Defaults follow the app's own environment:
+`DATA_DIR`, `BACKUP_DIR` (default `<data-dir>/backups`), `BACKUP_RETENTION`
+(default 14).
+
+Use the raw `sqlite3` commands above when you want a one-off snapshot to a
+path of your choosing, or when the Node runtime is unavailable.
 
 ### 2b. Host/provider volume snapshot
 
@@ -160,6 +182,13 @@ does not yet cross-reference — see `HANDOFF-docs.md`):
   payments; this repo's `.ledger.jsonl` is an audit trail, not a replacement.
 - Backing up anything outside `DATA_DIR` — the application code lives in git
   (this repo) and is not part of this runbook.
-- An automated backup script or cron job — none exists in this repo yet. If
-  one is built, it belongs under `scripts/` and this file should be updated
-  to point at it instead of the manual `sqlite3 .backup` commands above.
+- A backup *schedule*. `scripts/ops-backup.js` exists and is documented above,
+  but nothing in this repository runs it on a timer — that is a Railway cron
+  job / scheduled task you have to create, pointing at the command in §2a. The
+  script is built for it (retention pruning, non-zero exit on failure); it is
+  the scheduling that is not set up.
+
+  This bullet previously said no such script existed at all, which was wrong
+  from the day `scripts/ops-backup.js` landed and would have cost an operator
+  time at the worst possible moment. If the scheduling is ever configured,
+  record where, here.

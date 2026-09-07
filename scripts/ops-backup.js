@@ -16,8 +16,10 @@
  * legitimately absent; 1 if any backup attempt threw.
  *
  * Intended use: a Railway cron job / scheduled task running this on an
- * interval (see HANDOFF-ops.md "Backup schedule"), or a manual run before a
- * risky operation.
+ * interval, or a manual run before a risky operation. The operator-facing
+ * procedure is BACKUP-RESTORE.md §2a. (This used to point at HANDOFF-ops.md,
+ * which is no longer in the repository — a dangling reference on the one file
+ * an operator reaches for during an incident.)
  */
 
 const { backupAll, resolveDataDir, defaultBackupDir, DEFAULT_RETENTION } = require('./ops-lib');

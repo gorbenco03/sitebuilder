@@ -276,8 +276,10 @@ failure above.
 - **Renewal is automated via Stripe subscription schedule.** `bot/pricing.js` defines
   **29**/year; after the trial the first-year **99** phase rolls into the renewal Price.
   Owner still configures live Product/Prices and watches failed-payment dunning in Stripe.
-- **Custom domains are concierge**, not self-service. Fine for launch, but it is manual
-  work per customer — price it in.
+- **Custom domains are self-service.** `bot/domains.js` implements the connect /
+  verify / disconnect flow and the editor exposes it (`#domain-connect-form`).
+  This line used to say the opposite — "concierge, not self-service... it is
+  manual" — a launch document contradicting the shipped product.
 - **Cancel during trial unpublishes** in product. Refunds and post-charge cancellations
   are owner-owned via **Stripe Customer Portal** / Dashboard — write your refund policy
   before the first sale; do not invent VAT/legal text in this repo.
