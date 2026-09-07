@@ -132,3 +132,82 @@ Merită scris, fiindcă tiparele se repetă:
    în desfășurare, o dată eșantionând colțul rotunjit al unei pastile, o dată
    ascunzând elementul (și odată cu el umbra lui) ca să vadă ce e în spate.
    O metodă de măsurare are ipoteze, iar ipotezele se strică odată cu subiectul.
+
+---
+
+# Tura a doua — dimineața de 2026-09-07
+
+Cererea: „mai adaugă ceva, mai îmbunătățește, mai upgrade ceva."
+
+## Golul cel mai mare: produsul nu se măsura pe sine
+
+Fiecare oracol de accesibilitate din depozit măsura **site-urile generate**.
+Niciunul nu măsura **editorul** — produsul pe care stă clientul. Condus prin
+patru ecrane, la două viewport-uri: **98 de eșecuri**.
+
+| | | |
+|---|---|---|
+| pastila listei de verificare | **3,07:1** la 12px | pe fiecare ecran al editorului |
+| numerele „01–04" | 3,67:1 la 11px | pagina de start |
+| „Obligatorie" | 3,67:1 la 11px | panoul de secțiuni |
+| linkuri legale | 101×20, 50×20 | sub minimul AA de 24px |
+| butonul de consimțământ | 35px, verde WhatsApp | |
+
+Ultimele două sunt **exact defectele pe care produsul le repară pentru clienți**
+— podeaua de 24px de acum luni, butonul de aseară — purtate încă pe propria ușă
+din față. Cauza tokenului: `--text-light` la 3,27:1 pe cel mai închis fundal pe
+care stă, folosit pentru text de 11–12px.
+
+Și de la tastatură: **sertarul era modal pentru mouse și poros pentru tastatură**
+— 14 din 30 de apăsări Tab treceau prin overlay pe controale invizibile și
+neapăsabile. Plus zero linkuri de sărire (WCAG 2.4.1, nivel A).
+
+## Ce a scos auditul celor 26 de ramuri neintegrate
+
+22 sigure de șters, 4 conțineau ceva, **0 neclare**. Cele patru, toate reparate:
+
+1. **Site-urile publicate plecau fără niciun antet de cache.** Un `no-store`
+   scris în septembrie s-a pierdut într-o rescriere de performanță. Chromium nu
+   păstrează o pagină fără informație de prospețime — dar asta e alegerea
+   browserului, nu a produsului; orice CDN sau proxy din față poate decide
+   altfel. Acum `no-cache` + `ETag`: revalidare la 304 cu zero octeți.
+2. **Canonical către un domeniu inexistent.** O instalare self-hosted fără
+   `PUBLIC_URL` publica fiecare site cu `pending-deploy.hidook.invalid` în
+   canonical, og:url, robots și sitemap — permanent, fără auto-vindecare.
+   Placeholder-ul e o promisiune că vine o origine reală; deploy-ul izolat n-o
+   ține niciodată, iar corecția rescria directorul de build **după** ce copia
+   servită fusese făcută.
+3. **Manualul de restaurare nega existența uneltelor de restaurare.** Spunea
+   textual „niciunul nu există încă aici" despre `scripts/ops-backup.js`, care e
+   păstrat intenționat în imaginea de producție. Ce citește un operator în
+   mijlocul unui incident.
+4. **Sitemap-ul unui site re-exportat lista paginile rădăcinii gazdei**, nu pe
+   ale lui — pe o instalare partajată, paginile altui client.
+
+Plus `GO-LIVE.md`, care spunea „domeniile personalizate sunt concierge, nu
+self-service" în timp ce `bot/domains.js` implementează fluxul complet: **o
+decizie de preț sprijinită pe un fapt care încetase să fie adevărat.**
+
+## Restul
+
+- **Tipografie**, măsurată pe toate cele cinci: trei linii schimbate. Un bloc de
+  text fără limită de lățime la 93 de caractere pe rând, două `line-height` în
+  afara intervalului. Trei șabloane — rezultat negativ, cu tabelul care-l
+  susține.
+- **Date structurate**: professionals nu avea niciunul; rezerva de la publicare
+  eticheta orice afacere ca `LocalBusiness` generic. Acum tipul urmează șablonul.
+- **Lista de verificare** spune acum **care** câmp lipsește, cu eticheta reală
+  din schemă, și te duce la el.
+
+## Ce am greșit de data asta
+
+- Proba mea de accesibilitate raporta șapte `<textarea>` fără nume accesibil.
+  Erau corect etichetate cu `<label for>` — verificarea se uita doar la ARIA.
+  **A patra oară în două sesiuni** când ipotezele măsurătorii sunt greșite, nu
+  subiectul ei. Oracolul întreabă acum browserul (`el.labels`).
+- Testul meu de tastatură pretindea ca linkul de sărire să fie prima oprire Tab
+  la o vizită nouă. Nu e, și nici n-ar trebui: bannerul de consimțământ e un
+  dialog și **corect** ia focusul.
+- Am pornit trei probe de eroare care „au găsit" defecte inexistente (salvare
+  care minte, slug nevalidat) — toate artefacte ale probei. Verificarea a
+  costat mai puțin decât ar fi costat o reparație inventată.
