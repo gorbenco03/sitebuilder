@@ -1182,9 +1182,46 @@ function serveLive(req, res, urlPath) {
     // emitted here — deliberately not ETag/Last-Modified, to keep /live/'s
     // response shape unchanged beyond adding compression.
     const cached = getCachedStatic(realFile, stat);
+
+    // A published site went out with NO caching directives at all: no
+    // Cache-Control, no ETag, no Last-Modified. Chromium happens not to store
+    // a response like that, so a republish reaches a returning visitor — but
+    // that is the browser's choice, not ours, and anything sitting in front of
+    // this origin (a CDN, a corporate proxy, Cloudflare with "cache
+    // everything") is free to decide otherwise and serve a customer's old site
+    // indefinitely, with nothing in the response to revalidate against.
+    //
+    // no-cache, not no-store: the copy may be kept, it just may never be reused
+    // without asking. With the ETag below that question costs a 304 and no
+    // body, so repeat visits get cheaper rather than more expensive — which is
+    // what no-store would have made them. Applied to assets as well as HTML on
+    // purpose: photo and stylesheet FILENAMES are stable across republishes, so
+    // a max-age on them would leave a new page wearing an old stylesheet.
+    const cacheControl = 'no-cache';
+    const inm = req.headers['if-none-match'];
+    if (inm) {
+        const tags = String(inm).split(',').map((t) => t.trim());
+        if (tags.includes(cached.etag) || tags.includes('W/' + cached.etag)) {
+            res.writeHead(304, {
+                'ETag': cached.etag,
+                'Cache-Control': cacheControl,
+                'Last-Modified': cached.lastModified,
+            });
+            res.end();
+            return;
+        }
+    }
+
     const useGzip = COMPRESSIBLE_MIME_RE.test(mime) && cached.buf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
     const bodyBuf = useGzip ? getGzipBuf(cached) : cached.buf;
-    const headers = { 'Content-Type': mime, 'Content-Length': bodyBuf.length, 'Vary': 'Accept-Encoding' };
+    const headers = {
+        'Content-Type': mime,
+        'Content-Length': bodyBuf.length,
+        'Vary': 'Accept-Encoding',
+        'Cache-Control': cacheControl,
+        'ETag': cached.etag,
+        'Last-Modified': cached.lastModified,
+    };
     if (useGzip) headers['Content-Encoding'] = 'gzip';
     if (req.method === 'HEAD') {
         res.writeHead(200, headers);
