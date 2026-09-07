@@ -143,8 +143,9 @@ verbatim către clienți).
 
 ## Dovezi (se completează pe măsură ce rulez)
 
-- Oracle Playwright RED→GREEN: `bot/test/delete-site-oracle.mjs`
-- Teste unitare noi: `bot/test/delete-site.test.js`
-- `node --experimental-sqlite --test bot/test/*.test.js` — rezultat: TBD
+- Teste noi (`bot/test/delete-site.test.js`, 9 cazuri): auth necesară, 403 pe site-ul altui user, 422 CONFIRM_MISMATCH, 409 ACTIVE_SUBSCRIPTION, 409 FUTURE_BOOKINGS (dar TRECUT nu blochează), fluxul fericit complet (registry + versiuni + dosar publicat + fișier appointments + rânduri calendar-native — toate șterse), idempotență (id inexistent și dublă ștergere) — toate 9 PASS.
+  RED confirmat contra `main` (5f14883): am rulat exact același fișier de test în worktree-ul de pe `main` — 4 teste eșuează cu 404 (ruta DELETE nu exista), GREEN pe `feat/delete-site`.
+- Oracle Playwright RED→GREEN, care conduce dashboard-ul real: `bot/test/delete-site-oracle.mjs` — TBD
+- `node --experimental-sqlite --test bot/test/*.test.js` — **448 teste, 447 trecute, 1 eșuat (`flow3-legal-export.test.js`, cunoscut, specific Brave, documentat dinainte). Nimic altceva nu a picat.**
 - `node --experimental-sqlite bot/test/fullpass-63230d2.mjs` — rezultat: TBD
 - Screenshot-uri 1440x900 și 390x844 ale fluxului de confirmare — TBD
