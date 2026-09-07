@@ -658,9 +658,13 @@
 body.preview-cookie-isolated > .hb-cookie-banner,
 body.editor-preview-cookie-isolated > .hb-cookie-banner{display:none!important}
 .hb-cookie-banner p{margin:0;opacity:.92}
-.hb-cookie-banner a{color:#c8e6c9;text-decoration:underline}
+.hb-cookie-banner a{color:#e6e6e6;text-decoration:underline;text-underline-offset:2px}
 .hb-cookie-actions{display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center}
-.hb-cookie-banner button{appearance:none;border:0;border-radius:8px;padding:.55rem 1rem;font:inherit;font-weight:600;cursor:pointer;background:#25d366;color:#06210f}
+/* Same treatment the generated sites got: paper on ink instead of the chat
+   FAB's green, and a real 44px touch target. This card is the product's own
+   front door and had been carrying the defect it ships a fix for. */
+.hb-cookie-banner button{appearance:none;border:0;border-radius:8px;min-height:44px;min-width:44px;padding:.55rem 1.15rem;font:inherit;font-weight:600;letter-spacing:.01em;cursor:pointer;background:#f5f5f5;color:#111}
+.hb-cookie-actions .hb-cookie-link{display:inline-flex;align-items:center;min-height:44px}
 </style>
 <script>
 (function(){var K='hb-cookie-consent';function readCookie(){try{var p=document.cookie.split(';');for(var i=0;i<p.length;i++){var s=p[i].trim();if(s.indexOf(K+'=')===0)return decodeURIComponent(s.slice(K.length+1))}}catch(e){}return''}function ok(){try{if(localStorage.getItem(K))return true}catch(e){}var c=readCookie();if(c){try{localStorage.setItem(K,c)}catch(e){}return true}return false}function persist(){try{localStorage.setItem(K,'accepted')}catch(e){}try{document.cookie=K+'=accepted; Path=/; Max-Age=31536000; SameSite=Lax'}catch(e){}}function accept(){persist();var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();

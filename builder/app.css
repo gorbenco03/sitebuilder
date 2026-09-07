@@ -16,7 +16,13 @@
   --border-focus:  #1E3A32;
   --text:          #14120F;
   --text-muted:    #5C564E;
-  --text-light:    #8A8378;
+  /* Muted, not unreadable. This was #8A8378, which measures 3.75:1 on white,
+     3.67:1 on --surface and 3.27:1 on --bg — under the 4.5:1 AA floor on all
+     three, and it is used for 11-12px text (the numbered steps on the landing
+     page, the "Obligatorie" tag in the sections panel). Text a reader cannot
+     resolve is not muted, it is decorative. Chosen against the DARKEST of the
+     three backgrounds it sits on: 5.48 / 5.36 / 4.78. */
+  --text-light:    #6E695A;
   --forest:        #1E3A32;
   --ink:           #14120F;
   --paper:         #F3EFE8;
@@ -24,7 +30,10 @@
   --error-bg:      #FEF2F2;
   --success:       #16A34A;
   --success-bg:    #DCFCE7;
-  --warning:       #D97706;
+  /* #D97706 on --warning-bg is 3.07:1, and this pair carries the checklist
+     pill — the one element that tells an owner whether their site is ready to
+     publish, at 12px, on every editor screen. 4.84:1 now. */
+  --warning:       #B45309;
   --warning-bg:    #FFFBEB;
   --radius:        8px;
   --radius-sm:     2px;
@@ -1238,6 +1247,18 @@ body.details-drawer-open .editor-tpl-name {
 .landing-footer strong { color: var(--text); font-weight: 600; }
 .landing-footer a { color: var(--text-muted); }
 .landing-footer a:hover { color: var(--accent); }
+/* The generated sites got a 24px floor on their legal links months ago, in
+   bot/site-legal.js. The SaaS app's own footer never did: measured 101x20,
+   50x20, 65x20 — under the WCAG 2.5.8 (Level AA) 24x24 minimum, on the product
+   that ships that rule to everybody else. */
+.landing-footer-legal a,
+.landing-footer a[href*="terms"],
+.landing-footer a[href*="privacy"],
+.landing-footer a[href*="cookies"] {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+}
 .landing-footer-legal {
   flex-basis: 100%;
   display: flex;
