@@ -12,6 +12,26 @@ Not exhaustive — the full history is `git log main`. This file covers
 user-visible or architecturally significant changes, the way the audit
 expected a changelog to.
 
+## 2026-09-07 — Dashboard card layout + shell cache-busting
+
+`aeb088e` (`fix: the dashboard card starved its own name column, and deploys
+never reached the browser`).
+
+Two defects that together hid a shipped feature. `.site-card-info` was
+`flex: 1` against `.site-card-actions` at `flex-shrink: 0`, so a card with the
+full action set left the name/URL column 101px at 1440 and 41px at 700 — and
+`.site-card-name` is `overflow: visible`, so the project name painted across
+the button row. Separately, the CDN rewrites the origin's
+`max-age=0, must-revalidate` on `/app/*.js` to `max-age=14400`, so for four
+hours after a deploy an owner's browser served the previous build from disk.
+Both shells (`/app/` and `/calendar-native/owner/`) now stamp every same-origin
+`.js`/`.css` reference — attributes and inline-script string literals — with
+that file's size+mtime, and fold those signatures into the shell ETag.
+Published customer sites are not stamped.
+
+New oracles: `wave13-site-card-layout` (measures rendered boxes and the name's
+actual ink in Chromium, not CSS declarations) and `wave13-shell-cache-busting`.
+
 ## 2026-09-06 — Storage: SQLite registry (round 3)
 
 `04e65f0` (merge), `317b631` (`feat(registry): SQLite-backed storage behind
