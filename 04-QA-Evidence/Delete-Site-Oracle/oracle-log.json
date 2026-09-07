@@ -1,0 +1,87 @@
+{
+  "oracle": "delete-site-oracle",
+  "startedAt": "2026-09-07T07:11:18.515Z",
+  "entries": [
+    {
+      "index": 0,
+      "name": "site-published-success",
+      "file": "01-site-published-success.png",
+      "timestamp": "2026-09-07T07:11:21.893Z"
+    },
+    {
+      "index": 1,
+      "name": "dashboard-with-site",
+      "file": "02-dashboard-with-site.png",
+      "timestamp": "2026-09-07T07:11:22.544Z"
+    },
+    {
+      "index": 2,
+      "name": "delete-modal-active-subscription-before-refusal",
+      "file": "03-delete-modal-active-subscription-before-refusal.png",
+      "timestamp": "2026-09-07T07:11:22.744Z"
+    },
+    {
+      "index": 3,
+      "name": "delete-modal-active-subscription-refused",
+      "file": "04-delete-modal-active-subscription-refused.png",
+      "timestamp": "2026-09-07T07:11:22.828Z"
+    },
+    {
+      "index": 4,
+      "name": "delete-modal-open",
+      "file": "05-delete-modal-open.png",
+      "timestamp": "2026-09-07T07:11:23.906Z"
+    },
+    {
+      "index": 5,
+      "name": "delete-modal-wrong-name",
+      "file": "06-delete-modal-wrong-name.png",
+      "timestamp": "2026-09-07T07:11:24.092Z"
+    },
+    {
+      "index": 6,
+      "name": "delete-modal-correct-name",
+      "file": "07-delete-modal-correct-name.png",
+      "timestamp": "2026-09-07T07:11:24.286Z"
+    },
+    {
+      "index": 7,
+      "name": "after-delete-dashboard",
+      "file": "08-after-delete-dashboard.png",
+      "timestamp": "2026-09-07T07:11:24.882Z"
+    },
+    {
+      "index": 8,
+      "name": "mobile-dashboard-with-site",
+      "file": "09-mobile-dashboard-with-site.png",
+      "timestamp": "2026-09-07T07:11:29.095Z"
+    },
+    {
+      "index": 9,
+      "name": "mobile-delete-modal-open",
+      "file": "10-mobile-delete-modal-open.png",
+      "timestamp": "2026-09-07T07:11:29.142Z"
+    },
+    {
+      "index": 10,
+      "name": "mobile-delete-modal-wrong-name",
+      "file": "11-mobile-delete-modal-wrong-name.png",
+      "timestamp": "2026-09-07T07:11:29.318Z"
+    },
+    {
+      "index": 11,
+      "name": "mobile-delete-modal-correct-name",
+      "file": "12-mobile-delete-modal-correct-name.png",
+      "timestamp": "2026-09-07T07:11:29.503Z"
+    },
+    {
+      "index": 12,
+      "name": "mobile-after-delete-dashboard",
+      "file": "13-mobile-after-delete-dashboard.png",
+      "timestamp": "2026-09-07T07:11:29.975Z"
+    }
+  ],
+  "defects": [],
+  "finishedAt": "2026-09-07T07:11:29.996Z",
+  "result": "PASS"
+}
