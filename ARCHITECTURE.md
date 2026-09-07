@@ -322,6 +322,16 @@ Set in production: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, the six
   used to read only these two and fell back to `http://127.0.0.1:0`, so every
   cancel/reschedule link mailed to a visitor was dead. `PUBLIC_URL` is now the
   fallback, which production does set.
+
+  The native booking widget's own origin (`appointment.nativeApiBase`, resolved
+  in `bot/calendar-native/cutover.js`) had the identical bug and was not covered
+  by that fix: it resolved to `''`, so a site exported to Cloudflare Pages asked
+  its own static host for the widget bundle and the booking API. Pages answers
+  those with the site's `index.html` at 200 `text/html`, so the widget never
+  booted and nothing errored — the visitor saw a booking section with no way to
+  book. `PUBLIC_URL` is now in that chain too, and switching the calendar on
+  with no origin configured logs `calendar.native_api_base.unconfigured` at
+  error level instead of publishing quietly.
 - `STRIPE_AUTOMATIC_TAX` — VAT collection is therefore off, which is the
   deliberate default until Stripe Tax is configured in the Dashboard.
 - `NODE_OPTIONS` — not needed as a service variable; the Dockerfile sets

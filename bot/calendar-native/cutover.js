@@ -22,8 +22,20 @@ const TENANT_RE = /^[a-zA-Z0-9_-]{2,80}$/;
  * site is a static export (Cloudflare/Vercel/Netlify) that is not same-origin
  * with the bot host. Empty string = same-origin relative URLs (local/bot host).
  *
- * Env (build/publish time): CALENDAR_PUBLIC_BASE_URL || PUBLIC_BASE_URL
+ * Env (build/publish time): CALENDAR_PUBLIC_BASE_URL || PUBLIC_BASE_URL || PUBLIC_URL
  * Optional config override: appointment.nativeApiBase (absolute http(s) origin).
+ *
+ * PUBLIC_URL is in that list because neither of the other two is set anywhere in
+ * this repo — not in the Dockerfile, railway.json, CI or GO-LIVE.md — while the
+ * rest of the application configures itself from PUBLIC_URL. Without it a
+ * production publish resolved to '' and the exported site asked its own static
+ * host for the widget bundle and the booking API. Cloudflare Pages answers those
+ * with the site's index.html (200, text/html), so the script tag is ignored and
+ * the widget never boots: a booking section with a heading, an intro, a privacy
+ * notice and no way to book, with nothing logged anywhere. This is the same
+ * defect, from the same missing variable, that pointed every visitor's cancel
+ * link at http://127.0.0.1:0 — see email/index.js#manageBaseUrl, where it was
+ * fixed and where the fix stopped.
  *
  * @param {object} [appt]
  * @returns {string} origin without trailing slash, or ''
@@ -32,7 +44,10 @@ function resolveNativeApiBase(appt) {
     const fromCfg =
         appt && typeof appt.nativeApiBase === 'string' ? appt.nativeApiBase.trim() : '';
     const fromEnv = String(
-        process.env.CALENDAR_PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || ''
+        process.env.CALENDAR_PUBLIC_BASE_URL ||
+        process.env.PUBLIC_BASE_URL ||
+        process.env.PUBLIC_URL ||
+        ''
     ).trim();
     const raw = fromCfg || fromEnv || '';
     if (!raw) return '';
@@ -123,6 +138,24 @@ function applyCutoverToConfig(config, site) {
     cfg.appointment.nativeSiteId = siteId;
     // Static export hosts need an explicit bot-origin API base; empty = same-origin.
     cfg.appointment.nativeApiBase = resolveNativeApiBase(cfg.appointment);
+    if (!cfg.appointment.nativeApiBase) {
+        // Legitimate when the site is served from the bot host itself
+        // (/live/<slug>/), fatal when it is a static export — and this function
+        // cannot tell the two apart. Say so once, loudly, rather than shipping a
+        // booking section that silently cannot book.
+        try {
+            require('../logger.js').log(
+                'calendar.native_api_base.unconfigured',
+                {
+                    siteId,
+                    detail: 'native booking is on but no CALENDAR_PUBLIC_BASE_URL / PUBLIC_BASE_URL / ' +
+                        'PUBLIC_URL is set — widget assets and the booking API will be requested from ' +
+                        'the published site\'s own origin, which only works if that origin is this server',
+                },
+                'error'
+            );
+        } catch (_) { /* logging must never block a publish */ }
+    }
     // Native path wins over Cal.com link when both set.
     // bookingUrl left intact in config so opt-out can restore it.
     return {
