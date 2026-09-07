@@ -118,6 +118,92 @@ function eraseBookingPii(db, customerId, siteId, bookingId) {
     }
 }
 
+/**
+ * Every native-calendar table keyed by (customer_id, site_id) — kept as one
+ * list so site deletion (eraseSiteTenantData) and any future full-tenant
+ * operation cannot silently miss a table added later without updating this.
+ * Order does not matter: none of these tables reference each other via a
+ * real SQLite foreign key (see bot/calendar-native/db.js — `PRAGMA
+ * foreign_keys = ON` guards column-level CHECKs, not cross-table FKs here).
+ */
+const TENANT_SCOPED_TABLES = Object.freeze([
+    'calendar_settings',
+    'calendar_services',
+    'calendar_resources',
+    'calendar_service_resources',
+    'calendar_weekly_availability',
+    'calendar_date_overrides',
+    'calendar_bookings',
+    'calendar_email_outbox',
+    'calendar_email_audit',
+]);
+
+/**
+ * Full, permanent erasure of one tenant's native-calendar data — used when
+ * the SITE ITSELF is being deleted (bot/server.js's DELETE /api/sites/:id),
+ * not the lighter per-booking eraseBookingPii() above (owner-triggered early
+ * deletion of one visitor's PII while the site and its calendar stay live).
+ *
+ * Unlike runRetentionSweep/eraseBookingPii, this DELETEs rows rather than
+ * anonymizing them: once the site is gone there is no dashboard left to show
+ * "anonymized" history against, so keeping scrubbed rows around would only
+ * be dead weight, not a useful audit trail (the site's own deletion is
+ * already recorded in the ledger by the caller).
+ *
+ * Idempotent: a tenant with no rows in any table (never opted into native
+ * booking, or already erased) is a silent no-op — never throws "not found".
+ *
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} customerId
+ * @param {string} siteId
+ * @returns {{ deletedCounts: Record<string, number> }}
+ */
+function eraseSiteTenantData(db, customerId, siteId) {
+    const deletedCounts = {};
+    if (!db || !customerId || !siteId) return { deletedCounts };
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        for (const table of TENANT_SCOPED_TABLES) {
+            const result = db
+                .prepare(`DELETE FROM ${table} WHERE customer_id = ? AND site_id = ?`)
+                .run(customerId, siteId);
+            deletedCounts[table] = result && typeof result.changes === 'number' ? result.changes : 0;
+        }
+        db.exec('COMMIT;');
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+    return { deletedCounts };
+}
+
+/**
+ * Count active (requested/confirmed) bookings for a tenant whose start_utc
+ * is still in the future as of `nowMs` — the read side of the "future
+ * calendar bookings" delete-refusal rule (bot/server.js's DELETE
+ * /api/sites/:id): a visitor who booked and will turn up for it is real, so
+ * a site with any such booking must not be deleted out from under them.
+ * Past active bookings (already happened, just never got a status update)
+ * do not count — nobody is still waiting on those.
+ *
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} customerId
+ * @param {string} siteId
+ * @param {number} [nowMs]
+ * @returns {number}
+ */
+function countFutureActiveBookings(db, customerId, siteId, nowMs = Date.now()) {
+    if (!db || !customerId || !siteId) return 0;
+    const nowIso = new Date(nowMs).toISOString();
+    const row = db.prepare(
+        `SELECT COUNT(*) AS c FROM calendar_bookings
+         WHERE customer_id = ? AND site_id = ?
+           AND status IN ('requested', 'confirmed')
+           AND start_utc > ?`
+    ).get(customerId, siteId, nowIso);
+    return row && typeof row.c === 'number' ? row.c : 0;
+}
+
 const _scheduledDbs = new WeakSet();
 
 /**
@@ -145,5 +231,8 @@ module.exports = {
     retentionCutoffIso,
     runRetentionSweep,
     eraseBookingPii,
+    TENANT_SCOPED_TABLES,
+    eraseSiteTenantData,
+    countFutureActiveBookings,
     startRetentionScheduler,
 };

@@ -4768,10 +4768,17 @@ async function apiPost(url, body) {
 
 /**
  * DELETE with a JSON response, same error contract as apiPost/apiGet — used
- * by the custom-domain "Deconectează" action (DELETE /api/sites/:id/domain).
+ * by the custom-domain "Deconectează" action (DELETE /api/sites/:id/domain)
+ * and by the site "Șterge" confirm modal (DELETE /api/sites/:id with a
+ * {confirmName} body).
  */
-async function apiDelete(url) {
-  const r = await fetch(url, { method: 'DELETE', credentials: 'include' });
+async function apiDelete(url, body) {
+  const opts = { method: 'DELETE', credentials: 'include' };
+  if (body !== undefined) {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(url, opts);
   const json = await r.json().catch(() => ({}));
   if (!r.ok) {
     throw Object.assign(new Error(json.error || 'Eroare server'), {
@@ -6522,10 +6529,73 @@ function buildSiteCard(site) {
       .catch(() => { /* dashboard link is a bonus — never block the sites list on it */ });
   }
 
+  // Delete (permanent — not cancel/unpublish): always reachable regardless
+  // of paid/status, since an abandoned draft that was never paid needs
+  // cleanup just as much as a cancelled one. Server enforces the real
+  // refusal rules (active subscription / future bookings); this button only
+  // opens the confirm-by-typing-the-name modal.
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn-ghost btn-sm';
+  deleteBtn.textContent = 'Șterge';
+  deleteBtn.setAttribute('aria-label', 'Șterge definitiv site-ul ' + (site.projectName || site.slug || ''));
+  deleteBtn.addEventListener('click', () => openDeleteSiteModal(site));
+  actions.appendChild(deleteBtn);
+
   card.appendChild(thumbWrap);
   card.appendChild(info);
   card.appendChild(actions);
   return card;
+}
+
+// ---------------------------------------------------------------------------
+// 22d. Delete site (permanent — not cancel/unpublish)
+// ---------------------------------------------------------------------------
+
+let deleteSiteModalSite = null;
+
+function openDeleteSiteModal(site) {
+  deleteSiteModalSite = site;
+  const nameLabel = site.projectName || site.slug || site.id || '';
+  const nameEl = $('delete-site-name');
+  if (nameEl) nameEl.textContent = nameLabel;
+  const input = $('input-delete-confirm');
+  if (input) input.value = '';
+  const errEl = $('delete-site-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  const confirmBtn = $('btn-confirm-delete-site');
+  if (confirmBtn) confirmBtn.disabled = true;
+  openModal('modal-delete-site');
+  if (input) input.focus();
+}
+
+function expectedDeleteSiteName() {
+  if (!deleteSiteModalSite) return '';
+  return String(deleteSiteModalSite.projectName || deleteSiteModalSite.slug || '').trim();
+}
+
+async function confirmDeleteSite() {
+  const site = deleteSiteModalSite;
+  if (!site) return;
+  const confirmBtn = $('btn-confirm-delete-site');
+  const errEl = $('delete-site-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  try {
+    if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se șterge…');
+    const input = $('input-delete-confirm');
+    const confirmName = input ? input.value : '';
+    await apiDelete('/api/sites/' + encodeURIComponent(site.id), { confirmName });
+    closeModal('modal-delete-site');
+    deleteSiteModalSite = null;
+    showToast('Site-ul „' + (site.projectName || site.slug || '') + '” a fost șters definitiv.');
+    loadDashboard();
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = e.fromServer ? e.message : 'Ștergerea a eșuat. Încearcă din nou.';
+      errEl.style.display = '';
+    }
+  } finally {
+    if (confirmBtn) setBtnLoading(confirmBtn, false);
+  }
 }
 
 /* Optional: a drawer field to open and focus once the editor has loaded.
@@ -7353,6 +7423,22 @@ function wireStaticButtons() {
   wireModalClose('btn-close-gallery',  'modal-gallery');
   wireModalClose('btn-close-domain',   'modal-domain');
   wireModalClose('btn-close-invoices', 'modal-invoices');
+  wireModalClose('btn-close-delete-site', 'modal-delete-site');
+
+  // Delete-site confirm: the button stays disabled until the typed text
+  // matches the site's own name exactly — the server re-checks this too
+  // (source of truth), this is only so the button's enabled state itself
+  // never lies about what a click would do.
+  const deleteConfirmInput = $('input-delete-confirm');
+  const deleteConfirmBtn = $('btn-confirm-delete-site');
+  if (deleteConfirmInput && deleteConfirmBtn) {
+    deleteConfirmInput.addEventListener('input', () => {
+      deleteConfirmBtn.disabled = deleteConfirmInput.value.trim() !== expectedDeleteSiteName();
+    });
+  }
+  if (deleteConfirmBtn) {
+    deleteConfirmBtn.addEventListener('click', confirmDeleteSite);
+  }
 
   const successCloseBtn = $('btn-success-close');
   if (successCloseBtn) {

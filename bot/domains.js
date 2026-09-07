@@ -429,6 +429,16 @@ function _putRecord(record) {
     return record;
 }
 
+/** Remove a site's domain-connection record from the store entirely (not
+ *  just `disconnected` — used only when the site itself is gone). */
+function _deleteRecord(siteId) {
+    const store = _loadStore();
+    if (!Object.prototype.hasOwnProperty.call(store, siteId)) return false;
+    delete store[siteId];
+    _saveStore(store);
+    return true;
+}
+
 /** @returns {object|null} the domain-connection record for a site, or null. */
 function getDomainForSite(siteId) {
     if (!siteId) return null;
@@ -839,6 +849,30 @@ async function disconnectDomainConnection({ siteId }) {
     return { status: 'disconnected', message: _messageForStatus('disconnected') };
 }
 
+/**
+ * Site deletion cleanup: unlike disconnectDomainConnection() (customer-
+ * initiated, keeps a `disconnected` record so the domain can be reconnected
+ * or claimed elsewhere later), a deleted site has nothing left to reconnect
+ * to — best-effort detach from the deploy provider, then remove the record
+ * entirely. Never restores a fallback origin (there is no site left to point
+ * it at). Idempotent: no record for this site is a silent no-op.
+ * @param {string} siteId
+ * @returns {Promise<{removed: boolean}>}
+ */
+async function deleteDomainRecordForSite(siteId) {
+    const record = getDomainForSite(siteId);
+    if (!record) return { removed: false };
+    try {
+        await cfDeploy.detachDomain(record.projectName, record.targetHost);
+    } catch (_) {
+        // Best-effort — the site's own files/registry row are being removed
+        // regardless; a stuck DNS/edge record at the provider is not a reason
+        // to fail the owner's delete request.
+    }
+    _deleteRecord(siteId);
+    return { removed: true };
+}
+
 // ---------------------------------------------------------------------------
 // Module exports
 // ---------------------------------------------------------------------------
@@ -853,6 +887,7 @@ module.exports = {
     activateDomainConnection,
     checkTlsStatus,
     disconnectDomainConnection,
+    deleteDomainRecordForSite,
     getDomainForSite,
     getActiveDomainForSite,
     mapCloudflareStatus,

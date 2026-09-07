@@ -195,6 +195,31 @@ function listSites(userId) {
 }
 
 /**
+ * Permanently remove a site and its version history (drafts). `orders` rows
+ * are deliberately left in place — they hold amounts/currency/Stripe session
+ * ids, not site content, and are the durable financial audit trail (Stripe
+ * itself remains the system of record for payments) — see FINDINGS.md.
+ * Idempotent: deleting an unknown/already-gone id is a silent no-op, never
+ * throws "not found" (the caller — bot/server.js — treats "nothing to
+ * delete" as success, not an error).
+ * @param {string} siteId
+ * @returns {boolean} true iff a site row was actually removed
+ */
+function deleteSite(siteId) {
+    if (siteId == null) return false; // node:sqlite cannot bind undefined
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const result = db.prepare('DELETE FROM sites WHERE id = ?').run(siteId);
+        db.prepare('DELETE FROM versions WHERE site_id = ?').run(siteId);
+        db.exec('COMMIT;');
+        return result.changes > 0;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+/**
  * DELIBERATE FIX (4 of 4): patch keys are filtered to the known site schema
  * (bot/registry-shared.js#KNOWN_SITE_FIELDS) instead of a raw Object.assign
  * that persisted any foreign key handed to it. Known "core" fields (set at
@@ -460,6 +485,7 @@ module.exports = {
     listSites,
     listAllSites,
     updateSite,
+    deleteSite,
     saveVersion,
     listVersions,
     getVersionConfig,
