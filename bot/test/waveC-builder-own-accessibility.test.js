@@ -59,16 +59,37 @@ function auditFn(AA_TARGET) {
         return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
     };
     const alpha = (c) => { const m = String(c).match(/[\d.]+/g); return m && m.length > 3 ? parseFloat(m[3]) : 1; };
-    // Walk up for the first ancestor that actually paints, so translucent
-    // layers do not get mistaken for the surface behind the text.
+    /* The surface a text sits on, COMPOSITED.
+     *
+     * An earlier version walked up to the first ancestor with alpha > 0.9 and
+     * used that, skipping anything translucent. It reported .photo-thumb-badge
+     * — white 9px text on `background: rgba(17,24,39,.7)`, a dark chip over a
+     * photo thumbnail — as 1.02:1, because it walked straight past the chip to
+     * the light modal behind it and compared white against white. The badge is
+     * perfectly readable; the method was wrong.
+     *
+     * Compositing each translucent layer over what is behind it is both the
+     * correct answer and cheaper than a screenshot. Layers are collected
+     * outward and folded back in, so a stack of translucent boxes resolves the
+     * way the compositor resolves it. */
     const surfaceOf = (el) => {
+        const layers = [];
         let n = el;
         while (n && n !== document.documentElement) {
-            const cs = getComputedStyle(n);
-            if (alpha(cs.backgroundColor) > 0.9) return cs.backgroundColor;
+            const bg = getComputedStyle(n).backgroundColor;
+            const a = alpha(bg);
+            if (a > 0) {
+                layers.push({ rgb: parse(bg) || [255, 255, 255], a });
+                if (a >= 0.999) break;   // opaque: nothing behind it shows
+            }
             n = n.parentElement;
         }
-        return 'rgb(255,255,255)';
+        let out = [255, 255, 255];       // the page beneath everything
+        for (let i = layers.length - 1; i >= 0; i--) {
+            const { rgb, a } = layers[i];
+            out = [0, 1, 2].map((k) => rgb[k] * a + out[k] * (1 - a));
+        }
+        return 'rgb(' + out.map((v) => Math.round(v)).join(',') + ')';
     };
     const visible = (el) => {
         const cs = getComputedStyle(el);
@@ -137,6 +158,22 @@ async function openEditor(page) {
 
 const SCREENS = [
     ['landing', async () => {}],
+    // Added after darkening --text-light: it is used in thirteen places, and
+    // four screens were not enough to know whether any of them sits on a dark
+    // surface, where a DARKER muted colour reduces contrast instead of raising
+    // it. The gallery and the design-preview modal are the two that could.
+    ['design preview modal', async (page) => {
+        await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
+        await page.locator('.template-card[data-template-id="professionals"] .btn-preview-tpl')
+            .click({ timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(1800);
+    }],
+    ['photo gallery modal', async (page) => {
+        await openEditor(page);
+        await page.locator('#btn-close-drawer').click().catch(() => {});
+        await page.locator('#btn-open-gallery').click({ timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(1200);
+    }],
     ['editor canvas', openEditor],
     ['details drawer', async (page) => {
         await openEditor(page);
