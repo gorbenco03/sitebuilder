@@ -7,10 +7,22 @@
  * Structured data is how a small business appears in Google's local results
  * with its phone, address and hours attached, rather than as a plain blue
  * link. Four of the five templates carried a schema.org LocalBusiness subtype
- * in their preset; templates/professionals carried none at all, so a lawyer or
- * an accountant who downloaded their site got no structured data whatsoever,
- * and one who published got the generic LocalBusiness the publish-time
- * fallback produced for everybody.
+ * in their preset; templates/professionals carried none.
+ *
+ * A correction to my own first reading of this, because it matters: that did
+ * NOT mean professionals shipped nothing. templates/professionals/script.js
+ * builds a block CLIENT-SIDE from the rendered page whenever no server one
+ * exists — I found "0 JSON-LD blocks" by grepping the static HTML and stated
+ * the conclusion far too strongly. What was actually true is narrower and
+ * still worth fixing: that block only exists for crawlers that execute
+ * JavaScript, it is derived from rendered text rather than from config, and it
+ * is typed with the generic LocalBusiness parent.
+ *
+ * The server-side block now in the preset is in the HTML source, carries a
+ * structured PostalAddress and openingHoursSpecification from real config
+ * values, and is typed ProfessionalService. The client-side fallback stands
+ * down when it is present, by its own design, and is still covered for the
+ * paths that need it by wave5-professionals-jsonld.
  *
  * Two things are checked, because they are different code paths and only one
  * of them was covered by anything before:

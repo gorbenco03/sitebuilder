@@ -57,9 +57,16 @@ function serveDir(dir) {
 
 test('wave5-professionals: client-side LocalBusiness JSON-LD carries real config values on a web-builder publish (no server seo.jsonLd)', async (t) => {
     const config = JSON.parse(JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8')).presets[0].config));
-    // Reproduce prof-06 exactly: the web-builder publish path never sets
-    // seo.jsonLd (only bot/flow.js's Telegram-only buildSeo() does).
-    assert.ok(!config.seo || !config.seo.jsonLd, 'test fixture must NOT carry seo.jsonLd — this is the web-builder gap being tested');
+    // The preset now ships a server-side ProfessionalService block, so this
+    // fixture strips it: the contract under test is the CLIENT-SIDE fallback,
+    // which by design stands down whenever a server block exists. The gap it
+    // covers is still real — a draft whose seo.jsonLd was cleared, or a publish
+    // path that never sets one — it is just no longer the default preset.
+    //
+    // Reading the preset and deleting the key, rather than hand-writing a
+    // fixture, keeps this test measuring the real template's real fields.
+    if (config.seo) delete config.seo.jsonLd;
+    assert.ok(!config.seo || !config.seo.jsonLd, 'fixture must not carry seo.jsonLd — the client-side fallback is what is under test');
 
     const templateHtml = fs.readFileSync(path.join(ROOT, 'templates/professionals/template.html'), 'utf8');
     const html = renderHtml(templateHtml, config);
