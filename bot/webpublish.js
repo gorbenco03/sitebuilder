@@ -1730,7 +1730,28 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // of cfgCopy, so it is available even when siteDirAlreadyBuilt skips the
     // build branch below (robots.txt/sitemap.xml still get written either way).
     const slugForUrl    = site.slug || site.projectName;
-    const seoBuildOrigin = predictedPublicOrigin(slugForUrl, { siteId: site.id }) || PENDING_SEO_ORIGIN;
+    // PENDING_SEO_ORIGIN is a promise that a real origin will arrive after the
+    // deploy call and replace it (see 6b). Cloudflare Pages and Vercel keep
+    // that promise: they return an absolute https URL. Isolated deploy does
+    // not — its "url" is the relative /live/<slug>/, so there is no origin to
+    // substitute, AND the correction below rewrites the build directory after
+    // _isolatedDeploy() has already copied it to $DATA_DIR/published/<slug>/,
+    // which is the copy serveLive() actually serves.
+    //
+    // The result, reproduced: a self-hosted install that omits PUBLIC_URL
+    // published every site with rel=canonical, og:url, robots.txt's Sitemap
+    // line and all four sitemap.xml entries pointing at
+    // https://pending-deploy.hidook.invalid — permanently, with no self-healing
+    // on republish. A canonical is authoritative to a crawler: it does not
+    // degrade the page's ranking, it points the ranking at a domain that does
+    // not exist.
+    //
+    // So: only reach for the placeholder when an origin really is coming. When
+    // none ever will, assert nothing. An absent canonical is correct — the
+    // crawler uses the URL it fetched — and a wrong one is not.
+    const predictedOrigin = predictedPublicOrigin(slugForUrl, { siteId: site.id });
+    const originArrivesAfterDeploy = !_isIsolatedDeploy();
+    const seoBuildOrigin = predictedOrigin || (originArrivesAfterDeploy ? PENDING_SEO_ORIGIN : '');
 
     if (!siteDirAlreadyBuilt) {
         fs.mkdirSync(imagesDir, { recursive: true });
@@ -1826,7 +1847,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         // already carries real jsonLd, and never sets canonical) is never
         // overwritten.
         cfgCopy.seo = (cfgCopy.seo && typeof cfgCopy.seo === 'object') ? cfgCopy.seo : {};
-        if (!cfgCopy.seo.canonical) {
+        if (!cfgCopy.seo.canonical && seoBuildOrigin) {
             cfgCopy.seo.canonical = `${seoBuildOrigin}/`;
         }
         if (!cfgCopy.seo.jsonLd) {
@@ -1867,9 +1888,17 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         for (const p of ['privacy.html', 'terms.html', 'cookies.html']) {
             if (fs.existsSync(path.join(siteDir, p))) seoPages.push(p);
         }
-        const { robotsTxt, sitemapXml } = siteExport.buildSeoFiles(seoBuildOrigin, seoPages);
-        fs.writeFileSync(path.join(siteDir, 'robots.txt'), robotsTxt, 'utf8');
-        fs.writeFileSync(path.join(siteDir, 'sitemap.xml'), sitemapXml, 'utf8');
+        if (seoBuildOrigin) {
+            const { robotsTxt, sitemapXml } = siteExport.buildSeoFiles(seoBuildOrigin, seoPages);
+            fs.writeFileSync(path.join(siteDir, 'robots.txt'), robotsTxt, 'utf8');
+            fs.writeFileSync(path.join(siteDir, 'sitemap.xml'), sitemapXml, 'utf8');
+        } else {
+            // No absolute origin and none coming. robots.txt still does its job
+            // without a Sitemap line; a sitemap cannot — the protocol requires
+            // absolute <loc> URLs, so writing one here could only be a fiction.
+            fs.writeFileSync(path.join(siteDir, 'robots.txt'), 'User-agent: *\nAllow: /\n', 'utf8');
+            try { fs.rmSync(path.join(siteDir, 'sitemap.xml'), { force: true }); } catch (_) {}
+        }
     } catch (e) {
         log('webpublish.seo_files.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
