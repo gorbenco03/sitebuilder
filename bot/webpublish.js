@@ -1263,7 +1263,21 @@ function predictedPublicOrigin(slug, opts) {
  * @param {object} cfg  web builder config (post materializeImages)
  * @returns {string} JSON string for {{& seo.jsonLd}}, or '' if nothing useful
  */
-function buildLocalBusinessJsonLd(cfg) {
+/* schema.org type per template. LocalBusiness is the safe parent and was what
+ * every generated site got regardless of what the business actually is — a law
+ * firm and a bakery described identically. The subtypes below are the ones the
+ * shipped presets already use, so this only matters for a config that has no
+ * seo.jsonLd of its own (a heavily edited draft, or one drafted elsewhere) —
+ * exactly the case where nobody is going to hand-write the right @type. */
+const TEMPLATE_SCHEMA_TYPE = {
+    professionals: 'ProfessionalService',
+    portfolio: 'BeautySalon',
+    'local-service': 'HomeAndConstructionBusiness',
+    'product-menu': 'Restaurant',
+    desserdirina: 'Bakery',
+};
+
+function buildLocalBusinessJsonLd(cfg, templateId) {
     const business = (cfg && cfg.business) || {};
     const contact  = (cfg && cfg.contact) || {};
     const footer   = (cfg && cfg.footer) || {};
@@ -1284,7 +1298,10 @@ function buildLocalBusinessJsonLd(cfg) {
     const useful = name || description || address || phone || sameAs.length;
     if (!useful) return '';
 
-    const ld = { '@context': 'https://schema.org', '@type': 'LocalBusiness' };
+    const ld = {
+        '@context': 'https://schema.org',
+        '@type': TEMPLATE_SCHEMA_TYPE[templateId] || 'LocalBusiness',
+    };
     if (name) ld.name = name;
     if (description) ld.description = description;
     if (address) ld.address = address;
@@ -1851,7 +1868,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
             cfgCopy.seo.canonical = `${seoBuildOrigin}/`;
         }
         if (!cfgCopy.seo.jsonLd) {
-            cfgCopy.seo.jsonLd = buildLocalBusinessJsonLd(cfgCopy);
+            cfgCopy.seo.jsonLd = buildLocalBusinessJsonLd(cfgCopy, site.templateId);
         }
 
         // 4. Write config.json and build

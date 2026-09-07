@@ -461,7 +461,13 @@ function installHangingFetch() {
             const ldMatch = /<script type="application\/ld\+json">([^<]*)<\/script>/i.exec(html);
             assert.ok(ldMatch, 'ld+json script tag must be present');
             const ld = JSON.parse(ldMatch[1]); // must not throw — valid JSON
-            assert.strictEqual(ld['@type'], 'LocalBusiness');
+            // This asserted 'LocalBusiness' — the generic parent the fallback
+            // used to give every business, so a law firm and a bakery were
+            // described identically. The fixture publishes a product-menu site,
+            // so Restaurant is now the correct answer; LocalBusiness would mean
+            // the per-template mapping had gone missing. See
+            // waveC-structured-data, which owns that mapping's completeness.
+            assert.strictEqual(ld['@type'], 'Restaurant');
             assert.strictEqual(ld.name, 'JsonLd Bakery');
             assert.strictEqual(ld.telephone, '+40721234567');
             assert.ok(Array.isArray(ld.sameAs) && ld.sameAs.some((u) => u.includes('instagram.com')), 'sameAs must include Instagram');

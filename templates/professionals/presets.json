@@ -224,7 +224,7 @@
         "seo": {
           "ogImage": "",
           "canonical": "",
-          "jsonLd": ""
+          "jsonLd": "{\"@context\": \"https://schema.org\", \"@type\": \"ProfessionalService\", \"name\": \"Cabinet Juridic Ionescu\", \"description\": \"Consultanță juridică pentru contracte, organizarea companiilor și negocieri.\", \"telephone\": \"+40721555014\", \"email\": \"contact@cabinetjuridicionescu.ro\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"Strada Academiei 12, etajul 4\", \"addressLocality\": \"București\", \"postalCode\": \"010014\", \"addressCountry\": \"RO\"}, \"areaServed\": {\"@type\": \"City\", \"name\": \"București\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\"], \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
         },
         "footer": {
           "address": "București · numai cu programare",
