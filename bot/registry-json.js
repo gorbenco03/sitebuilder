@@ -196,6 +196,25 @@ function listSites(userId) {
 }
 
 /**
+ * Permanently remove a site and its version history (drafts). `orders` are
+ * deliberately left in place — see registry-sqlite.js#deleteSite / FINDINGS.md
+ * for the same rationale (financial audit trail, not site content).
+ * Idempotent: an unknown/already-gone id is a silent no-op.
+ * @param {string} siteId
+ * @returns {boolean} true iff a site row was actually removed
+ */
+function deleteSite(siteId) {
+    const db = _load();
+    db.sites = db.sites || {};
+    db.versions = db.versions || {};
+    const existed = Object.prototype.hasOwnProperty.call(db.sites, siteId);
+    delete db.sites[siteId];
+    delete db.versions[siteId];
+    _save(db);
+    return existed;
+}
+
+/**
  * DELIBERATE FIX (4 of 4): patch keys are now filtered to the known site
  * schema (bot/registry-shared.js#KNOWN_SITE_FIELDS) instead of a raw
  * Object.assign that persisted any foreign key handed to it.
@@ -445,6 +464,7 @@ module.exports = {
     listSites,
     listAllSites,
     updateSite,
+    deleteSite,
     saveVersion,
     listVersions,
     getVersionConfig,

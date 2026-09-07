@@ -892,6 +892,33 @@ body.details-drawer-open .editor-tpl-name {
 .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
 .btn-primary.loading { pointer-events: none; opacity: 0.8; }
 
+/* Delete-site: a permanent, hard-to-misclick destructive action — visually
+   distinct (red) from btn-primary/btn-ghost, same shape/sizing otherwise. */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: var(--error);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.35rem;
+  min-height: 44px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+.btn-danger:hover { background: #B91C1C; text-decoration: none; }
+.btn-danger:active { transform: scale(0.98); }
+.btn-danger:disabled { opacity: 0.45; pointer-events: none; }
+.btn-danger.loading { pointer-events: none; opacity: 0.8; }
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;

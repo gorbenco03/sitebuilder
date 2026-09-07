@@ -1547,6 +1547,125 @@ async function handleRollback(req, res, siteId) {
 }
 
 /**
+ * DELETE /api/sites/:id — permanent deletion, not the cancel/unpublish path.
+ * ("Trebuie să facem posibilitatea de a șterge un site, nu doar de a-l
+ * anula.") Cancel (POST .../billing-portal) stops billing and unpublishes;
+ * this removes the site and everything it owns: the registry row + version
+ * history (drafts), the isolated published directory, any connected custom
+ * domain record, and any native-calendar tenant data — see FINDINGS.md for
+ * what is kept (orders/ledger — the financial audit trail) and why.
+ *
+ * Confirmation: the body must carry `{ confirmName }` matching the site's
+ * own projectName/slug exactly — the deliberate, hard-to-misclick act this
+ * feature requires instead of a bare confirm dialog. Checked here, not only
+ * client-side, because the client is UX only.
+ *
+ * Refuses (409) rather than silently deleting: an active paid subscription
+ * (cancel it first — Stripe would otherwise keep billing a site that no
+ * longer exists), or any future active calendar booking (a visitor who
+ * booked and will turn up for it is real).
+ *
+ * Idempotent: an unknown id, or a site not owned by this user only in the
+ * sense that it is already gone, returns 200 {ok:true, alreadyDeleted:true} —
+ * never a 500, so a retried/double-clicked delete cannot fail loudly.
+ */
+async function handleDeleteSite(req, res, siteId) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const reg  = getRegistry();
+    const site = await reg.getSite(siteId);
+    if (!site || site.status === 'deleted') {
+        return sendJson(res, 200, { ok: true, alreadyDeleted: true });
+    }
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
+
+    let body;
+    try {
+        body = await parseJson(req, 2 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
+    }
+    const expectedName = String(site.projectName || site.slug || '').trim();
+    const typedName = String((body && body.confirmName) || '').trim();
+    if (!expectedName || typedName !== expectedName) {
+        return sendJson(res, 422, {
+            error: 'Confirmarea nu se potrivește. Scrie exact numele site-ului „' + expectedName + '” ca să continui.',
+            code: 'CONFIRM_MISMATCH',
+        });
+    }
+
+    if (hasActiveCommercialEntitlement(site)) {
+        return sendJson(res, 409, {
+            error: 'Site-ul are un abonament activ. Anulează-l din Facturare (butonul „Anulează”) înainte de ștergere — altfel clienți care au plătit ar rămâne fără site.',
+            code: 'ACTIVE_SUBSCRIPTION',
+        });
+    }
+
+    let futureBookings = 0;
+    try {
+        futureBookings = countFutureCalendarBookingsForSite(site);
+    } catch (e) {
+        log('server.delete_site.bookings_check_failed', { siteId, err: e.message }, 'warn');
+    }
+    if (futureBookings > 0) {
+        return sendJson(res, 409, {
+            error: 'Site-ul are ' + futureBookings +
+                (futureBookings === 1 ? ' programare viitoare confirmată' : ' programări viitoare confirmate') +
+                '. Anulează sau finalizează programările din Programări înainte de ștergere — altfel vizitatorii care au rezervat ar ajunge la un site inexistent.',
+            code: 'FUTURE_BOOKINGS',
+            count: futureBookings,
+        });
+    }
+
+    // From here on, every cleanup step is best-effort and independently
+    // guarded: a resource already gone (partial retry, or never existed for
+    // this site) must never block the rest, and the final registry delete
+    // below is what makes this operation idempotent overall.
+    try {
+        require('./webpublish.js').unpublishSite(site, { reason: 'owner_delete' });
+    } catch (e) {
+        log('server.delete_site.unpublish_failed', { siteId, err: e.message }, 'warn');
+    }
+
+    try {
+        await require('./domains.js').deleteDomainRecordForSite(site.id);
+    } catch (e) {
+        log('server.delete_site.domain_cleanup_failed', { siteId, err: e.message }, 'warn');
+    }
+
+    try {
+        eraseCalendarTenantForSite(site);
+    } catch (e) {
+        log('server.delete_site.calendar_cleanup_failed', { siteId, err: e.message }, 'warn');
+    }
+
+    try {
+        if (site.slug) fs.rmSync(appointmentsFileForSlug(site.slug), { force: true });
+    } catch (_) {}
+
+    try {
+        require('./ledger.js').append({
+            event: 'site_deleted',
+            siteId: site.id,
+            userId,
+            slug: site.slug,
+            reason: 'owner_requested',
+        });
+    } catch (_) {}
+
+    try {
+        reg.deleteSite(site.id);
+    } catch (e) {
+        log('server.delete_site.registry_delete_failed', { siteId, err: e.message }, 'error');
+        return sendJson(res, 500, { error: 'Ștergerea a eșuat: ' + e.message });
+    }
+
+    log('server.delete_site.done', { siteId, userId });
+    return sendJson(res, 200, { ok: true });
+}
+
+/**
  * Custom domain routes (audit #47 — self-serve, replacing manual concierge).
  *
  * The whole state machine lives in bot/domains.js; these handlers only carry
@@ -1864,6 +1983,37 @@ function getCalendarNativeApi() {
 function resolveCalendarNativeDb() {
     const api = getCalendarNativeApi();
     return api.getDb({});
+}
+
+/**
+ * Delete-site refusal rule: how many active, still-future calendar bookings
+ * this site's native-calendar tenant has. A site never opted into native
+ * booking (or opted in but never got a real booking) simply has zero rows
+ * for this tenant key — not an error condition, so this returns 0 rather
+ * than throwing. Tenant key = (site.userId, site.id), same as
+ * bot/calendar-native/cutover.js#applyCutoverToConfig.
+ * @param {object} site
+ * @returns {number}
+ */
+function countFutureCalendarBookingsForSite(site) {
+    if (!site || !site.userId || !site.id) return 0;
+    const retention = require('./calendar-native/retention.js');
+    const db = resolveCalendarNativeDb();
+    return retention.countFutureActiveBookings(db, site.userId, site.id);
+}
+
+/**
+ * Delete-site cleanup: erase this site's native-calendar tenant data
+ * entirely (not the lighter anonymize-in-place PII sweep — the site itself
+ * is gone, so there is no dashboard left to show scrubbed history against).
+ * A no-op for a site that never opted into native booking.
+ * @param {object} site
+ */
+function eraseCalendarTenantForSite(site) {
+    if (!site || !site.userId || !site.id) return;
+    const retention = require('./calendar-native/retention.js');
+    const db = resolveCalendarNativeDb();
+    retention.eraseSiteTenantData(db, site.userId, site.id);
 }
 
 /**
@@ -3683,6 +3833,9 @@ function createHandler({ onStripeEvent } = {}) {
             const siteMatch = url.match(/^\/api\/sites\/([^/]+)$/);
             if (req.method === 'GET' && siteMatch) {
                 return await handleGetSite(req, res, siteMatch[1]);
+            }
+            if (req.method === 'DELETE' && siteMatch) {
+                return await handleDeleteSite(req, res, siteMatch[1]);
             }
 
             if (req.method === 'POST' && url === '/api/publish') {
