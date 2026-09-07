@@ -1,0 +1,2 @@
+buttonText=Poză demo — Înlocuiește fotografia
+clickMessage={"hb":"image","path":"hero.background","src":"/app/generated/template-assets/local-service/images/pr-hero.jpg","alt":""}

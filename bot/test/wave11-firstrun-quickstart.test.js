@@ -175,7 +175,14 @@ test('GREEN: name/phone/town propagate everywhere, quick-start is skippable and 
     assert.strictEqual(afterSkip, beforeSkip, 'dismissing ("Nu acum") must not touch draft.config at all');
 
     // ---- Repeatable: reopen via the checklist pill, apply again ----
+    // Wave 12: the pill now opens a menu naming which required fields are
+    // still missing (see HANDOFF-firstrun.md / builder/app.js's
+    // buildChecklistMenu()) instead of jumping straight to quick-start —
+    // quick-start is that menu's first item, one click further in but still
+    // reachable from the exact same pill.
     await page2.locator('#checklist-indicator').click();
+    await page2.locator('#checklist-menu').waitFor({ state: 'visible' });
+    await page2.locator('#checklist-menu .account-menu-item').first().click();
     await page2.locator('#demo-content-banner').waitFor({ state: 'visible' });
     await page2.locator('#quickstart-town').fill('Iași');
     await page2.locator('#btn-quickstart-apply').click();

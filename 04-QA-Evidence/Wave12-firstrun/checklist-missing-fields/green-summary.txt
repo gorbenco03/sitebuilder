@@ -1,0 +1,4 @@
+count=15/22
+nameLabel=Numele firmei sau al meseriei
+bgLabel=Fundal deschidere
+menuBuildsOnKeystroke=0

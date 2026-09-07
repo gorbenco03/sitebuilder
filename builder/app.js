@@ -108,6 +108,9 @@ let tabConflictActive = false;
 // Account menu (editor topbar) state
 let accountMenuOpen = false;
 
+// Checklist "what's missing" menu (editor topbar) state — see section 7c.
+let checklistMenuOpen = false;
+
 // ---------------------------------------------------------------------------
 // 2. Helpers — DOM
 // ---------------------------------------------------------------------------
@@ -1121,6 +1124,158 @@ function updateChecklist() {
 }
 
 // ---------------------------------------------------------------------------
+// 7-menu. Checklist "what's missing" menu — WHICH fields, and one click there
+// ---------------------------------------------------------------------------
+//
+// updateChecklist() above already knows exactly which required fields the
+// owner hasn't genuinely made theirs — isFieldGenuinelyMade() is the same
+// honest check either way (see its doc comment). The pill only ever showed
+// the COUNT ("10/15"); this menu spends that same computation on something
+// actionable: each missing field's own Romanian label — straight from
+// schema.json (sections[].fields[].label), never invented — and a click that
+// lands the owner exactly on it: the details drawer, scrolled to that
+// field's row and focused, for a drawer field (phone/url/color/background
+// and the handful of key-matched fields — see isDrawerField()); the canvas
+// itself, scrolled and highlighted (and given keyboard focus when it is a
+// genuine contenteditable text field), for everything else — the large
+// majority of required fields, which are edited inline on the page, not in
+// the drawer.
+//
+// Built lazily, only when the menu is opened (openChecklistMenu(), from the
+// pill's click handler) — never from updateChecklist()'s own per-keystroke
+// call sites. That matters for the same reason the pill's own count logic
+// stays a plain textContent/classList update on that hot path (see the doc
+// comment closing updateChecklist(), above): a real regression was measured
+// this project sending anything into the preview iframe from every drawer
+// keystroke. This menu never touches the iframe until a specific missing
+// field is actually clicked, so the "reuse the existing count path, don't
+// add a new per-keystroke one" requirement holds by construction.
+
+/** Land the owner on `field`: the details drawer (scrolled to its row and
+ * focused) for a drawer field, the canvas itself (scrolled, highlighted, and
+ * focused when it is a real text field) for everything else. */
+function goToChecklistField(field) {
+  if (!field || !field.key) return;
+  if (isDrawerField(field)) {
+    openDrawer(field.key);
+  } else {
+    if (drawerOpen) closeDrawer();
+    sendFocusFieldToIframe(field.key);
+  }
+}
+
+/** (Re)build the menu's contents — called once, each time it opens. */
+function buildChecklistMenu() {
+  const menu = $('checklist-menu');
+  if (!menu) return;
+  menu.innerHTML = '';
+
+  const quickBtn = document.createElement('button');
+  quickBtn.type = 'button';
+  quickBtn.className = 'account-menu-item';
+  quickBtn.setAttribute('role', 'menuitem');
+  quickBtn.textContent = 'Completare rapidă (nume, telefon, localitate)';
+  quickBtn.addEventListener('click', () => {
+    closeChecklistMenu();
+    openQuickstart();
+  });
+  menu.appendChild(quickBtn);
+
+  if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) return;
+  const required = getRequiredFields(currentTemplate.data.schema);
+  const missing = required.filter((f) => !isFieldGenuinelyMade(f));
+
+  const divider = document.createElement('div');
+  divider.className = 'checklist-menu-divider';
+  divider.setAttribute('role', 'separator');
+  menu.appendChild(divider);
+
+  if (missing.length === 0) {
+    const done = document.createElement('p');
+    done.className = 'checklist-menu-empty';
+    done.textContent = 'Toate câmpurile esențiale sunt completate cu datele tale.';
+    menu.appendChild(done);
+    return;
+  }
+
+  const heading = document.createElement('p');
+  heading.className = 'checklist-menu-heading';
+  heading.textContent = 'Mai lipsesc (' + missing.length + '):';
+  menu.appendChild(heading);
+
+  missing.forEach((field) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'account-menu-item checklist-menu-field';
+    item.setAttribute('role', 'menuitem');
+    item.textContent = field.label || field.key;
+    item.addEventListener('click', () => {
+      closeChecklistMenu();
+      goToChecklistField(field);
+    });
+    menu.appendChild(item);
+  });
+}
+
+function toggleChecklistMenu() {
+  if (checklistMenuOpen) { closeChecklistMenu(); return; }
+  openChecklistMenu();
+}
+
+function openChecklistMenu() {
+  const menu = $('checklist-menu');
+  const btn = $('checklist-indicator');
+  if (!menu || !btn) return;
+  buildChecklistMenu();
+
+  const rect = btn.getBoundingClientRect();
+  // On a genuinely fresh draft the quick-start banner (#demo-content-banner)
+  // sits right below the topbar too, in normal document flow — anchoring
+  // purely off the pill would let this fixed-position menu overlap it
+  // (both would occupy the same first ~90px of the screen). Anchor below
+  // whichever is lower.
+  const banner = $('demo-content-banner');
+  let anchorBottom = rect.bottom;
+  if (banner && banner.style.display !== 'none') {
+    const bannerRect = banner.getBoundingClientRect();
+    if (bannerRect.bottom > anchorBottom) anchorBottom = bannerRect.bottom;
+  }
+  menu.style.top = (anchorBottom + 6) + 'px';
+  menu.style.left = rect.left + 'px';
+  menu.style.right = 'auto';
+  menu.style.display = '';
+  checklistMenuOpen = true;
+  btn.setAttribute('aria-expanded', 'true');
+
+  // Focus the first item at once — no need to wait a frame for this part,
+  // and a keyboard user (Enter/Space on the pill) should not see any lag
+  // before focus visibly lands inside the menu.
+  const first = menu.querySelector('button');
+  if (first) first.focus();
+
+  // Clamp on-screen at narrow widths — the same reasoning as the color
+  // popover's own on-screen clamp (see HANDOFF-mobile.md): an inline `left`
+  // computed from the button's own position can still push a wide-enough
+  // menu off the right edge on a 390px phone. This DOES need a layout pass
+  // (getBoundingClientRect), so it stays deferred a frame.
+  requestAnimationFrame(() => {
+    const mrect = menu.getBoundingClientRect();
+    if (mrect.right > window.innerWidth - 8) {
+      menu.style.left = 'auto';
+      menu.style.right = '8px';
+    }
+  });
+}
+
+function closeChecklistMenu() {
+  const menu = $('checklist-menu');
+  const btn = $('checklist-indicator');
+  if (menu) menu.style.display = 'none';
+  checklistMenuOpen = false;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+// ---------------------------------------------------------------------------
 // 7b. Undo / redo history (audit finding #45 — builder had no undo/redo at all)
 // ---------------------------------------------------------------------------
 //
@@ -2036,6 +2191,17 @@ function sendHighlightToIframe(path) {
   iframe.contentWindow.postMessage({ hb: 'highlight', path }, '*');
 }
 
+/** Same flash-and-scroll as sendHighlightToIframe(), plus a request to take
+ * keyboard focus when the target is a real editable text field (a canvas
+ * field the checklist "what's missing" menu points at — see
+ * goToChecklistField() below). A plain highlight-only caller (e.g.
+ * openPublishModal()'s missing-field nudge) keeps the old behaviour. */
+function sendFocusFieldToIframe(path) {
+  const iframe = getPreviewIframe();
+  if (!iframe || !iframeReady) return;
+  iframe.contentWindow.postMessage({ hb: 'highlight', path, focus: true }, '*');
+}
+
 // Send imgmap after re-render (to inject images into srcdoc)
 function sendImgMap() {
   // Not needed here since images are embedded as dataURLs in config
@@ -2723,7 +2889,29 @@ function shouldAutoOpenDrawer() {
   return true; // null (first entry) or 'open'
 }
 
-function openDrawer() {
+/** Scroll `key`'s field group into view inside the (already built, already
+ * open) drawer and focus its control. Returns whether a matching field was
+ * found — callers fall back to focusing the first field when it wasn't
+ * (e.g. a stale key from a template that changed shape since). Used by
+ * openDrawer(focusKey) below and, on its own, by the checklist "what's
+ * missing" menu (see goToChecklistField() — section 7c) when the drawer is
+ * already open and just needs to jump to a different field. */
+function focusDrawerField(key) {
+  const body = $('drawer-body');
+  if (!body || !key) return false;
+  const wrap = body.querySelector('[data-field-key="' + key + '"]');
+  if (!wrap) return false;
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const field = wrap.querySelector('input,textarea,select');
+  if (field) field.focus({ preventScroll: true });
+  return true;
+}
+
+/** `focusKey`, when given, is a schema field key to land on instead of the
+ * drawer's first field — see the checklist "what's missing" menu (section
+ * 7c), which needs one click to go from "this is unfinished" to "here is
+ * where you fix it" rather than just opening Details at the top. */
+function openDrawer(focusKey) {
   const overlay = $('drawer-overlay');
   const drawer = $('details-drawer');
   if (!drawer) return;
@@ -2735,8 +2923,9 @@ function openDrawer() {
   document.body.classList.add('details-drawer-open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'true');
-  // Focus first field
+  // Focus the requested field if there is one, else the first field.
   requestAnimationFrame(() => {
+    if (focusKey && focusDrawerField(focusKey)) return;
     const first = drawer.querySelector('input,textarea,select');
     if (first) first.focus();
   });
@@ -5034,9 +5223,10 @@ async function openPublishModal() {
       showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
       // Highlight in iframe
       sendHighlightToIframe(firstMissing.key);
-      // Open drawer if field is a drawer field
+      // Open drawer, scrolled to and focused on the actual missing field —
+      // not just Details' first row (see openDrawer()'s focusKey param).
       if (isDrawerField(firstMissing)) {
-        openDrawer();
+        openDrawer(firstMissing.key);
       }
       return;
     }
@@ -6865,6 +7055,7 @@ function showScreen(name) {
     }
     if (colorPopoverOpen) closeColorPopover();
     if (accountMenuOpen) closeAccountMenu();
+    if (checklistMenuOpen) closeChecklistMenu();
     hideTabConflictBanner();
     if (typeof maybeShowRecoveryBanner === 'function') maybeShowRecoveryBanner();
   }
@@ -7168,6 +7359,7 @@ function wireStaticButtons() {
       if (drawerOpen) closeDrawer();
       if (colorPopoverOpen) closeColorPopover();
       if (accountMenuOpen) closeAccountMenu();
+      if (checklistMenuOpen) closeChecklistMenu();
     }
   });
 
@@ -7207,8 +7399,23 @@ function wireStaticButtons() {
     e.preventDefault();
     applyQuickstart();
   });
+  // Wave 12: the pill used to always jump straight to the quick-start form —
+  // it now opens a menu naming exactly which fields are still missing (with
+  // quick-start kept as its first item, one click further in but still one
+  // click away), so an owner learns WHAT to fix, not just that something is
+  // unfinished (see buildChecklistMenu()).
   const checklistBtn = $('checklist-indicator');
-  if (checklistBtn) checklistBtn.addEventListener('click', () => openQuickstart());
+  if (checklistBtn) {
+    checklistBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleChecklistMenu();
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (!checklistMenuOpen) return;
+    const menu = $('checklist-menu');
+    if (menu && !menu.contains(e.target) && e.target !== checklistBtn) closeChecklistMenu();
+  });
 
   // Undo / redo toolbar buttons
   const undoBtn = $('btn-undo');
