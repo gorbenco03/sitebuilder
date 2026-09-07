@@ -303,7 +303,8 @@ ul { list-style: none; }
 
 .pf-series { margin: 2.5rem 0 3.5rem; }
 .pf-series__t { font-family: var(--display); font-size: 1.35rem; font-weight: 500; }
-.pf-series__b { color: var(--soft); margin: 0.35rem 0 1rem; }
+/* Measured uncapped at 936px/93 chars-per-line on a 1440 viewport — same 36rem cap as .pf-copy. */
+.pf-series__b { color: var(--soft); margin: 0.35rem 0 1rem; max-width: 36rem; }
 /* The photo wall is deliberately full-bleed while its heading stays in the
    980px text column — the contrast between the two is the section's whole
    idea. But it ran to x=0 and x=1440 with an 8px gap between the photos, so

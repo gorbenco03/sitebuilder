@@ -1,0 +1,62 @@
+  engine.js written (148057 bytes)
+  templates/product-menu.js written (79282 bytes)
+  templates/local-service.js written (103326 bytes)
+  templates/portfolio.js written (94691 bytes)
+  templates/professionals.js written (107976 bytes)
+  templates/desserdirina.js written (107341 bytes)
+  templates-data.js written (1852 bytes) [light registry]
+build:app done — builder/generated/ ready.
+(node:43235) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"ts":"2026-09-07T00:05:44.408Z","event":"server.started","port":59859}
+🌐 HTTP server on :59859 (health + webhooks + API)
+STEP 01-landing-cookie-banner.png landing-cookie-banner
+STEP 02-accepted-cookie-landing.png accepted-cookie-landing
+STEP 03-catalog-filter-all.png catalog-filter-all
+STEP 04-catalog-filter-product-menu.png catalog-filter-product-menu
+STEP 05-catalog-filter-portfolio.png catalog-filter-portfolio
+STEP 06-catalog-filter-local-service.png catalog-filter-local-service
+STEP 07-catalog-filter-professionals.png catalog-filter-professionals
+STEP 08-catalog-filter-desserdirina.png catalog-filter-desserdirina
+STEP 09-legal-terms.png legal-terms
+STEP 10-legal-privacy.png legal-privacy
+STEP 11-legal-cookies.png legal-cookies
+STEP 12-professionals-details-auto-open.png professionals-details-auto-open
+STEP 13-professionals-pressed-editor-chrome.png professionals-pressed-editor-chrome
+STEP 14-professionals-calcom-filled.png professionals-calcom-filled
+STEP 15-professionals-calcom-cleared.png professionals-calcom-cleared
+STEP 16-professionals-whatsapp-qr.png professionals-whatsapp-qr
+STEP 17-local-service-details-auto-open.png local-service-details-auto-open
+STEP 18-local-service-pressed-editor-chrome.png local-service-pressed-editor-chrome
+STEP 19-local-service-add-item.png local-service-add-item
+STEP 20-local-service-whatsapp-qr.png local-service-whatsapp-qr
+STEP 21-portfolio-details-auto-open.png portfolio-details-auto-open
+STEP 22-portfolio-pressed-editor-chrome.png portfolio-pressed-editor-chrome
+STEP 23-portfolio-add-item.png portfolio-add-item
+STEP 24-portfolio-whatsapp-qr.png portfolio-whatsapp-qr
+STEP 25-product-menu-details-auto-open.png product-menu-details-auto-open
+STEP 26-product-menu-pressed-editor-chrome.png product-menu-pressed-editor-chrome
+STEP 27-product-menu-add-item.png product-menu-add-item
+STEP 28-product-menu-whatsapp-qr.png product-menu-whatsapp-qr
+STEP 29-desserdirina-details-auto-open.png desserdirina-details-auto-open
+STEP 30-desserdirina-pressed-editor-chrome.png desserdirina-pressed-editor-chrome
+STEP 31-desserdirina-whatsapp-qr.png desserdirina-whatsapp-qr
+STEP 32-unpaid-export-html.png unpaid-export-html
+STEP 33-unpaid-export-zip.png unpaid-export-zip
+STEP 34-instagram-modal-closed-connect.png instagram-modal-closed-connect
+STEP 35-instagram-empty-email-unhappy.png instagram-empty-email-unhappy
+STEP 36-open-publish.png open-publish
+STEP 37-publish-address.png publish-address
+{"ts":"2026-09-07T00:08:13.019Z","event":"email.magic_link.dev","email":"f***@example.com#5b72fc88","devLink":"/auth/verify?token=aca6da234524ab334c463d6915a4aa329f6cc36a94908061f0c114a239f23226"}
+STEP 38-send-magic-link.png send-magic-link
+STEP 39-authenticated-unpaid-cta.png authenticated-unpaid-cta
+{"ts":"2026-09-07T00:08:13.405Z","event":"webpublish.stripe_paid.published","siteId":"f566c0dd-cc76-490f-ac93-517e26d1751d","orderId":"4cc18f90-6b0d-4741-ac63-9a8e334708a6","url":"/live/fullpass-mtqhfg7a/","source":"pending-draft"}
+STEP 40-trial-success-live.png trial-success-live
+STEP 41-return-to-editor-canvas.png return-to-editor-canvas
+STEP 42-paid-export-html.png paid-export-html
+STEP 43-paid-export-zip.png paid-export-zip
+STEP 45-past-due-export-html.png past-due-export-html
+STEP 46-details-reopen-on-new-design.png details-reopen-on-new-design
+FULLPASS defects=0 steps=46
+
+[exited with code 0]
