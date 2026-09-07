@@ -2065,6 +2065,11 @@ let clearEditorPreviewReadyListener = null;
 // so no edit is ever lost — once the current one settles.
 let renderInFlight = false;
 let renderInFlightSafetyTimer = null;
+// A focus path requested by a fullRerender() call that arrived while another
+// was still in flight — carried over to the queued replay so a list-add
+// that happened to land mid-render still ends up focused on its new item
+// (see fullRerender()'s doc comment just below for the full mechanism).
+let pendingRenderFocusPath = null;
 
 function prepareInteractivePreviewDocument(documentHtml, readyToken, cookieAccepted) {
   // The preview is only ready once generated consent is bound and the first
@@ -2129,10 +2134,30 @@ function waitForInteractivePreview(target, readyToken, onSettled) {
 }
 
 // Full re-render: new srcdoc. Called for: initial load, image change, list add/remove, color change.
-function fullRerender() {
+//
+// A fresh srcdoc is a brand-new document, so the canvas's scroll position is
+// lost by construction, not by accident — reported by the product owner as
+// "adăugarea unui element mă duce iarăși la începutul paginii, de parcă se
+// face un refresh" (PS 2026-09-06). Every call site below carries the reader
+// over to the same spot in the new document by default; `focusPath` (used by
+// onListAdd()) additionally lands them ON a specific new field — landing on
+// the thing you just asked for beats merely not losing your place.
+//
+// `focusPath` (optional): a data-hb-edit path (or a list item's root path,
+// e.g. "services.4" — see sendFocusFieldToIframe()/edit-overlay.js's
+// 'highlight' handler, which already falls back from an exact match to that
+// item's first field) to scroll into view and focus once the new document
+// is interactive. When omitted, or when no matching field exists in the new
+// document (e.g. a photos-only item), the plain scroll-carry-over below is
+// all the reader sees — never a jump back to the top.
+function fullRerender(focusPath) {
   if (!draft.config || !draft.templateId) return;
   if (renderInFlight) {
     pendingRender = true;
+    // Last-write-wins, same as draft.config itself for a queued render —
+    // the replay below re-reads draft.config fresh, so its own focus intent
+    // should be just as fresh, not whatever an earlier queued call wanted.
+    pendingRenderFocusPath = focusPath || null;
     return;
   }
   renderInFlight = true;
@@ -2147,13 +2172,38 @@ function fullRerender() {
   const iframe = getPreviewIframe();
   if (!iframe) { renderInFlight = false; return; }
 
+  // Capture the OUTGOING document's scroll position before it is replaced —
+  // read now, while `iframe.contentWindow` still points at the current
+  // document (assigning `.srcdoc` below starts navigating it away).
+  let carryScroll = null;
+  try {
+    if (iframe.contentWindow) {
+      carryScroll = { x: iframe.contentWindow.scrollX, y: iframe.contentWindow.scrollY };
+    }
+  } catch (e) { /* cross-origin/detached — nothing to carry over */ }
+
   let settled = false;
   const settleRender = () => {
     if (settled) return;
     settled = true;
     if (renderInFlightSafetyTimer) { clearTimeout(renderInFlightSafetyTimer); renderInFlightSafetyTimer = null; }
     renderInFlight = false;
-    if (pendingRender) { pendingRender = false; fullRerender(); }
+    // Restore the reader's place first — this is the fallback every re-render
+    // gets for free. If `focusPath` names a real field in the new document,
+    // sendFocusFieldToIframe()'s own scrollIntoView immediately supersedes
+    // this with something more specific; if it doesn't (field genuinely
+    // absent), this plain restore is what the reader is left with instead of
+    // the top of the page.
+    if (carryScroll) {
+      try { iframe.contentWindow && iframe.contentWindow.scrollTo(carryScroll.x, carryScroll.y); } catch (e) { /* ignore */ }
+    }
+    if (focusPath) sendFocusFieldToIframe(focusPath);
+    if (pendingRender) {
+      pendingRender = false;
+      const nextFocusPath = pendingRenderFocusPath;
+      pendingRenderFocusPath = null;
+      fullRerender(nextFocusPath);
+    }
   };
   // Safety net: a missing/late ready message (render error, etc.) must never
   // permanently wedge future edits behind a render that will never settle.
@@ -2395,8 +2445,38 @@ function onIframeReady() {
   scheduleDemoTextMarks();
 }
 
+/** True unless `path`'s nearest list-item segment (the last purely-numeric
+ * dot segment, e.g. the "4" in "services.4.label") now falls OUTSIDE its
+ * current array's bounds. Paths with no numeric segment at all (ordinary
+ * object fields) are never "stale" in this sense and always return true.
+ *
+ * Guards onInlineTextEdit() below against a real race introduced by
+ * fullRerender()'s `focusPath` (see onListAdd()): giving a freshly added
+ * item's field real keyboard focus means a blur (e.g. the owner immediately
+ * clicking Undo, or Ctrl+Z, right after adding — plausible, since landing on
+ * the new item is the whole point) fires edit-overlay.js's async
+ * `{hb:'text',...}` commit AFTER that Undo has already shortened the array.
+ * Without this guard, setPath() below would auto-vivify the missing index
+ * right back into existence — silently resurrecting the item Undo just
+ * removed, and (via pushHistory()'s standard "a new step discards the redo
+ * branch" rule) destroying the very redo step that would have brought it
+ * back on purpose. */
+function isListItemPathStillValid(path) {
+  const parts = String(path || '').split('.');
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (/^\d+$/.test(parts[i])) {
+      const idx = parseInt(parts[i], 10);
+      const listPath = parts.slice(0, i).join('.');
+      const arr = getPath(draft.config, listPath);
+      return Array.isArray(arr) && idx < arr.length;
+    }
+  }
+  return true;
+}
+
 function onInlineTextEdit(path, value) {
   if (!path) return;
+  if (!isListItemPathStillValid(path)) return; // stale blur-commit — see doc comment above isListItemPathStillValid()
   let prevName = null;
   if (path === 'business.name' && draft.config) {
     prevName = getPath(draft.config, 'business.name');
@@ -2593,8 +2673,18 @@ function onListAdd(listPath) {
       setPath(draft.config, otherPath, otherArr);
     }
   }
+  // Land the owner ON the item they just asked for, in the re-rendered
+  // canvas — not merely "didn't lose your place" (fullRerender()'s plain
+  // scroll carry-over) but scrolled to and focused, since a click on
+  // "+ Adaugă" is a request to go work on the new item right away. The new
+  // item's own root path doubles as its focus target: sendFocusFieldToIframe
+  // (via edit-overlay.js's 'highlight' handler) already falls back from an
+  // exact data-hb-edit match to that item's first field when the root path
+  // itself isn't a field (e.g. "services.4" → "services.4.label") — the
+  // same fallback goToChecklistField() already relies on elsewhere.
+  const newItemFocusPath = listPath + '.' + (arr.length - 1);
   saveDraft();
-  fullRerender();
+  fullRerender(newItemFocusPath);
 }
 
 function onListRemove(path) {

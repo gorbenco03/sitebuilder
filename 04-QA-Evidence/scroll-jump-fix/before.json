@@ -1,0 +1,122 @@
+[
+  {
+    "template": "professionals",
+    "viewport": "1440x900",
+    "scrollHeight": 4514,
+    "targetScroll": 2482,
+    "canvasScrollBeforeClick": 1202,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "professionals",
+    "viewport": "390x844",
+    "scrollHeight": 6341,
+    "targetScroll": 3487,
+    "canvasScrollBeforeClick": 1693,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "local-service",
+    "viewport": "1440x900",
+    "scrollHeight": 4943,
+    "targetScroll": 2718,
+    "canvasScrollBeforeClick": 2198,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "local-service",
+    "viewport": "390x844",
+    "scrollHeight": 6243,
+    "targetScroll": 3433,
+    "canvasScrollBeforeClick": 2553,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "product-menu",
+    "viewport": "1440x900",
+    "scrollHeight": 2964,
+    "targetScroll": 1630,
+    "canvasScrollBeforeClick": 1094,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "product-menu",
+    "viewport": "390x844",
+    "scrollHeight": 3563,
+    "targetScroll": 1959,
+    "canvasScrollBeforeClick": 1668,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "portfolio",
+    "viewport": "1440x900",
+    "scrollHeight": 4570,
+    "targetScroll": 2513,
+    "canvasScrollBeforeClick": 3010,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "portfolio",
+    "viewport": "390x844",
+    "scrollHeight": 5119,
+    "targetScroll": 2815,
+    "canvasScrollBeforeClick": 2042,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "desserdirina",
+    "viewport": "1440x900",
+    "scrollHeight": 3236,
+    "targetScroll": 1779,
+    "canvasScrollBeforeClick": 2442,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  },
+  {
+    "template": "desserdirina",
+    "viewport": "390x844",
+    "scrollHeight": 5128,
+    "targetScroll": 2820,
+    "canvasScrollBeforeClick": 4552,
+    "canvasScrollAfter": 0,
+    "outerPageScrollBefore": 0,
+    "outerPageScrollAfter": 0,
+    "drawerScrollBefore": 0,
+    "drawerScrollAfter": 0
+  }
+]
