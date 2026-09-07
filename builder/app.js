@@ -2445,8 +2445,38 @@ function onIframeReady() {
   scheduleDemoTextMarks();
 }
 
+/** True unless `path`'s nearest list-item segment (the last purely-numeric
+ * dot segment, e.g. the "4" in "services.4.label") now falls OUTSIDE its
+ * current array's bounds. Paths with no numeric segment at all (ordinary
+ * object fields) are never "stale" in this sense and always return true.
+ *
+ * Guards onInlineTextEdit() below against a real race introduced by
+ * fullRerender()'s `focusPath` (see onListAdd()): giving a freshly added
+ * item's field real keyboard focus means a blur (e.g. the owner immediately
+ * clicking Undo, or Ctrl+Z, right after adding — plausible, since landing on
+ * the new item is the whole point) fires edit-overlay.js's async
+ * `{hb:'text',...}` commit AFTER that Undo has already shortened the array.
+ * Without this guard, setPath() below would auto-vivify the missing index
+ * right back into existence — silently resurrecting the item Undo just
+ * removed, and (via pushHistory()'s standard "a new step discards the redo
+ * branch" rule) destroying the very redo step that would have brought it
+ * back on purpose. */
+function isListItemPathStillValid(path) {
+  const parts = String(path || '').split('.');
+  for (let i = parts.length - 1; i >= 0; i--) {
+    if (/^\d+$/.test(parts[i])) {
+      const idx = parseInt(parts[i], 10);
+      const listPath = parts.slice(0, i).join('.');
+      const arr = getPath(draft.config, listPath);
+      return Array.isArray(arr) && idx < arr.length;
+    }
+  }
+  return true;
+}
+
 function onInlineTextEdit(path, value) {
   if (!path) return;
+  if (!isListItemPathStillValid(path)) return; // stale blur-commit — see doc comment above isListItemPathStillValid()
   let prevName = null;
   if (path === 'business.name' && draft.config) {
     prevName = getPath(draft.config, 'business.name');

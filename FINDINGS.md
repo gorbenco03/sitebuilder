@@ -181,3 +181,69 @@ win condition ("land ON the new item"), not pixel-exact position retention.
 - **`onListRemove()`**: unchanged call site (`fullRerender()`, no
   `focusPath`) — same scroll-preserving fallback as reorder, no jump to the
   new (shorter) list's top either.
+
+## Second-order regression found and fixed while proving "nothing regresses"
+
+Running the full proof battery surfaced two real problems the scroll/focus fix
+itself introduced — both fixed before this work was considered done. Neither
+was hypothetical: both were caught by the SAME test-and-verify discipline
+this task asked for (build the oracle, run the wide net, don't declare victory
+on the narrow oracle alone).
+
+### 2a. Undo immediately after add could resurrect the just-removed item
+
+`node --experimental-sqlite --test bot/test/wave5-builder-undo-redo.test.js
+bot/test/wave7-sections-builder-e2e.test.js bot/test/wave11-mobile-editor-touch.test.js`
+run together (concurrent Chromium load) reliably failed on
+`wave5-builder-undo-redo.test.js`: after Undo-ing a list-add, the Redo button
+stayed **disabled** instead of enabling. Root cause: giving the new item real
+keyboard focus (`sendFocusFieldToIframe`) means clicking "Undo" right after
+"+ Adaugă" blurs that field — and edit-overlay.js's blur handler
+asynchronously `postMessage`s `{hb:'text', path, value}` to commit whatever
+text is in it. If that message is processed by the parent AFTER Undo has
+already shortened the array, `onInlineTextEdit()`'s unconditional `setPath()`
+auto-vivifies the missing array slot right back into existence — silently
+resurrecting the item Undo just removed, and (via `pushHistory()`'s standard
+"a new step discards the redo branch" rule) destroying the very redo step
+that would have brought it back on purpose. Verified this does NOT happen on
+unpatched `main` under the identical concurrent-load run (0/2 failures there
+vs 2/2 with the scroll fix, before this second fix).
+
+Fix: `builder/app.js` — added `isListItemPathStillValid(path)`, called at the
+top of `onInlineTextEdit()`. It checks whether `path`'s nearest list-item
+index is still within that list's current bounds; a stale blur-commit for an
+index that no longer exists is silently dropped instead of resurrecting it.
+Ordinary (non-list, or in-bounds) edits are completely unaffected.
+
+Verified: the same 3-file concurrent run passes cleanly 3 times in a row
+after this fix (was reproducing 2/2 before it).
+
+### 2b. Portfolio: scrolling to the new gallery item could park it under the WhatsApp button
+
+The full-pass QA harness (`bot/test/fullpass-63230d2.mjs`) went from
+`defects=0` (confirmed 3x on unpatched `main`) to a reproducible
+`defects=1`: "WhatsApp QR panel did not open on portfolio". Root cause,
+confirmed with a throwaway Playwright diagnostic (not committed): portfolio's
+`templates/portfolio/collage.js` assigns each gallery photo an **inline**
+`z-index` up to 50 (`base[i].z`, unrelated to page chrome — it is that
+template's own "which scattered photo overlaps which" stacking), while
+`.whatsapp-float` (the persistent floating button) and `.wa-qr` (its QR
+modal) used the same `z-index: 30` / `z-index: 50` every other template uses
+for that same chrome. `30 < 50`, so a gallery photo could always, in
+principle, render on top of and intercept clicks on the fixed WhatsApp
+button — a latent bug in portfolio's own CSS that predates this session
+entirely. It was never exercised before because every prior full re-render
+reset scroll to the top, so the gallery grid essentially never ended up
+coinciding with the WhatsApp button's fixed screen corner at the moment of a
+subsequent click. This session's scroll-to-new-item behavior is what first
+made that latent overlap reachable — clicking "+ Adaugă" on a gallery
+category and landing on it (working as designed) can place a photo cell
+right where the button sits.
+
+Fix: `templates/portfolio/styles.css` — `.whatsapp-float` raised from
+`z-index: 30` to `55`, `.wa-qr` raised from `50` to `60` (both scoped to
+portfolio only — the other four templates never run this scatter animation,
+so their shared `30`/`50` convention is untouched and still correct there).
+
+Verified: `bot/test/fullpass-63230d2.mjs` back to `defects=0 steps=46`,
+confirmed twice in a row.

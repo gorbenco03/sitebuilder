@@ -512,7 +512,17 @@ ul { list-style: none; }
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 18px; width: 48px; height: 48px; border-radius: 50%;
-    background: #25D366; color: #fff; display: grid; place-items: center; z-index: 30;
+    background: #25D366; color: #fff; display: grid; place-items: center;
+    /* z-index: 55, not the shared 30 every other template uses for this same
+       button — collage.js (above) assigns each .collage-photo an inline
+       z-index up to 50 (its own "which photo overlaps which" stacking, unrelated
+       to page chrome), and this button must stay clickable even when the
+       gallery grid is scrolled to a position where a photo's screen box
+       happens to cover this fixed corner. Found via the editor's own list-add
+       scroll fix: preserving/landing on scroll position (instead of always
+       resetting to the top on every re-render) made that overlap reachable
+       for the first time — the z-index gap was latent before that. */
+    z-index: 55;
     box-shadow: 0 8px 20px rgba(37, 211, 102, 0.35);
 }
 .whatsapp-float .wa-icon { display: block; }
@@ -524,7 +534,10 @@ ul { list-style: none; }
 }
 .hb-built-by a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .wa-qr {
-    position: fixed; inset: 0; z-index: 50;
+    /* Same reasoning as .whatsapp-float above: above collage.js's max inline
+       z-index (50), with a safety margin, instead of the shared 50 every
+       other template uses for this same modal. */
+    position: fixed; inset: 0; z-index: 60;
     display: grid; place-items: center;
 }
 .wa-qr[hidden] { display: none !important; }
