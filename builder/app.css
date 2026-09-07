@@ -2637,3 +2637,33 @@ body.editor-preview-cookie-isolated .toast {
   border-width: 0;
 }
 .btn-loading-text { display: flex; align-items: center; gap: 0.4rem; }
+
+
+/* Skip link — visually hidden until it takes focus, then a real, readable
+   control at the top-left. Not display:none: a hidden element is not
+   focusable, which would defeat the point. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md, 8px);
+  background: var(--text, #141210);
+  color: var(--surface, #fff);
+  font-weight: 600;
+  text-decoration: none;
+  /* No transition. A skip link should be there the instant it takes focus —
+     a slide means it is measurably off-screen for the duration, and a keyboard
+     user who tabbed to it deliberately gains nothing from the animation. */
+}
+.skip-link:focus-visible,
+.skip-link:focus {
+  top: 0.5rem;
+  outline: 2px solid var(--focus, #2563EB);
+  outline-offset: 2px;
+}
+[role="main"]:focus { outline: none; }

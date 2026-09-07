@@ -12,6 +12,11 @@
   <link rel="stylesheet" href="/app/app.css" />
 </head>
 <body>
+<!-- WCAG 2.4.1 Bypass Blocks (Level A). The landing page puts a nav before its
+     content and the editor puts seventeen toolbar controls before the canvas;
+     without this a keyboard user tabs past all of it every time. Visually
+     hidden until focused — see .skip-link in app.css. -->
+<a href="#main" id="skip-to-content" class="skip-link">Sari la conținut</a>
 
 <!-- ===== LOADING OVERLAY ===== -->
 <div id="loading-overlay" class="loading-overlay" aria-live="polite">
@@ -394,7 +399,11 @@
 
 <!-- ===== DETAILS DRAWER ===== -->
 <div id="drawer-overlay" class="drawer-overlay" style="display:none" aria-hidden="true"></div>
-<aside id="details-drawer" class="details-drawer" role="complementary" aria-label="Detalii site" style="display:none">
+<!-- role="dialog" aria-modal, not "complementary": this panel has a
+     full-screen overlay whose click closes it and Escape closes it, so it
+     behaves as a modal for everyone using a mouse. Announcing it as a
+     complementary landmark told screen-reader users the opposite. -->
+<aside id="details-drawer" class="details-drawer" role="dialog" aria-modal="true" aria-label="Detalii site" style="display:none">
   <div class="drawer-header">
     <div class="drawer-heading">
       <span class="drawer-heading-icon" aria-hidden="true">
@@ -675,6 +684,7 @@ body.editor-preview-cookie-isolated > .hb-cookie-banner{display:none!important}
 
 <script src="/app/generated/templates-data.js"></script>
 <script src="/app/generated/engine.js"></script>
+<script src="/app/a11y-focus.js"></script>
 <script src="/app/app.js"></script>
 </body>
 </html>
