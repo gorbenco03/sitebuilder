@@ -165,6 +165,13 @@
     root.innerHTML =
       '<div class="hod-shell" data-hod-shell>' +
       '  <header class="hod-top">' +
+      // This page opens in a new tab from the builder, so the browser's own
+      // back button is often greyed out — there is nowhere to go back TO. An
+      // owner who finished with their bookings had no way out but the address
+      // bar.
+      '    <a class="hod-back" href="/app/#dashboard">' +
+      '      <span aria-hidden="true">&#8592;</span> Proiectele mele' +
+      '    </a>' +
       '    <div>' +
       '      <p class="hod-eyebrow" data-hod-brand></p>' +
       '      <h1>Programările tale</h1>' +
@@ -718,7 +725,18 @@
         '<p class="hod-hint">Durata și pauza dintre programări se folosesc la generarea intervalelor libere pe site-ul public.</p>';
       html += '<ul class="hod-svc-list">';
       if (!state.services.length) {
-        html += '<li class="hod-hint">Niciun serviciu configurat.</li>';
+        // "Niciun serviciu configurat." on its own reads as a broken page. The
+        // services here are the consultation types from the site's own
+        // Programări section, and they are created by the publish-time cutover
+        // — so before the first publish with the calendar switched on, there
+        // genuinely are none, and nothing said so.
+        html +=
+          '<li class="hod-hint">' +
+          'Niciun serviciu încă. Serviciile de aici sunt <strong>tipurile de consultație</strong> ' +
+          'din site-ul tău (Detalii → Programări) și apar automat după prima publicare cu ' +
+          'programările native activate.<br>' +
+          'Le adaugi și le redenumești în editor; durata și pauza le ajustezi aici.' +
+          '</li>';
       }
       state.services.forEach(function (s) {
         html += '<li data-svc-id="' + esc(s.id) + '">';

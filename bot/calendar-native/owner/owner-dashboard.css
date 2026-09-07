@@ -431,3 +431,21 @@ body.hod {
   .hod-modal-bg { align-items: center; }
   .hod-modal { border-radius: 18px; }
 }
+
+/* Back to the builder's dashboard. This page opens in a new tab, so the
+   browser's own back button is usually dead — there is nowhere to go back to.
+   44px tall like every other control here. */
+.hod-back {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 44px;
+  padding: .4rem .75rem .4rem 0;
+  margin-bottom: .35rem;
+  font-size: .88rem;
+  font-weight: 600;
+  color: #4b5f58;
+  text-decoration: none;
+}
+.hod-back:hover { color: #1f2a26; text-decoration: underline; }
+.hod-back:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; border-radius: 6px; }

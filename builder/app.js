@@ -6478,7 +6478,29 @@ function buildSiteCard(site) {
       .then((data) => {
         const cfg = data && data.config;
         const nativeOn = isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking);
-        if (!nativeOn) return;
+        if (!nativeOn) {
+          // The calendar used to be invisible from here until it was already
+          // switched on — which meant the one place an owner looks for their
+          // projects offered no way to START using it. You had to know to open
+          // the site, find Detalii, scroll to Programări and flip a setting you
+          // had never been told about. Offer the first step instead, and land
+          // them on the switch rather than in the editor to go looking.
+          if (!(cfg && cfg.appointment)) return;   // template has no bookings at all
+          const setupBtn = document.createElement('button');
+          setupBtn.type = 'button';
+          setupBtn.className = 'btn-ghost btn-sm';
+          setupBtn.textContent = 'Configurează calendarul';
+          setupBtn.setAttribute(
+            'aria-label',
+            'Configurează calendarul pentru ' + (site.projectName || site.slug || 'acest site')
+          );
+          setupBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loadSiteForEdit(site.id, 'appointment.nativeBooking');
+          });
+          actions.appendChild(setupBtn);
+          return;
+        }
         const bookBtn = document.createElement('a');
         bookBtn.className = 'btn-ghost btn-sm';
         bookBtn.textContent = 'Programări';
@@ -6506,7 +6528,14 @@ function buildSiteCard(site) {
   return card;
 }
 
-async function loadSiteForEdit(siteId) {
+/* Optional: a drawer field to open and focus once the editor has loaded.
+ * Set by the dashboard's "Configurează calendarul" button so an owner who has
+ * never turned the calendar on lands ON the switch, instead of being dropped
+ * into the editor to hunt through Detalii for a setting they have not met. */
+let pendingFocusFieldKey = null;
+
+async function loadSiteForEdit(siteId, focusFieldKey) {
+  pendingFocusFieldKey = focusFieldKey || null;
   try {
     setLoading(true, 'Se încarcă site-ul…');
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId));
@@ -6543,6 +6572,13 @@ async function loadSiteForEdit(siteId) {
     previewCookieAccepted = false;
 
     window.location.hash = '#edit';
+    if (pendingFocusFieldKey) {
+      const key = pendingFocusFieldKey;
+      pendingFocusFieldKey = null;
+      // After the editor screen and its preview have settled, or the drawer
+      // opens against a canvas that is still being built.
+      setTimeout(() => { try { openDrawer(key); } catch (_) { /* never block the load */ } }, 700);
+    }
   } catch (e) {
     showToast('Nu am putut încărca site-ul.', 'error');
   } finally {
