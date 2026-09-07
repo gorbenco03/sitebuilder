@@ -127,3 +127,31 @@ test('a configured self-hosted install still gets real canonical, robots and sit
         fs.rmSync(dataDir, { recursive: true, force: true });
     }
 });
+
+test('a re-exported site keeps its own path in robots.txt and sitemap.xml', () => {
+    // A site published on a self-hosted install lives at https://host/live/<slug>/.
+    // originFromCanonical()'s `new URL(c).origin` threw that path away, so a
+    // re-exported ZIP listed the SITE ROOT's pages instead of this customer's —
+    // four <loc> entries that 404 or belong to somebody else, while the page's
+    // own rel=canonical was correct. Identical for a site at a domain root,
+    // which is why it went unnoticed.
+    const siteExport = require(path.join(ROOT, 'bot', 'site-export.js'));
+    const cfg = JSON.parse(
+        fs.readFileSync(path.join(ROOT, 'templates', 'professionals', 'presets.json'), 'utf8')
+    ).presets[0].config;
+    cfg.seo = Object.assign({}, cfg.seo, { canonical: 'https://exemplu.test/live/cabinet/' });
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reexport-'));
+    try {
+        siteExport.buildStaticSiteTree({ templateId: 'professionals', config: cfg, images: [], siteDir: dir });
+        const robots = fs.readFileSync(path.join(dir, 'robots.txt'), 'utf8');
+        const sitemap = fs.readFileSync(path.join(dir, 'sitemap.xml'), 'utf8');
+        assert.match(robots, /Sitemap:\s*https:\/\/exemplu\.test\/live\/cabinet\/sitemap\.xml/,
+            'robots.txt must point at THIS site\'s sitemap, not the host root\'s');
+        assert.match(sitemap, /<loc>https:\/\/exemplu\.test\/live\/cabinet\/<\/loc>/,
+            'the sitemap must list this site\'s home page');
+        assert.doesNotMatch(sitemap, /<loc>https:\/\/exemplu\.test\/(privacy|terms|cookies)\.html<\/loc>/,
+            'the sitemap must not list pages at the host root — those belong to a different site');
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});

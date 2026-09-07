@@ -346,6 +346,33 @@ function originFromCanonical(canonical) {
 }
 
 /**
+ * The base a sitemap's <loc> entries and robots.txt's Sitemap: line hang off:
+ * origin PLUS the canonical's path, trailing slash trimmed.
+ *
+ * Not originFromCanonical(). A site published on an isolated/self-hosted
+ * install lives at https://host/live/<slug>/, and `new URL(c).origin` throws
+ * that path away — so a re-exported ZIP listed
+ *
+ *     <loc>https://host/</loc>
+ *     <loc>https://host/privacy.html</loc>
+ *
+ * four URLs that belong to the site root, not to this customer's site, while
+ * the page's own rel=canonical correctly said /live/<slug>/. A crawler
+ * following that sitemap gets 404s or somebody else's pages. For a site
+ * published at a domain root the two functions return the same thing, which is
+ * why this went unnoticed.
+ */
+function baseFromCanonical(canonical) {
+    if (!canonical || !/^https?:\/\//i.test(String(canonical))) return '';
+    try {
+        const u = new URL(canonical);
+        return (u.origin + u.pathname).replace(/\/+$/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
+/**
  * Build a complete static site directory (HTML/CSS/JS/images/legal/badge).
  * @returns {{ siteDir: string, cleanup: function }}
  */
@@ -366,7 +393,7 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     // section). README-EXPORT.txt below tells the client to regenerate the
     // export after publishing so both correct themselves automatically.
     cfgCopy.seo = (cfgCopy.seo && typeof cfgCopy.seo === 'object') ? cfgCopy.seo : {};
-    const exportOrigin = originFromCanonical(cfgCopy.seo.canonical) || SEO_PLACEHOLDER_ORIGIN;
+    const exportOrigin = baseFromCanonical(cfgCopy.seo.canonical) || SEO_PLACEHOLDER_ORIGIN;
     if (!cfgCopy.seo.canonical) {
         cfgCopy.seo.canonical = `${exportOrigin}/`;
     }
