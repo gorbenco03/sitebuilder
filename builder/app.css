@@ -1882,7 +1882,16 @@ body.details-drawer-open .editor-tpl-name {
   transform-origin: top left;
 }
 
-.site-card-info { flex: 1; min-width: 0; }
+/* The name/URL column must keep a readable width even when a card carries the
+   full action set (Editează · Anulează · Istoric · Domeniu · Facturi ·
+   Programări · Șterge). It used to be `flex: 1` against actions that refused
+   to shrink, so the buttons took their whole max-content width and the info
+   column was squeezed to 101px at 1440 and 41px at 700 — the project name,
+   which is deliberately `overflow: visible`, then painted straight across the
+   button row, and the live URL wrapped into a four-line ribbon. Giving info a
+   real flex-basis and letting the actions shrink makes the buttons wrap onto a
+   second line instead of starving the text. */
+.site-card-info { flex: 1 1 15rem; min-width: 0; }
 /* S111 + W15: full site name readable at 390 — wrap at spaces only, never mid-letter/mid-hyphen. */
 .site-card-name {
   font-weight: 700;
@@ -1970,7 +1979,27 @@ body.details-drawer-open .editor-tpl-name {
 }
 .site-live-link:hover { color: var(--accent); text-decoration: underline; }
 
-.site-card-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; flex-shrink: 0; }
+.site-card-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  /* shrinkable on purpose — see .site-card-info above */
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-inline-start: auto;
+}
+
+/* Below this the buttons no longer fit beside a readable name column at all,
+   so give them their own full-width row rather than a 3-across sliver. */
+@media (max-width: 860px) {
+  .site-card-actions {
+    flex-basis: 100%;
+    width: 100%;
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
+}
 
 /* W15 390: actions must not steal the name column — stack full-width under thumb+info. */
 @media (max-width: 420px) {

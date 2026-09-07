@@ -212,14 +212,120 @@ const MIME_TYPES = {
 // In-memory static file cache: path → { buf, mtimeMs, size, etag, lastModified }
 const staticFileCache = new Map();
 
+// ---------------------------------------------------------------------------
+// Cache-busting for our own HTML shells (/app/ and /calendar-native/owner/)
+//
+// The origin answers /app/app.js with `public, max-age=0, must-revalidate`,
+// which is correct — and is not what the browser actually sees. The CDN in
+// front of production rewrites it to `max-age=14400`, so for four hours after
+// a deploy an owner's browser keeps serving the previous build from its own
+// disk without asking anyone. A feature that shipped, merged and deployed
+// cleanly is then simply missing from their screen, and the only way out is a
+// hard refresh — which is not an instruction a paying customer should ever
+// need, and not one they will think of.
+//
+// Stamping every same-origin .js/.css reference in our shells with that file's
+// own size+mtime makes the URL itself change whenever the file changes, so no
+// cache anywhere — browser, CDN or proxy — can serve yesterday's bytes for
+// today's URL. The HTML is already `no-cache`, so the new URLs are picked up on
+// the next navigation. Published customer sites are deliberately NOT stamped:
+// their HTML is a deliverable the owner exports and hosts themselves.
+// ---------------------------------------------------------------------------
+
+const APP_URL_PREFIX = '/app/';
+const CAL_OWNER_URL_PREFIX = '/calendar-native/owner/';
+const ASSET_REF_RE = /(\s(?:src|href)=")([^"?#<>]+\.(?:js|css))(")/gi;
+const ASSET_LITERAL_RE = /(['"])(\/(?:app|calendar-native\/owner)\/[^'"?#<>]+\.(?:js|css))\1/gi;
+
+/** Is this an HTML shell we own and therefore may rewrite? */
+function isOwnHtmlShell(filePath) {
+    if (path.extname(filePath).toLowerCase() !== '.html') return false;
+    const real = path.resolve(filePath);
+    return real.startsWith(path.resolve(BUILDER_DIR) + path.sep) ||
+           real.startsWith(CAL_NATIVE_OWNER_DIR + path.sep);
+}
+
+/** Map an href/src in one of our shells back to the file it will be served from. */
+function resolveAssetRef(ref, htmlPath) {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(ref) || ref.startsWith('//')) return null;   // external
+    if (ref.startsWith(APP_URL_PREFIX)) {
+        return path.join(BUILDER_DIR, ref.slice(APP_URL_PREFIX.length));
+    }
+    if (ref.startsWith(CAL_OWNER_URL_PREFIX)) {
+        return path.join(CAL_NATIVE_OWNER_DIR, ref.slice(CAL_OWNER_URL_PREFIX.length));
+    }
+    if (ref.startsWith('/')) return null;                                        // some other route
+    return path.join(path.dirname(htmlPath), ref);
+}
+
+function assetSignature(filePath) {
+    try {
+        const st = fs.statSync(filePath);
+        return st.size.toString(36) + '-' + Math.floor(st.mtimeMs).toString(36);
+    } catch {
+        return null;
+    }
+}
+
+function stampHtmlAssets(html, htmlPath) {
+    const refs = [];
+    const stamp = (ref) => {
+        const target = resolveAssetRef(ref, htmlPath);
+        if (!target) return null;
+        const sig = assetSignature(target);
+        if (!sig) return null;
+        refs.push(target);
+        return ref + '?v=' + sig;
+    };
+
+    // Pass 1: src=/href= attributes.
+    let out = html.replace(ASSET_REF_RE, (whole, pre, ref, post) => {
+        const stamped = stamp(ref);
+        return stamped === null ? whole : pre + stamped + post;
+    });
+
+    // Pass 2: the same URLs written as string literals inside our own inline
+    // scripts. The owner dashboard injects its bundle with
+    // `s.src = '/calendar-native/owner/owner-dashboard.js'`, which pass 1
+    // cannot see — and that is the file carrying the calendar's back button and
+    // its auto-dismissing save banner, so leaving it unstamped would strand
+    // exactly the fixes an owner is waiting for. A pass-1 URL already carries a
+    // '?', which this pattern excludes, so nothing is stamped twice.
+    out = out.replace(ASSET_LITERAL_RE, (whole, quote, ref) => {
+        const stamped = stamp(ref);
+        return stamped === null ? whole : quote + stamped + quote;
+    });
+
+    return { html: out, refs };
+}
+
+function refsSignature(refs) {
+    return refs.map((f) => assetSignature(f) || 'gone').join('|');
+}
+
 function getCachedStatic(filePath, stat) {
+    const shell = isOwnHtmlShell(filePath);
     const prev = staticFileCache.get(filePath);
-    if (prev && prev.mtimeMs === stat.mtimeMs && prev.size === stat.size) {
+    if (prev && prev.mtimeMs === stat.mtimeMs && prev.size === stat.size &&
+        (!shell || prev.assetSig === refsSignature(prev.assetRefs))) {
         return prev;
     }
-    const buf = fs.readFileSync(filePath);
-    // Strong ETag from size + mtime (stable across process restarts for unchanged files).
-    const etag = '"' + stat.size.toString(16) + '-' + Math.floor(stat.mtimeMs).toString(16) + '"';
+    let buf = fs.readFileSync(filePath);
+    let assetRefs = [];
+    if (shell) {
+        const stamped = stampHtmlAssets(buf.toString('utf8'), filePath);
+        buf = Buffer.from(stamped.html, 'utf8');
+        assetRefs = stamped.refs;
+    }
+    const assetSig = shell ? refsSignature(assetRefs) : null;
+    // Strong ETag from size + mtime (stable across process restarts for unchanged
+    // files). A shell also folds in its assets' signatures, so a rebuilt app.js
+    // invalidates the shell that points at it instead of 304-ing the old URLs.
+    let etag = '"' + stat.size.toString(16) + '-' + Math.floor(stat.mtimeMs).toString(16);
+    if (assetSig) {
+        etag += '-' + crypto.createHash('sha1').update(assetSig).digest('hex').slice(0, 8);
+    }
+    etag += '"';
     const entry = {
         buf,
         mtimeMs: stat.mtimeMs,
@@ -227,6 +333,8 @@ function getCachedStatic(filePath, stat) {
         etag,
         lastModified: stat.mtime.toUTCString(),
         gzipBuf: null, // PERF-03: computed lazily on first gzip-eligible request, see getGzipBuf()
+        assetRefs,
+        assetSig,
     };
     staticFileCache.set(filePath, entry);
     return entry;
