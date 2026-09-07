@@ -161,7 +161,22 @@ function seedTenantFromProfessionalConfig(db, customerId, siteId, config) {
         Math.max(0, parseInt(appt.minLeadMinutes, 10) || 0)
     );
 
-    engine.ensureSettings(db, customerId, siteId, {
+    // Has this tenant's calendar been established already? If it has, the owner
+    // has had the chance to set their real schedule in the calendar dashboard,
+    // and the site config is no longer the authority on it.
+    //
+    // Before this check, seeding ran on EVERY publish. An owner who set Tuesday
+    // and Thursday 14:00-19:00 in the calendar, then went back to the editor to
+    // fix a typo in their tagline and republished, silently got Monday-Friday
+    // 09:00-17:00 back — the config's values — and their site then accepted
+    // bookings at hours they do not work. Reproduced end to end before fixing.
+    const established = engine.listWeeklyAvailability(db, customerId, siteId).length > 0;
+
+    // Settings the owner can change from the calendar dashboard (timezone, slot
+    // interval, cancellation window) are only written on the first cutover.
+    // Afterwards ensureSettings is called with no patch, so it creates the row
+    // if it is somehow missing and leaves an existing one alone.
+    engine.ensureSettings(db, customerId, siteId, established ? {} : {
         timezone,
         default_buffer_minutes: 0,
         slot_interval_minutes: slotInterval,
@@ -225,11 +240,16 @@ function seedTenantFromProfessionalConfig(db, customerId, siteId, config) {
             windows.push({ weekday: d, start_minute: 9 * 60, end_minute: 17 * 60 });
         }
     }
-    engine.setWeeklyAvailability(db, customerId, siteId, windows);
+    // setWeeklyAvailability DELETEs the tenant's rows and re-inserts, so calling
+    // it on a republish is destructive by construction. Seed only.
+    if (!established) {
+        engine.setWeeklyAvailability(db, customerId, siteId, windows);
+    }
 
     return {
         services: serviceCount,
-        weeklyWindows: windows.length,
+        weeklyWindows: established ? 0 : windows.length,
+        availabilitySeeded: !established,
         timezone,
         minLeadMinutes: minLead,
         slotIntervalMinutes: slotInterval,
