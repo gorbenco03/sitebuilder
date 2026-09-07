@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-06T23:29:21.932Z",
-  "commit": "8c1c853",
+  "generatedAt": "2026-09-07T00:57:42.382Z",
+  "commit": "9320f14",
   "templates": {
     "desserdirina": {
       "viewports": {
@@ -33,7 +33,7 @@
           "firstLoadBytes": 70064
         }
       },
-      "exportBytes": 3912647
+      "exportBytes": 3912645
     },
     "local-service": {
       "viewports": {
@@ -49,7 +49,7 @@
             "p10": 17.49,
             "worst": 16.37
           },
-          "firstLoadBytes": 27013
+          "firstLoadBytes": 63202
         },
         "mobile": {
           "cls": 0,
@@ -63,7 +63,7 @@
             "p10": 17.07,
             "worst": 16.55
           },
-          "firstLoadBytes": 314886
+          "firstLoadBytes": 321683
         }
       },
       "exportBytes": 7596432
@@ -99,7 +99,7 @@
           "firstLoadBytes": 64882
         }
       },
-      "exportBytes": 7296112
+      "exportBytes": 7296130
     },
     "product-menu": {
       "viewports": {
@@ -115,7 +115,7 @@
             "p10": 18.68,
             "worst": 18.68
           },
-          "firstLoadBytes": 71838
+          "firstLoadBytes": 26246
         },
         "mobile": {
           "cls": 0,
@@ -148,7 +148,7 @@
             "p10": 14.05,
             "worst": 13.91
           },
-          "firstLoadBytes": 338134
+          "firstLoadBytes": 354030
         },
         "mobile": {
           "cls": 0,
@@ -165,7 +165,7 @@
           "firstLoadBytes": 338134
         }
       },
-      "exportBytes": 524417
+      "exportBytes": 525909
     }
   }
 }
