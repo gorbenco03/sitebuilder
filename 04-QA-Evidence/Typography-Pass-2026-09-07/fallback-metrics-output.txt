@@ -1,0 +1,12 @@
+
+=== portfolio .pf-copy ===
+{"requestedFont":"Iowan Old Style","resolvedFamilyCss":"\"Iowan Old Style\"","sampleWidthPx":349.1,"elementHeightPx":77,"lines":3,"textLength":203,"cpl":67.7}
+{"requestedFont":"Palatino","resolvedFamilyCss":"Palatino","sampleWidthPx":345.7,"elementHeightPx":77,"lines":3,"textLength":203,"cpl":67.7}
+{"requestedFont":"Georgia","resolvedFamilyCss":"Georgia","sampleWidthPx":344.2,"elementHeightPx":77,"lines":3,"textLength":203,"cpl":67.7}
+{"requestedFont":"serif","resolvedFamilyCss":"serif","sampleWidthPx":314.9,"elementHeightPx":77,"lines":3,"textLength":203,"cpl":67.7}
+
+=== professionals .pr-copy ===
+{"requestedFont":"Iowan Old Style","resolvedFamilyCss":"\"Iowan Old Style\"","sampleWidthPx":349.1,"elementHeightPx":53,"lines":2,"textLength":86,"cpl":43}
+{"requestedFont":"Palatino","resolvedFamilyCss":"Palatino","sampleWidthPx":345.7,"elementHeightPx":53,"lines":2,"textLength":86,"cpl":43}
+{"requestedFont":"Georgia","resolvedFamilyCss":"Georgia","sampleWidthPx":344.2,"elementHeightPx":53,"lines":2,"textLength":86,"cpl":43}
+{"requestedFont":"serif","resolvedFamilyCss":"serif","sampleWidthPx":314.9,"elementHeightPx":53,"lines":2,"textLength":86,"cpl":43}

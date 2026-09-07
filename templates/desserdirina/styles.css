@@ -636,7 +636,9 @@ body {
 .about-text {
     color: var(--color-text-light);
     font-size: 1.02rem;
-    line-height: 1.85;
+    /* 1.6 matches the body baseline; 1.85 was outside the 1.5-1.65 body range
+       measured and only added scroll length on a 6-10 line paragraph. */
+    line-height: 1.6;
     margin-bottom: 2.25rem;
     max-width: 60ch;
 }
@@ -1120,7 +1122,8 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 .category-blurb {
     color: var(--color-text-light);
     font-size: 0.95rem;
-    line-height: 1.75;
+    /* Same 1.6 body baseline as .about-text; 1.75 measured outside 1.5-1.65. */
+    line-height: 1.6;
     margin-bottom: 1.5rem;
     max-width: 800px;
 }

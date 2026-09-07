@@ -1,0 +1,82 @@
+✔ consent accept button meets the 44px target size on every template (6156.5675ms)
+✔ consent accept button is palette-neutral, not the chat FAB green (3132.95ms)
+✔ the consent card never covers first-screen copy, at any viewport (17886.967959ms)
+✔ exported stylesheets are minified and keep every rule (96.786416ms)
+  portfolio / seed photo / .pf-hero__word: p10 9.99:1, worst 8.19:1 (bar 3:1, 58px)
+  portfolio / seed photo / .pf-hero__tag: p10 10.62:1, worst 9.81:1 (bar 4.5:1, 21px)
+  portfolio / light photo / .pf-hero__word: p10 7.77:1, worst 7.53:1 (bar 3:1, 58px)
+  portfolio / light photo / .pf-hero__tag: p10 9.33:1, worst 9.19:1 (bar 4.5:1, 21px)
+  local-service / seed photo / .ls-hero__name, .ls-hero__tag: p10 15.97:1, worst 14.65:1 (bar 3:1, 54px)
+  local-service / seed photo / .ls-hero__tag: p10 17.49:1, worst 16.37:1 (bar 3:1, 54px)
+  local-service / light photo / .ls-hero__name, .ls-hero__tag: p10 7.98:1, worst 7.74:1 (bar 3:1, 54px)
+  local-service / light photo / .ls-hero__tag: p10 10.94:1, worst 10.30:1 (bar 3:1, 54px)
+  professionals / seed photo / .pr-display: p10 13.92:1, worst 13.79:1 (bar 3:1, 54px)
+  professionals / seed photo / .pr-lede: p10 14.21:1, worst 13.81:1 (bar 4.5:1, 17px)
+  professionals / light photo / .pr-display: p10 16.58:1, worst 16.57:1 (bar 3:1, 54px)
+  professionals / light photo / .pr-lede: p10 16.58:1, worst 16.58:1 (bar 4.5:1, 17px)
+  desserdirina / seed photo / .hero-wordmark: p10 3.67:1, worst 3.11:1 (bar 3:1, 86px)
+  desserdirina / seed photo / .hero-tagline: p10 12.27:1, worst 9.89:1 (bar 4.5:1, 17px)
+  desserdirina / light photo / .hero-wordmark: p10 4.33:1, worst 4.26:1 (bar 3:1, 86px)
+  desserdirina / light photo / .hero-tagline: p10 13.66:1, worst 13.46:1 (bar 4.5:1, 17px)
+  product-menu / seed photo / .pm-hero__tag: p10 18.68:1, worst 18.68:1 (bar 3:1, 54px)
+  product-menu / seed photo / .pm-kicker: p10 19.80:1, worst 19.80:1 (bar 4.5:1, 11px)
+  product-menu / light photo / .pm-hero__tag: p10 18.68:1, worst 18.68:1 (bar 3:1, 54px)
+  product-menu / light photo / .pm-kicker: p10 19.80:1, worst 19.80:1 (bar 4.5:1, 11px)
+✔ hero headlines clear WCAG AA over the seed photo AND over a light one (15093.479334ms)
+✔ no hero-sized background image tiles or renders at its natural size (7082.780458ms)
+✔ no template ships a file naming another template or its brand (6.7915ms)
+{"ts":"2026-09-07T00:04:18.311Z","event":"server.started","port":59711}
+🌐 HTTP server on :59711 (health + webhooks + API)
+✔ the page-sections panel is reachable and populated on every template (14314.97175ms)
+✔ every standalone target meets the WCAG 2.5.8 AA minimum of 24x24 (6156.634291ms)
+✔ primary actions and navigation meet the 44x44 platform floor (6094.938875ms)
+(node:42785) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS valid signature verifies
+PASS Buffer body verifies identically
+PASS wrong secret is rejected
+PASS tampered body is rejected
+PASS stale timestamp is rejected (replay protection)
+PASS malformed header / missing parts are rejected, never throw
+PASS constructWebhookEvent parses on valid sig, throws on invalid
+{"ts":"2026-09-07T00:04:18.979Z","event":"server.started","port":59729}
+🌐 HTTP server on :59729 (health + webhooks + API)
+PASS GET /health → 200 {ok:true}
+PASS POST /webhooks/stripe without secret configured → 503
+{"ts":"2026-09-07T00:04:19.013Z","event":"webhook.stripe.bad_signature","ip":"::ffff:127.0.0.1"}
+PASS POST /webhooks/stripe with bad signature → 400
+{"ts":"2026-09-07T00:04:19.016Z","event":"webhook.stripe.received","type":"checkout.session.completed","id":"evt_ok"}
+PASS POST /webhooks/stripe with valid signature → 200 + handler runs
+PASS unknown route → 404
+PASS ignores unrelated event types
+PASS ignores completed-but-unpaid sessions (delayed methods)
+PASS no chatId metadata → not handled
+PASS unknown chat (order already finished) → acked as handled, no throw
+PASS checkout session id mismatch → rejected
+PASS already published → idempotent no-op
+PASS wizard-phase session (not yet at payment) → rejected
+✔ bot/test/webhook.test.js (188.365125ms)
+PASS wrangler.toml exists
+PASS wrangler.toml must not present desserdina / DESSERD / desserd as product or Pages project name
+PASS wrangler.toml name is a Hidook-style Pages project slug
+PASS wrangler.toml comments name Hidook Site Builder identity
+PASS comments must not teach bakery sample deploy as the commercial product
+PASS pages_build_output_dir stays "dist" and compatibility_date is preserved
+PASS wrangler.toml must not instruct live hidook.agency DNS / production cutover
+✔ bot/test/wrangler-identity-commercial.test.js (56.751083ms)
+ℹ tests 419
+ℹ suites 0
+ℹ pass 418
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 166579.884333
+
+✖ failing tests:
+
+test at bot/test/flow3-legal-export.test.js:1:1
+✖ bot/test/flow3-legal-export.test.js (56555.187875ms)
+  'test failed'
+
+[exited with code 0]
