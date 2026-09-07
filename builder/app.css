@@ -2667,3 +2667,37 @@ body.editor-preview-cookie-isolated .toast {
   outline-offset: 2px;
 }
 [role="main"]:focus { outline: none; }
+/* ============================================================
+   WAVE 12 — checklist "what's missing" menu (builder/app.js,
+   builder/index.html). Appended at the very end on purpose — another
+   stream is working earlier in this file this session. Kept small and
+   self-contained; base look (position, surface, shadow) comes from the
+   existing .account-menu / .account-menu-item classes, reused as-is.
+   ============================================================ */
+.checklist-menu {
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.checklist-menu-divider { height: 1px; background: var(--border); margin: 0.3rem 0.1rem; }
+.checklist-menu-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 0.2rem 0.6rem 0.35rem;
+}
+.checklist-menu-empty { font-size: 0.82rem; color: var(--success); margin: 0.2rem 0.6rem 0.3rem; }
+.checklist-menu-field { display: flex; align-items: center; gap: 0.45rem; }
+.checklist-menu-field::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .checklist-menu { left: 0.75rem !important; right: 0.75rem !important; width: auto !important; max-width: none; }
+}

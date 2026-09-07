@@ -270,6 +270,24 @@
       '  pointer-events: none;',
       '  z-index: 2147483646;',
       '}',
+
+      /* Wave 12: a hero/background photo's "still demo" flag and its
+         "Înlocuiește fotografia" fix used to sit in different corners of the
+         same image (this ::after tag top-left, the button top-right) —
+         two signals for one fact, competing for attention instead of
+         reinforcing each other. Fix: fold the flag directly into the
+         button (see applyPendingDemoBadges() below, the 'bg' branch) —
+         same amber as the .hb-demo-text cue above, so every provisional-
+         content signal in the editor reads as one visual language. The
+         corner ::after tag above is kept for the OTHER photo shape
+         (plain <img>, e.g. a gallery photo or logo): its replace button
+         only appears on hover, so a persistent glanceable marker is still
+         needed there — this rule only ever applies to a background host,
+         which always carries the always-visible .hb-bg-btn instead. */
+      '.hb-demo-bg > .hb-bg-btn {',
+      '  background: rgba(180,83,9,0.92);',
+      '  box-shadow: 0 0 0 1px rgba(255,255,255,0.35) inset;',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
   }());
@@ -677,12 +695,18 @@
     return typeof src === 'string' && src.length > 0 && src.indexOf('data:image/') === -1;
   }
 
-  /** Hosts queued for the "demo" corner badge — populated during
-   * setupImages(), applied afterward (see applyPendingDemoBadges()). */
+  /** Hosts queued for the "demo" marker — populated during setupImages(),
+   * applied afterward (see applyPendingDemoBadges()). Each entry also
+   * carries which photo shape it is ('img' or 'bg' — see addDemoBadge()). */
   var pendingDemoBadgeHosts = [];
 
-  /** Queue a wrapper element for the small "demo" corner badge, applied only
-   * once the {hb:'ready'} handshake has already been sent (see mount()).
+  /** Queue a wrapper element for the "still demo" marker, applied only once
+   * the {hb:'ready'} handshake has already been sent (see mount()).
+   *
+   * `kind` is 'img' (a plain <img>'s wrap — the default) or 'bg' (a CSS
+   * background's host): they get different treatment in
+   * applyPendingDemoBadges() below — see that function's doc comment for
+   * why — but both queue the same cheap way.
    *
    * Not applied inline here on purpose: this is called from inside
    * setupImages()'s per-element loop, which the parent's fullRerender() /
@@ -696,23 +720,42 @@
    * (fullRerender()'s renderInFlight) still being busy when the next
    * scheduled re-render came due, reproduced as a real regression in
    * bot/test/fullpass-63230d2.mjs's professionals Cal.com-booking-link
-   * timing check during this wave's own development. The badge is purely
+   * timing check during this wave's own development. The marker is purely
    * cosmetic (unlike text/image editability, nothing depends on it being
    * present at "ready" time), so it is deferred one tick past the ready
    * handshake instead — imperceptible to a human, off the critical path
    * entirely. */
-  function addDemoBadge(host) {
+  function addDemoBadge(host, kind) {
     if (!host) return;
-    pendingDemoBadgeHosts.push(host);
+    pendingDemoBadgeHosts.push({ host: host, kind: kind === 'bg' ? 'bg' : 'img' });
   }
 
-  /** Paint every queued demo-photo badge — called once, shortly after
-   * {hb:'ready'} (see addDemoBadge()'s doc comment). */
+  /** Paint every queued "still demo" marker — called once, shortly after
+   * {hb:'ready'} (see addDemoBadge()'s doc comment).
+   *
+   * Wave 12: the flag and the "Înlocuiește fotografia" fix used to sit in
+   * different corners of the same image — a separate ::after corner tag
+   * (top-left) and the replace button (top-right), two signals for one
+   * fact. For a background photo (`kind === 'bg'`) the button is ALWAYS
+   * visible (see .hb-bg-btn — no hover-only opacity rule), so the flag now
+   * folds directly into it: same element, same corner, same click. A plain
+   * <img>'s replace button (`kind === 'img'`) only appears on hover, so it
+   * still gets the old persistent corner ::after (.hb-demo-photo) — dropping
+   * it there would mean the demo flag is invisible until the owner happens
+   * to hover the exact photo, defeating Wave 11's whole point (glance at
+   * the canvas, see what's still the template's). */
   function applyPendingDemoBadges() {
-    var hosts = pendingDemoBadgeHosts;
+    var items = pendingDemoBadgeHosts;
     pendingDemoBadgeHosts = [];
-    for (var i = 0; i < hosts.length; i++) {
-      hosts[i].classList.add('hb-demo-photo');
+    for (var i = 0; i < items.length; i++) {
+      var host = items[i].host;
+      if (items[i].kind === 'bg') {
+        host.classList.add('hb-demo-bg');
+        var bgBtn = host.querySelector(':scope > .hb-bg-btn');
+        if (bgBtn) bgBtn.textContent = 'Poză demo — Înlocuiește fotografia';
+      } else {
+        host.classList.add('hb-demo-photo');
+      }
     }
   }
 
@@ -752,7 +795,7 @@
 
       img.parentNode.insertBefore(wrap, img);
       wrap.appendChild(img);
-      if (isDemoSrcValue(src)) addDemoBadge(wrap);
+      if (isDemoSrcValue(src)) addDemoBadge(wrap, 'img');
 
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -897,7 +940,7 @@
         }
       }
       buttonHost.appendChild(btn);
-      if (isDemoSrcValue(bgUrl)) addDemoBadge(buttonHost);
+      if (isDemoSrcValue(bgUrl)) addDemoBadge(buttonHost, 'bg');
     });
   }
 
@@ -1218,7 +1261,11 @@
       }
 
       case 'highlight': {
-        var el = findByPath(msg.path);
+        // Exact field first; for a list's own root path (e.g. "services" —
+        // only its items carry data-hb-edit, as "services.0.label" etc.)
+        // fall back to that list's first field rather than silently
+        // no-op-ing (see itemFieldSelector()'s own doc comment, section 6).
+        var el = findByPath(msg.path) || document.querySelector(itemFieldSelector(msg.path));
         if (!el) return;
         el.classList.remove('hb-highlight');
         // Force reflow to restart the animation.
@@ -1228,6 +1275,16 @@
           el.classList.remove('hb-highlight');
         }, { once: true });
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Wave 12: the checklist "what's missing" menu (builder/app.js)
+        // sends this same message with `focus: true` to land the owner one
+        // click from "this isn't done" to "here is where you fix it" — for
+        // a genuine contenteditable text field that means keyboard focus
+        // too, not just a visual flash. A non-text fallback target (e.g. the
+        // first field of an otherwise-empty list) still gets scrolled and
+        // highlighted even though it cannot usefully take focus itself.
+        if (msg.focus && el.getAttribute('data-hb-kind') === 'text') {
+          try { el.focus({ preventScroll: true }); } catch (_) { try { el.focus(); } catch (__) {} }
+        }
         break;
       }
 
