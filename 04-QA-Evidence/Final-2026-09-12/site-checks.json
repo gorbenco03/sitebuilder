@@ -1,0 +1,92 @@
+[
+  {
+    "sablon": "product-menu",
+    "latime": "desktop",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "product-menu",
+    "latime": "tableta",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "product-menu",
+    "latime": "telefon",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "local-service",
+    "latime": "desktop",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "local-service",
+    "latime": "tableta",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "local-service",
+    "latime": "telefon",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "portfolio",
+    "latime": "desktop",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "portfolio",
+    "latime": "tableta",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "portfolio",
+    "latime": "telefon",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "professionals",
+    "latime": "desktop",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "professionals",
+    "latime": "tableta",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "professionals",
+    "latime": "telefon",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "desserdirina",
+    "latime": "desktop",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "desserdirina",
+    "latime": "tableta",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  },
+  {
+    "sablon": "desserdirina",
+    "latime": "telefon",
+    "scrollOrizontal": false,
+    "eroriConsola": 0
+  }
+]
