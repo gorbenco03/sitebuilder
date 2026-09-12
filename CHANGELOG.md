@@ -12,6 +12,40 @@ Not exhaustive — the full history is `git log main`. This file covers
 user-visible or architecturally significant changes, the way the audit
 expected a changelog to.
 
+## 2026-09-12 — QA wave: 21 commits across four waves
+
+`01729dd..be411f8`. Driven by `PLAN-QA-2026-09-12.md`, which came from ten
+exploratory agents and four client QA documents; §8 of that file records the
+result, including what was not delivered. Suite: 468 tests → 616, 615 passing,
+the one red being `flow3-legal-export` (Brave-specific, pre-accepted).
+
+Blockers closed: the "one unpaid site" rule never fired (it ran on a branch a
+browser never takes — autosave had already assigned a siteId); an emptied text
+field collapsed to 0×0 and could not be clicked again; FAQ, the "Experiență"
+list and new gallery categories could not be added to or populated; a booking
+that lost a race could never be confirmed on a one-person practice.
+
+For the owner: every cell a preset has, a newly added item now has too — price,
+icon, description. `business.title` and `business.metaDescription`, required in
+all five schemas and editable nowhere, have a "Google și browser" group. A salon
+can take bookings online (service → stylist → date → email); the engine was
+always template-agnostic, only the wiring was missing. Logo size is the same on
+all five (it ranged 22px to 460×460px). Modals close with Escape and have 44px
+targets. Two tabs no longer lose an edit.
+
+Quietly broken, found by measuring: product-menu shipped a call to action at
+2.64:1 on its own preset; the cookie banner covered footer links on all five
+templates; desserdirina's schema never declared its bilingual menu, which
+worked only because an allowlist matched it by path shape.
+
+`suite7-template-contract` renders all five templates at three widths under
+three owner-pickable colours and holds them to contrast, footer baselines,
+social icons, cookie overlap, scroll and console errors, with no suspended
+templates.
+
+Republish required: template fixes are baked into HTML at publish time, so
+sites already live do not change on their own.
+
 ## 2026-09-07 — Native calendar on statically-exported sites
 
 `b725a10` (`fix: the native calendar could never load on a statically-exported
