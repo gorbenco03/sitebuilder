@@ -148,6 +148,15 @@ button, input, select, textarea { font: inherit; color: inherit; }
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+/* m26: text-overflow:ellipsis is silently a no-op when the element it is set
+   on is itself a flex/inline-flex container — Chromium/WebKit truncate the
+   text (overflow:hidden still applies) but never paint the "…" glyph, so a
+   long business name on the text-only wordmark (no logo image, so nothing
+   needs align-items:center for cross-axis alignment here) looked abruptly
+   cut off with no ellipsis on a 390px header. inline-block keeps every other
+   .pr-nav__brand rule (overflow/white-space/text-overflow/max-width) working
+   exactly as before, but lets the ellipsis actually render. */
+.pr-nav__brand.pr-nav__word { display: inline-block; }
 /* Standard logo box shared across all 5 templates (max-height + width:auto +
    object-fit:contain, no fixed aspect-ratio) — a square upload no longer
    renders at a different height per template (was 22px here vs up to 460px
@@ -529,6 +538,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
     background: rgba(243, 239, 232, 0.08);
     border: 1px solid rgba(243, 239, 232, 0.18);
     color: rgba(243, 239, 232, 0.9);
+}
+.pr-native-cal__loading {
+    margin: 0;
+    padding: 1.5rem;
+    border: 1px dashed rgba(243, 239, 232, 0.24);
+    border-radius: var(--r);
+    font-size: 0.95rem;
+    color: rgba(243, 239, 232, 0.72);
 }
 .pr-sec--book .pr-input {
     background: rgba(243, 239, 232, 0.06);

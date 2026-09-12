@@ -1256,6 +1256,8 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
         }
 
         const previousStatus = row.status;
+        const previousStartUtc = row.start_utc;
+        const previousResourceId = row.resource_id;
         const requestedResourceId = input.resourceId || input.resource_id;
         const updated = applyReschedule(db, row, startMs, {
             onConflict: 'demote',
@@ -1263,11 +1265,26 @@ function rescheduleBookingAsOwner(db, customerId, siteId, bookingId, input = {})
             resourceId: requestedResourceId !== undefined ? requestedResourceId : undefined,
         });
         db.exec('COMMIT;');
-        emitBookingEmail(db, {
-            booking: updated,
-            kind: updated.status === STATUSES.CONFIRMED ? 'reschedule_confirmed' : 'rescheduled',
-            previousStatus,
-        });
+        // m24 (PLAN-QA-2026-09-12 Suite 5): the dashboard's "Reprogramează"
+        // action always ran through here even when the owner picked the
+        // SAME slot the booking already had (e.g. opened the modal and hit
+        // save without changing anything). applyReschedule() still bumps
+        // updated_at, and the email layer's own idempotency key includes
+        // updated_at (see email/index.js), so that no-op saved a "new"
+        // email every time. Only notify the visitor when something a
+        // visitor would actually notice changed: the slot, the assigned
+        // resource, or the confirmed/pending status.
+        const somethingActuallyChanged =
+            updated.start_utc !== previousStartUtc ||
+            updated.resource_id !== previousResourceId ||
+            updated.status !== previousStatus;
+        if (somethingActuallyChanged) {
+            emitBookingEmail(db, {
+                booking: updated,
+                kind: updated.status === STATUSES.CONFIRMED ? 'reschedule_confirmed' : 'rescheduled',
+                previousStatus,
+            });
+        }
         return updated;
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }

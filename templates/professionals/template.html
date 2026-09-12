@@ -231,7 +231,6 @@
             data-submit="{{appointment.submitLabel}}">
             <div class="pr-shell">
                 <p class="pr-kicker">{{labels.bookEyebrow}}</p>
-                <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
                 <!-- @if appointment.weekly -->
                 <div id="pr-weekly" hidden aria-hidden="true">
                     <!-- @each appointment.weekly -->
@@ -240,7 +239,8 @@
                 </div>
                 <!-- @endif -->
                 <!-- @if appointment.nativeBooking -->
-                <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
+                <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.nativeTitle}}</h2>
+                <p class="pr-copy pr-copy--lg">{{appointment.nativeIntro}}</p>
                 <!-- @if appointment.confidentialityWarning -->
                 <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
                 <!-- @endif -->
@@ -258,13 +258,22 @@
                     data-contact-email="{{contact.email}}"
                     data-contact-whatsapp="{{contact.waHref}}"
                     data-day-count="14"
-                ></div>
+                ><p class="pr-native-cal__loading" aria-live="polite">Se încarcă programările&hellip;</p></div>
+                <noscript>
+                    <style>[data-hidook-cal-native]{display:none}</style>
+                    <p class="pr-privacy" role="note">
+                        Programarea online are nevoie de JavaScript activ în browser.
+                        <!-- @if contact.phone -->Sună la <a href="tel:{{contact.phone}}">{{contact.phoneDisplay}}</a><!-- @endif -->
+                        <!-- @if contact.waHref --> sau scrie pe <a href="{{contact.waHref}}" target="_blank" rel="noopener noreferrer">WhatsApp</a><!-- @endif -->.
+                    </p>
+                </noscript>
                 <!-- @if appointment.privacyNotice -->
                 <p class="pr-privacy">{{appointment.privacyNotice}}</p>
                 <!-- @endif -->
                 <script src="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.js" defer></script>
                 <!-- @endif -->
                 <!-- @if !appointment.nativeBooking -->
+                <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
                 <!-- @if appointment.bookingUrl -->
                 <div class="pr-booking-action">
                     <a href="{{appointment.bookingUrl}}" class="pr-btn pr-btn--primary pr-booking-link" target="_blank" rel="noopener noreferrer">Programează-te</a>
@@ -371,6 +380,25 @@
         </section>
         <!-- @endif -->
 
+        <!-- @if appointment.nativeBooking -->
+        <!-- @if faq.nativeItems -->
+        <section class="pr-sec pr-reveal" id="faq" aria-labelledby="faq-heading">
+            <div class="pr-shell pr-faq-wrap">
+                <p class="pr-kicker">{{labels.faqEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="faq-heading">{{faq.title}}</h2>
+                <div class="pr-faq">
+                    <!-- @each faq.nativeItems -->
+                    <details class="pr-faq__item" open>
+                        <summary class="pr-faq__q">{{q}}</summary>
+                        <p class="pr-copy">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+        <!-- @endif -->
+        <!-- @if !appointment.nativeBooking -->
         <!-- @if faq.items -->
         <section class="pr-sec pr-reveal" id="faq" aria-labelledby="faq-heading">
             <div class="pr-shell pr-faq-wrap">
@@ -386,6 +414,7 @@
                 </div>
             </div>
         </section>
+        <!-- @endif -->
         <!-- @endif -->
 
         <!-- @if instagram.handle -->

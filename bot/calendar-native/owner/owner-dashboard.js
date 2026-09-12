@@ -808,7 +808,8 @@
           'Niciun serviciu încă. Serviciile de aici sunt <strong>tipurile de consultație</strong> ' +
           'din site-ul tău (Detalii → Programări) și apar automat după prima publicare cu ' +
           'programările native activate.<br>' +
-          'Le adaugi și le redenumești în editor; durata și pauza le ajustezi aici.' +
+          'Le redenumești chiar aici; durata și pauza le ajustezi tot în acest tab. Un tip nou nu ' +
+          'se poate adăuga încă din editor.' +
           '</li>';
       }
       state.services.forEach(function (s) {

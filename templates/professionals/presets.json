@@ -128,6 +128,24 @@
               "q": "Cererea confirmă automat programarea?",
               "a": "Nu. Înregistrăm cererea și confirmăm disponibilitatea înainte ca întâlnirea să devină fermă."
             }
+          ],
+          "nativeItems": [
+            {
+              "q": "Cum mă pregătesc pentru consultație?",
+              "a": "Trimite un rezumat scurt și documentele publice relevante. Nu transmite informații confidențiale prin calendarul de programare."
+            },
+            {
+              "q": "Putem discuta online?",
+              "a": "Da. Alege formatul dorit la rezervare, iar după confirmare îți trimitem linkul."
+            },
+            {
+              "q": "Cât durează prima discuție?",
+              "a": "De regulă, între 45 și 60 de minute, în funcție de tema aleasă."
+            },
+            {
+              "q": "Programarea se confirmă automat?",
+              "a": "Da. Dacă intervalul ales este liber, primești confirmarea instant, direct din calendarul de mai sus."
+            }
           ]
         },
         "appointment": {
@@ -136,6 +154,8 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
+          "nativeTitle": "Programează-te online",
+          "nativeIntro": "Alege ziua și ora din calendarul de mai jos. Dacă intervalul este liber, programarea se confirmă instant, fără să mai aștepți un răspuns din partea noastră.",
           "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "45",
@@ -357,6 +377,20 @@
               "q": "Pot anula?",
               "a": "Da. Trimite-ne un email sau sună înainte de ora confirmată."
             }
+          ],
+          "nativeItems": [
+            {
+              "q": "Lucrați cu firme mari?",
+              "a": "Ne concentrăm pe echipe mici și mijlocii. Dacă ai nevoie de alt tip de sprijin, îți spunem direct la prima discuție."
+            },
+            {
+              "q": "Cât costă?",
+              "a": "Stabilim tariful după prima discuție, în funcție de temă și frecvență. Nu folosim pachete generale."
+            },
+            {
+              "q": "Programarea se confirmă automat?",
+              "a": "Da. Dacă intervalul ales este liber, primești confirmarea instant, direct din calendarul de mai sus."
+            }
           ]
         },
         "appointment": {
@@ -365,6 +399,8 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră. Confirmăm cererea prin email; formularul nu rezervă automat în calendar.",
+          "nativeTitle": "Programează-te online",
+          "nativeIntro": "Alege ziua și ora din calendarul de mai jos. Dacă intervalul este liber, programarea se confirmă instant, fără să mai aștepți un răspuns prin email.",
           "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "50",
@@ -579,6 +615,24 @@
               "q": "Cererea confirmă automat programarea?",
               "a": "Nu. Înregistrăm cererea și confirmăm disponibilitatea înainte ca întâlnirea să devină fermă."
             }
+          ],
+          "nativeItems": [
+            {
+              "q": "Cum mă pregătesc pentru consultație?",
+              "a": "Trimite un rezumat scurt și documentele publice relevante. Nu transmite informații confidențiale prin calendarul de programare."
+            },
+            {
+              "q": "Putem discuta online?",
+              "a": "Da. Alege formatul dorit la rezervare, iar după confirmare îți trimitem linkul."
+            },
+            {
+              "q": "Cât durează prima discuție?",
+              "a": "De regulă, între 45 și 60 de minute, în funcție de tema aleasă."
+            },
+            {
+              "q": "Programarea se confirmă automat?",
+              "a": "Da. Dacă intervalul ales este liber, primești confirmarea instant, direct din calendarul de mai sus."
+            }
           ]
         },
         "appointment": {
@@ -587,6 +641,8 @@
           "enabled": "yes",
           "title": "Solicită o programare",
           "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
+          "nativeTitle": "Programează-te online",
+          "nativeIntro": "Alege ziua și ora din calendarul de mai jos. Dacă intervalul este liber, programarea se confirmă instant, fără să mai aștepți un răspuns din partea noastră.",
           "timezone": "Europe/Bucharest",
           "slotIntervalMinutes": "60",
           "durationMin": "45",

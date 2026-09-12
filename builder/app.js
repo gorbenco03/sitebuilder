@@ -3633,6 +3633,27 @@ function buildNativeBookingPanel(body, schema) {
   row.appendChild(actions);
   group.appendChild(row);
 
+  // PLAN-QA-2026-09-12 Suite 5 (M15/m25): the editor has no screen for
+  // appointment.weekly / appointment.types (deliberately — see schema.json's
+  // "editable": false on both, decided in Suite 1 to avoid generic list
+  // buttons producing empty rows on a structured config). Owners still need
+  // to be told, from right here, WHERE those two things actually live —
+  // this line is shown as soon as native booking is on, in BOTH the unpaid
+  // draft state and the published/paid state, not only after the "Deschide
+  // programările" link below becomes available.
+  if (on) {
+    const hoursHint = document.createElement('p');
+    hoursHint.className = 'field-hint';
+    hoursHint.style.marginTop = '.5rem';
+    hoursHint.textContent = (currentSiteId && currentSitePaid)
+      ? 'Orele disponibile (tab Disponibilitate) și tipurile de consultație (tab Servicii) se ' +
+        'setează în dashboard-ul de Programări de mai jos — editorul de site nu are un ecran pentru asta.'
+      : 'Orele disponibile și tipurile de consultație se setează în dashboard-ul de Programări, nu ' +
+        'în acest editor. Linkul „Deschide programările” apare chiar aici imediat ce publici și ' +
+        'plătești site-ul.';
+    group.appendChild(hoursHint);
+  }
+
   // Once active on a published, paid site, link straight to the owner's own
   // bookings dashboard — the same link the dashboard site card offers, but
   // reachable right where the owner just turned the feature on. Not shown for

@@ -442,6 +442,20 @@
             "q": "text",
             "a": "text"
           }
+        },
+        {
+          "key": "faq.nativeItems",
+          "type": "list",
+          "label": "Întrebare + răspuns — afișate doar când Programările native Hidook sunt active",
+          "hint": "Folosite în locul câmpului de mai sus pe site-ul public atunci când calendarul nativ e activ, ca să nu apară întrebări despre o „cerere” când programarea se confirmă instant.",
+          "required": false,
+          "min": 0,
+          "max": 10,
+          "itemShape": {
+            "q": "text",
+            "a": "text"
+          },
+          "editable": false
         }
       ]
     },
@@ -477,15 +491,29 @@
         {
           "key": "appointment.title",
           "type": "text",
-          "label": "Titlu secțiune (ex. Cere o programare)",
+          "label": "Titlu secțiune — folosit când Programările native Hidook sunt DEZACTIVATE (formular de cerere)",
           "required": true,
+          "maxLen": 80
+        },
+        {
+          "key": "appointment.nativeTitle",
+          "type": "text",
+          "label": "Titlu secțiune — folosit când Programările native Hidook sunt ACTIVE (rezervare instant)",
+          "required": false,
           "maxLen": 80
         },
         {
           "key": "appointment.intro",
           "type": "textarea",
-          "label": "Text intro — clarifică că e o cerere, nu confirmare automată",
+          "label": "Text intro — clarifică că e o cerere, nu confirmare automată (formular local, native booking dezactivat)",
           "required": true,
+          "maxLen": 400
+        },
+        {
+          "key": "appointment.nativeIntro",
+          "type": "textarea",
+          "label": "Text intro — folosit când Programările native Hidook sunt ACTIVE (explică rezervarea instant)",
+          "required": false,
           "maxLen": 400
         },
         {
