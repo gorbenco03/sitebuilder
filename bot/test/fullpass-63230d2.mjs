@@ -478,17 +478,32 @@ async function run() {
             defect('high', 'contact.phone did not render tel link in preview',
               'no tel link after drawer close; trace=' + JSON.stringify(fillTrace));
           }
-          // Restore the preset's own phone so later steps (e.g. the WhatsApp/
-          // phone dock checks below) see the template's intended value, not
-          // this step's throwaway test number. Not asserted on: whether a
-          // full re-render reliably clears a stale href on a SECOND close in
-          // a row is a separate, pre-existing question this step does not
-          // chase (see the S9A report — flagged, not fixed, out of scope for
-          // a Cal.com removal task).
+          // Clear it again and prove the tel: link is gone. This second half
+          // used to "fail" deterministically inside this pass: openDrawer()
+          // focused the drawer's first field one animation frame late, and
+          // fill('')'s Delete keystroke — sent right after the previous close
+          // kicked off a render — landed in business.title instead of here,
+          // so the phone was never cleared and its link "survived" a perfectly
+          // good re-render. Same mechanism as the Cal.com fill that used to go
+          // missing at this very step (PLAN-QA-2026-09-12.md §8). Fixed in
+          // openDrawer() (synchronous focus); oracle:
+          // bot/test/drawer-open-focus-steal.test.js.
           await openDrawer();
           await phoneField.fill('');
           await phoneField.blur();
           await closeDrawer();
+          await phoneLink.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+          const staleLink = await phoneLink.count();
+          await shot('professionals-contact-phone-cleared', {
+            action: 'clear+close-drawer',
+            selector: '#dr_contact_phone',
+            detail: 'staleTelLinkCount=' + staleLink,
+            ok: staleLink === 0,
+          });
+          if (staleLink) {
+            defect('high', 'contact.phone cleared in Details but its tel link stayed in preview',
+              'a[href="tel:' + testPhone + '"] still present after clear + drawer close');
+          }
         }
       }
 

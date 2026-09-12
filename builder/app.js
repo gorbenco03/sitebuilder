@@ -3369,12 +3369,22 @@ function openDrawer(focusKey) {
   document.body.classList.add('details-drawer-open');
   const btn = $('btn-open-drawer');
   if (btn) btn.setAttribute('aria-expanded', 'true');
-  // Focus the requested field if there is one, else the first field.
-  requestAnimationFrame(() => {
-    if (focusKey && focusDrawerField(focusKey)) return;
+  // Focus the requested field if there is one, else the first field —
+  // synchronously, for the same reason openModal() does (see its doc
+  // comment): show(drawer) above already made the fields focusable, so
+  // deferring to requestAnimationFrame only left a one-frame window in which
+  // focus could move to ANOTHER drawer field first (an owner's click landing
+  // while the main thread is busy re-rendering the preview; a Playwright
+  // fill(), which focuses in one call and types in the next) and then get
+  // yanked to the first field just before the keystrokes arrived. The text
+  // went where focus went — a phone number appended to business.title. This
+  // is the whole of the "Cal.com race" PLAN-QA-2026-09-12.md §8 could not
+  // pin down: not Cal.com, not a render race, just this deferred focus.
+  // Oracle: bot/test/drawer-open-focus-steal.test.js.
+  if (!(focusKey && focusDrawerField(focusKey))) {
     const first = drawer.querySelector('input,textarea,select');
     if (first) first.focus();
-  });
+  }
 }
 
 function cssEscapeFieldKey(key) {

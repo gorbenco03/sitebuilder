@@ -12,6 +12,18 @@ Not exhaustive — the full history is `git log main`. This file covers
 user-visible or architecturally significant changes, the way the audit
 expected a changelog to.
 
+## 2026-09-12 — Details drawer: typing right after opening went to the wrong field
+
+Branch commit, pending integration. The "Cal.com race" `PLAN-QA-2026-09-12.md`
+§8 left open turned out to be neither Cal.com-specific nor a render race:
+`openDrawer()` focused the drawer's first field one animation frame late, so a
+keystroke that arrived inside that frame — a Playwright `fill()`, or an owner's
+click landing while the preview was re-rendering — went to `business.title`,
+the site's own `<title>`, instead of the field they were in. Fixed by focusing
+synchronously (as `openModal()` already did). Deterministic oracle:
+`bot/test/drawer-open-focus-steal.test.js`; the fullpass phone step asserts the
+cleared `tel:` link again. §8 is corrected in place.
+
 ## 2026-09-12 — QA wave: 21 commits across four waves
 
 `01729dd..be411f8`. Driven by `PLAN-QA-2026-09-12.md`, which came from ten
