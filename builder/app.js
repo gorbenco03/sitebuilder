@@ -1639,20 +1639,75 @@ function redo() {
 }
 
 // ---------------------------------------------------------------------------
-// 7c. Multi-tab draft conflict warning (audit medium #8)
+// 7c. Multi-tab draft conflict warning (audit medium #8 / M12)
 // ---------------------------------------------------------------------------
 //
-// Two tabs editing the same draft both write to the same localStorage key —
-// the second save silently clobbers the first with no warning. We cannot
-// merge (there's no server-side draft yet to reconcile against, and silently
-// picking a "winner" would just move the surprise elsewhere per the task's
-// explicit instruction), so instead we detect it honestly: the `storage`
-// event fires in every OTHER tab of this origin whenever one tab writes to
-// localStorage, which is exactly "another tab just changed this draft".
+// Two tabs editing the same draft both write to the same localStorage key.
+// saveDraft() now merges leaf-by-leaf against a per-tab baseline before
+// writing (see mergeDraftConfigs() near saveDraft()), so a field only ONE
+// tab touched always survives — this is NOT a CRDT, and two tabs editing
+// the exact same field is still last-write-wins. The `storage` event fires
+// in every OTHER tab of this origin whenever one tab writes to localStorage,
+// which is exactly "another tab just changed this draft" — used here to
+// name WHICH section changed, not just announce that something did.
 
-function showTabConflictBanner() {
+/** Human label for a top-level draft.config section, for the conflict
+ * banner (M12) — only needs to be recognizable, not an exhaustive catalog. */
+const CONFIG_SECTION_LABELS = {
+  business: 'datele firmei',
+  contact: 'contact',
+  hero: 'secțiunea principală (hero)',
+  theme: 'culori',
+  services: 'servicii',
+  gallery: 'poze',
+  photos: 'poze',
+  faq: 'întrebări frecvente',
+  appointment: 'programări',
+  seo: 'titlu și descriere (SEO)',
+  credentials: 'experiență',
+  testimonials: 'testimoniale',
+  about: 'despre',
+  footer: 'subsol',
+  instagram: 'Instagram',
+};
+function labelForConfigSection(key) {
+  if (CONFIG_SECTION_LABELS[key]) return CONFIG_SECTION_LABELS[key];
+  return String(key || '').replace(/[_-]+/g, ' ').trim() || 'un câmp';
+}
+
+/** Top-level config keys where `a` and `b` differ (shallow — enough to name
+ * a section in the banner; the actual merge in saveDraft() is leaf-level). */
+function changedTopLevelSections(a, b) {
+  const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+  const out = [];
+  keys.forEach((k) => {
+    if (JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k])) out.push(k);
+  });
+  return out;
+}
+
+/** Is this localStorage draft record the same draft this tab has open? */
+function isSameDraftRecord(record) {
+  if (!record || !draft.templateId) return false;
+  return record.templateId === draft.templateId &&
+    (!currentSiteId || !record.siteId || record.siteId === currentSiteId);
+}
+
+function showTabConflictBanner(sections) {
   tabConflictActive = true;
   const banner = $('tab-conflict-banner');
+  const textEl = $('tab-conflict-text');
+  if (textEl) {
+    if (sections && sections.length) {
+      const labels = sections.map(labelForConfigSection);
+      textEl.textContent = 'Acest proiect e deschis și în altă filă a browserului — acolo tocmai s-a ' +
+        'modificat: ' + labels.join(', ') + '. Am păstrat modificările din ambele file unde a fost posibil ' +
+        '(dacă amândouă au atins exact același câmp, câștigă ultima salvare).';
+    } else {
+      textEl.textContent = 'Acest proiect e deschis și în altă filă a browserului. Îmbinăm modificările ' +
+        'câmp cu câmp — dacă amândouă tab-urile ating exact același câmp, câștigă ultima salvare.';
+    }
+  }
   if (banner) { banner.style.display = ''; banner.setAttribute('aria-hidden', 'false'); }
 }
 
@@ -1669,10 +1724,13 @@ function initTabConflictWatcher() {
     let incoming;
     try { incoming = JSON.parse(e.newValue); } catch (_) { return; }
     if (!incoming || incoming.tabId === TAB_ID) return; // our own write (storage never fires for it, but be safe)
-    const sameDraft = incoming.templateId === draft.templateId &&
-      (!currentSiteId || !incoming.siteId || incoming.siteId === currentSiteId);
-    if (!sameDraft) return;
-    showTabConflictBanner();
+    if (!isSameDraftRecord(incoming)) return;
+    // Name what changed there relative to what THIS tab currently shows —
+    // an approximation (not the 3-way merge saveDraft() does), good enough
+    // to point the owner at the right section instead of a bare "someone
+    // changed something somewhere".
+    const sections = changedTopLevelSections(draft.config, incoming.config);
+    showTabConflictBanner(sections);
   });
 }
 
@@ -4434,6 +4492,68 @@ function buildGallerySection(body, path) {
 // 15. Draft persistence
 // ---------------------------------------------------------------------------
 
+/** Baseline snapshot for the multi-tab merge in saveDraft() (M12) — this
+ * tab's own last-known state of draft.config: either "what I just loaded"
+ * (see syncDraftBaseline(), called from every place that assigns a fresh
+ * draft.config: resumeLocalDraft, loadSiteForEdit, ensureDraftBoundToPaidSite,
+ * catalog template switch) or "what I last wrote" (updated at the end of a
+ * successful saveDraft() below). Always the common ancestor for the 3-way
+ * merge — never a stale snapshot left over from a previous draft/template. */
+let lastSyncedDraftConfig = null;
+
+/** Call right after draft.config is (re)assigned from a load — a fresh
+ * page/tab picking up an existing draft, a template switch, a paid-site
+ * bind. Marks "this is what I started from" so a later saveDraft() diffs
+ * against the real common ancestor instead of whatever happens to already
+ * be in localStorage by the time the first edit in this tab is saved. */
+function syncDraftBaseline() {
+  lastSyncedDraftConfig = draft.config ? deepClone(draft.config) : null;
+}
+
+/**
+ * 3-way per-field merge for saveDraft() vs. a newer write from another tab
+ * (M12). `baseline` is the common ancestor (what THIS tab last observed —
+ * see syncDraftBaseline()), `current` is this tab's config right now
+ * (baseline plus whatever THIS tab touched), `stored` is the freshest
+ * config already in localStorage (baseline plus whatever the OTHER tab
+ * touched since).
+ *
+ * Walks every leaf (anything that is not a plain object — arrays included,
+ * compared as whole values, same as any other leaf). If `current` differs
+ * from `baseline` at that leaf, THIS tab touched it and wins. Otherwise, if
+ * `stored` differs from `baseline`, the OTHER tab touched it and its value
+ * is kept — instead of being silently overwritten by this tab's stale copy,
+ * which is the actual M12 data-loss bug. Two tabs touching the exact same
+ * leaf is still last-write-wins (current wins, since this save is
+ * happening now) — deliberately not a CRDT, per the task's own instruction.
+ */
+function mergeDraftConfigs(baseline, current, stored) {
+  const theirChangedPaths = [];
+  function isPlainObj(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+  function walk(b, c, s, prefix) {
+    if (isPlainObj(c) && isPlainObj(s)) {
+      const keys = new Set([
+        ...Object.keys(c || {}), ...Object.keys(s || {}), ...Object.keys(b || {}),
+      ]);
+      const out = {};
+      keys.forEach((k) => {
+        out[k] = walk((b || {})[k], (c || {})[k], (s || {})[k], prefix ? prefix + '.' + k : k);
+      });
+      return out;
+    }
+    const changedByUs = JSON.stringify(c) !== JSON.stringify(b);
+    if (changedByUs) return c;
+    const changedByOther = JSON.stringify(s) !== JSON.stringify(b);
+    if (changedByOther) {
+      theirChangedPaths.push(prefix);
+      return s;
+    }
+    return c;
+  }
+  const merged = walk(baseline, current, stored, '');
+  return { merged, theirChangedPaths };
+}
+
 function saveDraft() {
   if (!draft.templateId || !draft.config) return;
   deriveWaHref(draft.config);
@@ -4448,6 +4568,34 @@ function saveDraft() {
   if (typeof pushHistory === 'function') {
     pushHistory(pendingHistoryCoalesceKey);
     pendingHistoryCoalesceKey = null;
+  }
+  // Multi-tab merge (M12): another tab may have written a newer version of
+  // this same draft into localStorage since we last saw it. Merge leaf by
+  // leaf against OUR OWN last-known snapshot (a 3-way merge, not
+  // last-tab-wins) so a field only WE touched always survives, and a field
+  // only THEY touched is kept instead of getting clobbered by our stale
+  // in-memory copy of it — see mergeDraftConfigs()/syncDraftBaseline() above.
+  // Guarded by `typeof mergeDraftConfigs === 'function'` for the same
+  // isolated-extraction sandboxes as pushHistory/TAB_ID above — those only
+  // ever pull this ONE function's source text, so mergeDraftConfigs (a
+  // separate top-level function) never exists there; the guard keeps this a
+  // silent no-op (plain overwrite, their pre-existing expected behavior)
+  // instead of a ReferenceError.
+  if (typeof mergeDraftConfigs === 'function' && typeof isSameDraftRecord === 'function' &&
+      typeof loadDraft === 'function') {
+    try {
+      const existing = loadDraft();
+      if (existing && isSameDraftRecord(existing) &&
+          existing.tabId && typeof TAB_ID !== 'undefined' && existing.tabId !== TAB_ID) {
+        const baseline = lastSyncedDraftConfig || existing.config;
+        const { merged, theirChangedPaths } = mergeDraftConfigs(baseline, draft.config, existing.config);
+        draft.config = merged;
+        if (theirChangedPaths.length && typeof showTabConflictBanner === 'function') {
+          const sections = Array.from(new Set(theirChangedPaths.map((p) => String(p).split('.')[0])));
+          showTabConflictBanner(sections);
+        }
+      }
+    } catch (_) { /* localStorage unavailable/malformed — fall through, save our own copy */ }
   }
   const payload = { templateId: draft.templateId, config: draft.config };
   // Same isolated-extraction test compatibility as pushHistory() above — TAB_ID
@@ -4468,6 +4616,9 @@ function saveDraft() {
     if (currentSiteSlug) payload.slug = currentSiteSlug;
   }
   const ok = lsSet(DRAFT_KEY, payload);
+  // This write is now our new common ancestor for the NEXT merge — same
+  // guard as the merge attempt above (a no-op in the isolated sandboxes).
+  if (ok && typeof mergeDraftConfigs === 'function') lastSyncedDraftConfig = deepClone(draft.config);
   // Wave 9 (save-state audit): resolve the visible saving/saved/failed
   // indicator + exit guard from the result of this write. Same
   // isolated-extraction test compatibility as pushHistory/TAB_ID above.
@@ -5665,15 +5816,41 @@ function updateSlugPreview(slug, state) {
   }
 }
 
+/**
+ * m22: show a discrete note under the field when normalization (spaces,
+ * diacritics, uppercase → lowercase-hyphenated) actually changed what the
+ * visitor typed — never when it didn't. `typedValue` is what the input box
+ * showed BEFORE this check (possibly about to be silently rewritten below);
+ * `finalSlug` is what it is about to become.
+ */
+function applySlugNormalizeNote(typedValue, finalSlug) {
+  const noteEl = $('slug-normalize-note');
+  if (!noteEl) return;
+  if (typedValue && finalSlug && typedValue !== finalSlug) {
+    noteEl.textContent = 'Adresele web nu au spații sau diacritice — am simplificat-o în „' + finalSlug + '”.';
+    show(noteEl);
+  } else {
+    hide(noteEl);
+  }
+}
+
 async function checkSlug(rawSlug) {
   const slugInput = $('input-slug');
   const errorEl = $('slug-error');
-  if (!rawSlug) { slugValid = false; return; }
+  const normNoteEl = $('slug-normalize-note');
+  if (!rawSlug) { slugValid = false; if (normNoteEl) hide(normNoteEl); return; }
+
+  // What the visitor's input box actually shows right now, BEFORE any of
+  // the branches below possibly rewrite it — the m22 note compares against
+  // this, not against `rawSlug` (which the caller already ran through
+  // toSlug() itself before ever getting here).
+  const typedValue = slugInput ? slugInput.value : rawSlug;
 
   if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(rawSlug) && rawSlug.length < 3) {
     updateSlugPreview(rawSlug, 'invalid');
     if (errorEl) { errorEl.textContent = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).'; show(errorEl); }
     slugValid = false;
+    if (normNoteEl) hide(normNoteEl);
     return;
   }
 
@@ -5685,6 +5862,7 @@ async function checkSlug(rawSlug) {
     if (errorEl) hide(errorEl);
     slugValid = true;
     if (slugInput) slugInput.value = rawSlug;
+    applySlugNormalizeNote(typedValue, rawSlug);
     return;
   }
 
@@ -5696,21 +5874,30 @@ async function checkSlug(rawSlug) {
       if (errorEl) hide(errorEl);
       slugValid = true;
       if (slugInput) slugInput.value = slugNormalized;
+      applySlugNormalizeNote(typedValue, slugNormalized);
     } else {
       updateSlugPreview(slugNormalized, 'taken');
-      if (errorEl) { errorEl.textContent = PUBLISH_SLUG_COLLISION_MESSAGE; show(errorEl); }
+      // m10: show the SERVER's own message (e.g. "rezervată de platformă")
+      // when it sends one — the generic collision text is only a fallback
+      // for the rare case a legacy/offline response omits `error`.
+      if (errorEl) { errorEl.textContent = data.error || PUBLISH_SLUG_COLLISION_MESSAGE; show(errorEl); }
       slugValid = false;
+      if (normNoteEl) hide(normNoteEl);
     }
   } catch (_) {
     updateSlugPreview(rawSlug, 'valid');
     slugValid = true;
     slugNormalized = rawSlug;
     if (errorEl) hide(errorEl);
+    if (normNoteEl) hide(normNoteEl);
   }
 }
 
 async function doActualPublish(chosenSlug) {
   if (!currentUser) {
+    // m1: this IS the publish flow — the auth step's title should say so.
+    const authTitleEl = $('modal-auth-title');
+    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să publici';
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
@@ -5728,7 +5915,14 @@ async function doActualPublish(chosenSlug) {
     // send (e.g. "Ai deja un site neplătit...", 409) is safe to show
     // verbatim -- apiPost() already marks it fromServer for exactly this.
     // Falling back to the generic message here silently swallowed it.
-    const msg = (e && e.fromServer && e.message) ? e.message : 'Publicarea a eșuat. Încearcă din nou.';
+    // Show the server's own words only for a 4xx — those are deliberate
+    // refusals written for the owner ("Ai deja un site neplătit...", the 409
+    // this exists for). A 5xx is an internal failure whose message was never
+    // meant for a customer ("boom", a stack, an English driver error), so it
+    // keeps the fixed Romanian fallback.
+    const deliberateRefusal = e && e.fromServer && e.message &&
+      typeof e.status === 'number' && e.status >= 400 && e.status < 500;
+    const msg = deliberateRefusal ? e.message : 'Publicarea a eșuat. Încearcă din nou.';
     showToast(msg, 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
@@ -5736,6 +5930,12 @@ async function doActualPublish(chosenSlug) {
 }
 
 async function execPublish(slug) {
+  // m9: was this site ALREADY paid/live before this call? currentSitePaid
+  // reflects whatever site loadSiteForEdit/bindSignedInPaidSiteForEdit/etc.
+  // bound before the owner clicked Publish — i.e. exactly the "republishing
+  // an edit" case, distinct from the site's OWN publish call below turning
+  // it paid for the first time. Captured before anything overwrites it.
+  const wasAlreadyPaid = !!currentSitePaid;
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
   const payload = {
@@ -5759,7 +5959,7 @@ async function execPublish(slug) {
   if (data.site.slug) currentSiteSlug = data.site.slug;
   saveDraft();
 
-  showSuccessScreen(data.site.url, data.paymentUrl);
+  showSuccessScreen(data.site.url, data.paymentUrl, wasAlreadyPaid);
 }
 
 /** Unauth #dashboard Intră — same magic-link modal as publish (no second auth system). */
@@ -5767,6 +5967,11 @@ function wireDashboardAuthButton() {
   const btn = $('btn-dashboard-auth');
   if (!btn) return;
   btn.onclick = () => {
+    // m1: this modal is reused from the publish flow, but nobody here is
+    // publishing anything — set a context-appropriate title BEFORE opening it
+    // (the static markup default is the publish-flow copy, for that caller).
+    const authTitleEl = $('modal-auth-title');
+    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să-ți vezi proiectele';
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
@@ -5871,7 +6076,14 @@ function clearPreviewOverlays() {
   } catch (_) { /* cross-origin or missing preview */ }
 }
 
-function showSuccessScreen(url, paymentUrl) {
+/**
+ * @param {boolean} [alreadyPaidBefore] - m9: true when THIS site was already
+ *   paid/live before this publish call (a republish/edit), so the trial
+ *   language would be false — no trial started just now. Defaults to falsy
+ *   for every other caller (completeTestCheckout's post-payment transitions),
+ *   which really is the trial-starting moment.
+ */
+function showSuccessScreen(url, paymentUrl, alreadyPaidBefore) {
   // One coherent chrome state: never stack pay-loading / QR / stale toasts on success.
   setLoading(false);
   hideToast();
@@ -5887,7 +6099,13 @@ function showSuccessScreen(url, paymentUrl) {
   const href = isLive ? absoluteSiteUrl(url) : '';
 
   if (isLive) {
-    if (titleEl) titleEl.textContent = 'Site-ul tău e live — trial de 7 zile început';
+    // m9: a republish of an already-paid/live site never announces a trial —
+    // nothing started, the edit is just live now.
+    if (titleEl) {
+      titleEl.textContent = alreadyPaidBefore
+        ? 'Modificările sunt live'
+        : 'Site-ul tău e live — trial de 7 zile început';
+    }
     if (draftNote) hide(draftNote);
     if (urlText) {
       // Soft-wrap only at `/` so long /live/<slug>/ is fully readable at 390px
@@ -6057,6 +6275,7 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     if (site.url) publishedSiteUrl = site.url;
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
     if (typeof resetHistory === 'function') resetHistory();
 
     let tplData = null;
@@ -6104,6 +6323,10 @@ async function resumeLocalDraft() {
   if (!tplData || !meta) return false;
   draft.templateId = saved.templateId;
   draft.config = deepClone(saved.config);
+  // M12: this tab's baseline for the multi-tab merge in saveDraft() is
+  // "what I just resumed" — NOT whatever is in localStorage by the time
+  // this tab's first edit is saved (another tab may have written by then).
+  if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
   isFreshDemoDraft = !!saved.isFreshDemoDraft;
   demoBannerDismissed = !!saved.demoBannerDismissed;
   if (typeof resetHistory === 'function') resetHistory();
@@ -6416,6 +6639,8 @@ async function startWithTemplate(templateId) {
     draft.config = presets.length > 0 ? deepClone(presets[0].config) : {};
     isFreshDemoDraft = true;
   }
+  // M12: fresh baseline for whichever config this design switch landed on.
+  if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
   demoBannerDismissed = false;
   if (typeof resetHistory === 'function') resetHistory();
   // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
@@ -6990,6 +7215,7 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
     // A saved/published site is the owner's own content, never demo filler.
     isFreshDemoDraft = false;
     demoBannerDismissed = false;
@@ -7743,7 +7969,18 @@ function wireStaticButtons() {
 
   const continueBtn = $('btn-publish-continue');
   if (continueBtn) {
+    // M11 fix (Suita 3 / S3-2): the old handler's only guard against a second
+    // click was setBtnLoading() deep inside doActualPublish(), which runs
+    // AFTER `await checkSlug(...)` below. A second click landing in that
+    // window (real double-click/double-tap, or just a slow connection —
+    // proven with bot/test/suite3-publish-single-flight.test.js) started its
+    // own independent call chain and fired a second POST /api/publish.
+    // publishClickInFlight is checked SYNCHRONOUSLY, before any await, and
+    // the button is disabled in the very same tick — no window is left for
+    // a second click to race into, disabled or not.
+    let publishClickInFlight = false;
     continueBtn.addEventListener('click', async () => {
+      if (publishClickInFlight) return;
       const rawSlug = slugInput ? toSlug(slugInput.value) : '';
       if (!rawSlug || rawSlug.length < 3) {
         const err = $('slug-error');
@@ -7751,12 +7988,22 @@ function wireStaticButtons() {
         if (slugInput) slugInput.focus();
         return;
       }
-      if (slugCheckTimer) {
-        clearTimeout(slugCheckTimer);
-        await checkSlug(rawSlug);
+      publishClickInFlight = true;
+      continueBtn.disabled = true;
+      try {
+        if (slugCheckTimer) {
+          clearTimeout(slugCheckTimer);
+          await checkSlug(rawSlug);
+        }
+        if (!slugValid) { if (slugInput) slugInput.focus(); return; }
+        await doActualPublish(slugNormalized || rawSlug);
+      } finally {
+        // Recoverable either way: a validation miss (slug taken) or a failed
+        // publish (doActualPublish already reset its own loading state) must
+        // both leave the button clickable again for a retry.
+        publishClickInFlight = false;
+        continueBtn.disabled = false;
       }
-      if (!slugValid) { if (slugInput) slugInput.focus(); return; }
-      await doActualPublish(slugNormalized || rawSlug);
     });
   }
 

@@ -181,7 +181,7 @@
 
 <!-- ===== TAB CONFLICT BANNER (shown only in #edit, when another tab saves the same draft) ===== -->
 <div id="tab-conflict-banner" class="tab-conflict-banner" role="status" aria-live="polite" aria-hidden="true" style="display:none">
-  <span class="tab-conflict-text">Acest proiect e deschis și în altă filă a browserului. Ce salvezi aici poate suprascrie modificările de acolo (sau invers) — nu se îmbină automat.</span>
+  <span class="tab-conflict-text" id="tab-conflict-text">Acest proiect e deschis și în altă filă a browserului. Îmbinăm modificările câmp cu câmp — dacă amândouă tab-urile ating exact același câmp, câștigă ultima salvare.</span>
   <span class="tab-conflict-actions">
     <button type="button" class="btn-ghost btn-sm" id="btn-tab-conflict-reload">Reîncarcă pagina</button>
     <button type="button" class="tab-conflict-dismiss" id="btn-tab-conflict-dismiss" aria-label="Închide avertismentul">&times;</button>
@@ -475,12 +475,13 @@
           <span class="slug-status-icon" id="slug-status-icon" aria-hidden="true"></span>
         </div>
         <p class="slug-preview" id="slug-preview" aria-live="polite"></p>
+        <p class="field-hint" id="slug-normalize-note" aria-live="polite" style="display:none"></p>
         <p class="field-error" id="slug-error" role="alert" style="display:none"></p>
       </div>
       <button id="btn-publish-continue" class="btn-primary btn-full" type="button">Continuă cu această adresă</button>
     </div>
     <div id="publish-step-2" class="publish-step" style="display:none">
-      <h2 class="modal-title">Autentifică-te ca să publici</h2>
+      <h2 id="modal-auth-title" class="modal-title">Autentifică-te ca să publici</h2>
       <p class="modal-sub">Îți trimitem un link pe email — fără parolă, fără cont de creat.</p>
       <form id="form-auth-email" novalidate autocomplete="off">
         <div class="field-group">

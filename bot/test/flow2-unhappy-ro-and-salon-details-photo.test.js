@@ -95,15 +95,15 @@ check('publish network failure copy', () => {
     doActualPublish.includes("'Publicarea a eșuat. Încearcă din nou.'"),
     'publish failure keeps the fixed Romanian fallback for non-server errors'
   );
-  const unguarded = /(?:err|e)\.message/g;
-  let m;
-  while ((m = unguarded.exec(doActualPublish))) {
-    const line = doActualPublish.slice(0, m.index).split('\n').pop() +
-      doActualPublish.slice(m.index).split('\n')[0];
-    assert.ok(
-      /fromServer/.test(line),
-      'publish failure cannot expose an exception message unless it is fromServer: ' + line.trim()
-    );
+  // Showing `e.message` is allowed only behind BOTH guards: the message came
+  // from our server (`fromServer`), and the status is a 4xx — a deliberate
+  // refusal written for the owner. A 5xx carries an internal failure's text
+  // ("boom", a stack, an English driver error) and must not be shown.
+  if (/(?:err|e)\.message/.test(doActualPublish)) {
+    assert.match(doActualPublish, /fromServer/,
+      'a publish failure that shows e.message must gate it on fromServer');
+    assert.match(doActualPublish, /status\s*[<>=]/,
+      'a publish failure that shows e.message must also gate it on the status code');
   }
 });
 

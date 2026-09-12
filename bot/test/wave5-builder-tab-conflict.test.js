@@ -7,14 +7,17 @@
  * silențios același draft, fără avertisment" — two tabs silently overwrite
  * the same draft with no warning).
  *
- * There is no server-side draft yet to reconcile against, so we do not
- * attempt to merge (the task is explicit: "do not silently merge") — instead
- * we detect the situation honestly. Every editor tab writes to the SAME
- * localStorage key (DRAFT_KEY); the `storage` event fires in every OTHER tab
- * of the same origin whenever one tab writes to it, which is exactly "another
- * tab just changed this draft". builder/app.js tags each write with a random
- * per-tab id (TAB_ID) and compares templateId (+ siteId when bound) so an
- * unrelated draft in another tab never triggers a false warning.
+ * M12 (PLAN-QA-2026-09-12, Suita 3): saveDraft() now merges leaf-by-leaf
+ * against a per-tab baseline instead of overwriting the whole config — a
+ * field only ONE tab touched always survives; two tabs touching the exact
+ * SAME field is still last-write-wins (no CRDT, per the task's own
+ * instruction). Every editor tab writes to the SAME localStorage key
+ * (DRAFT_KEY); the `storage` event fires in every OTHER tab of the same
+ * origin whenever one tab writes to it, which is exactly "another tab just
+ * changed this draft" — used to name WHICH section changed instead of just
+ * announcing that something did. builder/app.js tags each write with a
+ * random per-tab id (TAB_ID) and compares templateId (+ siteId when bound)
+ * so an unrelated draft in another tab never triggers a false warning.
  *
  * This oracle opens the SAME draft in two real browser tabs (two pages in one
  * Playwright browser context, so they share localStorage like real tabs in
@@ -100,7 +103,8 @@ test('a second tab editing the same draft warns the first tab in Romanian instea
     await banner1.waitFor({ state: 'visible', timeout: 5000 });
     const bannerText = (await banner1.innerText()).trim();
     assert.match(bannerText, /altă filă/i, 'banner must say the draft is open in another tab, in Romanian');
-    assert.match(bannerText, /nu se îmbină automat|suprascri/i, 'banner must be honest that it does not merge — one save can overwrite the other');
+    assert.match(bannerText, /firm/i, 'banner must name the section tab 2 actually changed (business.name → "datele firmei")');
+    assert.match(bannerText, /ultima salvare/i, 'banner must stay honest that the SAME field in both tabs is still last-write-wins, not a CRDT');
 
     // ---- Dismissing the banner hides it (this is a warning, not a block). ----
     await tab1.locator('#btn-tab-conflict-dismiss').click();
@@ -117,7 +121,7 @@ test('a second tab editing the same draft warns the first tab in Romanian instea
     await banner1.waitFor({ state: 'visible', timeout: 5000 });
     await tab1.locator('#btn-tab-conflict-reload').click();
     await navPromise;
-    console.log('PASS wave5-builder-tab-conflict: second tab write warns the first tab honestly, in Romanian, without merging');
+    console.log('PASS wave5-builder-tab-conflict: second tab write warns the first tab honestly, in Romanian, naming the merged section');
   } finally {
     await context.close();
     await browser.close();
