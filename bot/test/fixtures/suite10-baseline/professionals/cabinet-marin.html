@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabinet Juridic Ionescu | Consultanță juridică | București</title>
+    <meta name="description" content="Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.">
+    <meta property="og:title" content="Cabinet Juridic Ionescu | Consultanță juridică | București">
+    <meta property="og:description" content="Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.">
+    
+    <meta property="og:image" content="images/hero.jpg">
+    
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cabinet Juridic Ionescu | Consultanță juridică | București">
+    <meta name="twitter:description" content="Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.">
+    
+    <meta name="twitter:image" content="images/hero.jpg">
+    
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23F3EFE8'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='%239A4030' stroke-width='2'/%3E%3C/svg%3E">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cookie-banner.css">
+    <script>
+    // Pre-paint consent check. Sets the clearance class synchronously so the
+    // hero does not shift when cookie-banner.js runs after first paint.
+    // Why it matters, with the numbers: bot/test/waveB-cls-all-templates.test.js.
+    (function () {
+        try {
+            var KEY = 'hb-cookie-consent', accepted = false;
+            try { if (localStorage.getItem(KEY)) accepted = true; } catch (e) {}
+            if (!accepted) {
+                var m = document.cookie.match(/(?:^|; )hb-cookie-consent=([^;]*)/);
+                if (m && decodeURIComponent(m[1])) accepted = true;
+            }
+            if (!accepted) document.documentElement.classList.add('hb-cookie-open');
+        } catch (e) {}
+    })();
+    </script>
+    <style>
+        :root {
+            --color-primary:       #9A4030;
+            --color-primary-light: #C4A574;
+            --color-primary-dark:  #14120F;
+            --color-cream:         #F3EFE8;
+        }
+    </style>
+    <script>
+    // Pre-paint dark-panel colour for the "book" (appointments) section
+    // (same reasoning/timing as the consent check above — must land before
+    // first paint). .pr-sec--book is meant to be a fixed-dark backdrop for
+    // cream text, but its background aliases --color-primary-dark, a colour
+    // the owner can set from the theme popover — and the "dark" swatch
+    // formula only pulls a saturated hue to roughly 35-40% lightness, not
+    // the near-black this section's cream-at-0.55/0.72-opacity text assumes.
+    // Mixing it 40% toward black keeps it under the darkness every palette
+    // colour needs (measured worst case 4.83:1, all six presets, at the
+    // section's lowest text opacity) while barely changing the shipped
+    // near-black default. See bot/test/suite7-template-contract.test.js.
+    (function () {
+        try {
+            var hex = "#14120F";
+            var m = /^#([0-9a-f]{6})$/i.exec(hex);
+            if (!m) return;
+            var n = parseInt(m[1], 16);
+            var mixed = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (c) {
+                return Math.round(c * 0.4);
+            });
+            function toHex(c) {
+                return '#' + c.map(function (v) {
+                    return ('0' + Math.max(0, Math.min(255, v)).toString(16)).slice(-2);
+                }).join('');
+            }
+            document.documentElement.style.setProperty('--pr-book-bg', toHex(mixed));
+        } catch (e) {}
+    })();
+    </script>
+    
+    <script type="application/ld+json">{"@context": "https://schema.org", "@type": "ProfessionalService", "name": "Cabinet Juridic Ionescu", "description": "Consultanță juridică pentru contracte, organizarea companiilor și negocieri.", "telephone": "+40721555014", "email": "contact@cabinetjuridicionescu.ro", "address": {"@type": "PostalAddress", "streetAddress": "Strada Academiei 12, etajul 4", "addressLocality": "București", "postalCode": "010014", "addressCountry": "RO"}, "areaServed": {"@type": "City", "name": "București"}, "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "09:00", "closes": "18:00"}]}</script>
+    
+    <script>document.documentElement.classList.add('js-loaded');</script>
+    <noscript><style>
+        .pr-reveal, .pr-hero__copy { opacity: 1 !important; transform: none !important; }
+    </style></noscript>
+</head>
+<body class="pr-page">
+    <!-- Cookie banner is mounted first, before the hero, and its stylesheet
+         + script load here (synchronously) rather than at the end of body.
+         cookie-banner.js decides open/accepted state and toggles
+         html/body.hb-cookie-open the moment it runs; cookie-banner.css keys
+         .pr-hero/.pr-hero__copy padding off that class (see bot/site-legal.js
+         COOKIE_BANNER_CSS). Running this before the hero is ever laid out
+         means the hero gets its final padding on the FIRST layout pass —
+         previously the banner mounted just before </body>, so first-time
+         visitors got an initial hero layout WITHOUT the clearance padding,
+         then an immediate second layout WITH it the instant this script ran,
+         a real box-size change the browser counts as a layout shift (this
+         was the dominant source of this template's measured CLS). -->
+    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
+      <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
+      <div class="hb-cookie-actions">
+        <button type="button" id="hb-cookie-accept" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}">Acceptă</button>
+        <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>
+      </div>
+    </div>
+    <!-- The stylesheet now loads from <head> alongside the pre-paint consent
+         check; a second <link> to the same file here was redundant. -->
+    <script src="cookie-banner.js"></script>
+
+    <header class="pr-nav" id="top">
+        <div class="pr-nav__inner">
+            
+            <a href="#top" class="pr-nav__brand pr-nav__word">Cabinet Juridic Ionescu</a>
+            
+            <nav class="pr-nav__links" aria-label="Navigație">
+                <a href="#services">Servicii</a>
+                <a href="#about">Despre</a>
+                <a href="#faq">Întrebări</a>
+                <a href="#contact">Contact</a>
+            </nav>
+            <div class="pr-nav__actions">
+                <a href="#appointment" class="pr-nav__cta">Programare</a>
+                <button type="button" class="pr-nav__toggle" id="pr-nav-toggle" aria-expanded="false" aria-controls="pr-nav-mobile" aria-label="Deschide meniul">
+                    <span class="pr-nav__toggle-bars" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        <nav class="pr-nav__mobile" id="pr-nav-mobile" aria-label="Navigație mobilă" hidden>
+            <a href="#services">Servicii</a>
+            <a href="#about">Despre</a>
+            <a href="#faq">Întrebări</a>
+            <a href="#contact">Contact</a>
+            <a href="#appointment" class="pr-nav__mobile-cta">Programare</a>
+        </nav>
+    </header>
+
+    <section class="pr-hero" aria-labelledby="hero-heading">
+        <div class="pr-hero__bg" style="background: linear-gradient(145deg, rgba(243, 239, 232, 0.32), rgba(20, 18, 15, 0.48)), url(&#39;images/hero.jpg&#39;) center / cover" aria-hidden="true"></div>
+        <div class="pr-hero__veil" aria-hidden="true"></div>
+        <div class="pr-shell pr-hero__copy">
+            <!-- Near-opaque "paper on the desk" card: keeps hero text at safe
+                 WCAG AA contrast regardless of the uploaded photo — see
+                 wave10-professionals-hero-contrast.test.js and .pr-hero__card. -->
+            <div class="pr-hero__card">
+                
+                <p class="pr-kicker">Avocat — drept civil și comercial</p>
+                
+                <h1 class="pr-display" id="hero-heading">Claritate pentru deciziile importante.</h1>
+                
+                <p class="pr-lede">Consultații online sau la cabinet, numai cu programare.</p>
+                
+                <div class="pr-hero__actions">
+                    <a href="#appointment" class="pr-btn pr-btn--primary"><span>Programează o consultație</span></a>
+                    <a href="#services" class="pr-btn pr-btn--ghost">Vezi serviciile</a>
+                </div>
+                
+                <!-- m6: business.profession/.languages/.modes used to also
+                     repeat verbatim in a .pr-strip band right below the
+                     hero (removed — see the note there used to be). Kept
+                     here only, so there is exactly one place to edit. The
+                     " · " separator between modes/languages is real markup
+                     in a .pr-hero__sep span, inside the languages guard so it
+                     can never appear alone on a published page. It briefly
+                     lived only as a CSS ::before scoped to [data-hb-edit] —
+                     attributes a published page does not have — which ran the
+                     two chips together into "Online și la cabinetRomână".
+                     styles.css hides the span when either neighbour is empty,
+                     which only ever happens in the
+                     builder's live editor, since it wraps each token below in its own
+                     [data-hb-edit] span and patches only the one the owner
+                     typed into (builder/app.js), so a literal " · " text
+                     node between two spans would survive as an orphan dot
+                     if one of them were cleared without a page reload. The
+                     CSS rule is a no-op on the published site, which never
+                     carries [data-hb-edit] attributes at all. -->
+                <p class="pr-hero__meta">Online și la cabinet<span class="pr-hero__sep" aria-hidden="true"> · </span>Română, engleză și spaniolă</p>
+                
+            </div>
+        </div>
+        <a href="#services" class="pr-scroll" aria-label="Explorează">
+            <span>Explorează</span>
+        </a>
+    </section>
+
+    <main>
+        
+        <section class="pr-sec pr-reveal" id="services" aria-labelledby="services-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">Servicii</p>
+                <h2 class="pr-display pr-display--sec" id="services-heading">Servicii</h2>
+                <ul class="pr-svc" role="list">
+                    
+                    <li class="pr-svc__card">
+                        <h3 class="pr-svc__title">Contracte și negocieri</h3>
+                        <p class="pr-copy">Revizuire atentă, riscuri explicate clar și modificări pe care le poți folosi imediat.</p>
+                    </li>
+                    
+                    <li class="pr-svc__card">
+                        <h3 class="pr-svc__title">Organizare și guvernanță corporativă</h3>
+                        <p class="pr-copy">Structuri simple, acte de înființare și acorduri clare între asociați.</p>
+                    </li>
+                    
+                    <li class="pr-svc__card">
+                        <h3 class="pr-svc__title">Îndrumare în drept civil</h3>
+                        <p class="pr-copy">Opțiuni, termene și pași concreți înainte ca situația să se complice.</p>
+                    </li>
+                    
+                    <li class="pr-svc__card">
+                        <h3 class="pr-svc__title">Verificări juridice esențiale</h3>
+                        <p class="pr-copy">Liste de verificare potrivite tranzacțiilor mici și mijlocii, fără jargon inutil.</p>
+                    </li>
+                    
+                </ul>
+            </div>
+        </section>
+        
+
+        
+        <section class="pr-sec pr-sec--alt pr-reveal" id="process" aria-labelledby="process-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">Cum lucrăm</p>
+                <h2 class="pr-display pr-display--sec" id="process-heading">De la cerere la consultație</h2>
+                <ol class="pr-steps">
+                    
+                    <li class="pr-steps__item">
+                        <span class="pr-steps__num" aria-hidden="true"></span>
+                        <div>
+                            <h3 class="pr-steps__title">Trimite cererea</h3>
+                            <p class="pr-copy">Alege tema și ora potrivită. Programarea devine fermă după ce îți răspundem.</p>
+                        </div>
+                    </li>
+                    
+                    <li class="pr-steps__item">
+                        <span class="pr-steps__num" aria-hidden="true"></span>
+                        <div>
+                            <h3 class="pr-steps__title">Confirmăm ora</h3>
+                            <p class="pr-copy">Te contactăm prin email sau telefon pentru confirmarea finală.</p>
+                        </div>
+                    </li>
+                    
+                    <li class="pr-steps__item">
+                        <span class="pr-steps__num" aria-hidden="true"></span>
+                        <div>
+                            <h3 class="pr-steps__title">Analizăm opțiunile</h3>
+                            <p class="pr-copy">Discutăm online sau la cabinet, pornind de la întrebările tale.</p>
+                        </div>
+                    </li>
+                    
+                </ol>
+            </div>
+        </section>
+        
+
+        <section class="pr-sec pr-reveal" id="about" aria-labelledby="about-heading">
+            <div class="pr-shell pr-about">
+                <div>
+                    <p class="pr-kicker">Despre noi</p>
+                    <h2 class="pr-display pr-display--sec" id="about-heading">Cabinet Juridic Ionescu</h2>
+                    <p class="pr-copy pr-copy--lg">Lucrăm cu antreprenori și profesioniști care vor răspunsuri clare înainte să semneze. Pornim de la situația ta, nu de la un pachet standard. Nu promitem rezultate, ci analiză riguroasă și recomandări directe.</p>
+                </div>
+                
+                <aside class="pr-cred" aria-labelledby="cred-heading">
+                    
+                    <h3 class="pr-cred__title" id="cred-heading">Experiență</h3>
+                    
+                    
+                    <p class="pr-copy">Rigoare, experiență și explicații directe.</p>
+                    
+                    <ul class="pr-cred__list" role="list">
+                        
+                        <li>Drept civil și comercial</li>
+                        
+                        <li>Limbi: română, engleză și spaniolă</li>
+                        
+                        <li>Consultații online sau la cabinet, cu programare</li>
+                        
+                    </ul>
+                </aside>
+                
+            </div>
+        </section>
+
+        
+        <section class="pr-sec pr-sec--book pr-reveal" id="appointment" aria-labelledby="book-heading"
+            data-pr-appt="1"
+            data-tz="Europe/Bucharest"
+            data-interval="60"
+            data-duration="45"
+            data-lead="120"
+            data-mode="Online sau la cabinet"
+            data-confirm="Am înregistrat cererea. Confirmăm disponibilitatea înainte ca întâlnirea să devină fermă."
+            data-empty="Nu sunt ore disponibile momentan. Lasă-ne datele tale și revenim cu opțiuni."
+            data-submit="Trimite cererea">
+            <div class="pr-shell">
+                <p class="pr-kicker">Programare</p>
+                
+                <div id="pr-weekly" hidden aria-hidden="true">
+                    
+                    <span data-w="1" data-s="09:00" data-e="17:00"></span>
+                    
+                    <span data-w="2" data-s="09:00" data-e="17:00"></span>
+                    
+                    <span data-w="3" data-s="09:00" data-e="17:00"></span>
+                    
+                    <span data-w="4" data-s="09:00" data-e="17:00"></span>
+                    
+                    <span data-w="5" data-s="09:00" data-e="15:00"></span>
+                    
+                </div>
+                
+                
+                
+                <h2 class="pr-display pr-display--sec" id="book-heading">Solicită o programare</h2>
+                <p class="pr-copy pr-copy--lg">Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.</p>
+                
+                <p class="pr-warn" role="note">Nu trimite documente sau informații confidențiale prin acest formular.</p>
+                
+
+                <form class="pr-appt" id="pr-appt-form" novalidate>
+                    <fieldset class="pr-appt__fieldset">
+                        <legend class="pr-appt__legend">Tipul consultației</legend>
+                        <div class="pr-appt__types" role="radiogroup" aria-label="Tipul consultației">
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="consult-init"
+                                    data-label="Consultație inițială"
+                                    data-duration="45"
+                                    data-mode="online">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Consultație inițială</span>
+                                    <span class="pr-type__meta">45 min · online</span>
+                                </span>
+                            </label>
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="contract-review"
+                                    data-label="Revizuire contract"
+                                    data-duration="60"
+                                    data-mode="cabinet">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Revizuire contract</span>
+                                    <span class="pr-type__meta">60 min · cabinet</span>
+                                </span>
+                            </label>
+                            
+                            <label class="pr-type">
+                                <input type="radio" name="appt-type" value="follow-up"
+                                    data-label="Discuție de urmărire"
+                                    data-duration="30"
+                                    data-mode="telefon">
+                                <span class="pr-type__body">
+                                    <span class="pr-type__label">Discuție de urmărire</span>
+                                    <span class="pr-type__meta">30 min · telefon</span>
+                                </span>
+                            </label>
+                            
+                        </div>
+                    </fieldset>
+
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-appt-date">Data</label>
+                            <select class="pr-input" id="pr-appt-date" name="date" required></select>
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-appt-slot">Ora</label>
+                            <select class="pr-input" id="pr-appt-slot" name="slot" required></select>
+                        </div>
+                    </div>
+
+                    <p class="pr-appt__hint" id="pr-appt-hint" hidden></p>
+
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-name">Nume</label>
+                            <input class="pr-input" id="pr-name" name="name" type="text" autocomplete="name" required maxlength="80">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-email">Email</label>
+                            <input class="pr-input" id="pr-email" name="email" type="email" autocomplete="email" required maxlength="120">
+                        </div>
+                    </div>
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-phone">Telefon (opțional)</label>
+                            <input class="pr-input" id="pr-phone" name="phone" type="tel" autocomplete="tel" maxlength="30">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-note">Notă (opțional, fără informații confidențiale)</label>
+                            <input class="pr-input" id="pr-note" name="note" type="text" maxlength="200">
+                        </div>
+                    </div>
+
+                    
+                    <p class="pr-privacy">Folosim datele tale numai pentru a răspunde cererii de programare.</p>
+                    
+
+                    <button type="button" class="pr-btn pr-btn--primary pr-appt__submit" id="pr-appt-submit">
+                        <span>Trimite cererea</span>
+                    </button>
+                    <p class="pr-appt__fallback">
+                        Preferi altă cale de contact?
+                        
+                        <a href="mailto:contact@cabinetjuridicionescu.ro">contact@cabinetjuridicionescu.ro</a>
+                        
+                        
+                        · <a href="tel:+40721555014">+40 721 555 014</a>
+                        
+                    </p>
+                </form>
+
+                <div class="pr-appt__fail" id="pr-appt-fail" role="alert" hidden>
+                    <h3 class="pr-appt__fail-title">Cererea nu a ajuns la noi</h3>
+                    <p class="pr-copy">Site-ul nu a putut contacta serverul de programări. Sună-ne sau scrie-ne pe WhatsApp — te ajutăm imediat cu o programare.</p>
+                    <div class="pr-appt__fail-actions">
+                        
+                        <a class="pr-btn pr-btn--primary" href="tel:+40721555014">Sună la +40 721 555 014</a>
+                        
+                        
+                        <a class="pr-btn pr-btn--ghost" href="https://wa.me/40721555014" target="_blank" rel="noopener">Scrie pe WhatsApp</a>
+                        
+                    </div>
+                </div>
+
+                <div class="pr-appt-done" id="pr-appt-done" hidden>
+                    <h3 class="pr-appt-done__title">Cerere trimisă — așteaptă confirmarea</h3>
+                    <p class="pr-copy" id="pr-appt-done-body"></p>
+                    <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
+                </div>
+                
+            </div>
+        </section>
+        
+
+        
+        
+        
+        <section class="pr-sec pr-reveal" id="faq" aria-labelledby="faq-heading">
+            <div class="pr-shell pr-faq-wrap">
+                <p class="pr-kicker">Întrebări frecvente</p>
+                <h2 class="pr-display pr-display--sec" id="faq-heading">Întrebări frecvente</h2>
+                <div class="pr-faq">
+                    
+                    <details class="pr-faq__item" open>
+                        <summary class="pr-faq__q">Cum mă pregătesc pentru consultație?</summary>
+                        <p class="pr-copy">Trimite un rezumat scurt și documentele publice relevante. Nu transmite informații confidențiale prin formularul de programare.</p>
+                    </details>
+                    
+                    <details class="pr-faq__item" open>
+                        <summary class="pr-faq__q">Putem discuta online?</summary>
+                        <p class="pr-copy">Da. Alege formatul dorit la programare, iar după confirmare îți trimitem linkul.</p>
+                    </details>
+                    
+                    <details class="pr-faq__item" open>
+                        <summary class="pr-faq__q">Cât durează prima discuție?</summary>
+                        <p class="pr-copy">De regulă, între 45 și 60 de minute, în funcție de tema aleasă.</p>
+                    </details>
+                    
+                    <details class="pr-faq__item" open>
+                        <summary class="pr-faq__q">Cererea confirmă automat programarea?</summary>
+                        <p class="pr-copy">Nu. Înregistrăm cererea și confirmăm disponibilitatea înainte ca întâlnirea să devină fermă.</p>
+                    </details>
+                    
+                </div>
+            </div>
+        </section>
+        
+        
+
+        
+
+        <section class="pr-sec pr-reveal" id="contact" aria-labelledby="contact-heading">
+            <div class="pr-shell pr-contact">
+                <div>
+                    <p class="pr-kicker">Contact</p>
+                    <h2 class="pr-display pr-display--sec" id="contact-heading">Contact</h2>
+                    <p class="pr-copy pr-copy--lg">Preferi emailul sau telefonul? Contactează-ne — răspundem în zilele lucrătoare.</p>
+                    
+                    <p class="pr-copy pr-copy--sm">Luni–Vineri, numai cu programare</p>
+                    
+                </div>
+                <!-- M7 (client-confirmed): a bordered, near-white
+                     .pr-contact__row per line read as an empty form field
+                     waiting to be filled in, not as contact info already on
+                     file (04-QA-Evidence D6). Each row now carries a real
+                     icon instead (phone/email/WhatsApp/address/social —
+                     same chip shape as the sibling template's contact-icon
+                     treatment; also closes m7/X4, professionals having zero
+                     social icons at all). -->
+                <ul class="pr-contact__list" role="list">
+                    
+                    <li><a class="pr-contact__row" data-ld="phone" href="tel:+40721555014">
+                        <span class="pr-contact__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false"><path fill="currentColor" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg></span>
+                        <span class="pr-contact__text">+40 721 555 014</span>
+                    </a></li>
+                    
+                    
+                    <li><a class="pr-contact__row" data-ld="email" href="mailto:contact@cabinetjuridicionescu.ro">
+                        <span class="pr-contact__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false"><path fill="currentColor" d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm0 2.24V6l8 5.99L20 6v.24l-8 6.01-8-6.01zM4 8.4l7.4 5.55a1 1 0 001.2 0L20 8.4V18H4V8.4z"/></svg></span>
+                        <span class="pr-contact__text">contact@cabinetjuridicionescu.ro</span>
+                    </a></li>
+                    
+                    
+                    <li><a class="pr-contact__row" href="https://wa.me/40721555014" target="_blank" rel="noopener">
+                        <span class="pr-contact__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></span>
+                        <span class="pr-contact__text">WhatsApp</span>
+                    </a></li>
+                    
+                    
+                    
+                    <li><span class="pr-contact__row pr-contact__row--static" data-ld="address">
+                        <span class="pr-contact__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" focusable="false"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg></span>
+                        <span class="pr-contact__text">Strada Academiei 12, etajul 4<br>București 010014</span>
+                    </span></li>
+                    
+                    
+                    
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="pr-foot">
+        <div class="pr-shell pr-foot__inner">
+            <div>
+                <p class="pr-foot__name" data-ld="name">Cabinet Juridic Ionescu</p>
+                <p class="pr-copy pr-copy--sm">București · numai cu programare</p>
+            </div>
+            <p class="pr-copy pr-copy--sm">&copy; 2026 Cabinet Juridic Ionescu. Cererile de programare se confirmă separat.</p>
+            <nav class="hb-legal-links" aria-label="Pagini legale">
+                <a href="privacy.html">Confidențialitate</a>
+                <a href="terms.html">Termeni</a>
+                <a href="cookies.html">Cookie-uri</a>
+            </nav>
+            <p class="hb-built-by">Build by <a href="https://hidook.tech" target="_blank" rel="noopener noreferrer">hidook.tech</a> powered by <a href="https://hidook.agency" target="_blank" rel="noopener noreferrer">hidook.agency</a></p>
+        </div>
+    </footer>
+
+    
+    <div class="wa-qr" id="wa-qr" hidden>
+        <div class="wa-qr__backdrop" data-wa-close></div>
+        <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
+            <button class="wa-qr__close" type="button" data-wa-close aria-label="Închide">&times;</button>
+            <h3 class="wa-qr__title" id="wa-qr-title">Deschide WhatsApp pe telefon</h3>
+            <div class="wa-qr__code"><img id="wa-qr-img" alt="WhatsApp QR" width="240" height="240"></div>
+            <a class="wa-qr__open" id="wa-qr-open" href="https://wa.me/40721555014" target="_blank" rel="noopener">Sau deschide WhatsApp Web</a>
+        </div>
+    </div>
+    <a href="https://wa.me/40721555014" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="wa-icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+    
+
+    <!-- The cookie banner, its stylesheet and its script moved to the top of
+         <body> (see the comment there) to remove a first-paint layout shift.
+         qrcode.js stays here: it is the shared WhatsApp QR encoder, needed
+         only after the page has rendered, and loading it early would delay
+         first paint for no benefit. -->
+    <script src="qrcode.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
