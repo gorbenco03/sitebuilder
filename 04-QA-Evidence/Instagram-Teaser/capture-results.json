@@ -1,0 +1,92 @@
+[
+  {
+    "tpl": "product-menu",
+    "vp": "390w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "product-menu",
+    "vp": "1280w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "portfolio",
+    "vp": "390w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "portfolio",
+    "vp": "1280w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "local-service",
+    "vp": "390w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "local-service",
+    "vp": "1280w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "professionals",
+    "vp": "390w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "professionals",
+    "vp": "1280w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "desserdirina",
+    "vp": "390w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  },
+  {
+    "tpl": "desserdirina",
+    "vp": "1280w",
+    "restScroll": false,
+    "revealedScroll": false,
+    "consoleErrors": [],
+    "revealedOk": true,
+    "ctaClickable": true
+  }
+]

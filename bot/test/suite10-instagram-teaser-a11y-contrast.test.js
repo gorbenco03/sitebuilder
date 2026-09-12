@@ -39,20 +39,27 @@
  * Measured at 390px (mobile) and 1280px (desktop), matching the two
  * viewports item 3's visual evidence uses.
  *
- * STATUS AT TIME OF WRITING: the Instagram-teaser section
- * (`data-hb-ig-teaser`) does not exist in any template yet in this
- * worktree — verified by rendering every template's every preset with
- * editMode:true and finding no `data-hb-ig-teaser` anywhere (also checked:
- * `grep -r hb-ig-teaser` across this worktree and every sibling
- * `.claude/worktrees/agent-*` worktree found nothing). This file does NOT
- * fabricate a pass for work that doesn't exist: it renders every
- * template/theme/viewport combination, and if the veil is genuinely absent
- * everywhere, it calls `t.skip(...)` with an explicit explanation rather
- * than reporting green. Once the section lands, re-running this file
- * (unchanged) starts measuring it for real — per template, whichever ones
- * already have the section get measured even if others don't yet, so this
- * self-activates incrementally as each of the two parallel agents lands
- * their work rather than needing an all-or-nothing flag flip.
+ * REAL REVEAL, NOT A SIMULATION: the veil starts `hidden`, and revealing it
+ * (blurring the grid via `.hb-ig-teaser.is-revealed`, un-hiding
+ * `.hb-ig-teaser__veil`) is real behaviour owned by
+ * `builder/edit-overlay.js`'s click handler (see `revealIgTeaser()` there),
+ * not something this file's markup contract spells out byte-for-byte. So
+ * this measures against the REAL bundle — `builder/generated/engine.js`'s
+ * `renderPreview()`, the exact function `builder/app.js`'s `buildSrcdoc()`
+ * calls for the real iframe srcdoc — via
+ * `bot/test/lib/suite10-real-preview.js`, and reveals the section with an
+ * actual Playwright click on `.hb-ig-teaser__badge` (inside the section,
+ * not the CTA), the same interaction a customer's browser performs.
+ * Reimplementing the reveal by hand (e.g. just removing the `hidden`
+ * attribute) would silently drift from whatever edit-overlay.js actually
+ * does — this way it can't.
+ *
+ * STATUS: the Instagram-teaser feature landed on main at commit 5bf43f6
+ * (merged into this branch). Earlier revisions of this file ran against a
+ * worktree where it hadn't landed yet and used `t.skip(...)` rather than
+ * fabricate a pass — that skip path is left in place (now dead in
+ * practice, harmless) so a future regression that removes the section
+ * entirely is reported the same honest way instead of as an empty pass.
  *
  * Run: node --test bot/test/suite10-instagram-teaser-a11y-contrast.test.js
  */
@@ -60,13 +67,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
 const { renderHtml } = require(path.join(ROOT, 'build.js'));
-const siteExport = require(path.join(ROOT, 'bot', 'site-export.js'));
+const { materializePreviewSite } = require('./lib/suite10-real-preview.js');
 
 const TEMPLATES = ['product-menu', 'portfolio', 'local-service', 'professionals', 'desserdirina'];
 const VIEWPORTS = [
@@ -273,35 +279,20 @@ async function measureTextContrast(page, imgB64, prepared) {
     }, { imgB64, prepared });
 }
 
-// Broad, best-effort selectors for "the veil's lead text and CTA label" —
-// the task's markup contract names the container (`.hb-ig-teaser__veil`)
-// and the CTA marker (`[data-hb-ig-connect]`) but not a specific class for
-// the lead paragraph, so this covers the common text-bearing tags inside
-// the veil (excluding the button itself, measured separately) rather than
-// guessing one exact class name. Refine/narrow once the real markup lands
-// if it turns out to need it — this is deliberately generous, the same
-// "solid starting set, not exhaustive" approach suite7's own TEXT_CASES
-// tables use.
+// The real, landed markup (confirmed identical across all five templates —
+// see templates/*/template.html): `.hb-ig-teaser__lead` is the veil's lead
+// <p>, `.hb-ig-teaser__cta` / `[data-hb-ig-connect]` is the CTA <button>.
+// The broader fallback tags are kept too (harmless — querySelectorAll on a
+// selector that matches nothing is a no-op) as a defense against a future
+// per-template variant this file hasn't seen.
 const VEIL_TEXT_SELECTORS = [
+    '.hb-ig-teaser__lead',
     '.hb-ig-teaser__veil p',
     '.hb-ig-teaser__veil h1', '.hb-ig-teaser__veil h2', '.hb-ig-teaser__veil h3',
     '.hb-ig-teaser__veil span:not([data-hb-ig-connect])',
     '.hb-ig-teaser__veil strong',
 ];
-const VEIL_CTA_SELECTORS = ['[data-hb-ig-connect]'];
-
-async function renderEditModeSite(tpl, cfg) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'suite10-a11y-' + tpl + '-'));
-    // Reuse buildStaticSiteTree for the asset tree (images/css/js copied +
-    // minified exactly like a real publish) — then overwrite index.html with
-    // the editMode:true render, since buildStaticSiteTree/build() always
-    // renders the public (non-edit) path (see build.js's build()).
-    siteExport.buildStaticSiteTree({ templateId: tpl, config: cfg, images: [], siteDir: dir });
-    const templateHtml = fs.readFileSync(path.join(ROOT, 'templates', tpl, 'template.html'), 'utf8');
-    const editHtml = renderHtml(templateHtml, cfg, { editMode: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), editHtml, 'utf8');
-    return dir;
-}
+const VEIL_CTA_SELECTORS = ['.hb-ig-teaser__cta', '[data-hb-ig-connect]'];
 
 test('suite10: Instagram-teaser veil text and CTA meet WCAG 1.4.3 contrast — 5 templates x 3 themes x 2 widths', async (t) => {
     const browser = await chromium.launch({ headless: true });
@@ -330,7 +321,7 @@ test('suite10: Instagram-teaser veil text and CTA meet WCAG 1.4.3 contrast — 5
             for (const theme of THEMES) {
                 const cfg = buildThemedConfig(basePreset, theme);
                 for (const vp of VIEWPORTS) {
-                    const dir = await renderEditModeSite(tpl, cfg);
+                    const dir = materializePreviewSite(tpl, cfg);
                     const context = await browser.newContext({ viewport: vp, deviceScaleFactor: 1 });
                     const page = await context.newPage();
                     try {
@@ -338,15 +329,61 @@ test('suite10: Instagram-teaser veil text and CTA meet WCAG 1.4.3 contrast — 5
                         await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
                         await page.waitForTimeout(200);
 
-                        // Reveal the veil if it ships `hidden` by default — the
-                        // task brief's contract shows `<div class="hb-ig-teaser__veil" hidden>`,
-                        // and its text must still be checked once revealed (the
-                        // state a visitor sees after the reveal interaction), not
-                        // only whatever (if anything) is visible at rest.
-                        await page.evaluate(() => {
-                            document.querySelectorAll('.hb-ig-teaser__veil[hidden]')
-                                .forEach((el) => el.removeAttribute('hidden'));
-                        });
+                        // Real reveal: click inside the section (the badge —
+                        // definitely not the CTA) exactly like a visitor would,
+                        // and let builder/edit-overlay.js's own click handler do
+                        // the rest (adds .is-revealed to blur the grid, unhides
+                        // .hb-ig-teaser__veil). See this file's header for why
+                        // this is not reimplemented by hand.
+                        const label0 = `${tpl} @ ${vp.width}px / ${theme.name}`;
+                        const badge = page.locator('.hb-ig-teaser__badge').first();
+                        if (await badge.count() === 0) {
+                            report.push(`${label0}: no .hb-ig-teaser__badge to click — cannot reveal, skipping this combo`);
+                            continue;
+                        }
+                        await badge.click();
+                        const revealedOk = await page.evaluate(
+                            () => !!document.querySelector('.hb-ig-teaser.is-revealed .hb-ig-teaser__veil:not([hidden])')
+                        );
+                        if (!revealedOk) {
+                            failures.push(`${label0}: clicking .hb-ig-teaser__badge did not reveal the veil (no .is-revealed + un-hidden .hb-ig-teaser__veil found) — real customer interaction is broken, not just a contrast issue`);
+                            continue;
+                        }
+
+                        // Re-validate the sibling "connect button under the blur
+                        // could not actually be clicked" fix (blur made the grid
+                        // a stacking context that painted over the veil; fixed
+                        // with position:relative;z-index:1 on the veil). A trial
+                        // click checks real Playwright actionability — visible,
+                        // not covered by another element, receives pointer
+                        // events — without actually triggering the postMessage.
+                        // Done BEFORE the scroll-reset below since trial clicks also
+                        // auto-scroll their target into view.
+                        const ctaLocator = page.locator('[data-hb-ig-connect]').first();
+                        if (await ctaLocator.count() > 0) {
+                            try {
+                                await ctaLocator.click({ trial: true, timeout: 2000 });
+                            } catch (e) {
+                                failures.push(`${label0}: [data-hb-ig-connect] CTA is not actually clickable once revealed (${e.message.split('\n')[0]}) — the blur/veil stacking-context bug may have regressed`);
+                            }
+                        }
+
+                        // Both actions above (Playwright's click() and trial click())
+                        // auto-scroll their target into view for actionability — on
+                        // templates where the teaser sits mid-page this moves scrollY
+                        // well away from 0. getBoundingClientRect() below (via
+                        // prepareAndHideInk) is viewport-relative, but
+                        // page.screenshot({fullPage:true}) always captures from the
+                        // TOP of the document — sampling rect coordinates directly
+                        // against that image after a scroll lands on whatever else is
+                        // at that y-offset in the document, not the veil (this bit a
+                        // first draft of this file: it measured a wildly wrong
+                        // background — e.g. a pure, undiluted theme accent colour with
+                        // no scrim blended in at all — that turned out to be an
+                        // unrelated part of the page, not the veil). Reset scroll to
+                        // the top so the two coordinate systems agree again; nothing
+                        // above depends on scroll position to stay revealed.
+                        await page.evaluate(() => window.scrollTo(0, 0));
 
                         const selectors = [...VEIL_TEXT_SELECTORS, ...VEIL_CTA_SELECTORS];
                         const prepared = await prepareAndHideInk(page, selectors);
