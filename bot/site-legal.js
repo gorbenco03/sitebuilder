@@ -250,6 +250,23 @@ function cookiesHtml(config) {
  * s56/s58 commercial-preview oracles proved, prose shipped into the payload
  * is prose the product's own content contracts have to police.
  */
+/*
+ * A note on the "html.hb-cookie-open footer" rule further down.
+ *
+ * QA exploration measured, on one template at 390x844 scrolled to the
+ * bottom before accepting: the consent card at left:8->296, top:722->836,
+ * with that template's own footer social links sitting at left:147-243,
+ * top:772-812 — entirely inside the card's box, unclickable until the
+ * visitor deals with the banner. Re-measuring against all five templates'
+ * own footers (each is just a plain <footer> — no shared class) found the
+ * same overlap on every one of them, not only the template it was first
+ * caught on: the card is position:fixed, and a plain <footer> is the last
+ * thing in the document on every template, so once the page is scrolled to
+ * its end the footer is exactly what the fixed card can end up on top of.
+ * That is why the fix below targets the bare `footer` element rather than
+ * any one template's class list, and reuses the same --hb-cookie-clearance
+ * already trusted to keep the hero fold clear of the same card.
+ */
 const COOKIE_BANNER_CSS = `/* Hidook generated-site bottom chrome + cookie consent (shared layout rule). */
 :root {
   --hb-fab-size: 3.25rem;
@@ -435,6 +452,16 @@ body:has(#hb-cookie-banner:not([hidden])) .ls-hero {
   box-sizing: border-box;
   padding-bottom: var(--hb-cookie-clearance);
   margin-bottom: calc(var(--hb-dock-safe-bottom) + 0.35rem);
+}
+/* The trailing <footer> is the last thing in the document on every template,
+ * so it is exactly what the fixed bottom-left card ends up over once the
+ * page is scrolled to its end. Generic element selector on purpose: this has
+ * to hold for any footer, on any template, not one class list. */
+html.hb-cookie-open footer,
+body.hb-cookie-open footer,
+body:has(#hb-cookie-banner:not([hidden])) footer {
+  padding-bottom: var(--hb-cookie-clearance);
+  box-sizing: border-box;
 }
 /* Credibility / meta strips at the fold — never enter FAB or cookie corners. */
 .pr-strip {

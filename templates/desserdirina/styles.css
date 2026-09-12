@@ -560,37 +560,43 @@ body {
     box-shadow: 0 -20px 50px rgba(45, 45, 45, 0.06);
 }
 
-/* WAVE-SECTIONS: the about/contact two-card layout used to live on a nested
+/* WAVE-SECTIONS: the about/contact cards used to live on a nested
    ".about-section" grid, with ".gallery-section" as a plain sibling below it.
    The page-sections feature needs "about" and "contact" to be independent
    top-level <section id="…"> elements (see template.html), and reorderSections()
    in build.js refuses to reorder anything in a template if it finds
    non-whitespace content (like a wrapping <div>'s own closing tag) between
-   two top-level sections. So the grid now lives directly on .content-wrapper
-   itself — about/contact/gallery are true DOM siblings with nothing but
-   whitespace between them — and .gallery-section spans both columns to sit
-   full-width in its own row underneath. (align-items:stretch still makes
-   the about/contact cards share the tallest height, any language.) */
+   two top-level sections. So the layout now lives directly on
+   .content-wrapper itself — about/contact/gallery are true DOM siblings with
+   nothing but whitespace between them.
+   Single column at every width, About above Order: a 2-column grid with
+   align-items:stretch forced both cards to the height of the taller one,
+   which meant a long "About" (it has an open-ended add-section option) left
+   a large blank gap under a short "Order now" card. Stacking removes that
+   coupling — each card's height now comes from its own content — and it
+   also matches the DOM order already in template.html. */
 .content-wrapper {
     max-width: 1200px;
     margin: 0 auto;
     padding: var(--space-section) 2rem;
     display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    column-gap: 1.75rem;
+    grid-template-columns: 1fr;
     row-gap: var(--space-section);
-    align-items: stretch;
 }
 
 .about-card,
 .contact-card {
     background: var(--color-white);
     padding: 3rem;
+    max-width: 760px;
+    margin-inline: auto;
+    width: 100%;
     border-radius: 28px;
     box-shadow: var(--shadow-md);
     transition: transform 0.5s var(--spring), box-shadow 0.5s var(--transition-smooth);
     position: relative;
     overflow: hidden;
+    box-sizing: border-box;
 }
 
 .about-card::before {
@@ -1783,13 +1789,36 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-@media (max-width: 992px) {
-    .content-wrapper {
-        grid-template-columns: 1fr;
+/* .content-wrapper is already grid-template-columns:1fr at every width (see
+   above) — .collage-deck / .collage-photo sizing is fully responsive via
+   clamp() above (fixed tile size reserved for zero CLS) — no override
+   needed here either. */
+
+/* Hero copy and the footer's text column are centered by default (kept for
+   narrow screens, where an anchored-left block reads no better than a
+   centered one). At >=992px a centered block leaves uneven true margins
+   from the viewport edges — the wordmark/tagline and the whole footer read
+   as floating in the middle of a wide page instead of belonging to it — so
+   both are left-anchored from here up. */
+@media (min-width: 992px) {
+    .hero {
+        justify-content: flex-start;
+        text-align: left;
     }
 
-    /* .collage-deck / .collage-photo sizing is fully responsive via clamp() above
-       (fixed tile size reserved for zero CLS) — no override needed here. */
+    .hero-content {
+        padding-left: clamp(2rem, 8vw, 7rem);
+    }
+
+    .hero-tagline::after {
+        margin-left: 0;
+        margin-right: auto;
+    }
+
+    .footer-info {
+        align-items: flex-start;
+        text-align: left;
+    }
 }
 
 @media (max-width: 768px) {
