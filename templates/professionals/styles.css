@@ -936,7 +936,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
     grid-row: 2; grid-column: 1;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 1rem; text-align: center; padding: 1.5rem;
-    background: rgba(20, 18, 15, 0.55); border-radius: var(--r);
+        /* The scrim has to guarantee the text on it, not merely tint whatever photo
+       happens to be underneath. At 0.5–0.55 the lead text measured anywhere from
+       3.4:1 to 4.5:1 and moved between runs, because a blurred bright tile can
+       show through. 0.86 makes the reading independent of the photo, which is
+       the only version of this that is actually testable. */
+    background: rgba(20, 18, 15, 0.86); border-radius: var(--r);
 }
 .hb-ig-teaser__veil[hidden] { display: none; }
 .hb-ig-teaser__lead { color: var(--snow); font-weight: 600; max-width: 26ch; }

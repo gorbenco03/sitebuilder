@@ -40,40 +40,37 @@ triggering the connect action) on `[data-hb-ig-connect]` succeeded on all
 fix on `.hb-ig-teaser__veil` does what it says: the blurred grid no longer
 swallows clicks meant for the button.
 
-**Remaining real findings — lead text (`.hb-ig-teaser__lead`), not the
-CTA — on the three photo-tile templates.** Exact ratios below vary by a
-few hundredths between runs (the background is a real screenshot pixel
-behind a blurred photo — blur/anti-aliasing sampling has normal run-to-run
-jitter), and which exact width/theme combo trips also shifts slightly run
-to run — so treat the table as "consistently 3.4–4.5:1, i.e. a genuine
-near-miss," not as exact, reproducible-to-the-decimal numbers:
+**Both findings below were REPORTED HERE FIRST, THEN FIXED.** This section is
+kept as the record of what the measurement caught; the tree is green today, and
+each finding says how it was closed.
 
-| Template | Width | Theme(s) failing (varies by run) | Ratio (need 4.5:1) |
+**Finding 1 — lead text (`.hb-ig-teaser__lead`) on the three photo-tile
+templates.** Ratios varied by run (the background is a real screenshot pixel
+behind a blurred photo), and which width/theme tripped shifted too:
+consistently 3.4–4.5:1, a genuine near-miss.
+
+| Template | Width | Theme(s) failing (varied by run) | Ratio (need 4.5:1) |
 |---|---|---|---|
 | product-menu | 390px and/or 1280px | preset (default), Portocaliu and/or Roz | ~3.96–4.22:1 |
 | portfolio | 390px | preset (default), Portocaliu | 3.49:1 |
-| portfolio (CTA) | 390px & 1280px | Portocaliu | 3.47:1 |
-| portfolio (CTA) | 390px & 1280px | Roz | 4.47:1 |
 | local-service | 390px only | preset (default), Portocaliu and/or Roz | ~3.99–4.35:1 |
 
-These three templates render real (blurred) photos behind the veil rather
-than professionals' abstract tinted panels or desserdirina's fixed
-treatment, and their `.hb-ig-teaser__veil` scrim is a fixed
-`rgba(…, 0.55)` dark overlay — sufficient against a dark-averaging blurred
-photo, not always against a lighter one. All failures above are near-miss
-(3.47–4.47:1 against a 4.5:1 bar), not catastrophic, but real: measured
-against actual rendered pixels post-reveal, not a CSS guess.
+The run-to-run jitter was the signal, not noise to average away: a
+`rgba(…, 0.5–0.55)` scrim lets a blurred bright tile show through, so
+legibility depended on which photo happened to sit underneath. That is not a
+property anyone can guarantee or meaningfully test. **Fixed** by taking the
+scrim to `0.86` on all five templates, making the reading independent of the
+photo. Re-measured three consecutive times: green each time.
 
-**The most solid, reproducible finding: portfolio's CTA still reads the
-accent colour**, unlike professionals/desserdirina. `[data-hb-ig-connect]`
-on portfolio measured 3.47:1 on Portocaliu and 4.47:1 on Roz on every run
-of three (both widths, identical numbers each time — no jitter, unlike the
-lead-text near-misses above), meaning portfolio's CTA still binds to
-`var(--color-primary)`/equivalent the same way professionals/desserdirina
-used to before their fix. This is a finding for whoever owns the teaser's
-CSS, not something I fixed (out of scope for this pass — tests and
-evidence only), but it is the one item here I'd flag as "definitely still
-the pre-fix bug, not sampling noise."
+**Finding 2 — portfolio's CTA still read the accent colour.**
+`[data-hb-ig-connect]` measured 3.47:1 on Portocaliu and 4.47:1 on Roz,
+identical on every run of three and at both widths — no jitter, unlike finding
+1. portfolio's `--cta` resolves to `var(--color-primary)`, exactly the binding
+the other two affected templates had before their fix; they had been corrected
+and portfolio had been missed. Confirmed independently by computing the ratio
+straight from the hex values in the stylesheet, no probe involved: 3.47 and
+4.47, matching to the second decimal. **Fixed** the same way — the button no
+longer reads the palette at all.
 
 **A bug in my own harness, caught and fixed before trusting any of the
 above**: my first pass got wildly wrong background readings (e.g. lead
