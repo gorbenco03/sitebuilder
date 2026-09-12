@@ -3704,6 +3704,32 @@ function buildNativeBookingPanel(body, schema) {
 function buildDrawer() {
   const body = $('drawer-body');
   if (!body) return;
+
+  // `body.innerHTML = ''` below destroys every input in the drawer, including
+  // the one the owner may be typing into right now. A rebuild can be triggered
+  // from several places that have nothing to do with the field in hand — a
+  // section reorder, the native-booking toggle, an undo — and if one lands
+  // between a keystroke and the input handler that commits it, the typed text
+  // is simply gone. fullpass caught exactly that once, instrumented: the
+  // Cal.com field and its config entry both empty after a fill that had
+  // clearly happened.
+  //
+  // So carry the live value across the rebuild and replay it through the
+  // normal input event, rather than writing it to draft.config from here —
+  // that way the field's own validity gate and side effects run exactly as
+  // they would have, instead of this function quietly bypassing them.
+  let carried = null;
+  const active = document.activeElement;
+  if (active && typeof active.closest === 'function' && body.contains(active) && 'value' in active) {
+    const wrap = active.closest('[data-field-key]');
+    const key = wrap && wrap.getAttribute('data-field-key');
+    if (key) {
+      let caret = null;
+      try { caret = { start: active.selectionStart, end: active.selectionEnd }; } catch (_) {}
+      carried = { key, value: active.value, caret };
+    }
+  }
+
   body.innerHTML = '';
 
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) {
@@ -3774,6 +3800,25 @@ function buildDrawer() {
   galleryBtn.addEventListener('click', () => openGalleryModal());
   photoSection.appendChild(galleryBtn);
   body.appendChild(photoSection);
+
+  // Put back whatever was being typed when this rebuild started — see the
+  // note at the top of this function.
+  if (carried) {
+    const wrap = body.querySelector('[data-field-key="' + cssEscapeFieldKey(carried.key) + '"]');
+    const input = wrap && wrap.querySelector('input,textarea,select');
+    if (input && input.value !== carried.value) {
+      input.value = carried.value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (input) {
+      try {
+        input.focus({ preventScroll: true });
+        if (carried.caret && typeof input.setSelectionRange === 'function') {
+          input.setSelectionRange(carried.caret.start, carried.caret.end);
+        }
+      } catch (_) { /* selection is unsupported on some input types */ }
+    }
+  }
 }
 
 /** "Google și browser" drawer group: business.title / business.metaDescription,
