@@ -96,9 +96,11 @@
    * (['services','menu','pricing','packages','steps','reviews'] plus a
    * couple of regex special-cases), which silently starved every list
    * whose schema key didn't happen to match one of those six guessed words
-   * — faq.items, credentials.items and instagram.gallery (all end in
-   * ".items"/".gallery", not one of the six) never got add/remove controls
-   * no matter how many items schema.json's `min`/`max` allowed. The one
+   * — faq.items, credentials.items and (while it still existed;
+   * professionals' instagram.gallery was removed as a dead field in S9B,
+   * see build.js's normalizeInstagramForPublic()) instagram.gallery (all
+   * ended in ".items"/".gallery", not one of the six) never got add/remove
+   * controls no matter how many items schema.json's `min`/`max` allowed. The one
    * fix here is: a list is safe to add/remove from iff schema.json says so.
    *
    * Read once at module load — this script itself is only ever a fresh
@@ -518,7 +520,7 @@
   /**
    * Is `rootPath` a schema-declared editable list? A top-level match is an
    * exact lookup in listSchema.lists (schema.json's own key, e.g.
-   * "faq.items", "credentials.items", "instagram.gallery", "menu.en"). A
+   * "faq.items", "credentials.items", "menu.en"). A
    * nested match (an itemShape sub-field of type "list" living inside
    * another list's items — e.g. product-menu's `menu.en.<N>.items` dish
    * array nested inside the `menu.en` section list) has no schema key of

@@ -300,24 +300,6 @@
                 <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
             <!-- @endif -->
-            <!-- @if instagram.posts -->
-            <div class="pm-embeds">
-                <!-- @each instagram.posts -->
-                <a href="{{.}}" target="_blank" rel="noopener" class="pm-embed-link">
-                    <blockquote class="instagram-media" data-instgrm-permalink="{{.}}" data-instgrm-version="14"></blockquote>
-                </a>
-                <!-- @end -->
-            </div>
-            <!-- @endif -->
-            <!-- @if instagram.gallery -->
-            <div class="pm-ig-grid">
-                <!-- @each instagram.gallery -->
-                <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pm-ig-cell">
-                    <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy" decoding="async">
-                </a>
-                <!-- @end -->
-            </div>
-            <!-- @endif -->
         </section>
         <!-- @endif -->
     </main>

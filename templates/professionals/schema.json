@@ -752,17 +752,6 @@
           "label": "URL feed Instafidget (opțional)",
           "required": false,
           "maxLen": 400
-        },
-        {
-          "key": "instagram.gallery",
-          "type": "list",
-          "label": "Poze galerie Instagram",
-          "required": false,
-          "min": 0,
-          "max": 12,
-          "itemShape": {
-            ".": "text"
-          }
         }
       ]
     },

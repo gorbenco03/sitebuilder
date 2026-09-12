@@ -295,17 +295,6 @@ ul, ol { list-style: none; }
 .instagram-embed-iframe {
     width: 100%; min-height: 480px; border: 0; border-radius: var(--r); background: var(--snow);
 }
-.ls-iggrid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
-}
-@media (min-width: 720px) { .ls-iggrid { grid-template-columns: repeat(3, 1fr); } }
-.ls-igcell img {
-    /* See the note on .ls-shot img — the baked height attribute wins without this. */
-    width: 100%; height: auto; aspect-ratio: 16/10; object-fit: cover; border-radius: var(--r);
-    transition: opacity 160ms var(--ease-out);
-}
-.ls-igcell:hover img { opacity: 0.88; }
-
 .ls-band { background: var(--void); color: #fff; }
 .ls-band .ls-text { color: rgba(255,255,255,0.68); }
 .ls-band__inner {

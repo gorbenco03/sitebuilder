@@ -255,7 +255,7 @@ const MINIMAL_CONFIG = {
     services: [{ icon: '✦', label: 'Torturi' }],
     galleryTitle: '',
     categories: [{ title: '', blurb: '', photos: [] }],
-    instagram: { handle: '', url: '', gallery: [] },
+    instagram: { handle: '', url: '' },
     contact: { title: 'Contact', intro: 'text', instagram: { url: '', label: '' }, facebook: { url: '', label: '' }, whatsapp: '', phone: '', phoneDisplay: '', waHref: '', address: '', addressHref: '' },
     seo:    { ogImage: '', jsonLd: '' },
     footer: { address: 'Str. Test 1', year: 2026, note: 'test' },

@@ -88,21 +88,35 @@ function dirTotalBytes(dir) {
   // minifyCss/trimJsWhitespace short-circuited to identity:
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       84928        92039     86700
-  //   local-service     105667       112896    107800
-  //   portfolio         105962       120782    108100
-  //   professionals     121427       141955    123900
+  //   product-menu       82126        89171     83800
+  //   local-service     103391       110467    105500
+  //   portfolio         103598       118279    105700
+  //   professionals     121228       143138    123700
   //
-  // Re-measured twice on 2026-09-12, after each wave that added shipped
-  // features rather than drift. First: portfolio gained a whole appointment
-  // section (schema + template + three presets) so a salon can take bookings
-  // online, and professionals gained the separate native-mode copy that stops
-  // the page contradicting its own booking widget. Then the template pass
-  // added, across all five, real SVG social icons in place of "IG"/"FB" text,
-  // contrast-safe colour tokens, a translucent panel behind portfolio's price
-  // list, and product-menu's pre-paint ink picker. Every ceiling still sits at
-  // minified + ~2% and comfortably under unminified, so property (1) below —
-  // delete the minifier and this gate trips — still holds on all four.
+  // Re-measured on 2026-09-12 (S9B): instagram.gallery — and, on desserdirina
+  // and product-menu, the never-schema-declared instagram.posts — removed
+  // from every schema.json/template.html, plus the CSS rules that only ever
+  // styled that now-gone markup (.pr-ig-grid, .ls-iggrid, .pf-ig__grid,
+  // .pm-ig-grid/.pm-embeds, desserdirina's whole .instagram-embeds-grid/
+  // .insta-frame/.instagram-grid/.insta-card block). Both fields were dead:
+  // build.js's normalizeInstagramForPublic() clears them on every render,
+  // connected or not (see that function's doc comment), so no template
+  // markup reading them could ever show anything. templateHtml and
+  // stylesCss both shrank on all five (desserdirina isn't gated by this
+  // ceiling table, but its own payload dropped ~3.3KB), tightening every
+  // margin back down toward the ~2%-over-minified band this gate is meant
+  // to hold — left alone, four of them would have drifted to +4–5%,
+  // silently handing back the exact growth budget the note below warns
+  // about.
+  //
+  // Re-measured twice on 2026-09-12 before that, after each wave that added
+  // shipped features rather than drift. First: portfolio gained a whole
+  // appointment section (schema + template + three presets) so a salon can
+  // take bookings online, and professionals gained the separate native-mode
+  // copy that stops the page contradicting its own booking widget. Then the
+  // template pass added, across all five, real SVG social icons in place of
+  // "IG"/"FB" text, contrast-safe colour tokens, a translucent panel behind
+  // portfolio's price list, and product-menu's pre-paint ink picker.
   //
   // These used to sit at the midpoint between the two. That rule stopped
   // serving its purpose once the stylesheets grew long explanatory comments:
@@ -118,10 +132,10 @@ function dirTotalBytes(dir) {
   // The "embedded styles.css is smaller than the raw source" check below is
   // the direct minifier-ran assertion; this one is the growth guard.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 86700,
-    'local-service': 107800,
-    portfolio: 108100,
-    professionals: 123900,
+    'product-menu': 83800,
+    'local-service': 105500,
+    portfolio: 105700,
+    professionals: 123700,
   };
 
   for (const id of TPLS) {
@@ -307,7 +321,17 @@ function dirTotalBytes(dir) {
     check(`${id}: template.html keeps loading=lazy + decoding=async on repeating gallery images`, () => {
       const html = fs.readFileSync(path.join(ROOT, 'templates', id, 'template.html'), 'utf8');
       const lazyImgs = html.match(/<img\b[^>]*loading=["']lazy["'][^>]*>/g) || [];
-      assert.ok(lazyImgs.length >= 1, id + ' must keep at least one loading="lazy" <img>');
+      if (lazyImgs.length === 0) {
+        // professionals ships only a CSS-background hero photo, a nav logo
+        // (above the fold, correctly eager) and a JS-populated WhatsApp QR
+        // <img> (no static src to lazy-load) — no <img> gallery/Instagram
+        // grid at all, same reason the variants.json check above special-
+        // cases it. S9B removed its one repeating-image markup (the
+        // instagram.gallery grid) as a dead field, so this template
+        // legitimately has nothing left to gate on lazy-loading.
+        assert.strictEqual(id, 'professionals', id + ' must keep at least one loading="lazy" <img>');
+        return;
+      }
       for (const tag of lazyImgs) {
         assert.ok(
           /decoding=["']async["']/.test(tag),

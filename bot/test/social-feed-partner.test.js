@@ -95,7 +95,7 @@ function secretIn(obj) {
     });
     registry.saveVersion(site.id, {
         business: { name: 'Test IG' },
-        instagram: { handle: 'test', url: 'https://instagram.com/test', gallery: ['https://example.com/a.jpg'] },
+        instagram: { handle: 'test', url: 'https://instagram.com/test' },
     });
     const otherSite = registry.createSite({
         userId: tgUser.id,
@@ -166,7 +166,7 @@ function secretIn(obj) {
         restoreFetch();
     });
 
-    await check('grant mock 200 persists instagram.embedUrl and keeps gallery', async () => {
+    await check('grant mock 200 persists instagram.embedUrl and keeps sibling fields untouched', async () => {
         fetchCalls = [];
         process.env.SITEBUILDER_PARTNER_SECRET = 'unit-test-secret-not-real';
         const embed = 'https://instafidget.hidook.agency/embed/instagram?widgetKey=abc-123';
@@ -203,7 +203,7 @@ function secretIn(obj) {
         const latest = versions[versions.length - 1];
         const cfg = registry.getVersionConfig(site.id, latest.versionId);
         assert.strictEqual(cfg.instagram.embedUrl, embed);
-        assert.deepStrictEqual(cfg.instagram.gallery, ['https://example.com/a.jpg']);
+        assert.strictEqual(cfg.instagram.url, 'https://instagram.com/test', 'sibling instagram.url must survive the grant untouched');
 
         delete process.env.SITEBUILDER_PARTNER_SECRET;
         restoreFetch();

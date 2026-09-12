@@ -118,7 +118,7 @@ function siteConfig(name) {
         services: [{ icon: '✦', label: 'Svc' }],
         galleryTitle: '',
         categories: [{ title: '', blurb: '', photos: [] }],
-        instagram: { handle: '', url: '', gallery: [] },
+        instagram: { handle: '', url: '' },
         contact: {
             title: 'Contact',
             intro: 'hi',

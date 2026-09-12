@@ -195,6 +195,17 @@ function isConnectedSocialFeedEmbed(url) {
  * S111 owner policy: public Instagram section only when Instafidget (or partner) is
  * connected. No direct instagram.com iframe, no empty section, no fake gallery
  * pretending to be a live feed. Mutates the shallow-cloned render config only.
+ *
+ * S9B: `instagram.gallery` (manual photo list) and `instagram.posts` (never
+ * schema-declared on any template) used to be force-cleared here too, on
+ * both branches below. No template.html has read either key since S9B
+ * removed the markup that once rendered them — this function used to be the
+ * ONLY thing standing between a customer-entered gallery/posts value and a
+ * fake "live feed" appearing on the public site (see the removed field's
+ * schema.json history and bot/test/suite2-string-gallery-in-photos-panel.
+ * test.js for the full story) — so with the markup gone there is nothing
+ * left for this function to protect on those two keys, and stripping them
+ * here would just be busywork on an object no longer read downstream.
  */
 function normalizeInstagramForPublic(cfg) {
     if (!cfg || !cfg.instagram || typeof cfg.instagram !== 'object') return;
@@ -202,17 +213,12 @@ function normalizeInstagramForPublic(cfg) {
     const rawEmbed = typeof ig.embedUrl === 'string' ? ig.embedUrl.trim() : '';
     if (isConnectedSocialFeedEmbed(rawEmbed)) {
         ig.embedUrl = rawEmbed;
-        // Connected: partner embed only — drop posts/gallery filler on live/preview.
-        ig.posts = [];
-        ig.gallery = [];
         // Section templates gate on handle; keep a stable handle for @line when present.
         if (typeof ig.handle === 'string') ig.handle = ig.handle.trim();
         if (!ig.handle) ig.handle = 'instagram';
     } else {
         // Not connected: omit the whole public Instagram block.
         ig.embedUrl = '';
-        ig.posts = [];
-        ig.gallery = [];
         ig.handle = '';
     }
     cfg.instagram = ig;

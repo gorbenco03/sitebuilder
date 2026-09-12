@@ -211,14 +211,6 @@
         "instagram": {
           "handle": "atelier.ivoire",
           "url": "https://www.instagram.com/atelier.ivoire",
-          "gallery": [
-            "images/iv-ig1.jpg",
-            "images/iv-ig2.jpg",
-            "images/iv-ig3.jpg",
-            "images/iv-ig4.jpg",
-            "images/iv-ig5.jpg",
-            "images/iv-ig6.jpg"
-          ],
           "embedUrl": ""
         },
         "appointment": {
@@ -494,14 +486,6 @@
         "instagram": {
           "handle": "studioforma.bucuresti",
           "url": "https://www.instagram.com/studioforma.bucuresti",
-          "gallery": [
-            "images/sf-ig1.jpg",
-            "images/sf-ig2.jpg",
-            "images/sf-ig3.jpg",
-            "images/sf-ig4.jpg",
-            "images/sf-ig5.jpg",
-            "images/sf-ig6.jpg"
-          ],
           "embedUrl": ""
         },
         "appointment": {
@@ -784,14 +768,6 @@
         "instagram": {
           "handle": "atelier.ivoire",
           "url": "https://www.instagram.com/atelier.ivoire",
-          "gallery": [
-            "images/iv-ig1.jpg",
-            "images/iv-ig2.jpg",
-            "images/iv-ig3.jpg",
-            "images/iv-ig4.jpg",
-            "images/iv-ig5.jpg",
-            "images/iv-ig6.jpg"
-          ],
           "embedUrl": ""
         },
         "appointment": {

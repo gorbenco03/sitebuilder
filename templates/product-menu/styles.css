@@ -418,19 +418,11 @@ ul { list-style: none; }
     font-family: var(--font-ui); color: var(--link); font-size: 12px;
     font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
 }
-.pm-embed, .pm-ig-grid, .pm-embeds { max-width: var(--max); margin: 0 auto; }
-.pm-embed { margin-bottom: 1.25rem; }
+.pm-embed { max-width: var(--max); margin: 0 auto 1.25rem; }
 .instagram-embed-iframe {
     width: 100%; min-height: 480px; border: 0;
     border-radius: var(--r-media); background: var(--snow);
 }
-.pm-ig-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-@media (min-width: 640px) { .pm-ig-grid { grid-template-columns: repeat(3, 1fr); } }
-.pm-ig-cell img {
-    width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r);
-    transition: opacity 160ms var(--ease-out);
-}
-.pm-ig-cell:hover img { opacity: 0.88; }
 
 .pm-foot {
     background: var(--paper); color: var(--ink-mute); font-size: 12px;

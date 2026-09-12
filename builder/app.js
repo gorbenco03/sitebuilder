@@ -947,12 +947,14 @@ function computeListSchemaInfo(schema) {
  * — this is that same convention, reused so findPhotoPaths() and the
  * postMessage 'list-add' handler agree on what counts as one.
  *
- * Across every shipped schema.json today, exactly one field uses this shape:
- * professionals' `instagram.gallery` (items are bare `images/xxx.jpg` / data:
- * URI strings, rendered as `<img src="{{.}}">` — see
- * templates/professionals/template.html). Every other template declares its
- * own `instagram.gallery` as a distinct top-level `"type":"photos"` field
- * instead (see findPhotoPaths()), so this check does not fire for them.
+ * No shipped schema.json currently declares a field with this shape —
+ * professionals' `instagram.gallery` was the one example, removed in S9B as
+ * a dead field (build.js's normalizeInstagramForPublic() cleared it on
+ * every render, so no template markup reading it could ever show anything
+ * — see that function's doc comment). The mechanism itself is kept: it is
+ * generic (any future bare-scalar-string photo list benefits automatically,
+ * whatever it's named), and bot/test/suite2-string-gallery-in-photos-panel.
+ * test.js exercises it end to end with a synthetic schema field.
  */
 function isBareScalarListField(field) {
   if (!field || field.type !== 'list') return false;
@@ -2589,30 +2591,22 @@ function initPostMessageListener() {
         break;
       case 'list-add':
         // B4 (S2-2 / integration with Wave 1's schema-driven "+ Adaugă"):
-        // a bare-scalar list (itemShape {'.': type} — today only
-        // professionals' instagram.gallery) holds photo src strings
-        // directly, one per item. onListAdd()'s generic item seeder has no
-        // way to invent a real photo, so left to run here it would push a
-        // useless {'.': 'Titlu nou'} placeholder object that the template's
-        // `<img src="{{.}}">` can never render (see isBareScalarListField()'s
-        // doc comment).
-        //
-        // The obvious fix would route this to the "Poze" panel instead — but
-        // findPhotoPaths() deliberately does NOT list instagram.gallery
-        // there either (see isS111DeadInstagramGalleryPath()'s doc comment:
-        // build.js's S111 owner policy clears this exact field on every
-        // render, in-editor or published, so no upload UI for it — however
-        // reachable — could ever show a visible result). Warn instead of
-        // silently doing nothing or corrupting the array.
+        // a bare-scalar list (itemShape {'.': type}) holds its items
+        // directly as scalar values (e.g. photo src strings), not
+        // {key: value} objects. onListAdd()'s generic item seeder has no
+        // way to invent a real value for such a list, so left to run here
+        // it would push a useless {'.': 'Titlu nou'} placeholder object
+        // that a template's `{{.}}` token can never render as intended
+        // (see isBareScalarListField()'s doc comment). findPhotoPaths()
+        // already surfaces this kind of field in the "Poze" panel (its own
+        // doc comment explains how) — that upload flow is the right tool
+        // for it, so warn instead of corrupting the array here.
         (function () {
           const tpl = currentTemplate && currentTemplate.data;
           const schema = tpl && tpl.schema;
           const field = schema && getAllSchemaFields(schema).find(f => f && f.key === msg.listPath);
           if (isBareScalarListField(field)) {
-            showToast(
-              'Galeria foto proprie de Instagram nu mai e afișată pe site — conectează Instagram (Detalii → Instagram) pentru un feed real.',
-              'error'
-            );
+            showToast('Pentru a adăuga o poză aici, folosește panoul „Poze".', 'error');
             return;
           }
           onListAdd(msg.listPath);
@@ -4288,34 +4282,6 @@ function syncDrawerField(path, value) {
 // ---------------------------------------------------------------------------
 
 /**
- * PLAN-QA-2026-09-12 Suite 2, B4 — S111 conflict discovered while fixing
- * this: `instagram.gallery` is declared as a photo field in EVERY template's
- * schema.json (either `"type":"photos"`, or professionals' bare-scalar
- * `"type":"list"`), but build.js's normalizeInstagramForPublic() — the S111
- * owner policy ("public Instagram section only when Instafidget is
- * connected... no fake gallery pretending to be a live feed") — sets
- * `instagram.gallery` to `[]` on EVERY render, unconditionally, before the
- * template ever sees it: both when disconnected (whole block hidden) AND
- * when connected (partner embed shown instead, gallery still dropped). This
- * runs for every renderHtml() call, including the editor's own live preview
- * (buildSrcdoc has no "skip S111 normalization" mode) — so a photo added
- * here would never be visible ANYWHERE, in-editor or published, regardless
- * of what the client does. Confirmed empirically: setting instagram.handle
- * and instagram.gallery directly on draft.config and re-rendering never
- * produces an `#instagram` section in the DOM, editor or export.
- *
- * Surfacing a working-looking upload control for a field that can never
- * have any visible effect is exactly the "fake gallery" S111 was written to
- * eliminate — just relocated from the live site into the editor's own UI.
- * So, unlike every other photo path, this one is excluded here rather than
- * fixed: the smallest, most reversible response to a real product policy
- * this task's briefing didn't know about (see the implementation report).
- */
-function isS111DeadInstagramGalleryPath(key) {
-  return key === 'instagram.gallery';
-}
-
-/**
  * PLAN-QA-2026-09-12 Suite 2 (B5/S2-3, B4/S2-2): which schema list field, if
  * any, is `path` — and, when it is, what shape do its items use? Shared by
  * findPhotoPaths() (which paths to show) and buildGallerySection() (how to
@@ -4323,23 +4289,25 @@ function isS111DeadInstagramGalleryPath(key) {
  * given path's shape.
  *
  * Returns null for anything not resolvable from the current schema (e.g. no
- * template loaded yet, or isS111DeadInstagramGalleryPath() excludes it) —
- * callers fall back to structural detection.
+ * template loaded yet) — callers fall back to structural detection.
  *   - { kind: 'flat', itemsAreStrings } for a top-level field: `field.key`
  *     itself is the photo array. `itemsAreStrings` is true for a `"type":
- *     "photos"` field (every template's own instagram.gallery bar
- *     professionals') and for a `"type":"list"` field using the bare-scalar
- *     itemShape (professionals' instagram.gallery — see
- *     isBareScalarListField()); both hold plain src strings today.
+ *     "photos"` field and for a `"type":"list"` field using the bare-scalar
+ *     itemShape (see isBareScalarListField()); both hold plain src strings.
  *   - { kind: 'nested', itemsAreStrings: false } for `<listKey>.<idx>.<key>`
  *     where `<listKey>`'s itemShape declares `<key>` as `"photos"` (e.g.
  *     categories.3.photos) — always the `{src,alt}` object shape by
  *     convention (see every shipped preset's categories[].photos).
+ *
+ * S9B: professionals' `instagram.gallery` used to be excluded here
+ * (isS111DeadInstagramGalleryPath()) because build.js's
+ * normalizeInstagramForPublic() cleared it on every render — no upload here
+ * could ever show anything. The field itself is gone now (dead field
+ * removed, not worked around), so that exclusion is gone with it.
  */
 function resolveSchemaPhotoPath(path) {
   const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
   if (!schema) return null;
-  if (isS111DeadInstagramGalleryPath(path)) return null;
   const fields = getAllSchemaFields(schema);
 
   const flat = fields.find(f => f && f.key === path);
@@ -4388,7 +4356,6 @@ function findPhotoPaths() {
   if (schema) {
     getAllSchemaFields(schema).forEach((f) => {
       if (!f || !f.key) return;
-      if (isS111DeadInstagramGalleryPath(f.key)) return; // see isS111DeadInstagramGalleryPath() doc comment
       if (f.type === 'photos' || (f.type === 'list' && isBareScalarListField(f))) {
         if (paths.indexOf(f.key) === -1) paths.push(f.key);
         return;
@@ -4436,7 +4403,6 @@ function humanizePhotoPathLabel(path) {
     const title = cat && typeof cat.title === 'string' ? cat.title.trim() : '';
     return title || ('Categorie ' + (Number(catMatch[1]) + 1));
   }
-  if (path === 'instagram.gallery') return 'Galerie Instagram';
   return path
     .split('.')
     .filter(seg => !/^\d+$/.test(seg))
@@ -4675,8 +4641,8 @@ function buildGallerySection(body, path, itemsAreStrings) {
       div.appendChild(del);
       card.appendChild(div);
 
-      // B4 (S2-2): `itemsAreStrings` paths (e.g. professionals'
-      // instagram.gallery) store each photo as a bare src string — writing
+      // B4 (S2-2): `itemsAreStrings` paths (a bare-scalar-string photo list,
+      // see isBareScalarListField()) store each photo as a bare src string — writing
       // an alt value here would have to promote it to a {src,alt} object,
       // which the template's own `<img src="{{.}}">` (item used directly,
       // not item.src) can never read back. No alt field is offered for
@@ -4788,8 +4754,8 @@ function buildGallerySection(body, path, itemsAreStrings) {
       try {
         const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
         const arr = getPath(draft.config, path) || [];
-        // B4 (S2-2): a bare-string photo path (e.g. professionals'
-        // instagram.gallery) must receive the src itself, not a {src,alt}
+        // B4 (S2-2): a bare-string photo path (isBareScalarListField())
+        // must receive the src itself, not a {src,alt}
         // wrapper — the template renders each item directly as `{{.}}`.
         arr.push(itemsAreStrings ? dataUrl : { src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
         setPath(draft.config, path, arr);

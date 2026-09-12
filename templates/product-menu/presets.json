@@ -124,15 +124,7 @@
         "instagram": {
           "handle": "casa.nord.bucuresti",
           "url": "https://www.instagram.com/casa.nord.bucuresti",
-          "embedUrl": "",
-          "gallery": [
-            "images/cn-ig1.jpg",
-            "images/cn-ig2.jpg",
-            "images/cn-ig3.jpg",
-            "images/cn-ig4.jpg",
-            "images/cn-ig5.jpg",
-            "images/cn-ig6.jpg"
-          ]
+          "embedUrl": ""
         },
         "contact": {
           "title": "Rezervări",
@@ -290,15 +282,7 @@
         "instagram": {
           "handle": "traista.verde.cluj",
           "url": "https://www.instagram.com/traista.verde.cluj",
-          "embedUrl": "",
-          "gallery": [
-            "images/tv-ig1.jpg",
-            "images/tv-ig2.jpg",
-            "images/tv-ig3.jpg",
-            "images/tv-ig4.jpg",
-            "images/tv-ig5.jpg",
-            "images/tv-ig6.jpg"
-          ]
+          "embedUrl": ""
         },
         "contact": {
           "title": "Rezervări",

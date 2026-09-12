@@ -356,7 +356,7 @@ ul { list-style: none; }
    sizes (960x960 vs 960x643), and without `height: auto` here the two shapes
    rendered at two different pixel heights side by side in the same row — a
    real, visible defect, not merely an untidy intent. Same fix applied to
-   .pf-person__pic img and .pf-ig__cell img below, which share the pattern. */
+   .pf-person__pic img below, which shares the pattern. */
 .pf-frame img, .collage-photo img { width: 100%; height: auto; aspect-ratio: 4/5; object-fit: cover; }
 
 .pf-about {
@@ -475,16 +475,6 @@ ul { list-style: none; }
 .instagram-embed-iframe {
     width: 100%; min-height: 480px; border: 0; border-radius: var(--r); background: var(--snow);
 }
-.pf-ig__grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;
-}
-@media (min-width: 640px) { .pf-ig__grid { grid-template-columns: repeat(3, 1fr); } }
-.pf-ig__cell img {
-    width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; border-radius: 6px;
-    transition: opacity 160ms var(--ease-out);
-}
-.pf-ig__cell:hover img { opacity: 0.88; }
-
 .pf-appt {
     padding: clamp(3rem, 8vw, 5rem) 0;
     background: var(--void); color: var(--snow);

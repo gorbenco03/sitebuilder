@@ -273,8 +273,14 @@ exists and why it is not part of the live architecture.
 
 ## 10a. Image variants — a build artifact, not a build step
 
-Gallery and Instagram photos ship as committed WebP width-variants
+Gallery photos ship as committed WebP width-variants
 (`templates/<id>/images/*-{480,960}w.webp`) plus a `variants.json` manifest.
+(The manual Instagram photo grid this line used to also cover —
+`instagram.gallery` — was removed as a dead field in S9B: build.js's
+normalizeInstagramForPublic() cleared it on every render, so no upload
+there could ever be visible. The real, live Instagram integration is the
+Instafidget partner embed, `instagram.embedUrl` — an iframe, not a photo
+gallery, so it ships no width-variants of its own.)
 `build.js#injectResponsiveImages()` reads that manifest and upgrades the
 matching `<img>` into a `<picture>` with `srcset`/`sizes` and intrinsic
 `width`/`height`.

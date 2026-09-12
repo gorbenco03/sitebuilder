@@ -578,12 +578,6 @@
           "type": "url",
           "label": "URL feed Instafidget (opțional)",
           "required": false
-        },
-        {
-          "key": "instagram.gallery",
-          "type": "photos",
-          "label": "Poze grilă Instagram (max. 6)",
-          "required": false
         }
       ]
     },

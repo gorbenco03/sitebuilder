@@ -235,17 +235,6 @@
                 <iframe src="{{instagram.embedUrl}}" title="{{labels.instaTitle}}" loading="lazy" class="instagram-embed-iframe" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </div>
             <!-- @endif -->
-            <!-- @if instagram.gallery -->
-            <div class="pf-shell">
-                <div class="pf-ig__grid">
-                    <!-- @each instagram.gallery -->
-                    <a href="{{instagram.url}}" target="_blank" rel="noopener" class="pf-ig__cell">
-                        <img src="{{.}}" alt="{{business.name}} on Instagram" loading="lazy" decoding="async">
-                    </a>
-                    <!-- @end -->
-                </div>
-            </div>
-            <!-- @endif -->
         </section>
         <!-- @endif -->
 

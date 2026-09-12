@@ -407,12 +407,6 @@
           "type": "url",
           "label": "URL feed Instafidget (opțional)",
           "required": false
-        },
-        {
-          "key": "instagram.gallery",
-          "type": "photos",
-          "label": "Poze grilă Instagram (rezultate / fallback)",
-          "required": false
         }
       ]
     },

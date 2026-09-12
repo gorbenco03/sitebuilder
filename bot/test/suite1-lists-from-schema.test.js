@@ -13,7 +13,10 @@
  *
  *   - B3 professionals `faq.items`         (ends in ".items", not allow-listed)
  *   - M2 professionals `credentials.items` (ends in ".items", not allow-listed)
- *   - B4 professionals `instagram.gallery` (ends in ".gallery", not allow-listed)
+ *   - B4 professionals `instagram.gallery` (ends in ".gallery", not allow-listed
+ *     at the time — S9B later removed this field entirely as dead, see
+ *     build.js's normalizeInstagramForPublic() doc comment, so it no longer
+ *     appears in professionals' schema.json and this file no longer seeds it)
  *   - local-service `trust` / `certifications` (HANDOFF note; worked around
  *     by templates/local-service/script.js injecting its OWN `.hb-ls-add`/
  *     `.hb-ls-remove` controls and stripping the generic ones — see below)
@@ -75,10 +78,10 @@
  * safe lists too — harmless, since that removal is unconditional and already
  * covers whichever lists the generic overlay decides to touch.
  *
- * RED (pre-fix, `SAFE_LIST_PATHS` in place): fails on `faq.items`,
- * `credentials.items`, `instagram.gallery`, `appointment.types`
- * (professionals — the last of these is later excluded via `editable:false`,
- * see above); `trust`, `certifications` (local-service, generic overlay
+ * RED (pre-fix, `SAFE_LIST_PATHS` in place): failed on `faq.items`,
+ * `credentials.items`, `instagram.gallery` (removed since, see above),
+ * `appointment.types` (professionals — the last of these is later excluded
+ * via `editable:false`, see above); `trust`, `certifications` (local-service, generic overlay
  * only — masked by that template's own controls, see above, so NOT asserted
  * here); `schedule.rows` (later also excluded, see above), `team.members`
  * (portfolio).
@@ -144,27 +147,6 @@ async function openTemplateEditor(page, templateId) {
     await drawer.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   }
   await page.waitForTimeout(400);
-}
-
-/** professionals.instagram.gallery is the one list field that starts EMPTY
- *  in the default preset, and its whole section is gated on
- *  `@if instagram.handle` in template.html — so it renders nothing at all
- *  to attach a button to until both are filled. Seed both directly on the
- *  document model the same way a customer's own edits would land there
- *  (app.js's own setPath/fullRerender — these are plain top-level `function`
- *  declarations in a classic, non-module script, so they are ordinary
- *  globals in the page's JS realm even though `draft` itself is a
- *  block-scoped `const` never attached to `window`).
- */
-async function seedProfessionalsInstagramGallery(page) {
-  await page.evaluate(() => {
-    /* eslint-disable no-undef */
-    setPath(draft.config, 'instagram.handle', 'qa_salon');
-    setPath(draft.config, 'instagram.gallery', ['images/pr-hero.jpg', 'images/pr-hero.jpg']);
-    fullRerender();
-    /* eslint-enable no-undef */
-  });
-  await page.waitForTimeout(900);
 }
 
 /** Inspect one schema list root inside the (possibly reloaded) preview
@@ -312,10 +294,6 @@ for (const kase of CASES) {
     const failures = [];
     try {
       await openTemplateEditor(page, kase.templateId);
-
-      if (kase.templateId === 'professionals') {
-        await seedProfessionalsInstagramGallery(page);
-      }
 
       for (const field of fields) {
         if (field.editable === false) continue; // explicit, schema-documented exclusion — see file header

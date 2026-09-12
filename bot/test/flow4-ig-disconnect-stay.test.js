@@ -388,7 +388,7 @@ check('HEAD: grant persists only when op generation still matches', () => {
       });
       registry.saveVersion(site.id, {
         business: { name: 'IG Disc' },
-        instagram: { handle: 'x', url: 'https://instagram.com/x', gallery: [] },
+        instagram: { handle: 'x', url: 'https://instagram.com/x' },
       });
       const cookie = 'hb_session=' + auth.signSession(user.id);
 
@@ -519,7 +519,7 @@ check('HEAD: grant persists only when op generation still matches', () => {
         });
         registry.saveVersion(site.id, {
           business: { name: 'IG Race' },
-          instagram: { handle: 'x', url: 'https://instagram.com/x', gallery: [] },
+          instagram: { handle: 'x', url: 'https://instagram.com/x' },
         });
         const cookie = 'hb_session=' + auth.signSession(user.id);
 

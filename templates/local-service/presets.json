@@ -189,14 +189,6 @@
         "instagram": {
           "handle": "renovari.casa.nord",
           "url": "https://www.instagram.com/renovari.casa.nord",
-          "gallery": [
-            "images/pr-ig1.jpg",
-            "images/pr-ig2.jpg",
-            "images/pr-ig3.jpg",
-            "images/pr-ig4.jpg",
-            "images/pr-ig5.jpg",
-            "images/pr-ig6.jpg"
-          ],
           "embedUrl": ""
         },
         "contact": {
@@ -419,14 +411,6 @@
         "instagram": {
           "handle": "acoperisuri.dacia",
           "url": "https://www.instagram.com/acoperisuri.dacia",
-          "gallery": [
-            "images/ct-ig1.jpg",
-            "images/ct-ig2.jpg",
-            "images/ct-ig3.jpg",
-            "images/ct-ig4.jpg",
-            "images/ct-ig5.jpg",
-            "images/ct-ig6.jpg"
-          ],
           "embedUrl": ""
         },
         "contact": {

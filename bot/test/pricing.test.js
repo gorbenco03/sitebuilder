@@ -212,7 +212,7 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
         services: [{ icon: '✦', label: 'X' }],
         galleryTitle: '',
         categories: [],
-        instagram: { handle: '', url: '', gallery: [] },
+        instagram: { handle: '', url: '' },
         contact: { title: 'C', intro: 'i', instagram: { url: '', label: '' }, facebook: { url: '', label: '' }, whatsapp: '', phone: '', phoneDisplay: '', waHref: '', address: '', addressHref: '' },
         seo:    { ogImage: '', jsonLd: '' },
         footer: { address: 'A', year: 2026, note: 'n' },

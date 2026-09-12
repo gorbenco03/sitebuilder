@@ -1293,166 +1293,6 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     background: var(--color-cream);
 }
 
-/* ── LIVE Instagram embeds — uniform square cards (cropped to the media) ── */
-.instagram-embeds-grid {
-    max-width: 1080px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);   /* each column stays ≥326px so IG embeds aren't clipped */
-    gap: 1.75rem;
-    justify-items: center;
-}
-
-.insta-frame {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    border-radius: 22px;
-    background: var(--color-white);
-    box-shadow: var(--shadow-md);
-    text-decoration: none;
-    transition: transform 0.4s var(--spring), box-shadow 0.4s var(--transition-smooth);
-}
-
-.insta-frame:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 22px 52px rgba(232, 88, 140, 0.22);
-}
-
-/* Crop the official embed down to just its square media (hide profile header + caption footer) */
-.insta-frame .instagram-media {
-    margin: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    width: 100% !important;
-    min-width: 100% !important;
-    max-width: none !important;
-    position: absolute !important;
-    top: -56px !important;
-    left: 0 !important;
-    background: transparent !important;
-}
-
-.insta-frame .instagram-media iframe {
-    border: none !important;
-}
-
-/* Elegant hover overlay with an "open on Instagram" affordance */
-.insta-frame .insta-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    border-radius: 22px;
-    background: linear-gradient(160deg, rgba(232, 88, 140, 0) 45%, rgba(188, 24, 136, 0.62) 100%);
-    display: flex;
-    align-items: flex-end;
-    gap: 0.5rem;
-    padding: 1rem 1.1rem;
-    color: #fff;
-    opacity: 0;
-    transition: opacity 0.3s var(--transition-smooth);
-}
-
-.insta-frame:hover .insta-overlay {
-    opacity: 1;
-}
-
-.insta-overlay svg {
-    width: 26px;
-    height: 26px;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
-}
-
-.insta-overlay span {
-    font-size: 0.82rem;
-    font-weight: 500;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-}
-
-@media (max-width: 1060px) {
-    .instagram-embeds-grid { grid-template-columns: repeat(2, 1fr); max-width: 720px; }
-}
-
-@media (max-width: 760px) {
-    .instagram-embeds-grid { grid-template-columns: 1fr; max-width: 360px; gap: 1.25rem; }
-    .insta-frame { border-radius: 16px; }
-    .insta-frame .insta-overlay { border-radius: 16px; }
-}
-
-/* ── Photo grid (uniform squares, link to the Instagram profile) ── */
-.instagram-grid {
-    max-width: 980px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 2rem;                       /* generous space between photos */
-}
-
-.insta-card {
-    position: relative;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    border-radius: 22px;
-    box-shadow: var(--shadow-md);
-    text-decoration: none;
-    transition: transform 0.4s var(--spring), box-shadow 0.4s var(--transition-smooth);
-}
-
-.insta-card img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.6s var(--spring), filter 0.4s ease;
-}
-
-.insta-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 22px 52px rgba(232, 88, 140, 0.22);
-}
-
-.insta-card:hover img {
-    transform: scale(1.07);
-    filter: brightness(0.92);
-}
-
-.insta-badge {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-    opacity: 0.92;
-    transform: translateY(-2px);
-    transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.insta-card:hover .insta-badge {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.insta-badge svg {
-    width: 20px;
-    height: 20px;
-}
-
-@media (max-width: 860px) {
-    .instagram-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.4rem;
-    }
-}
-
 @media (max-width: 600px) {
     .instagram-section {
         padding: 3.5rem 1rem 3rem;
@@ -1478,15 +1318,6 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 
     .instagram-follow-btn {
         margin: 0 auto;
-    }
-
-    .instagram-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-
-    .insta-card {
-        border-radius: 16px;
     }
 }
 
@@ -1768,9 +1599,7 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 .about-card,
 .contact-card,
 .category-block,
-.service-card,
-.insta-card,
-.insta-frame {
+.service-card {
     --reveal-delay: 0ms;
 }
 

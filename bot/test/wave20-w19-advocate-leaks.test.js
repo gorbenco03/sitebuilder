@@ -124,40 +124,29 @@ check('HEAD professionals seo.ogImage is not a customer field (no factory path)'
   assert.ok(!/social sharing/i.test(src), 'no English "social sharing" in schema');
 });
 
-check('HEAD professionals instagram.gallery label is photo list (no path/URL factory hint)', () => {
+check('HEAD professionals instagram.gallery field removed entirely (S9B: dead field, not relabeled)', () => {
+  // This test used to assert the factory path-glob label was replaced by a
+  // human one. S9B went further: build.js's normalizeInstagramForPublic()
+  // cleared this field on every render regardless of label quality (see its
+  // doc comment) — a photo added here could never be seen anywhere, in the
+  // editor or published, so the field itself was removed rather than
+  // relabeled. Confirm it is gone, not just relabeled.
   const src = headRead(PRO_SCHEMA);
   assert.ok(
     !src.includes(FACTORY_GALLERY),
-    'factory Instagram gallery photos (URLs or images/...) gone'
+    'factory Instagram gallery photos (URLs or images/...) must not resurface'
   );
   const schema = parseSchema(src);
-  const f = fieldByKey(schema, 'instagram.gallery');
-  assert.ok(f, 'instagram.gallery present');
-  assert.strictEqual(f.key, 'instagram.gallery');
-  assert.strictEqual(f.type, 'list', 'type unchanged');
-  assert.ok(typeof f.label === 'string' && f.label.length > 4, 'label present');
-  assert.ok(!labelHasFactoryPathHint(f.label), 'no URLs or images/... in label');
-  assert.ok(
-    /Poze galerie Instagram/.test(f.label),
-    'still a photo list label: ' + f.label
-  );
+  assert.ok(!fieldByKey(schema, 'instagram.gallery'), 'instagram.gallery must not be a customer field (S9B)');
 });
 
-check('HEAD professionals drops share field; gallery keys/types unchanged from parent', () => {
+check('HEAD professionals drops share field AND the dead instagram.gallery field (both present on parent)', () => {
   const parent = parseSchema(parentBlob(PRO_SCHEMA));
   const head = parseSchema(headRead(PRO_SCHEMA));
   assert.ok(fieldByKey(parent, 'seo.ogImage'), 'parent still has seo.ogImage');
   assert.ok(!fieldByKey(head, 'seo.ogImage'), 'HEAD dropped seo.ogImage');
-  const key = 'instagram.gallery';
-  const p = fieldByKey(parent, key);
-  const h = fieldByKey(head, key);
-  assert.ok(p && h, key + ' on both');
-  assert.strictEqual(h.key, p.key);
-  assert.strictEqual(h.type, p.type);
-  if (p.required !== undefined) assert.strictEqual(h.required, p.required);
-  if (p.maxLen !== undefined) assert.strictEqual(h.maxLen, p.maxLen);
-  if (p.min !== undefined) assert.strictEqual(h.min, p.min);
-  if (p.max !== undefined) assert.strictEqual(h.max, p.max);
+  assert.ok(fieldByKey(parent, 'instagram.gallery'), 'parent still has instagram.gallery');
+  assert.ok(!fieldByKey(head, 'instagram.gallery'), 'HEAD dropped instagram.gallery (S9B)');
 });
 
 check('HEAD other three schemas drop customer social-image field (no factory regression)', () => {

@@ -96,15 +96,6 @@ function hasEmbedField(schema) {
   return false;
 }
 
-function hasGalleryField(schema) {
-  for (const sec of schema.sections || []) {
-    for (const f of sec.fields || []) {
-      if (f.key === 'instagram.gallery') return true;
-    }
-  }
-  return false;
-}
-
 check('registry keeps five commercial ids with live RO picker names', () => {
   const byId = registryById();
   const reg = readJson('templates/registry.json');
@@ -156,12 +147,11 @@ check('product-menu schema editor copy is not bakery/patisserie/cofetărie', () 
   assert.ok(hasRestaurantCue, 'product-menu schema should teach restaurant language (rezervă / meniu / bucătărie)');
 });
 
-check('instagram.embedUrl and instagram.gallery remain in commercial schemas', () => {
+check('instagram.embedUrl remains in commercial schemas', () => {
   for (const id of ALL_IDS) {
     const schema = readJson(path.join('templates', id, 'schema.json'));
     assert.strictEqual(schema.templateId, id, `${id}: templateId must stay ${id}`);
     assert.ok(hasEmbedField(schema), `${id}: missing instagram.embedUrl field`);
-    assert.ok(hasGalleryField(schema), `${id}: missing instagram.gallery field`);
   }
 });
 
@@ -174,7 +164,7 @@ check('schema field contracts keep keys (spot-check required core keys)', () => 
         if (f.key) keys.add(f.key);
       }
     }
-    for (const need of ['business.name', 'business.tagline', 'instagram.embedUrl', 'instagram.gallery']) {
+    for (const need of ['business.name', 'business.tagline', 'instagram.embedUrl']) {
       assert.ok(keys.has(need), `${id}: missing field key ${need}`);
     }
   }

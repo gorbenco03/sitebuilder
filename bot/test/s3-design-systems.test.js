@@ -184,10 +184,6 @@ check('S47: every system ships instagram.embedUrl iframe markup', () => {
             /class="[^"]*instagram-embed-iframe/.test(html) || html.includes('instagram-embed-iframe'),
             `${tid}: missing instagram-embed-iframe class on iframe`
         );
-        assert.ok(
-            html.includes('instagram.gallery'),
-            `${tid}: missing instagram.gallery fallback path`
-        );
     }
 });
 
@@ -257,9 +253,6 @@ check('S47: renderHtml resolves presets with embedUrl when present', () => {
         if (!cfg.instagram.handle) cfg.instagram.handle = 'demo.handle';
         if (!cfg.instagram.url) cfg.instagram.url = 'https://www.instagram.com/demo.handle';
         cfg.instagram.embedUrl = 'https://example.com/embed/demo';
-        if (!cfg.instagram.gallery || !cfg.instagram.gallery.length) {
-            cfg.instagram.gallery = ['https://picsum.photos/seed/s47-ig/600/600'];
-        }
         const html = renderHtml(tpl, cfg);
         assert.ok(!html.includes('{{'), `${tid}: unresolved tokens with embedUrl`);
         assert.ok(

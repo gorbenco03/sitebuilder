@@ -544,12 +544,32 @@ check('HEAD: all five schemas — no hero/SEO and no factory English in title/la
 });
 
 check('HEAD: schema keys/ids stable aside from documented post-parent evolution', () => {
-  /** seo.ogImage was dropped earlier; ignore for parent/head key parity. */
+  /**
+   * Keys deliberately REMOVED since the parent commit — the inverse of
+   * ALLOWED_ADDED_KEYS below. Dropped from both parent and HEAD before the
+   * "every parent key must survive on HEAD" check runs, so a documented,
+   * intentional removal doesn't read as a regression.
+   *
+   *   - seo.ogImage — dropped earlier (see wave20-w19-advocate-leaks.test.js).
+   *   - instagram.gallery — S9B: dead field, not a Detalii EN leak. Every
+   *     template's build.js normalizeInstagramForPublic() cleared this
+   *     field to `[]` on EVERY render (embedded-partner-connected or not,
+   *     in-editor preview or published) before the template ever saw it —
+   *     see that function's doc comment and
+   *     bot/test/suite2-string-gallery-in-photos-panel.test.js. No upload
+   *     UI for it could ever show a visible result, so the field itself was
+   *     removed (schema.json, presets.json, template.html markup) rather
+   *     than kept as a working-looking control with no effect. The
+   *     `#instagram` section and the real embedUrl-connected feed path are
+   *     untouched — instagram.embedUrl/instagram.handle/instagram.url stay
+   *     on every schema.
+   */
+  const KEYS_REMOVED_SINCE_PARENT = new Set(['seo.ogImage', 'instagram.gallery']);
   function dropRemovedSocialImage(schema) {
     const next = JSON.parse(JSON.stringify(schema));
     next.sections = (next.sections || [])
       .map((sec) => {
-        sec.fields = (sec.fields || []).filter((f) => f && f.key !== 'seo.ogImage');
+        sec.fields = (sec.fields || []).filter((f) => f && !KEYS_REMOVED_SINCE_PARENT.has(f.key));
         return sec;
       })
       .filter((sec) => sec.id !== 'seo' || (sec.fields && sec.fields.length));
