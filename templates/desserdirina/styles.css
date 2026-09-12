@@ -829,7 +829,13 @@ body {
     color: var(--color-primary-dark, #333);
     margin: 0;
 }
-.menu-langs { display: inline-flex; gap: 0.4rem; }
+.menu-langs { display: inline-flex; align-items: center; gap: 0.5rem; }
+.menu-langs-caption {
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(0, 0, 0, 0.45);
+}
 /* DSD-06: both states measured under the 4.5:1 AA floor at this 13.6px size
    (inactive "EN" 4.37:1 text-on-white; active "RO" 3.38:1 white-on-pink) —
    both now use the same AA-safe ink colour, as text on white when inactive

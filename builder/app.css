@@ -863,7 +863,9 @@ body.details-drawer-open .editor-tpl-name {
   outline-offset: 2px;
 }
 .checklist-indicator.checklist-ok { color: var(--success); border-color: var(--success-bg); background: var(--success-bg); }
-.checklist-indicator.checklist-warn { color: var(--warning); border-color: #FDE68A; background: var(--warning-bg); }
+.checklist-indicator.checklist-warn { color: var(--warning); border-color: #FDE68A; background: var(--warning-bg); cursor: pointer; }
+.checklist-indicator.checklist-warn:hover { border-color: var(--warning); }
+.checklist-indicator.checklist-warn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .checklist-indicator svg { flex-shrink: 0; }
 
 /* ---------- Buttons ---------- */
@@ -2483,6 +2485,22 @@ body.details-drawer-open .editor-tpl-name {
 .field-input.valid { border-color: var(--success); }
 .field-textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
 .field-error { font-size: 0.77rem; color: var(--error); }
+
+/* Character-budget counter under SEO fields (business.title / metaDescription) */
+.field-counter { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin: -0.15rem 0 0; }
+.field-counter--over { color: var(--warning); }
+
+/* "Google și browser" drawer group — mock search-result preview */
+.seo-google-preview {
+  margin-top: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.seo-google-preview__url { font-size: 0.78rem; color: #1A7A3C; line-height: 1.3; }
+.seo-google-preview__title { font-size: 1rem; color: #1A0DAB; line-height: 1.3; margin-top: 0.1rem; overflow-wrap: anywhere; }
+.seo-google-preview__desc { font-size: 0.82rem; color: #4D5156; line-height: 1.4; margin-top: 0.15rem; overflow-wrap: anywhere; }
 
 /* Color swatch */
 .field-color-swatch {

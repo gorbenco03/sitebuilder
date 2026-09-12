@@ -128,7 +128,8 @@
                     <div class="menu-block">
                         <div class="menu-head">
                             <h3 class="menu-heading">{{menu.title}}</h3>
-                            <div class="menu-langs" role="group" aria-label="{{labels.menuLang}}">
+                            <div class="menu-langs" role="group" aria-labelledby="menu-lang-caption">
+                                <span id="menu-lang-caption" class="menu-langs-caption">{{labels.menuLang}}</span>
                                 <button type="button" class="menu-lang-btn" data-menu-lang="en" aria-pressed="false">EN</button>
                                 <button type="button" class="menu-lang-btn is-active" data-menu-lang="ro" aria-pressed="true">RO</button>
                             </div>

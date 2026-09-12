@@ -764,6 +764,23 @@ const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
 const HIDDEN_DRAWER_KEYS = ['seo.ogImage', 'seo.jsonLd', 'seo.canonical', 'contact.waHref'];
 
+// business.title / business.metaDescription are `required: true` in every
+// schema.json (they feed <title> and <meta name="description">), but they
+// have NO visual representation anywhere in the page preview — a <title> and
+// a <meta> tag render nothing on screen, so they can never earn an inline
+// data-hb-edit surface the way every other required field does. They also
+// never matched isDrawerField()'s type/key heuristics (plain text/textarea,
+// key doesn't contain any DRAWER_KEYS_PARTIAL pattern), so Detalii never
+// showed them either — a client had no way at all to change the browser tab
+// title or the Google search snippet for their own site. Rendered as an
+// explicit "Google și browser" group in buildDrawer() instead of relying on
+// the generic heuristics. (QA 2026-09-12, suite 6, D1.)
+const SEO_FIELD_KEYS = ['business.title', 'business.metaDescription'];
+// Practical SEO length budgets for the character counter — not the same as
+// each schema's hard `maxLen` (which varies 70-90 for title across
+// templates): these are where Google/browsers actually start truncating.
+const SEO_CHAR_LIMITS = { 'business.title': 60, 'business.metaDescription': 160 };
+
 /** Default prefilled WhatsApp inquiry (browser builder; RO product surface; do not edit flow.js). */
 const WA_DEFAULT_MSG = 'Bună ziua, aș dori mai multe informații despre serviciile dumneavoastră.';
 
@@ -796,6 +813,20 @@ function isDrawerField(field) {
   if (DRAWER_TYPES.has(field.type)) return true;
   const k = field.key || '';
   return DRAWER_KEYS_PARTIAL.some(p => k.includes(p));
+}
+
+/**
+ * True when a field has SOME editable surface in Detalii — either the
+ * generic isDrawerField() heuristic, or the explicit "Google și browser"
+ * group (business.title / business.metaDescription), which is deliberately
+ * NOT covered by isDrawerField()'s type/key heuristics (that mismatch is
+ * exactly what caused D1). Used wherever code needs to know "can a click
+ * actually take the user to this field", e.g. goToChecklistField() and the
+ * checklist pill's own missing-field detection — using isDrawerField() alone
+ * there would silently reintroduce the D2 dead click for these two fields.
+ */
+function isFieldRepresentedInDrawer(field) {
+  return isDrawerField(field) || SEO_FIELD_KEYS.includes(field.key);
 }
 
 function getAllSchemaFields(schema) {
@@ -1185,6 +1216,17 @@ function updateChecklist() {
   if (ind) {
     ind.classList.toggle('checklist-ok', done === total);
     ind.classList.toggle('checklist-warn', done < total);
+    // Only advertise it as clickable when a click would actually go somewhere
+    // (a required field is missing AND is representable in Detalii) — see
+    // goToChecklistField(); avoids reintroducing a dead click.
+    const missing = required.find((f) => !isFieldComplete(f) && isFieldRepresentedInDrawer(f) && !isHiddenDrawerField(f));
+    if (missing) {
+      ind.title = 'Click pentru a merge la câmpul lipsă: ' + (missing.label || missing.key);
+      ind.setAttribute('aria-label', 'Câmpuri completate: ' + done + ' din ' + total + '. Click pentru a completa câmpul lipsă.');
+    } else {
+      ind.title = 'Câmpuri obligatorii completate';
+      ind.setAttribute('aria-label', 'Câmpuri completate: ' + done + ' din ' + total);
+    }
   }
   // NOT wired to sendDemoTextMarks()/scheduleDemoTextMarks() here on purpose,
   // even though updateChecklist() already runs on every identity-field
@@ -1239,7 +1281,12 @@ function updateChecklist() {
  * focused when it is a real text field) for everything else. */
 function goToChecklistField(field) {
   if (!field || !field.key) return;
-  if (isDrawerField(field)) {
+  // isFieldRepresentedInDrawer(), not isDrawerField(): business.title and
+  // business.metaDescription live in the explicit "Google și browser" group,
+  // which isDrawerField()'s type/key heuristics deliberately do not match —
+  // routing them to the canvas would land on nothing, since neither has any
+  // visible representation there. That is defect D2's dead click, restated.
+  if (isFieldRepresentedInDrawer(field)) {
     openDrawer(field.key);
   } else {
     if (drawerOpen) closeDrawer();
@@ -3125,6 +3172,21 @@ function openDrawer(focusKey) {
   });
 }
 
+function cssEscapeFieldKey(key) {
+  return (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(key) : String(key).replace(/["\\]/g, '\\$&');
+}
+
+/**
+ * Checklist "câmpuri lipsă" pill → jump straight to the missing field instead
+ * of the dead click the QA audit found (click did nothing: drawer stayed
+ * closed, scroll and focus never moved — see D2/2026-09-12 suite 6).
+ *
+ * Deliberately narrow: only targets required fields that ARE representable
+ * in Detalii (isDrawerField() and not hidden). A required field with no
+ * editable surface anywhere (inline or drawer) has nothing to jump to, so it
+ * is left inert rather than pretending a click did something — "dacă nu are
+ * nicio reprezentare, nu-l lista ca acționabil".
+ */
 function closeDrawer() {
   hide($('drawer-overlay'));
   hide($('details-drawer'));
@@ -3422,6 +3484,15 @@ function buildDrawer() {
   buildNativeBookingPanel(body, schema);
   const allFields = getAllSchemaFields(schema);
 
+  // "Google și browser" group — business.title / business.metaDescription.
+  // Rendered first (not "collapsible at the bottom" as an old comment here
+  // used to promise) so a client can't miss the two required fields that
+  // control their own <title> and Google search snippet. See SEO_FIELD_KEYS.
+  const seoFields = allFields.filter(f => SEO_FIELD_KEYS.includes(f.key));
+  if (seoFields.length) {
+    body.appendChild(buildSeoGroup(seoFields));
+  }
+
   // Group drawer fields by section
   const sectionMap = {};
   allFields.forEach(f => {
@@ -3429,9 +3500,6 @@ function buildDrawer() {
     if (!sectionMap[f._section]) sectionMap[f._section] = [];
     sectionMap[f._section].push(f);
   });
-
-  // SEO section: always add as collapsible at the bottom
-  const seoFields = allFields.filter(f => (f.key || '').startsWith('seo.') || (f.key || '').includes('jsonLd') || (f.key || '').includes('canonical') || (f.key || '').includes('ogImage'));
 
   Object.entries(sectionMap).forEach(([sectionTitle, fields]) => {
     if (fields.length === 0) return;
@@ -3476,7 +3544,55 @@ function buildDrawer() {
   body.appendChild(photoSection);
 }
 
-function buildDrawerField(field) {
+/** "Google și browser" drawer group: business.title / business.metaDescription,
+ * each with a character-budget counter plus a small live mock of how the page
+ * shows up in a Google result (blue title, green URL, grey description). */
+function buildSeoGroup(fields) {
+  const group = document.createElement('div');
+  group.className = 'drawer-section drawer-section--seo';
+
+  const title = document.createElement('div');
+  title.className = 'drawer-section-title';
+  title.textContent = 'Google și browser';
+  group.appendChild(title);
+
+  const intro = document.createElement('p');
+  intro.className = 'field-hint';
+  intro.textContent = 'Titlul din tab-ul browserului și textul care apare pe Google pentru acest site.';
+  group.appendChild(intro);
+
+  const preview = document.createElement('div');
+  preview.className = 'seo-google-preview';
+  const previewUrl = document.createElement('div');
+  previewUrl.className = 'seo-google-preview__url';
+  previewUrl.textContent = 'www.numele-site-ului.ro';
+  const previewTitle = document.createElement('div');
+  previewTitle.className = 'seo-google-preview__title';
+  const previewDesc = document.createElement('div');
+  previewDesc.className = 'seo-google-preview__desc';
+  preview.appendChild(previewUrl);
+  preview.appendChild(previewTitle);
+  preview.appendChild(previewDesc);
+
+  function refreshPreview() {
+    const t = getPath(draft.config, 'business.title');
+    const d = getPath(draft.config, 'business.metaDescription');
+    previewTitle.textContent = (t && String(t).trim()) || '(titlul paginii)';
+    previewDesc.textContent = (d && String(d).trim()) || '(descrierea pentru Google)';
+  }
+
+  fields.forEach((field) => {
+    const fg = buildDrawerField(field, { charLimit: SEO_CHAR_LIMITS[field.key], onInput: refreshPreview });
+    if (fg) group.appendChild(fg);
+  });
+
+  refreshPreview();
+  group.appendChild(preview);
+  return group;
+}
+
+function buildDrawerField(field, opts) {
+  opts = opts || {};
   if (isHiddenDrawerField(field)) return null;
   const wrap = document.createElement('div');
   wrap.className = 'field-group';
@@ -3660,6 +3776,24 @@ function buildDrawerField(field) {
     updateUrlValidity();
   }
 
+  // Character-budget counter (SEO fields: 60 for title, 160 for description —
+  // see SEO_CHAR_LIMITS). Informational only; does not block typing past it,
+  // since the schema's own maxLen (a hard input.maxLength cap) already exists
+  // and is looser than the practical Google/browser truncation point.
+  let counterEl = null;
+  function updateCounter() {
+    if (!counterEl) return;
+    const len = input.value.length;
+    const limit = opts.charLimit;
+    counterEl.textContent = len + ' / ' + limit + ' caractere';
+    counterEl.classList.toggle('field-counter--over', len > limit);
+  }
+  if (opts.charLimit) {
+    counterEl = document.createElement('p');
+    counterEl.className = 'field-counter';
+    counterEl.setAttribute('aria-live', 'polite');
+  }
+
   // Sync to config on change
   input.addEventListener('input', () => {
     if (!updateUrlValidity()) return;
@@ -3699,6 +3833,8 @@ function buildDrawerField(field) {
     updateChecklist();
     // Try chirurgical update if field has a visible representation
     sendSetToIframe(key, nextValue);
+    updateCounter();
+    if (opts.onInput) opts.onInput();
     // Re-render on drawer close — see drawerNeedsRerenderOnClose's doc
     // comment for why this never expires on its own. Set unconditionally,
     // even for a field that already forced an immediate scheduleRerender(true)
@@ -3712,6 +3848,7 @@ function buildDrawerField(field) {
 
   wrap.appendChild(input);
   if (urlError) wrap.appendChild(urlError);
+  if (counterEl) { updateCounter(); wrap.appendChild(counterEl); }
   wrap.dataset.fieldKey = key;
   return wrap;
 }
@@ -7550,6 +7687,7 @@ function wireStaticButtons() {
   if (drawerBtn) drawerBtn.addEventListener('click', () => {
     if (drawerOpen) closeDrawer(); else openDrawer();
   });
+
 
   const closeDrawerBtn = $('btn-close-drawer');
   if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);

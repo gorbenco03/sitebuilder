@@ -102,21 +102,21 @@
           "title": "Meniu",
           "en": [
             {
-              "category": "Torturi",
+              "category": "Cakes",
               "items": [
                 "Red Velvet",
-                "Tort de morcovi",
-                "Tort Oreo",
-                "Pandispan Victoria",
-                "Tort de ciocolată"
+                "Carrot Cake",
+                "Oreo Cake",
+                "Victoria Sponge",
+                "Chocolate Cake"
               ],
               "empty": false
             },
             {
-              "category": "Plăcinte",
+              "category": "Pies",
               "items": [
-                "Cu legume",
-                "Cu brânză"
+                "Vegetable Pie",
+                "Cheese Pie"
               ],
               "empty": false
             }
@@ -259,21 +259,21 @@
           "title": "Meniu",
           "en": [
             {
-              "category": "Torturi",
+              "category": "Cakes",
               "items": [
                 "Red Velvet",
-                "Tort de morcovi",
-                "Tort Oreo",
-                "Pandispan Victoria",
-                "Tort de ciocolată"
+                "Carrot Cake",
+                "Oreo Cake",
+                "Victoria Sponge",
+                "Chocolate Cake"
               ],
               "empty": false
             },
             {
-              "category": "Plăcinte",
+              "category": "Pies",
               "items": [
-                "Cu legume",
-                "Cu brânză"
+                "Vegetable Pie",
+                "Cheese Pie"
               ],
               "empty": false
             }
