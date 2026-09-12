@@ -80,14 +80,16 @@
  *   merged to main, "main" itself will carry the feature, so asking git for
  *   "main" at test-run time would silently stop being a pre-feature
  *   baseline. A frozen snapshot survives that.
- *   To regenerate ONLY for a legitimate, Instagram-teaser-unrelated change
- *   to the public render pipeline (e.g. an unrelated template fix touches
- *   one of these presets' output): re-run the equivalent of
- *     node -e "const {renderHtml}=require('./build.js'); ..." per template,
- *   writing renderHtml(templateHtml, presetConfig) (no opts) to the fixture
- *   path, and update manifest.json's generatedAtCommit. Do NOT regenerate to
- *   make this file pass after a real teaser leak — that would defeat the
- *   guard.
+ *   To regenerate: run `node scripts/regen-suite10-baseline.js` (dry run —
+ *   prints a diff, writes nothing) and, ONLY once every reported change is
+ *   confirmed unrelated to the Instagram teaser, `node
+ *   scripts/regen-suite10-baseline.js --write`. That script refuses to write
+ *   (even with --write) if any newly-rendered preset contains a teaser
+ *   marker — see bot/test/fixtures/suite10-baseline/README.md, which also
+ *   spells out when a refresh is legitimate and when it is NOT (a diff
+ *   caused by the teaser reaching the public render is this guard working,
+ *   not a stale fixture — regenerating in that case would defeat the guard,
+ *   not fix it).
  *
  * "PROVE THE GUARD IS NOT VACUOUS": an absence assertion that has never
  * been made to fail is not known to be checking anything. The last test
@@ -206,14 +208,27 @@ test('suite10: Instagram teaser never appears in the published (no-editMode) ren
             // Byte-identical to the frozen pre-feature baseline.
             const baselineEntry = baselineEntries.find((b) => b.id === preset.id);
             if (!baselineEntry) {
-                failures.push(`${label}: no baseline fixture recorded for this preset (new preset added since baseline capture — regenerate bot/test/fixtures/suite10-baseline/, see this file's header)`);
+                failures.push(
+                    `${label}: no baseline fixture recorded for this preset (new preset added since baseline ` +
+                    `capture). If this preset is new and unrelated to the Instagram teaser, run ` +
+                    `\`node scripts/regen-suite10-baseline.js\` (dry run), read the diff, then re-run with ` +
+                    `--write. Read bot/test/fixtures/suite10-baseline/README.md FIRST if there is any chance ` +
+                    `this is teaser-related.`
+                );
                 continue;
             }
             const baselineHtml = fs.readFileSync(path.join(BASELINE_DIR, baselineEntry.file), 'utf8');
             if (publicHtml !== baselineHtml) {
                 failures.push(
                     `${label}: public render is NOT byte-identical to the pre-teaser baseline ` +
-                    `(baseline ${baselineHtml.length}B, current ${publicHtml.length}B, commit ${manifest.generatedAtCommit})`
+                    `(baseline ${baselineHtml.length}B, current ${publicHtml.length}B, commit ${manifest.generatedAtCommit}). ` +
+                    `If — and ONLY if — this is an intentional, Instagram-teaser-UNRELATED change (a copy fix, a ` +
+                    `new photo, a markup tweak): run \`node scripts/regen-suite10-baseline.js\` to see the full diff, ` +
+                    `then \`node scripts/regen-suite10-baseline.js --write\` to refresh the fixture. ` +
+                    `If this diff could instead be the Instagram teaser (or its example tiles / connect button) ` +
+                    `reaching the PUBLIC render: STOP — that is this guard doing its job, not a stale fixture, and ` +
+                    `regenerating would silence the exact bug this test exists to catch. Read ` +
+                    `bot/test/fixtures/suite10-baseline/README.md ("When NOT to refresh") before running anything.`
                 );
             }
         }
