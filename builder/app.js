@@ -2622,6 +2622,13 @@ function initPostMessageListener() {
         // F1: remember consent across full re-renders (see previewCookieAccepted).
         previewCookieAccepted = true;
         break;
+      case 'connect-instagram':
+        // The edit-mode-only Instagram teaser's CTA (see edit-overlay.js's
+        // section 5c) — open the SAME modal the top-bar "Adaugă Instagram"
+        // button opens (#btn-add-instagram → openInstagramModal()), so the
+        // auth / connect / connected states all keep working unchanged.
+        openInstagramModal();
+        break;
       case 'undo':
       case 'redo':
         // Ctrl+Z/Ctrl+Shift+Z pressed while focus is inside a contenteditable
