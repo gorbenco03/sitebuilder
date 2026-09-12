@@ -914,6 +914,29 @@ function computeListSchemaInfo(schema) {
   return { lists, nested };
 }
 
+/**
+ * PLAN-QA-2026-09-12 Suite 2 (B4/S2-3): does this `type:"list"` schema field
+ * declare "each item IS a bare scalar" (`itemShape: {".": <type>}`) instead
+ * of the usual "each item is a keyed object" (`itemShape: {key: type, ...}`)?
+ * build.js's own token resolver already treats `.` as "the item itself"
+ * (`if (token === '.') return item`, build.js), and onListAdd()'s
+ * primaryItemShapeKey() picks `.` as the (only) key when seeding a new item
+ * — this is that same convention, reused so findPhotoPaths() and the
+ * postMessage 'list-add' handler agree on what counts as one.
+ *
+ * Across every shipped schema.json today, exactly one field uses this shape:
+ * professionals' `instagram.gallery` (items are bare `images/xxx.jpg` / data:
+ * URI strings, rendered as `<img src="{{.}}">` — see
+ * templates/professionals/template.html). Every other template declares its
+ * own `instagram.gallery` as a distinct top-level `"type":"photos"` field
+ * instead (see findPhotoPaths()), so this check does not fire for them.
+ */
+function isBareScalarListField(field) {
+  if (!field || field.type !== 'list') return false;
+  const shape = field.itemShape !== undefined ? field.itemShape : field.itemSchema;
+  return !!shape && typeof shape === 'object' && Object.keys(shape).length === 1 && shape['.'] !== undefined;
+}
+
 /** Embed computeListSchemaInfo() as an inert JSON <script> tag so it is
  *  present in the DOM synchronously at parse time — edit-overlay.js reads it
  *  during its very first mount(), with no postMessage round trip (which
@@ -2542,7 +2565,35 @@ function initPostMessageListener() {
         applySelectedImageFile(msg.file, msg.path, msg.src, msg.alt);
         break;
       case 'list-add':
-        onListAdd(msg.listPath);
+        // B4 (S2-2 / integration with Wave 1's schema-driven "+ Adaugă"):
+        // a bare-scalar list (itemShape {'.': type} — today only
+        // professionals' instagram.gallery) holds photo src strings
+        // directly, one per item. onListAdd()'s generic item seeder has no
+        // way to invent a real photo, so left to run here it would push a
+        // useless {'.': 'Titlu nou'} placeholder object that the template's
+        // `<img src="{{.}}">` can never render (see isBareScalarListField()'s
+        // doc comment).
+        //
+        // The obvious fix would route this to the "Poze" panel instead — but
+        // findPhotoPaths() deliberately does NOT list instagram.gallery
+        // there either (see isS111DeadInstagramGalleryPath()'s doc comment:
+        // build.js's S111 owner policy clears this exact field on every
+        // render, in-editor or published, so no upload UI for it — however
+        // reachable — could ever show a visible result). Warn instead of
+        // silently doing nothing or corrupting the array.
+        (function () {
+          const tpl = currentTemplate && currentTemplate.data;
+          const schema = tpl && tpl.schema;
+          const field = schema && getAllSchemaFields(schema).find(f => f && f.key === msg.listPath);
+          if (isBareScalarListField(field)) {
+            showToast(
+              'Galeria foto proprie de Instagram nu mai e afișată pe site — conectează Instagram (Detalii → Instagram) pentru un feed real.',
+              'error'
+            );
+            return;
+          }
+          onListAdd(msg.listPath);
+        })();
         break;
       case 'list-remove':
         onListRemove(msg.path);
@@ -4092,17 +4143,126 @@ function syncDrawerField(path, value) {
 // 14. Gallery Modal
 // ---------------------------------------------------------------------------
 
+/**
+ * PLAN-QA-2026-09-12 Suite 2, B4 — S111 conflict discovered while fixing
+ * this: `instagram.gallery` is declared as a photo field in EVERY template's
+ * schema.json (either `"type":"photos"`, or professionals' bare-scalar
+ * `"type":"list"`), but build.js's normalizeInstagramForPublic() — the S111
+ * owner policy ("public Instagram section only when Instafidget is
+ * connected... no fake gallery pretending to be a live feed") — sets
+ * `instagram.gallery` to `[]` on EVERY render, unconditionally, before the
+ * template ever sees it: both when disconnected (whole block hidden) AND
+ * when connected (partner embed shown instead, gallery still dropped). This
+ * runs for every renderHtml() call, including the editor's own live preview
+ * (buildSrcdoc has no "skip S111 normalization" mode) — so a photo added
+ * here would never be visible ANYWHERE, in-editor or published, regardless
+ * of what the client does. Confirmed empirically: setting instagram.handle
+ * and instagram.gallery directly on draft.config and re-rendering never
+ * produces an `#instagram` section in the DOM, editor or export.
+ *
+ * Surfacing a working-looking upload control for a field that can never
+ * have any visible effect is exactly the "fake gallery" S111 was written to
+ * eliminate — just relocated from the live site into the editor's own UI.
+ * So, unlike every other photo path, this one is excluded here rather than
+ * fixed: the smallest, most reversible response to a real product policy
+ * this task's briefing didn't know about (see the implementation report).
+ */
+function isS111DeadInstagramGalleryPath(key) {
+  return key === 'instagram.gallery';
+}
+
+/**
+ * PLAN-QA-2026-09-12 Suite 2 (B5/S2-3, B4/S2-2): which schema list field, if
+ * any, is `path` — and, when it is, what shape do its items use? Shared by
+ * findPhotoPaths() (which paths to show) and buildGallerySection() (how to
+ * read/write an item once shown), so the two can never disagree about a
+ * given path's shape.
+ *
+ * Returns null for anything not resolvable from the current schema (e.g. no
+ * template loaded yet, or isS111DeadInstagramGalleryPath() excludes it) —
+ * callers fall back to structural detection.
+ *   - { kind: 'flat', itemsAreStrings } for a top-level field: `field.key`
+ *     itself is the photo array. `itemsAreStrings` is true for a `"type":
+ *     "photos"` field (every template's own instagram.gallery bar
+ *     professionals') and for a `"type":"list"` field using the bare-scalar
+ *     itemShape (professionals' instagram.gallery — see
+ *     isBareScalarListField()); both hold plain src strings today.
+ *   - { kind: 'nested', itemsAreStrings: false } for `<listKey>.<idx>.<key>`
+ *     where `<listKey>`'s itemShape declares `<key>` as `"photos"` (e.g.
+ *     categories.3.photos) — always the `{src,alt}` object shape by
+ *     convention (see every shipped preset's categories[].photos).
+ */
+function resolveSchemaPhotoPath(path) {
+  const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
+  if (!schema) return null;
+  if (isS111DeadInstagramGalleryPath(path)) return null;
+  const fields = getAllSchemaFields(schema);
+
+  const flat = fields.find(f => f && f.key === path);
+  if (flat) {
+    if (flat.type === 'photos') return { kind: 'flat', itemsAreStrings: true };
+    if (flat.type === 'list' && isBareScalarListField(flat)) return { kind: 'flat', itemsAreStrings: true };
+    return null;
+  }
+
+  const nestedMatch = path.match(/^(.+)\.(\d+)\.([^.]+)$/);
+  if (nestedMatch) {
+    const listField = fields.find(f => f && f.key === nestedMatch[1] && f.type === 'list');
+    const shape = listField && (listField.itemShape !== undefined ? listField.itemShape : listField.itemSchema);
+    if (shape && typeof shape === 'object' && shape[nestedMatch[3]] === 'photos') {
+      return { kind: 'nested', itemsAreStrings: false };
+    }
+  }
+  return null;
+}
+
 function findPhotoPaths() {
-  // Return list of dotted config paths that hold photo arrays — i.e. arrays
-  // whose items are objects with a .src (the { src, alt } shape used by
-  // category galleries and the Instagram gallery field). Recurses into BOTH
-  // plain objects and arrays-of-objects: category galleries live nested as
-  // categories[i].photos, so a walk that only recursed into plain objects
-  // (as an earlier version of this function did) would never reach them —
-  // every template's real gallery lives one level deeper than a flat scan
-  // finds, which is why "Manage photos" used to render for no one.
+  // Return the list of dotted config paths that hold photo arrays. Two
+  // sources, merged:
+  //
+  // 1. Schema-declared (B5/B4, S2-3): every `"type":"photos"` top-level
+  //    field, every `"type":"list"` field using the bare-scalar itemShape
+  //    (resolveSchemaPhotoPath()'s 'flat' kind — always included, even
+  //    empty, since a photo field with nothing in it yet is still a photo
+  //    field), and one path per EXISTING item of any list whose itemShape
+  //    nests a `"photos"` key (categories[i].photos) — again included while
+  //    that item's own photos array is still `[]`. This is what actually
+  //    fixes B5: a brand-new category's `photos: []` used to be silently
+  //    invisible to the old content-sniffing check below, so "+ Adaugă
+  //    categorie" produced a category the "Poze" panel could never show —
+  //    the client had no way to give it a first photo.
+  // 2. Structural fallback: the original recursive walk, for any
+  //    `{src,alt}`-shaped array the schema scan above didn't reach (schema
+  //    not loaded, or a shape schema.json doesn't declare). Recurses into
+  //    BOTH plain objects and arrays-of-objects — category galleries live
+  //    nested as categories[i].photos, one level deeper than a flat scan
+  //    finds.
   const paths = [];
   if (!draft.config) return paths;
+
+  const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
+  if (schema) {
+    getAllSchemaFields(schema).forEach((f) => {
+      if (!f || !f.key) return;
+      if (isS111DeadInstagramGalleryPath(f.key)) return; // see isS111DeadInstagramGalleryPath() doc comment
+      if (f.type === 'photos' || (f.type === 'list' && isBareScalarListField(f))) {
+        if (paths.indexOf(f.key) === -1) paths.push(f.key);
+        return;
+      }
+      if (f.type !== 'list') return;
+      const shape = f.itemShape !== undefined ? f.itemShape : f.itemSchema;
+      if (!shape || typeof shape !== 'object') return;
+      const photoKey = Object.keys(shape).find(k => shape[k] === 'photos');
+      if (!photoKey) return;
+      const list = getPath(draft.config, f.key);
+      if (Array.isArray(list)) {
+        list.forEach((_, i) => {
+          const p = f.key + '.' + i + '.' + photoKey;
+          if (paths.indexOf(p) === -1) paths.push(p);
+        });
+      }
+    });
+  }
 
   function walk(obj, path) {
     if (!obj || typeof obj !== 'object') return;
@@ -4112,8 +4272,8 @@ function findPhotoPaths() {
     }
     Object.entries(obj).forEach(([k, v]) => {
       const full = path ? path + '.' + k : k;
-      if (Array.isArray(v) && v.length > 0 && v.some(p => p && typeof p === 'object' && p.src)) {
-        paths.push(full);
+      if (Array.isArray(v) && v.some(p => p && typeof p === 'object' && p.src)) {
+        if (paths.indexOf(full) === -1) paths.push(full);
       } else if (v && typeof v === 'object') {
         walk(v, full);
       }
@@ -4231,7 +4391,10 @@ function buildGalleryModal() {
   }
 
   const photoPaths = findPhotoPaths();
-  photoPaths.forEach(path => buildGallerySection(body, path));
+  photoPaths.forEach(path => {
+    const resolved = resolveSchemaPhotoPath(path);
+    buildGallerySection(body, path, !!(resolved && resolved.itemsAreStrings));
+  });
 }
 
 function buildSingleImageSection(body, opts) {
@@ -4310,9 +4473,14 @@ function buildSingleImageSection(body, opts) {
   body.appendChild(section);
 }
 
-function buildGallerySection(body, path) {
+function buildGallerySection(body, path, itemsAreStrings) {
   const section = document.createElement('div');
   section.className = 'gallery-path-section';
+  // B5/B4 (S2-1/S2-2): lets an oracle — or a future feature — target this
+  // exact path's section directly instead of matching on its human label,
+  // which can collide (two untitled new categories both read "Categorie
+  // nouă") or change wording per template (see humanizePhotoPathLabel()).
+  section.dataset.photoPath = path;
 
   const title = document.createElement('div');
   title.className = 'field-label';
@@ -4363,29 +4531,37 @@ function buildGallerySection(body, path) {
       div.appendChild(del);
       card.appendChild(div);
 
-      const altInput = document.createElement('input');
-      altInput.type = 'text';
-      altInput.className = 'photo-thumb-alt';
-      altInput.placeholder = 'Descriere poză (alt)';
-      altInput.value = alt;
-      altInput.maxLength = 160;
-      altInput.setAttribute('aria-label', 'Descriere poză ' + (idx + 1) + ' pentru accesibilitate și SEO');
-      altInput.addEventListener('input', () => {
-        const arr = getPath(draft.config, path) || [];
-        const cur = arr[idx];
-        if (cur && typeof cur === 'object') {
-          cur.alt = altInput.value;
-        } else {
-          arr[idx] = { src: src, alt: altInput.value };
-        }
-        setPath(draft.config, path, arr);
-        // Every keystroke would otherwise fragment undo into one step per
-        // character — coalesce them into a single step per editing session,
-        // same trick the drawer's own color-drag inputs use.
-        pendingHistoryCoalesceKey = 'gallery-alt:' + path + ':' + idx;
-        saveDraft();
-      });
-      card.appendChild(altInput);
+      // B4 (S2-2): `itemsAreStrings` paths (e.g. professionals'
+      // instagram.gallery) store each photo as a bare src string — writing
+      // an alt value here would have to promote it to a {src,alt} object,
+      // which the template's own `<img src="{{.}}">` (item used directly,
+      // not item.src) can never read back. No alt field is offered for
+      // these paths rather than silently breaking the gallery on first edit.
+      if (!itemsAreStrings) {
+        const altInput = document.createElement('input');
+        altInput.type = 'text';
+        altInput.className = 'photo-thumb-alt';
+        altInput.placeholder = 'Descriere poză (alt)';
+        altInput.value = alt;
+        altInput.maxLength = 160;
+        altInput.setAttribute('aria-label', 'Descriere poză ' + (idx + 1) + ' pentru accesibilitate și SEO');
+        altInput.addEventListener('input', () => {
+          const arr = getPath(draft.config, path) || [];
+          const cur = arr[idx];
+          if (cur && typeof cur === 'object') {
+            cur.alt = altInput.value;
+          } else {
+            arr[idx] = { src: src, alt: altInput.value };
+          }
+          setPath(draft.config, path, arr);
+          // Every keystroke would otherwise fragment undo into one step per
+          // character — coalesce them into a single step per editing session,
+          // same trick the drawer's own color-drag inputs use.
+          pendingHistoryCoalesceKey = 'gallery-alt:' + path + ':' + idx;
+          saveDraft();
+        });
+        card.appendChild(altInput);
+      }
 
       const actions = document.createElement('div');
       actions.className = 'photo-thumb-actions';
@@ -4426,7 +4602,8 @@ function buildGallerySection(body, path) {
           if (!dataUrl) return;
           const arr = getPath(draft.config, path) || [];
           const cur = arr[idx];
-          if (cur && typeof cur === 'object') cur.src = dataUrl;
+          if (itemsAreStrings) arr[idx] = dataUrl;
+          else if (cur && typeof cur === 'object') cur.src = dataUrl;
           else arr[idx] = { src: dataUrl, alt: alt };
           setPath(draft.config, path, arr);
           saveDraft();
@@ -4467,7 +4644,10 @@ function buildGallerySection(body, path) {
       try {
         const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
         const arr = getPath(draft.config, path) || [];
-        arr.push({ src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
+        // B4 (S2-2): a bare-string photo path (e.g. professionals'
+        // instagram.gallery) must receive the src itself, not a {src,alt}
+        // wrapper — the template renders each item directly as `{{.}}`.
+        arr.push(itemsAreStrings ? dataUrl : { src: dataUrl, alt: file.name.replace(/\.[^.]+$/, '') });
         setPath(draft.config, path, arr);
         added++;
       } catch (e) {
