@@ -4,9 +4,15 @@
  * (VISION.md §8 step e).
  *
  * Mechanism: config flag `appointment.nativeBooking` (truthy "da"/"yes"/true).
- * Default falsy → legacy local appointment-request form (and optional Cal.com
- * bookingUrl) stay unchanged. Opt-in is reversible: clear the flag + republish
- * restores the legacy path. Native engine rows are never deleted on opt-out.
+ * Default falsy → legacy local appointment-request form stays unchanged.
+ * Opt-in is reversible: clear the flag + republish restores the legacy path.
+ * Native engine rows are never deleted on opt-out.
+ *
+ * The optional Cal.com booking-link field (`appointment.bookingUrl`) that
+ * used to sit alongside the legacy form was removed from the product on
+ * 2026-09-12 (owner decision — see VISION.md §8/Flow 4). A config saved
+ * before that date may still carry the key; this module never reads or
+ * writes it, so it passes through untouched as inert, unused data.
  *
  * At publish, when opted in, inject tenant keys from the Site Builder site
  * record (customerId = site.userId, siteId = site.id) and seed services +
@@ -156,8 +162,8 @@ function applyCutoverToConfig(config, site) {
             );
         } catch (_) { /* logging must never block a publish */ }
     }
-    // Native path wins over Cal.com link when both set.
-    // bookingUrl left intact in config so opt-out can restore it.
+    // Any orphaned appointment.* keys from a config saved before the
+    // Cal.com field's removal (see module header) are left as-is here.
     return {
         config: cfg,
         optedIn: true,

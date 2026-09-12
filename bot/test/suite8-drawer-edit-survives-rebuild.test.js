@@ -13,11 +13,12 @@
  * input handler that writes it to draft.config, the text is gone with no
  * error and no way to tell it happened.
  *
- * fullpass caught it once, instrumented, on the Cal.com field: after a fill
- * that had demonstrably run, both the input's value and
- * `draft.config.appointment.bookingUrl` were empty. It reproduces in roughly
- * one run in four there and never in isolation, which is exactly the shape of
- * bug that gets dismissed as flakiness and shipped.
+ * fullpass caught it once, instrumented, on the (now-removed) Cal.com booking
+ * field: after a fill that had demonstrably run, both the input's value and
+ * its config path were empty. It reproduces in roughly one run in four there
+ * and never in isolation, which is exactly the shape of bug that gets
+ * dismissed as flakiness and shipped. This oracle uses `contact.phone`
+ * instead — any drawer field the rebuild can race with makes the same point.
  *
  * This does not chase the trigger. It asserts the property directly: rebuild
  * the drawer while a field holds an uncommitted value, and the value — and
@@ -84,42 +85,42 @@ test('a value being typed into Detalii survives a drawer rebuild', async () => {
         page.setDefaultTimeout(20000);
         await openProfessionalsEditor(page);
 
-        const url = 'https://cal.com/hidook-rebuild/consultatie';
-        const field = page.locator('#dr_appointment_bookingUrl');
+        const phone = '+40 712 345 678';
+        const field = page.locator('#dr_contact_phone');
         await field.waitFor({ state: 'visible' });
         await field.click();
-        await field.fill(url);
+        await field.fill(phone);
 
         // Rebuild while the field still has focus and its value has NOT been
         // committed — the exact window the bug lives in. Suppressing the input
         // event first is what makes this deterministic instead of a race.
         const after = await page.evaluate((typed) => {
-            const el = document.getElementById('dr_appointment_bookingUrl');
+            const el = document.getElementById('dr_contact_phone');
             el.focus();
             el.value = typed;
-            try { el.setSelectionRange(7, 7); } catch (_) {}
+            try { el.setSelectionRange(3, 3); } catch (_) {}
             /* eslint-disable no-undef */
             buildDrawer();
             /* eslint-enable no-undef */
-            const fresh = document.getElementById('dr_appointment_bookingUrl');
+            const fresh = document.getElementById('dr_contact_phone');
             let caret = null;
             try { caret = fresh ? fresh.selectionStart : null; } catch (_) {}
             return {
                 fieldValue: fresh ? fresh.value : '(field gone)',
-                configValue: (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
-                    ? draft.config.appointment.bookingUrl : '(no config)',
+                configValue: (typeof draft !== 'undefined' && draft.config && draft.config.contact)
+                    ? draft.config.contact.phone : '(no config)',
                 focused: document.activeElement === fresh,
                 caret,
             };
-        }, url);
+        }, phone);
 
-        assert.equal(after.fieldValue, url,
+        assert.equal(after.fieldValue, phone,
             'the rebuilt field must still show what the owner had typed');
-        assert.equal(after.configValue, url,
+        assert.equal(after.configValue, phone,
             'the carried value must reach draft.config through the normal input handler, not around it');
         assert.equal(after.focused, true,
             'focus must come back to the field the owner was in');
-        assert.equal(after.caret, 7, 'the caret must not jump to the end');
+        assert.equal(after.caret, 3, 'the caret must not jump to the end');
 
         await page.close();
     } finally {

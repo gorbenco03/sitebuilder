@@ -14,7 +14,7 @@
  * both viewports — not a proxy/estimate) shows this template was ALREADY
  * near zero CLS even before this change: templates/local-service/styles.css
  * already carried `aspect-ratio: 16 / 10` on `.ls-shot img` (portfolio
- * gallery) and `.ls-igcell img` (Instagram grid) — the audit's 0.20/0.17
+ * gallery) — the audit's 0.20/0.17
  * figures were measured on a different, shared performance run (its own
  * evidence names a "Casa Nord" / product-menu site) and generalized to "the
  * product" rather than re-verified per template. This oracle's first check
@@ -87,7 +87,9 @@ function checkAspectRatioDeclared() {
   const css = fs.readFileSync(STYLES_PATH, 'utf8');
   const required = [
     { selector: '.ls-shot img', pattern: 'aspect-ratio\\s*:' },
-    { selector: '.ls-igcell img', pattern: 'aspect-ratio\\s*:' },
+    // .ls-igcell img is gone: it rendered instagram.gallery, a field build.js
+    // cleared on every render, so the whole grid was dead markup and was
+    // removed with it. Nothing to reserve layout for any more.
     { selector: '.ls-hero__logo', pattern: '(?:aspect-ratio|max-height)\\s*:' },
     { selector: '.ls-foot__logo', pattern: 'aspect-ratio\\s*:' },
   ];

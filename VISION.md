@@ -183,7 +183,7 @@ Reguli:
 
 **Override owner 2026-09-04 — NATIVE HIDOOK (LOCKED).** Supersedează atât decizia Cal.com-link-only din 2026-09-01, cât și override-ul earlier same-day (2026-09-04) pentru self-hosted cal.diy / Cal.com Platform. Calendarul Professional final este un **modul nativ Hidook construit în interiorul Site Builder** — **nu** cal.diy, **nu** Cal.com Platform, **nu** embed/integrare către un calendar third-party self-hosted.
 
-Stare: **BUILT ca opt-in per-site (2026-09-05) — nu default global. Step (e) cod + repair REJECT t_e22548f9: E2E pe `/live/<slug>/` professionals opted-in (nu preview widget), CTA post-submit fără „Se trimite…” stale (CSS `.hnb__layout[hidden]` force-hide), outbox email + owner dashboard UI act + manage-link + double-book pe UI real (status `reschedule_needed` / „Cerere înregistrată”, niciodată confirmed) + legacy form submit in-browser pe site non-opted-in (`/api/appointments` requested) — dovezi `04-QA-Evidence/Calendar-Cutover/`, `nativeApiBase` din env + CORS pe API public. Independent QA/advocate pe acest SHA încă necesar înainte de a marca step 5 „QA/advocate complete”.** Pașii (a)+(b)+(c)+(d)+(e) sunt pe linia calendar nativ: model SQLite tenant-keyed + booking engine + oracle de izolare; widget public de booking; dashboard owner + editor availability; harness email (boundary provider + transport local/memory, outbox queued/sent/failed/suppressed/dead_letter, retry backoff, copy RO onest, token manage); **cutover staged (e)** prin flag-ul de config `appointment.nativeBooking` (`da` / `nu`, reversibil, non-destructiv). Default pe site-urile Professional rămâne formularul local de cerere (+ link Cal.com opțional din Detalii). Opt-in la publicare injectează tenant ids (`nativeCustomerId` / `nativeSiteId` din site.userId + site.id), seed-uiește servicii/weekly din config appointment, montează widget-ul nativ pe `#appointment`, și setează `nativeApiBase` din `CALENDAR_PUBLIC_BASE_URL` / `PUBLIC_BASE_URL` / `PUBLIC_URL` (gol = same-origin pe host-ul bot). **Publicare statică:** export Cloudflare/Vercel/Netlify are nevoie de originea bot în `data-api-base`; `PUBLIC_URL` — singura dintre cele trei pe care producția o setează efectiv — e acum în lanț, după ce un publish real pe `pages.dev` a livrat `data-api-base=""` și widget-ul nu a pornit niciodată (Pages răspunde la `/calendar-native/widget/*` cu propriul `index.html`, 200 `text/html`, deci nimic nu eșuează vizibil). Cu base setat, API public reflectă CORS Origin; fără niciunul, publicarea loghează `calendar.native_api_base.unconfigured` la nivel error. Opt-out (gol/`nu`) restaurează formularul local; rezervările native **nu** se șterg. Manage-link visitor: `GET/POST /api/calendar-native/manage*` + UI `/calendar-native/manage/?token=` (token unic, unguessable, single-booking; cancel eliberează slotul). **Nu** este încă singura/opțiunea default pe toate site-urile live — cutover forțat pe flota existentă rămâne out of scope până la decizie owner.
+Stare: **BUILT ca opt-in per-site (2026-09-05) — nu default global. Step (e) cod + repair REJECT t_e22548f9: E2E pe `/live/<slug>/` professionals opted-in (nu preview widget), CTA post-submit fără „Se trimite…” stale (CSS `.hnb__layout[hidden]` force-hide), outbox email + owner dashboard UI act + manage-link + double-book pe UI real (status `reschedule_needed` / „Cerere înregistrată”, niciodată confirmed) + legacy form submit in-browser pe site non-opted-in (`/api/appointments` requested) — dovezi `04-QA-Evidence/Calendar-Cutover/`, `nativeApiBase` din env + CORS pe API public. Independent QA/advocate pe acest SHA încă necesar înainte de a marca step 5 „QA/advocate complete”.** Pașii (a)+(b)+(c)+(d)+(e) sunt pe linia calendar nativ: model SQLite tenant-keyed + booking engine + oracle de izolare; widget public de booking; dashboard owner + editor availability; harness email (boundary provider + transport local/memory, outbox queued/sent/failed/suppressed/dead_letter, retry backoff, copy RO onest, token manage); **cutover staged (e)** prin flag-ul de config `appointment.nativeBooking` (`da` / `nu`, reversibil, non-destructiv). Default pe site-urile Professional rămâne formularul local de cerere — **linkul Cal.com opțional din Detalii a fost eliminat din produs pe 2026-09-12** (decizie owner explicită, vezi corecția de mai jos, secțiunea „Commercial E2E + calendar/LP readiness"); un site vechi salvat cu valoarea completată nu crapă la republicare, valoarea rămâne pur și simplu orfană în config. Opt-in la publicare injectează tenant ids (`nativeCustomerId` / `nativeSiteId` din site.userId + site.id), seed-uiește servicii/weekly din config appointment, montează widget-ul nativ pe `#appointment`, și setează `nativeApiBase` din `CALENDAR_PUBLIC_BASE_URL` / `PUBLIC_BASE_URL` / `PUBLIC_URL` (gol = same-origin pe host-ul bot). **Publicare statică:** export Cloudflare/Vercel/Netlify are nevoie de originea bot în `data-api-base`; `PUBLIC_URL` — singura dintre cele trei pe care producția o setează efectiv — e acum în lanț, după ce un publish real pe `pages.dev` a livrat `data-api-base=""` și widget-ul nu a pornit niciodată (Pages răspunde la `/calendar-native/widget/*` cu propriul `index.html`, 200 `text/html`, deci nimic nu eșuează vizibil). Cu base setat, API public reflectă CORS Origin; fără niciunul, publicarea loghează `calendar.native_api_base.unconfigured` la nivel error. Opt-out (gol/`nu`) restaurează formularul local; rezervările native **nu** se șterg. Manage-link visitor: `GET/POST /api/calendar-native/manage*` + UI `/calendar-native/manage/?token=` (token unic, unguessable, single-booking; cancel eliberează slotul). **Nu** este încă singura/opțiunea default pe toate site-urile live — cutover forțat pe flota existentă rămâne out of scope până la decizie owner.
 
 Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **netulburat și nelegat** de Site Builder: nu se șterge, nu se oprește, nu se modifică din acest track, și **nu** se construiește nicio integrare Site Builder → acel pilot. Este un experiment separat, irelevant pentru arhitectura de mai jos.
 
@@ -365,6 +365,18 @@ Include: trial/card/live/cancel/renew; calendarul Professional per decizia owner
 > client, afișat de Hidook la fel ca un număr de telefon, **nu** o
 > integrare/arhitectură de calendar construită de Hidook. Nu contravine §8.
 
+> **Corecție 2026-09-12 (decizie owner explicită — Cal.com iese din produs):**
+> nota de mai sus (2026-09-06) descria corect starea de atunci — câmpul chiar
+> exista. Owner-ul a decis explicit: „la noi nu mai există Cal.com, noi avem
+> calendarul nostru." Câmpul `appointment.bookingUrl` e scos din schema,
+> preseturile și template-ul `templates/professionals/` și din drawer;
+> calendarul nativ Hidook (`appointment.nativeBooking`, §8) rămâne singura
+> cale de programare online, cu formularul local de cerere ca fallback când
+> nativul e oprit. Un site publicat anterior cu valoarea completată nu
+> crapă la republicare — valoarea rămâne orfană în config, dar nu se mai
+> randează nicăieri. Bulletul de mai jos e actualizat să reflecte asta;
+> istoricul SUPERSEDAT de mai sus și cel din bullet rămân neșterse.
+
 Acceptare:
 
 - card test → trial live imediat;
@@ -374,9 +386,9 @@ Acceptare:
   (`appointment.nativeBooking`, §8) și booking-ul se face direct pe site-ul
   public — aceasta e arhitectura de calendar a produsului, per decizia
   owner-locked §8 — fie, dacă nu optează, formularul local de cerere rămâne
-  fallback-ul default; owner-ul poate opțional adăuga în Detalii un link
-  Cal.com propriu (link extern simplu, ales/găzduit de client) ca alternativă
-  suplimentară de contact, nu ca arhitectură de calendar a produsului
+  singurul fallback disponibil (linkul extern Cal.com opțional a fost
+  eliminat din produs pe 2026-09-12, decizie owner — vezi corecția de mai
+  sus), nu ca arhitectură de calendar a produsului
   *(text original SUPERSEDAT, păstrat pentru istoric: "fie — dacă nu
   optează — poate lipi un link Cal.com valid, iar site-ul public deschide
   rezervarea în tab nou; formularul local de cerere rămâne fallback-ul când

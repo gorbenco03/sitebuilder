@@ -169,7 +169,7 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     assert.equal(
       await livePage.locator('.pr-booking-link').count(),
       0,
-      'once native booking is on, the legacy Cal.com/local booking link must not also render'
+      'once native booking is on, the legacy local booking link must not also render'
     );
 
     // =====================================================================

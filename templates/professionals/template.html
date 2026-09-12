@@ -307,12 +307,6 @@
                 <!-- @endif -->
                 <!-- @if !appointment.nativeBooking -->
                 <h2 class="pr-display pr-display--sec" id="book-heading">{{appointment.title}}</h2>
-                <!-- @if appointment.bookingUrl -->
-                <div class="pr-booking-action">
-                    <a href="{{appointment.bookingUrl}}" class="pr-btn pr-btn--primary pr-booking-link" target="_blank" rel="noopener noreferrer">Programează-te</a>
-                </div>
-                <!-- @endif -->
-                <!-- @if !appointment.bookingUrl -->
                 <p class="pr-copy pr-copy--lg">{{appointment.intro}}</p>
                 <!-- @if appointment.confidentialityWarning -->
                 <p class="pr-warn" role="note">{{appointment.confidentialityWarning}}</p>
@@ -407,7 +401,6 @@
                     <p class="pr-copy" id="pr-appt-done-body"></p>
                     <p class="pr-copy pr-copy--sm" id="pr-appt-done-confirm"></p>
                 </div>
-                <!-- @endif -->
                 <!-- @endif -->
             </div>
         </section>

@@ -579,9 +579,24 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
   const ALLOWED_TYPE_CHANGES = {
     'business.lang': { from: 'text', to: 'select' },
   };
+  /**
+   * Keys that were added after 254be23 and later deliberately removed again
+   * — not a Detalii EN regression, and not something a future HEAD should
+   * silently resurrect. Kept here (rather than just vanishing from
+   * ALLOWED_ADDED_KEYS) so the removal has a reason attached, the same way
+   * ALLOWED_ADDED_KEYS documents additions.
+   */
+  const ALLOWED_REMOVED_KEYS = new Set([
+    // appointment.bookingUrl (professionals): the optional Cal.com external
+    // booking-link field. Owner decision 2026-09-12 — "la noi nu mai există
+    // Cal.com, noi avem calendarul nostru" — removed it from schema, presets,
+    // template and drawer; the native Hidook calendar
+    // (appointment.nativeBooking) is now the only booking path. A site saved
+    // before the removal keeps the key as inert, unread data in its config.
+    'appointment.bookingUrl',
+  ]);
   const ALLOWED_ADDED_KEYS = new Set([
     'labels.menuLang',
-    'appointment.bookingUrl',
     'appointment.nativeBooking',
     // desserdirina's bilingual menu has always been RENDERED by its
     // template.html; it was simply never declared. The old list-control
@@ -666,6 +681,13 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
       assert.ok(
         ALLOWED_ADDED_KEYS.has(key),
         rel + ' unexpected added key ' + key + ':' + hMap[key]
+      );
+    }
+
+    for (const key of ALLOWED_REMOVED_KEYS) {
+      assert.ok(
+        !Object.prototype.hasOwnProperty.call(hMap, key),
+        rel + ' deliberately removed key ' + key + ' must not be resurrected'
       );
     }
 

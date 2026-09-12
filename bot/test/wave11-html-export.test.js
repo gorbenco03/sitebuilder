@@ -413,7 +413,11 @@ function assertNoSecretLeak(body) {
             });
         });
 
-        await check('save current browser draft then export returns unsaved name and cleared Cal.com state', async () => {
+        await check('save current browser draft then export returns unsaved name and never leaks a pre-removal Cal.com value', async () => {
+            // Compat: appointment.bookingUrl (the Cal.com link field) was removed
+            // from the product on 2026-09-12. A version saved before the removal —
+            // simulated here — still carries the key; republishing it must not
+            // crash, and the stale link must simply never appear.
             const professionalSite = registry.createSite({
                 userId: user.id,
                 templateId: 'professionals',
@@ -437,7 +441,9 @@ function assertNoSecretLeak(body) {
             const currentConfig = JSON.parse(JSON.stringify(professionalConfig));
             currentConfig.business.name = currentName;
             currentConfig.business.title = currentName;
-            currentConfig.appointment.bookingUrl = '';
+            // Left set (not cleared) on purpose: the orphaned value from before the
+            // field's removal must stay harmless even when the owner republishes
+            // without ever touching this (now nonexistent) field.
             const payload = JSON.stringify({
                 siteId: professionalSite.id,
                 templateId: 'professionals',
@@ -458,8 +464,8 @@ function assertNoSecretLeak(body) {
             });
             assert.strictEqual(res.status, 200, 'current export 200, got ' + res.status);
             assert.ok(res.body.includes(currentName), 'download contains current browser business name');
-            assert.ok(!/cal\.com/i.test(res.body), 'cleared Cal.com does not leak stale booking CTA');
-            assert.ok(/<form/i.test(res.body), 'cleared Cal.com restores the local appointment form');
+            assert.ok(!/cal\.com/i.test(res.body), 'orphaned pre-removal Cal.com value does not leak into export');
+            assert.ok(/<form/i.test(res.body), 'local appointment form still renders with the field gone');
         });
 
         await check('GET /api/export-html?siteId= owned draft → 200 with business name', async () => {

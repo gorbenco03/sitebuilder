@@ -85,9 +85,9 @@ const DRAWER_PREF_KEY = 'hb-details-drawer-pref';
 // every drawer keystroke already sends) once the drawer closes? Used to be a
 // self-expiring 2-second timer (drawerSaveTimer) instead of a plain flag —
 // which meant an edit whose visible effect can ONLY come from a full
-// re-render (e.g. appointment.bookingUrl: emptying it must remove the
-// Cal.com <a> and bring back the local request <form>, a structural change
-// no surgical text-content update can make) silently never reappeared if the
+// re-render (e.g. appointment.nativeBooking: switching it must swap the
+// native widget for the local request <form>, a structural change no
+// surgical text-content update can make) silently never reappeared if the
 // owner took more than two seconds to close the drawer after editing. A
 // plain flag has no such window — correct regardless of how long the drawer
 // stays open, and regardless of how fast any given render happens to be.
@@ -954,7 +954,7 @@ function computeListSchemaInfo(schema) {
  * — see that function's doc comment). The mechanism itself is kept: it is
  * generic (any future bare-scalar-string photo list benefits automatically,
  * whatever it's named), and bot/test/suite2-string-gallery-in-photos-panel.
- * test.js exercises it end to end with a synthetic schema field.
+ * test.js exercises it end to end with a purpose-built schema field.
  */
 function isBareScalarListField(field) {
   if (!field || field.type !== 'list') return false;
@@ -1178,7 +1178,7 @@ let demoTextMarksTimer = null;
  * Earlier versions of this fix also called this (undebounced) from
  * updateChecklist(), which fires on every keystroke in ANY drawer field —
  * including ones with nothing to do with identity text (e.g.
- * appointment.bookingUrl). Sending a postMessage into the preview iframe
+ * appointment.timezone). Sending a postMessage into the preview iframe
  * from that same hot path measurably raised the odds of fullRerender()'s
  * renderInFlight guard still being busy when the next scheduled re-render
  * came due, coalescing it later than a fixed-wait caller expected —
@@ -1316,7 +1316,7 @@ function updateChecklist() {
   // even though updateChecklist() already runs on every identity-field
   // change: this function is also called from the general DRAWER field
   // handler on every keystroke in ANY field, including ones with nothing to
-  // do with identity text (e.g. appointment.bookingUrl) — sending a message
+  // do with identity text (e.g. appointment.timezone) — sending a message
   // into the preview iframe from that same hot path added real, measurable
   // main-thread contention (the iframe processing the message right as the
   // parent's own closeDrawer()-triggered fullRerender() needs the thread)
@@ -3616,7 +3616,7 @@ function buildNativeBookingPanel(body, schema) {
   hint.className = 'field-hint';
   hint.textContent = on
     ? 'Activ: pe site-ul public, formularul local de cerere e înlocuit de calendarul nativ Hidook — vizitatorii văd sloturi reale, rezervă direct, primesc confirmare pe email și un memento automat (fișier .ics). La publicare se leagă automat de contul tău. Reversibil oricând — programările existente nu se șterg dacă dezactivezi.'
-    : 'Dezactivat: site-ul public arată formularul local de cerere (sau linkul Cal.com, dacă ai unul). Activează ca să înlocuiești formularul cu un calendar real: sloturi live, confirmare automată pe email și memento cu fișier .ics. Reversibil oricând.';
+    : 'Dezactivat: site-ul public arată formularul local de cerere. Activează ca să înlocuiești formularul cu un calendar real: sloturi live, confirmare automată pe email și memento cu fișier .ics. Reversibil oricând.';
   group.appendChild(hint);
 
   const row = document.createElement('div');

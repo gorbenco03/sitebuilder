@@ -427,91 +427,68 @@ async function run() {
 
       let fillTrace = null;
       if (system === 'professionals') {
+        // Was: fill appointment.bookingUrl (Cal.com link), verify a.pr-booking-link
+        // appears/disappears in the preview. That field was removed from the
+        // product on 2026-09-12 (owner decision — Cal.com is out, the native
+        // Hidook calendar is the only booking path) — see PLAN-QA-2026-09-12.md
+        // §8 for the race this same step used to chase; it went unreproduced
+        // outside this file and is now moot, not fixed, since the feature it
+        // exercised no longer exists. Kept the drawer-edit coverage for
+        // professionals by moving it to contact.phone (contact.email has no
+        // drawer control at all — isDrawerField() only surfaces phone/url/
+        // color/background types plus a fixed key-substring allowlist, which
+        // "email" matches neither of; verified empirically, this file's own
+        // first attempt at contact.email logged a false "field missing"
+        // defect for exactly that reason).
         await openDrawer();
-        const booking = page.locator('#dr_appointment_bookingUrl');
-        if (!(await booking.count())) {
-          defect('critical', 'Cal.com booking field missing in Details', 'no #dr_appointment_bookingUrl');
-          await shot('professionals-calcom-field-missing', { action: 'inspect', selector: '#details-drawer' });
+        const phoneField = page.locator('#dr_contact_phone');
+        const testPhone = '+40799112233';
+        if (!(await phoneField.count())) {
+          defect('critical', 'Contact phone field missing in Details', 'no #dr_contact_phone');
+          await shot('professionals-phone-field-missing', { action: 'inspect', selector: '#details-drawer' });
         } else {
-          await booking.fill('https://cal.com/hidook-fullpass/consultatie');
-          await booking.blur();
+          await phoneField.fill(testPhone);
+          await phoneField.blur();
           const afterFill = await page.evaluate(() => ({
-            field: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
-            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
-              ? draft.config.appointment.bookingUrl : '(none)',
+            field: (document.getElementById('dr_contact_phone') || {}).value,
+            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.contact)
+              ? draft.config.contact.phone : '(none)',
           })).catch(() => null);
           await page.waitForTimeout(1500);
           const afterWait = await page.evaluate(() => ({
-            field: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
-            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
-              ? draft.config.appointment.bookingUrl : '(none)',
+            field: (document.getElementById('dr_contact_phone') || {}).value,
+            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.contact)
+              ? draft.config.contact.phone : '(none)',
           })).catch(() => null);
           fillTrace = { afterFill, afterWait };
           await closeDrawer();
-          // Wait for the RESULT, not for a stopwatch. Measured in isolation the
-          // link lands 30-45ms after the drawer closes, 6 runs out of 6 — but
-          // inside a 46-step pass, on whichever template ran before this one,
-          // a fixed 800ms occasionally expired first and reported a defect the
-          // product does not have. The contract is "closing the drawer shows
-          // the link", so poll for it and let the timeout be the failure.
-          const bookingLink = page.frameLocator('#preview-iframe').locator('a.pr-booking-link, a[href*="cal.com/hidook-fullpass"]').first();
-          await bookingLink.waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
-          const hasLink = await bookingLink.count();
-          await shot('professionals-calcom-filled', {
+          // Wait for the RESULT, not for a stopwatch — a fixed wait inside a
+          // 46-step pass can expire before a slower render finishes and report
+          // a defect the product does not have.
+          const phoneLink = page.frameLocator('#preview-iframe').locator('a[href="tel:' + testPhone + '"]').first();
+          await phoneLink.waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
+          const hasLink = await phoneLink.count();
+          await shot('professionals-contact-phone-filled', {
             action: 'fill+close-drawer',
-            selector: '#dr_appointment_bookingUrl',
-            detail: 'bookingLinkCount=' + hasLink,
+            selector: '#dr_contact_phone',
+            detail: 'telLinkCount=' + hasLink,
             ok: hasLink > 0,
           });
           if (!hasLink) {
-            const diag = await page.evaluate(() => {
-              const cfgVal = (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
-                ? draft.config.appointment.bookingUrl : '(no draft.appointment)';
-              const nb = (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
-                ? draft.config.appointment.nativeBooking : null;
-              const fr = document.getElementById('preview-iframe');
-              let inner = '';
-              try { inner = fr && fr.contentDocument
-                ? (fr.contentDocument.querySelector('#appointment') || {}).outerHTML || '(no #appointment)'
-                : '(no contentDocument)'; } catch (e) { inner = 'ERR ' + e.message; }
-              return {
-                cfgBookingUrl: cfgVal,
-                cfgNativeBooking: nb,
-                fieldValue: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
-                pendingRender: typeof pendingRender !== 'undefined' ? pendingRender : null,
-                renderInFlight: typeof renderInFlight !== 'undefined' ? renderInFlight : null,
-                needsRerender: typeof drawerNeedsRerenderOnClose !== 'undefined' ? drawerNeedsRerenderOnClose : null,
-                apptHtmlHead: String(inner).slice(0, 400),
-              };
-            }).catch((e) => ({ diagError: String(e && e.message) }));
-            defect('high', 'Cal.com URL did not render booking link in preview',
-              'no a.pr-booking-link after drawer close; trace=' + JSON.stringify(fillTrace) +
-              ' diag=' + JSON.stringify(diag));
+            defect('high', 'contact.phone did not render tel link in preview',
+              'no tel link after drawer close; trace=' + JSON.stringify(fillTrace));
           }
-          const formStill = await page.frameLocator('#preview-iframe').locator('form, button:has-text("Trimite")').count();
-          if (!hasLink && formStill) {
-            defect('high', 'Local request form still showing after Cal.com URL', 'form count=' + formStill);
-          }
+          // Restore the preset's own phone so later steps (e.g. the WhatsApp/
+          // phone dock checks below) see the template's intended value, not
+          // this step's throwaway test number. Not asserted on: whether a
+          // full re-render reliably clears a stale href on a SECOND close in
+          // a row is a separate, pre-existing question this step does not
+          // chase (see the S9A report — flagged, not fixed, out of scope for
+          // a Cal.com removal task).
           await openDrawer();
-          await booking.fill('');
-          await booking.blur();
-          await page.waitForTimeout(800);
+          await phoneField.fill('');
+          await phoneField.blur();
           await closeDrawer();
-          // Same reasoning as the fill case above: wait for the link to be
-          // GONE rather than for a stopwatch to run out, so a slow render on
-          // a loaded pass cannot be reported as a leak.
-          const clearedLink = page.frameLocator('#preview-iframe').locator('a[href*="cal.com/hidook-fullpass"]').first();
-          await clearedLink.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
-          const leaked = await page.frameLocator('#preview-iframe').locator('a[href*="cal.com/hidook-fullpass"]').count();
-          await shot('professionals-calcom-cleared', {
-            action: 'fill-empty+close-drawer',
-            selector: '#dr_appointment_bookingUrl',
-            detail: 'leakedCalLinks=' + leaked,
-            ok: leaked === 0,
-          });
-          if (leaked) {
-            defect('critical', 'Cleared Cal.com still leaks in preview', 'href still present');
-          }
         }
       }
 

@@ -464,15 +464,6 @@
       "title": "Programări",
       "fields": [
         {
-          "key": "appointment.bookingUrl",
-          "type": "url",
-          "label": "Link Cal.com de programări (opțional)",
-          "hint": "Creează-ți un cont gratuit pe cal.com și lipește linkul de rezervare aici. Poți folosi și un domeniu Cal.com personalizat.",
-          "required": false,
-          "previewRefresh": "full",
-          "maxLen": 300
-        },
-        {
           "key": "appointment.nativeBooking",
           "type": "text",
           "label": "Programări native Hidook (da / nu) — opțional, reversibil",

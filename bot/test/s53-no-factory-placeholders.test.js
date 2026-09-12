@@ -184,17 +184,18 @@ check('system ids stay product-menu / portfolio / local-service with ≥2 preset
   assert.ok(ids.includes('desserdirina'), 'registry missing desserdirina');
 });
 
-check('instagram embed + gallery fallback still present on presets', () => {
+check('instagram presets still declare a real feed, with no dead gallery fallback', () => {
   for (const id of SYSTEMS) {
     const data = readPresets(id);
     for (const p of data.presets || []) {
       const ig = p.config && p.config.instagram;
       assert.ok(ig, `${id}/${p.id}: missing instagram`);
       assert.ok(ig.embedUrl || ig.url, `${id}/${p.id}: need embedUrl or url`);
-      assert.ok(Array.isArray(ig.gallery) && ig.gallery.length >= 1, `${id}/${p.id}: gallery fallback`);
-      for (const g of ig.gallery) {
-        assert.ok(typeof g === 'string' && g.startsWith('images/'), `${id}/${p.id}: ig gallery must be images/…`);
-      }
+      // The manual `gallery` array is gone: build.js cleared it on every
+      // render, so it was never a fallback for anything. Guard against it
+      // coming back rather than requiring it.
+      assert.ok(!('gallery' in ig),
+        `${id}/${p.id}: instagram.gallery is a removed dead field and must not reappear`);
     }
   }
 });

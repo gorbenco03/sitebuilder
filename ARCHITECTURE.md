@@ -224,9 +224,14 @@ config flag (`da`/`nu`, reversible, non-destructive — see `VISION.md` §8 for
 the product decision this implements). Default behavior for a site that does
 not opt in is unchanged: the legacy local appointment-*request* form
 (`POST /api/appointments`, handled directly in `bot/server.js`, status
-always `requested`), plus an optional Cal.com link the owner can paste in
-Detalii (`templates/professionals/schema.json`) — that link is a plain,
-customer-supplied external URL, not a Hidook-built calendar integration.
+always `requested`). An optional Cal.com link the owner could paste in
+Detalii used to exist alongside it (`templates/professionals/schema.json`);
+it was removed from the product on 2026-09-12 (owner decision — see
+`VISION.md` §8), since the native calendar above is the only booking path
+the product offers. A site published before the removal that still carries
+`appointment.bookingUrl` in its saved config does not fail to render — the
+template no longer reads that key, so republishing it just drops the link
+and keeps the local form; the value itself is left as an inert, unused key.
 
 Storage is a **second, separate SQLite database**: `bot/calendar-native/db.js`
 opens `DATA_DIR/calendar-native.sqlite` (same `node:sqlite` + WAL pattern as

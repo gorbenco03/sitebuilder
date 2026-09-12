@@ -132,15 +132,26 @@ const optedOutHtml = renderHtml(TPL, baseCfg);
 assert.match(optedOutHtml, /id="pr-appt-form"/);
 assert.doesNotMatch(optedOutHtml, /data-hidook-cal-native/);
 
-// native wins over bookingUrl when both set
+// Compat: appointment.bookingUrl (the Cal.com link field) was removed from
+// the product on 2026-09-12. A config saved before that removal may still
+// carry the key — rendering it must not crash and must never leak the
+// orphaned URL, regardless of nativeBooking.
 baseCfg.appointment.nativeBooking = 'da';
-baseCfg.appointment.bookingUrl = 'https://cal.com/should-not-win';
-const nativeWins = renderHtml(TPL, baseCfg);
-assert.match(nativeWins, /data-hidook-cal-native/);
-assert.doesNotMatch(nativeWins, /pr-booking-link/);
-assert.doesNotMatch(nativeWins, /cal\.com\/should-not-win/);
+baseCfg.appointment.bookingUrl = 'https://cal.com/orphaned-legacy-value';
+const nativeWithOrphan = renderHtml(TPL, baseCfg);
+assert.match(nativeWithOrphan, /data-hidook-cal-native/);
+assert.doesNotMatch(nativeWithOrphan, /pr-booking-link/);
+assert.doesNotMatch(nativeWithOrphan, /cal\.com\/orphaned-legacy-value/);
+
+baseCfg.appointment.nativeBooking = 'nu';
+const legacyWithOrphan = renderHtml(TPL, baseCfg);
+assert.match(legacyWithOrphan, /id="pr-appt-form"/);
+assert.doesNotMatch(legacyWithOrphan, /pr-booking-link/);
+assert.doesNotMatch(legacyWithOrphan, /cal\.com\/orphaned-legacy-value/);
 
 // --- 4. applyCutoverToConfig injects tenant; opt-out clears ids ---
+// An orphaned appointment.bookingUrl (see compat note above) must pass
+// through untouched — cutover.js never reads or strips unknown keys.
 const on = cutover.applyCutoverToConfig(
     { appointment: { nativeBooking: 'da', bookingUrl: 'https://cal.com/x' } },
     site
@@ -148,7 +159,6 @@ const on = cutover.applyCutoverToConfig(
 assert.strictEqual(on.optedIn, true);
 assert.strictEqual(on.config.appointment.nativeCustomerId, 'cust_cutover_A');
 assert.strictEqual(on.config.appointment.nativeSiteId, 'site_cutover_A');
-// bookingUrl preserved in config for reverse
 assert.strictEqual(on.config.appointment.bookingUrl, 'https://cal.com/x');
 
 const off = cutover.applyCutoverToConfig(

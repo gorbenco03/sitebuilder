@@ -149,7 +149,6 @@
           ]
         },
         "appointment": {
-          "bookingUrl": "",
           "nativeBooking": "",
           "enabled": "yes",
           "title": "Solicită o programare",
@@ -393,7 +392,6 @@
           ]
         },
         "appointment": {
-          "bookingUrl": "",
           "nativeBooking": "",
           "enabled": "yes",
           "title": "Solicită o programare",
@@ -634,7 +632,6 @@
           ]
         },
         "appointment": {
-          "bookingUrl": "",
           "nativeBooking": "",
           "enabled": "yes",
           "title": "Solicită o programare",

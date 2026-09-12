@@ -158,7 +158,6 @@ function sanitizeCssUrls(value) {
 
 /** URL token paths that appear in href attributes and must be sanitized. */
 const URL_TOKENS = new Set([
-    'appointment.bookingUrl',
     'contact.waHref',
     'contact.addressHref',
     'contact.instagram.url',
@@ -224,17 +223,6 @@ function normalizeInstagramForPublic(cfg) {
     cfg.instagram = ig;
 }
 
-function isPlausibleHttpUrl(value) {
-    const str = typeof value === 'string' ? value.trim() : '';
-    if (!/^https?:\/\//i.test(str)) return false;
-    try {
-        const parsed = new URL(str);
-        return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && !!parsed.hostname;
-    } catch (_) {
-        return false;
-    }
-}
-
 /** Return a safe image URL/path already present in customer site data. */
 function isUsableSocialImage(value) {
     const image = typeof value === 'string' ? value.trim() : '';
@@ -298,10 +286,6 @@ function normalizeConfigForRender(config) {
     cfg.labels = labels;
     if (cfg.appointment && typeof cfg.appointment === 'object') {
         cfg.appointment = Object.assign({}, cfg.appointment);
-        const rawBookingUrl = typeof cfg.appointment.bookingUrl === 'string'
-            ? cfg.appointment.bookingUrl.trim()
-            : '';
-        cfg.appointment.bookingUrl = isPlausibleHttpUrl(rawBookingUrl) ? rawBookingUrl : '';
         // Staged native cutover (VISION §8 e): empty/falsy keeps legacy form.
         // Tenant ids are injected at publish — never invent them here.
         if (cfg.appointment.nativeCustomerId == null) cfg.appointment.nativeCustomerId = '';
