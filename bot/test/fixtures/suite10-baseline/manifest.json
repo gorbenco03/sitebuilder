@@ -1,0 +1,75 @@
+{
+  "generatedAtCommit": "7cc77419ed04ebc6d96acce60b590f58bb357af8",
+  "templates": {
+    "product-menu": [
+      {
+        "id": "casa-nord",
+        "file": "product-menu/casa-nord.html",
+        "bytes": 23868
+      },
+      {
+        "id": "traista-verde",
+        "file": "product-menu/traista-verde.html",
+        "bytes": 23847
+      }
+    ],
+    "portfolio": [
+      {
+        "id": "atelier-ivoire",
+        "file": "portfolio/atelier-ivoire.html",
+        "bytes": 28650
+      },
+      {
+        "id": "studio-forma",
+        "file": "portfolio/studio-forma.html",
+        "bytes": 27325
+      },
+      {
+        "id": "atelier-ivoire-ro",
+        "file": "portfolio/atelier-ivoire-ro.html",
+        "bytes": 28541
+      }
+    ],
+    "local-service": [
+      {
+        "id": "renovari-bucuresti",
+        "file": "local-service/renovari-bucuresti.html",
+        "bytes": 30799
+      },
+      {
+        "id": "acoperisuri-dacia",
+        "file": "local-service/acoperisuri-dacia.html",
+        "bytes": 30758
+      }
+    ],
+    "professionals": [
+      {
+        "id": "cabinet-marin",
+        "file": "professionals/cabinet-marin.html",
+        "bytes": 34032
+      },
+      {
+        "id": "atelier-nord",
+        "file": "professionals/atelier-nord.html",
+        "bytes": 28021
+      },
+      {
+        "id": "cabinet-marin-ro",
+        "file": "professionals/cabinet-marin-ro.html",
+        "bytes": 33200
+      }
+    ],
+    "desserdirina": [
+      {
+        "id": "desserdirina-ro",
+        "file": "desserdirina/desserdirina-ro.html",
+        "bytes": 23428
+      },
+      {
+        "id": "desserdirina-en",
+        "file": "desserdirina/desserdirina-en.html",
+        "bytes": 23428
+      }
+    ]
+  }
+}
