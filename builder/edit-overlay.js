@@ -28,6 +28,9 @@
  *     {hb:'list-remove', path}               — remove list item at path
  *     {hb:'focus', path}                     — a field received focus
  *     {hb:'undo'} / {hb:'redo'}              — Ctrl+Z / Ctrl+Shift+Z pressed on the canvas
+ *     {hb:'connect-instagram'}                — Instagram teaser's CTA clicked (see
+ *                                              section 5c below) — app.js opens the
+ *                                              existing Instagram modal in response.
  *
  *   parent → iframe:
  *     {hb:'set', path, value}               — surgical text update (no re-render)
@@ -975,6 +978,10 @@
     imgs.forEach(function (img) {
       // Skip images that are already inside a [data-hb-edit] image container
       // or that are the logo (handled separately via data-hb-edit if present).
+      // Also skip the Instagram teaser's example tiles (see section 5c below)
+      // — they are fixture photography, not an owner's content, and must
+      // never grow a "Înlocuiește fotografia" control.
+      if (img.closest('[data-hb-ig-teaser]')) return;
       var src = img.getAttribute('src') || '';
       // Do not wrap tiny icons (data: SVG icons used inline as service icons).
       if (src.startsWith('data:image/svg') || src.startsWith('data:image/svg+xml')) return;
@@ -1072,6 +1079,7 @@
 
     var allEls = Array.prototype.slice.call(document.querySelectorAll('[style]'));
     allEls.forEach(function (el) {
+      if (el.closest('[data-hb-ig-teaser]')) return;
       var style = el.getAttribute('style') || '';
       var bgUrls = extractBackgroundUrls(style);
       if (!bgUrls.length) return;
@@ -1138,6 +1146,96 @@
       if (isDemoSrcValue(bgUrl)) addDemoBadge(buttonHost, 'bg');
     });
   }
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     5c. Instagram teaser (edit-mode-only example section)
+  ───────────────────────────────────────────────────────────────────────── */
+
+  /**
+   * A parallel effort owns the `[data-hb-ig-teaser]` markup and all its CSS
+   * (including the blurred/veiled look, keyed off `.is-revealed` — see the
+   * task's own section for the fixed shape: a badge, a 6-tile grid, and a
+   * `.hb-ig-teaser__veil` holding the `[data-hb-ig-connect]` CTA). This is
+   * the behaviour half only:
+   *
+   *   - click anywhere in the section reveals it once (`.is-revealed` +
+   *     un-hide the veil via `hidden = false`, never an inline `display` —
+   *     that stays the other side's CSS to decide). One-way per render:
+   *     once shown, further clicks elsewhere in the section do nothing —
+   *     there is no un-reveal.
+   *   - click on the CTA posts {hb:'connect-instagram'} to the parent
+   *     instead (app.js opens the existing Instagram modal from there —
+   *     see its postMessage switch).
+   *   - it is not part of the inline-edit surface: the section carries no
+   *     [data-hb-edit] fields, so setupTextFields()/setupListControls()
+   *     already ignore it, and setupImages() above explicitly skips its six
+   *     tiles. Nothing here ever posts {hb:'text'|'image'|'list-add'|...},
+   *     so a click here never marks the draft dirty.
+   *   - keyboard: the CTA is a real <button>, so Enter/Space and a focus
+   *     ring come for free. The section itself has no visible affordance in
+   *     its fixed markup for the click-to-reveal action, so setupIgTeaser()
+   *     below gives any not-yet-revealed section a tabindex + role so Tab
+   *     reaches it and Enter/Space reveal it exactly like a click. Once
+   *     revealed, that affordance is removed — the CTA is the only control
+   *     left worth stopping on.
+   *
+   * Click/keydown are handled via document-level delegation (not a
+   * per-element listener bound at mount) so this works the same whether the
+   * section was present in the srcdoc from the start or arrives from a
+   * later mutation — mirroring the Ctrl+Z listener's own delegation a few
+   * sections below.
+   */
+  function igTeaserVeil(section) {
+    return section.querySelector('.hb-ig-teaser__veil');
+  }
+
+  function revealIgTeaser(section) {
+    if (section.classList.contains('is-revealed')) return;
+    section.classList.add('is-revealed');
+    var veil = igTeaserVeil(section);
+    if (veil) veil.hidden = false;
+    // The reveal affordance's job is done — retire it so Tab doesn't stop
+    // on a section that no longer does anything on Enter/Space (the CTA
+    // inside the now-visible veil is the real control from here on).
+    section.removeAttribute('tabindex');
+    section.removeAttribute('role');
+    section.removeAttribute('aria-label');
+  }
+
+  /** Give every not-yet-revealed teaser section a keyboard path in. */
+  function setupIgTeaser() {
+    var sections = Array.prototype.slice.call(document.querySelectorAll('[data-hb-ig-teaser]'));
+    sections.forEach(function (section) {
+      if (section.classList.contains('is-revealed')) return;
+      section.setAttribute('tabindex', '0');
+      section.setAttribute('role', 'button');
+      section.setAttribute('aria-label', 'Vezi un exemplu de flux Instagram');
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var section = e.target && e.target.closest ? e.target.closest('[data-hb-ig-teaser]') : null;
+    if (!section) return;
+    var connectBtn = e.target.closest('[data-hb-ig-connect]');
+    if (connectBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      toParent({ hb: 'connect-instagram' });
+      return;
+    }
+    revealIgTeaser(section);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+    var section = e.target && e.target.closest ? e.target.closest('[data-hb-ig-teaser]') : null;
+    // Only the section itself, focused directly (not a child control like
+    // the CTA button, which already handles Enter/Space natively).
+    if (!section || e.target !== section) return;
+    if (section.classList.contains('is-revealed')) return;
+    e.preventDefault();
+    revealIgTeaser(section);
+  });
 
   /* ─────────────────────────────────────────────────────────────────────────
      6. List add / remove controls
@@ -1540,6 +1638,7 @@
     try { setupTextFields(); }    catch (e) { console.warn('[hb-overlay] setupTextFields:', e); }
     try { setupImages(); }        catch (e) { console.warn('[hb-overlay] setupImages:', e); }
     try { setupListControls(); }  catch (e) { console.warn('[hb-overlay] setupListControls:', e); }
+    try { setupIgTeaser(); }      catch (e) { console.warn('[hb-overlay] setupIgTeaser:', e); }
 
     // Announce readiness to parent.
     toParent({ hb: 'ready' });
