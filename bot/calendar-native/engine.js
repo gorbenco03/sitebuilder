@@ -1415,14 +1415,32 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
             throw err;
         }
         if (!row.resource_id) {
-            // Wave 7 (audit #25): an unresolved "any available" request has
-            // no physical resource yet — confirming it would claim nothing.
-            // The owner must reassign it to a resource first (see
-            // reassignBookingAsOwner), which itself confirms when free.
-            db.exec('ROLLBACK;');
-            const err = new Error('booking has no resource assigned yet — reassign it first');
-            err.code = 'RESOURCE_REQUIRED';
-            throw err;
+            // Suite 5 / B6 (2026-09-12): an unresolved "any available"
+            // request has no physical resource yet — confirming it would
+            // claim nothing. On a tenant with more than one resource the
+            // owner genuinely has to pick which one (see
+            // reassignBookingAsOwner — the dashboard's "Reatribuie").
+            // But the common "professionals" tenant has exactly ONE
+            // resource — there is no ambiguity to ask the owner about, so
+            // "Confirmă" can default to it directly, inline in this same
+            // transaction (equivalent to reassignBookingAsOwner(..., that
+            // one id), just without a second BEGIN IMMEDIATE). Zero active
+            // resources (the owner deactivated their only one) is its own
+            // honest error, distinct from "pick one of several".
+            const soloResources = listResources(db, customerId, siteId, { activeOnly: true });
+            if (!soloResources.length) {
+                db.exec('ROLLBACK;');
+                const err = new Error('no active resource configured for this site — add one in Personal first');
+                err.code = 'NO_RESOURCE';
+                throw err;
+            }
+            if (soloResources.length > 1) {
+                db.exec('ROLLBACK;');
+                const err = new Error('booking has no resource assigned yet — reassign it first');
+                err.code = 'RESOURCE_REQUIRED';
+                throw err;
+            }
+            row.resource_id = soloResources[0].id;
         }
         const service = getService(db, customerId, siteId, row.service_id);
         const settings = getSettings(db, customerId, siteId);
@@ -1455,9 +1473,9 @@ function confirmBookingAsOwner(db, customerId, siteId, bookingId) {
             return updated;
         }
         db.prepare(
-            `UPDATE calendar_bookings SET status = ?, updated_at = ?
+            `UPDATE calendar_bookings SET status = ?, resource_id = ?, updated_at = ?
              WHERE id = ? AND customer_id = ? AND site_id = ?`
-        ).run(STATUSES.CONFIRMED, nowIso(), bookingId, customerId, siteId);
+        ).run(STATUSES.CONFIRMED, row.resource_id, nowIso(), bookingId, customerId, siteId);
         const updated = getBooking(db, customerId, siteId, bookingId);
         db.exec('COMMIT;');
         emitBookingEmail(db, {

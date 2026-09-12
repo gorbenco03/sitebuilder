@@ -702,13 +702,16 @@ function mapEngineError(e) {
     const code = e && e.code ? String(e.code) : 'ERROR';
     const status =
         code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST' ||
-            code === 'STATE' || code === 'MIN_NOTICE' || code === 'MAX_ADVANCE' || code === 'RESOURCE_REQUIRED'
+            code === 'STATE' || code === 'MIN_NOTICE' || code === 'MAX_ADVANCE' || code === 'RESOURCE_REQUIRED' ||
+            code === 'NO_RESOURCE'
             ? 400
             : code === 'SERVICE_NOT_FOUND' || code === 'SETTINGS_MISSING' || code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND'
                 ? 404
                 : 500;
     const ro =
-        code === 'SLOT_OUTSIDE_AVAILABILITY'
+        code === 'NO_RESOURCE'
+            ? 'Cabinetul nu are nicio persoană/resursă activă — adaugă una în tabul „Personal” înainte de a confirma.'
+            : code === 'SLOT_OUTSIDE_AVAILABILITY'
             ? 'Intervalul ales nu este disponibil (în afara programului sau zi liberă).'
             : code === 'SLOT_IN_PAST'
                 ? 'Intervalul ales a trecut deja.'

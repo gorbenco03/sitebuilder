@@ -140,6 +140,40 @@
     return 'hod-badge hod-badge--cancelled';
   }
 
+  /**
+   * Suite 5 / B6: two bookings for the same start/duration overlap.
+   * Duration-agnostic bookings (missing durationMinutes) never "overlap" —
+   * treated as a point in time, which only ever matters for the identical-
+   * start case this whole feature exists for.
+   */
+  function bookingsOverlap(a, b) {
+    var aStart = Date.parse(a.startUtc);
+    var aEnd = aStart + (Number(a.durationMinutes) || 0) * 60000;
+    var bStart = Date.parse(b.startUtc);
+    var bEnd = bStart + (Number(b.durationMinutes) || 0) * 60000;
+    return aStart < bEnd && bStart < aEnd;
+  }
+
+  /**
+   * Suite 5 / B6: on a solo-resource tenant, a "requested" booking with no
+   * resourceId can be confirmed straight from this list — but only offer
+   * the button when the slot honestly looks free, using the bookings
+   * already loaded in this view (the default, unfiltered dashboard load
+   * carries every status, so a still-confirmed twin on the same slot is
+   * visible here). Never promise a confirmation the click can't deliver;
+   * if a filtered view hides the real conflict, the click still degrades
+   * honestly server-side to "reprogramare necesară" rather than erroring.
+   */
+  function soloConfirmLooksFree(state, booking) {
+    return !state.bookings.some(function (other) {
+      return (
+        other.id !== booking.id &&
+        other.status === 'confirmed' &&
+        bookingsOverlap(other, booking)
+      );
+    });
+  }
+
   function mount(root) {
     var cfg = cfgFromRoot(root);
     var state = {
@@ -454,7 +488,19 @@
               esc(b.id) +
               '">Anulează</button>';
           }
-          if (b.status === 'requested' && b.resourceId) {
+          // Suite 5 / B6: a "requested" booking with a resource already
+          // assigned could always be confirmed. One with NO resource could
+          // not — not even on a solo cabinet, the normal "professionals"
+          // case, where "Reatribuie" also never appears (it needs 2+
+          // resources). Default it to the tenant's one resource here,
+          // exactly what confirmBookingAsOwner now does internally — and
+          // only offer it when the slot honestly looks free (see
+          // soloConfirmLooksFree's own honesty note).
+          var canSoloConfirm =
+            !b.resourceId &&
+            state.resources.length === 1 &&
+            soloConfirmLooksFree(state, b);
+          if (b.status === 'requested' && (b.resourceId || canSoloConfirm)) {
             html +=
               '<button type="button" class="hod-btn hod-btn--small" data-hod-act="confirm" data-id="' +
               esc(b.id) +
@@ -1039,7 +1085,18 @@
         setMsg((r.data && r.data.error) || 'Nu am putut confirma.', 'err');
         return;
       }
-      setMsg('Programare confirmată.', 'ok');
+      // Suite 5 / B6: confirming a resourceless "requested" booking can
+      // still honestly land on "reprogramare necesară" if the slot turned
+      // out busy after all (e.g. a filtered view hid the real conflict) —
+      // say so instead of claiming a confirmation that did not happen.
+      var status = r.data.booking && r.data.booking.status;
+      if (status === 'confirmed') {
+        setMsg('Programare confirmată.', 'ok');
+      } else if (status === 'reschedule_needed') {
+        setMsg('Intervalul nu mai era liber — programarea a fost marcată „necesită reprogramare”.', 'ok');
+      } else {
+        setMsg('Programare actualizată.', 'ok');
+      }
       await loadBookings();
     }
 
