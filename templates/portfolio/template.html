@@ -257,9 +257,11 @@
             data-duration="{{appointment.durationMin}}"
             data-lead="{{appointment.minLeadMinutes}}">
             <div class="pf-shell">
-                <p class="pf-kicker pf-kicker--center">{{labels.bookingEyebrow}}</p>
-                <h2 class="pf-display pf-display--center" id="appt-heading">{{appointment.title}}</h2>
-                <p class="pf-copy">{{appointment.intro}}</p>
+                <div class="pf-svc__intro">
+                    <p class="pf-kicker pf-kicker--center">{{labels.bookingEyebrow}}</p>
+                    <h2 class="pf-display pf-display--center" id="appt-heading">{{appointment.title}}</h2>
+                    <p class="pf-copy">{{appointment.intro}}</p>
+                </div>
                 <!-- @if appointment.nativeBooking -->
                 <link rel="stylesheet" href="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.css" />
                 <div
@@ -276,7 +278,7 @@
                     data-day-count="14"
                 ></div>
                 <!-- @if appointment.privacyNotice -->
-                <p class="pf-copy pf-copy--sm">{{appointment.privacyNotice}}</p>
+                <div class="pf-svc__intro"><p class="pf-copy pf-copy--sm">{{appointment.privacyNotice}}</p></div>
                 <!-- @endif -->
                 <script src="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.js" defer></script>
                 <!-- @endif -->
@@ -347,10 +349,10 @@
             </div>
             <div class="pf-foot__soc">
                 <!-- @if contact.instagram.url -->
-                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
+                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram"><span class="pf-soc-icon pf-soc-icon--ig" aria-hidden="true"></span></a>
                 <!-- @endif -->
                 <!-- @if contact.facebook.url -->
-                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook">FB</a>
+                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook"><span class="pf-soc-icon pf-soc-icon--fb" aria-hidden="true"></span></a>
                 <!-- @endif -->
             </div>
         </div>
