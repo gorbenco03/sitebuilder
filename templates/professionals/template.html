@@ -164,16 +164,22 @@
                      repeat verbatim in a .pr-strip band right below the
                      hero (removed — see the note there used to be). Kept
                      here only, so there is exactly one place to edit. The
-                     " · " separator between modes/languages is a CSS
-                     ::before (styles.css) instead of static markup: the
-                     builder's live editor wraps each token below in its own
+                     " · " separator between modes/languages is real markup
+                     in a .pr-hero__sep span, inside the languages guard so it
+                     can never appear alone on a published page. It briefly
+                     lived only as a CSS ::before scoped to [data-hb-edit] —
+                     attributes a published page does not have — which ran the
+                     two chips together into "Online și la cabinetRomână".
+                     styles.css hides the span when either neighbour is empty,
+                     which only ever happens in the
+                     builder's live editor, since it wraps each token below in its own
                      [data-hb-edit] span and patches only the one the owner
                      typed into (builder/app.js), so a literal " · " text
                      node between two spans would survive as an orphan dot
                      if one of them were cleared without a page reload. The
                      CSS rule is a no-op on the published site, which never
                      carries [data-hb-edit] attributes at all. -->
-                <p class="pr-hero__meta">{{business.modes}}<!-- @if business.languages -->{{business.languages}}<!-- @endif --></p>
+                <p class="pr-hero__meta">{{business.modes}}<!-- @if business.languages --><span class="pr-hero__sep" aria-hidden="true"> · </span>{{business.languages}}<!-- @endif --></p>
                 <!-- @endif -->
             </div>
         </div>

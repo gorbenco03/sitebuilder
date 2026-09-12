@@ -257,9 +257,17 @@ test('s72 professionals: editor-mode chip separator does not go orphan when a fi
         const langs = document.querySelector('[data-hb-edit="business.languages"]');
         modes.textContent = '';
         langs.textContent = '';
+        const meta = document.querySelector('.pr-hero__meta');
+        const sepEl = meta.querySelector('.pr-hero__sep');
         return {
             sepContent: getComputedStyle(langs, '::before').content,
-            metaText: document.querySelector('.pr-hero__meta').textContent,
+            // innerText, not textContent: the separator is real markup (it has
+            // to be — a published page has no [data-hb-edit] for CSS to hang
+            // off, see suite8-hero-chip-separator), and the editor hides it
+            // rather than deleting it. textContent reads hidden text too, so
+            // it would report an orphan dot that nobody can see.
+            metaText: meta.innerText,
+            sepDisplay: sepEl ? getComputedStyle(sepEl).display : '(no .pr-hero__sep)',
         };
     });
     await page.close();
@@ -268,7 +276,10 @@ test('s72 professionals: editor-mode chip separator does not go orphan when a fi
         after.sepContent === 'none' || after.sepContent === '""' || !/·/.test(after.sepContent),
         'separator pseudo-element still renders "·" after both chips were cleared live: ' + after.sepContent
     );
-    assert.ok(!/·/.test(after.metaText), 'orphan "·" left in .pr-hero__meta after clearing both fields live: ' + JSON.stringify(after.metaText));
+    assert.ok(!/·/.test(after.metaText),
+        'orphan "·" visible in .pr-hero__meta after clearing both fields live: ' + JSON.stringify(after.metaText));
+    assert.equal(after.sepDisplay, 'none',
+        'the separator span must be hidden once a neighbouring chip is empty: ' + after.sepDisplay);
 });
 
 test('s72 professionals: primary CTA corners are rounded (~10px), not the old sharp 4px', async (t) => {

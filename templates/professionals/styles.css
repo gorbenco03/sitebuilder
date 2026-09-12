@@ -402,18 +402,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
     color: var(--mute);
     letter-spacing: 0.02em;
 }
-/* m6: the " · " between modes/languages is generated here instead of being
-   static markup, and only when BOTH tokens are still non-empty. In the
-   builder's live editor (renderHtml(..., {editMode:true})) each token is
-   its own [data-hb-edit] span the owner can clear in place without a page
-   reload — a static separator between them would survive as an orphan "·"
-   once one side went empty. :empty and :has() both re-evaluate live as the
-   owner types, so the dot appears/disappears with the content instead. On
-   the plain published site these attributes never exist, so this rule never
-   matches there — harmless no-op, exactly matching the original @if guards
-   already baked into the static HTML at that point. */
-.pr-hero__meta:has([data-hb-edit="business.modes"]:not(:empty)) [data-hb-edit="business.languages"]:not(:empty)::before {
-    content: " · ";
+/* m6: the " · " between modes/languages is real markup (.pr-hero__sep in
+   template.html, inside the languages guard). This rule takes it away again
+   in the one case markup cannot handle: the builder's live editor, where
+   each token is its own [data-hb-edit] span the owner can clear in place
+   without a reload, leaving the dot stranded. :empty and :has() re-evaluate
+   as they type, so it disappears with the content.
+   The separator was ONLY this rule for a while, and that was wrong in a way
+   worth remembering: a published page carries no [data-hb-edit] attributes,
+   so the rule never matched there and the chips rendered as
+   "Online și la cabinetRomână, engleză". Editor-scoped CSS cannot stand in
+   for markup the visitor needs. Locked by
+   bot/test/suite8-hero-chip-separator.test.js, which measures rendered
+   output rather than the editor. */
+.pr-hero__meta:has([data-hb-edit="business.modes"]:empty) .pr-hero__sep,
+.pr-hero__meta:has([data-hb-edit="business.languages"]:empty) .pr-hero__sep {
+    display: none;
 }
 /* These density blocks sit AFTER the base rules on purpose.
    They used to sit before them, and at equal specificity the later rule wins:
