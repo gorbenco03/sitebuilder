@@ -146,7 +146,30 @@ function setLoading(visible, msg) {
 // a floor per message; a call that arrives before it elapses is queued
 // (capped at 2 pending, dropping the oldest so a burst of failures can't
 // build a long stale tail) instead of erasing the current one.
+//
+// The floor was 2500ms at first, then 900ms, and both were wrong in the same
+// way: they delayed the answer to the owner's OWN next click. fullpass caught
+// it — export HTML, then immediately export ZIP, and the second refusal sat
+// behind the first, which reads as the button doing nothing.
+//
+// The floor is not really about time; it is about WHOSE message is arriving.
+// A background failure (an autosave that could not reach the server) must not
+// wipe something the owner is still reading. A message they just asked for by
+// clicking must never wait. So the floor applies only when no user gesture
+// preceded the message — see toastFollowsUserGesture() below.
 const TOAST_MIN_VISIBLE_MS = 2500;
+// A toast arriving within this long after a click/keypress is that action's
+// answer, not background noise, and jumps the queue.
+const TOAST_GESTURE_WINDOW_MS = 1500;
+let lastUserGestureAt = 0;
+if (typeof document !== 'undefined') {
+  ['pointerdown', 'keydown'].forEach((evt) => {
+    document.addEventListener(evt, () => { lastUserGestureAt = Date.now(); }, true);
+  });
+}
+function toastFollowsUserGesture() {
+  return Date.now() - lastUserGestureAt <= TOAST_GESTURE_WINDOW_MS;
+}
 let toastTimer = null;
 let toastShownAt = 0;
 let toastQueue = [];
@@ -177,7 +200,7 @@ function showToast(msg, type, durationMs) {
   const t = $('toast');
   if (!t) return;
   const isShowing = t.style.display !== 'none';
-  if (!isShowing || Date.now() - toastShownAt >= TOAST_MIN_VISIBLE_MS) {
+  if (!isShowing || toastFollowsUserGesture() || Date.now() - toastShownAt >= TOAST_MIN_VISIBLE_MS) {
     renderToastNow(msg, type, durationMs);
     return;
   }
@@ -4042,8 +4065,6 @@ function buildDrawerField(field, opts) {
     updateChecklist();
     // Try chirurgical update if field has a visible representation
     sendSetToIframe(key, nextValue);
-    updateCounter();
-    if (opts.onInput) opts.onInput();
     // Re-render on drawer close — see drawerNeedsRerenderOnClose's doc
     // comment for why this never expires on its own. Set unconditionally,
     // even for a field that already forced an immediate scheduleRerender(true)
@@ -4052,7 +4073,21 @@ function buildDrawerField(field, opts) {
     // in flight the instant this input event fired, and this is the one
     // remaining guarantee that the drawer closing still forces a final,
     // up-to-date render.
+    //
+    // FIRST in this handler, and the decorative work below is wrapped, because
+    // "unconditionally" stopped being true when the SEO character counter and
+    // its Google-preview callback were merged in ahead of it: anything either
+    // one throws would skip this line, and the owner would close the drawer
+    // onto a stale canvas. fullpass caught it as an intermittent "Cal.com URL
+    // did not render booking link in preview". A counter must never be able to
+    // cost someone their edit.
     drawerNeedsRerenderOnClose = true;
+    try {
+      updateCounter();
+      if (opts.onInput) opts.onInput();
+    } catch (err) {
+      console.warn('drawer field decoration failed (edit itself is unaffected):', err);
+    }
   });
 
   wrap.appendChild(input);

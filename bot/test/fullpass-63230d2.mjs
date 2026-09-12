@@ -436,8 +436,14 @@ async function run() {
           await booking.blur();
           await page.waitForTimeout(1500);
           await closeDrawer();
-          await page.waitForTimeout(800);
+          // Wait for the RESULT, not for a stopwatch. Measured in isolation the
+          // link lands 30-45ms after the drawer closes, 6 runs out of 6 — but
+          // inside a 46-step pass, on whichever template ran before this one,
+          // a fixed 800ms occasionally expired first and reported a defect the
+          // product does not have. The contract is "closing the drawer shows
+          // the link", so poll for it and let the timeout be the failure.
           const bookingLink = page.frameLocator('#preview-iframe').locator('a.pr-booking-link, a[href*="cal.com/hidook-fullpass"]').first();
+          await bookingLink.waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
           const hasLink = await bookingLink.count();
           await shot('professionals-calcom-filled', {
             action: 'fill+close-drawer',
@@ -446,7 +452,28 @@ async function run() {
             ok: hasLink > 0,
           });
           if (!hasLink) {
-            defect('high', 'Cal.com URL did not render booking link in preview', 'no a.pr-booking-link after drawer close');
+            const diag = await page.evaluate(() => {
+              const cfgVal = (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
+                ? draft.config.appointment.bookingUrl : '(no draft.appointment)';
+              const nb = (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
+                ? draft.config.appointment.nativeBooking : null;
+              const fr = document.getElementById('preview-iframe');
+              let inner = '';
+              try { inner = fr && fr.contentDocument
+                ? (fr.contentDocument.querySelector('#appointment') || {}).outerHTML || '(no #appointment)'
+                : '(no contentDocument)'; } catch (e) { inner = 'ERR ' + e.message; }
+              return {
+                cfgBookingUrl: cfgVal,
+                cfgNativeBooking: nb,
+                fieldValue: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
+                pendingRender: typeof pendingRender !== 'undefined' ? pendingRender : null,
+                renderInFlight: typeof renderInFlight !== 'undefined' ? renderInFlight : null,
+                needsRerender: typeof drawerNeedsRerenderOnClose !== 'undefined' ? drawerNeedsRerenderOnClose : null,
+                apptHtmlHead: String(inner).slice(0, 400),
+              };
+            }).catch((e) => ({ diagError: String(e && e.message) }));
+            defect('high', 'Cal.com URL did not render booking link in preview',
+              'no a.pr-booking-link after drawer close; diag=' + JSON.stringify(diag));
           }
           const formStill = await page.frameLocator('#preview-iframe').locator('form, button:has-text("Trimite")').count();
           if (!hasLink && formStill) {
@@ -457,7 +484,11 @@ async function run() {
           await booking.blur();
           await page.waitForTimeout(800);
           await closeDrawer();
-          await page.waitForTimeout(800);
+          // Same reasoning as the fill case above: wait for the link to be
+          // GONE rather than for a stopwatch to run out, so a slow render on
+          // a loaded pass cannot be reported as a leak.
+          const clearedLink = page.frameLocator('#preview-iframe').locator('a[href*="cal.com/hidook-fullpass"]').first();
+          await clearedLink.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
           const leaked = await page.frameLocator('#preview-iframe').locator('a[href*="cal.com/hidook-fullpass"]').count();
           await shot('professionals-calcom-cleared', {
             action: 'fill-empty+close-drawer',

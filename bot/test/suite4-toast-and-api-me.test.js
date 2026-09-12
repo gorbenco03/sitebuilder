@@ -76,6 +76,13 @@ test('m20: a second toast does not instantly erase an unread one', async () => {
     await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
     await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
 
+    // The floor protects a message the owner is reading from being wiped by
+    // one they did NOT cause — a background autosave failure, say. It must
+    // not delay the answer to their own click, so it only applies outside
+    // the gesture window; the test below covers that half. Wait the window
+    // out here, since accepting the cookie banner above was a real click.
+    await page.waitForTimeout(1700);
+
     // A long duration on the first message proves this is the QUEUEING
     // decision at work, not just "the first message's own timer hadn't
     // fired yet" — if showToast() still overwrote instantly (the bug),
@@ -100,6 +107,7 @@ test('m20: the toast queue caps at 2 pending, dropping the oldest', async () => 
   await withApp(async (page, base) => {
     await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
     await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(1700);   // outside the gesture window — see above
 
     await page.evaluate(() => {
       hideToast();
@@ -150,5 +158,32 @@ test('m19 contract check: an invalid session cookie still gets a real 401 (uncha
   await withApp(async (page, base) => {
     const res = await fetch(base + '/api/me', { headers: { Cookie: 'hb_session=v1.garbage.garbage' } });
     assert.strictEqual(res.status, 401, 'a present-but-invalid session cookie must still be rejected with 401');
+  });
+});
+
+test('m20: a message the owner just asked for is never made to wait', async () => {
+  await withApp(async (page, base) => {
+    await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
+    await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(1700);
+
+    // An unread message is on screen with a long duration...
+    await page.evaluate(() => { hideToast(); showToast('Background message', null, 5000); });
+    await page.waitForTimeout(80);
+    assert.strictEqual(await page.locator('#toast').textContent(), 'Background message');
+
+    // ...and now the owner clicks something. The answer to THAT click must
+    // appear at once — waiting behind an older message reads as the button
+    // having done nothing, which is how fullpass caught this: export HTML,
+    // then immediately export ZIP, and the second refusal never arrived
+    // within the window a person would still be looking.
+    await page.mouse.click(5, 5);
+    await page.evaluate(() => { showToast('Answer to the click I just made'); });
+    await page.waitForTimeout(80);
+    assert.strictEqual(
+      await page.locator('#toast').textContent(),
+      'Answer to the click I just made',
+      'a toast following a user gesture must not be queued behind an older one'
+    );
   });
 });
