@@ -262,6 +262,33 @@
             <!-- @endif -->
         </section>
         <!-- @endif -->
+
+        <!-- @if instagram.showTeaser -->
+        <!-- Instagram teaser: editor-preview-only example section shown when
+             Instagram isn't connected — see build.js renderHtml()'s
+             cfg.instagram.showTeaser (never set outside editMode, so this
+             never reaches a published site) and bot/test/
+             suite10-instagram-teaser-editmode.test.js. This comment MUST
+             stay inside the @if/@endif pair: anything outside it is literal
+             HTML in every render, including a published site with no
+             opts.editMode — see wave7-sections-render-order.test.js's
+             "no content between sections" invariant, which this once broke. -->
+        <section class="hb-ig-teaser" data-hb-ig-teaser aria-label="Instagram — exemplu">
+            <p class="hb-ig-teaser__badge">Exemplu — așa va arăta pe site</p>
+            <ul class="hb-ig-teaser__grid">
+                <li><img src="images/cupcakes-1.jpg" alt="" loading="lazy" decoding="async"></li>
+                <li><img src="images/torturi-1.jpg" alt="" loading="lazy" decoding="async"></li>
+                <li><img src="images/catering-1.jpg" alt="" loading="lazy" decoding="async"></li>
+                <li><img src="images/placinte-1.jpg" alt="" loading="lazy" decoding="async"></li>
+                <li><img src="images/torturi-2.jpg" alt="" loading="lazy" decoding="async"></li>
+                <li><img src="images/catering-2.jpg" alt="" loading="lazy" decoding="async"></li>
+            </ul>
+            <div class="hb-ig-teaser__veil" hidden>
+                <p class="hb-ig-teaser__lead">Conectează Instagram ca să afișezi fluxul tău real.</p>
+                <button type="button" class="hb-ig-teaser__cta" data-hb-ig-connect>Conectează Instagram</button>
+            </div>
+        </section>
+        <!-- @endif -->
     </main>
 
     <!-- Footer -->

@@ -424,6 +424,49 @@ ul { list-style: none; }
     border-radius: var(--r-media); background: var(--snow);
 }
 
+/* Instagram teaser (editor-preview-only "example" section) — see
+   build.js renderHtml()'s cfg.instagram.showTeaser and this template's
+   <!-- @if instagram.showTeaser --> block. Never renders on a published
+   site (see bot/test/suite10-instagram-teaser-editmode.test.js).
+   builder/edit-overlay.js toggles .is-revealed and un-hides the veil on
+   interaction; the grid and the veil are stacked in the same grid cell so
+   the veil always reads centred over the photos, whatever their count. */
+.hb-ig-teaser {
+    display: grid; grid-template-columns: 1fr; row-gap: 1rem;
+    max-width: var(--max); margin: 0 auto; padding: clamp(2rem, 5vw, 3rem) 22px;
+}
+.hb-ig-teaser__badge {
+    grid-row: 1; grid-column: 1; justify-self: start;
+    font-family: var(--font-ui); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--link); background: var(--snow); border: 1px solid rgba(26, 20, 16, 0.14);
+    border-radius: var(--r-pill); padding: 0.4rem 0.9rem;
+}
+.hb-ig-teaser__grid {
+    grid-row: 2; grid-column: 1; list-style: none;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;
+    transition: filter 0.3s var(--ease-out);
+}
+.hb-ig-teaser__grid li { aspect-ratio: 1; border-radius: var(--r-media); overflow: hidden; background: var(--snow); }
+.hb-ig-teaser__grid img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hb-ig-teaser.is-revealed .hb-ig-teaser__grid { filter: blur(6px); }
+.hb-ig-teaser__veil {
+    grid-row: 2; grid-column: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1rem; text-align: center; padding: 1.5rem;
+    background: rgba(26, 20, 16, 0.55); border-radius: var(--r-media);
+}
+.hb-ig-teaser__veil[hidden] { display: none; }
+.hb-ig-teaser__lead { color: var(--snow); font-weight: 600; max-width: 26ch; }
+.hb-ig-teaser__cta {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    padding: 0.65rem 1.5rem; border: 0; border-radius: var(--r-pill);
+    background: var(--cta-bg); color: var(--cta-ink); font-weight: 600; font-size: 13px; cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+    .hb-ig-teaser__grid { transition: none; }
+}
+
 .pm-foot {
     background: var(--paper); color: var(--ink-mute); font-size: 12px;
     border-top: 1px solid rgba(26, 20, 16, 0.08);
