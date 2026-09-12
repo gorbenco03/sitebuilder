@@ -807,6 +807,59 @@ function getAllSchemaFields(schema) {
   return fields;
 }
 
+/**
+ * Schema-derived "which repeated groups of fields are real editable lists"
+ * payload, embedded into every rendered srcdoc so builder/edit-overlay.js
+ * (running inside the sandboxed iframe, no access to this scope) can decide
+ * add/remove eligibility from schema.json instead of a hardcoded name
+ * allowlist (S1-4 / B3 / B4 / M2 — see PLAN-QA-2026-09-12.md Suite 1).
+ *
+ * `lists`: { [schemaKey]: {min, max} } — every top-level `type:"list"` field,
+ *   skipping any explicitly marked `editable:false` (e.g. professionals'
+ *   appointment.types/appointment.weekly: structured booking config the
+ *   native calendar widget consumes — an id slug, an enum-ish mode, clock
+ *   times — not freeform content the generic empty-string item seeder
+ *   should ever hand a half-filled row).
+ * `nested`: [{parent, key}] — an itemShape sub-field of type "list" nested
+ *   inside another list's items (e.g. product-menu's `menu.en`/`menu.ro`
+ *   section list, each holding its own `items` dish array). These have no
+ *   schema key of their own — `menu.en.<N>.items` only exists once N items
+ *   of `menu.en` exist — so they are carried as a parent+key pattern instead
+ *   of a literal path.
+ */
+function computeListSchemaInfo(schema) {
+  const lists = {};
+  const nested = [];
+  getAllSchemaFields(schema).forEach(f => {
+    if (!f || f.type !== 'list' || f.editable === false) return;
+    lists[f.key] = {
+      min: typeof f.min === 'number' ? f.min : 0,
+      max: typeof f.max === 'number' ? f.max : null,
+    };
+    const shape = f.itemShape !== undefined ? f.itemShape : f.itemSchema;
+    if (shape && typeof shape === 'object') {
+      Object.keys(shape).forEach(k => {
+        if (shape[k] === 'list') nested.push({ parent: f.key, key: k });
+      });
+    }
+  });
+  return { lists, nested };
+}
+
+/** Embed computeListSchemaInfo() as an inert JSON <script> tag so it is
+ *  present in the DOM synchronously at parse time — edit-overlay.js reads it
+ *  during its very first mount(), with no postMessage round trip (which
+ *  would arrive too late for the initial render: the overlay wires up list
+ *  controls before the parent ever gets a 'ready' message to reply to). */
+function injectListSchema(html, schema) {
+  const info = computeListSchemaInfo(schema);
+  const json = JSON.stringify(info).replace(/</g, '\\u003c');
+  const tag = '<script type="application/json" id="hb-list-schema">' + json + '</script>';
+  const closeBodyAt = html.toLowerCase().lastIndexOf('</body>');
+  if (closeBodyAt === -1) return html + tag;
+  return html.slice(0, closeBodyAt) + tag + html.slice(closeBodyAt);
+}
+
 function getRequiredFields(schema) {
   return getAllSchemaFields(schema).filter(f => f.required !== false);
 }
@@ -2038,6 +2091,9 @@ function buildSrcdoc() {
     // Pass editMode:true so renderHtml emits data-hb-edit attributes and
     // renderPreview injects the modern edit-overlay.js (bundled in engine.js).
     let html = window.HidookEngine.renderPreview(tpl.files, draft.config, { editMode: true });
+    // Embed schema.json's type:"list" fields so the overlay can decide
+    // add/remove eligibility itself instead of a hardcoded name allowlist.
+    html = injectListSchema(html, tpl.schema);
     return html;
   } catch (e) {
     console.warn('buildSrcdoc error:', e);

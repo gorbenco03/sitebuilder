@@ -535,7 +535,8 @@
             "label": "text",
             "durationMin": "text",
             "mode": "text"
-          }
+          },
+          "editable": false
         },
         {
           "key": "appointment.weekly",
@@ -548,7 +549,8 @@
             "weekday": "text",
             "start": "text",
             "end": "text"
-          }
+          },
+          "editable": false
         },
         {
           "key": "appointment.confirmationText",

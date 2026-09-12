@@ -87,8 +87,55 @@
   /** debounce timers per path */
   var debounceTimers = {};
 
-  /** safe lists that support add/remove (conservative — only confirmed text lists) */
-  var SAFE_LIST_PATHS = ['services', 'menu', 'pricing', 'packages', 'steps', 'reviews'];
+  /**
+   * Schema-derived list metadata — { lists: {key: {min,max}}, nested:
+   * [{parent,key}] } — read synchronously from the
+   * <script type="application/json" id="hb-list-schema"> tag builder/app.js
+   * embeds into every rendered srcdoc (see buildSrcdoc()/injectListSchema
+   * there). This replaces the old hardcoded SAFE_LIST_PATHS name allowlist
+   * (['services','menu','pricing','packages','steps','reviews'] plus a
+   * couple of regex special-cases), which silently starved every list
+   * whose schema key didn't happen to match one of those six guessed words
+   * — faq.items, credentials.items and instagram.gallery (all end in
+   * ".items"/".gallery", not one of the six) never got add/remove controls
+   * no matter how many items schema.json's `min`/`max` allowed. The one
+   * fix here is: a list is safe to add/remove from iff schema.json says so.
+   *
+   * Read once at module load — this script itself is only ever a fresh
+   * inline injection per full re-render (a new srcdoc document), so there
+   * is exactly one schema payload per instance of this script, no matter
+   * how many times mount() itself might be re-entered.
+   */
+  function readListSchema() {
+    try {
+      var el = document.getElementById('hb-list-schema');
+      if (!el) return { lists: {}, nested: [] };
+      var parsed = JSON.parse(el.textContent || '{}') || {};
+      return {
+        lists: parsed.lists && typeof parsed.lists === 'object' ? parsed.lists : {},
+        nested: Array.isArray(parsed.nested) ? parsed.nested : []
+      };
+    } catch (e) {
+      return { lists: {}, nested: [] };
+    }
+  }
+  // NOT read eagerly here: this whole script runs as an inline <script> that
+  // builder/app.js inserts BEFORE the later <script id="hb-list-schema">
+  // JSON tag in the same document (see buildSrcdoc()/injectListSchema). A
+  // classic <script>'s top-level statements execute the instant the parser
+  // reaches them — mid-parse, well before a later sibling tag exists in the
+  // DOM — so reading it here would always see an empty document and quietly
+  // disable every list's add/remove controls (which is exactly what happened
+  // the first time this was written eagerly: every list broke, not just the
+  // three this fix targets). mount() below IS correctly deferred to
+  // DOMContentLoaded (or run only once the document is already interactive),
+  // by which point the entire document — including a JSON tag that comes
+  // later in the HTML — is guaranteed parsed. So the read happens there.
+  var listSchema = { lists: {}, nested: [] };
+
+  function escapeRegExpLiteral(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
 
   /* ─────────────────────────────────────────────────────────────────────────
      2. Inject overlay CSS
@@ -383,21 +430,34 @@
     return null;
   }
 
-  /** Is `path` a known "safe" list for add/remove? */
+  /**
+   * Is `rootPath` a schema-declared editable list? A top-level match is an
+   * exact lookup in listSchema.lists (schema.json's own key, e.g.
+   * "faq.items", "credentials.items", "instagram.gallery", "menu.en"). A
+   * nested match (an itemShape sub-field of type "list" living inside
+   * another list's items — e.g. product-menu's `menu.en.<N>.items` dish
+   * array nested inside the `menu.en` section list) has no schema key of
+   * its own, so it is matched by the parent+key pattern instead.
+   */
   function isSafeList(rootPath) {
     if (!rootPath) return false;
-    for (var i = 0; i < SAFE_LIST_PATHS.length; i++) {
-      if (rootPath === SAFE_LIST_PATHS[i] || rootPath.endsWith('.' + SAFE_LIST_PATHS[i])) {
-        return true;
-      }
+    if (Object.prototype.hasOwnProperty.call(listSchema.lists, rootPath)) return true;
+    for (var i = 0; i < listSchema.nested.length; i++) {
+      var n = listSchema.nested[i];
+      if (!n || !n.parent || !n.key) continue;
+      var re = new RegExp('^' + escapeRegExpLiteral(n.parent) + '\\.\\d+\\.' + escapeRegExpLiteral(n.key) + '$');
+      if (re.test(rootPath)) return true;
     }
-    // Restaurant menu: bilingual section lists + nested dish arrays
-    // e.g. menu.en, menu.ro, menu.en.0.items
-    if (/^menu\.(en|ro)$/.test(rootPath)) return true;
-    if (/^menu\.(en|ro)\.\d+\.items$/.test(rootPath)) return true;
-    // Gallery photo category blocks (restaurant)
-    if (rootPath === 'categories' || /\.categories$/.test(rootPath)) return true;
     return false;
+  }
+
+  /** min/max for a schema-declared list root, defaulting to "no limit". */
+  function listLimits(rootPath) {
+    var l = listSchema.lists[rootPath];
+    return {
+      min: l && typeof l.min === 'number' ? l.min : 0,
+      max: l && typeof l.max === 'number' ? l.max : null
+    };
   }
 
   /**
@@ -987,6 +1047,14 @@
 
     Object.keys(groups).forEach(function (root) {
       var indices = Object.keys(groups[root]).map(Number).sort(function (a, b) { return a - b; });
+      // Schema min/max (S1-4 step 4): a nested list (e.g. product-menu's
+      // menu.en.<N>.items) has no schema key of its own, so listLimits()
+      // returns the "no limit" default {min:0, max:null} for it — same as
+      // before this fix, since nothing enforced limits on it previously.
+      var limits = listLimits(root);
+      var count = indices.length;
+      var canRemove = count > limits.min;
+      var canAdd = limits.max === null || count < limits.max;
 
       /* Wrap each unique list item with the remove control */
       indices.forEach(function (idx) {
@@ -1010,6 +1078,14 @@
         if (container.classList.contains('hb-list-item')) return;
         container.classList.add('hb-list-item');
 
+        // Ensure container can host absolute children — done regardless of
+        // canRemove so the container's own layout never shifts depending on
+        // whether the remove button happens to be present.
+        var pos = window.getComputedStyle(container).position;
+        if (pos === 'static') container.style.position = 'relative';
+
+        if (!canRemove) return; // at schema min — no "×" on any item (S1-4 step 4)
+
         var removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.className = 'hb-remove-btn';
@@ -1020,12 +1096,10 @@
           toParent({ hb: 'list-remove', path: itemPath });
         });
 
-        // Ensure container can host absolute children.
-        var pos = window.getComputedStyle(container).position;
-        if (pos === 'static') container.style.position = 'relative';
-
         container.appendChild(removeBtn);
       });
+
+      if (!canAdd) return; // at schema max — no "+ Adaugă" (S1-4 step 4)
 
       /* Add "+" button after the last item container */
       // Find the last item container and insert the add button after it.
@@ -1312,6 +1386,7 @@
   ───────────────────────────────────────────────────────────────────────── */
 
   function mount() {
+    listSchema = readListSchema();
     try { setupTextFields(); }    catch (e) { console.warn('[hb-overlay] setupTextFields:', e); }
     try { setupImages(); }        catch (e) { console.warn('[hb-overlay] setupImages:', e); }
     try { setupListControls(); }  catch (e) { console.warn('[hb-overlay] setupListControls:', e); }

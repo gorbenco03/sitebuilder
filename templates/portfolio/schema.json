@@ -327,7 +327,8 @@
           "itemShape": {
             "day": "text",
             "hours": "text"
-          }
+          },
+          "editable": false
         }
       ]
     },
