@@ -157,18 +157,27 @@ check('A11Y-01 behavioral: Tab cycles 15x inside a 3-control modal without escap
 
 // ─── A11Y-02: Escape must close #modal-instagram too ──────────────────────
 
-check('A11Y-02: global Escape handler includes modal-instagram', () => {
+check('A11Y-02: the Escape handler closes whatever modal is open, by shape not by name', () => {
   const idx = appSrc.indexOf("e.key === 'Escape'");
   assert.ok(idx !== -1, 'global Escape handler exists');
-  const windowSrc = appSrc.slice(idx, idx + 400);
+  const windowSrc = appSrc.slice(idx, idx + 600);
+  // This originally demanded that 'modal-instagram' be present in a hardcoded
+  // id array. The array WAS the defect: it silently omitted whichever modal
+  // shipped last, and by the time Suite 4 measured it, Domeniu, Facturi and
+  // Șterge — the delete-a-site confirmation among them — had all been added
+  // without anyone remembering to update it. The array is gone; the handler
+  // scans the DOM for an open .modal-overlay, so a tenth modal inherits the
+  // behaviour without a decision. Asserting the shape, not the roll call.
   assert.ok(
-    /\[['"]modal-publish['"][^\]]*\]/.test(windowSrc),
-    'Escape handler still has its modal id array'
+    !/\[\s*['"]modal-[a-z-]+['"]\s*,/.test(windowSrc),
+    'the Escape handler must not carry a hardcoded modal id list again'
   );
   assert.ok(
-    /modal-instagram/.test(windowSrc),
-    "'modal-instagram' must be in the Escape-closes list alongside the other 5 modals"
+    /modal-overlay/.test(windowSrc),
+    'the Escape handler must find open modals by their .modal-overlay class'
   );
+  // The behavioural proof — every modal, real browser, Esc + backdrop + focus
+  // trap + 44px close button — is bot/test/suite4-modal-contract.test.js.
 });
 
 // ─── F4 + PORT-04: cascadeBusinessNameIdentity ────────────────────────────

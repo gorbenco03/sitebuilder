@@ -387,9 +387,15 @@ check('Instafidget draft slug collision matches Romanian publish copy', () => {
         /ensureDraftSiteForInstagram[\s\S]*?catch\s*\(error\)[\s\S]*?error\.status\s*===\s*409[\s\S]*?PUBLISH_SLUG_COLLISION_MESSAGE/.test(appSrc),
         'Instafidget draft creation does not map a 409 to the publish collision copy'
     );
+    // The publish form now prefers the server's own message and keeps the
+    // shared copy as the fallback: /api/slug-check distinguishes "taken by
+    // another site" from "reserved by the platform", and flattening both to
+    // one string told an owner to "try another address" when no other address
+    // would have helped either (m10). Both strings are Romanian — the server
+    // side of that is asserted two lines down.
     assert.ok(
-        appSrc.includes('errorEl.textContent = PUBLISH_SLUG_COLLISION_MESSAGE'),
-        'publish form does not use the shared collision copy'
+        /errorEl\.textContent\s*=\s*data\.error\s*\|\|\s*PUBLISH_SLUG_COLLISION_MESSAGE/.test(appSrc),
+        'publish form must fall back to the shared collision copy when the server sends no message'
     );
     assert.ok(serverSrc.includes(`error: '${collisionCopy}'`), 'publish API collision copy differs from the builder');
 });

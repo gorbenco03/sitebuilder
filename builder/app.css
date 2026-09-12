@@ -755,6 +755,35 @@ body.details-drawer-open .editor-tpl-name {
 }
 .recovery-banner-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 
+/* On a phone the demo banner is advice, and the canvas is the work. Giving its
+   controls the 44px touch floor (Suite 4, m16) pushed the banner from 164px to
+   199px on a 390x844 screen — a quarter of the editor spent explaining it —
+   and the 35px came straight out of the preview, which shrank until the
+   generated site's own cookie banner started covering the hero copy the owner
+   was trying to edit (advocate-eed3ca0-repair caught exactly that). The
+   buttons keep their 44px; the banner gives back the space around them. */
+@media (max-width: 640px) {
+  .demo-content-banner {
+    position: relative;
+    padding: 0.4rem 2.9rem 0.4rem 0.6rem;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+  /* The dismiss "×" was taking a whole 52px row of its own once it grew to
+     44px — a corner control laid out as a paragraph. Pinning it to the corner
+     it belongs in gives that row back to the canvas, and it keeps its full
+     44x44 target. */
+  .demo-content-banner-dismiss {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.5rem;
+    min-width: 44px;
+    padding: 0.4rem;
+  }
+}
+
+
 /* ---------- Save status indicator (Wave 9 — visible saving/saved/failed) ----------
    Same pill language as .checklist-indicator right next to it: calm by
    default (hidden until the first edit), colour is the only thing that

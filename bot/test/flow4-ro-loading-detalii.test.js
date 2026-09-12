@@ -563,7 +563,18 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'labels.menuLang',
     'appointment.bookingUrl',
     'appointment.nativeBooking',
+    // desserdirina's bilingual menu has always been RENDERED by its
+    // template.html; it was simply never declared. The old list-control
+    // allowlist matched it by path shape, so nobody noticed until controls
+    // became schema-driven and the dish "×" disappeared. Declaring it is the
+    // fix, not a new feature — see bf77cbd.
+    'menu.title',
+    'menu.en',
+    'menu.ro',
   ]);
+
+  // Same reason: declaring desserdirina's menu adds the section that holds it.
+  const ALLOWED_ADDED_SECTIONS = { 'templates/desserdirina/schema.json': ['menu'] };
 
   function fieldMap(schema) {
     const map = Object.create(null);
@@ -578,9 +589,14 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
   for (const rel of SCHEMAS) {
     const parent = dropRemovedSocialImage(parseSchema(parentBlob(rel)));
     const head = dropRemovedSocialImage(parseSchema(headRead(rel)));
-    const pIds = (parent.sections || []).map((s) => s.id).join(',');
-    const hIds = (head.sections || []).map((s) => s.id).join(',');
-    assert.strictEqual(hIds, pIds, rel + ' section ids stable');
+    const pIds = (parent.sections || []).map((s) => s.id);
+    const hIds = (head.sections || []).map((s) => s.id);
+    const allowedNew = ALLOWED_ADDED_SECTIONS[rel] || [];
+    assert.strictEqual(
+      hIds.filter((id) => !allowedNew.includes(id)).join(','),
+      pIds.join(','),
+      rel + ' section ids stable (aside from documented additions)'
+    );
 
     const pMap = fieldMap(parent);
     const hMap = fieldMap(head);
