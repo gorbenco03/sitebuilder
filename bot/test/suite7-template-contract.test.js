@@ -20,16 +20,51 @@
  *  - Contrast (#1) samples a REAL pixel from a full-page screenshot, not
  *    getComputedStyle() background — the only way to see through a photo,
  *    gradient, backdrop-filter, or a themed accent behind translucent text.
- *    For an element with its OWN opaque fill (a button/pill), the sample
- *    point is INSET from the left edge at the element's VERTICAL CENTER —
- *    for any border-radius (including a fully-rounded 999px pill) the
- *    vertical-center row is always flat/unrounded, so this can never land on
- *    the anti-aliased corner blend the way a corner or top-edge sample
- *    would. For an element with NO own fill (plain text on a section
- *    background), the sample point is a few px ABOVE the text box at
- *    horizontal-center — outside the glyph ink, inside the same backdrop
- *    (this is the same technique already proven in wave9/wave10's contrast
- *    oracles for this repo's templates).
+ *    S8-A (2026-09-12) found the "sample near the text but not on it" guess
+ *    this used to rely on still landed ON the glyphs for a common, ordinary
+ *    shape: a short pill CTA whose label fills most of the button (padding
+ *    much smaller than the fraction-of-width the old sample points assumed),
+ *    and for display headings whose glyph strokes are wide relative to their
+ *    line box. That produced literal white-on-white/self-vs-self readings —
+ *    `.hero-cta` and `.pm-hero__cta--fill` "failing" at 1:1 against their own
+ *    label, `.pf-price__row` borders reading against themselves — which is
+ *    not a threshold problem, it is sampling the wrong pixel. The fix is not
+ *    a smarter guess about where the glyphs AREN'T, it's removing the glyphs
+ *    from the question entirely: every matched text element gets a
+ *    `color:transparent` (+ `text-shadow:none`) override applied BEFORE the
+ *    one full-page screenshot is taken, then removed right after — same
+ *    principle `waveB-hero-contrast-any-photo.test.js` already uses
+ *    (`visibility:hidden` + re-screenshot), adapted to run once for every
+ *    matched element instead of once per element, so the whole contract still
+ *    costs one screenshot per page load. With the ink gone, sampling is no
+ *    longer a guessing game:
+ *      - An element with its OWN opaque fill (a button/pill) is sampled on a
+ *        small grid across its VERTICAL-CENTER row, inset from the edges —
+ *        the vertical-center row is flat for any border-radius (including a
+ *        999px pill), so it can never land on the rounded-corner blend
+ *        either. Since the label is invisible for this screenshot, every
+ *        point on that row is the button's real fill.
+ *      - An element with NO own fill (plain text on a section/photo/gradient
+ *        background) is sampled on a grid INSIDE its own former glyph box —
+ *        exactly where the letters were — which is strictly more accurate
+ *        than sampling beside the text (a gradient or photo can vary within
+ *        a few px) and needs no special-casing for what sits above/below.
+ *  - Border/divider contrast (#2) has the same "expected pixel, wrong pixel"
+ *    failure mode for a different reason: a border on a box with a
+ *    non-integer height (common with rem/flex sizing) can paint one device
+ *    pixel off from `getBoundingClientRect()`'s reported edge — confirmed by
+ *    sampling a vertical window around `.pf-price__row`'s border, where the
+ *    ink was consistently 1px above the naive `bottom - borderWidth/2`
+ *    computation on some rows and exactly on it on others, an off-by-one that
+ *    tracks the sub-pixel remainder, not anything about the border itself.
+ *    The fix: search a small window of candidate rows (and a few x positions,
+ *    in case a sibling element interrupts the line at one spot) around the
+ *    expected edge and keep whichever candidate has the strongest contrast
+ *    against a background sample taken safely inside the box (away from any
+ *    edge) — that is the actual ink wherever the renderer put it, not a
+ *    manufactured pass: a genuinely low-contrast border still measures low
+ *    contrast, because none of the candidates near it would differ from the
+ *    background either.
  *  - `prefers-reduced-motion: reduce` is emulated on every page load. All 5
  *    templates already ship a `@media (prefers-reduced-motion: reduce)` rule
  *    that forces `.fade-in-section` (and friends) to their final
@@ -132,33 +167,34 @@ const TEMPLATES = ['product-menu', 'local-service', 'portfolio', 'professionals'
 // Per contract §"Raportează pe fiecare eșec": templates NOT listed here must
 // be fully green. A template listed here still RUNS every check and prints
 // every failure (console.warn), it just does not fail this test — remove
-// the entry once your sub-task lands.
-// Every entry names what is broken and who owns it. An entry with no owner is
-// just a failing test with the alarm switched off, so there must never be one.
+// the entry once your sub-task lands. Every entry names what is broken and
+// who owns it. An entry with no owner is just a failing test with the alarm
+// switched off, so there must never be one.
 //
-// The five per-template fixes have all landed and this contract is deliberately
-// stricter than any of them: it re-renders each template under colours the
-// OWNER can actually pick, not just the shipped preset. Doing that surfaced one
-// systemic defect and one methodology gap, both assigned:
+// KNOWN_RED is per template + property, not per template: everything NOT
+// listed here is enforced on all five today.
 //
-//   · Text and dividers drawn on the accent colour fall under AA once the owner
-//     picks a saturated theme — professionals' appointment section reads 2.4:1
-//     on Portocaliu. portfolio's price list had the same shape and was fixed by
-//     giving the block its own translucent panel instead of trusting the
-//     owner's colour; that is the pattern the rest should follow. Owner: S8-A.
-//   · The contrast probe assumes a flat background. Over a photo or gradient it
-//     walks up to an ancestor and reads white-on-white (1:1) — visible in the
-//     .hero-cta and .pf-price__row rows below, which are not real failures.
-//     A gate that cries wolf teaches people to ignore it, so the sampler has to
-//     read the painted pixel before these can be enforced. Owner: S8-A.
-//
-// KNOWN_RED is per template + property, not per template: everything NOT listed
-// here is enforced on all five today.
-const KNOWN_RED = {
-    professionals: 'S8-A: appointment-section copy on a saturated accent (2.4:1 measured on Portocaliu); second footer pair pr-copy--sm vs hb-legal-links still 8.39px apart',
-    portfolio: 'S8-A: contrast sampler reads white-on-white over the hero photo and reports .pf-price__row borders against themselves — measurement, not defect',
-    'product-menu': 'S8-A: .pm-hero__cta--fill measured pre-paint, before the ink-picking script the CTA fix relies on has run',
-};
+// This contract is deliberately stricter than the five per-template S7
+// fixes: it re-renders each template under colours the OWNER can actually
+// pick from the theme popover, not just the shipped preset. Doing that
+// surfaced one systemic defect and one methodology gap, both since fixed —
+// S8-A (2026-09-12) cleared every entry that used to live here:
+//   - portfolio / product-menu were both measurement artifacts (the old
+//     sampler landing on the label glyph of a short pill CTA and reading
+//     white-on-white, and .pf-price__row's border sampled 1 device pixel
+//     off its true edge) — see the method notes above. Fixed the sampler,
+//     both templates are genuinely green, nothing was suppressed.
+//   - professionals had two real defects: appointment-section copy read as
+//     low as 2.4:1 on a saturated accent because .pr-sec--book's backdrop
+//     aliased the owner-adjustable --color-primary-dark instead of a
+//     guaranteed-dark neutral (fixed with --pr-book-bg, set pre-paint from
+//     a fixed 40%-toward-black mix — template.html/styles.css), and the
+//     footer's second unaligned pair was bot/site-legal.js's shared
+//     `.hb-legal-links { margin-top: 0.65rem }` (meant for a stacked
+//     context) leaking into this template's flex footer row (cancelled
+//     locally with a more specific selector, shared file untouched).
+// A template NOT listed here must be fully green — today that is 5/5.
+const KNOWN_RED = {};
 
 // ---------------------------------------------------------------------------
 // Per-template selector tables.
@@ -235,10 +271,85 @@ function buildThemedConfig(basePreset, theme) {
 }
 
 // ---------------------------------------------------------------------------
-// In-page measurement — one screenshot + one evaluate() per page load.
+// In-page measurement — one screenshot + a handful of evaluate() calls per
+// page load. Text contrast is measured in three passes so the glyphs
+// themselves are never in the picture the sampler reads:
+//   1. prepareAndHideInk  — BEFORE the screenshot: record each candidate
+//      element's colour/rect/font metadata, then paint its own text
+//      transparent (a scoped class, not inline style, so restoring is exact).
+//   2. (page.screenshot)  — the one full-page capture, now ink-free.
+//   3. restoreInk         — put the glyphs back immediately.
+//   4. computeChecks      — decode the screenshot and do every measurement:
+//      text contrast (against prepared metadata), border contrast, footer
+//      alignment, social icons, cookie overlap.
 // ---------------------------------------------------------------------------
-async function runPageChecks(page, imgB64, textSelectors, borderSelectors) {
-    return page.evaluate(async ({ imgB64, textSelectors, borderSelectors }) => {
+async function prepareAndHideInk(page, textSelectors) {
+    return page.evaluate((textSelectors) => {
+        if (!document.getElementById('hb-s8a-style')) {
+            const style = document.createElement('style');
+            style.id = 'hb-s8a-style';
+            // text-shadow:none too — a couple of hero headings use a soft
+            // glow behind the glyphs (see e.g. desserdirina's .hero-wordmark)
+            // which color:transparent alone would leave behind, painting a
+            // faint halo where the ink used to be instead of pure backdrop.
+            style.textContent = '.hb-s8a-hide-ink{color:transparent!important;text-shadow:none!important;}';
+            document.head.appendChild(style);
+        }
+        const prepared = [];
+        for (const sel of textSelectors) {
+            let els;
+            try { els = document.querySelectorAll(sel); } catch (e) { continue; }
+            els.forEach((el, idx) => {
+                const r = el.getBoundingClientRect();
+                if (r.width < 1 || r.height < 1) return;
+                const cs = getComputedStyle(el);
+                if (cs.visibility === 'hidden' || cs.display === 'none' || parseFloat(cs.opacity) === 0) return;
+                const text = (el.textContent || '').trim();
+                if (!text) return;
+                if (!cs.color) return;
+                // A parent like `.hb-built-by` ("Build by <a>hidook.tech</a>
+                // powered by <a>hidook.agency</a>") reports ITS OWN colour
+                // via getComputedStyle, but its bounding box also contains
+                // two child <a> runs with their own colour/underline. Prefer
+                // the element's OWN first direct text node's rect (skips
+                // element children entirely) when it has one; only fall
+                // back to the whole element's box when there is no text
+                // directly inside it (e.g. the element IS the link/button).
+                let tr = r;
+                for (const node of el.childNodes) {
+                    if (node.nodeType === 3 && node.textContent.trim()) {
+                        const range = document.createRange();
+                        range.selectNodeContents(node);
+                        const rects = range.getClientRects();
+                        if (rects.length && rects[0].width > 0 && rects[0].height > 0) tr = rects[0];
+                        break;
+                    }
+                }
+                const fontPx = parseFloat(cs.fontSize);
+                let weight = parseInt(cs.fontWeight, 10);
+                if (Number.isNaN(weight)) weight = cs.fontWeight === 'bold' ? 700 : 400;
+                el.classList.add('hb-s8a-hide-ink');
+                prepared.push({
+                    sel, idx, text: text.slice(0, 40),
+                    rect: { left: r.left, top: r.top, width: r.width, height: r.height },
+                    tr: { left: tr.left, top: tr.top, width: tr.width, height: tr.height },
+                    fg: cs.color, bgOwn: cs.backgroundColor,
+                    fontPx, weight,
+                });
+            });
+        }
+        return prepared;
+    }, textSelectors);
+}
+
+async function restoreInk(page) {
+    await page.evaluate(() => {
+        document.querySelectorAll('.hb-s8a-hide-ink').forEach((el) => el.classList.remove('hb-s8a-hide-ink'));
+    });
+}
+
+async function computeChecks(page, imgB64, prepared, borderSelectors) {
+    return page.evaluate(async ({ imgB64, prepared, borderSelectors }) => {
         function relLum([r, g, b]) {
             const c = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
             return 0.2126 * c(r) + 0.7152 * c(g) + 0.0722 * c(b);
@@ -287,39 +398,21 @@ async function runPageChecks(page, imgB64, textSelectors, borderSelectors) {
             const d = ctx.getImageData(x, y, 1, 1).data;
             return [d[0], d[1], d[2]];
         }
-        // A single (x, y) guess near a text box's edge repeatedly turned out
-        // to still land inside a glyph — a "g" descender, an underline
-        // stroke, or (worst) a letter-spaced ALL-CAPS label where there is
-        // no single row that clears every glyph at once. The robust fix
-        // isn't a smarter single point, it's not depending on one point:
-        // sample a small GRID (several x-positions the text is likely to
-        // have gaps at — letter/word spacing — crossed with a few depths
-        // off the edge) and take whichever exact-ish colour comes up most
-        // often. Background pixels vastly outnumber ink pixels in any
-        // normal line of text at this scale, so the majority colour in a
-        // ~15-point grid is reliably the true backdrop, not a stroke.
+        // The glyphs are gone by the time this runs (prepareAndHideInk
+        // painted them transparent before the screenshot), so this grid no
+        // longer has to dodge ink — it only has to survive anti-aliasing at
+        // a rounded corner or a translucent-panel seam. Kept as a grid+vote
+        // (not a single point) for that residual edge-blend safety margin.
         function dominantColor(xs, ys) {
             const counts = new Map();
-            let bestKey = null, bestCount = -1, bestColor = null;
+            let bestCount = -1, bestColor = null;
             for (const y of ys) {
                 for (const x of xs) {
                     const c = samplePixel(x, y);
-                    // Bucket near-identical anti-aliasing variants together.
-                    // 24, not a finer step: a point 1px off a glyph can pick
-                    // up a faint sub-pixel-rendering halo even when it is
-                    // NOT on the glyph's main body — e.g. genuine void
-                    // background samples of (17,23,30)/(15,19,25)/(16,21,27)
-                    // around a true (15,23,32), which an 8-wide bucket
-                    // scattered into separate buckets and let a smaller,
-                    // more-contaminated cluster "win" on count instead. 24
-                    // still stays far under the 100+ point gap between any
-                    // two genuinely different colours this file samples
-                    // (void vs. white, paper vs. ink, etc.), so it cannot
-                    // merge two real, different backgrounds together.
                     const key = c.map((v) => Math.round(v / 24) * 24).join(',');
                     const count = (counts.get(key) || 0) + 1;
                     counts.set(key, count);
-                    if (count > bestCount) { bestCount = count; bestKey = key; bestColor = c; }
+                    if (count > bestCount) { bestCount = count; bestColor = c; }
                 }
             }
             return bestColor;
@@ -334,105 +427,55 @@ async function runPageChecks(page, imgB64, textSelectors, borderSelectors) {
             cookieOverlap: null,
         };
 
-        // #1 text contrast
-        for (const sel of textSelectors) {
-            let els;
-            try { els = document.querySelectorAll(sel); } catch (e) { continue; }
-            els.forEach((el, idx) => {
-                const r = el.getBoundingClientRect();
-                if (r.width < 1 || r.height < 1) return;
-                const cs = getComputedStyle(el);
-                if (cs.visibility === 'hidden' || cs.display === 'none' || parseFloat(cs.opacity) === 0) return;
-                const text = (el.textContent || '').trim();
-                if (!text) return;
-                const fg = parseRgb(cs.color);
-                if (!fg || fg.a === 0) return;
-                const bgOwn = parseRgb(cs.backgroundColor);
-                // A parent like `.hb-built-by` ("Build by <a>hidook.tech</a>
-                // powered by <a>hidook.agency</a>") reports ITS OWN colour
-                // via getComputedStyle, but its bounding box also contains
-                // two child <a> runs with their own colour/underline. When
-                // the box is a single line (wide viewport), the box's
-                // horizontal-centre sample point can land squarely inside
-                // one of those child links instead of the parent's own
-                // text — sampling the link's underline, not the ink-on-
-                // paper text this selector actually meant to check. Prefer
-                // the element's OWN first direct text node's rect (skips
-                // element children entirely) when it has one; only fall
-                // back to the whole element's box when there is no text
-                // directly inside it (e.g. the element IS the link/button).
-                let tr = r;
-                for (const node of el.childNodes) {
-                    if (node.nodeType === 3 && node.textContent.trim()) {
-                        const range = document.createRange();
-                        range.selectNodeContents(node);
-                        const rects = range.getClientRects();
-                        if (rects.length && rects[0].width > 0 && rects[0].height > 0) tr = rects[0];
-                        break;
-                    }
-                }
-                let bg;
-                if (bgOwn && bgOwn.a > 0.05) {
-                    // Own opaque fill (button/pill/badge) — vertical-center
-                    // row, inset from the left/right edges, which for ANY
-                    // border-radius (including a full pill) is always
-                    // outside the curve. A grid across that row (not one
-                    // point) so a short, centred label inside a wide pill
-                    // can't put the single sample on the glyph itself.
-                    const xs = [0.15, 0.3, 0.5, 0.7, 0.85].map((f) => r.left + r.width * f);
-                    bg = dominantColor(xs, [r.top + r.height / 2]);
-                } else {
-                    // Plain text with no fill of its own (inherits whatever
-                    // is painted behind it) — sample a GRID inside its own
-                    // box: several x-positions (word/letter gaps) crossed
-                    // with a few depths off whichever edge (top or bottom)
-                    // the leading is more likely to be clear.
-                    //
-                    // Default to the TOP edge: measured directly against
-                    // real cases this file's own development hit, the
-                    // leading ABOVE a line (before the ascender) was
-                    // reliably clean, while the space below it was not —
-                    // a descender ("g", "ă"-adjacent strokes) can occupy
-                    // most of a tight line-height, and an underlined link's
-                    // decoration sits right at the bottom too. Only
-                    // exception: a caption whose PREVIOUS sibling is an
-                    // <img> (a photo directly above it) — there the top
-                    // edge sits against the photo's own pixels rather than
-                    // the caption's real backdrop, so use the bottom edge
-                    // instead, which sits inside the caption's own padded
-                    // card background.
-                    //
-                    // A single x-position (even off a "safe" edge) still
-                    // failed for a letter-spaced ALL-CAPS label and a
-                    // multi-glyph diacritic string — every row had SOME
-                    // glyph ink somewhere along it, just not at the one x
-                    // this file happened to guess. dominantColor's grid is
-                    // what actually fixed those, not the edge choice alone.
-                    const xs = [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => tr.left + tr.width * f);
-                    const prevIsMedia = !!(el.previousElementSibling && /^(IMG|PICTURE|VIDEO)$/.test(el.previousElementSibling.tagName));
-                    const ys = [1, 2, 3].map((d) => prevIsMedia
-                        ? Math.max(tr.top + 1, tr.bottom - d)
-                        : Math.min(tr.bottom - 1, tr.top + d));
-                    bg = dominantColor(xs, ys);
-                }
-                const rt = ratio(composite(fg, bg), bg);
-                const fontPx = parseFloat(cs.fontSize);
-                let weight = parseInt(cs.fontWeight, 10);
-                if (Number.isNaN(weight)) weight = cs.fontWeight === 'bold' ? 700 : 400;
-                const isLarge = fontPx >= 24 || (fontPx >= 18.66 && weight >= 700);
-                const bar = isLarge ? 3.0 : 4.5;
-                if (rt < bar) {
-                    results.textFailures.push({
-                        selector: sel, index: idx, text: text.slice(0, 40),
-                        ratio: Math.round(rt * 100) / 100, bar,
-                        fontPx: Math.round(fontPx), weight,
-                        fg: [Math.round(fg.r), Math.round(fg.g), Math.round(fg.b)], bg,
-                    });
-                }
-            });
+        // #1 text contrast — ink already hidden for this screenshot.
+        for (const item of prepared) {
+            const fg = parseRgb(item.fg);
+            if (!fg || fg.a === 0) continue;
+            const bgOwn = parseRgb(item.bgOwn);
+            const r = item.rect, tr = item.tr;
+            let bg;
+            if (bgOwn && bgOwn.a > 0.05) {
+                // Own opaque fill (button/pill/badge) — vertical-center row,
+                // inset from the left/right edges, which for ANY
+                // border-radius (including a full pill) is always outside
+                // the curve.
+                const xs = [0.15, 0.3, 0.5, 0.7, 0.85].map((f) => r.left + r.width * f);
+                bg = dominantColor(xs, [r.top + r.height / 2]);
+            } else {
+                // Plain text with no fill of its own — sample INSIDE its own
+                // former glyph box (a grid of x/y fractions across exactly
+                // where the letters were), the real backdrop the reader sees
+                // behind that text, not a nearby guess.
+                const xs = [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => tr.left + tr.width * f);
+                const ys = [0.2, 0.5, 0.8].map((f) => tr.top + tr.height * f);
+                bg = dominantColor(xs, ys);
+            }
+            const rt = ratio(composite(fg, bg), bg);
+            const fontPx = item.fontPx, weight = item.weight;
+            const isLarge = fontPx >= 24 || (fontPx >= 18.66 && weight >= 700);
+            const bar = isLarge ? 3.0 : 4.5;
+            if (rt < bar) {
+                results.textFailures.push({
+                    selector: item.sel, index: item.idx, text: item.text,
+                    ratio: Math.round(rt * 100) / 100, bar,
+                    fontPx: Math.round(fontPx), weight,
+                    fg: [Math.round(fg.r), Math.round(fg.g), Math.round(fg.b)], bg,
+                });
+            }
         }
 
-        // #2 informational border/divider contrast
+        // #2 informational border/divider contrast. A 1px border on a box
+        // with a non-integer height/position can paint one device pixel off
+        // from getBoundingClientRect()'s edge (confirmed on portfolio's
+        // .pf-price__row: the ink sat consistently 1px above the naive
+        // `bottom - borderWidth/2` pixel on some rows, exactly on it on
+        // others — an off-by-one tracking the sub-pixel remainder, not the
+        // border itself). Search a small window of candidate rows (and a
+        // few x offsets, in case a sibling interrupts the line at one spot)
+        // and keep whichever candidate contrasts most against a background
+        // sample taken safely inside the box. A genuinely low-contrast
+        // border still measures low: nothing in that window would differ
+        // from the background either.
         for (const sel of borderSelectors) {
             let els;
             try { els = document.querySelectorAll(sel); } catch (e) { continue; }
@@ -444,17 +487,23 @@ async function runPageChecks(page, imgB64, textSelectors, borderSelectors) {
                 if (bw < 1) return;
                 const borderColor = parseRgb(cs.borderBottomColor);
                 if (!borderColor) return;
-                const sampleX = r.left + r.width / 2;
-                const borderY = r.bottom - bw / 2;
-                const adjacentY = r.bottom + 3;
-                const borderPixel = samplePixel(sampleX, borderY);
-                const adjacentPixel = samplePixel(sampleX, adjacentY);
-                const rt = ratio(borderPixel, adjacentPixel);
-                if (rt < 3.0) {
+                const xs = [0.2, 0.5, 0.8].map((f) => r.left + r.width * f);
+                const adjacentY = Math.min(r.bottom - 2, r.top + Math.max(4, r.height * 0.3));
+                const adjacent = dominantColor(xs, [adjacentY]);
+                let borderPixel = null, bestRatio = -1;
+                for (let dy = -3; dy <= 1; dy++) {
+                    const y = r.bottom - bw / 2 + dy;
+                    for (const x of xs) {
+                        const c = samplePixel(x, y);
+                        const rt = ratio(c, adjacent);
+                        if (rt > bestRatio) { bestRatio = rt; borderPixel = c; }
+                    }
+                }
+                if (bestRatio < 3.0) {
                     results.borderFailures.push({
                         selector: sel, index: idx,
-                        ratio: Math.round(rt * 100) / 100,
-                        border: borderPixel, adjacent: adjacentPixel,
+                        ratio: Math.round(bestRatio * 100) / 100,
+                        border: borderPixel, adjacent,
                     });
                 }
             });
@@ -571,7 +620,7 @@ async function runPageChecks(page, imgB64, textSelectors, borderSelectors) {
         }
 
         return results;
-    }, { imgB64, textSelectors, borderSelectors });
+    }, { imgB64, prepared, borderSelectors });
 }
 
 async function testOneCombo(browser, tpl, cfg, vp) {
@@ -604,8 +653,10 @@ async function testOneCombo(browser, tpl, cfg, vp) {
         await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
         await page.waitForTimeout(200);
 
+        const prepared = await prepareAndHideInk(page, TEXT_CASES[tpl] || []);
         const shot = await page.screenshot({ fullPage: true });
-        const checks = await runPageChecks(page, shot.toString('base64'), TEXT_CASES[tpl] || [], BORDER_CASES[tpl] || []);
+        await restoreInk(page);
+        const checks = await computeChecks(page, shot.toString('base64'), prepared, BORDER_CASES[tpl] || []);
         result = { checks, consoleErrors, pageErrors, requestFailures };
     } finally {
         await context.close();

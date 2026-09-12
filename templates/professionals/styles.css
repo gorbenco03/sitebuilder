@@ -25,6 +25,11 @@
     --line: rgba(20, 18, 15, 0.12);
     --cloud: #E7E9E5;
     --snow: #FBF9F5;
+    /* Fallback only (no-JS / unrecognised colour): the pre-paint script in
+       template.html overwrites this with --color-primary-dark mixed 40%
+       toward black before first paint, on every real page load. See the
+       comment on .pr-sec--book. */
+    --pr-book-bg: var(--ink);
     --font: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
     --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -520,8 +525,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Sections */
 .pr-sec { padding: 4.5rem 0; }
 .pr-sec--alt { background: color-mix(in srgb, var(--cloud) 28%, var(--paper)); }
+/* Fixed-dark backdrop for the cream text below, independent of how light
+   --color-primary-dark (owner-chosen) turns out to be — see --pr-book-bg. */
 .pr-sec--book {
-    background: var(--ink);
+    background: var(--pr-book-bg);
     color: var(--paper);
 }
 .pr-sec--book .pr-kicker,
@@ -559,7 +566,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
     background: rgba(196, 165, 116, 0.12);
 }
 .pr-sec--book .pr-type__label { color: var(--paper); }
-.pr-sec--book .pr-type__meta { color: rgba(243, 239, 232, 0.55); }
+/* 0.55 measured 4.3:1 on Portocaliu for the pre-selected (:checked) option,
+   whose card stacks the brass tint above on top of .pr-sec--book's own
+   backdrop — one translucent layer more than the other .pr-type text here.
+   0.62 matches the alpha already established at the top of this file for
+   the same shape of problem in light sections (see --mute). */
+.pr-sec--book .pr-type__meta { color: rgba(243, 239, 232, 0.62); }
 .pr-sec--book .pr-btn--primary {
     background: var(--brass);
     border-color: var(--brass);
@@ -991,6 +1003,15 @@ a.pr-contact__row:hover .pr-contact__icon { background: var(--accent); }
     flex-wrap: wrap;
     gap: 0.25rem 1.25rem;
 }
+/* bot/site-legal.js ships a shared `.hb-legal-links { margin: 0.65rem 0 0; }`
+   (cookie-banner.css, loaded after this file, same specificity — it wins on
+   any property only it declares). That margin-top assumes the block sits
+   stacked BELOW other footer text; here it is a sibling in the same flex
+   row as the copyright line, so it pushed this nav 10.4px below the row's
+   other items — the second unaligned footer pair (m13 continued). A more
+   specific selector cancels just the margin without touching the shared
+   file the other four templates also use. */
+.pr-foot__inner .hb-legal-links { margin-top: 0; }
 .hb-legal-links a {
     display: inline-flex;
     align-items: center;
