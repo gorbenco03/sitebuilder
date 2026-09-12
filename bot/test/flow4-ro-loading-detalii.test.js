@@ -591,6 +591,7 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'appointment.nativeTitle',
     'appointment.nativeIntro',
     'faq.nativeItems',
+    'header.left',
   ]);
 
   // Same reason: declaring desserdirina's menu adds the section that holds it.
@@ -599,6 +600,10 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     // A salon can now take bookings online — the calendar engine was always
     // template-agnostic, only the presentation was wired to professionals.
     'templates/portfolio/schema.json': ['appointment'],
+    // The owner can put the business name in the navbar instead of the phone
+    // number, which needed a field of its own — the old workaround left a
+    // tel: link pointing at a number the page no longer showed.
+    'templates/local-service/schema.json': ['header'],
   };
 
   function fieldMap(schema) {

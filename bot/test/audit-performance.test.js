@@ -88,18 +88,21 @@ function dirTotalBytes(dir) {
   // minifyCss/trimJsWhitespace short-circuited to identity:
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       80409        86333     82000
-  //   local-service     104378       109895    106500
-  //   portfolio         103286       115828    105400
-  //   professionals     115318       133255    117700
+  //   product-menu       84928        92039     86700
+  //   local-service     105667       112896    107800
+  //   portfolio         105962       120782    108100
+  //   professionals     121427       141955    123900
   //
-  // Re-measured 2026-09-12. portfolio grew ~8KB and professionals ~6KB, both
-  // for shipped features rather than drift: portfolio gained a whole
-  // appointment section (schema + template + three presets) so a salon can
-  // take bookings online, and professionals gained the separate native-mode
-  // copy that stops the page contradicting its own booking widget. The
-  // ceilings move with them, by the same minified + ~2% rule, and both stay
-  // comfortably under unminified so property (1) below still holds.
+  // Re-measured twice on 2026-09-12, after each wave that added shipped
+  // features rather than drift. First: portfolio gained a whole appointment
+  // section (schema + template + three presets) so a salon can take bookings
+  // online, and professionals gained the separate native-mode copy that stops
+  // the page contradicting its own booking widget. Then the template pass
+  // added, across all five, real SVG social icons in place of "IG"/"FB" text,
+  // contrast-safe colour tokens, a translucent panel behind portfolio's price
+  // list, and product-menu's pre-paint ink picker. Every ceiling still sits at
+  // minified + ~2% and comfortably under unminified, so property (1) below —
+  // delete the minifier and this gate trips — still holds on all four.
   //
   // These used to sit at the midpoint between the two. That rule stopped
   // serving its purpose once the stylesheets grew long explanatory comments:
@@ -115,10 +118,10 @@ function dirTotalBytes(dir) {
   // The "embedded styles.css is smaller than the raw source" check below is
   // the direct minifier-ran assertion; this one is the growth guard.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 82000,
-    'local-service': 106500,
-    portfolio: 105400,
-    professionals: 117700,
+    'product-menu': 86700,
+    'local-service': 107800,
+    portfolio: 108100,
+    professionals: 123900,
   };
 
   for (const id of TPLS) {
