@@ -29,7 +29,11 @@
     --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
     --max: 1080px;
-    --r: 4px;
+    /* D1 (client-confirmed): 4px measured as the most square-cornered
+       button of all 5 templates. Shared by every button/card/input that
+       reuses this token (.pr-btn, .pr-svc__card, .pr-cred, .pr-input,
+       .pr-type, .pr-nav__toggle, .pr-warn, .pr-appt__fail, .pr-appt-done). */
+    --r: 10px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -393,6 +397,19 @@ button, input, select, textarea { font: inherit; color: inherit; }
     color: var(--mute);
     letter-spacing: 0.02em;
 }
+/* m6: the " · " between modes/languages is generated here instead of being
+   static markup, and only when BOTH tokens are still non-empty. In the
+   builder's live editor (renderHtml(..., {editMode:true})) each token is
+   its own [data-hb-edit] span the owner can clear in place without a page
+   reload — a static separator between them would survive as an orphan "·"
+   once one side went empty. :empty and :has() both re-evaluate live as the
+   owner types, so the dot appears/disappears with the content instead. On
+   the plain published site these attributes never exist, so this rule never
+   matches there — harmless no-op, exactly matching the original @if guards
+   already baked into the static HTML at that point. */
+.pr-hero__meta:has([data-hb-edit="business.modes"]:not(:empty)) [data-hb-edit="business.languages"]:not(:empty)::before {
+    content: " · ";
+}
 /* These density blocks sit AFTER the base rules on purpose.
    They used to sit before them, and at equal specificity the later rule wins:
    .pr-hero__actions and .pr-hero__meta kept their desktop margins on every
@@ -498,25 +515,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
     opacity: 0.55;
     cursor: not-allowed;
     transform: none;
-}
-
-/* Strip */
-.pr-strip {
-    border-block: 1px solid var(--line);
-    background: color-mix(in srgb, var(--cloud) 35%, var(--paper));
-}
-.pr-strip__row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem 1.1rem;
-    padding: 1rem 0;
-    font-size: 0.86rem;
-    color: var(--soft);
-}
-.pr-strip__dot {
-    width: 4px; height: 4px; border-radius: 50%;
-    background: var(--brass);
 }
 
 /* Sections */
@@ -910,31 +908,52 @@ button, input, select, textarea { font: inherit; color: inherit; }
        of .pr-contact (the 2-column layout at >=720px). */
     min-width: 0;
 }
+/* M7: dropped the 1px border + near-white --snow panel + input-style
+   padding this used to have on every row — that combination is exactly what
+   an empty form field looks like (04-QA-Evidence D6: "toate 4 randurile cu
+   aceeasi bordura/fundal/padding, niciuna cu iconita"). A plain icon + text
+   row reads as information already on file instead. */
 .pr-contact__row {
-    display: block;
-    padding: 0.85rem 1rem;
-    border: 1px solid var(--line);
-    border-radius: var(--r);
-    background: var(--snow);
-    transition: border-color 140ms var(--ease);
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.4rem 0;
+    min-width: 0;
+    transition: transform 140ms var(--ease);
+}
+a.pr-contact__row:hover { transform: translateX(4px); }
+a.pr-contact__row:hover .pr-contact__icon { background: var(--accent); }
+.pr-contact__list > li { min-width: 0; }
+/* Icon chip: ink-on-paper, the same high-contrast pairing already used for
+   .pr-nav__cta, so it stays legible across the 3 saturated theme presets
+   too instead of a hardcoded colour. Same shape as the sibling template's
+   contact-icon chip (a background chip holding an SVG glyph), recoloured to
+   this template's own tokens rather than a hardcoded white-on-dark. */
+.pr-contact__icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    transition: background 140ms var(--ease);
+}
+.pr-contact__icon svg { display: block; }
+.pr-contact__text {
+    min-width: 0;
     /* WAVE8-03 [MEDIUM, horizontal overflow at 200% zoom]: contact.email
        ("contact@cabinetjuridicionescu.ro") is one unbreakable token — no
-       spaces to wrap on. .pr-contact__list's implicit auto grid column has
-       default min-width:auto on its <li> items, which refuses to shrink a
-       column below the widest unbreakable token in it; every row shares that
-       one column, so the whole list (and the .pr-contact shell around it)
-       was forced as wide as the email needed, however narrow the real
-       viewport. At 100% zoom on a 390px phone there's just enough room for
-       it to fit without visibly overflowing; 200% zoom halves the effective
-       layout width, so the same email no longer fits and the page gained
-       real horizontal scroll. overflow-wrap lets a long token break instead
-       of forcing the column (and every sibling row) wider; min-width:0 on
-       the <li> (below) is what actually lets the column shrink to use it. */
+       spaces to wrap on. Previously this lived on .pr-contact__row itself;
+       moved to the text column now that the row also holds a fixed-width
+       icon. min-width:0 (here and on the <li> below) is what actually lets
+       a flex/grid child shrink below its content's own width so
+       overflow-wrap can do its job — see
+       bot/test/wave8-templates-zoom-overflow.test.js. */
     overflow-wrap: break-word;
     word-break: break-word;
 }
-.pr-contact__list > li { min-width: 0; }
-a.pr-contact__row:hover { border-color: var(--accent); }
 .pr-contact__row--static { color: var(--soft); }
 
 /* Footer */
@@ -947,6 +966,17 @@ a.pr-contact__row:hover { border-color: var(--accent); }
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    /* m13: the default align-items (stretch) grew every flex item on this
+       row — including .hb-legal-links, whose own children are flex items
+       too — up to the height of the tallest sibling (the two-line
+       copyright/footer-note paragraph). .hb-legal-links a then centers its
+       own text vertically (align-items:center, set for the touch-target
+       fix below) inside that now-oversized box, so its visible text sits
+       several pixels lower than the un-stretched business name/copyright,
+       even though the boxes' own top edges coincide — measured 10.4px on
+       the rendered page. flex-start keeps every item at its own natural
+       height, so there is no extra room left to center into. */
+    align-items: flex-start;
     gap: 1.25rem;
 }
 .pr-foot__name {
@@ -965,7 +995,14 @@ a.pr-contact__row:hover { border-color: var(--accent); }
     display: inline-flex;
     align-items: center;
     min-height: 24px;
-    padding: 0.25rem 0;
+    /* m13 (continued): equal top/bottom padding here, combined with
+       align-items:center, used to centre this link's text a few pixels
+       below its own box's own top edge — visible once .pr-foot__inner
+       stopped stretching this box taller than its content (see above),
+       and still off the business-name/copyright text baseline by the
+       padding-top amount. Bottom-only padding keeps the same 24px
+       touch-target floor (via min-height) without pushing the text down. */
+    padding: 0 0 0.4rem;
     font-size: 0.85rem;
     color: var(--soft);
 }

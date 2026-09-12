@@ -35,7 +35,7 @@ const BRAVE = (process.env.HIDOOK_BROWSER_PATH || '')  // opt-in only: these ora
 const TPLS = ['professionals', 'local-service', 'portfolio', 'product-menu', 'desserdirina'];
 
 const TEXT_SELECTORS = {
-  professionals: '.pr-strip__item, .pr-hero__meta, .pr-scroll',
+  professionals: '.pr-hero__meta, .pr-scroll',
   'local-service': '.ls-scroll, .scroll-indicator__label, .ls-hero__tag, .hero-tagline',
   portfolio: '.pf-hint, .scroll-hint__label, .pf-hero__tag, .hero-tagline',
   'product-menu': '.pm-scroll, .scroll-indicator, .pm-hero__tag, .hero-tagline',
@@ -112,7 +112,7 @@ async function main() {
       /\.hb-cookie-banner\s*\{[^}]*\bright\s*:\s*0\.75rem/,
       'cookie must not re-occupy bottom-right'
     );
-    assert.match(css, /\.pr-strip/, 'credibility strip clearance in shared CSS');
+    assert.match(css, /\.pr-hero__meta/, 'hero meta chip clearance in shared CSS');
     assert.match(css, /text-align:\s*left\s*!important/, 'explore labels stay left of FAB (not right under it)');
     assert.doesNotMatch(
       css,
@@ -398,12 +398,16 @@ async function main() {
             system + ' (b2) cookie overlaps strip/label: ' + JSON.stringify(cookieTextHits.slice(0, 3))
           );
 
-          // Professionals: full "cabinet" must not be element-clipped on strip items.
+          // Professionals: full "cabinet" must not be element-clipped on the hero
+          // meta chips. These used to be duplicated into a separate credibility
+          // band and this block measured that band; the duplicate desynced from
+          // the hero on live edits and was removed, so the same contract is now
+          // measured where the chips actually are.
           if (system === 'professionals') {
             const stripText = await frame.evaluate(() => {
-              const row = document.querySelector('.pr-strip__row, .pr-strip');
+              const row = document.querySelector('.pr-hero__meta');
               if (!row) return { missing: true };
-              const items = Array.from(document.querySelectorAll('.pr-strip__item')).map((el) => {
+              const items = Array.from(document.querySelectorAll('.pr-hero__meta > *')).map((el) => {
                 const r = el.getBoundingClientRect();
                 return {
                   text: String(el.innerText || '').replace(/\s+/g, ' ').trim(),
@@ -419,8 +423,8 @@ async function main() {
                 items,
               };
             });
-            assert.ok(!stripText.missing, 'professionals strip present');
-            assert.match(stripText.rowText, /cabinet/i, 'strip keeps full cabinet word in DOM');
+            assert.ok(!stripText.missing, 'professionals hero meta chips present');
+            assert.match(stripText.rowText, /cabinet/i, 'hero meta keeps full cabinet word in DOM');
             const modes = stripText.items.find((i) => /cabinet/i.test(i.text));
             if (modes) {
               assert.ok(!modes.clippedX, 'modes item must not clip horizontally: ' + JSON.stringify(modes));
