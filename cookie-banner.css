@@ -184,18 +184,31 @@ body:has(#hb-cookie-banner:not([hidden])) .ls-hero {
   padding-bottom: var(--hb-cookie-clearance);
   margin-bottom: calc(var(--hb-dock-safe-bottom) + 0.35rem);
 }
-/* Credibility / meta strips at the fold — never enter FAB or cookie corners. */
-.pr-strip {
+/* The trailing <footer> is the last thing in the document on every template,
+ * so it is exactly what the fixed bottom-left card ends up over once the
+ * page is scrolled to its end. Generic element selector on purpose: this has
+ * to hold for any footer, on any template, not one class list. */
+html.hb-cookie-open footer,
+body.hb-cookie-open footer,
+body:has(#hb-cookie-banner:not([hidden])) footer {
+  padding-bottom: var(--hb-cookie-clearance);
+  box-sizing: border-box;
+}
+/* Meta chips at the fold — never enter FAB or cookie corners. The selector
+ * used to name a separate credibility band; that band duplicated the hero's
+ * own chips and was removed, so the clearance follows the chips to where they
+ * actually live now. */
+.pr-hero__meta {
   padding-inline-end: max(1rem, var(--hb-fab-safe-right)) !important;
   box-sizing: border-box;
   overflow-x: clip;
 }
-.pr-strip__row {
+.pr-hero__meta > * {
   padding-inline-end: max(0.5rem, var(--hb-fab-safe-right)) !important;
   max-width: 100%;
   box-sizing: border-box;
 }
-/* While consent is open, keep the strip OFF the first screen under fixed
+/* While consent is open, keep the chips OFF the first screen under fixed
  * chrome (border-box min-height heroes otherwise leave a peek strip under FAB). */
 @media (max-width: 899px) {
   html.hb-cookie-open .pr-hero,
@@ -206,12 +219,9 @@ body:has(#hb-cookie-banner:not([hidden])) .ls-hero {
     margin-bottom: 0 !important;
     padding-bottom: calc(var(--hb-cookie-clearance) + 1.25rem) !important;
   }
-  html.hb-cookie-open .pr-strip,
-  body.hb-cookie-open .pr-strip,
-  body:has(#hb-cookie-banner:not([hidden])) .pr-strip,
-  html.hb-cookie-open .pr-strip__row,
-  body.hb-cookie-open .pr-strip__row,
-  body:has(#hb-cookie-banner:not([hidden])) .pr-strip__row {
+  html.hb-cookie-open .pr-hero__meta,
+  body.hb-cookie-open .pr-hero__meta,
+  body:has(#hb-cookie-banner:not([hidden])) .pr-hero__meta {
     /* No huge left pad — that crushed the flex row into the FAB column. */
     padding-inline-start: 0;
     padding-inline-end: max(1rem, var(--hb-fab-safe-right)) !important;
