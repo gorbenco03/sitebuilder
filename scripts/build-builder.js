@@ -240,6 +240,18 @@ function renderPreview(files, config, opts) {
             '</head>',
             '<style data-hidook-edit-affordances>' + editStyles + '</style></head>'
         );
+        // S1-6 (m3/m21): builder/app.js computes maxLen-per-field and
+        // max-per-list from the template's schema.json (renderHtml/build.js
+        // never reads schema — see build.js's placeholderLabelForToken() doc
+        // comment for why) and hands them through here as plain globals for
+        // edit-overlay.js to read. Injected BEFORE the overlay script so it
+        // sees the maps on its very first run.
+        html = insertBeforeBodyClose(html,
+            '<script data-hidook-edit-limits>' +
+            'window.__hbFieldLimits=' + JSON.stringify((opts && opts.fieldLimits) || {}) + ';' +
+            'window.__hbListLimits=' + JSON.stringify((opts && opts.listLimits) || {}) + ';' +
+            '</script>'
+        );
         // Inject the overlay script at end of body (after template scripts so it
         // can observe the fully rendered DOM).
         html = insertBeforeBodyClose(html,

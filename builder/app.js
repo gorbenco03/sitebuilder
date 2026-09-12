@@ -808,6 +808,7 @@ function getAllSchemaFields(schema) {
 }
 
 /**
+
  * Schema-derived "which repeated groups of fields are real editable lists"
  * payload, embedded into every rendered srcdoc so builder/edit-overlay.js
  * (running inside the sandboxed iframe, no access to this scope) can decide
@@ -858,6 +859,35 @@ function injectListSchema(html, schema) {
   const closeBodyAt = html.toLowerCase().lastIndexOf('</body>');
   if (closeBodyAt === -1) return html + tag;
   return html.slice(0, closeBodyAt) + tag + html.slice(closeBodyAt);
+}
+
+/**
+ * PLAN-QA-2026-09-12 §3 Suite 1, step S1-6 (m3/m21): `schema.json` already
+ * declares `maxLen` on text fields and `max` on lists, but nothing enforced
+ * either in the editor canvas — a 500-character paste into a 60-char h1
+ * grows to 857px and covers the whole hero (m3), and 34 services can be
+ * added to an 8-item list with zero warning (m21).
+ *
+ * Both limits live in the schema, which only app.js reads (build.js/
+ * renderHtml is deliberately schema-blind — see its own doc comment). So
+ * this walks the schema ONCE per render and hands the two small maps to the
+ * iframe as `window.__hbFieldLimits` / `window.__hbListLimits` (see
+ * scripts/build-builder.js's renderPreview()), which edit-overlay.js reads
+ * to truncate typing past maxLen, show a discreet counter past 80%, and
+ * disable "+ Adaugă" once a list is at its schema max.
+ */
+function computeSchemaLimits(schema) {
+  const fieldLimits = {};
+  const listLimits = {};
+  getAllSchemaFields(schema).forEach(f => {
+    if ((f.type === 'text' || f.type === 'textarea') && typeof f.maxLen === 'number' && f.maxLen > 0) {
+      fieldLimits[f.key] = f.maxLen;
+    } else if (f.type === 'list' && typeof f.max === 'number' && f.max > 0) {
+      listLimits[f.key] = f.max;
+    }
+  });
+  return { fieldLimits, listLimits };
+
 }
 
 function getRequiredFields(schema) {
@@ -2090,9 +2120,17 @@ function buildSrcdoc() {
   try {
     // Pass editMode:true so renderHtml emits data-hb-edit attributes and
     // renderPreview injects the modern edit-overlay.js (bundled in engine.js).
-    let html = window.HidookEngine.renderPreview(tpl.files, draft.config, { editMode: true });
-    // Embed schema.json's type:"list" fields so the overlay can decide
-    // add/remove eligibility itself instead of a hardcoded name allowlist.
+    // Two separate schema-derived payloads reach the sandboxed overlay, both
+    // computed here because build.js/renderHtml is deliberately schema-blind:
+    // maxLen/max limits ride along with the render options (S1-6, m3/m21),
+    // while the list inventory is embedded as an inert JSON tag so it is in
+    // the DOM at parse time (S1-4, B3/B4/M2) — see injectListSchema().
+    const limits = computeSchemaLimits(tpl.schema);
+    let html = window.HidookEngine.renderPreview(tpl.files, draft.config, {
+      editMode: true,
+      fieldLimits: limits.fieldLimits,
+      listLimits: limits.listLimits,
+    });
     html = injectListSchema(html, tpl.schema);
     return html;
   } catch (e) {
@@ -2675,16 +2713,26 @@ function onListAdd(listPath) {
   // placeholder that desyncs the list from the edit-overlay's DOM tracking
   // (DSD-02: an add+remove on such a list corrupts/removes the WRONG item).
   let itemShape = null;
+  let listMax = null;
   if (schema) {
     getAllSchemaFields(schema).forEach(f => {
       if (f.key === listPath && f.type === 'list') {
         itemShape = f.itemShape !== undefined ? f.itemShape : f.itemSchema;
+        if (typeof f.max === 'number') listMax = f.max;
       }
     });
   }
   const arr = Array.isArray(getPath(draft.config, listPath))
     ? getPath(draft.config, listPath).slice()
     : [];
+  // S1-6 (m21): belt-and-suspenders — edit-overlay.js already disables
+  // "+ Adaugă" once a list hits its schema max (see setupListControls()),
+  // but this guards the actual mutation too, in case a stale/disabled-late
+  // button click still reaches here.
+  if (typeof listMax === 'number' && arr.length >= listMax) {
+    showToast('Ai atins limita de ' + listMax + ' elemente pentru această listă.', 'error');
+    return;
+  }
   let newItem;
   // Restaurant menu: menu.en / menu.ro are section lists; *.items are string dishes
   if (/^menu\.(en|ro)$/.test(listPath)) {

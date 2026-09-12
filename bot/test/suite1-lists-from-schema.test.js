@@ -342,7 +342,7 @@ for (const kase of CASES) {
   });
 }
 
-test('professionals: "+ Adaugă" disappears at schema max, "×" disappears at schema min', async () => {
+test('professionals: "+ Adaugă" is disabled with a reason at schema max, "×" disappears at schema min', async () => {
   const fields = readListFields('professionals');
   const services = fields.find((f) => f.key === 'services');
   assert.ok(services && typeof services.min === 'number' && typeof services.max === 'number',
@@ -384,7 +384,10 @@ test('professionals: "+ Adaugă" disappears at schema max, "×" disappears at sc
     assert.equal(info.itemCount, services.min, 'setup: services count must equal schema min after trimming');
     assert.equal(info.removeCountFound, 0, 'at schema min, no item should offer a remove ("×") control');
 
-    // Now drive the count to exactly `max` and confirm the add control is gone.
+    // Now drive the count to exactly `max`. The button must STAY and say why
+    // it cannot be used. This started out asserting the button disappeared;
+    // a vanished control just sends the owner hunting for it, so S1-6's
+    // disabled-with-a-reason won and this assertion follows the behaviour.
     const filler = Array.from({ length: services.max }, (_, i) => ({ label: 'Serviciu ' + i, blurb: '' }));
     await page.evaluate((arr) => {
       /* eslint-disable no-undef */
@@ -395,7 +398,16 @@ test('professionals: "+ Adaugă" disappears at schema max, "×" disappears at sc
     await page.waitForTimeout(900);
     info = await inspectList(page, 'services', ['.hb-add-btn'], '.hb-remove-btn');
     assert.equal(info.itemCount, services.max, 'setup: services count must equal schema max after filling');
-    assert.equal(info.hasAddBtn, false, 'at schema max, "+ Adaugă" must not be offered');
+    assert.equal(info.hasAddBtn, true, 'at schema max, "+ Adaugă" must still be visible');
+    const atMaxHandle = await page.$('#preview-iframe');
+    const atMaxCtx = await atMaxHandle.contentFrame();
+    const atMax = await atMaxCtx.evaluate(() => {
+      const b = document.querySelector('.hb-add-btn');
+      return b ? { disabled: b.disabled, text: (b.textContent || '').trim() } : null;
+    });
+    assert.ok(atMax && atMax.disabled, 'at schema max, "+ Adaugă" must be disabled');
+    assert.match(atMax.text, /limită atinsă/,
+      'a disabled "+ Adaugă" must say why: ' + JSON.stringify(atMax));
   } finally {
     await page.close();
   }

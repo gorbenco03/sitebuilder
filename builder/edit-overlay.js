@@ -137,6 +137,23 @@
     return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
+  /**
+   * S1-6 (m3/m21): {path: maxLen} / {listPath: max}, computed by
+   * builder/app.js's computeSchemaLimits() from the template's schema.json
+   * and injected as plain globals by scripts/build-builder.js's
+   * renderPreview() (see its "S1-6" comment). Defensive reads: a page that
+   * somehow runs this overlay without that injection (e.g. an older cached
+   * srcdoc) must not throw, just skip the limit.
+   */
+  function getFieldLimits() {
+    try { return (window.__hbFieldLimits && typeof window.__hbFieldLimits === 'object') ? window.__hbFieldLimits : {}; }
+    catch (e) { return {}; }
+  }
+  function getListLimits() {
+    try { return (window.__hbListLimits && typeof window.__hbListLimits === 'object') ? window.__hbListLimits : {}; }
+    catch (e) { return {}; }
+  }
+
   /* ─────────────────────────────────────────────────────────────────────────
      2. Inject overlay CSS
   ───────────────────────────────────────────────────────────────────────── */
@@ -158,6 +175,50 @@
       '[data-hb-edit][data-hb-kind="text"]:focus {',
       '  outline: 2px solid rgba(59,130,246,0.9);',
       '  outline-offset: 2px;',
+      '}',
+
+      /* PLAN-QA-2026-09-12 §3 Suite 1 (B2 + M1): a genuinely empty
+       * contenteditable span has no box to click on at all — a title
+       * emptied via Ctrl+A/Delete collapses to 0×0 and is unrecoverable
+       * without Undo, and a freshly-added list item's optional field (price,
+       * description, …) is invisible even once build.js's editMode @if fix
+       * makes the span exist. `:empty` (real DOM emptiness, not merely
+       * "no visible text") gets a floor box plus a muted placeholder drawn
+       * from data-hb-placeholder (set by build.js's replaceTokens() on every
+       * such span, see placeholderLabelForToken()). `content: attr(...)` is
+       * a generated box, never a real text node, so it can never leak into
+       * el.textContent / the committed edit, and it only exists on THIS
+       * editor-only style tag — the exported/published HTML never has it. */
+      '[data-hb-edit][data-hb-kind="text"]:empty {',
+      '  display: inline-block;',
+      '  min-width: 44px;',
+      /* max(): a small nav-brand copy of business.name can sit at ~16px
+       * font-size, where 1.4em alone rounds to ~22-24px — too close to the
+       * 24px floor this fix promises. The absolute 24px guarantees the
+       * floor regardless of the surrounding font-size; 1.4em still grows it
+       * on a large hero h1. */
+      '  min-height: max(1.4em, 24px);',
+      '  outline: 2px dashed rgba(59,130,246,0.55);',
+      '  outline-offset: 2px;',
+      '}',
+      '[data-hb-edit][data-hb-kind="text"]:empty::before {',
+      '  content: attr(data-hb-placeholder);',
+      '  color: rgba(71,85,105,0.6);',
+      '  font-style: italic;',
+      '  pointer-events: none;',
+      '  white-space: nowrap;',
+      '}',
+
+      /* S1-6 (m3): the discreet "48/60" counter shown once a field is >= 80%
+       * of its schema maxLen. Small and muted on purpose — it is a nudge,
+       * not a warning banner. */
+      '.hb-charcount {',
+      '  font-size: 0.7em;',
+      '  color: rgba(100,116,139,0.8);',
+      '  font-family: system-ui, sans-serif;',
+      '  user-select: none;',
+      '  pointer-events: none;',
+      '  vertical-align: middle;',
       '}',
 
       /* image change button wrapper */
@@ -260,6 +321,17 @@
       '}',
       '.hb-add-btn:hover {',
       '  background: rgba(59,130,246,0.2);',
+      '}',
+      /* S1-6 (m21): list at its schema max. */
+      '.hb-add-btn:disabled {',
+      '  cursor: not-allowed;',
+      '  opacity: 0.55;',
+      '  background: rgba(100,116,139,0.1);',
+      '  border-color: rgba(100,116,139,0.4);',
+      '  color: rgba(71,85,105,0.85);',
+      '}',
+      '.hb-add-btn:disabled:hover {',
+      '  background: rgba(100,116,139,0.1);',
       '}',
 
       /* highlight flash */
@@ -591,6 +663,8 @@
       document.querySelectorAll('[data-hb-edit][data-hb-kind="text"]')
     );
 
+    var fieldLimits = getFieldLimits();
+
     fields.forEach(function (el) {
       var path = el.getAttribute('data-hb-edit');
 
@@ -599,6 +673,30 @@
 
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('spellcheck', 'true');
+
+      // S1-6 (m3): maxLen from schema.json, enforced at typing time. Only
+      // top-level fields carry a declared maxLen today (itemShape entries
+      // don't — see computeSchemaLimits() in app.js), so most list-item
+      // fields simply have no entry here and are left unlimited.
+      var maxLen = fieldLimits[path];
+      var counterEl = null;
+      function updateCounter() {
+        if (!maxLen) return;
+        var len = el.textContent.length;
+        if (len >= Math.floor(maxLen * 0.8)) {
+          if (!counterEl || !counterEl.isConnected) {
+            counterEl = document.createElement('span');
+            counterEl.className = 'hb-charcount';
+            counterEl.setAttribute('contenteditable', 'false');
+            counterEl.setAttribute('aria-hidden', 'true');
+            if (el.parentNode) el.parentNode.insertBefore(counterEl, el.nextSibling);
+          }
+          counterEl.textContent = ' ' + len + '/' + maxLen;
+        } else if (counterEl) {
+          counterEl.remove();
+          counterEl = null;
+        }
+      }
 
       /* Prevent paste as HTML — always insert plain text */
       el.addEventListener('paste', function (e) {
@@ -668,6 +766,26 @@
        * costs nothing the 300ms debounce below still exists to avoid. */
       el.addEventListener('input', function () {
         var value = el.textContent;
+        // S1-6 (m3): block typing past the schema's maxLen. Truncating AFTER
+        // the browser already inserted the character (rather than trying to
+        // preventDefault a contenteditable keystroke, which does not
+        // reliably cover paste/IME/composition) and re-placing the caret at
+        // the end is the same trade-off every plain-text-length limiter on a
+        // contenteditable makes — the caret lands at the end rather than
+        // exactly where typing stopped, which only matters when the owner
+        // types past the limit in the middle of existing text (rare: the
+        // limit is usually hit typing forward).
+        if (maxLen && value.length > maxLen) {
+          value = value.slice(0, maxLen);
+          el.textContent = value;
+          var range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          var sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        updateCounter();
         // The moment the owner touches a "still demo" field it stops being
         // the demo's — drop the marker immediately rather than waiting for
         // the debounced commit + a round trip back from the parent (see
@@ -680,12 +798,14 @@
         }, 300);
       });
 
-      /* On blur: send immediately (cancel any pending debounce) */
+      /* On blur: send immediately (cancel any pending debounce), and drop
+       * the discreet char-counter — it is only useful while actively typing. */
       el.addEventListener('blur', function () {
         if (debounceTimers[path]) {
           clearTimeout(debounceTimers[path]);
           delete debounceTimers[path];
         }
+        if (counterEl) { counterEl.remove(); counterEl = null; }
         toParent({ hb: 'text', path: path, value: el.textContent });
       });
 
@@ -1099,7 +1219,9 @@
         container.appendChild(removeBtn);
       });
 
-      if (!canAdd) return; // at schema max — no "+ Adaugă" (S1-4 step 4)
+      // At schema max the button STAYS, disabled, and says why (see the
+      // listMax block below). Removing it outright — the first thing S1-4
+      // did — leaves the owner hunting for a control that silently vanished.
 
       /* Add "+" button after the last item container */
       // Find the last item container and insert the add button after it.
@@ -1127,6 +1249,19 @@
       addBtn.addEventListener('click', function () {
         toParent({ hb: 'list-add', listPath: root });
       });
+
+      // S1-6 (m21): schema `max` on the list, disable "+ Adaugă" once hit
+      // instead of letting the count grow unbounded with no feedback (the
+      // QA report reproduced 34 services added to an 8-item list). The
+      // count here (indices.length) already reflects the CURRENT render, so
+      // this re-evaluates correctly on every fullRerender — including right
+      // after the item that hits the cap was added.
+      var listMax = getListLimits()[root];
+      if (typeof listMax === 'number' && indices.length >= listMax) {
+        addBtn.disabled = true;
+        addBtn.textContent += ' — limită atinsă (' + listMax + ')';
+        addBtn.setAttribute('aria-disabled', 'true');
+      }
 
       if (lastContainer.parentNode) {
         lastContainer.parentNode.insertBefore(addBtn, lastContainer.nextSibling);

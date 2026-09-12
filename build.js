@@ -385,6 +385,43 @@ function sanitizeAddress(value) {
     return escapeHtml(String(value)).replace(/&lt;br\s*\/?&gt;/gi, '<br>');
 }
 
+/**
+ * Editor-only, single-convention placeholder text for an empty
+ * `[data-hb-edit]` field — PLAN-QA-2026-09-12 §3 Suite 1 (B2/M1): an empty
+ * contenteditable span has nothing to show a user where to click or what to
+ * type, on any of the 5 templates. Rather than every template inventing its
+ * own wording, one small dictionary here (keyed by the LAST dot-path
+ * segment — itemShape has no per-field human label to draw on, only a
+ * type) drives a `data-hb-placeholder` attribute; the CSS that paints it is
+ * `[data-hb-edit]:empty::before { content: attr(data-hb-placeholder) }` in
+ * builder/edit-overlay.js, so it only ever appears when the field is
+ * genuinely empty and NEVER in the exported/published HTML (this attribute
+ * is inert without that editor-only CSS rule, and edit-overlay.js itself
+ * only runs inside editMode's srcdoc — see its file header).
+ */
+const FIELD_PLACEHOLDER_LABELS = {
+    price: 'Adaugă preț',
+    blurb: 'Adaugă o descriere…',
+    text: 'Adaugă o descriere…',
+    bio: 'Adaugă o descriere…',
+    description: 'Adaugă o descriere…',
+    lead: 'Adaugă textul introductiv',
+    subtitle: 'Adaugă un subtitlu',
+    label: 'Scrie textul aici…',
+    title: 'Scrie titlul aici…',
+    name: 'Scrie numele aici…',
+    q: 'Scrie întrebarea aici…',
+    a: 'Scrie răspunsul aici…',
+    role: 'Adaugă rolul',
+    day: 'Adaugă ziua',
+    hours: 'Adaugă programul',
+};
+function placeholderLabelForToken(token) {
+    if (!token || token === '.') return 'Scrie aici…';
+    const last = token.split('.').pop();
+    return FIELD_PLACEHOLDER_LABELS[last] || 'Scrie aici…';
+}
+
 function replaceTokens(str, resolver, warn = true, editOpts) {
     return str.replace(/\{\{\s*([^}]+?)\s*\}\}/g, (match, token) => {
         let raw = false;
@@ -469,7 +506,14 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
             const fullPath = token === '.'
                 ? (prefix || '.')
                 : (prefix ? prefix + '.' + token : token);
-            return '<span data-hb-edit="' + fullPath + '" data-hb-kind="text">' + escaped + '</span>';
+            // Baked in unconditionally (not only when currently empty): text
+            // edits happen live in the browser without a full re-render (see
+            // edit-overlay.js), so a field that starts non-empty and is later
+            // cleared by the owner must already carry the attribute the
+            // `:empty::before` placeholder CSS reads — see
+            // placeholderLabelForToken() doc comment above (B2).
+            const placeholderAttr = ' data-hb-placeholder="' + escapeHtml(placeholderLabelForToken(token)) + '"';
+            return '<span data-hb-edit="' + fullPath + '" data-hb-kind="text"' + placeholderAttr + '>' + escaped + '</span>';
         }
 
         return escaped;
@@ -653,7 +697,44 @@ function expandEach(str, scope, editOpts) {
             // type:text with value 'false'/'nu' (e.g. showWordmark, nativeBooking) work with @if.
             const isFalsyString = typeof ifVal === 'string' && /^(false|0|no|nu)$/i.test(ifVal.trim());
             const truthy = Array.isArray(ifVal) ? ifVal.length > 0 : (!isFalsyString && Boolean(ifVal));
-            if (negate ? !truthy : truthy) out += expandEach(block, scope, editOpts);
+            // PLAN-QA-2026-09-12 §3 Suite 1 (M1): `<!-- @if price -->`/`<!-- @if
+            // blurb -->` correctly hide an empty optional field on the
+            // PUBLISHED site (no empty <p></p>), but in the EDITOR that same
+            // guard means the field's [data-hb-edit] span never exists at
+            // all -- nothing to click to type a price/description into (an
+            // owner adding a service has no way to give it one). Render the
+            // block anyway when ALL of this holds:
+            //   - editOpts.editMode is on (never on export/publish — see
+            //     renderHtml()'s opts.editMode doc comment)
+            //   - editOpts.pathPrefix is set, i.e. we are inside an @each
+            //     ITEM's own scope (an itemShape leaf), not a page-level
+            //     toggle like `@if pricing` or `@if showWordmark`
+            //   - the directive is a plain (non-negated) local field name —
+            //     dataPath has no dot, so it cannot be a nested @each list
+            //     re-check reached through the item
+            //   - the value is not an array — an empty `photos` array stays
+            //     hidden here; Suite 2 (findPhotoPaths) owns that field, not
+            //     this one, and forcing an @each-less shell open for it would
+            //     invite a broken half-rendered gallery block
+            // The emptied span still gets a placeholder (see
+            // placeholderLabelForToken() in replaceTokens()) so it is
+            // visible and clickable, not just present.
+            //
+            // One more guard: `ifVal !== undefined`, i.e. the item genuinely
+            // HAS this key (onListAdd() always sets every itemShape key, even
+            // to '' — see its own doc comment), just empty/falsy. Without
+            // this, product-menu's `<!-- @if empty -->` inside `@each
+            // menu.en` would force-render too: "empty" is a synthetic flag
+            // no config item has ever actually carried (grep confirms it),
+            // so it always resolves to `undefined` and was always meant to
+            // stay unreachable — forcing it on would duplicate the category
+            // header on every menu section in the editor for no reason.
+            const isEditorItemField = !!(
+                editOpts && editOpts.editMode && editOpts.pathPrefix &&
+                !negate && dataPath.indexOf('.') === -1 && !Array.isArray(ifVal) &&
+                ifVal !== undefined && ifVal !== null
+            );
+            if ((negate ? !truthy : truthy) || isEditorItemField) out += expandEach(block, scope, editOpts);
         } else {
             const value = resolve(scope, dataPath);
             if (!Array.isArray(value)) {
