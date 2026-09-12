@@ -124,6 +124,24 @@ function dirTotalBytes(dir) {
   // 112023 -> 124892) while the shipped payload barely moved, and a midpoint
   // ceiling would have handed out ~7KB of silent growth budget.
   //
+  // Re-measured on 2026-09-12 (Instagram teaser): S111 made the public
+  // Instagram section disappear from the BUILDER PREVIEW too, whenever a
+  // customer hadn't connected Instagram — an owner never discovered the
+  // feature existed. build.js renderHtml() now sets a render-only
+  // cfg.instagram.showTeaser flag in editMode when disconnected, and each
+  // template's template.html + styles.css gained a fixed-contract
+  // `.hb-ig-teaser` "here's an example" section (gated by
+  // `<!-- @if instagram.showTeaser -->`, so it never reaches a published
+  // site — see bot/test/suite10-instagram-teaser-editmode.test.js). That is
+  // real shipped-feature markup+CSS, not drift, so the ceilings move up with
+  // it, same as every prior wave noted above.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   product-menu       86844     88600
+  //   local-service     108171    110400
+  //   portfolio         108243    110500
+  //   professionals     125689    128300
+  //
   // Two properties have to hold, and both still do at minified + ~2%:
   //   1. Well under unminified, so deleting the minifier trips this gate. The
   //      earlier generation of these ceilings sat ABOVE the unminified size
@@ -132,10 +150,10 @@ function dirTotalBytes(dir) {
   // The "embedded styles.css is smaller than the raw source" check below is
   // the direct minifier-ran assertion; this one is the growth guard.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 83800,
-    'local-service': 105500,
-    portfolio: 105700,
-    professionals: 123700,
+    'product-menu': 88600,
+    'local-service': 110400,
+    portfolio: 110500,
+    professionals: 128300,
   };
 
   for (const id of TPLS) {

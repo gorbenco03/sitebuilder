@@ -905,6 +905,27 @@ function renderHtml(templateHtml, config, opts) {
     const editMode  = !!(opts && opts.editMode);
     const editOpts  = editMode ? { editMode: true, pathPrefix: '' } : undefined;
 
+    // Builder-preview-only Instagram teaser (S111 follow-up): when Instagram
+    // isn't connected, normalizeInstagramForPublic() above has already blanked
+    // instagram.embedUrl/handle — which is correct for a published site, but
+    // in the BUILDER PREVIEW it meant the whole section silently vanished and
+    // an owner never discovered the feature existed. cfg.instagram.showTeaser
+    // is a render-only flag (never part of any stored config, never a schema
+    // field) read by <!-- @if instagram.showTeaser --> in each
+    // templates/*/template.html to render a "here's an example" section
+    // instead. Gating happens HERE, structurally, rather than as a filter
+    // applied afterwards: the flag is only ever set inside this `if (editMode)`
+    // branch, so a non-editMode call — i.e. every publish/export — can never
+    // produce it and renderHtml() stays byte-identical to before this change
+    // for every template and preset. See
+    // bot/test/suite10-instagram-teaser-editmode.test.js.
+    if (editMode) {
+        const connected = !!(cfg.instagram && cfg.instagram.embedUrl);
+        if (!connected) {
+            cfg.instagram = Object.assign({}, cfg.instagram, { showTeaser: true });
+        }
+    }
+
     let html = templateHtml;
     html = expandEach(html, cfg, editOpts);                                        // 1) loops first
     html = replaceTokensWithEditMode(                                              // 2) global tokens
