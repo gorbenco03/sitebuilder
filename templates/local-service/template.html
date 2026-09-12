@@ -61,8 +61,19 @@
     <!-- Utility strip: phone + zone + estimate — trade trust chrome -->
     <header class="hero ls-hero" id="top">
         <div class="ls-util">
+            <!-- M6: header.left lets the owner show the business name here
+                 instead of the phone. Unset/"phone" (default) keeps the old
+                 behaviour byte-for-byte for every existing site. "name"
+                 renders a plain span — never a tel: link — so there is no
+                 stale/orphaned call link left over the way overwriting
+                 contact.phoneDisplay alone used to leave one. -->
+            <!-- @if !header.left -->
             <!-- @if contact.phone -->
             <a href="tel:{{contact.phone}}" class="ls-util__phone">{{contact.phoneDisplay}}</a>
+            <!-- @endif -->
+            <!-- @endif -->
+            <!-- @if header.left -->
+            <span class="ls-util__name">{{business.name}}</span>
             <!-- @endif -->
             <!-- @if business.zone -->
             <span class="ls-util__zone">{{business.zone}}</span>
@@ -112,7 +123,7 @@
                 <div class="ls-hero__actions">
                     <a href="#contact" class="hero-cta ls-btn ls-btn--fill">{{hero.ctaLabel}}</a>
                     <!-- @if contact.phone -->
-                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--phone"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
                     <!-- @endif -->
                 </div>
             </div>
@@ -331,7 +342,7 @@
                     <a href="{{contact.waHref}}" class="ls-btn ls-btn--fill" target="_blank" rel="noopener">{{hero.ctaLabel}}</a>
                     <!-- @endif -->
                     <!-- @if contact.phone -->
-                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--ghost"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
+                    <a href="tel:{{contact.phone}}" class="ls-btn ls-btn--phone"><!-- @if labels.callCta -->{{labels.callCta}} · <!-- @endif -->{{contact.phoneDisplay}}</a>
                     <!-- @endif -->
                 </div>
             </div>

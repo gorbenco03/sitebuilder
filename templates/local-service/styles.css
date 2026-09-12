@@ -13,19 +13,30 @@
 
     --ink: #0f1720;
     --soft: rgba(15, 23, 32, 0.78);
-    --mute: rgba(15, 23, 32, 0.5);
+    --mute: rgba(15, 23, 32, 0.65);
     --paper: var(--color-cream, #eef1f4);
     --snow: #ffffff;
     --navy: #0b3d91;
     --cta: var(--color-primary, #ff4d00);
     --accent: var(--color-primary, #ff4d00);
+    /* Same reasoning as .ls-meter__n / .ls-punch__n::before below, applied the
+       other direction: an owner can set the accent to any of the colour
+       popover's presets (checked against all 6 — Indigo/Turcoaz/Violet/
+       Portocaliu/Roz/Verde), and several of those (Turcoaz 3.74:1, Portocaliu
+       3.56:1, Verde 3.30:1 white-on-fill; same numbers when used as text on
+       white) sit under the 4.5:1 floor a plain var(--cta) fill/text can't
+       guarantee. Mixed 80/20 toward black, the worst of the six clears
+       4.88:1 while the accent stays visibly the owner's chosen hue. Used
+       wherever --cta is either a text colour on a light card or a solid fill
+       behind white text (bot/test/suite7-template-contract.test.js). */
+    --cta-safe: color-mix(in srgb, var(--cta) 80%, black);
     --link: #0b3d91;
     --void: #0f1720;
     --font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     --display: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --max: 1040px;
-    --r: 6px;
+    --r: 12px;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,7 +62,17 @@ ul, ol { list-style: none; }
     background: var(--void); color: #fff;
     font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
 }
-.ls-util__phone { color: #fff; display: inline-flex; align-items: center; min-height: 44px; }
+/* D2: plain white text on the navy bar blended into the chrome instead of
+   reading as tappable. A solid cream/ink pill (the theme's own light
+   background colour on its dark ink text — the same pairing the rest of the
+   page uses for body copy) stands out on any accent/background combination
+   and keeps the 44px touch target. */
+.ls-util__phone {
+    display: inline-flex; align-items: center; min-height: 44px;
+    background: var(--paper); color: var(--ink); border-radius: var(--r);
+    padding: 6px 12px; font-weight: 700;
+}
+.ls-util__name { color: #fff; display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
 .ls-util__zone { color: rgba(255,255,255,0.55); display: none; }
 @media (min-width: 720px) { .ls-util__zone { display: inline; } }
 /* Touch-target floor: 44px.
@@ -65,7 +86,7 @@ ul, ol { list-style: none; }
    box rather than the declaration. */
 .ls-util__cta {
     display: inline-flex; align-items: center; min-height: 44px;
-    background: var(--cta); color: #fff; border-radius: var(--r);
+    background: var(--cta-safe); color: #fff; border-radius: var(--r);
     padding: 8px 14px; font-size: 12px; font-weight: 700;
     letter-spacing: 0.06em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
@@ -134,9 +155,16 @@ ul, ol { list-style: none; }
     transition: transform 140ms var(--ease-out);
 }
 .ls-btn:active, .hero-cta:active { transform: scale(0.97); }
-.ls-btn--fill { background: var(--cta); color: #fff; border: 1px solid var(--cta); }
+.ls-btn--fill { background: var(--cta-safe); color: #fff; border: 1px solid var(--cta-safe); }
 .ls-btn--ghost { border: 1px solid rgba(255,255,255,0.7); color: #fff; background: transparent; }
 .ls-btn--ink { border-color: var(--ink); color: var(--ink); }
+/* D2: the two "Sună · …" phone CTAs (hero + closing contact band) — same
+   solid cream/ink treatment as .ls-util__phone and .ls-dock__call below, so
+   the phone number reads as a button in all three places the client asked
+   for, not just one. A dedicated modifier rather than restyling
+   .ls-btn--ghost itself, because that class is also used by the Instagram
+   follow button, which is not part of this request. */
+.ls-btn--phone { background: var(--paper); color: var(--ink); border: 1px solid var(--paper); }
 .ls-scroll, .scroll-indicator {
     width: 100%; border: 0; background: var(--void); color: rgba(255,255,255,0.48);
     padding: 0 0 1.5rem; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
@@ -221,7 +249,7 @@ ul, ol { list-style: none; }
     background: var(--snow); border-radius: var(--r); padding: 1.25rem;
     border: 1px solid rgba(15,23,32,0.08);
 }
-.ls-flow__n { display: block; font-size: 12px; font-weight: 700; color: var(--cta); letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+.ls-flow__n { display: block; font-size: 12px; font-weight: 700; color: var(--cta-safe); letter-spacing: 0.08em; margin-bottom: 0.5rem; }
 .ls-flow__t { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem; }
 
 .ls-trust__grid {
@@ -292,9 +320,11 @@ ul, ol { list-style: none; }
     border-top: 2px solid var(--cta);
     box-shadow: 0 -8px 24px rgba(15,23,32,0.2);
 }
+/* D2: this was a solid --cta (blue in the shipped preset) button — same
+   "not cream/white" complaint as the other two phone spots. */
 .ls-dock__call {
     flex: 1; text-align: center; padding: 14px 12px;
-    background: var(--cta); color: #fff; font-weight: 800;
+    background: var(--paper); color: var(--ink); font-weight: 800;
     font-size: 13px; letter-spacing: 0.06em;
 }
 .ls-dock__wa {

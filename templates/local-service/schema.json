@@ -9,6 +9,22 @@
   },
   "sections": [
     {
+      "id": "header",
+      "title": "Bara de sus",
+      "fields": [
+        {
+          "key": "header.left",
+          "type": "select",
+          "label": "Ce arătăm în stânga barei de sus",
+          "required": false,
+          "options": [
+            { "value": "", "label": "Telefon (implicit)" },
+            { "value": "name", "label": "Numele firmei" }
+          ]
+        }
+      ]
+    },
+    {
       "id": "business",
       "title": "Despre afacere",
       "fields": [
