@@ -238,6 +238,33 @@ function updateSite(siteId, patch) {
     return { ...site };
 }
 
+/**
+ * JSON-backend counterpart of registry-sqlite.js#commitUnpaidDraft — see
+ * that function's docstring for the full rationale (PLAN-QA-2026-09-12.md
+ * S3-1 / defect B1). This backend has no real transaction, but `_load()`
+ * gives one in-memory snapshot that the check and the write both use
+ * without any I/O in between, so a single synchronous call here is already
+ * atomic with respect to any other request running on the same process.
+ *
+ * @returns {{ok:true}|{ok:false, conflictSiteId:string}}
+ */
+function commitUnpaidDraft(userId, siteId, isEntitled) {
+    const db = _load();
+    db.sites = db.sites || {};
+    const conflict = Object.values(db.sites).find((s) =>
+        s.userId === userId && s.id !== siteId && s.status !== 'deleted' && !isEntitled(s)
+    );
+    if (conflict) return { ok: false, conflictSiteId: conflict.id };
+
+    const site = db.sites[siteId];
+    if (!site) throw new Error(`Site not found: ${siteId}`);
+    site.status = 'draft';
+    site.paid = false;
+    db.sites[siteId] = site;
+    _save(db);
+    return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // Site versions (max 10 kept)
 // ---------------------------------------------------------------------------
@@ -464,6 +491,7 @@ module.exports = {
     listSites,
     listAllSites,
     updateSite,
+    commitUnpaidDraft,
     deleteSite,
     saveVersion,
     listVersions,

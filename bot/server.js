@@ -3038,6 +3038,11 @@ function exportHtmlFilename(site, config) {
 /**
  * POST /api/draft — persist the browser's current config for export without
  * creating checkout, deploying, or changing a paid site's public state.
+ *
+ * With no `siteId`, this reuses the caller's single unpaid-draft slot no
+ * matter which template it was created for (see the comment inline below —
+ * PLAN-QA-2026-09-12.md S3-1 / defect B1 follow-up), so trying out several
+ * designs in a row never leaves more than one unpaid row behind.
  */
 async function handleSaveDraft(req, res) {
     const userId = requireAuth(req, res);
@@ -3066,9 +3071,24 @@ async function handleSaveDraft(req, res) {
         }
     } else {
         const existing = (await reg.listSites(userId)) || [];
-        site = existing.slice().reverse().find(s =>
-            s && s.status !== 'deleted' && !s.paid && s.templateId === templateId
-        ) || null;
+        // Reuse the user's single unpaid-draft SLOT regardless of templateId
+        // (PLAN-QA-2026-09-12.md S3-1 / defect B1 follow-up): this used to
+        // only reuse a draft of the SAME templateId and created a brand-new
+        // site row for a different one, so trying 3 designs in a row left 3
+        // unpaid rows behind even though the browser only ever keeps ONE
+        // local draft (builder/app.js's hb.draft.v1 is a single global key —
+        // the server-side row for an abandoned design is already orphaned,
+        // unreachable from the editor). Reusing the slot just makes the
+        // server's one allowed unpaid site match what the client can still
+        // see, and stops commitUnpaidDraft()'s "max 1 unpaid" guard (added
+        // for the same defect) from tripping on a well-behaved user's own
+        // account for doing nothing wrong. An explicit `siteId` (dashboard
+        // "Editează", or a same-template resume) is untouched above — this
+        // only changes what happens with NO siteId.
+        site = existing.slice().reverse().find(s => s && s.status !== 'deleted' && !s.paid) || null;
+        if (site && site.templateId !== templateId) {
+            site = await reg.updateSite(site.id, { templateId, templateVersion: tpl.version });
+        }
         if (!site) {
             let slug = slugify((config.business && config.business.name) || 'site');
             if (!SLUG_RE.test(slug)) slug = 'site-' + crypto.randomBytes(4).toString('hex');
@@ -3516,7 +3536,13 @@ async function handleSocialFeedDisconnect(req, res, siteId) {
 /**
  * POST /api/publish — pay before first public production publish.
  *
- * - Max 1 unpaid site per user (409 if another unpaid exists and it's a NEW site).
+ * - Max 1 unpaid site per user (409 if another non-entitled site exists),
+ *   enforced atomically by registry.commitUnpaidDraft() right before ANY
+ *   site — brand new or an existing one reached via `siteId` (including one
+ *   whose id came from POST /api/draft's autosave) — is persisted as an
+ *   unpaid draft. See PLAN-QA-2026-09-12.md S3-1 / defect B1: the check
+ *   used to run only on the "no siteId" (brand new site) branch, which a
+ *   real browser session never actually reaches for a second design.
  * - Unpaid: persist draft (non-public), never deploy / never set status live.
  *   Returns checkout URL when payments are configured.
  * - Paid (re-edit): deploys directly.
@@ -3653,10 +3679,24 @@ async function handlePublish(req, res) {
 
     // Unpaid path: persist draft only — never deploy, never set live
     try {
+        // Max 1 unpaid site per user — authoritative check, atomic with the
+        // write below (registry-level transaction, not read-then-write from
+        // here). This is what actually stops the abuse case the `else`
+        // branch above only catches when NO siteId was sent: a site that
+        // already got a siteId from POST /api/draft's autosave (builder/app.js
+        // runServerAutosave) used to sail straight through this branch with
+        // no check at all. See PLAN-QA-2026-09-12.md S3-1 / defect B1.
+        const claim = reg.commitUnpaidDraft(userId, site.id, hasActiveCommercialEntitlement);
+        if (!claim.ok) {
+            return sendJson(res, 409, {
+                error: 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.',
+                siteId: claim.conflictSiteId,
+            });
+        }
+
         if (config && typeof config === 'object') {
             await reg.saveVersion(site.id, config);
         }
-        await reg.updateSite(site.id, { status: 'draft', paid: false });
 
         let paymentUrl = null;
         if (payments.isConfigured()) {

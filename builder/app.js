@@ -5503,7 +5503,12 @@ async function doActualPublish(chosenSlug) {
   try {
     await execPublish(chosenSlug);
   } catch (e) {
-    showToast('Publicarea a eșuat. Încearcă din nou.', 'error', 5000);
+    // PLAN-QA-2026-09-12.md S3-1 / defect B1: a refusal the SERVER chose to
+    // send (e.g. "Ai deja un site neplătit...", 409) is safe to show
+    // verbatim -- apiPost() already marks it fromServer for exactly this.
+    // Falling back to the generic message here silently swallowed it.
+    const msg = (e && e.fromServer && e.message) ? e.message : 'Publicarea a eșuat. Încearcă din nou.';
+    showToast(msg, 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }

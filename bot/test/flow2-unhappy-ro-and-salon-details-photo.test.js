@@ -84,11 +84,27 @@ check('apiPost marks server-chosen errors so the UI can tell them apart', () => 
 });
 
 check('publish network failure copy', () => {
+  // The contract is about what the OWNER reads, not about one exact call site.
+  // A raw exception ("NetworkError when attempting to fetch resource", a stack)
+  // must never reach a Romanian UI. A refusal the server itself chose to send
+  // must reach it verbatim -- PLAN-QA-2026-09-12.md S3-1 / defect B1: the
+  // "Ai deja un site neplătit..." 409 was being swallowed by the fallback, so
+  // the owner saw "Publicarea a eșuat. Încearcă din nou." and had no idea why.
+  // apiPost() marks server-authored messages `fromServer` for exactly this.
   assert.ok(
-    doActualPublish.includes("showToast('Publicarea a eșuat. Încearcă din nou.', 'error', 5000)"),
-    'publish failure uses the fixed Romanian fallback'
+    doActualPublish.includes("'Publicarea a eșuat. Încearcă din nou.'"),
+    'publish failure keeps the fixed Romanian fallback for non-server errors'
   );
-  assert.ok(!/showToast\(\s*(?:err|e)\.message/.test(doActualPublish), 'publish failure cannot expose an exception message');
+  const unguarded = /(?:err|e)\.message/g;
+  let m;
+  while ((m = unguarded.exec(doActualPublish))) {
+    const line = doActualPublish.slice(0, m.index).split('\n').pop() +
+      doActualPublish.slice(m.index).split('\n')[0];
+    assert.ok(
+      /fromServer/.test(line),
+      'publish failure cannot expose an exception message unless it is fromServer: ' + line.trim()
+    );
+  }
 });
 
 check('invalid payment copy', () => {

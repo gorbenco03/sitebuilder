@@ -267,6 +267,55 @@ function updateSite(siteId, patch) {
     return getSite(siteId);
 }
 
+/**
+ * Atomically claims the "one unpaid/non-entitled site per user" slot for
+ * `siteId`: inside a single SQLite transaction, re-reads every OTHER
+ * non-deleted site this user owns and, only if none of them is still
+ * unpaid (per the caller-supplied `isEntitled` predicate — the actual
+ * "commercially entitled" business rule lives in bot/server.js as
+ * hasActiveCommercialEntitlement; this module does not duplicate it),
+ * marks `siteId` itself `{status:'draft', paid:false}` before releasing
+ * the transaction. Callers that need to persist other fields alongside
+ * (e.g. `paidUntil` on directRepublish) should not call this — it exists
+ * only for the "about to become an unpaid draft" transition.
+ *
+ * Doing the check and the write as one registry-level transaction (instead
+ * of the caller doing "read, then decide, then write") closes a race a
+ * caller-side check cannot: two POST /api/publish calls for two different
+ * sites belonging to the same user, both reaching the check before either
+ * had written anything, could otherwise both "pass" and leave the user
+ * with two unpaid sites. See PLAN-QA-2026-09-12.md S3-1 / defect B1 — the
+ * old check in bot/server.js ran only on the branch that creates a brand
+ * new site (no siteId given); a site already created earlier via POST
+ * /api/draft's autosave (which assigns its own siteId with no such check)
+ * sailed straight through the `if (siteId)` branch of POST /api/publish,
+ * which never re-checked the invariant at all.
+ *
+ * @param {string} userId
+ * @param {string} siteId
+ * @param {(site: object) => boolean} isEntitled
+ * @returns {{ok:true}|{ok:false, conflictSiteId:string}}
+ */
+function commitUnpaidDraft(userId, siteId, isEntitled) {
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const rows = db.prepare('SELECT * FROM sites WHERE user_id = ?').all(userId).map(siteRowToObj);
+        const conflict = rows.find((s) =>
+            s.id !== siteId && s.status !== 'deleted' && !isEntitled(s)
+        );
+        if (conflict) {
+            db.exec('ROLLBACK;');
+            return { ok: false, conflictSiteId: conflict.id };
+        }
+        updateSite(siteId, { status: 'draft', paid: false });
+        db.exec('COMMIT;');
+        return { ok: true };
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Site versions (max 10 kept)
 // ---------------------------------------------------------------------------
@@ -485,6 +534,7 @@ module.exports = {
     listSites,
     listAllSites,
     updateSite,
+    commitUnpaidDraft,
     deleteSite,
     saveVersion,
     listVersions,
