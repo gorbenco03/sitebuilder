@@ -26,8 +26,26 @@
  * path with no stored width/height, so an owner-uploaded logo had no
  * layout-reservation at all — had neither an aspect-ratio nor width/height.
  * The second check is a static, deterministic (zero-flakiness) source scan
- * that all four image classes still carry an aspect-ratio, so no one can
- * silently drop the protection again.
+ * that all four image classes still carry a layout-reservation rule, so no
+ * one can silently drop the protection again.
+ *
+ * UPDATE (Suite 2 / S2-5, logo standardisation): `.ls-hero__logo` traded its
+ * fixed `aspect-ratio: 3/1` for `max-height: 40px; width: auto` — the fixed
+ * ratio box "contain"-letterboxed any upload that wasn't itself 3:1 (a
+ * square logo rendered tiny and centred in a wide empty box), which is the
+ * exact defect 04-QA-Evidence/QA-Explorare-2026-09-12/reports/
+ * 03-images-logo-gallery.md (D1/M3) flagged. This is not a loss of
+ * protection: build.js's injectResponsiveImages() bakes real width/height
+ * HTML attributes onto every <img> (including data: URL logos) from the
+ * uploaded file's own pixels at publish/export time, and browsers use those
+ * to establish the intrinsic aspect ratio (the standard `aspect-ratio:
+ * attr(width) / attr(height)` UA mapping) before a single image byte has
+ * arrived — verified directly below by the SAME live-CLS measurement this
+ * file already made the authority over the static check (see the file
+ * header above: "not a proxy/estimate"). The static check below now accepts
+ * either `aspect-ratio` OR `max-height` on `.ls-hero__logo` specifically,
+ * since both are real layout-reservation rules and only one of them also
+ * avoids letterboxing a same-height-different-shape upload.
  *
  * Run: HIDOOK_TEST_PAY=1 HIDOOK_ISOLATED_DEPLOY=1 \
  *   node --experimental-sqlite --test bot/test/wave5-local-service-cls.test.js
@@ -57,18 +75,28 @@ function check(name, fn) {
 
 // ---------------------------------------------------------------------------
 // Static check: the CSS classes that carry the layout-reservation must keep
-// an aspect-ratio declaration. Cheap, deterministic, catches the "someone
+// SOME layout-reservation rule. Cheap, deterministic, catches the "someone
 // deleted the one CSS line that mattered" regression instantly.
+//
+// `.ls-hero__logo` is allowed `max-height` as an alternative to
+// `aspect-ratio` (see the file-header UPDATE note) — every other selector
+// here still requires the original `aspect-ratio` specifically, so this
+// stays a real regression gate rather than a rubber stamp.
 // ---------------------------------------------------------------------------
 function checkAspectRatioDeclared() {
   const css = fs.readFileSync(STYLES_PATH, 'utf8');
-  const required = ['.ls-shot img', '.ls-igcell img', '.ls-hero__logo', '.ls-foot__logo'];
-  required.forEach((selector) => {
+  const required = [
+    { selector: '.ls-shot img', pattern: 'aspect-ratio\\s*:' },
+    { selector: '.ls-igcell img', pattern: 'aspect-ratio\\s*:' },
+    { selector: '.ls-hero__logo', pattern: '(?:aspect-ratio|max-height)\\s*:' },
+    { selector: '.ls-foot__logo', pattern: 'aspect-ratio\\s*:' },
+  ];
+  required.forEach(({ selector, pattern }) => {
     const re = new RegExp(
-      selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{[^}]*aspect-ratio\\s*:',
+      selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{[^}]*' + pattern,
       's'
     );
-    assert.ok(re.test(css), selector + ' must declare an aspect-ratio (or width+height) so its box is known before the image loads');
+    assert.ok(re.test(css), selector + ' must declare an aspect-ratio (or max-height/width+height) so its box is known before the image loads');
   });
 }
 

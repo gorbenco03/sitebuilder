@@ -3066,6 +3066,24 @@ async function applySelectedImageFile(file, path, src, alt) {
 // 11. Image resize
 // ---------------------------------------------------------------------------
 
+// A resized upload above this size (data-URL chars, ~3/4 of it real bytes)
+// falls back to a flattened JPEG rather than shipping a huge PNG — this only
+// matters for the rare large image that also happens to carry alpha; an
+// ordinary logo/icon PNG lands nowhere near it.
+const TRANSPARENT_PNG_SIZE_CEILING = 900 * 1024;
+
+// Every pixel drawImage() puts on the canvas keeps its real alpha value even
+// though a canvas has no visible "background colour" of its own — this reads
+// that channel back to tell a genuinely transparent source (a logo cut out on
+// a transparent background) from an ordinary opaque photo.
+function hasTransparentPixel(ctx, w, h) {
+  const data = ctx.getImageData(0, 0, w, h).data;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
 function resizeImageToDataUrl(file, maxPx, quality) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -3079,7 +3097,32 @@ function resizeImageToDataUrl(file, maxPx, quality) {
       }
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // toDataURL('image/jpeg', ...) has no alpha channel to write to, so it
+      // silently flattens a transparent background onto solid BLACK — a PNG
+      // logo made to sit on a dark header/hero came back with an opaque black
+      // square around it instead. Keep the transparency (as PNG) when it's
+      // real, instead of always re-encoding to JPEG; an ordinary opaque photo
+      // (the overwhelming majority of uploads) is unaffected and still gets
+      // the smaller JPEG.
+      if (hasTransparentPixel(ctx, w, h)) {
+        const pngUrl = canvas.toDataURL('image/png');
+        if (pngUrl.length <= TRANSPARENT_PNG_SIZE_CEILING) {
+          resolve(pngUrl);
+          return;
+        }
+        // Big enough that shipping it as PNG would be an unreasonable
+        // payload: flatten onto white instead of leaving it to the JPEG
+        // encoder's default black, so it's at least visible, then fall
+        // through to the normal JPEG encode below.
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      }
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error reading the image')); };

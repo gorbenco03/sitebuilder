@@ -395,10 +395,15 @@ body {
     animation: logoReveal 1.2s var(--spring) 0.3s forwards;
 }
 
+/* Standard logo box shared across all 5 templates (max-height + width:auto +
+   object-fit:contain, no fixed aspect-ratio) — without a height limit a
+   square upload rendered as large as the whole hero (460x460px, on mobile
+   too), pushing the business name below the fold instead of sitting beside
+   it like a mark. */
 .hero-logo {
-    max-width: 460px;
-    width: min(82vw, 460px);
-    height: auto;
+    max-height: 40px;
+    width: auto;
+    object-fit: contain;
     display: block;
     filter: drop-shadow(0 14px 36px rgba(45, 45, 45, 0.18));
 }
@@ -1013,6 +1018,49 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     box-shadow: 0 12px 35px rgba(45, 45, 45, 0.18);
     background: var(--color-white);
     pointer-events: none;
+}
+
+/* Large galleries (collage.js adds this class once a category has more photos
+   than the scatter deck can space out — GRID_THRESHOLD) drop the absolute
+   scatter for a plain grid: the same shared .collage-deck/.collage-photo
+   markup already renders overlap-free as a grid in the portfolio template
+   (templates/portfolio/styles.css, .collage-deck at >=834px) — reused here
+   rather than inventing a second spacing scheme. Scoped to the width where
+   the scatter itself is active; below 768px the existing masonry rules
+   further down already give every photo its own non-overlapping cell
+   regardless of count, so this class has nothing to override there. */
+@media (min-width: 769px) {
+    .collage-deck.collage-grid {
+        position: static;
+        width: 100%;
+        max-width: 1240px;
+        height: auto;
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+    }
+    .collage-grid .collage-photo {
+        position: static;
+        left: auto;
+        top: auto;
+        width: 100%;
+        height: auto;
+        margin: 0;
+        transform: none;
+        grid-column: span 2;
+    }
+    .collage-grid .collage-photo img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 4 / 5;
+    }
+    /* Same trailing-row treatment as portfolio: a remainder of 1 becomes a
+       wide feature shot, a remainder of 2 splits the last row evenly —
+       either way the last row always sums to the full row width. */
+    .collage-grid > :nth-child(3n+1):last-child { grid-column: span 6; }
+    .collage-grid > :nth-child(3n+1):last-child img { aspect-ratio: 21 / 9; }
+    .collage-grid > :nth-child(3n+1):nth-last-child(2),
+    .collage-grid > :nth-child(3n+2):last-child { grid-column: span 3; }
 }
 
 .collage-cta {

@@ -108,10 +108,15 @@ ul, ol { list-style: none; }
     word-break: normal;
     white-space: normal;
 }
-/* Logo width is unknown until the owner uploads one (schema stores only a
-   path, no natural dimensions) — reserve a stable box via aspect-ratio
-   instead of leaving width to resolve to 0 pre-load and jump on load. */
-.ls-hero__logo { height: 40px; aspect-ratio: 3 / 1; object-fit: contain; object-position: left center; margin-bottom: 1rem; }
+/* Standard logo box shared across all 5 templates (max-height + width:auto +
+   object-fit:contain, no fixed aspect-ratio) — a fixed 3:1 box let a square
+   upload sit "contain"-ed and tiny, and let a square upload elsewhere render
+   at up to 460px for the identical file. Reserving space before the image
+   loads is handled upstream: build.js writes real width/height attributes
+   onto every <img> from the uploaded file's own pixels, which the browser
+   uses to size this box (via width:auto against the intrinsic ratio) before
+   a single byte of image data has arrived. */
+.ls-hero__logo { max-height: 40px; width: auto; object-fit: contain; object-position: left center; margin-bottom: 1rem; }
 .ls-meters { display: flex; flex-wrap: wrap; gap: 1.75rem; margin: 1.5rem 0; }
 /* Audit a11y #32: the owner-chosen accent (--cta) is arbitrary — the shipped
    "renovari-bucuresti" preset picks a navy (#0b3d91) that measures 1.8:1

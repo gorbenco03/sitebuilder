@@ -148,7 +148,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-.pr-nav__logo { height: 22px; width: auto; }
+/* Standard logo box shared across all 5 templates (max-height + width:auto +
+   object-fit:contain, no fixed aspect-ratio) — a square upload no longer
+   renders at a different height per template (was 22px here vs up to 460px
+   elsewhere for the identical file). */
+.pr-nav__logo { max-height: 40px; width: auto; object-fit: contain; }
 .pr-nav__links {
     display: none;
     align-items: center;

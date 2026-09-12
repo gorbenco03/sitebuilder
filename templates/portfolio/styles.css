@@ -85,7 +85,11 @@ ul { list-style: none; }
        chrome row past the viewport (flex-wrap above), rather than being cut off. */
     min-width: 0;
 }
-.pf-chrome__logo { height: 22px; width: auto; }
+/* Standard logo box shared across all 5 templates (max-height + width:auto +
+   object-fit:contain, no fixed aspect-ratio) — a square upload no longer
+   renders at a different height per template (was 22px here vs up to 460px
+   elsewhere for the identical file). */
+.pf-chrome__logo { max-height: 40px; width: auto; object-fit: contain; }
 /* Standalone nav targets, 44px. These rendered 17px tall — text with no
    padding — which is under even the 24x24 of WCAG 2.5.8 (Level AA), and a
    masthead link is not "inline in a sentence", so no exception applies. This

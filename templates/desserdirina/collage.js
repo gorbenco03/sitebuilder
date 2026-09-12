@@ -66,10 +66,31 @@
     });
 
     /* ---------------- Scatter deck ---------------- */
+    // Above this many photos in one category, the scatter's own spacing
+    // formula ((deckW - photoW) / (n - 1), with no floor — see compute()
+    // below) shrinks toward 0 and the photos pile up almost on top of each
+    // other: measured at 16 photos, 54 overlapping pairs, up to 79% of a
+    // photo's area covered by another (bot/test/suite2-collage-scales.test.js).
+    // Past this threshold the deck switches to a plain grid instead (CSS:
+    // .collage-grid, same shared markup portfolio already renders overlap-free
+    // as a grid) rather than trying to find a spacing formula that degrades
+    // gracefully to zero for an unbounded photo count.
+    const GRID_THRESHOLD = 6;
+
     function initDeck(deck) {
         const photos = Array.from(deck.querySelectorAll('.collage-photo'));
         const n = photos.length;
         if (n === 0) return;
+
+        if (n > GRID_THRESHOLD) {
+            deck.classList.add('collage-grid');
+            photos.forEach((el) => {
+                const img = el.querySelector('img');
+                const imgIndex = allImgs.indexOf(img);
+                el.addEventListener('click', () => openLightbox(imgIndex));
+            });
+            return;   // no scatter positioning/drag physics in grid mode
+        }
 
         const yPattern = [16, 34, 8, 26, 18, 40, 12, 30];   // gentle vertical variation
         let base = [];

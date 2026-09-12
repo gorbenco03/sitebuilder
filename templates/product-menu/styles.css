@@ -71,7 +71,11 @@ ul { list-style: none; }
     line-height: 1.2; text-transform: none;
     display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pm-mast__logo { height: 28px; width: auto; }
+/* Standard logo box shared across all 5 templates (max-height + width:auto +
+   object-fit:contain, no fixed aspect-ratio) — a square upload no longer
+   renders at a different height per template (was 28px here vs up to 460px
+   elsewhere for the identical file). */
+.pm-mast__logo { max-height: 40px; width: auto; object-fit: contain; }
 /* Standalone nav targets, 44px. These rendered 17px tall — text with no
    padding — which is under even the 24x24 of WCAG 2.5.8 (Level AA), and a
    masthead link is not "inline in a sentence", so no exception applies. This
