@@ -88,10 +88,18 @@ function dirTotalBytes(dir) {
   // minifyCss/trimJsWhitespace short-circuited to identity:
   //
   //   template        minified   unminified   ceiling
-  //   product-menu       80384        85929     82000
-  //   local-service     104382       109531    106500
-  //   portfolio          95221       105350     97100
-  //   professionals     109024       124892    111200
+  //   product-menu       80409        86333     82000
+  //   local-service     104378       109895    106500
+  //   portfolio         103286       115828    105400
+  //   professionals     115318       133255    117700
+  //
+  // Re-measured 2026-09-12. portfolio grew ~8KB and professionals ~6KB, both
+  // for shipped features rather than drift: portfolio gained a whole
+  // appointment section (schema + template + three presets) so a salon can
+  // take bookings online, and professionals gained the separate native-mode
+  // copy that stops the page contradicting its own booking widget. The
+  // ceilings move with them, by the same minified + ~2% rule, and both stay
+  // comfortably under unminified so property (1) below still holds.
   //
   // These used to sit at the midpoint between the two. That rule stopped
   // serving its purpose once the stylesheets grew long explanatory comments:
@@ -109,8 +117,8 @@ function dirTotalBytes(dir) {
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 82000,
     'local-service': 106500,
-    portfolio: 97100,
-    professionals: 111200,
+    portfolio: 105400,
+    professionals: 117700,
   };
 
   for (const id of TPLS) {

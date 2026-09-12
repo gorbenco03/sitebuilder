@@ -571,10 +571,35 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'menu.title',
     'menu.en',
     'menu.ro',
+    // Online booking on the salon template (S5-6 / X1): the whole appointment
+    // section, the same field set professionals already had, with salon
+    // wording. Off by default — a portfolio site that never opts in renders
+    // byte-identical HTML, which is verified separately.
+    'appointment.nativeBooking',
+    'appointment.enabled',
+    'appointment.title',
+    'appointment.intro',
+    'appointment.timezone',
+    'appointment.slotIntervalMinutes',
+    'appointment.durationMin',
+    'appointment.minLeadMinutes',
+    'appointment.types',
+    'appointment.weekly',
+    'appointment.privacyNotice',
+    // professionals: native-mode copy, so the page stops contradicting the
+    // widget it just rendered (S5-2 / M14).
+    'appointment.nativeTitle',
+    'appointment.nativeIntro',
+    'faq.nativeItems',
   ]);
 
   // Same reason: declaring desserdirina's menu adds the section that holds it.
-  const ALLOWED_ADDED_SECTIONS = { 'templates/desserdirina/schema.json': ['menu'] };
+  const ALLOWED_ADDED_SECTIONS = {
+    'templates/desserdirina/schema.json': ['menu'],
+    // A salon can now take bookings online — the calendar engine was always
+    // template-agnostic, only the presentation was wired to professionals.
+    'templates/portfolio/schema.json': ['appointment'],
+  };
 
   function fieldMap(schema) {
     const map = Object.create(null);
