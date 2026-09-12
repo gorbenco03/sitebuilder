@@ -118,9 +118,28 @@ function gitShow(ref, relPath) {
  * removed), runs `overlayJs` (old or current builder/edit-overlay.js
  * content) against it, and reports whether the remove control ends up
  * scoped to the dish/category or ballooned onto the whole panel.
+ *
+ * Includes a `<script id="hb-list-schema">` tag matching what
+ * builder/app.js's computeListSchemaInfo()/injectListSchema() now embed into
+ * every REAL rendered srcdoc (post S1-4: builder/edit-overlay.js's
+ * isSafeList() reads this tag instead of a hardcoded name allowlist, so a
+ * fixture without it no longer represents what the current overlay actually
+ * sees in production — the old, pre-fix overlayJs never reads this tag at
+ * all, so its half of this test is unaffected by its presence). The payload
+ * mirrors templates/desserdirina/schema.json's `menu.en`/`menu.ro` fields
+ * (type:"list", itemShape `{category:"text", items:"list"}`) — declared
+ * there as part of this same fix, since schema.json previously never
+ * described this template's own bilingual menu structure at all.
  */
 async function measureContainerScope(overlayJs) {
   const { chromium } = loadPlaywright();
+  const listSchema = JSON.stringify({
+    lists: { 'menu.ro': { min: 0, max: 20 }, 'menu.en': { min: 0, max: 20 } },
+    nested: [
+      { parent: 'menu.ro', key: 'items' },
+      { parent: 'menu.en', key: 'items' },
+    ],
+  });
   const html = `<!doctype html><html><body>
     <div class="menu-panel" data-menu-panel="ro">
       <div class="menu-groups">
@@ -141,6 +160,7 @@ async function measureContainerScope(overlayJs) {
     </div>
     <script>window.parent = window; /* overlay posts to window.parent */</script>
     <script>${overlayJs}</script>
+    <script type="application/json" id="hb-list-schema">${listSchema}</script>
   </body></html>`;
   const browser = await chromium.launch({ headless: true });
   try {
@@ -216,7 +236,16 @@ async function runEditorFlow() {
     // the minimal reproduction; no hidden-tab interaction, no rapid
     // clicking, no multi-step batch sequence needed.
     for (let i = 0; i < 4; i++) {
-      await frame().locator('body').evaluate(() => {
+      // `i` is passed in explicitly rather than closed over: locator.evaluate()
+      // serializes the callback and re-runs it inside the PAGE's own JS realm,
+      // which has no access to this outer Node-side `for` loop's binding.
+      // Referencing it directly used to compile fine (Node itself is happy to
+      // capture it) but threw "i is not defined" the moment either `throw`
+      // branch actually ran in-browser — which never happened before this
+      // suite's own fix wave landed (the remove button always existed), so
+      // this had been a latent bug in the test itself, only surfaced once a
+      // regression made `!btn` true and tried to report why.
+      await frame().locator('body').evaluate((i) => {
         const panel = document.querySelector('[data-menu-panel="ro"]');
         const cats = Array.prototype.slice.call(panel.querySelectorAll('.menu-group'));
         const target = cats.find((c) => (c.querySelector('.menu-cat') || {}).textContent.replace(/×$/, '').trim() === 'Torturi');
@@ -224,7 +253,7 @@ async function runEditorFlow() {
         const btn = target.querySelector('.menu-items .hb-remove-btn');
         if (!btn) throw new Error('no remove button reachable for a Torturi dish (index ' + i + ')');
         btn.click();
-      });
+      }, i);
       await waitStable();
     }
 
