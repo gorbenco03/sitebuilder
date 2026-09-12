@@ -60,7 +60,12 @@
             <nav class="pf-chrome__nav" aria-label="Navigație">
                 <a href="#gallery-heading">{{labels.navGallery}}</a>
                 <a href="#services-heading">{{labels.navServices}}</a>
+                <!-- @if appointment.enabled -->
+                <a href="#appointment">{{labels.navBooking}}</a>
+                <!-- @endif -->
+                <!-- @if !appointment.enabled -->
                 <a href="#contact">{{labels.navBooking}}</a>
+                <!-- @endif -->
             </nav>
             <a href="#contact" class="pf-chrome__cta">{{hero.ctaLabel}}</a>
         </div>
@@ -73,7 +78,12 @@
     <nav class="pf-mobile-nav" id="pf-mobile-nav" aria-label="Navigație mobilă">
         <a href="#gallery-heading">{{labels.navGallery}}</a>
         <a href="#services-heading">{{labels.navServices}}</a>
+        <!-- @if appointment.enabled -->
+        <a href="#appointment">{{labels.navBooking}}</a>
+        <!-- @endif -->
+        <!-- @if !appointment.enabled -->
         <a href="#contact">{{labels.navBooking}}</a>
+        <!-- @endif -->
     </nav>
 
     <header class="hero pf-hero">
@@ -236,6 +246,46 @@
                 </div>
             </div>
             <!-- @endif -->
+        </section>
+        <!-- @endif -->
+
+        <!-- @if appointment.enabled -->
+        <section class="pf-svc fade-in-section" id="appointment" aria-labelledby="appt-heading"
+            data-pf-appt="1"
+            data-tz="{{appointment.timezone}}"
+            data-interval="{{appointment.slotIntervalMinutes}}"
+            data-duration="{{appointment.durationMin}}"
+            data-lead="{{appointment.minLeadMinutes}}">
+            <div class="pf-shell">
+                <p class="pf-kicker pf-kicker--center">{{labels.bookingEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="appt-heading">{{appointment.title}}</h2>
+                <p class="pf-copy">{{appointment.intro}}</p>
+                <!-- @if appointment.nativeBooking -->
+                <link rel="stylesheet" href="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.css" />
+                <div
+                    id="hnb-root"
+                    class="pf-native-cal"
+                    data-hidook-cal-native
+                    data-customer-id="{{appointment.nativeCustomerId}}"
+                    data-site-id="{{appointment.nativeSiteId}}"
+                    data-api-base="{{appointment.nativeApiBase}}"
+                    data-brand="{{business.name}}"
+                    data-contact-phone="{{contact.phoneDisplay}}"
+                    data-contact-phone-tel="{{contact.phone}}"
+                    data-contact-whatsapp="{{contact.waHref}}"
+                    data-day-count="14"
+                ></div>
+                <!-- @if appointment.privacyNotice -->
+                <p class="pf-copy pf-copy--sm">{{appointment.privacyNotice}}</p>
+                <!-- @endif -->
+                <script src="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.js" defer></script>
+                <!-- @endif -->
+                <!-- @if !appointment.nativeBooking -->
+                <!-- @if contact.waHref -->
+                <a href="{{contact.waHref}}" class="hero-cta" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
+                <!-- @endif -->
+                <!-- @endif -->
+            </div>
         </section>
         <!-- @endif -->
 

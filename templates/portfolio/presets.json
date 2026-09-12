@@ -221,6 +221,46 @@
           ],
           "embedUrl": ""
         },
+        "appointment": {
+          "nativeBooking": "",
+          "enabled": "yes",
+          "title": "Programează-te online",
+          "intro": "Alege serviciul, ziua și ora care ți se potrivesc. Primești confirmarea pe email imediat ce rezervarea e făcută.",
+          "timezone": "Europe/Bucharest",
+          "slotIntervalMinutes": "30",
+          "durationMin": "45",
+          "minLeadMinutes": "120",
+          "types": [
+            {
+              "id": "tuns-styling",
+              "label": "Tuns și styling",
+              "durationMin": "45",
+              "mode": "salon"
+            },
+            {
+              "id": "manichiura-gel",
+              "label": "Manichiură cu ojă gel",
+              "durationMin": "60",
+              "mode": "salon"
+            },
+            {
+              "id": "machiaj-zi",
+              "label": "Machiaj de zi",
+              "durationMin": "45",
+              "mode": "salon"
+            }
+          ],
+          "weekly": [
+            { "weekday": "1", "start": "09:00", "end": "20:00" },
+            { "weekday": "2", "start": "09:00", "end": "20:00" },
+            { "weekday": "3", "start": "09:00", "end": "20:00" },
+            { "weekday": "4", "start": "09:00", "end": "20:00" },
+            { "weekday": "5", "start": "09:00", "end": "20:00" },
+            { "weekday": "6", "start": "09:00", "end": "18:00" },
+            { "weekday": "7", "start": "10:00", "end": "15:00" }
+          ],
+          "privacyNotice": "Folosim datele tale numai pentru a confirma programarea."
+        },
         "contact": {
           "title": "Programează o vizită",
           "intro": "Scrie-ne pe WhatsApp și îți confirmăm ziua și ora în cel mult două ore. Te așteptăm în studioul nostru din București.",
@@ -463,6 +503,45 @@
             "images/sf-ig6.jpg"
           ],
           "embedUrl": ""
+        },
+        "appointment": {
+          "nativeBooking": "",
+          "enabled": "yes",
+          "title": "Programează-te online",
+          "intro": "Alege serviciul, ziua și ora care ți se potrivesc. Primești confirmarea pe email imediat ce rezervarea e făcută.",
+          "timezone": "Europe/Bucharest",
+          "slotIntervalMinutes": "30",
+          "durationMin": "60",
+          "minLeadMinutes": "180",
+          "types": [
+            {
+              "id": "coafura-mireasa",
+              "label": "Coafură de mireasă",
+              "durationMin": "90",
+              "mode": "salon"
+            },
+            {
+              "id": "machiaj-eveniment",
+              "label": "Machiaj de eveniment",
+              "durationMin": "60",
+              "mode": "salon"
+            },
+            {
+              "id": "manichiura-artistica",
+              "label": "Manichiură artistică",
+              "durationMin": "60",
+              "mode": "salon"
+            }
+          ],
+          "weekly": [
+            { "weekday": "1", "start": "09:00", "end": "19:00" },
+            { "weekday": "2", "start": "09:00", "end": "19:00" },
+            { "weekday": "3", "start": "09:00", "end": "19:00" },
+            { "weekday": "4", "start": "09:00", "end": "19:00" },
+            { "weekday": "5", "start": "09:00", "end": "19:00" },
+            { "weekday": "6", "start": "09:00", "end": "19:00" }
+          ],
+          "privacyNotice": "Folosim datele tale numai pentru a confirma programarea."
         },
         "contact": {
           "title": "Programează-te",
@@ -714,6 +793,46 @@
             "images/iv-ig6.jpg"
           ],
           "embedUrl": ""
+        },
+        "appointment": {
+          "nativeBooking": "",
+          "enabled": "yes",
+          "title": "Programează-te online",
+          "intro": "Alege serviciul, ziua și ora care ți se potrivesc. Primești confirmarea pe email imediat ce rezervarea e făcută.",
+          "timezone": "Europe/Bucharest",
+          "slotIntervalMinutes": "30",
+          "durationMin": "45",
+          "minLeadMinutes": "120",
+          "types": [
+            {
+              "id": "tuns-coafat",
+              "label": "Tuns și coafat",
+              "durationMin": "45",
+              "mode": "salon"
+            },
+            {
+              "id": "manichiura-gel",
+              "label": "Manichiură cu gel",
+              "durationMin": "60",
+              "mode": "salon"
+            },
+            {
+              "id": "tratament-facial",
+              "label": "Tratament facial",
+              "durationMin": "60",
+              "mode": "salon"
+            }
+          ],
+          "weekly": [
+            { "weekday": "1", "start": "09:00", "end": "20:00" },
+            { "weekday": "2", "start": "09:00", "end": "20:00" },
+            { "weekday": "3", "start": "09:00", "end": "20:00" },
+            { "weekday": "4", "start": "09:00", "end": "20:00" },
+            { "weekday": "5", "start": "09:00", "end": "20:00" },
+            { "weekday": "6", "start": "09:00", "end": "18:00" },
+            { "weekday": "7", "start": "10:00", "end": "15:00" }
+          ],
+          "privacyNotice": "Folosim datele tale numai pentru a confirma programarea."
         },
         "contact": {
           "title": "Programează o vizită",

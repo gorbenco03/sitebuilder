@@ -417,6 +417,106 @@
       ]
     },
     {
+      "id": "appointment",
+      "title": "Programări online",
+      "fields": [
+        {
+          "key": "appointment.nativeBooking",
+          "type": "text",
+          "label": "Programări native Hidook (da / nu) — opțional, reversibil",
+          "hint": "Scrie „da” ca să înlocuiești butonul WhatsApp cu un calendar de programări online pe site-ul public. Scrie „nu” (sau lasă gol) ca să păstrezi WhatsApp. Nu șterge rezervările existente; poți reveni oricând. La publicare se leagă automat de contul tău.",
+          "required": false,
+          "previewRefresh": "full",
+          "maxLen": 8
+        },
+        {
+          "key": "appointment.enabled",
+          "type": "text",
+          "label": "Activează secțiunea programări (da / nu)",
+          "required": true,
+          "maxLen": 8
+        },
+        {
+          "key": "appointment.title",
+          "type": "text",
+          "label": "Titlu secțiune (ex. Programează-te online)",
+          "required": true,
+          "maxLen": 80
+        },
+        {
+          "key": "appointment.intro",
+          "type": "textarea",
+          "label": "Text intro secțiune programări",
+          "required": true,
+          "maxLen": 400
+        },
+        {
+          "key": "appointment.timezone",
+          "type": "text",
+          "label": "Fus orar afișat (ex. Europe/Bucharest)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "appointment.slotIntervalMinutes",
+          "type": "text",
+          "label": "Interval slot în minute (ex. 30)",
+          "required": true,
+          "maxLen": 4
+        },
+        {
+          "key": "appointment.durationMin",
+          "type": "text",
+          "label": "Durată implicită serviciu (minute)",
+          "required": true,
+          "maxLen": 4
+        },
+        {
+          "key": "appointment.minLeadMinutes",
+          "type": "text",
+          "label": "Preaviz minim înainte de primul slot (minute)",
+          "required": true,
+          "maxLen": 6
+        },
+        {
+          "key": "appointment.types",
+          "type": "list",
+          "label": "Servicii programabile (nume + durată)",
+          "required": true,
+          "min": 1,
+          "max": 6,
+          "itemShape": {
+            "id": "text",
+            "label": "text",
+            "durationMin": "text",
+            "mode": "text"
+          },
+          "editable": false
+        },
+        {
+          "key": "appointment.weekly",
+          "type": "list",
+          "label": "Disponibilitate săptămânală (zi 1=Lun…7=Dum, start, end HH:MM)",
+          "required": true,
+          "min": 1,
+          "max": 14,
+          "itemShape": {
+            "weekday": "text",
+            "start": "text",
+            "end": "text"
+          },
+          "editable": false
+        },
+        {
+          "key": "appointment.privacyNotice",
+          "type": "textarea",
+          "label": "Notă confidențialitate / date personale",
+          "required": false,
+          "maxLen": 280
+        }
+      ]
+    },
+    {
       "id": "contact",
       "title": "Contact și programări",
       "fields": [
@@ -565,6 +665,11 @@
     {
       "id": "instagram",
       "label": "Instagram",
+      "removable": true
+    },
+    {
+      "id": "appointment",
+      "label": "Programări online",
       "removable": true
     },
     {
