@@ -54,6 +54,58 @@
         } catch (e) {}
     })();
     </script>
+    <script>
+    // CTA auto-contrast (pre-paint, same reasoning as the consent check
+    // above): the owner can set {{theme.primary}} to any accent — a builder
+    // swatch or a custom hex — and a text color fixed to one shade fails
+    // WCAG AA on roughly half of them. This computes relative luminance,
+    // picks whichever of two fixed inks (near-black/near-white) contrasts
+    // best against the real accent, and — only if even the better one still
+    // falls short of 4.5:1 — nudges the button's own fill toward black or
+    // white until it clears the threshold. See --cta-ink/--cta-bg in
+    // styles.css and bot/test/s74-product-menu-suite7.test.js.
+    (function () {
+        try {
+            var hex = "{{theme.primary}}";
+            var m = /^#([0-9a-f]{6})$/i.exec(hex);
+            if (!m) return;
+            var n = parseInt(m[1], 16), rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            var VOID_L = 0.003035269835488375, SNOW_L = 0.9405136905533645;
+            var lp = relLum(rgb);
+            var rVoid = ratio(lp, VOID_L), rSnow = ratio(lp, SNOW_L);
+            var useSnow = rSnow > rVoid;
+            var best = useSnow ? rSnow : rVoid;
+            var bg = rgb.slice();
+            if (best < 4.5) {
+                var target = useSnow ? [0, 0, 0] : [255, 255, 255];
+                for (var t = 0.02; t <= 0.7 && best < 4.5; t += 0.02) {
+                    var mixed = rgb.map(function (c, i) { return c + (target[i] - c) * t; });
+                    var r2 = ratio(relLum(mixed), useSnow ? SNOW_L : VOID_L);
+                    if (r2 > best) { best = r2; bg = mixed; }
+                }
+            }
+            function toHex(c) {
+                return '#' + c.map(function (v) {
+                    return ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2);
+                }).join('');
+            }
+            var root = document.documentElement.style;
+            root.setProperty('--cta-ink', useSnow ? '#faf8f5' : '#0a0a0a');
+            root.setProperty('--cta-bg', toHex(bg));
+        } catch (e) {}
+    })();
+    </script>
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>
     <!-- @endif -->
@@ -287,10 +339,10 @@
             </div>
             <div class="pm-foot__soc">
                 <!-- @if contact.instagram.url -->
-                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram">IG</a>
+                <a href="{{contact.instagram.url}}" target="_blank" rel="noopener" aria-label="Instagram"><span class="pm-foot__soc-icon instagram" aria-hidden="true"></span></a>
                 <!-- @endif -->
                 <!-- @if contact.facebook.url -->
-                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook">FB</a>
+                <a href="{{contact.facebook.url}}" target="_blank" rel="noopener" aria-label="Facebook"><span class="pm-foot__soc-icon facebook" aria-hidden="true"></span></a>
                 <!-- @endif -->
             </div>
         </div>

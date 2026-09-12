@@ -219,12 +219,11 @@
         {
           "key": "services",
           "type": "list",
-          "label": "Listă produse / specialități (icon opțional, label obligatoriu)",
+          "label": "Listă produse / specialități",
           "required": false,
           "min": 0,
           "max": 12,
           "itemShape": {
-            "icon": "text",
             "label": "text"
           }
         }

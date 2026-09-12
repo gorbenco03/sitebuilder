@@ -21,13 +21,27 @@
     --accent:     var(--color-primary, #c4a574);
     --link:       #6b4f2a;
     --glass:      rgba(10, 10, 10, 0.82);
+    /* CTA text/fill: the owner picks --color-primary freely (builder swatch
+       or custom hex), so a text color fixed to --void fails WCAG AA on
+       roughly half the builder's own swatches (measured down to 3.47:1) —
+       including the "Traista Verde" demo preset itself (2.64:1). script.js
+       overrides both before first paint by picking whichever fixed ink
+       contrasts best against the real accent, nudging the fill toward
+       black/white only if neither ink alone clears 4.5:1. These are the
+       no-JS fallback (same look as before this fix).
+       Locked by bot/test/s74-product-menu-suite7.test.js. */
+    --cta-ink:    var(--void);
+    --cta-bg:     var(--cta);
 
     --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
     --font-text:    'Helvetica Neue', Helvetica, Arial, sans-serif;
     --font-ui:      'Helvetica Neue', Helvetica, Arial, sans-serif;
 
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-    --r: 4px;
+    /* Softer corners across the board (client requirement) — was 4px, the
+       most-square CTA of the 5 templates. Locked by
+       bot/test/s74-product-menu-suite7.test.js. */
+    --r: 10px;
     --r-media: 8px;
     --r-pill: 980px;
     --max: 1040px;
@@ -156,7 +170,7 @@ ul { list-style: none; }
    Locked by bot/test/waveB-touch-targets.test.js, which measures the rendered
    box rather than the declaration. */
     min-height: 44px; padding: 8px 16px;
-    background: var(--cta); color: var(--void);
+    background: var(--cta-bg); color: var(--cta-ink);
     border-radius: var(--r); font-family: var(--font-ui);
     font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out), opacity 140ms var(--ease-out);
@@ -202,7 +216,7 @@ ul { list-style: none; }
     font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
 }
-.pm-hero__cta--fill { background: var(--cta); color: var(--void); border: 1px solid var(--cta); }
+.pm-hero__cta--fill { background: var(--cta-bg); color: var(--cta-ink); border: 1px solid var(--cta-bg); }
 .pm-hero__cta--ghost, .hero-cta {
     border: 1px solid rgba(255,255,255,0.55); color: var(--snow); background: transparent;
 }
@@ -422,17 +436,32 @@ ul { list-style: none; }
     background: var(--paper); color: var(--ink-mute); font-size: 12px;
     border-top: 1px solid rgba(26, 20, 16, 0.08);
 }
+
 .pm-foot__inner {
     max-width: var(--max); margin: 0 auto; padding: 2rem 22px 3rem;
     display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: center; justify-content: space-between;
 }
 .pm-foot__logo { height: 28px; }
-.pm-foot__soc { display: flex; gap: 0.35rem; color: var(--link); font-weight: 600; margin: -10px; }
+.pm-foot__soc { display: flex; gap: 0.35rem; margin: -10px; }
 .pm-foot__soc a {
     display: inline-flex; align-items: center; justify-content: center;
     min-width: 44px; min-height: 44px; border-radius: 50%;
 }
 .pm-foot__soc a:hover { background: rgba(26, 20, 16, 0.06); }
+/* Real icons, not the "IG"/"FB" text this used to carry — background-image
+   glyph on a fixed-size box, same technique as .contact-icon elsewhere in
+   this codebase, fill matched to --link since this footer sits on --paper
+   (a light ground), not the dark card that technique was first used on. */
+.pm-foot__soc-icon {
+    width: 20px; height: 20px; flex-shrink: 0;
+    background-repeat: no-repeat; background-position: center; background-size: contain;
+}
+.pm-foot__soc-icon.instagram {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b4f2a'%3E%3Cpath d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z'/%3E%3C/svg%3E");
+}
+.pm-foot__soc-icon.facebook {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b4f2a'%3E%3Cpath d='M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z'/%3E%3C/svg%3E");
+}
 
 .whatsapp-float {
     position: fixed; right: 18px; bottom: 18px; z-index: 30;

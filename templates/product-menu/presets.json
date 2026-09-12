@@ -40,12 +40,12 @@
         },
         "servicesTitle": "La masă",
         "services": [
-          { "icon": "", "label": "Cine de sezon" },
-          { "icon": "", "label": "Meniu degustare" },
-          { "icon": "", "label": "Vinuri românești" },
-          { "icon": "", "label": "Sală privată" },
-          { "icon": "", "label": "Bar de cocktailuri" },
-          { "icon": "", "label": "Brunch de weekend" }
+          { "label": "Cine de sezon" },
+          { "label": "Meniu degustare" },
+          { "label": "Vinuri românești" },
+          { "label": "Sală privată" },
+          { "label": "Bar de cocktailuri" },
+          { "label": "Brunch de weekend" }
         ],
         "menu": {
           "title": "Meniu",
@@ -204,12 +204,12 @@
         },
         "servicesTitle": "Ce oferim",
         "services": [
-          { "icon": "", "label": "Mic dejun" },
-          { "icon": "", "label": "Prânz în săptămână" },
-          { "icon": "", "label": "Cină lejeră" },
-          { "icon": "", "label": "Vin la pahar" },
-          { "icon": "", "label": "Terasă" },
-          { "icon": "", "label": "Catering mic" }
+          { "label": "Mic dejun" },
+          { "label": "Prânz în săptămână" },
+          { "label": "Cină lejeră" },
+          { "label": "Vin la pahar" },
+          { "label": "Terasă" },
+          { "label": "Catering mic" }
         ],
         "menu": {
           "title": "Meniu",
