@@ -425,6 +425,7 @@ async function run() {
         await page.locator('#btn-color-picker').click().catch(() => {});
       }
 
+      let fillTrace = null;
       if (system === 'professionals') {
         await openDrawer();
         const booking = page.locator('#dr_appointment_bookingUrl');
@@ -434,7 +435,18 @@ async function run() {
         } else {
           await booking.fill('https://cal.com/hidook-fullpass/consultatie');
           await booking.blur();
+          const afterFill = await page.evaluate(() => ({
+            field: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
+            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
+              ? draft.config.appointment.bookingUrl : '(none)',
+          })).catch(() => null);
           await page.waitForTimeout(1500);
+          const afterWait = await page.evaluate(() => ({
+            field: (document.getElementById('dr_appointment_bookingUrl') || {}).value,
+            cfg: (typeof draft !== 'undefined' && draft.config && draft.config.appointment)
+              ? draft.config.appointment.bookingUrl : '(none)',
+          })).catch(() => null);
+          fillTrace = { afterFill, afterWait };
           await closeDrawer();
           // Wait for the RESULT, not for a stopwatch. Measured in isolation the
           // link lands 30-45ms after the drawer closes, 6 runs out of 6 — but
@@ -473,7 +485,8 @@ async function run() {
               };
             }).catch((e) => ({ diagError: String(e && e.message) }));
             defect('high', 'Cal.com URL did not render booking link in preview',
-              'no a.pr-booking-link after drawer close; diag=' + JSON.stringify(diag));
+              'no a.pr-booking-link after drawer close; trace=' + JSON.stringify(fillTrace) +
+              ' diag=' + JSON.stringify(diag));
           }
           const formStill = await page.frameLocator('#preview-iframe').locator('form, button:has-text("Trimite")').count();
           if (!hasLink && formStill) {
