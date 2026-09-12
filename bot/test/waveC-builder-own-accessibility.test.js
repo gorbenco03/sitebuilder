@@ -20,8 +20,17 @@
  * them on its own front door.
  *
  * Screens covered: the landing page, the editor with its canvas, the editor
- * with the details drawer open, and the publish modal — at 1440x900 and
- * 390x844. Each is driven through the real app, not rendered in isolation.
+ * with the details drawer open, the publish modal, and (Suite 4 QA) the
+ * #save-status pill in both its "Salvat" and "Nu s-a salvat" states — at
+ * 1440x900 and 390x844. Each is driven through the real app, not rendered
+ * in isolation.
+ *
+ * Suite 4 QA (m15) found #save-status failing the same contrast rule this
+ * file already enforced on everything else: "Salvat" (green text on a
+ * green tint) measured 3.00:1, "Nu s-a salvat" (red on red tint) 4.41:1 —
+ * both under the 4.5:1 floor at this pill's 12.48px. Fixed in
+ * builder/app.css by darkening both to shades already used elsewhere in
+ * this app for the same tint pairing (see the CSS comment there).
  *
  * Two exemptions are applied, both from the criteria themselves:
  *   - WCAG 2.5.8 exempts a target whose size is constrained by the line-height
@@ -187,6 +196,28 @@ const SCREENS = [
         await page.locator('#btn-close-drawer').click().catch(() => {});
         await page.locator('#btn-publish').click().catch(() => {});
         await page.waitForTimeout(1200);
+    }],
+    // Suite 4 QA (m15): #save-status's "Salvat"/"Nu s-a salvat" pill was
+    // never on any prior screen here — it only appears after a real edit
+    // (saved) or a real network failure (error), neither of which the
+    // other screens above trigger. setSaveState() is the exact function
+    // renderSaveIndicator()'s caller uses for both real transitions (see
+    // builder/app.js) — called directly here instead of staging a live
+    // edit + debounce or an aborted /api/draft request, which would only
+    // reach the same two DOM states less deterministically. No bespoke
+    // contrast check needed: the generic scan below already measures every
+    // visible button/a/p/span/h1-4/label/li/td/div, so #save-status-text
+    // (a <span>) is caught by the same rule as everything else once one of
+    // these screens puts it on screen.
+    ['save status: saved', async (page) => {
+        await openEditor(page);
+        await page.evaluate(() => setSaveState('saved'));
+        await page.waitForTimeout(200);
+    }],
+    ['save status: error', async (page) => {
+        await openEditor(page);
+        await page.evaluate(() => setSaveState('error', 'Nu s-a putut salva.'));
+        await page.waitForTimeout(200);
     }],
 ];
 

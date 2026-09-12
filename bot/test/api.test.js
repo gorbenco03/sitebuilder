@@ -6,7 +6,9 @@
  *   - GET /api/config → {amount, currency, renewal, brandDomain|null, contactUrl|null}
  *   - GET /api/slug-check → {available, slug}
  *   - GET /api/templates returns templates with schema+presets
- *   - GET /api/me without cookie → 401
+ *   - GET /api/me with no cookie at all → 200 {user:null} (Suite 4 QA m19:
+ *     a 401 here made Chromium log a console error on every anonymous page
+ *     load); with a garbage/invalid cookie → still 401
  *   - Full email magic-link flow (no RESEND → devLink in response)
  *   - Token reuse → redirect to login-expired
  *   - POST /api/publish without auth → 401
@@ -314,9 +316,22 @@ const MINIMAL_CONFIG = {
         }
     });
 
-    // ── 4. GET /api/me without cookie → 401 ───────────────────────────────
-    await check('GET /api/me without cookie → 401', async () => {
+    // ── 4. GET /api/me without cookie → 200 {user:null} ───────────────────
+    // Changed from 401 (Suite 4 QA m19): a plain anonymous visitor with no
+    // session cookie is an expected state, not an auth failure, and a 401
+    // response made Chromium log "Failed to load resource" to the console
+    // on every single unauthenticated page load regardless of the client's
+    // own try/catch. A cookie that IS present but invalid/revoked still
+    // gets a real 401 — see wave8-logout-invalidate.test.js.
+    await check('GET /api/me without cookie → 200 {user:null}', async () => {
         const res  = await fetch(`${base}/api/me`);
+        assert.strictEqual(res.status, 200);
+        const body = await res.json();
+        assert.strictEqual(body.user, null);
+    });
+
+    await check('GET /api/me with a garbage cookie → still 401', async () => {
+        const res  = await fetch(`${base}/api/me`, { headers: { Cookie: 'hb_session=v1.garbage.garbage' } });
         assert.strictEqual(res.status, 401);
     });
 

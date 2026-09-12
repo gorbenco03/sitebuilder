@@ -1572,6 +1572,23 @@ async function handleAuthLogoutEverywhere(req, res) {
 }
 
 async function handleGetMe(req, res) {
+    // Suite 4 QA (m19): a plain anonymous visitor with NO session cookie at
+    // all is the overwhelmingly common case on this route (it's how the
+    // builder checks "am I signed in?" on every load) and is not an error —
+    // but a 401 response makes Chromium log "Failed to load resource: the
+    // server responded with a status of 401" to the console regardless of
+    // any try/catch in builder/app.js's fetchCurrentUser(), burying real
+    // errors in noise (confirmed empirically: an unauthenticated fetch('/api
+    // /me') logs that line even though the JS never throws). Only the
+    // no-cookie-at-all case is special-cased to 200 {user:null} here — an
+    // INVALID or revoked hb_session cookie still goes through requireAuth()
+    // and gets a real 401, unchanged: bot/test/wave8-logout-invalidate.test.js
+    // and wave8-logout-everywhere.test.js depend on that exact status to
+    // prove a revoked session is actually rejected server-side, not just
+    // cleared client-side, and this route must not weaken that.
+    if (!getAuth().getSessionCookieValue(req)) {
+        return sendJson(res, 200, { user: null });
+    }
     const userId = requireAuth(req, res);
     if (!userId) return;
     const user = await getRegistry().getUser(userId);

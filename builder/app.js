@@ -139,21 +139,57 @@ function setLoading(visible, msg) {
   }
 }
 
+// Suite 4 QA (m20): #toast is a single global slot — a second showToast()
+// call used to overwrite whatever was already showing instantly, even a
+// message the user had not had a chance to read yet (e.g. a failed save
+// immediately followed by another action's toast). TOAST_MIN_VISIBLE_MS is
+// a floor per message; a call that arrives before it elapses is queued
+// (capped at 2 pending, dropping the oldest so a burst of failures can't
+// build a long stale tail) instead of erasing the current one.
+const TOAST_MIN_VISIBLE_MS = 2500;
 let toastTimer = null;
-function showToast(msg, type, durationMs) {
+let toastShownAt = 0;
+let toastQueue = [];
+
+function renderToastNow(msg, type, durationMs) {
   const t = $('toast');
   if (!t) return;
   t.textContent = msg;
   t.className = 'toast' + (type ? ' toast-' + type : '');
   t.style.display = '';
+  toastShownAt = Date.now();
   if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.style.display = 'none'; }, durationMs || 3500);
+  toastTimer = setTimeout(advanceToastQueue, durationMs || 3500);
+}
+
+function advanceToastQueue() {
+  toastTimer = null;
+  const next = toastQueue.shift();
+  if (next) {
+    renderToastNow(next.msg, next.type, next.durationMs);
+  } else {
+    const t = $('toast');
+    if (t) t.style.display = 'none';
+  }
+}
+
+function showToast(msg, type, durationMs) {
+  const t = $('toast');
+  if (!t) return;
+  const isShowing = t.style.display !== 'none';
+  if (!isShowing || Date.now() - toastShownAt >= TOAST_MIN_VISIBLE_MS) {
+    renderToastNow(msg, type, durationMs);
+    return;
+  }
+  toastQueue.push({ msg, type, durationMs });
+  if (toastQueue.length > 2) toastQueue.shift();
 }
 
 function hideToast() {
   const t = $('toast');
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = null;
+  toastQueue = [];
   if (t) t.style.display = 'none';
 }
 
@@ -7808,12 +7844,18 @@ function wireStaticButtons() {
     });
   });
 
-  // Escape closes everything
+  // Escape closes everything. Queries `.modal-overlay` fresh on every
+  // keypress instead of a hardcoded id list — a hardcoded
+  // ['modal-publish', 'modal-preview', ...] here once missed modal-domain,
+  // modal-invoices and modal-delete-site simply because whoever added those
+  // three modals never remembered to also add their id to this array (Suite
+  // 4 QA, m14). Reading the DOM makes "every modal closes on Escape" true by
+  // construction: a modal added later needs no matching entry here, because
+  // there is no list to forget to update.
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      ['modal-publish','modal-preview','modal-success','modal-versions','modal-gallery','modal-instagram'].forEach(id => {
-        const el = $(id);
-        if (el && el.style.display !== 'none') closeModal(id);
+      document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        if (getComputedStyle(overlay).display !== 'none') closeModal(overlay.id);
       });
       if (drawerOpen) closeDrawer();
       if (colorPopoverOpen) closeColorPopover();

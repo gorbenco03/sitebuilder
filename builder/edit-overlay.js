@@ -255,11 +255,18 @@
       '  pointer-events: auto;',
       '}',
 
-      /* background-image change overlay */
+      /* background-image change overlay
+         Suite 4 QA (m16): measured 219x31px on a phone — under the 44px
+         touch floor (this button is always visible when there is no photo
+         behind it yet — see .hb-demo-bg below — so it is a real touch
+         target, not a hover-only affordance). */
       '.hb-bg-btn {',
       '  position: absolute;',
       '  top: 12px;',
       '  right: 12px;',
+      '  min-height: 44px;',
+      '  display: flex;',
+      '  align-items: center;',
       '  background: rgba(0,0,0,0.65);',
       '  color: #fff;',
       '  border: none;',
@@ -306,8 +313,14 @@
       '  opacity: 1;',
       '  pointer-events: auto;',
       '}',
+      /* Suite 4 QA (m16): measured 91x34px on a phone — under the 44px
+         touch floor. min-height (not just bigger padding) so it hits 44px
+         regardless of font metrics in whichever browser renders it. */
       '.hb-add-btn {',
-      '  display: block;',
+      '  display: flex;',
+      '  align-items: center;',
+      '  justify-content: center;',
+      '  min-height: 44px;',
       '  margin: 6px auto 0;',
       '  background: rgba(59,130,246,0.1);',
       '  color: rgba(59,130,246,0.95);',

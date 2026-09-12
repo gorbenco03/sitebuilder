@@ -145,6 +145,10 @@ input, textarea, select {
 }
 
 .logo {
+  /* Suite 4 QA (m16): 26px tall at 390px — under the 44px floor. The
+     56px header (--header-h) already has room: min-height + the existing
+     flex centering is all this needs. */
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -187,6 +191,11 @@ input, textarea, select {
 }
 .header-nav::-webkit-scrollbar { display: none; }
 .header-nav a {
+  /* Suite 4 QA (m16): 28px tall at 390px — under the 44px floor. Same
+     56px-header headroom as .logo above. */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   padding: 0.35rem 0.65rem;
   border-radius: var(--radius-md);
   font-size: 0.875rem;
@@ -465,8 +474,21 @@ body.details-drawer-open .editor-tpl-name {
    always visible without scrolling. Threshold picked well clear of
    every viewport width already exercised by the test suite (390 vs.
    1000/1200/1280/1400/1440), so nothing above phone width changes.
+
+   Suite 4 QA (m17): the same overflow-bleed shape reappears at 844x390 —
+   a phone rotated to landscape. 844px is well above the 640px threshold
+   above, so the rail was still a no-op there and #checklist-indicator
+   (part of the bled-over right side) landed on top of #btn-account-menu,
+   a ~23x28px overlap. A phone in landscape is still a phone — it needs
+   the rail too — but a wide-and-SHORT viewport is specifically what marks
+   it as a rotated phone rather than a tablet/laptop that happens to be
+   844px wide: an iPad portrait is 768x1024 (tall) and a small laptop is
+   1280x720 (both wider AND taller than this), neither of which should
+   get the phone topbar. The second query clause below adds exactly that
+   case (<=900px wide AND <=420px tall) alongside the original <=640px
+   rule; either one being true still applies this whole block.
 */
-@media (max-width: 640px) {
+@media (max-width: 640px), (max-width: 900px) and (max-height: 420px) {
   /* Same overflow-bleed shape appears a second time once touch targets
      grow below: left has flex-shrink:1 + min-width:0 + default
      overflow:visible, so once back+account (now 44px tall/wide) no
@@ -766,9 +788,25 @@ body.details-drawer-open .editor-tpl-name {
   height: 9px;
   animation: spin 0.7s linear infinite;
 }
-.save-status[data-state="saved"] { color: var(--success); border-color: var(--success-bg); background: var(--success-bg); }
-.save-status[data-state="error"] { color: var(--error); border-color: var(--error-bg); background: var(--error-bg); }
+/* Suite 4 QA (m15): var(--success)/var(--error) on their own -bg tint measure
+   3.00:1 / 4.41:1 at this pill's 12.48px — both under the 4.5:1 WCAG 1.4.3 AA
+   floor for normal text. Darkened to the shades this app already uses for
+   the same green/red-on-tint pairing elsewhere (.status-live, .status-expired
+   two rules down) rather than inventing a new pair: #15803D/#DCFCE7 measures
+   ~4.57:1, #B91C1C/#FEF2F2 ~5.9:1. .save-status-retry inherits `color`, so
+   the "Reîncearcă" link is fixed by the same rule. */
+.save-status[data-state="saved"] { color: #15803D; border-color: var(--success-bg); background: var(--success-bg); }
+.save-status[data-state="error"] { color: #B91C1C; border-color: var(--error-bg); background: var(--error-bg); }
 .save-status-retry {
+  /* Found while extending bot/test/waveC-builder-own-accessibility.test.js
+     for Suite 4 QA (m15): once a screen actually put the error state on
+     screen (nothing did before), this measured 67x19px — under even that
+     file's own 24x24 WCAG 2.5.8 AA floor, not just Suite 4's stricter 44px
+     bar. min-height + flex centering, same pattern as the other small
+     controls fixed in this file. */
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
   background: none;
   border: none;
   padding: 0;
@@ -781,6 +819,8 @@ body.details-drawer-open .editor-tpl-name {
 }
 
 .demo-content-banner-dismiss {
+  /* Suite 4 QA (m16): 27px tall at 390px — under the 44px floor. */
+  min-height: 44px;
   background: none;
   border: 1px solid var(--accent-muted);
   border-radius: var(--radius-sm);
@@ -809,6 +849,8 @@ body.details-drawer-open .editor-tpl-name {
   white-space: nowrap;
 }
 .quickstart-input {
+  /* Suite 4 QA (m16): 35px tall at 390px — under the 44px floor. */
+  min-height: 44px;
   font: inherit;
   font-size: 0.82rem;
   padding: 0.4rem 0.6rem;
@@ -824,6 +866,8 @@ body.details-drawer-open .editor-tpl-name {
   outline-offset: 1px;
 }
 .quickstart-submit {
+  /* Suite 4 QA (m16): 33px tall at 390px — under the 44px floor. */
+  min-height: 44px;
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -1172,7 +1216,7 @@ body.details-drawer-open .editor-tpl-name {
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
   cursor: pointer;
-  min-height: 36px;
+  min-height: 44px; /* Suite 4 QA (m16): was 36px, under the 44px floor */
   transition: color var(--transition), border-color var(--transition), background var(--transition);
 }
 .catalog-chip:hover { color: var(--text); border-color: var(--text-light); }
@@ -1780,8 +1824,16 @@ body.details-drawer-open .editor-tpl-name {
 .hb-secrow__actions { display: flex; align-items: center; gap: 0.3rem; flex-shrink: 0; }
 
 .hb-secrow__btn {
+  /* Suite 4 QA (m16): "Elimină" (the --wide variant) measured 64x30px on a
+     phone — under the 44px touch floor. Applied to the whole class (also
+     the small up/down reorder icon buttons) so the section list keeps one
+     consistent target size instead of Elimină/Adaugă being the only ones
+     bumped. */
   min-width: 30px;
-  min-height: 30px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 0 0.5rem;
   font-size: 0.8rem;
   line-height: 1;
@@ -1972,6 +2024,16 @@ body.details-drawer-open .editor-tpl-name {
   word-break: normal;
   overflow-wrap: normal;
   max-width: 100%;
+  /* Suite 4 QA (m16): this link's tap area was its bare text line, 19px
+     tall at 390px — under the 44px floor. Padding + an equal negative
+     margin grows the hit area to 44px without moving anything else in the
+     card: the visual line stays exactly where it was (negative margin
+     cancels the padding's layout footprint), only the invisible padding
+     box — which is still part of the anchor and still receives taps —
+     grows. Display:inline-block so the padding/margin apply on all sides. */
+  display: inline-block;
+  padding: 12.5px 0;
+  margin: -12.5px 0;
 }
 .site-live-link .site-live-seg {
   /* Path token (incl. long slug) never splits at hyphen. */
@@ -2077,8 +2139,21 @@ body.details-drawer-open .editor-tpl-name {
 }
 
 .modal-close {
+  /* Suite 4 QA (M13): measured 27x28px on every one of the 9 modals that
+     use this class — under the 44x44 touch-target floor, and on Domeniu/
+     Facturi/Șterge it was the ONLY way to close the dialog on a phone
+     (Esc didn't work there either — see the Escape handler above — and
+     the modal-overlay backdrop click already closes it, so this was never
+     the sole path, but it still had to meet the floor on its own). Sized
+     via min-width/min-height rather than just bigger padding so the glyph
+     stays visually the same size and centered. */
   position: absolute;
   top: 1rem; right: 1rem;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   font-size: 1.35rem;
@@ -2231,10 +2306,12 @@ body.details-drawer-open .editor-tpl-name {
 .modal-preview-title { font-size: 0.95rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .modal-preview-controls { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
 .modal-close-btn {
+  /* Suite 4 QA (M13): same 44x44 floor as .modal-close (below) — the
+     preview modal's X used its own class and was 30x30px. */
   background: none; border: none;
   font-size: 1.35rem; color: var(--text-muted);
   cursor: pointer;
-  width: 30px; height: 30px;
+  min-width: 44px; min-height: 44px;
   display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm);
   line-height: 1;
@@ -2449,7 +2526,12 @@ body.details-drawer-open .editor-tpl-name {
 
 .field-input,
 .field-textarea {
+  /* Suite 4 QA (m16): #dr_contact_phone (a plain .field-input, same as
+     every other drawer text/tel/email field) measured 40px tall on a
+     phone — 4px under the 44px touch floor. min-height applies the fix to
+     every drawer field at once rather than special-casing the phone one. */
   width: 100%;
+  min-height: 44px;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 0.55rem 0.7rem;
@@ -2469,7 +2551,7 @@ body.details-drawer-open .editor-tpl-name {
   overflow-wrap: normal;
   overflow-x: auto;
   text-overflow: clip;
-  min-height: 2.6rem;
+  min-height: 44px; /* was 2.6rem (41.6px) — under the shared .field-input floor above */
   resize: vertical;
   line-height: 1.45;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;

@@ -55,7 +55,7 @@ function intersects(a, b) {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
 
-async function withEditor(run) {
+async function withEditor(run, viewport = VIEWPORT) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wave11-mobile-editor-'));
   const env = {
     DATA_DIR: dataDir,
@@ -80,7 +80,7 @@ async function withEditor(run) {
 
   const browser = await chromium.launch({ headless: process.env.HIDOOK_E2E_HEADLESS !== '0' });
   const context = await browser.newContext({
-    viewport: VIEWPORT,
+    viewport,
     isMobile: true,
     hasTouch: true,
     deviceScaleFactor: 2,
@@ -160,6 +160,56 @@ test('mobile editor: topbar buttons neither overlap nor fall under 44x44 at 390p
     const publishBox = await page.locator('#btn-publish').boundingBox();
     assert.ok(publishBox.width >= MIN_TARGET && publishBox.height >= MIN_TARGET, 'publish button must be >= 44x44px');
   });
+});
+
+/**
+ * Suite 4 QA (m17): the fix above only ever engaged the phone topbar rail
+ * below 640px width. A phone rotated to LANDSCAPE is 844x390 — well over
+ * 640px wide, so `.editor-topbar-scroll` was still `display:contents` (a
+ * no-op) there, and the exact same overflow-bleed shape the Wave 11 fix
+ * exists to prevent reappeared: #checklist-indicator (part of the bled-over
+ * right side) landed on top of #btn-account-menu, a ~23x28px overlap
+ * (measured via getBoundingClientRect in the Suite 4 QA mobile-builder
+ * report). Fixed by widening the CSS breakpoint to also match a short-AND-
+ * wide viewport (<=900px wide, <=420px tall) alongside the original
+ * <=640px-wide rule — see the media query comment in builder/app.css.
+ */
+const LANDSCAPE_VIEWPORT = { width: 844, height: 390 };
+
+test('mobile editor landscape: topbar buttons do not overlap at 844x390', { timeout: 60000 }, async () => {
+  await withEditor(async (page) => {
+    await page.locator('#hb-cookie-accept').tap();
+    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.waitForURL(/#edit$/);
+    await page.locator('#details-drawer').waitFor({ state: 'visible' });
+    await page.locator('#btn-close-drawer').tap();
+    await page.locator('#details-drawer').waitFor({ state: 'hidden' });
+
+    const buttons = await page.locator('.editor-topbar button').all();
+    const report = [];
+    for (const btn of buttons) {
+      const id = await btn.getAttribute('id');
+      const visible = await btn.isVisible();
+      const box = visible ? await btn.boundingBox() : null;
+      report.push({ id, visible, box });
+    }
+
+    const onScreen = report.filter((b) => b.box && b.box.x >= -1 && b.box.x + b.box.width <= LANDSCAPE_VIEWPORT.width + 1);
+    const overlaps = [];
+    for (let i = 0; i < onScreen.length; i += 1) {
+      for (let j = i + 1; j < onScreen.length; j += 1) {
+        if (intersects(onScreen[i].box, onScreen[j].box)) overlaps.push(onScreen[i].id + ' x ' + onScreen[j].id);
+      }
+    }
+    assert.deepStrictEqual(overlaps, [], 'no two on-screen topbar buttons should overlap at 844x390 landscape');
+
+    // The specific pair the QA report measured overlapping.
+    const checklist = report.find((b) => b.id === 'checklist-indicator');
+    const account = report.find((b) => b.id === 'btn-account-menu');
+    assert.ok(checklist && checklist.visible, 'checklist-indicator must be visible in landscape');
+    assert.ok(account && account.visible, 'btn-account-menu must be visible in landscape');
+    assert.ok(!intersects(checklist.box, account.box), 'checklist-indicator must not overlap btn-account-menu, got ' + JSON.stringify({ checklist: checklist.box, account: account.box }));
+  }, LANDSCAPE_VIEWPORT);
 });
 
 test('mobile editor: color popover stays fully on-screen at 390px', { timeout: 60000 }, async () => {
