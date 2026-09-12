@@ -170,11 +170,20 @@ function dynamicCandidateTileFiles(editModeHtml) {
  * detect anything" proof runs the EXACT same code path production teardown
  * uses, not a re-implementation of it.
  */
-function assertNoTeaserLeak(publicHtml, candidateTileFiles, label) {
+function assertNoTeaserLeak(publicHtml, candidateTileFiles, label, baselineHtml) {
     for (const marker of MARKERS) {
         assert.ok(!publicHtml.includes(marker), `${label}: public render leaks marker "${marker}"`);
     }
     for (const file of candidateTileFiles) {
+        // A tile filename is only evidence of a leak when the PUBLIC page did not
+        // already carry that photo for its own reasons. desserdirina's teaser
+        // borrows real gallery photos (cupcakes-1.jpg and friends), and those
+        // legitimately appear on the published page — flagging them would be the
+        // guard crying wolf, and a gate that cries wolf gets muted, which is worse
+        // than not having it. When a baseline is available, a filename present in
+        // the frozen pre-teaser render is exempt; a filename that was NOT there
+        // before and is there now is exactly the leak this looks for.
+        if (baselineHtml && baselineHtml.includes(file)) continue;
         assert.ok(!publicHtml.includes(file), `${label}: public render leaks example tile filename "${file}"`);
     }
 }
@@ -199,14 +208,20 @@ test('suite10: Instagram teaser never appears in the published (no-editMode) ren
                 ...dynamicCandidateTileFiles(editModeHtml),
             ]);
 
+            // Read the baseline BEFORE the leak check: the check needs it to tell a
+            // real leak from a photo the public page already carried on its own.
+            const baselineEntry = baselineEntries.find((b) => b.id === preset.id);
+            const baselineHtmlOrNull = baselineEntry
+                ? fs.readFileSync(path.join(BASELINE_DIR, baselineEntry.file), 'utf8')
+                : null;
+
             try {
-                assertNoTeaserLeak(publicHtml, [...candidates], label);
+                assertNoTeaserLeak(publicHtml, [...candidates], label, baselineHtmlOrNull);
             } catch (e) {
                 failures.push(e.message);
             }
 
             // Byte-identical to the frozen pre-feature baseline.
-            const baselineEntry = baselineEntries.find((b) => b.id === preset.id);
             if (!baselineEntry) {
                 failures.push(
                     `${label}: no baseline fixture recorded for this preset (new preset added since baseline ` +
@@ -217,7 +232,7 @@ test('suite10: Instagram teaser never appears in the published (no-editMode) ren
                 );
                 continue;
             }
-            const baselineHtml = fs.readFileSync(path.join(BASELINE_DIR, baselineEntry.file), 'utf8');
+            const baselineHtml = baselineHtmlOrNull;
             if (publicHtml !== baselineHtml) {
                 failures.push(
                     `${label}: public render is NOT byte-identical to the pre-teaser baseline ` +

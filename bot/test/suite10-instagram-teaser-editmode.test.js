@@ -72,8 +72,11 @@ for (const templateId of TEMPLATE_IDS) {
     assert.match(html, /data-hb-ig-connect/, 'teaser CTA button must render');
     const tiles = html.match(/hb-ig-teaser__grid[\s\S]*?<\/ul>/);
     assert.ok(tiles, 'teaser grid must render');
-    const imgCount = (tiles[0].match(/<img\b/g) || []).length;
-    assert.equal(imgCount, 6, `teaser must render exactly 6 tiles, got ${imgCount}`);
+    // Count tiles, not <img>: professionals ships exactly one photo, so its six
+    // tiles are CSS panels rather than six copies of the same picture. What the
+    // contract promises is six tiles; how a template fills them is its own call.
+    const tileCount = (tiles[0].match(/<li\b/g) || []).length;
+    assert.equal(tileCount, 6, `teaser must render exactly 6 tiles, got ${tileCount}`);
     // The real (public) section must still be absent — it is gated on
     // instagram.handle, which stays blank when not connected.
     assert.ok(
