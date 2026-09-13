@@ -781,6 +781,45 @@ button, input, select, textarea { font: inherit; color: inherit; }
     outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
     outline-offset: 1px;
 }
+/* Suite F (PLAN-FEEDBACK-2026-09-13, punct 7): the opened native <select>
+   popup ("Data"/"Ora" inside .pr-sec--book) is painted by the OS/browser,
+   not by this stylesheet. Left alone, it inherits the CLOSED control's own
+   `color` — light (--paper), set below for the dark .pr-sec--book backdrop
+   — onto whatever popup surface the engine defaults to, which several
+   engines paint light/white regardless of the page's own theme. Light text
+   on a light surface is close to invisible; only the highlighted option
+   (browser-drawn accent background) was readable, which matches the
+   owner's report. Two changes, both needed because Chromium, Safari and
+   Firefox each decide the popup's default surface differently and don't
+   fully agree on how much of an author's `option` styling they honour on
+   their own:
+     1. `color-scheme: light` on the <select> — tells every engine to use
+        its LIGHT set of default form-control colours for whatever part of
+        the popup the author doesn't otherwise style (surface, scrollbar,
+        selected-row highlight), instead of following the page's own dark
+        section or the OS theme.
+     2. Explicit `color`/`background` on `option` — guarantees the actual
+        text/background pair outright, so the fix does not depend on any
+        one engine's defaults being right.
+   Scoped to `select.pr-input` (not `.pr-input` generally) so the plain
+   text/email/tel inputs sharing this class keep their own native chrome
+   untouched. This does not touch the CLOSED control's own background/color
+   (set by `.pr-sec--book .pr-input` below) or its :focus outline above —
+   those still paint light text on the dark backdrop, as before. */
+select.pr-input {
+    color-scheme: light;
+}
+select.pr-input option {
+    color: var(--ink);
+    background: var(--snow);
+}
+select.pr-input option:disabled {
+    /* --mute is already measured elsewhere in this file at 4.5:1 against
+       --paper/--snow (see the --mute definition near the top) — legible,
+       but visibly muted rather than full-strength ink, so a disabled option
+       still reads as disabled. */
+    color: var(--mute);
+}
 .pr-appt__hint { margin: 0.35rem 0 0.85rem; font-size: 0.9rem; }
 .pr-privacy { font-size: 0.85rem; margin: 0.75rem 0 1rem; max-width: 40rem; }
 .pr-appt__submit {
