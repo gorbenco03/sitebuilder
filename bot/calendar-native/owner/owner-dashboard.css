@@ -131,6 +131,25 @@ body.hod {
   width: 100%;
   max-width: 100%;
 }
+/* Suite F (PLAN-FEEDBACK-2026-09-13, punct 7) — same shape of defect as the
+   professionals booking form, checked defensively here even though this
+   page's own theme never goes dark: dark ink (--ink) on an explicit white
+   surface is fine while the popup follows this page's own colours, but an
+   owner whose OS is set to dark mode can get a browser-drawn popup that
+   ignores the page's light theme and paints its own dark surface — dark
+   ink on a dark surface would be just as unreadable as the booking form's
+   original bug. `color-scheme: light` plus explicit `option` colours pin
+   the popup to this page's actual (light) theme regardless of OS/browser
+   defaults. Scoped to `select` only, not the shared `input` rule above. */
+.hod-filters select,
+.hod-field select {
+  color-scheme: light;
+}
+.hod-filters select option,
+.hod-field select option {
+  color: var(--ink);
+  background: #fff;
+}
 .hod-filters input[type="search"] { flex: 1 1 140px; }
 .hod-filters input[type="date"],
 .hod-filters input[data-hod-from],
