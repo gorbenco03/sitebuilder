@@ -142,6 +142,18 @@ function dirTotalBytes(dir) {
   //   portfolio         108243    110500
   //   professionals     125689    128300
   //
+  // Re-measured on 2026-09-13 (PLAN-FEEDBACK-2026-09-13 Suite E, portfolio
+  // booking-copy honesty fix): appointment.title/intro no longer promise
+  // online booking while native booking is off — real new schema fields
+  // (appointment.nativeTitle/nativeIntro), template markup (the split
+  // @if appointment.nativeBooking / !appointment.nativeBooking blocks plus
+  // the editor-only activation hint) and a small CSS rule, all shipped
+  // feature content rather than drift, same as every prior wave noted
+  // above. Only portfolio's bundle grew.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         110642    112900
+  //
   // Two properties have to hold, and both still do at minified + ~2%:
   //   1. Well under unminified, so deleting the minifier trips this gate. The
   //      earlier generation of these ceilings sat ABOVE the unminified size
@@ -152,7 +164,7 @@ function dirTotalBytes(dir) {
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 88600,
     'local-service': 110400,
-    portfolio: 110500,
+    portfolio: 112900,
     professionals: 128300,
   };
 

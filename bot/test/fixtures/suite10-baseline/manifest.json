@@ -1,5 +1,5 @@
 {
-  "generatedAtCommit": "7cc77419ed04ebc6d96acce60b590f58bb357af8",
+  "generatedAtCommit": "a26df88c53925aeca822fd9f44ca3334e8879d2f",
   "templates": {
     "product-menu": [
       {
@@ -17,17 +17,17 @@
       {
         "id": "atelier-ivoire",
         "file": "portfolio/atelier-ivoire.html",
-        "bytes": 28650
+        "bytes": 28735
       },
       {
         "id": "studio-forma",
         "file": "portfolio/studio-forma.html",
-        "bytes": 27325
+        "bytes": 27410
       },
       {
         "id": "atelier-ivoire-ro",
         "file": "portfolio/atelier-ivoire-ro.html",
-        "bytes": 28541
+        "bytes": 28626
       }
     ],
     "local-service": [

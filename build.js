@@ -293,6 +293,45 @@ function normalizeConfigForRender(config) {
         if (cfg.appointment.nativeBooking == null) cfg.appointment.nativeBooking = '';
         // Empty = same-origin; publish injects CALENDAR_PUBLIC_BASE_URL when set.
         if (cfg.appointment.nativeApiBase == null) cfg.appointment.nativeApiBase = '';
+
+        // PLAN-FEEDBACK-2026-09-13 Suite E (portfolio booking-copy honesty,
+        // same defect SHAPE as professionals' M14 / commit 169c62c): before
+        // this fix, portfolio's appointment.title/intro were shared between
+        // both modes and described ONLY online booking — the ONLY mode the
+        // template used to have. Now appointment.title/intro are the
+        // WhatsApp-mode copy (rendered when nativeBooking is off, the
+        // default) and appointment.nativeTitle/nativeIntro are the
+        // online-booking copy (rendered when nativeBooking is on), mirroring
+        // professionals' schema/template shape exactly.
+        //
+        // Migration rule for a draft saved before this change existed (same
+        // shape as Suite A's per-language menu-text rule: a value is
+        // "untouched boilerplate" only while it matches the shipped default
+        // EXACTLY — the moment it differs at all, by even one character, it
+        // is the owner's own writing and is never touched again):
+        //   - nativeTitle/nativeIntro missing or blank -> filled with the
+        //     honest online-booking default, so turning native booking on
+        //     never shows a blank heading.
+        //   - title/intro EXACTLY equal to the old shared online-booking
+        //     default -> that is untouched boilerplate, corrected in place to
+        //     the new WhatsApp-honest default (the online copy already moved
+        //     into nativeTitle/nativeIntro above).
+        //   - title/intro different from that default -> an owner's own
+        //     writing. NEVER overwritten, no matter what it says.
+        const NATIVE_TITLE_DEFAULT = 'Programează-te online';
+        const NATIVE_INTRO_DEFAULT = 'Alege serviciul, ziua și ora care ți se potrivesc. Primești confirmarea pe email imediat ce rezervarea e făcută.';
+        const WHATSAPP_TITLE_DEFAULT = 'Programează-te pe WhatsApp';
+        const WHATSAPP_INTRO_DEFAULT = 'Scrie-ne pe WhatsApp cu serviciul, ziua și ora care ți se potrivesc. Confirmăm rezervarea direct în conversație.';
+        const hasNativeTitle = typeof cfg.appointment.nativeTitle === 'string' && cfg.appointment.nativeTitle.trim();
+        const hasNativeIntro = typeof cfg.appointment.nativeIntro === 'string' && cfg.appointment.nativeIntro.trim();
+        if (!hasNativeTitle) {
+            if (cfg.appointment.title === NATIVE_TITLE_DEFAULT) cfg.appointment.title = WHATSAPP_TITLE_DEFAULT;
+            cfg.appointment.nativeTitle = NATIVE_TITLE_DEFAULT;
+        }
+        if (!hasNativeIntro) {
+            if (cfg.appointment.intro === NATIVE_INTRO_DEFAULT) cfg.appointment.intro = WHATSAPP_INTRO_DEFAULT;
+            cfg.appointment.nativeIntro = NATIVE_INTRO_DEFAULT;
+        }
     }
     // Social cards follow the customer's current site photography. Never rely on
     // the removed customer-facing seo.ogImage URL control or a stale saved value.
@@ -923,6 +962,26 @@ function renderHtml(templateHtml, config, opts) {
         const connected = !!(cfg.instagram && cfg.instagram.embedUrl);
         if (!connected) {
             cfg.instagram = Object.assign({}, cfg.instagram, { showTeaser: true });
+        }
+    }
+
+    // PLAN-FEEDBACK-2026-09-13 Suite E: builder-preview-only "where do I turn
+    // this on" hint for the appointment section, same gating shape and same
+    // reason as instagram.showTeaser directly above — cfg.appointment.
+    // showActivationHint is a render-only flag, never part of any stored
+    // config or schema field, read by <!-- @if appointment.showActivationHint
+    // --> in templates/portfolio/template.html. It is only ever set inside
+    // this `if (editMode)` branch, so a non-editMode call (every publish/
+    // export) can never produce it. Shown only while native booking is off —
+    // once it's on, the real online-booking form is already rendering and
+    // there is nothing to point the owner at. See
+    // bot/test/suite11-portfolio-booking-copy-honest.test.js.
+    if (editMode && cfg.appointment && typeof cfg.appointment === 'object') {
+        const rawNative = cfg.appointment.nativeBooking;
+        const isFalsyString = typeof rawNative === 'string' && /^(false|0|no|nu)$/i.test(rawNative.trim());
+        const nativeOn = !isFalsyString && Boolean(rawNative);
+        if (!nativeOn) {
+            cfg.appointment = Object.assign({}, cfg.appointment, { showActivationHint: true });
         }
     }
 
