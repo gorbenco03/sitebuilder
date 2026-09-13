@@ -98,10 +98,10 @@
       {
         "category": "Cakes",
         "items": [
-          "Napoleon",
-          "Poveste",
-          "Smântânel (sour cream cake)",
-          "Medovic (honey cake)"
+          "Mille-feuille",
+          "“Story” cake",
+          "Sour cream cake",
+          "Honey cake"
         ],
         "empty": false
       },
@@ -109,8 +109,8 @@
         "category": "Made to order",
         "items": [
           "Cakes",
-          "Colaci (braided sweet bread)",
-          "Sarmale (stuffed cabbage rolls)",
+          "Braided sweet bread",
+          "Stuffed cabbage rolls",
           "Boxed meals",
           "Pies and cheese pastries",
           "Pastries and pastry platters"
@@ -120,7 +120,7 @@
       {
         "category": "Services and events",
         "items": [
-          "Catering and food to order",
+          "Event food service and meals to order",
           "Birthday parties at our place",
           "Events"
         ],

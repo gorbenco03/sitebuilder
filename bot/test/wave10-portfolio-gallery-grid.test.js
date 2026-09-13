@@ -2,26 +2,36 @@
 /**
  * Wave10 portfolio (Salon) — gallery grid regression gate.
  *
- * Concrete defect this guards against: a gallery category's photo count is
- * owner-editable (add/remove via the drawer's "+ Adaugă" control) and this
- * template's shipped presets never divide evenly by 3 (every category has
- * either 3 or 4 photos). At >=834px the gallery used a plain 3-column CSS
- * grid, so a 4-photo category left its 4th photo alone on a new row,
- * stranded next to two-thirds of a row of empty page background — confirmed
- * by rendering this exact template and comparing it side-by-side against
- * local-service/product-menu (04-QA-Evidence/Wave10-portfolio/ has the
- * before/after captures). This was the single most "looks unfinished" thing
- * found on the page.
+ * Concrete defect this guards against (ORIGINAL, still true of commit
+ * 20a3a2b — see the "before" check below): a gallery category's photo count
+ * is owner-editable (add/remove via the drawer's "+ Adaugă" control) and
+ * this template's shipped presets never divide evenly by 3 (every category
+ * has either 3 or 4 photos). At >=834px the gallery used a plain 3-column
+ * CSS grid, so a 4-photo category left its 4th photo alone on a new row,
+ * stranded next to two-thirds of a row of empty page background.
  *
- * The fix (templates/portfolio/styles.css, `.collage-deck` at >=834px) is a
- * 6-unit sub-grid where a trailing remainder of 1 spans the full row (a wide
- * "feature" shot) and a remainder of 2 splits the row evenly between them —
- * either way, the last row's items always sum to the full row width, so
- * there is never a large empty gap. This test proves that geometrically, on
- * the real rendered page (not by reading the CSS source), for every shipped
- * preset, and proves the *previous* commit (20a3a2b) actually had the gap —
- * i.e. this is a real red-before/green-after regression test, not a
- * tautology that would pass no matter what the CSS says.
+ * SUPERSEDED FIX, SUPERSEDED HERE (feedback 2026-09-13, Suite C): Wave10's
+ * own fix for that was a 6-unit sub-grid that STRETCHED the leftover
+ * photo(s) to fill the row (`grid-column: span 6` + `aspect-ratio: 21/9` on
+ * a lone remainder). That is exactly the NEW defect the owner reported with
+ * a screenshot: adding a 4th/5th photo to the gallery rendered it as a huge
+ * full-width banner under the row of three. "No empty gap in the last row"
+ * and "no photo ever renders bigger than its siblings" cannot both hold
+ * when a remainder is forced to fill leftover space by stretching — so this
+ * file's old "after" assertion (emptyFraction < 0.03) no longer applies and
+ * is REPLACED below with the invariant that supersedes it.
+ *
+ * CURRENT FIX (templates/portfolio/styles.css + collage.js): `.collage-deck`
+ * is a single-row flex track (2-up under 834px, 3-up from 834px, never
+ * wraps) — every photo, at any count, renders at the same size. A category
+ * with more photos than fit on one row becomes a horizontal scroll-snap
+ * carousel (real prev/next <button>s + native touch swipe) instead of
+ * wrapping to a second row or stretching a leftover photo to fill it. See
+ * bot/test/suite11-portfolio-gallery-uniform.test.js for the full carousel
+ * contract (breakpoints, button behaviour, no page horizontal scroll); this
+ * file keeps only the two checks in its own original scope: the historical
+ * red-before regression proof, and (rewritten) that every shipped preset's
+ * gallery photos are uniformly sized on the real rendered page.
  *
  * Run: node --experimental-sqlite bot/test/wave10-portfolio-gallery-grid.test.js
  */
@@ -92,6 +102,48 @@ async function measureGalleryGaps(dir, viewport) {
   }
 }
 
+/**
+ * SUITE C replacement for the "after" half of this file: the current design
+ * never wraps `.collage-deck` into multiple rows (it is a single-row flex
+ * track that scrolls instead, see styles.css/collage.js) so `measureGalleryGaps`'s
+ * "group into rows by top offset" logic no longer describes it — every item
+ * shares the same top, whether or not it is currently scrolled into view.
+ * What matters now: every `.collage-photo` in a deck renders at the SAME
+ * width (no stretched orphan), and — when the deck doesn't fit on one row —
+ * the carousel nav buttons are actually present to reach the rest.
+ */
+async function measureUniformity(dir, viewport) {
+  const { chromium } = loadPlaywright();
+  const { base, close } = await serveDir(dir);
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport });
+    await page.goto(base + '/index.html', { waitUntil: 'load', timeout: 30000 });
+    await page.waitForTimeout(300); // let collage.js's initCarousel() measure overflow
+    return await page.evaluate(() => {
+      const stages = [...document.querySelectorAll('.collage-stage')];
+      return stages.map((stage) => {
+        const deck = stage.querySelector(':scope > .collage-deck');
+        const items = [...deck.querySelectorAll(':scope > .collage-photo')];
+        const widths = items.map((el) => el.getBoundingClientRect().width);
+        const overflowing = deck.scrollWidth > deck.clientWidth + 1;
+        const prev = stage.querySelector(':scope > .collage-nav--prev');
+        const next = stage.querySelector(':scope > .collage-nav--next');
+        return {
+          count: items.length,
+          maxWidth: Math.max(...widths),
+          minWidth: Math.min(...widths),
+          overflowing,
+          navShown: !!(prev && !prev.hidden && next && !next.hidden),
+        };
+      });
+    });
+  } finally {
+    await browser.close();
+    await close();
+  }
+}
+
 async function main() {
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
   const DESKTOP = { width: 1440, height: 1000 };
@@ -107,21 +159,24 @@ async function main() {
     assert.ok(worst > 0.5, `expected the pre-fix template to have a >50% empty last row somewhere, worst was ${worst}`);
   });
 
-  // 2) Green-after: every shipped preset, every category's last row is
-  //    (near-)fully covered, at desktop width where the 3-column grid (and
-  //    therefore the remainder problem) applies.
+  // 2) Green-after (rewritten, Suite C): every shipped preset's gallery
+  //    photos render at a uniform size — no orphan stretched to fill a
+  //    partial row — and any category that doesn't fit on one row exposes
+  //    working carousel nav buttons instead of silently clipping photos.
   for (const presetIndex of [0, 1, 2]) {
-    await check(`after (working tree): preset ${presetIndex} has no empty gallery row gap at 1440px`, async () => {
+    await check(`after (working tree): preset ${presetIndex} — gallery photos are uniformly sized at 1440px, carousel nav present when needed`, async () => {
       const { dir } = buildSite({ state: 'after', presetIndex });
-      const gaps = await measureGalleryGaps(dir, DESKTOP);
-      results.after[`preset${presetIndex}`] = gaps;
-      for (const g of gaps) {
-        // A few px of gap rounding/border-radius is fine; anything under ~3%
-        // of the row width is not a visible "empty column" the way >60% was.
+      const decks = await measureUniformity(dir, DESKTOP);
+      results.after[`preset${presetIndex}`] = decks;
+      for (const d of decks) {
+        const spread = d.maxWidth - d.minWidth;
         assert.ok(
-          g.emptyFraction < 0.03,
-          `category with ${g.count} photos left ${(g.emptyFraction * 100).toFixed(1)}% of its last row empty`
+          spread <= 1,
+          `category with ${d.count} photos: widths range ${d.minWidth.toFixed(1)}-${d.maxWidth.toFixed(1)}px (spread ${spread.toFixed(1)}px) — a photo is stretched relative to its siblings`
         );
+        if (d.overflowing) {
+          assert.ok(d.navShown, `category with ${d.count} photos overflows its row but the carousel nav buttons are not shown`);
+        }
       }
     });
   }

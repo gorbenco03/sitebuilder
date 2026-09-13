@@ -65,6 +65,56 @@
         else if (e.key === 'ArrowRight') showAt(current + 1);
     });
 
+    /* Carousel controls (Suite C, 2026-09-13). Each .collage-stage holds one
+     * .collage-deck + a hidden prev/next <button> pair (styles.css). Shown
+     * only when the deck's REAL scrollWidth/clientWidth actually overflows
+     * (never a fixed photo-count guess), re-checked on resize/scroll. */
+    function initCarousel(stage) {
+        const deck = stage.querySelector(':scope > .collage-deck');
+        const prevBtn = stage.querySelector(':scope > .collage-nav--prev');
+        const nextBtn = stage.querySelector(':scope > .collage-nav--next');
+        if (!deck || !prevBtn || !nextBtn) return;
+
+        prevBtn.setAttribute('aria-label', lbPrevAria);
+        nextBtn.setAttribute('aria-label', lbNextAria);
+
+        function update() {
+            const canScroll = deck.scrollWidth > deck.clientWidth + 1;
+            prevBtn.hidden = !canScroll;
+            nextBtn.hidden = !canScroll;
+            if (!canScroll) return;
+            const max = deck.scrollWidth - deck.clientWidth;
+            prevBtn.disabled = deck.scrollLeft <= 1;
+            nextBtn.disabled = deck.scrollLeft >= max - 1;
+        }
+
+        function step(dir) {
+            const tile = deck.querySelector('.collage-photo');
+            const gap = 20;
+            const amount = tile ? tile.getBoundingClientRect().width + gap : deck.clientWidth * 0.8;
+            deck.scrollBy({ left: dir * amount, behavior: reduce ? 'auto' : 'smooth' });
+        }
+
+        prevBtn.addEventListener('click', () => step(-1));
+        nextBtn.addEventListener('click', () => step(1));
+
+        let scrollRT;
+        deck.addEventListener('scroll', () => {
+            clearTimeout(scrollRT);
+            scrollRT = setTimeout(update, 50);
+        });
+
+        let resizeRT;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeRT);
+            resizeRT = setTimeout(update, 150);
+        });
+
+        update();
+    }
+
+    Array.prototype.slice.call(document.querySelectorAll('.collage-stage')).forEach(initCarousel);
+
     /* ---------------- Scatter deck ---------------- */
     function initDeck(deck) {
         const photos = Array.from(deck.querySelectorAll('.collage-photo'));

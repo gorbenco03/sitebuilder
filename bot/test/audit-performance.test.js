@@ -136,6 +136,16 @@ function dirTotalBytes(dir) {
   // real shipped-feature markup+CSS, not drift, so the ceilings move up with
   // it, same as every prior wave noted above.
   //
+  // Re-measured on 2026-09-13 (Suite C, PLAN-FEEDBACK-2026-09-13.md): the
+  // portfolio gallery's WAVE10 fix (stretch a leftover photo to fill its
+  // row) turned out to BE the owner's next reported defect — a 4th/5th
+  // photo rendering as a huge banner. Replaced with a uniform-size gallery
+  // that becomes a real horizontal carousel above the per-row photo count
+  // (templates/portfolio/{template.html,styles.css,collage.js}: two
+  // <button> nav controls + collage.js's overflow-driven show/enable
+  // logic). Real shipped markup+JS, not drift, so only portfolio's ceiling
+  // moves.
+  //
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   product-menu       86844     88600
   //   local-service     108171    110400
@@ -154,6 +164,14 @@ function dirTotalBytes(dir) {
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   portfolio         110642    112900
   //
+  // Re-measured on 2026-09-13 after merging Suite C (portfolio gallery: uniform
+  // tiles + scroll-snap carousel with prev/next buttons, collage.js carousel
+  // logic) on top of Suite E above. The two suites were measured separately in
+  // their own worktrees (110642 and 111471); this is the combined build.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         113867    116200
+  //
   // Two properties have to hold, and both still do at minified + ~2%:
   //   1. Well under unminified, so deleting the minifier trips this gate. The
   //      earlier generation of these ceilings sat ABOVE the unminified size
@@ -164,7 +182,7 @@ function dirTotalBytes(dir) {
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 88600,
     'local-service': 110400,
-    portfolio: 112900,
+    portfolio: 116200,
     professionals: 128300,
   };
 
