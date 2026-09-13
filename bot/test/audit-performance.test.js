@@ -136,10 +136,20 @@ function dirTotalBytes(dir) {
   // real shipped-feature markup+CSS, not drift, so the ceilings move up with
   // it, same as every prior wave noted above.
   //
+  // Re-measured on 2026-09-13 (Suite C, PLAN-FEEDBACK-2026-09-13.md): the
+  // portfolio gallery's WAVE10 fix (stretch a leftover photo to fill its
+  // row) turned out to BE the owner's next reported defect — a 4th/5th
+  // photo rendering as a huge banner. Replaced with a uniform-size gallery
+  // that becomes a real horizontal carousel above the per-row photo count
+  // (templates/portfolio/{template.html,styles.css,collage.js}: two
+  // <button> nav controls + collage.js's overflow-driven show/enable
+  // logic). Real shipped markup+JS, not drift, so only portfolio's ceiling
+  // moves.
+  //
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   product-menu       86844     88600
   //   local-service     108171    110400
-  //   portfolio         108243    110500
+  //   portfolio         111471    113750
   //   professionals     125689    128300
   //
   // Two properties have to hold, and both still do at minified + ~2%:
@@ -152,7 +162,7 @@ function dirTotalBytes(dir) {
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 88600,
     'local-service': 110400,
-    portfolio: 110500,
+    portfolio: 113750,
     professionals: 128300,
   };
 

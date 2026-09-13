@@ -320,30 +320,86 @@ ul { list-style: none; }
    row width is now split with more space between them): on a client-chosen
    section colour the photos read as a single fused mass at a tight gap —
    more breathing room keeps them reading as separate framed shots. */
-.collage-stage { padding-inline: 20px; }
-.collage-deck { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-@media (min-width: 834px) {
-    /* WAVE10: a category's photo count is owner-editable (add/remove via the
-       drawer) and rarely divides evenly by 3. Left as a plain 3-column grid,
-       a remainder stranded a lone thumbnail (or a pair) next to a slab of
-       empty background on its own row — confirmed on this exact preset data
-       (4-photo categories) and, side-by-side against local-service/
-       product-menu, the single most "unfinished-looking" thing on the page.
-       A 6-unit sub-grid (each normal photo spans 2 of 6 = one visual column)
-       lets the trailing row's item(s) widen to fill the row completely
-       instead: a remainder of 1 becomes a deliberate wide feature shot, a
-       remainder of 2 becomes a paired diptych. Pure CSS, no JS/build.js
-       change, and it changes nothing when a category's count already
-       divides evenly by 3 (no :last-child in that case matches either rule). */
-    .collage-deck { grid-template-columns: repeat(6, 1fr); }
-    .pf-frame, .collage-photo { grid-column: span 2; }
-    .collage-deck > :nth-child(3n+1):last-child { grid-column: span 6; }
-    .collage-deck > :nth-child(3n+1):last-child img { aspect-ratio: 21 / 9; }
-    .collage-deck > :nth-child(3n+1):nth-last-child(2),
-    .collage-deck > :nth-child(3n+2):last-child {
-        grid-column: span 3;
-    }
+/* SUITE C (feedback 2026-09-13, punct 3): supersedes the WAVE10 fix below.
+   WAVE10 solved "a partial last row leaves an empty gap" by STRETCHING the
+   leftover photo(s) to fill the row (`grid-column: span 6` + `aspect-ratio:
+   21/9` on a lone remainder). That is exactly the defect the owner reported
+   with a screenshot: adding a 4th/5th photo to a 3-per-row grid made that
+   photo render as a huge full-width banner under the row of three. Uniform
+   sizing and "stretch to fill" are mutually exclusive — this fix keeps
+   uniform sizing and drops the stretch entirely, so
+   bot/test/wave10-portfolio-gallery-grid.test.js's "no empty last-row gap"
+   assertion no longer applies (it is rewritten in this same commit to check
+   the new invariant: never stretched, and any row that would otherwise
+   leave a gap becomes a scrollable carousel instead — see that file's
+   updated header comment).
+   Every photo, at any count, renders at the same size: `.collage-deck` is a
+   single-row flex track (no wrapping) sized to fit N photos per screen
+   width; a category with more photos than fit becomes a horizontal
+   scroll-snap carousel (collage.js wires the prev/next buttons + swipe is
+   native `overflow-x` touch scrolling) instead of wrapping to a second row
+   or stretching a leftover photo. */
+.collage-stage { padding-inline: 20px; position: relative; }
+.collage-deck {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    -webkit-overflow-scrolling: touch;
+    /* Buttons + swipe are the carousel's affordances; a second, native
+       scrollbar underneath the photos read as visual clutter in review. */
+    scrollbar-width: none;
+    /* Flex items paint like inline content (CSS Flexbox §z-index), which
+       sits ABOVE a lower positioned sibling in stacking order regardless of
+       DOM order — confirmed live: without this, `.collage-nav` (z-index:5,
+       a sibling of this deck, not a child) rendered visually on top but a
+       photo <img> still received the click. Giving the deck its own
+       explicit stacking context (position + a z-index below the buttons')
+       contains that flex-item painting quirk inside the deck itself, so the
+       stage-level comparison becomes a plain "z-index 1 vs 5" and the nav
+       buttons are reliably clickable, not just visually on top. */
+    position: relative;
+    z-index: 1;
 }
+.collage-deck::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) {
+    .collage-deck { scroll-behavior: auto; }
+}
+/* Two per screen on narrow widths, three from 834px up — same breakpoint
+   WAVE10 used for its 3-per-row desktop grid. A category at or under the
+   breakpoint's count renders as a plain uniform row (nothing to scroll,
+   `overflow-x` auto is a no-op); above it, .collage-nav (below) engages. */
+.pf-frame, .collage-photo {
+    flex: 0 0 calc((100% - 20px) / 2);
+    scroll-snap-align: start;
+}
+@media (min-width: 834px) {
+    .pf-frame, .collage-photo { flex: 0 0 calc((100% - 40px) / 3); }
+}
+/* Real <button>s, absolutely positioned over the stage's own side padding so
+   they never add horizontal page scroll. collage.js shows/hides + enables/
+   disables them based on the deck's actual measured overflow (never a fixed
+   photo-count guess), and sets their Romanian aria-label from the same
+   `data-lb-prev`/`data-lb-next` values the lightbox buttons already use. */
+.collage-nav {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; border: 0; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(251, 252, 253, 0.92); color: var(--ink);
+    font-size: 1.5rem; line-height: 1; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(28, 34, 40, 0.22);
+    z-index: 5;
+    transition: background 160ms var(--ease-out), opacity 160ms var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+}
+.collage-nav:hover { background: var(--snow); }
+.collage-nav:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.collage-nav:disabled { opacity: 0.35; cursor: default; }
+.collage-nav[hidden] { display: none; }
+.collage-nav--prev { left: 8px; }
+.collage-nav--next { right: 8px; }
 .pf-frame, .collage-photo { margin: 0; border-radius: var(--r); overflow: hidden; }
 /* WAVE10: `height: auto` is required, not decorative — build.js's CLS-safety
    pass (injectResponsiveImages) writes real width/height HTML ATTRIBUTES onto

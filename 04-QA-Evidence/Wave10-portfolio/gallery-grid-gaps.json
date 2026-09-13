@@ -19,43 +19,49 @@
     "preset0": [
       {
         "count": 4,
-        "rowCount": 2,
-        "lastRowItems": 1,
-        "emptyFraction": 0
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": true,
+        "navShown": true
       },
       {
         "count": 4,
-        "rowCount": 2,
-        "lastRowItems": 1,
-        "emptyFraction": 0
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": true,
+        "navShown": true
       }
     ],
     "preset1": [
       {
         "count": 4,
-        "rowCount": 2,
-        "lastRowItems": 1,
-        "emptyFraction": 0
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": true,
+        "navShown": true
       },
       {
         "count": 3,
-        "rowCount": 1,
-        "lastRowItems": 3,
-        "emptyFraction": 0.011235955056179803
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": false,
+        "navShown": false
       }
     ],
     "preset2": [
       {
         "count": 4,
-        "rowCount": 2,
-        "lastRowItems": 1,
-        "emptyFraction": 0
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": true,
+        "navShown": true
       },
       {
         "count": 4,
-        "rowCount": 2,
-        "lastRowItems": 1,
-        "emptyFraction": 0
+        "maxWidth": 453.328125,
+        "minWidth": 453.328125,
+        "overflowing": true,
+        "navShown": true
       }
     ]
   }
