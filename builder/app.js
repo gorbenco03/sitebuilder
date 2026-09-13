@@ -2791,7 +2791,35 @@ function onInlineTextEdit(path, value) {
   if (path === 'business.name' && draft.config) {
     prevName = getPath(draft.config, 'business.name');
   }
+  // Bilingual paired-list mirroring (Suite A, points 3-4). Capture the
+  // PREVIOUS value of this exact field BEFORE applying the edit — the
+  // "untranslated" test compares the sibling's CURRENT value against it.
+  const tplForLang = currentTemplate && currentTemplate.data;
+  const schemaForLang = tplForLang && tplForLang.schema;
+  const langLeaf = schemaForLang ? classifyLangPairLeaf(schemaForLang, path) : null;
+  const prevSelfValueForLang = langLeaf ? getPath(draft.config, path) : undefined;
+
   setPath(draft.config, path, value);
+
+  if (langLeaf && isListItemPathStillValid(langLeaf.siblingPath)) {
+    if (langLeaf.kind === 'neutral') {
+      // Point 3: language-neutral leaf (anything not itemShape "text", e.g.
+      // price/photos/icon) — always kept identical on both sides.
+      setPath(draft.config, langLeaf.siblingPath, value);
+    } else if (langLeaf.fromRo) {
+      // Point 4: a text leaf propagates RO -> EN only (see
+      // classifyLangPairLeaf()'s doc comment for why the direction is
+      // fixed rather than symmetric) while EN still holds the untranslated
+      // value — empty, or equal to what RO used to say before this edit.
+      // Once the owner has typed a real EN translation directly, EN no
+      // longer matches either condition and is never overwritten again.
+      const siblingValue = getPath(draft.config, langLeaf.siblingPath);
+      const untranslated = siblingValue === '' || siblingValue == null || siblingValue === prevSelfValueForLang;
+      if (untranslated) setPath(draft.config, langLeaf.siblingPath, value);
+    }
+    // else: editing the EN side directly — never propagated back onto RO
+    // (RO is always the owner's own authored text, point 4's direction).
+  }
   // Coalesce a burst of debounced keystrokes into ONE undo step (see saveDraft/pushHistory).
   pendingHistoryCoalesceKey = 'text:' + path;
   if (path === 'business.name' && prevName != null) {
@@ -2917,6 +2945,186 @@ function primaryItemShapeKey(itemShape) {
   return keys[0];
 }
 
+// ---------------------------------------------------------------------------
+// Bilingual (RO/EN) paired-list mirroring — PLAN-FEEDBACK-2026-09-13 Suite A.
+//
+// Root cause fixed here: menu.ro / menu.en (product-menu, desserdirina) are
+// two independent `type:"list"` fields in schema.json. Editing in RO never
+// touched EN's array (or vice versa), so a category/dish added while working
+// in one language silently never appeared in the other. The fix below is
+// generic — it reads the PAIR from schema.json (any two list fields whose
+// keys differ only by a trailing ".ro"/".en"), never hardcodes "menu" — so
+// any future template that declares its own such pair gets the same
+// structural-alignment guarantee for free.
+// ---------------------------------------------------------------------------
+
+/**
+ * Every RO/EN list pair a schema declares: two `type:"list"` fields whose
+ * keys are identical except for a final ".ro" / ".en" segment.
+ * Returns [{ro: '<key>.ro', en: '<key>.en'}, ...].
+ */
+function findLangListPairs(schema) {
+  const pairs = [];
+  if (!schema) return pairs;
+  const fields = getAllSchemaFields(schema).filter(f => f && f.type === 'list');
+  const byKey = {};
+  fields.forEach(f => { byKey[f.key] = f; });
+  fields.forEach(f => {
+    const m = /^(.+)\.ro$/.exec(f.key);
+    if (m && byKey[m[1] + '.en']) {
+      pairs.push({ ro: m[1] + '.ro', en: m[1] + '.en' });
+    }
+  });
+  return pairs;
+}
+
+/**
+ * Map any config path living under one half of a schema-detected RO/EN list
+ * pair — the pair root itself ("menu.ro") or anything nested underneath it
+ * ("menu.ro.2", "menu.ro.2.items", "menu.ro.2.items.1") — onto the SAME path
+ * under the other language, preserving every index untouched. Returns null
+ * when `path` is not under any known pair.
+ */
+function siblingLangListPath(schema, path) {
+  if (!path || !schema) return null;
+  const pairs = findLangListPairs(schema);
+  for (const pair of pairs) {
+    const sides = [[pair.ro, pair.en], [pair.en, pair.ro]];
+    for (const [self, sibling] of sides) {
+      if (path === self) return sibling;
+      if (path.indexOf(self + '.') === 0) return sibling + path.slice(self.length);
+    }
+  }
+  return null;
+}
+
+/** Schema-declared `max` for a given `type:"list"` field key, or null. */
+function schemaListMax(schema, listKey) {
+  let max = null;
+  if (!schema) return max;
+  getAllSchemaFields(schema).forEach(f => {
+    if (f && f.key === listKey && f.type === 'list' && typeof f.max === 'number') max = f.max;
+  });
+  return max;
+}
+
+/**
+ * Mirror a just-added item onto the sibling language list at the same
+ * index — IF (a) a sibling pair exists for this path, (b) the sibling
+ * container actually exists (never fabricate structure that isn't there,
+ * e.g. a nested "items" list under a category with no counterpart yet on
+ * the sibling side), and (c) the pair was aligned BEFORE this add (same
+ * length). Point 5: an already-misaligned legacy draft is left exactly as
+ * misaligned as it was — never forced into alignment, nothing deleted or
+ * fabricated on the sibling.
+ */
+function mirrorListAddToSibling(schema, listPath, newItem) {
+  const siblingPath = siblingLangListPath(schema, listPath);
+  if (!siblingPath) return;
+  const primaryArr = getPath(draft.config, listPath);
+  if (!Array.isArray(primaryArr)) return;
+  const siblingArrRaw = getPath(draft.config, siblingPath);
+  if (!Array.isArray(siblingArrRaw)) return; // sibling container doesn't exist — don't fabricate it
+  if (siblingArrRaw.length !== primaryArr.length - 1) return; // wasn't aligned before this add
+  const siblingArr = siblingArrRaw.slice();
+  siblingArr.push(JSON.parse(JSON.stringify(newItem)));
+  setPath(draft.config, siblingPath, siblingArr);
+}
+
+/**
+ * Mirror a just-removed index onto the sibling language list — IF the
+ * sibling container exists AND actually has an item at that index. Point 5:
+ * never deletes on the sibling when the index doesn't exist there (a
+ * shorter, already-misaligned sibling is left untouched).
+ */
+function mirrorListRemoveToSibling(schema, parentPath, idx) {
+  const siblingParentPath = siblingLangListPath(schema, parentPath);
+  if (!siblingParentPath) return;
+  const siblingArrRaw = getPath(draft.config, siblingParentPath);
+  if (!Array.isArray(siblingArrRaw) || idx >= siblingArrRaw.length) return;
+  const siblingArr = siblingArrRaw.slice();
+  siblingArr.splice(idx, 1);
+  setPath(draft.config, siblingParentPath, siblingArr);
+}
+
+/**
+ * Classify a leaf-level edit path (e.g. "menu.ro.2.category",
+ * "menu.ro.2.items.1") against the schema's language pairs: is it under a
+ * pair at all, and if so is the specific leaf a translatable "text" value
+ * (point 4 — shared only until independently translated) or a
+ * language-neutral one (point 3 — price/photos/icon/any itemShape value
+ * that ISN'T literally "text" — always kept identical on both sides)?
+ *
+ * A nested list value (itemShape[key] === "list", e.g. menu's "items" dish
+ * array) is itself full of per-language text — its own bare-string entries
+ * are classified as "text" leaves too, recursively, rather than as one
+ * neutral value copied verbatim (that would make every dish name identical
+ * in both languages, defeating the whole feature). This only resolves one
+ * level of such nesting — no shipped schema goes deeper, and guessing
+ * further would be inventing a shape nothing declares.
+ *
+ * Direction for "text" leaves is deliberately RO -> EN only (`fromRo` on the
+ * returned object): every schema with a language pair fixes
+ * `business.lang` to a single "ro" option — the owner works in Romanian and
+ * EN exists purely as a translation of it — so RO is always the source of
+ * truth. A purely symmetric fallback (mirror whichever side was edited last
+ * onto the other, whenever they still match) was tried first and produces a
+ * real bug: RO -> "Aperitive" -> mirrors to EN; owner types the real EN
+ * translation "Cold appetizers" directly — at that instant EN's OWN
+ * previous value ("Aperitive") still equals RO's current value, so a
+ * symmetric rule reads that as "RO is still untranslated" and overwrites
+ * the owner's own RO text with the English string; the next RO edit then
+ * finds EN sitting at what LOOKS LIKE its own previous mirrored value again
+ * and clobbers the real translation right back. Fixing that requires either
+ * persistent per-leaf "was this independently edited" state (nothing in
+ * `draft` currently tracks edit provenance, and inventing a field for it
+ * risks leaking into published config) or a fixed direction — the latter is
+ * simpler, matches the product's actual RO-source/EN-translation model, and
+ * is what's implemented. "Neutral" leaves (point 3) have no such directional
+ * source-language, so they stay a plain two-way mirror.
+ */
+function classifyLangPairLeaf(schema, path) {
+  if (!schema || !path) return null;
+  const pairs = findLangListPairs(schema);
+  for (const pair of pairs) {
+    const sides = [[pair.ro, pair.en, true], [pair.en, pair.ro, false]];
+    for (const [selfRoot, siblingRoot, fromRo] of sides) {
+      if (path.indexOf(selfRoot + '.') !== 0) continue;
+      const remainder = path.slice(selfRoot.length + 1); // "2.category" | "2.items.1" | "2"
+      const segs = remainder.split('.');
+      const idx = segs[0];
+      if (!/^\d+$/.test(idx)) continue;
+      const field = getAllSchemaFields(schema).find(f => f && f.key === selfRoot && f.type === 'list');
+      const itemShape = field ? (field.itemShape !== undefined ? field.itemShape : field.itemSchema) : null;
+      if (!itemShape || typeof itemShape !== 'object') continue;
+
+      if (segs.length === 1) {
+        // Bare-scalar list item (itemShape {'.':type}) — the item itself is the leaf.
+        if (itemShape['.'] !== 'text') continue;
+        return { siblingPath: siblingRoot + '.' + idx, kind: 'text', fromRo: fromRo };
+      }
+      if (segs.length === 2) {
+        const key = segs[1];
+        const shapeType = itemShape[key];
+        if (shapeType === undefined) continue;
+        return {
+          siblingPath: siblingRoot + '.' + idx + '.' + key,
+          kind: shapeType === 'text' ? 'text' : 'neutral',
+          fromRo: fromRo,
+        };
+      }
+      if (segs.length === 3) {
+        const nestedKey = segs[1];
+        const nestedIdx = segs[2];
+        if (itemShape[nestedKey] !== 'list' || !/^\d+$/.test(nestedIdx)) continue;
+        return { siblingPath: siblingRoot + '.' + idx + '.' + nestedKey + '.' + nestedIdx, kind: 'text', fromRo: fromRo };
+      }
+      // Deeper paths: not a shape any shipped schema declares — skip.
+    }
+  }
+  return null;
+}
+
 function onListAdd(listPath) {
   if (!listPath) return;
   const tpl = currentTemplate && currentTemplate.data;
@@ -2949,6 +3157,25 @@ function onListAdd(listPath) {
     showToast('Ai atins limita de ' + listMax + ' elemente pentru această listă.', 'error');
     return;
   }
+  // Point 6: a bilingual pair must never end up misaligned because one side
+  // could grow and the other couldn't. If this list has a language sibling,
+  // the pair is currently aligned (same length), and the SIBLING is already
+  // at its own schema max, refuse the add on both sides rather than adding
+  // only here and leaving the pair permanently unequal.
+  const langSiblingPath = schema ? siblingLangListPath(schema, listPath) : null;
+  if (langSiblingPath) {
+    const siblingArrForMaxCheck = getPath(draft.config, langSiblingPath);
+    const siblingMax = schemaListMax(schema, langSiblingPath);
+    if (
+      Array.isArray(siblingArrForMaxCheck) &&
+      siblingArrForMaxCheck.length === arr.length &&
+      typeof siblingMax === 'number' &&
+      siblingArrForMaxCheck.length >= siblingMax
+    ) {
+      showToast('Ai atins limita de ' + siblingMax + ' elemente pentru această listă.', 'error');
+      return;
+    }
+  }
   let newItem;
   // Restaurant menu: menu.en / menu.ro are section lists; *.items are string dishes
   if (/^menu\.(en|ro)$/.test(listPath)) {
@@ -2980,19 +3207,10 @@ function onListAdd(listPath) {
   }
   arr.push(newItem);
   setPath(draft.config, listPath, arr);
-  // Keep bilingual restaurant menus in sync when adding a section on one language
-  const mLang = /^menu\.(en|ro)$/.exec(listPath);
-  if (mLang && draft.config && draft.config.menu) {
-    const other = mLang[1] === 'en' ? 'ro' : 'en';
-    const otherPath = 'menu.' + other;
-    const otherArr = Array.isArray(getPath(draft.config, otherPath))
-      ? getPath(draft.config, otherPath).slice()
-      : [];
-    if (otherArr.length === arr.length - 1) {
-      otherArr.push(JSON.parse(JSON.stringify(newItem)));
-      setPath(draft.config, otherPath, otherArr);
-    }
-  }
+  // Generic bilingual-list mirroring (Suite A, points 1-2): keep ANY
+  // schema-declared RO/EN list pair structurally aligned, including lists
+  // nested inside another list's items (e.g. "menu.ro.2.items").
+  if (schema) mirrorListAddToSibling(schema, listPath, newItem);
   // Land the owner ON the item they just asked for, in the re-rendered
   // canvas — not merely "didn't lose your place" (fullRerender()'s plain
   // scroll carry-over) but scrolled to and focused, since a click on
@@ -3017,6 +3235,13 @@ function onListRemove(path) {
   if (!Array.isArray(arr)) return;
   arr.splice(idx, 1);
   setPath(draft.config, parentPath, arr);
+  // Generic bilingual-list mirroring (Suite A, point 2): removing at a path
+  // under one language's list removes the SAME index on the sibling
+  // language's list, including nested lists — only when that index actually
+  // exists there (point 5: never delete to force alignment).
+  const tpl = currentTemplate && currentTemplate.data;
+  const schema = tpl && tpl.schema;
+  if (schema) mirrorListRemoveToSibling(schema, parentPath, idx);
   saveDraft();
   fullRerender();
 }
