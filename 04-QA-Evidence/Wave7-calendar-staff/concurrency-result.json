@@ -6,14 +6,14 @@
   "confirmed": 5,
   "requested": 15,
   "confirmedResourceIds": [
-    "res_1e331415840786c7ac026184",
-    "res_24ae6b9457d40e08db38605d",
-    "res_5c46959149e67a6a436a6cc6",
-    "res_6bc454d34016143b15f8acc8",
-    "res_a236312b3a4a91aa0cfe2650"
+    "res_37c3b64dc4e66325bda67d62",
+    "res_be613b0215215984a88a6bfc",
+    "res_c9d4c8c310d4d5f15407a6f0",
+    "res_d26da28448ae8644ff636481",
+    "res_f3d9478168058d686f28939d"
   ],
   "doubleBooked": 0,
   "allWorkersResolvedWithoutError": true,
   "targetStartUtc": "2031-03-03T10:00:00.000Z",
-  "generatedAt": "2026-09-06T23:31:11.097Z"
+  "generatedAt": "2026-09-13T12:40:37.649Z"
 }

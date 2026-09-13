@@ -122,18 +122,18 @@
   {
     "label": "price list value on --paper",
     "selector": ".pf-price__val",
-    "ratio": 10.90097673456173,
+    "ratio": 6.119852919723722,
     "required": 4.5,
     "isLarge": false,
     "fg": [
-      42,
-      51,
-      64
+      89,
+      96,
+      106
     ],
     "bg": [
-      232,
-      238,
-      242
+      249,
+      251,
+      252
     ],
     "text": "260–350 lei",
     "fontSize": 17,

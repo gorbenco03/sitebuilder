@@ -103,19 +103,31 @@
             {
               "category": "Cakes",
               "items": [
-                "Red Velvet",
-                "Carrot Cake",
-                "Oreo Cake",
-                "Victoria Sponge",
-                "Chocolate Cake"
+                "Mille-feuille",
+                "“Story” cake",
+                "Sour cream cake",
+                "Honey cake"
               ],
               "empty": false
             },
             {
-              "category": "Pies",
+              "category": "Made to order",
               "items": [
-                "Vegetable Pie",
-                "Cheese Pie"
+                "Cakes",
+                "Braided sweet bread",
+                "Stuffed cabbage rolls",
+                "Boxed meals",
+                "Pies and cheese pastries",
+                "Pastries and pastry platters"
+              ],
+              "empty": false
+            },
+            {
+              "category": "Services and events",
+              "items": [
+                "Event food service and meals to order",
+                "Birthday parties at our place",
+                "Events"
               ],
               "empty": false
             }
@@ -259,19 +271,31 @@
             {
               "category": "Cakes",
               "items": [
-                "Red Velvet",
-                "Carrot Cake",
-                "Oreo Cake",
-                "Victoria Sponge",
-                "Chocolate Cake"
+                "Mille-feuille",
+                "“Story” cake",
+                "Sour cream cake",
+                "Honey cake"
               ],
               "empty": false
             },
             {
-              "category": "Pies",
+              "category": "Made to order",
               "items": [
-                "Vegetable Pie",
-                "Cheese Pie"
+                "Cakes",
+                "Braided sweet bread",
+                "Stuffed cabbage rolls",
+                "Boxed meals",
+                "Pies and cheese pastries",
+                "Pastries and pastry platters"
+              ],
+              "empty": false
+            },
+            {
+              "category": "Services and events",
+              "items": [
+                "Event food service and meals to order",
+                "Birthday parties at our place",
+                "Events"
               ],
               "empty": false
             }

@@ -1,5 +1,5 @@
 {
-  "generatedAtCommit": "a26df88c53925aeca822fd9f44ca3334e8879d2f",
+  "generatedAtCommit": "4f5ddb0367a198810cfb57e46cd8634c1642c29a",
   "templates": {
     "product-menu": [
       {
@@ -63,12 +63,12 @@
       {
         "id": "desserdirina-ro",
         "file": "desserdirina/desserdirina-ro.html",
-        "bytes": 23428
+        "bytes": 25205
       },
       {
         "id": "desserdirina-en",
         "file": "desserdirina/desserdirina-en.html",
-        "bytes": 23428
+        "bytes": 25205
       }
     ]
   }

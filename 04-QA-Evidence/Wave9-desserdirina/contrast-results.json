@@ -1,12 +1,12 @@
 {
   "eyebrow (about section)": {
-    "ratio": 6.891523263528134,
+    "ratio": 7.828528263803601,
     "required": 4.5,
     "isLarge": false,
     "fg": [
-      156.75002999999998,
-      51,
-      89.25
+      145.49994,
+      43.499939999999995,
+      80.25003
     ],
     "bg": [
       255,
@@ -18,13 +18,13 @@
     "fontWeight": 500
   },
   "language toggle, inactive (\"EN\")": {
-    "ratio": 6.891523263528134,
+    "ratio": 7.828528263803601,
     "required": 4.5,
     "isLarge": false,
     "fg": [
-      156.75002999999998,
-      51,
-      89.25
+      145.49994,
+      43.499939999999995,
+      80.25003
     ],
     "bg": [
       255,
@@ -36,7 +36,7 @@
     "fontWeight": 400
   },
   "language toggle, active (\"RO\")": {
-    "ratio": 6.882077808638976,
+    "ratio": 7.7826528815283655,
     "required": 4.5,
     "isLarge": false,
     "fg": [
@@ -45,29 +45,29 @@
       255
     ],
     "bg": [
-      157,
-      51,
-      89
+      146,
+      44,
+      80
     ],
     "text": "RO",
     "fontSize": 13.6,
     "fontWeight": 400
   },
   "menu category title (first: \"Torturi\")": {
-    "ratio": 6.3926850532369395,
+    "ratio": 7.261865585757215,
     "required": 4.5,
     "isLarge": false,
     "fg": [
-      156.75002999999998,
-      51,
-      89.25
+      145.49994,
+      43.499939999999995,
+      80.25003
     ],
     "bg": [
       248,
       246,
       244
     ],
-    "text": "Torturi",
+    "text": "Cakes",
     "fontSize": 22.4,
     "fontWeight": 600
   }

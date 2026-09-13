@@ -10,7 +10,7 @@
   "theme": {
     "primary": "#E8588C",
     "primaryLight": "#f07aa5",
-    "primaryDark": "#d14477",
+    "primaryDark": "#c23a6b",
     "cream": "#faf8f8"
   },
   "labels": {
@@ -62,8 +62,7 @@
   "instagram": {
     "handle": "cofetariamariei",
     "url": "https://www.instagram.com/cofetariamariei",
-    "embedUrl": "",
-    "gallery": []
+    "embedUrl": ""
   },
   "contact": {
     "title": "Comandă acum",
@@ -97,21 +96,33 @@
     "title": "Meniu",
     "en": [
       {
-        "category": "Torturi",
+        "category": "Cakes",
         "items": [
-          "Red Velvet",
-          "Tort de morcovi",
-          "Tort Oreo",
-          "Pandispan Victoria",
-          "Tort de ciocolată"
+          "Napoleon",
+          "Poveste",
+          "Smântânel (sour cream cake)",
+          "Medovic (honey cake)"
         ],
         "empty": false
       },
       {
-        "category": "Plăcinte",
+        "category": "Made to order",
         "items": [
-          "Cu legume",
-          "Cu brânză"
+          "Cakes",
+          "Colaci (braided sweet bread)",
+          "Sarmale (stuffed cabbage rolls)",
+          "Boxed meals",
+          "Pies and cheese pastries",
+          "Pastries and pastry platters"
+        ],
+        "empty": false
+      },
+      {
+        "category": "Services and events",
+        "items": [
+          "Catering and food to order",
+          "Birthday parties at our place",
+          "Events"
         ],
         "empty": false
       }

@@ -136,7 +136,7 @@
                                     <summary class="menu-cat">Cakes</summary>
                                     
                                     <ul class="menu-items">
-                                        <li>Red Velvet</li><li>Carrot Cake</li><li>Oreo Cake</li><li>Victoria Sponge</li><li>Chocolate Cake</li>
+                                        <li>Napoleon</li><li>Poveste</li><li>Smântânel (sour cream cake)</li><li>Medovic (honey cake)</li>
                                     </ul>
                                     
                                 </details>
@@ -155,10 +155,32 @@
                                     completely, live, with no trace (see HANDOFF-desserdirina.md).
                                 -->
                                 <details class="menu-group" open>
-                                    <summary class="menu-cat">Pies</summary>
+                                    <summary class="menu-cat">Made to order</summary>
                                     
                                     <ul class="menu-items">
-                                        <li>Vegetable Pie</li><li>Cheese Pie</li>
+                                        <li>Cakes</li><li>Colaci (braided sweet bread)</li><li>Sarmale (stuffed cabbage rolls)</li><li>Boxed meals</li><li>Pies and cheese pastries</li><li>Pastries and pastry platters</li>
+                                    </ul>
+                                    
+                                </details>
+                                
+                                <!--
+                                    DSD-03: the heading renders unconditionally, and only the
+                                    dish list itself is gated on `items` being non-empty — a
+                                    category an owner has cleared down to zero dishes (a
+                                    normal, single realistic action: "we don't make this
+                                    anymore") still shows its own name instead of vanishing
+                                    from the page outright. An older version of this block
+                                    gated the WHOLE <details> (heading included) on `items`,
+                                    with a `menu-group--plain` fallback for an `empty` flag
+                                    that no code anywhere ever set — so a category emptied out
+                                    through the editor's own "remove item" control disappeared
+                                    completely, live, with no trace (see HANDOFF-desserdirina.md).
+                                -->
+                                <details class="menu-group" open>
+                                    <summary class="menu-cat">Services and events</summary>
+                                    
+                                    <ul class="menu-items">
+                                        <li>Catering and food to order</li><li>Birthday parties at our place</li><li>Events</li>
                                     </ul>
                                     
                                 </details>
