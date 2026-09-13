@@ -224,10 +224,16 @@ TEMPLATES.forEach((templateId) => {
         // Only scalar text leaves — see the "deliberate narrowings" doc
         // comment above for why "photos", nested "list" values, and "icon"
         // are excluded.
-        // `photo` is declared "text" in portfolio's team.members itemShape but
-        // holds an image path rendered as <img src>, so it has no text box to
-        // click — images are Suite 2's scope, not this oracle's. Same reason
-        // as `icon`. If either ever grows a real editing surface, drop it here.
+        // `photo` (portfolio's team.members itemShape) holds an image path
+        // rendered as <img src>, so it has no text box to click — images are
+        // Suite 2's/PLAN-FEEDBACK-2026-09-13 Suite D's scope, not this
+        // oracle's. As of Suite D it is declared "image" in schema.json (was
+        // "text", the bug that fix addressed), so the `=== 'text'` filter
+        // above already excludes it on its own — kept in this explicit list
+        // too as a second, name-based guard against any future itemShape
+        // leaf that renders as an <img> under some other type string. Same
+        // reasoning covers `icon`. If either ever grows a real text editing
+        // surface, drop it here.
         const IMAGE_LIKE = ['icon', 'photo', 'photos', 'image', 'img'];
         const keys = Object.keys(itemShape).filter(
           (k) => itemShape[k] === 'text' && IMAGE_LIKE.indexOf(k) === -1
