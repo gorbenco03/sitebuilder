@@ -248,8 +248,14 @@
             <div class="pf-shell">
                 <div class="pf-svc__intro">
                     <p class="pf-kicker pf-kicker--center">{{labels.bookingEyebrow}}</p>
+                    <!-- @if appointment.nativeBooking -->
+                    <h2 class="pf-display pf-display--center" id="appt-heading">{{appointment.nativeTitle}}</h2>
+                    <p class="pf-copy">{{appointment.nativeIntro}}</p>
+                    <!-- @endif -->
+                    <!-- @if !appointment.nativeBooking -->
                     <h2 class="pf-display pf-display--center" id="appt-heading">{{appointment.title}}</h2>
                     <p class="pf-copy">{{appointment.intro}}</p>
+                    <!-- @endif -->
                 </div>
                 <!-- @if appointment.nativeBooking -->
                 <link rel="stylesheet" href="{{appointment.nativeApiBase}}/calendar-native/widget/public-booking-widget.css" />
@@ -274,6 +280,16 @@
                 <!-- @if !appointment.nativeBooking -->
                 <!-- @if contact.waHref -->
                 <a href="{{contact.waHref}}" class="hero-cta" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
+                <!-- @endif -->
+                <!-- @if appointment.showActivationHint -->
+                <!-- PLAN-FEEDBACK-2026-09-13 Suite E: editor-preview-only honest
+                     hint, gated structurally in build.js renderHtml()'s
+                     `if (editMode)` branch — cfg.appointment.showActivationHint
+                     is never a stored config value or schema field, so a
+                     publish/export call (editMode false/absent) can never
+                     produce it. Same gating shape as instagram.showTeaser; see
+                     bot/test/suite11-portfolio-booking-copy-honest.test.js. -->
+                <p class="pf-appt-hint" role="note" data-hb-appt-hint>Poți oferi și programări online cu formular, nu doar pe WhatsApp — se activează din panoul „Programări native Hidook” al editorului.</p>
                 <!-- @endif -->
                 <!-- @endif -->
             </div>

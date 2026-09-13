@@ -397,6 +397,15 @@ ul { list-style: none; }
    to --paper — only to the panel's own fixed backdrop). */
 .pf-svc__intro .pf-kicker { color: rgb(89, 96, 106); }
 .pf-svc__intro .pf-copy { color: rgb(89, 96, 106); }
+/* PLAN-FEEDBACK-2026-09-13 Suite E: editor-only hint (see appointment.
+   showActivationHint in build.js, never present on a published site). Sits
+   directly in .pf-shell — the dark --void page background, NOT the light
+   .pf-svc__intro panel above — so it reuses the same rgba(255,255,255,0.72)
+   "soft light copy on dark section" convention as .pf-appt .pf-copy /
+   .pf-about .pf-copy below, already proven: composited over --void
+   (#1c2228) that is ~8.9:1, comfortably clearing the 4.5:1 WCAG AA floor
+   for normal text. */
+.pf-appt-hint { margin-top: 0.9rem; max-width: 30rem; font-size: 0.85rem; line-height: 1.5; color: rgba(255,255,255,0.72); }
 .pf-chips {
     display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 0.5rem;
 }
