@@ -380,7 +380,7 @@
             "name": "text",
             "role": "text",
             "bio": "text",
-            "photo": "text"
+            "photo": "image"
           }
         }
       ]

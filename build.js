@@ -510,6 +510,69 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
     });
 }
 
+/** Matches a whole `<img ...>` tag (no attribute may itself contain `>`, true
+ * of every shipped template — attribute values here are always tokens/plain
+ * text, never markup). */
+const IMG_TAG_RE = /^<img\b[^>]*>$/i;
+/** A `src="{{token}}"` (or `'...'`) binding whose token is a bare itemShape
+ * leaf key — no dot, not the `{{&...}}` raw-sink prefix, not the `.`
+ * bare-scalar-item marker (that shape is always a populated array element
+ * handled elsewhere, never rendered with an empty src to begin with). */
+const IMG_SRC_TOKEN_RE = /\bsrc\s*=\s*(["'])\{\{\s*([^&][^}]*?)\s*\}\}\1/i;
+
+/**
+ * PLAN-FEEDBACK-2026-09-13 Suite D: a list item's own single-photo leaf
+ * (e.g. portfolio's `team.members[].photo`) renders `<img src="{{photo}}">`.
+ * The M1 fix above (`isEditorItemField`) force-opens that field's `@if`
+ * guard in the editor even while empty, so an owner has something to click
+ * — correct for a text leaf, but for an image leaf it means the editor
+ * emits a literal `<img src="">`, which paints as a broken-image glyph with
+ * no way to tell WHICH config path a click on it should fill (an empty
+ * `src` can never round-trip through the src→path reverse lookup every
+ * other photo control uses — see builder/app.js's buildImgMap()/
+ * resolveImgPath()).
+ *
+ * Two things happen here, ONLY inside an `@each` item's own scope
+ * (`pathPrefix` truthy — the same condition `isEditorItemField` itself
+ * requires, so this only ever touches the exact fields that fix can force
+ * open) and ONLY for a plain `<img>` tag whose `src` is a single bare
+ * itemShape token:
+ *
+ *   1. `data-hb-edit-img="<fullPath>"` is stamped onto the tag unconditionally
+ *      — a direct, unambiguous path builder/edit-overlay.js can read instead
+ *      of ever having to infer one from `src`/`alt` content.
+ *   2. When the resolved value is empty, the `src` attribute itself is
+ *      dropped rather than emitted as `src=""` — no request the browser can
+ *      fail, so no broken-image glyph; the image's own CSS (sizing rules
+ *      target `img`, not a wrapper) still reserves the normal photo's
+ *      footprint via `aspect-ratio`/`width`, so the empty slot occupies the
+ *      same space a real photo would.
+ *
+ * Never runs outside editMode (see replaceTokensWithEditMode's own fast
+ * path) and is schema-blind like the rest of this file: it does not care
+ * whether the field is declared "image" or "text" in schema.json, only that
+ * it is a bare (dot-free) token used as an `<img>`'s `src`. A field with a
+ * genuine value is unaffected beyond gaining the extra `data-hb-edit-img`
+ * attribute, which no existing src-based lookup conflicts with.
+ */
+function annotateEditableImageTag(originalChunk, substitutedChunk, resolver, pathPrefix) {
+    if (!pathPrefix) return substitutedChunk;
+    const trimmed = originalChunk.trim();
+    if (!IMG_TAG_RE.test(trimmed)) return substitutedChunk;
+    const srcMatch = IMG_SRC_TOKEN_RE.exec(originalChunk);
+    if (!srcMatch) return substitutedChunk;
+    const token = srcMatch[2].trim();
+    if (!token || token === '.' || token.indexOf('.') !== -1) return substitutedChunk;
+
+    const fullPath = pathPrefix + '.' + token;
+    let out = substitutedChunk;
+    const rawVal = resolver(token);
+    if (rawVal === undefined || rawVal === null || rawVal === '') {
+        out = out.replace(/\ssrc\s*=\s*(["'])\1/i, '');
+    }
+    return out.replace(/^<img\b/i, '<img data-hb-edit-img="' + escapeHtml(fullPath) + '"');
+}
+
 /**
  * Segment `str` into alternating text/tag regions and call replaceTokens on each.
  *
@@ -543,7 +606,9 @@ function replaceTokensWithEditMode(str, resolver, warn, editOpts) {
         if (end <= runStart) return;
         const chunk = str.slice(runStart, end);
         const opts  = Object.assign({}, editOpts, { inTextCtx: !isTagCtx });
-        out += replaceTokens(chunk, resolver, warn, opts);
+        let result = replaceTokens(chunk, resolver, warn, opts);
+        if (isTagCtx) result = annotateEditableImageTag(chunk, result, resolver, editOpts.pathPrefix);
+        out += result;
         runStart = end;
     }
 

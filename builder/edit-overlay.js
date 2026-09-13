@@ -260,6 +260,22 @@
       '  pointer-events: auto;',
       '}',
 
+      /* PLAN-FEEDBACK-2026-09-13 Suite D: a per-item photo leaf with no
+         value yet (team.members[].photo before an owner uploads one) — a
+         neutral fill standing in for "no photo", same size as a real one
+         (width/aspect-ratio come from the template's own CSS on the <img>,
+         untouched here), never a broken-image glyph. The replace button is
+         ALWAYS visible rather than hover-only, same reasoning as .hb-demo-bg
+         below: with a blank fill and nothing else on the card to signal
+         "click me", hover-to-reveal would hide the only way to fill it. */
+      '.hb-photo-empty {',
+      '  background: linear-gradient(135deg, rgba(120,120,120,0.18), rgba(120,120,120,0.28));',
+      '}',
+      '.hb-img-wrap--empty > .hb-img-btn {',
+      '  opacity: 1;',
+      '  pointer-events: auto;',
+      '}',
+
       /* background-image change overlay
          Suite 4 QA (m16): measured 219x31px on a phone — under the 44px
          touch floor (this button is always visible when there is no photo
@@ -986,7 +1002,24 @@
       // Do not wrap tiny icons (data: SVG icons used inline as service icons).
       if (src.startsWith('data:image/svg') || src.startsWith('data:image/svg+xml')) return;
 
-      var path = resolveImgPath(src);
+      // PLAN-FEEDBACK-2026-09-13 Suite D: build.js stamps a direct
+      // data-hb-edit-img="<path>" on any <img> whose src is a bare
+      // itemShape token inside an @each item (see its own doc comment in
+      // build.js) — a per-item single photo like team.members[].photo.
+      // Prefer it outright over src-based resolution: it is exact where
+      // resolveImgPath(src) is a best-effort reverse lookup, and it is the
+      // ONLY way to resolve a path at all once src is empty (an empty
+      // string can never round-trip through imgMap).
+      var explicitPath = img.getAttribute('data-hb-edit-img') || '';
+      var path = explicitPath || resolveImgPath(src);
+      // A field build.js knows the config path for, but that has no photo
+      // yet (src was empty, so build.js omitted the attribute rather than
+      // emit src="" — see build.js's annotateEditableImageTag()): render a
+      // plain empty <img> as a broken-image glyph, which is what this whole
+      // fix exists to avoid, so mark it for the neutral placeholder styling
+      // below instead. Never true for a field WITHOUT an explicit path —
+      // those keep the old behaviour untouched.
+      var isEmptyOwnerSlot = !!explicitPath && !src;
       // Even if we can't resolve the path yet (imgMap not arrived), still wrap the
       // image so we can re-resolve on click. The btn click will re-check imgMap.
       var wrap = document.createElement('span');
@@ -998,6 +1031,16 @@
       img.parentNode.insertBefore(wrap, img);
       wrap.appendChild(img);
       if (isDemoSrcValue(src)) addDemoBadge(wrap, 'img');
+      if (isEmptyOwnerSlot) {
+        // Same size as a real photo (the template's own CSS sizes the <img>
+        // itself, e.g. aspect-ratio, independently of whether it has a src),
+        // just a neutral fill instead of nothing/a broken glyph — and the
+        // replace button stays always-visible here (mirrors .hb-demo-bg's
+        // own reasoning below: with nothing behind it yet, hover-to-reveal
+        // would hide the only way to fill it).
+        img.classList.add('hb-photo-empty');
+        wrap.classList.add('hb-img-wrap--empty');
+      }
 
       var btn = document.createElement('button');
       btn.type = 'button';
@@ -1015,8 +1058,10 @@
           pointerHandled = true;
           setTimeout(function () { pointerHandled = false; }, 500);
         }
-        // Re-resolve on click in case imgMap arrived after mount.
-        var resolvedPath = resolveImgPath(img.getAttribute('src') || '');
+        // Re-resolve on click in case imgMap arrived after mount. The
+        // explicit build.js-stamped path (if any) always wins — see the
+        // doc comment above where it is first read.
+        var resolvedPath = img.getAttribute('data-hb-edit-img') || resolveImgPath(img.getAttribute('src') || '');
         if (!resolvedPath && /^data:image\//i.test(img.getAttribute('src') || '')) {
           // Preview inlined images/* → data:; try any single matching images/ path by type
           var keys2 = Object.keys(imgMap);

@@ -4305,6 +4305,12 @@ function syncDrawerField(path, value) {
  *     where `<listKey>`'s itemShape declares `<key>` as `"photos"` (e.g.
  *     categories.3.photos) — always the `{src,alt}` object shape by
  *     convention (see every shipped preset's categories[].photos).
+ *   - { kind: 'nestedImage' } for `<listKey>.<idx>.<key>` where `<listKey>`'s
+ *     itemShape declares `<key>` as `"image"` (PLAN-FEEDBACK-2026-09-13
+ *     Suite D — e.g. portfolio's team.members[].photo): a SINGLE photo per
+ *     list item, not an array, so it is shown/edited the same way
+ *     hero.background/logo are (buildSingleImageSection()), just discovered
+ *     dynamically per existing item instead of hardcoded.
  *
  * S9B: professionals' `instagram.gallery` used to be excluded here
  * (isS111DeadInstagramGalleryPath()) because build.js's
@@ -4328,8 +4334,9 @@ function resolveSchemaPhotoPath(path) {
   if (nestedMatch) {
     const listField = fields.find(f => f && f.key === nestedMatch[1] && f.type === 'list');
     const shape = listField && (listField.itemShape !== undefined ? listField.itemShape : listField.itemSchema);
-    if (shape && typeof shape === 'object' && shape[nestedMatch[3]] === 'photos') {
-      return { kind: 'nested', itemsAreStrings: false };
+    if (shape && typeof shape === 'object') {
+      if (shape[nestedMatch[3]] === 'photos') return { kind: 'nested', itemsAreStrings: false };
+      if (shape[nestedMatch[3]] === 'image') return { kind: 'nestedImage' };
     }
   }
   return null;
@@ -4350,6 +4357,11 @@ function findPhotoPaths() {
   //    invisible to the old content-sniffing check below, so "+ Adaugă
   //    categorie" produced a category the "Poze" panel could never show —
   //    the client had no way to give it a first photo.
+  //    Also — PLAN-FEEDBACK-2026-09-13 Suite D — one path per EXISTING item
+  //    of any list whose itemShape nests an `"image"` key (a SINGLE photo
+  //    per item, e.g. team.members[].photo): included even while that
+  //    item's own value is still `''`, same reasoning as the "photos" case
+  //    above, just one leaf instead of an array.
   // 2. Structural fallback: the original recursive walk, for any
   //    `{src,alt}`-shaped array the schema scan above didn't reach (schema
   //    not loaded, or a shape schema.json doesn't declare). Recurses into
@@ -4370,12 +4382,19 @@ function findPhotoPaths() {
       if (f.type !== 'list') return;
       const shape = f.itemShape !== undefined ? f.itemShape : f.itemSchema;
       if (!shape || typeof shape !== 'object') return;
-      const photoKey = Object.keys(shape).find(k => shape[k] === 'photos');
-      if (!photoKey) return;
       const list = getPath(draft.config, f.key);
-      if (Array.isArray(list)) {
+      if (!Array.isArray(list)) return;
+      const photoKey = Object.keys(shape).find(k => shape[k] === 'photos');
+      if (photoKey) {
         list.forEach((_, i) => {
           const p = f.key + '.' + i + '.' + photoKey;
+          if (paths.indexOf(p) === -1) paths.push(p);
+        });
+      }
+      const imageKey = Object.keys(shape).find(k => shape[k] === 'image');
+      if (imageKey) {
+        list.forEach((_, i) => {
+          const p = f.key + '.' + i + '.' + imageKey;
           if (paths.indexOf(p) === -1) paths.push(p);
         });
       }
@@ -4410,11 +4429,41 @@ function humanizePhotoPathLabel(path) {
     const title = cat && typeof cat.title === 'string' ? cat.title.trim() : '';
     return title || ('Categorie ' + (Number(catMatch[1]) + 1));
   }
+  // PLAN-FEEDBACK-2026-09-13 Suite D: a per-item single-image leaf (e.g.
+  // team.members.3.photo) gets "<section label> — <item's own name>", so
+  // "Poze" reads as "Echipa — Maria Ionescu" instead of a raw config path —
+  // the section label comes from schema.pageSections (the same human title
+  // used everywhere else a section is named), never hardcoded per template.
+  const nestedImgMatch = path.match(/^([^.]+(?:\.[^.]+)*)\.(\d+)\.([^.]+)$/);
+  const resolvedForNested = nestedImgMatch ? resolveSchemaPhotoPath(path) : null;
+  if (nestedImgMatch && resolvedForNested && resolvedForNested.kind === 'nestedImage') {
+    const listKey = nestedImgMatch[1];
+    const idx = Number(nestedImgMatch[2]);
+    const item = getPath(draft.config, listKey + '.' + idx);
+    const itemLabel = item && typeof item.name === 'string' && item.name.trim()
+      ? item.name.trim()
+      : ('Membru ' + (idx + 1));
+    const sectionLabel = sectionLabelForListKey(listKey);
+    return (sectionLabel ? sectionLabel + ' — ' : '') + itemLabel;
+  }
   return path
     .split('.')
     .filter(seg => !/^\d+$/.test(seg))
     .map(seg => seg.charAt(0).toUpperCase() + seg.slice(1))
     .join(' — ');
+}
+
+/** The human page-section title (schema.pageSections[].label) whose id is
+ * `listKey`'s first dot-segment — e.g. "team" for "team.members" → "Echipă".
+ * Returns null when unresolvable (no template loaded, or no matching
+ * section — schema.json need not declare one) so callers fall back to a
+ * generic label instead of guessing. */
+function sectionLabelForListKey(listKey) {
+  const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
+  if (!schema || !Array.isArray(schema.pageSections)) return null;
+  const topId = String(listKey || '').split('.')[0];
+  const sec = schema.pageSections.find(s => s && s.id === topId);
+  return sec && typeof sec.label === 'string' && sec.label.trim() ? sec.label.trim() : null;
 }
 
 /** Owner-uploaded photos are stored as data: URIs; anything else is still a
@@ -4510,6 +4559,20 @@ function buildGalleryModal() {
   const photoPaths = findPhotoPaths();
   photoPaths.forEach(path => {
     const resolved = resolveSchemaPhotoPath(path);
+    if (resolved && resolved.kind === 'nestedImage') {
+      // PLAN-FEEDBACK-2026-09-13 Suite D: a single photo per list item
+      // (team.members[].photo) is shown/edited the same as any other
+      // single-image field (hero.background, logo) — just discovered per
+      // existing item instead of hardcoded to one fixed config path.
+      buildSingleImageSection(body, {
+        label: humanizePhotoPathLabel(path),
+        photoPath: path,
+        get: () => getPath(draft.config, path) || '',
+        set: (dataUrl) => setPath(draft.config, path, dataUrl),
+        clear: () => setPath(draft.config, path, ''),
+      });
+      return;
+    }
     buildGallerySection(body, path, !!(resolved && resolved.itemsAreStrings));
   });
 }
@@ -4517,6 +4580,12 @@ function buildGalleryModal() {
 function buildSingleImageSection(body, opts) {
   const section = document.createElement('div');
   section.className = 'gallery-path-section';
+  // Addressable by config path when one exists (a dynamically-discovered
+  // per-item field, e.g. team.members.2.photo) — mirrors buildGallerySection's
+  // own data-photo-path, for the same reason (see its doc comment). The two
+  // hardcoded calls below (hero.background/logo) don't pass one and keep
+  // being found by label instead, as before.
+  if (opts.photoPath) section.dataset.photoPath = opts.photoPath;
 
   const title = document.createElement('div');
   title.className = 'field-label';
