@@ -96,7 +96,13 @@ test('new list items get real Romanian text and stay editable', async () => {
   // defaults on purpose, which bot/test/s63-owner-builder-gaps.test.js locks in.
   const appSrc = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
   const seedStart = appSrc.indexOf('function onListAdd');
-  const seedRegion = appSrc.slice(seedStart, seedStart + 2600);
+  // Window widened from 2600 (PLAN-FEEDBACK-2026-09-13 Suite A): onListAdd
+  // grew a sibling-language max-limit guard (point 6) ahead of the
+  // 'Categorie nouă'/'Preparat nou' literals, pushing them past the old
+  // fixed offset — 6000 comfortably covers the whole function (~5000 chars)
+  // with headroom, rather than re-tuning a magic number on every future
+  // onListAdd edit.
+  const seedRegion = appSrc.slice(seedStart, seedStart + 6000);
   assert.match(seedRegion, /'Categorie nouă'/, 'menu.ro must seed a Romanian section name');
   assert.match(seedRegion, /'Preparat nou'/, 'menu.ro must seed a Romanian dish name');
 });

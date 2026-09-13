@@ -88,7 +88,20 @@ function runListOp(appSrc, schema, config, op) {
   // for side effects (persistence, re-render, toasts, the undo stack) is
   // stubbed below: they touch the DOM or localStorage and are irrelevant to
   // the data mutation under test.
-  const fns = ['getPath', 'setPath', 'getAllSchemaFields', 'primaryItemShapeKey', 'defaultListItemLabel', 'onListAdd', 'onListRemove']
+  // PLAN-FEEDBACK-2026-09-13 Suite A: onListAdd/onListRemove now
+  // unconditionally call the bilingual-list mirroring helpers (they check
+  // `if (schema) mirror...(...)` regardless of whether THIS schema actually
+  // declares a RO/EN pair — `categories` here doesn't, so the mirror
+  // functions no-op via siblingLangListPath() returning null, but they still
+  // have to exist in the sandbox or that no-op throws a ReferenceError
+  // first). Same pattern as primaryItemShapeKey above: any new symbol
+  // onListAdd/onListRemove reach for has to be extracted here too.
+  const fns = [
+    'getPath', 'setPath', 'getAllSchemaFields', 'primaryItemShapeKey', 'defaultListItemLabel',
+    'findLangListPairs', 'siblingLangListPath', 'schemaListMax',
+    'mirrorListAddToSibling', 'mirrorListRemoveToSibling',
+    'onListAdd', 'onListRemove',
+  ]
     .map((name) => extractFunction(appSrc, name))
     .join('\n\n');
 
