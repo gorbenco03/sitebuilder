@@ -283,6 +283,16 @@ function normalizeConfigForRender(config) {
     if (typeof labels.menuLang !== 'string' || !labels.menuLang.trim()) {
         labels.menuLang = 'Limba meniului';
     }
+    // Suite B (PLAN-FEEDBACK-2026-09-13): desserdirina's contact-section
+    // WhatsApp row used to be a hardcoded "WhatsApp" literal, never a
+    // token, so it could never be edited (see the sweep in
+    // bot/test/suite11-contact-chips-editable.test.js). Now that every
+    // template renders {{labels.whatsapp}} there, a config saved before
+    // this field existed (or that never set it) must still show the same
+    // word it always did — same fallback pattern as labels.menuLang above.
+    if (typeof labels.whatsapp !== 'string' || !labels.whatsapp.trim()) {
+        labels.whatsapp = 'WhatsApp';
+    }
     cfg.labels = labels;
     if (cfg.appointment && typeof cfg.appointment === 'object') {
         cfg.appointment = Object.assign({}, cfg.appointment);
@@ -405,6 +415,7 @@ const FIELD_PLACEHOLDER_LABELS = {
     role: 'Adaugă rolul',
     day: 'Adaugă ziua',
     hours: 'Adaugă programul',
+    address: 'Scrie adresa aici…',
 };
 function placeholderLabelForToken(token) {
     if (!token || token === '.') return 'Scrie aici…';
@@ -426,7 +437,32 @@ function replaceTokens(str, resolver, warn = true, editOpts) {
         if (raw) {
             // Per-sink sanitization — each raw sink must be explicitly handled here.
             if (token === 'seo.jsonLd') return sanitizeJsonLd(value);
-            if (token === 'contact.address') return sanitizeAddress(value);
+            if (token === 'contact.address') {
+                const safeAddress = sanitizeAddress(value);
+                // Suite B (PLAN-FEEDBACK-2026-09-13): a raw (`{{& …}}`) token
+                // never went through the wrap-in-<span data-hb-edit> logic
+                // below — that logic lives past the `if (raw) { … return … }`
+                // early-returns, so it never ran for this sink. That is why
+                // the address row could never be clicked into on any of the
+                // five templates, even though the phone/name/etc. rows right
+                // next to it (plain {{token}}s) worked fine. Wrapping it here
+                // — editMode + text context only, exactly the same gate the
+                // generic path uses — makes it editable without touching the
+                // published (non-editMode) output at all: that branch below
+                // still returns bare `safeAddress`, byte-identical to before.
+                //
+                // data-hb-multiline="br" tells edit-overlay.js this field's
+                // line breaks are real <br> elements (not a plain-text
+                // newline) — see setupTextFields()'s allowsBr handling there
+                // for how typing Enter/pasting/reading the value back all
+                // stay consistent with sanitizeAddress()'s own contract
+                // (escape everything, then un-escape only literal <br>).
+                if (editOpts && editOpts.editMode && editOpts.inTextCtx) {
+                    const placeholderAttr = ' data-hb-placeholder="' + escapeHtml(placeholderLabelForToken(token)) + '"';
+                    return '<span data-hb-edit="contact.address" data-hb-kind="text" data-hb-multiline="br"' + placeholderAttr + '>' + safeAddress + '</span>';
+                }
+                return safeAddress;
+            }
             // CSS style-attribute sinks: escapeHtml is correct here because the HTML
             // parser uses literal (unencoded) characters to find attribute boundaries,
             // so &quot; / &#39; do NOT close the attribute, and the encoded characters

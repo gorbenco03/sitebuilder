@@ -676,6 +676,41 @@
      4. Make text fields editable
   ───────────────────────────────────────────────────────────────────────── */
 
+  /**
+   * Suite B (PLAN-FEEDBACK-2026-09-13): contact.address is the one editable
+   * text field whose line breaks are real <br> elements rather than plain
+   * text — build.js's raw `{{& contact.address}}` sink marks its span
+   * `data-hb-multiline="br"` (see replaceTokens() there) precisely so this
+   * file can special-case it, instead of the generic el.textContent-based
+   * single-line detection (which sees no '\n' at all across a <br> boundary
+   * and would otherwise treat a two-line address as single-line — blurring
+   * on Enter instead of adding a break).
+   *
+   * serializeBrText() walks the field's own DOM and rebuilds the text an
+   * owner would recognize typing: each <br> becomes '\n', everything else is
+   * concatenated verbatim. setBrContent() is the inverse, used to rebuild the
+   * DOM (as real <br> elements, never a literal "<br>" text run) after a
+   * maxLen truncation splices the string.
+   */
+  function serializeBrText(el) {
+    var out = '';
+    Array.prototype.forEach.call(el.childNodes, function (node) {
+      if (node.nodeType === 3) { out += node.nodeValue; }
+      else if (node.nodeType === 1) {
+        out += (node.tagName === 'BR') ? '\n' : serializeBrText(node);
+      }
+    });
+    return out;
+  }
+
+  function setBrContent(el, text) {
+    while (el.firstChild) el.removeChild(el.firstChild);
+    String(text).split('\n').forEach(function (line, idx) {
+      if (idx > 0) el.appendChild(document.createElement('br'));
+      if (line) el.appendChild(document.createTextNode(line));
+    });
+  }
+
   function setupTextFields() {
     var fields = Array.prototype.slice.call(
       document.querySelectorAll('[data-hb-edit][data-hb-kind="text"]')
@@ -686,8 +721,20 @@
     fields.forEach(function (el) {
       var path = el.getAttribute('data-hb-edit');
 
+      // contact.address (see build.js's replaceTokens()) is the one field
+      // whose line breaks are real <br> elements rather than a plain-text
+      // '\n' — read/write it through serializeBrText()/setBrContent() below
+      // instead of el.textContent, and never let it fall into the
+      // single-line "Enter blurs" behavior just because it currently has no
+      // break yet (an owner must be able to ADD the first line break too).
+      var allowsBr = el.getAttribute('data-hb-multiline') === 'br';
+
+      function currentValue() {
+        return allowsBr ? serializeBrText(el) : el.textContent;
+      }
+
       // Determine if this is a single-line field (no \n in original text).
-      var isSingleLine = el.textContent.indexOf('\n') === -1;
+      var isSingleLine = !allowsBr && el.textContent.indexOf('\n') === -1;
 
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('spellcheck', 'true');
@@ -700,7 +747,7 @@
       var counterEl = null;
       function updateCounter() {
         if (!maxLen) return;
-        var len = el.textContent.length;
+        var len = currentValue().length;
         if (len >= Math.floor(maxLen * 0.8)) {
           if (!counterEl || !counterEl.isConnected) {
             counterEl = document.createElement('span');
@@ -725,8 +772,28 @@
         if (!sel || !sel.rangeCount) return;
         var range = sel.getRangeAt(0);
         range.deleteContents();
-        range.insertNode(document.createTextNode(text));
-        range.collapse(false);
+        if (allowsBr && text.indexOf('\n') !== -1) {
+          // Multi-line paste on the address field: split into real <br>
+          // elements rather than a text node holding a literal '\n' —
+          // a bare '\n' would collapse to a space under this field's
+          // normal white-space, silently losing the line break the owner
+          // just pasted.
+          var frag = document.createDocumentFragment();
+          var lastNode = null;
+          text.split(/\r\n|\r|\n/).forEach(function (line, idx) {
+            if (idx > 0) frag.appendChild(document.createElement('br'));
+            lastNode = document.createTextNode(line);
+            frag.appendChild(lastNode);
+          });
+          range.insertNode(frag);
+          if (lastNode) {
+            range.setStartAfter(lastNode);
+            range.setEndAfter(lastNode);
+          }
+        } else {
+          range.insertNode(document.createTextNode(text));
+          range.collapse(false);
+        }
         sel.removeAllRanges();
         sel.addRange(range);
         // Fire synthetic input so debounce triggers
@@ -774,6 +841,28 @@
         });
       }
 
+      /* contact.address: Enter inserts a real <br> (never letting the
+       * browser's own default — a wrapping <div>/<p>, inconsistent across
+       * browsers — decide the markup), then reports the edit immediately so
+       * the debounced commit and the live-edit safety net both see it. */
+      if (allowsBr) {
+        el.addEventListener('keydown', function (e) {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          // document.execCommand('insertLineBreak') — the browser's own
+          // Shift+Enter behavior — inserts exactly one <br> AND leaves the
+          // caret at a genuinely typeable position afterwards. A hand-built
+          // Range().insertNode(br) + manual caret placement looked
+          // equivalent but was not: Chromium's actual text-insertion still
+          // landed the next keystrokes BEFORE the <br> (observed under
+          // Playwright), because a caret placed via the Selection API alone
+          // right after a trailing <br> is not a stable typing anchor in
+          // every engine. The native command does not have that problem.
+          document.execCommand('insertLineBreak');
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      }
+
       /* On input: debounced postMessage (the "committed" edit — applies to
        * draft.config, persists, records an undo step) PLUS an immediate,
        * undebounced mirror (Wave 9 — closes the 300ms reload-loses-the-edit
@@ -783,7 +872,7 @@
        * write, no localStorage, no history — so sending it every keystroke
        * costs nothing the 300ms debounce below still exists to avoid. */
       el.addEventListener('input', function () {
-        var value = el.textContent;
+        var value = currentValue();
         // S1-6 (m3): block typing past the schema's maxLen. Truncating AFTER
         // the browser already inserted the character (rather than trying to
         // preventDefault a contenteditable keystroke, which does not
@@ -795,7 +884,7 @@
         // limit is usually hit typing forward).
         if (maxLen && value.length > maxLen) {
           value = value.slice(0, maxLen);
-          el.textContent = value;
+          if (allowsBr) { setBrContent(el, value); } else { el.textContent = value; }
           var range = document.createRange();
           range.selectNodeContents(el);
           range.collapse(false);
@@ -810,9 +899,21 @@
         // markDemoTextPaths()'s doc comment; the parent will confirm/repaint
         // the full set once the debounced {hb:'text'} below lands anyway).
         el.classList.remove('hb-demo-text');
-        toParent({ hb: 'text-live', path: path, value: value });
+        // contact.address is stored the same way the Telegram bot's own
+        // address formatter stores it (see bot/flow.js's formatAddressHtml
+        // and build.js's sanitizeAddress): plain text with a literal "<br>"
+        // marking each line break, never a raw '\n' — a bare newline
+        // character would just render as a collapsed space, not a break.
+        // A trailing '\n' (or several) is dropped first: a caret sitting at
+        // the very end of the field needs a second, phantom <br> before a
+        // browser will treat the position after the first one as a real
+        // place to type (see the keydown handler above) — that phantom line
+        // is an editing artifact, never a blank line the owner actually
+        // asked to save.
+        var wireValue = allowsBr ? value.replace(/\n+$/, '').replace(/\n/g, '<br>') : value;
+        toParent({ hb: 'text-live', path: path, value: wireValue });
         debounce(path, function () {
-          toParent({ hb: 'text', path: path, value: value });
+          toParent({ hb: 'text', path: path, value: wireValue });
         }, 300);
       });
 
@@ -824,7 +925,12 @@
           delete debounceTimers[path];
         }
         if (counterEl) { counterEl.remove(); counterEl = null; }
-        toParent({ hb: 'text', path: path, value: el.textContent });
+        var value = currentValue();
+        toParent({
+          hb: 'text',
+          path: path,
+          value: allowsBr ? value.replace(/\n+$/, '').replace(/\n/g, '<br>') : value,
+        });
       });
 
       /* On focus: notify parent */
