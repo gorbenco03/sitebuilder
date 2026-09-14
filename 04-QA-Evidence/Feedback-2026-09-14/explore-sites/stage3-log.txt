@@ -1,0 +1,36 @@
+[MAJOR] portfolio orange accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"A","cls":"pf-chrome__cta","text":"Programează o vizită","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"","text":"Programează o vizită","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__num","text":"01","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__cap","text":"Salon","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"A","cls":"hero-cta","text":"Programează-te pe WhatsApp","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"A","cls":"pf-appt__wa","text":"Programează-te pe WhatsApp","ratio":3.56,"threshold":4.5,"overImage":false}]
+[MAJOR] portfolio orange accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"A","cls":"pf-chrome__cta","text":"Programează o vizită","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"","text":"Programează o vizită","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__num","text":"01","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__cap","text":"Salon","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"A","cls":"hero-cta","text":"Programează-te pe WhatsApp","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"A","cls":"pf-appt__wa","text":"Programează-te pe WhatsApp","ratio":3.56,"threshold":4.5,"overImage":false}]
+[MAJOR] portfolio pink accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"pf-about__num","text":"01","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__cap","text":"Salon","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"P","cls":"pf-kicker","text":"Program","ratio":4.36,"threshold":4.5,"overImage":false}]
+[MAJOR] portfolio pink accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"pf-about__num","text":"01","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"pf-about__cap","text":"Salon","ratio":3.73,"threshold":4.5,"overImage":false},{"tag":"P","cls":"pf-kicker","text":"Program","ratio":4.36,"threshold":4.5,"overImage":false}]
+[MAJOR] professionals orange accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"","text":"Programează o consultație","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"","text":"Trimite cererea","ratio":2.16,"threshold":4.5,"overImage":false}]
+[MAJOR] professionals orange accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"","text":"Programează o consultație","ratio":3.56,"threshold":4.5,"overImage":false},{"tag":"SPAN","cls":"","text":"Trimite cererea","ratio":2.16,"threshold":4.5,"overImage":false}]
+[MAJOR] professionals pink accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"","text":"Trimite cererea","ratio":2.03,"threshold":4.5,"overImage":false}]
+[MAJOR] professionals pink accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"","text":"Trimite cererea","ratio":2.03,"threshold":4.5,"overImage":false}]
+[MAJOR] desserdirina orange accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"menu-langs-caption","text":"Limba meniului","ratio":3.35,"threshold":4.5,"overImage":false},{"tag":"BUTTON","cls":"menu-lang-btn is-active","text":"RO","ratio":1,"threshold":4.5,"overImage":false}]
+[NOTE] desserdirina orange accent @390 text over image/gradient bg — needs visual check :: 8 candidate(s), see screenshot
+[MAJOR] desserdirina orange accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"menu-langs-caption","text":"Limba meniului","ratio":3.35,"threshold":4.5,"overImage":false},{"tag":"BUTTON","cls":"menu-lang-btn is-active","text":"RO","ratio":1,"threshold":4.5,"overImage":false}]
+[NOTE] desserdirina orange accent @1280 text over image/gradient bg — needs visual check :: 8 candidate(s), see screenshot
+[MAJOR] desserdirina pink accent @390 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"menu-langs-caption","text":"Limba meniului","ratio":3.35,"threshold":4.5,"overImage":false},{"tag":"BUTTON","cls":"menu-lang-btn is-active","text":"RO","ratio":1,"threshold":4.5,"overImage":false}]
+[NOTE] desserdirina pink accent @390 text over image/gradient bg — needs visual check :: 8 candidate(s), see screenshot
+[MAJOR] desserdirina pink accent @1280 low-contrast text (CSS-solid bg) :: [{"tag":"SPAN","cls":"menu-langs-caption","text":"Limba meniului","ratio":3.35,"threshold":4.5,"overImage":false},{"tag":"BUTTON","cls":"menu-lang-btn is-active","text":"RO","ratio":1,"threshold":4.5,"overImage":false}]
+[NOTE] desserdirina pink accent @1280 text over image/gradient bg — needs visual check :: 8 candidate(s), see screenshot
+[PASS] professionals long business name/address @390 no horizontal scroll :: {"hScroll":false,"scrollWidth":390,"innerWidth":390}
+[PASS] professionals long business name/address @1280 no horizontal scroll :: {"hScroll":false,"scrollWidth":1280,"innerWidth":1280}
+[PASS] portfolio gallery with exactly 1 photo — layout stable :: {"count":1,"hScroll":false}
+[PASS] portfolio gallery with 20 photos @390 — stays uniform, no page overflow :: {"count":20,"hScroll":false,"uniform":true,"widths":[165,165,165,165,165,165]}
+[PASS] portfolio gallery with 20 photos @1280 — stays uniform, no page overflow :: {"count":20,"hScroll":false,"uniform":true,"widths":[399.984375,399.984375,399.984375,399.984375,399.984375,399.984375]}
+[PASS] portfolio: hidden "team" section stays hidden :: {"order":["services","gallery","schedule","appointment","about","contact"],"teamPresent":false}
+[PASS] portfolio: reordered sections (services before gallery) honoured :: ["services","gallery","schedule","appointment","about","contact"]
+[PASS] portfolio: structural about/contact sections still render
+[PASS] portfolio DPR 1.25 :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] portfolio DPR 1.5 :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] portfolio reduced-motion :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] portfolio forced-colors :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] portfolio dark OS :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] professionals DPR 1.25 :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] professionals DPR 1.5 :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] professionals reduced-motion :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] professionals forced-colors :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] professionals dark OS :: {"errors":[],"hScroll":false,"bodyVisible":true}
+[PASS] portfolio keyboard focus visible (first 12 tab stops) :: all 12 stops had visible focus
+[PASS] professionals keyboard focus visible (first 12 tab stops) :: all 12 stops had visible focus

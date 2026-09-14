@@ -1,0 +1,12 @@
+[PASS] professionals (dark book section) happy path booking confirms :: slot="09:00" confirmed=true consoleErrors=[]
+[NOTE] professionals (dark book section) double-submit (rapid double click) :: ctaDisabledDuring=null bookingsCount=2
+[MAJOR] professionals (dark book section) slot taken meanwhile (raced via engine directly) :: raceBooked=true raceErr=null widgetResult={"ok":true,"err":false,"errText":null}
+[PASS] professionals (dark book section) invalid email rejected :: {"ok":false,"nativeValidity":false,"errShown":true}
+[PASS] professionals (dark book section) very long name (300 chars) — no overflow :: {"ok":true,"hScroll":false}
+[PASS] professionals (dark book section) network failure on submit shows RO error, no fake success :: {"ok":false,"errShown":true,"errText":"Programările online sunt temporar indisponibileConexiunea a eșuat sau a expirat. Nu am înregistrat nicio programare.Dacă programările online nu răspund: WhatsApp · +40 721 555 014 · contact@cabinetjuridicionescu.ro"}
+[PASS] portfolio (light theme) happy path booking confirms :: slot="09:00" confirmed=true consoleErrors=[]
+[NOTE] portfolio (light theme) double-submit (rapid double click) :: ctaDisabledDuring=null bookingsCount=2
+[MAJOR] portfolio (light theme) slot taken meanwhile (raced via engine directly) :: raceBooked=true raceErr=null widgetResult={"ok":true,"err":false,"errText":null}
+[PASS] portfolio (light theme) invalid email rejected :: {"ok":false,"nativeValidity":false,"errShown":true}
+[PASS] portfolio (light theme) very long name (300 chars) — no overflow :: {"ok":true,"hScroll":false}
+[PASS] portfolio (light theme) network failure on submit shows RO error, no fake success :: {"ok":false,"errShown":true,"errText":"Programările online sunt temporar indisponibileConexiunea a eșuat sau a expirat. Nu am înregistrat nicio programare.Dacă programările online nu răspund: WhatsApp · +40 721 234 567"}
