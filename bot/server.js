@@ -1648,11 +1648,31 @@ function withDunningState(site) {
     return { ...site, dunning: webpublish.getDunningState(site) };
 }
 
+/**
+ * PLAN-FEEDBACK-2026-09-14 defect #2 — attach the ONE source of truth for
+ * "this site's public address" (webpublish.publicUrlForSite: an active
+ * verified custom domain, else the site's own registry url) as a separate
+ * `publicUrl` field, alongside the existing `url`. `url` is left exactly as
+ * it was — several call sites legitimately need the platform's own host
+ * regardless of any custom domain (the domain-connect modal's "current
+ * origin", calendar-native's data-api-base) — so nothing that already reads
+ * `site.url` changes behaviour. Every NEW display surface (dashboard card
+ * link, publish success modal, copy button, "Trimite pe WhatsApp") reads
+ * `publicUrl` instead.
+ * @param {object} site
+ * @returns {object} site with a `publicUrl` field
+ */
+function withPublicUrl(site) {
+    if (!site) return site;
+    const webpublish = require('./webpublish.js');
+    return { ...site, publicUrl: webpublish.publicUrlForSite(site) };
+}
+
 async function handleGetSites(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const sites = await getRegistry().listSites(userId);
-    sendJson(res, 200, { sites: (sites || []).map(withDunningState) });
+    sendJson(res, 200, { sites: (sites || []).map(withDunningState).map(withPublicUrl) });
 }
 
 async function handleGetSite(req, res, siteId) {
@@ -1666,7 +1686,7 @@ async function handleGetSite(req, res, siteId) {
     if (versions.length > 0) {
         config = await getRegistry().getVersionConfig(siteId, versions[0].versionId);
     }
-    sendJson(res, 200, { site: withDunningState(site), config });
+    sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config });
 }
 
 async function handleGetVersions(req, res, siteId) {
@@ -2890,6 +2910,8 @@ async function handleTestPayComplete(req, res) {
             paid: !!site.paid,
             status: site.status,
             url: site.url || null,
+            // Defect #2 — same one source of truth as GET /api/sites / /api/publish.
+            publicUrl: webpublish.publicUrlForSite(site),
             paidUntil: site.paidUntil || null,
         },
     });
@@ -3696,9 +3718,18 @@ async function handlePublish(req, res) {
     // Republish directly for a currently entitled site (re-edit).
     const directRepublish = async () => {
         try {
-            const result = await webpublish.publishSite({ site, config, images: imgList });
+            // PLAN-FEEDBACK-2026-09-14 defect #2: do NOT hand the client the
+            // raw, single-call publishSite() return value — that is exactly
+            // what let a transient best-effort DNS-reconfirmation hiccup
+            // (see _deploy()'s doc comment in webpublish.js) show the raw
+            // pages.dev host in the success modal while the dashboard, reading
+            // the SAME registry row moments later, kept showing the correct
+            // brand subdomain. Re-read the row this call itself just
+            // persisted and let withPublicUrl() (custom domain > registry
+            // url) be the one source of truth for both.
+            await webpublish.publishSite({ site, config, images: imgList });
             const updated = await reg.getSite(site.id);
-            return sendJson(res, 200, { site: { ...updated, url: result.url }, paymentUrl: null });
+            return sendJson(res, 200, { site: withPublicUrl(updated), paymentUrl: null });
         } catch (e) {
             if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Your images were blocked by moderation.' });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
