@@ -118,6 +118,21 @@ async function startTrial(prefix) {
     return { site: registry.getSite(site.id), subscriptionId, user, order };
 }
 
+/** customer.subscription.{created,updated,deleted} event. */
+function subscriptionStatusEvent({ eventId, subscriptionId, status, type = 'customer.subscription.updated' }) {
+    return {
+        id: eventId,
+        type,
+        data: {
+            object: {
+                id: subscriptionId,
+                status,
+                customer: 'cus_test_' + subscriptionId,
+            },
+        },
+    };
+}
+
 /** A real day-7 (or later renewal) Stripe invoice event. */
 function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, type = 'invoice.paid', amountPaid }) {
     return {
@@ -266,6 +281,158 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         const failedRow = history.find((h) => h.status === 'failed');
         assert.ok(failedRow, 'the failed attempt must be recorded in the invoice history, not only the separate dunning banner');
         assert.strictEqual(failedRow.attemptCount, 1);
+    });
+
+    // ── TRW-04 / TRW-05 — recovery after an unpublish for non-payment ──────
+    // A site Stripe unpublished because every dunning retry failed (terminal
+    // 'unpaid'/'incomplete_expired') must come back live once a real payment
+    // succeeds again — the product's own "site-ul redevine live automat"
+    // email promise (buildSiteDownEmailRo) was not actually implemented
+    // anywhere before this fix. An owner-initiated cancel must never be
+    // resurrected the same way.
+
+    await check('TRW-04: a site Stripe exhausted retries on republishes once the subscription itself reports active again', async () => {
+        const { site, subscriptionId } = await startTrial('trw04-sub-active');
+        // Simulate Stripe exhausting every dunning retry: one failed attempt
+        // on record, then the terminal status update that unpublishes.
+        await onStripeEvent({
+            id: 'evt_' + crypto.randomUUID(),
+            type: 'invoice.payment_failed',
+            data: {
+                object: {
+                    id: 'in_failed_' + crypto.randomUUID().slice(0, 8),
+                    subscription: subscriptionId,
+                    attempt_count: 3,
+                    next_payment_attempt: null,
+                },
+            },
+        });
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'unpaid',
+        }));
+
+        const downSite = registry.getSite(site.id);
+        assert.strictEqual(downSite.status, 'unpublished', 'sanity: the site really is down');
+        assert.strictEqual(downSite.url, null, 'sanity: no public URL while down');
+        assert.ok(downSite.paymentFailedAt, 'sanity: the dunning failure is on record');
+        const downDunning = webpublish.getDunningState(downSite);
+        assert.strictEqual(downDunning.severity, 'critical', 'sanity: dashboard must show the critical/site-down state, not a plain cancel');
+
+        // Owner adds a new card; Stripe retries and the subscription itself
+        // flips back to active.
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'active',
+        }));
+
+        const recoveredSite = registry.getSite(site.id);
+        assert.strictEqual(recoveredSite.status, 'live', 'TRW-04: the site must republish once the card update goes through');
+        assert.ok(recoveredSite.url, 'TRW-04: a live site must have a public URL again');
+        assert.strictEqual(recoveredSite.canceledAt, null, 'the resolved outage must not keep showing as cancelled');
+        assert.strictEqual(recoveredSite.paymentFailedAt, null, 'TRW-05: the stale "card refuzat" failure record must clear on recovery');
+        assert.strictEqual(recoveredSite.paymentFailedCount, null, 'TRW-05: the stale failure count must clear on recovery');
+
+        const recoveredDunning = webpublish.getDunningState(recoveredSite);
+        assert.strictEqual(recoveredDunning, null, 'TRW-05: a recovered site must stop reporting a dunning warning/critical state entirely');
+    });
+
+    await check('TRW-04: a site Stripe exhausted retries on republishes once the real day-7 charge succeeds (invoice.paid, isFirstPeriodCompletion branch)', async () => {
+        const { site, subscriptionId } = await startTrial('trw04-invoice-first');
+        const paidUntilBeforeOutage = registry.getSite(site.id).paidUntil;
+
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'unpaid',
+        }));
+        assert.strictEqual(registry.getSite(site.id).status, 'unpublished', 'sanity: down before recovery');
+
+        // The recovery charge succeeds — this is the SAME event type that
+        // originally confirmed the day-7 charge (isFirstPeriodCompletion),
+        // since paidUntil (granted a full year at trial start) never moved
+        // during the whole outage.
+        const invoiceId = 'in_recovery_' + crypto.randomUUID().slice(0, 10);
+        await onStripeEvent(subscriptionCycleInvoiceEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            invoiceId,
+            subscriptionId,
+        }));
+
+        const recoveredSite = registry.getSite(site.id);
+        assert.strictEqual(recoveredSite.status, 'live', 'TRW-04: the site must republish once the real charge succeeds');
+        assert.ok(recoveredSite.url, 'a live site must have a public URL');
+        assert.strictEqual(
+            recoveredSite.paidUntil, paidUntilBeforeOutage,
+            'recovery confirms the year already granted at trial start — it must not add a second year'
+        );
+        assert.strictEqual(recoveredSite.paymentFailedAt, null, 'TRW-05: the dunning failure record must clear on recovery');
+
+        const history = webpublish.getInvoiceHistory(recoveredSite);
+        const paidRow = history.find((h) => h.invoiceId === invoiceId);
+        assert.ok(paidRow && paidRow.status === 'paid', 'the recovery charge itself must still be recorded as a real paid invoice');
+    });
+
+    await check('TRW-04: an owner-cancelled site is never resurrected by a later stray "active" event for the same subscription', async () => {
+        const { site, subscriptionId } = await startTrial('trw04-owner-cancel');
+        // Owner clicks Cancel in the Customer Portal — a real Stripe cancel
+        // reports status 'canceled', never 'unpaid'/'incomplete_expired'.
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'canceled',
+        }));
+        const cancelledSite = registry.getSite(site.id);
+        assert.strictEqual(cancelledSite.status, 'unpublished');
+        assert.strictEqual(cancelledSite.stripeSubscriptionStatus, 'canceled');
+
+        // An anomalous/out-of-order webhook later claims 'active' for the
+        // very same (already-canceled) subscription id. A real canceled
+        // Stripe subscription never legitimately does this, but the guard
+        // must hold even if one arrives.
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'active',
+        }));
+
+        const afterStraySite = registry.getSite(site.id);
+        assert.strictEqual(afterStraySite.status, 'unpublished', 'an owner cancel must never be resurrected by a later stray event');
+        assert.strictEqual(afterStraySite.url, null, 'no public URL must reappear for a cancelled site');
+    });
+
+    await check('TRW-04: duplicate/out-of-order recovery delivery never double-publishes or throws', async () => {
+        const { site, subscriptionId } = await startTrial('trw04-dup-recover');
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'unpaid',
+        }));
+
+        const recoverEvent = subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'active',
+        });
+        await onStripeEvent(recoverEvent);
+        const firstUrl = registry.getSite(site.id).url;
+        assert.ok(firstUrl, 'sanity: recovered once');
+
+        // Redelivery of the identical event, and a sibling "still active"
+        // update arriving after recovery — neither must republish again or
+        // throw.
+        await onStripeEvent(recoverEvent);
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'active',
+        }));
+
+        const finalSite = registry.getSite(site.id);
+        assert.strictEqual(finalSite.status, 'live');
+        assert.strictEqual(finalSite.url, firstUrl, 'republishing again must not change the already-recovered site');
     });
 
     if (failed) {

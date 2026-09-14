@@ -194,6 +194,142 @@ function unpublishSite(siteOrId, meta = {}) {
     return registry.getSite(site.id);
 }
 
+// ---------------------------------------------------------------------------
+// Wave12/TRW-04, TRW-05 — recovery after an unpublish-for-non-payment
+// ---------------------------------------------------------------------------
+//
+// unpublishSite() above is used for two very different reasons that must
+// never be confused with each other:
+//   - the OWNER clicked Cancel in the Stripe Customer Portal (or the
+//     subscription was otherwise deleted) — terminal, by the owner's own
+//     choice. Stripe never transitions a truly canceled subscription back to
+//     'active' on its own; the only way back is a brand-new checkout (a
+//     different subscription id, a different code path — handleStripePaid's
+//     first-publish/reactivation branch).
+//   - STRIPE gave up on every dunning retry (status unpaid /
+//     incomplete_expired — see the isUnpaidUpdate branch below) — this IS
+//     recoverable on the SAME subscription: the owner adds a new card via
+//     the Customer Portal ("Actualizează cardul", already wired in
+//     builder/app.js — same billing-portal route as Cancel, Stripe's portal
+//     covers both), Stripe retries the failed invoice, and if it succeeds
+//     the subscription itself reports 'active'/'trialing' again.
+// Before this fix, NOTHING republished the site in the second case: the only
+// reactivation branches that existed anywhere checked site.status ===
+// 'expired', a different case entirely, so a genuinely-recovered owner
+// stayed offline forever (TRW-04) — directly contradicting this product's
+// own "de îndată ce plata trece, site-ul redevine live automat" promise in
+// buildSiteDownEmailRo above. Separately, paymentFailedAt/paymentFailedCount
+// were never cleared by any handler (TRW-05), so even a manual fix would
+// leave getDunningState() reporting a stale "card refuzat" warning forever,
+// masking whether the site actually came back.
+//
+// The dashboard already reads recoverable-vs-cancelled correctly with zero
+// UI changes needed: builder/app.js#buildSiteCard's 'unpublished' badge
+// branch already keys off dunning.severity === 'critical' (Plată eșuată —
+// site oprit) vs everything else (Anulat), and the "Actualizează cardul"
+// button already renders whenever `dunning` is present — both already read
+// getDunningState()/stripeSubscriptionStatus, which the fix below keeps
+// truthful. Once a recovered site's status flips back to 'live' and its
+// dunning fields clear, getDunningState() returns null and the card renders
+// as a plain, healthy "Activ" site on its own — no separate UI branch.
+
+/**
+ * True when this site's CURRENT 'unpublished' state was caused by Stripe
+ * exhausting every dunning retry (recoverable on the same subscription),
+ * never by an owner-initiated cancel/delete (terminal). Reads the Stripe
+ * status unpublishSite() itself recorded at the moment it unpublished —
+ * 'unpaid'/'incomplete_expired' only reach that call via the isUnpaidUpdate
+ * branch below; every other unpublish reason records 'canceled'/'cancelled'.
+ *
+ * Callers must pass the site record fetched BEFORE applying the current
+ * webhook's own patch (stripeSubscriptionStatus is exactly what this
+ * function reads) — see the call sites below for why this ordering, not
+ * post-patch state, is what keeps a canceled subscription from ever being
+ * resurrected by some later/out-of-order event for the same subscription id.
+ *
+ * @param {object} site
+ * @returns {boolean}
+ */
+function _isRecoverableNonPaymentUnpublish(site) {
+    if (!site || site.status !== 'unpublished') return false;
+    const subSt = String(site.stripeSubscriptionStatus || site.subscriptionStatus || '').toLowerCase();
+    return subSt === 'unpaid' || subSt === 'incomplete_expired';
+}
+
+/**
+ * Republish a site Stripe previously unpublished for non-payment, now that a
+ * real payment (or the subscription status itself) confirms the card
+ * actually went through. Never called for an owner-initiated cancel — see
+ * _isRecoverableNonPaymentUnpublish, which every call site below checks
+ * first against the PRE-webhook site record.
+ *
+ * Idempotent by construction, not by a separate claim: each caller re-fetches
+ * `site` fresh at the top of its own webhook handler, so a redelivered event
+ * (or the sibling event for the same recovery — e.g. both
+ * customer.subscription.updated AND invoice.paid can fire for one card
+ * update) sees site.status already 'live' from the first successful run and
+ * _isRecoverableNonPaymentUnpublish() returns false on every call after that.
+ *
+ * Clears paymentFailedAt/paymentFailedCount (TRW-05) so getDunningState()
+ * stops reporting a stale "card refuzat" warning once the card has actually
+ * gone through, and clears canceledAt (this unpublish is over) — matching
+ * the "Keep paid/paidUntil history" philosophy: only the fields that
+ * describe the CURRENT outage are reset, paid/paidUntil stay untouched.
+ *
+ * @param {object} site  the site record from BEFORE this webhook's own patch
+ * @param {{subscriptionId?: string, notifyAdmin?: Function}} [opts]
+ * @returns {Promise<object>} the current site record (updated on success)
+ */
+async function _reactivateFromNonPaymentUnpublish(site, { subscriptionId, notifyAdmin } = {}) {
+    if (!_isRecoverableNonPaymentUnpublish(site)) return registry.getSite(site.id) || site;
+
+    const versions = registry.listVersions(site.id);
+    const last = versions[versions.length - 1];
+    const lastConfig = last && registry.getVersionConfig(site.id, last.versionId);
+    if (!lastConfig) {
+        log('webpublish.recover.no_version', { siteId: site.id, subscriptionId: subscriptionId || null }, 'error');
+        try {
+            registry.updateSite(site.id, {
+                status: 'needs-retry',
+                paymentFailedAt: null,
+                paymentFailedCount: null,
+            });
+        } catch (_) {}
+        return registry.getSite(site.id);
+    }
+
+    try {
+        const result = await module.exports.publishSite({
+            site: { ...site, paid: true },
+            config: lastConfig,
+            images: [],
+            siteDirAlreadyBuilt: false,
+        });
+        registry.updateSite(site.id, {
+            status: 'live',
+            url: result.url,
+            paid: true,
+            canceledAt: null,
+            paymentFailedAt: null,
+            paymentFailedCount: null,
+        });
+        log('webpublish.recover.reactivated', {
+            siteId: site.id, subscriptionId: subscriptionId || null, url: result.url,
+        });
+        if (typeof notifyAdmin === 'function') {
+            try {
+                notifyAdmin(
+                    `🟢 Site repornit: „${site.slug || site.projectName}” este din nou public — plata a trecut.`
+                );
+            } catch (_) { /* best-effort — never let a notify failure undo the recovery */ }
+        }
+    } catch (e) {
+        log('webpublish.recover.failed', { siteId: site.id, err: e.message }, 'error');
+        try { registry.updateSite(site.id, { status: 'needs-retry' }); } catch (_) {}
+    }
+    return registry.getSite(site.id);
+}
+
 /**
  * Handle Stripe subscription lifecycle for entitlement + cancel → unpublish.
  * - customer.subscription.deleted → always unpublish
@@ -324,6 +460,19 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
         : (sub.customer && sub.customer.id);
     if (customerId) patch.stripeCustomerId = customerId;
 
+    // TRW-04 — a status transition back to 'active'/'trialing' (never
+    // 'past_due': that status alone never got the site unpublished in the
+    // first place, so it is not a "recovery") is the OTHER of the two
+    // webhooks that can report a successful card-update retry (the other is
+    // handleStripeInvoicePaid's invoice.paid/payment_succeeded below — order
+    // between the two is not guaranteed, so both check independently).
+    // Decide recoverability from `site` — fetched above, BEFORE this
+    // function's own patch — never from the freshly-patched record, so an
+    // owner-cancelled subscription (recorded status 'canceled') is never
+    // resurrected by this branch.
+    const isRecoveredStatus = status === 'active' || status === 'trialing';
+    const shouldRecover = isRecoveredStatus && _isRecoverableNonPaymentUnpublish(site);
+
     try {
         const updated = registry.updateSite(site.id, patch);
         log('webpublish.subscription.status_updated', {
@@ -331,6 +480,12 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
             status,
             subscriptionId: sub.id,
         });
+        if (shouldRecover) {
+            return await _reactivateFromNonPaymentUnpublish(site, {
+                subscriptionId: sub.id,
+                notifyAdmin: firstDelivery ? notifyAdmin : undefined,
+            });
+        }
         return updated;
     } catch (e) {
         log('webpublish.subscription.status_update_failed', {
@@ -489,6 +644,15 @@ async function handleStripeInvoicePaid(event) {
         return null;
     }
 
+    // TRW-04 — decided from `site` as fetched here, BEFORE any updateSite
+    // call below touches it, exactly like handleStripeSubscriptionEvent's own
+    // check: a real charge succeeding is the other of the two webhooks that
+    // can report a card-update recovery (the other is
+    // customer.subscription.updated above) — order between them is not
+    // guaranteed, so both check independently, both against the pre-webhook
+    // record, so an owner-cancelled site is never resurrected by this event.
+    const wasUnpublishedForNonPayment = _isRecoverableNonPaymentUnpublish(site);
+
     // Wave12 — idempotency claims now run BEFORE the first-year/renewal
     // branch below (they used to run after it, which was harmless only
     // because that branch used to return early and write nothing — see next
@@ -536,6 +700,16 @@ async function handleStripeInvoicePaid(event) {
             invoiceId: invoice.id || null,
             paidUntil: site.paidUntil,
         });
+        // TRW-04 — a first-time trial site can fail its day-7 charge, go
+        // through dunning, and reach terminal 'unpaid' WITHOUT paidUntil ever
+        // changing (it was only ever extended optimistically at trial start,
+        // 12 months out — see handleStripePaid) — so this branch, not just
+        // the renewal branch below, is exactly where that site's real
+        // recovery charge lands. paidUntil is correct already; only status/
+        // url/dunning fields need fixing.
+        if (wasUnpublishedForNonPayment) {
+            await _reactivateFromNonPaymentUnpublish(site, { subscriptionId });
+        }
     } else {
         const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
             ? site.paidUntil
@@ -566,6 +740,12 @@ async function handleStripeInvoicePaid(event) {
                     registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
                 }
             }
+        } else if (wasUnpublishedForNonPayment) {
+            // TRW-04 — a later-year renewal charge succeeding after the
+            // subscription had reached terminal 'unpaid'/'incomplete_expired'
+            // (paidUntil already at/near expiry, so this took the renewal
+            // branch, not the isFirstPeriodCompletion one above).
+            await _reactivateFromNonPaymentUnpublish(site, { subscriptionId });
         }
         log('webpublish.invoice_paid.renewed', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, paidUntil });
     }
