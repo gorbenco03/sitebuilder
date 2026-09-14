@@ -1192,6 +1192,42 @@ function absolutizeSocialImageMeta(indexPath, baseUrl) {
 function getDomains() { return require('./domains.js'); }
 
 /**
+ * PLAN-FEEDBACK-2026-09-14 defect #2 — ONE source of truth for "this site's
+ * public address". Every surface that shows or shares a site's live URL
+ * (the publish success modal, its copy button, "Trimite pe WhatsApp", and
+ * the dashboard card link) must call this instead of reading `site.url`
+ * directly, so they can never drift apart.
+ *
+ * Precedence:
+ *   1. An ACTIVE, verified custom domain (bot/domains.js) always wins — once
+ *      an owner's own domain is live, that is the address customers should
+ *      be given, not the Hidook subdomain underneath it.
+ *   2. Otherwise the site's own registry-persisted `url` — the same value
+ *      GET /api/sites already returns, kept in sync by publishSite() (see
+ *      its _deploy() call below, which now refuses to let a single flaky
+ *      best-effort DNS reconfirmation regress an already-working brand
+ *      subdomain back to the raw pages.dev host).
+ *
+ * Deliberately does NOT replace `site.url` itself — code that needs the
+ * platform's own host regardless of any custom domain (the domain-connect
+ * modal's "current origin", calendar's data-api-base, export paths) keeps
+ * reading `site.url` unchanged.
+ *
+ * @param {object|null} site  registry site record (needs at least id + url)
+ * @returns {string|null}
+ */
+function publicUrlForSite(site) {
+    if (!site) return null;
+    try {
+        const domain = getDomains().getActiveDomainForSite(site.id);
+        if (domain) return `https://${domain}`;
+    } catch (_) {
+        // domains.js unavailable/broken must never block showing the site's URL.
+    }
+    return site.url || null;
+}
+
+/**
  * Best-effort predicted public origin for a site BEFORE deploy runs.
  *
  * Checked in priority order:
@@ -1715,8 +1751,24 @@ async function _deploy(siteDir, projectName, userId, opts = {}) {
     // BRAND_DOMAIN: attach <slug>.<BRAND_DOMAIN> when cloudflare is the provider
     if (provider === 'cloudflare' && process.env.BRAND_DOMAIN) {
         const sub = await cfDeploy.ensureSubdomain(projectName);
-        // Return brandUrl as the canonical URL if available
-        return { url: sub.brandUrl || url || sub.url, provider };
+        if (sub.brandUrl) return { url: sub.brandUrl, provider };
+        // PLAN-FEEDBACK-2026-09-14 defect #2: ensureSubdomain() is explicitly
+        // best-effort (deploy-cloudflare.js) — it returns brandUrl:null on
+        // ANY transient hiccup reconfirming the attach/DNS record, even when
+        // that CNAME was already created on an earlier publish and keeps
+        // resolving regardless of this call's own success. Blindly falling
+        // back to the raw pages.dev host here regressed an already-working
+        // brand subdomain on every republish that hit such a hiccup — the
+        // success modal (fed straight from this return value) showed
+        // "<slug>.pages.dev" while the dashboard card, reading the same
+        // registry row moments later, still showed "<slug>.<BRAND_DOMAIN>".
+        // Only fall through to pages.dev when the brand subdomain was never
+        // established for this project in the first place.
+        const brandOrigin = `https://${projectName}.${process.env.BRAND_DOMAIN}`;
+        if (opts.existingUrl && String(opts.existingUrl).replace(/\/+$/, '') === brandOrigin) {
+            return { url: opts.existingUrl, provider };
+        }
+        return { url: url || sub.url, provider };
     }
 
     return { url, provider };
@@ -1926,6 +1978,10 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     try {
         const result = await _deploy(siteDir, site.projectName, site.userId, {
             slug: slugForUrl,
+            // Defect #2 guard above — the value this project was already
+            // reachable at before this deploy, so a flaky best-effort DNS
+            // reconfirmation cannot regress it back to pages.dev.
+            existingUrl: site.url,
         });
         url = result && result.url;
         deployProvider = result && result.provider;
@@ -2402,6 +2458,7 @@ module.exports = {
     resolvePublishPayload,
     absolutizeSocialImageMeta,
     predictedPublicOrigin,
+    publicUrlForSite,
     buildLocalBusinessJsonLd,
     // Wave 7 — self-serve custom domain connect (called from bot/domains.js)
     applyCustomDomainOrigin,
