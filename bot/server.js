@@ -213,6 +213,32 @@ const MIME_TYPES = {
 const staticFileCache = new Map();
 
 // ---------------------------------------------------------------------------
+// CORS for self-hosted template @font-face files (see scripts/build-builder.js's
+// font-copying block for how these paths are produced and why).
+//
+// The editor's preview is a sandboxed `srcdoc` iframe with no allow-same-origin
+// (bot/test/suite9-preview-sandbox.test.js guards that — it stays that way so a
+// customer's template code, and anything pasted into a field, never reaches the
+// builder's own origin). That gives the iframe an opaque "null" origin, and
+// @font-face resource loads — unlike <img src>, which is why images needed no
+// header here — are always CORS-mode fetches: the browser requires
+// Access-Control-Allow-Origin on the response before it will use the font, no
+// matter that the file is served from the very same host. Scoped to font files
+// (by extension) under generated/template-assets/ specifically — not a blanket
+// CORS grant on the rest of /app/ — because these are public, non-credentialed,
+// per-template static assets with no user data in them; nothing else under
+// /app/ gets this header, and no credentials flag is ever set alongside it.
+// ---------------------------------------------------------------------------
+const TEMPLATE_ASSETS_DIR = path.join(BUILDER_DIR, 'generated', 'template-assets');
+const CORS_FONT_EXTS = new Set(['.woff', '.woff2', '.ttf', '.otf']);
+
+function isPublicTemplateFontAsset(targetPath) {
+    if (!CORS_FONT_EXTS.has(path.extname(targetPath).toLowerCase())) return false;
+    const real = path.resolve(targetPath);
+    return real.startsWith(TEMPLATE_ASSETS_DIR + path.sep);
+}
+
+// ---------------------------------------------------------------------------
 // Cache-busting for our own HTML shells (/app/ and /calendar-native/owner/)
 //
 // The origin answers /app/app.js with `public, max-age=0, must-revalidate`,
@@ -376,6 +402,8 @@ function sendCachedFile(req, res, targetPath, stat) {
     const useGzip = COMPRESSIBLE_MIME_RE.test(mime) && cached.buf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
     const bodyBuf = useGzip ? getGzipBuf(cached) : cached.buf;
 
+    const isFontAsset = isPublicTemplateFontAsset(targetPath);
+
     const headers = {
         'Content-Type': mime,
         'Content-Length': bodyBuf.length,
@@ -385,18 +413,24 @@ function sendCachedFile(req, res, targetPath, stat) {
         'Vary': 'Accept-Encoding',
     };
     if (useGzip) headers['Content-Encoding'] = 'gzip';
+    // No credentials are ever issued on this response (no cookie is read for
+    // /app/generated/* static assets), so a bare '*' is correct and safe — see
+    // the file-header comment above isPublicTemplateFontAsset().
+    if (isFontAsset) headers['Access-Control-Allow-Origin'] = '*';
 
     const inm = req.headers['if-none-match'];
     if (inm) {
         // Allow weak/strong and comma-separated lists.
         const tags = String(inm).split(',').map((s) => s.trim());
         if (tags.includes(cached.etag) || tags.includes('W/' + cached.etag)) {
-            res.writeHead(304, {
+            const notModifiedHeaders = {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
                 'Vary': 'Accept-Encoding',
-            });
+            };
+            if (isFontAsset) notModifiedHeaders['Access-Control-Allow-Origin'] = '*';
+            res.writeHead(304, notModifiedHeaders);
             res.end();
             return;
         }
@@ -405,12 +439,14 @@ function sendCachedFile(req, res, targetPath, stat) {
     if (ims && !inm) {
         const since = Date.parse(ims);
         if (!Number.isNaN(since) && stat.mtimeMs <= since + 999) {
-            res.writeHead(304, {
+            const notModifiedHeaders = {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
                 'Vary': 'Accept-Encoding',
-            });
+            };
+            if (isFontAsset) notModifiedHeaders['Access-Control-Allow-Origin'] = '*';
+            res.writeHead(304, notModifiedHeaders);
             res.end();
             return;
         }
@@ -1612,11 +1648,31 @@ function withDunningState(site) {
     return { ...site, dunning: webpublish.getDunningState(site) };
 }
 
+/**
+ * PLAN-FEEDBACK-2026-09-14 defect #2 — attach the ONE source of truth for
+ * "this site's public address" (webpublish.publicUrlForSite: an active
+ * verified custom domain, else the site's own registry url) as a separate
+ * `publicUrl` field, alongside the existing `url`. `url` is left exactly as
+ * it was — several call sites legitimately need the platform's own host
+ * regardless of any custom domain (the domain-connect modal's "current
+ * origin", calendar-native's data-api-base) — so nothing that already reads
+ * `site.url` changes behaviour. Every NEW display surface (dashboard card
+ * link, publish success modal, copy button, "Trimite pe WhatsApp") reads
+ * `publicUrl` instead.
+ * @param {object} site
+ * @returns {object} site with a `publicUrl` field
+ */
+function withPublicUrl(site) {
+    if (!site) return site;
+    const webpublish = require('./webpublish.js');
+    return { ...site, publicUrl: webpublish.publicUrlForSite(site) };
+}
+
 async function handleGetSites(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const sites = await getRegistry().listSites(userId);
-    sendJson(res, 200, { sites: (sites || []).map(withDunningState) });
+    sendJson(res, 200, { sites: (sites || []).map(withDunningState).map(withPublicUrl) });
 }
 
 async function handleGetSite(req, res, siteId) {
@@ -1630,7 +1686,7 @@ async function handleGetSite(req, res, siteId) {
     if (versions.length > 0) {
         config = await getRegistry().getVersionConfig(siteId, versions[0].versionId);
     }
-    sendJson(res, 200, { site: withDunningState(site), config });
+    sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config });
 }
 
 async function handleGetVersions(req, res, siteId) {
@@ -2854,6 +2910,8 @@ async function handleTestPayComplete(req, res) {
             paid: !!site.paid,
             status: site.status,
             url: site.url || null,
+            // Defect #2 — same one source of truth as GET /api/sites / /api/publish.
+            publicUrl: webpublish.publicUrlForSite(site),
             paidUntil: site.paidUntil || null,
         },
     });
@@ -3660,9 +3718,18 @@ async function handlePublish(req, res) {
     // Republish directly for a currently entitled site (re-edit).
     const directRepublish = async () => {
         try {
-            const result = await webpublish.publishSite({ site, config, images: imgList });
+            // PLAN-FEEDBACK-2026-09-14 defect #2: do NOT hand the client the
+            // raw, single-call publishSite() return value — that is exactly
+            // what let a transient best-effort DNS-reconfirmation hiccup
+            // (see _deploy()'s doc comment in webpublish.js) show the raw
+            // pages.dev host in the success modal while the dashboard, reading
+            // the SAME registry row moments later, kept showing the correct
+            // brand subdomain. Re-read the row this call itself just
+            // persisted and let withPublicUrl() (custom domain > registry
+            // url) be the one source of truth for both.
+            await webpublish.publishSite({ site, config, images: imgList });
             const updated = await reg.getSite(site.id);
-            return sendJson(res, 200, { site: { ...updated, url: result.url }, paymentUrl: null });
+            return sendJson(res, 200, { site: withPublicUrl(updated), paymentUrl: null });
         } catch (e) {
             if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Your images were blocked by moderation.' });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');

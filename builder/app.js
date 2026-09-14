@@ -65,6 +65,12 @@ let colorPopoverOpen = false;
 // set this — that content is the owner's own, not a demo.
 let isFreshDemoDraft = false;
 let demoBannerDismissed = false;
+// PLAN-FEEDBACK-2026-09-14 defect #1: the config that was live as of the
+// last publish for the currently-bound paid site, if any — see
+// notePublishedSnapshot() and maybeShowRecoveryBanner()'s paid-site branch.
+// Persisted into the draft record (payload.publishedConfig) the same way
+// isFreshDemoDraft/demoBannerDismissed are, so it survives a reload.
+let publishedConfigSnapshot = null;
 // Wave 11: the same bar now hosts the name/phone/town quick-start form, so it
 // must also open on demand — from the checklist pill — for a draft that is
 // no longer "fresh" (isFreshDemoDraft went false on the very first edit) but
@@ -2032,6 +2038,12 @@ function initSaveGuard() {
 // banner, which is #edit-only.
 
 let recoveryBannerDismissedThisSession = false;
+// PLAN-FEEDBACK-2026-09-14 defect #1: which case the banner is currently
+// showing — governs what "Renunță" is allowed to do (see discardLocalDraft).
+//   'unfinished'   — a draft that was never published; freely disposable.
+//   'resume-live'  — unsaved local edits sitting on top of a PAID/live site;
+//                    never "neterminat", and never destroyed by a dismiss.
+let recoveryBannerMode = 'unfinished';
 
 function showRecoveryBanner() {
   const banner = $('recovery-banner');
@@ -2053,6 +2065,27 @@ function loadReplacedDraft() {
   return r;
 }
 
+/**
+ * PLAN-FEEDBACK-2026-09-14 defect #1 — right after a publish/pay completes,
+ * snapshot the config that just went live into the local draft record. This
+ * is what lets maybeShowRecoveryBanner() below tell "a paid site with
+ * nothing left to resume" (the reported bug: fresh pay, nothing edited
+ * since, dashboard shows a false "proiect neterminat") apart from "a paid
+ * site with genuine local edits not yet republished" (decision: honest to
+ * offer back, dishonest to call it "neterminat" — see the mode split below).
+ * No snapshot on record (an older draft, or one never published from this
+ * browser) safely defaults to "nothing to resume" in the check below —
+ * never to the false-positive banner.
+ */
+function notePublishedSnapshot() {
+  if (!currentSiteId || !draft.config) return;
+  publishedConfigSnapshot = deepClone(draft.config);
+  // saveDraft() (see its own publishedConfigSnapshot guard) is what actually
+  // persists it — called right after this by every caller, but also safe to
+  // call again here so the snapshot is never left only in memory.
+  if (typeof saveDraft === 'function') saveDraft();
+}
+
 function maybeShowRecoveryBanner() {
   if (recoveryBannerDismissedThisSession) { hideRecoveryBanner(); return; }
   // An interrupted draft comes first; a design the owner deliberately moved on
@@ -2062,22 +2095,48 @@ function maybeShowRecoveryBanner() {
   if (!saved || !saved.templateId || !saved.config) { hideRecoveryBanner(); return; }
   // Already the draft loaded in this tab — not "interrupted", just navigation.
   if (draft.templateId && draft.templateId === saved.templateId) { hideRecoveryBanner(); return; }
-  const nameEl = $('recovery-banner-name');
-  if (nameEl) {
-    const registry = (typeof getTemplateList === 'function' && getTemplateList()) || [];
-    const meta = registry.find(t => t.id === saved.templateId);
-    nameEl.textContent = meta && meta.name ? (': ' + meta.name) : '';
+
+  const registryList = (typeof getTemplateList === 'function' && getTemplateList()) || [];
+  const meta = registryList.find(t => t.id === saved.templateId);
+  const templateName = meta && meta.name ? meta.name : '';
+  const textEl = $('recovery-banner-text');
+
+  if (saved.siteId && saved.paid) {
+    // A paid/published site is never "un proiect neterminat" — it is live.
+    // Only offer it back when this browser's local draft genuinely differs
+    // from the config that was last published (notePublishedSnapshot()
+    // above); otherwise there is nothing left to resume, and the honest
+    // thing is to show nothing at all.
+    const stillDirty = !!saved.publishedConfig &&
+      JSON.stringify(saved.config) !== JSON.stringify(saved.publishedConfig);
+    if (!stillDirty) { hideRecoveryBanner(); return; }
+    recoveryBannerMode = 'resume-live';
+    const siteName = (getPath(saved.config, 'business.name') || templateName || 'site-ul tău').trim();
+    if (textEl) textEl.textContent = 'Ai modificări nesalvate la ' + siteName + '. Continui de unde ai rămas?';
+    showRecoveryBanner();
+    return;
+  }
+
+  recoveryBannerMode = 'unfinished';
+  if (textEl) {
+    textEl.textContent = 'Ai un proiect neterminat' + (templateName ? (': ' + templateName) : '') + '. Continui de unde ai rămas?';
   }
   showRecoveryBanner();
 }
 
-/** "Renunță" — the owner explicitly does not want the leftover draft back.
- * Only clears the local scratch copy; a paid/created site (siteId bound) is
- * never touched here and stays reachable from "Proiectele mele". */
+/** "Renunță". For a genuinely unfinished (never-published) draft, this is
+ * disposable scratch work — clear it outright. For unsaved edits sitting on
+ * top of a PAID/live site (recoveryBannerMode === 'resume-live'), those
+ * edits belong to that site and must never be destroyed by what reads as a
+ * "dismiss this reminder" button — only stop offering it back this session.
+ * A paid/created site itself (siteId bound, server-side) is never touched
+ * here either way and stays reachable from "Proiectele mele". */
 function discardLocalDraft() {
   recoveryBannerDismissedThisSession = true;
-  try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
-  try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
+  if (recoveryBannerMode !== 'resume-live') {
+    try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
+    try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
+  }
   hideRecoveryBanner();
 }
 
@@ -2096,6 +2155,8 @@ function initRecoveryBanner() {
           templateId: replaced.templateId,
           config: replaced.config,
           siteId: replaced.siteId || null,
+          paid: !!replaced.paid,
+          publishedConfig: replaced.publishedConfig || null,
         });
         try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
       }
@@ -5200,6 +5261,14 @@ function saveDraft() {
     payload.isFreshDemoDraft = isFreshDemoDraft;
     payload.demoBannerDismissed = !!demoBannerDismissed;
   }
+  // PLAN-FEEDBACK-2026-09-14 defect #1: same reload-survival need as the demo
+  // banner state above — maybeShowRecoveryBanner()'s paid-site branch reads
+  // this back to tell "nothing left to resume" from "genuine unpublished
+  // edits", and reconstructing `payload` from scratch on every save would
+  // otherwise silently drop it on the very next keystroke after a publish.
+  if (typeof publishedConfigSnapshot !== 'undefined' && publishedConfigSnapshot) {
+    payload.publishedConfig = publishedConfigSnapshot;
+  }
   // Persist paid-site bind so fresh #edit (no dashboard «Edit») can republish
   if (currentSiteId) {
     payload.siteId = currentSiteId;
@@ -5273,7 +5342,10 @@ async function bindSignedInPaidSiteForEdit() {
         currentSitePaid = true;
         currentSiteSlug = fromDraft.slug || fromDraft.projectName || saved.slug || '';
         publishedSiteId = fromDraft.id;
-        if (fromDraft.url) publishedSiteUrl = fromDraft.url;
+        // Inlined rather than calling siteDisplayUrl() — this function is
+        // extracted and eval'd standalone by isolated-extraction tests (e.g.
+        // bot/test/s92-s91-advocate.test.js) that never declare it.
+        if (fromDraft.url) publishedSiteUrl = fromDraft.publicUrl || fromDraft.url;
         if (currentSiteId && currentSitePaid && currentSiteSlug) {
           saveDraft();
           return;
@@ -5971,6 +6043,29 @@ function formatHostingUntilDate(iso) {
 
 
 /**
+ * PLAN-FEEDBACK-2026-09-14 defect #2 — ONE source of truth for "this site's
+ * public address" on the client: `site.publicUrl || site.url`. The server
+ * attaches `publicUrl` (an active verified custom domain, else the same
+ * value already in `url`) to every site object it returns (GET /api/sites,
+ * GET /api/sites/:id, POST /api/publish, POST /api/test-pay/complete — see
+ * withPublicUrl() in bot/server.js). Every display surface — the success
+ * modal, its copy button, "Trimite pe WhatsApp", and the dashboard card
+ * link — reads the URL this way so they can never show different addresses
+ * for the same site. `site.url` itself is left untouched for callers that
+ * legitimately need the platform host regardless of a custom domain
+ * (openDomainModal's "current origin").
+ *
+ * Every call site inlines `site.publicUrl || site.url` directly rather than
+ * calling a shared function: execPublish, completeTestCheckout,
+ * ensureDraftBoundToPaidSite, bindSignedInPaidSiteForEdit and buildSiteCard
+ * are all extracted and eval'd standalone by isolated-extraction tests (e.g.
+ * bot/test/s92-s91-advocate.test.js) that never declare a helper by this
+ * name — see saveDraft()'s own typeof-guard comments above for the same
+ * constraint. Kept here only as documentation of the rule, not as a
+ * function anything currently calls.
+ */
+
+/**
  * Live trial/site URL: absolute http(s) OR same-origin isolated /live/<slug>/.
  * Relative /live/… must count as live so success chrome is not the unpaid pay CTA.
  */
@@ -6542,15 +6637,20 @@ async function execPublish(slug) {
 
   closeModal('modal-publish');
 
+  // publicUrl||url inlined rather than calling siteDisplayUrl()/
+  // notePublishedSnapshot() unconditionally — this function is extracted and
+  // eval'd standalone by isolated-extraction tests that never declare them
+  // (see saveDraft()'s own typeof-guard comments above for the same reason).
   currentSiteId = data.site.id;
   publishedSiteId = data.site.id;
-  publishedSiteUrl = data.site.url;
+  publishedSiteUrl = data.site.publicUrl || data.site.url;
   sitePaymentUrl = data.paymentUrl || null;
   currentSitePaid = !!data.site.paid;
   if (data.site.slug) currentSiteSlug = data.site.slug;
   saveDraft();
+  if (typeof notePublishedSnapshot === 'function') notePublishedSnapshot();
 
-  showSuccessScreen(data.site.url, data.paymentUrl, wasAlreadyPaid);
+  showSuccessScreen(data.site.publicUrl || data.site.url, data.paymentUrl, wasAlreadyPaid);
 }
 
 /** Unauth #dashboard Intră — same magic-link modal as publish (no second auth system). */
@@ -6759,16 +6859,19 @@ async function completeTestCheckout(sessionId) {
   try {
     const data = await apiPost('/api/test-pay/complete', { sessionId: id });
     const site = data && data.site;
+    // publicUrl||url inlined rather than calling siteDisplayUrl() — same
+    // isolated-extraction-test reason as execPublish() above.
     if (site && site.id) {
       currentSiteId = site.id;
       publishedSiteId = site.id;
-      publishedSiteUrl = site.url || null;
+      publishedSiteUrl = site.publicUrl || site.url;
       currentSitePaid = !!site.paid;
       if (site.slug) currentSiteSlug = site.slug;
       // Dashboard pay often has empty in-memory draft — bind template+config so
       // «Înapoi la editor» / fresh #edit open the paid site, not the catalog (S92).
       await ensureDraftBoundToPaidSite(site.id);
       saveDraft();
+      if (typeof notePublishedSnapshot === 'function') notePublishedSnapshot();
     }
     // Drop pay-loading before any success chrome so title and loader never contradict.
     setLoading(false);
@@ -6776,19 +6879,19 @@ async function completeTestCheckout(sessionId) {
     clearPreviewOverlays();
     if (site && isLiveSiteUrl(site.url)) {
       sitePaymentUrl = null;
-      showSuccessScreen(site.url, null);
+      showSuccessScreen(site.publicUrl || site.url, null);
       showToast('Trial început. Site-ul tău e live.', 'success', 6000);
     } else if (site && site.paid) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
         const s = fresh && fresh.site;
         if (s && isLiveSiteUrl(s.url)) {
-          publishedSiteUrl = s.url;
-          showSuccessScreen(s.url, null);
+          publishedSiteUrl = s.publicUrl || s.url;
+          showSuccessScreen(s.publicUrl || s.url, null);
           showToast('Trial început. Site-ul tău e live.', 'success', 6000);
         } else if (s && s.url) {
-          publishedSiteUrl = s.url;
-          showSuccessScreen(s.url, null);
+          publishedSiteUrl = s.publicUrl || s.url;
+          showSuccessScreen(s.publicUrl || s.url, null);
           showToast('Trial început. Site-ul tău e live.', 'success', 6000);
         } else {
           showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
@@ -6863,9 +6966,14 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     currentSitePaid = !!site.paid;
     currentSiteSlug = site.slug || site.projectName || '';
     publishedSiteId = site.id;
-    if (site.url) publishedSiteUrl = site.url;
+    // Inlined rather than calling siteDisplayUrl() — this function is
+    // extracted and eval'd standalone by isolated-extraction tests.
+    if (site.url) publishedSiteUrl = site.publicUrl || site.url;
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    // Freshly loaded straight from the site's own last-published version —
+    // nothing local to resume yet (see notePublishedSnapshot()/defect #1).
+    publishedConfigSnapshot = deepClone(config);
     if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
     if (typeof resetHistory === 'function') resetHistory();
 
@@ -6920,6 +7028,7 @@ async function resumeLocalDraft() {
   if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
   isFreshDemoDraft = !!saved.isFreshDemoDraft;
   demoBannerDismissed = !!saved.demoBannerDismissed;
+  publishedConfigSnapshot = saved.publishedConfig || null;
   if (typeof resetHistory === 'function') resetHistory();
   // Restore paid-site bind from draft (fresh #edit without loadSiteForEdit)
   if (saved.siteId) {
@@ -7199,6 +7308,13 @@ async function startWithTemplate(templateId) {
         templateId: existingDraftForSwitch.templateId,
         config: existingDraftForSwitch.config,
         siteId: existingDraftForSwitch.siteId || null,
+        // PLAN-FEEDBACK-2026-09-14 defect #1: carried through so
+        // maybeShowRecoveryBanner() can tell a replaced PAID site's draft
+        // apart from a genuinely unfinished one — a paid site is never
+        // "proiect neterminat", even when a template switch is what
+        // shelved it here.
+        paid: !!existingDraftForSwitch.paid,
+        publishedConfig: existingDraftForSwitch.publishedConfig || null,
         replacedAt: Date.now(),
       });
     } catch (_) { /* storage full: the toast below still tells them */ }
@@ -7219,6 +7335,10 @@ async function startWithTemplate(templateId) {
   currentSitePaid = false;
   currentSiteSlug = '';
   publishedSiteId = null;
+  // A different template drops any paid-site bind above — the "resumed
+  // config" snapshot belonged to that OLD bind and must not linger and get
+  // attached to this new, unpaid draft (see maybeShowRecoveryBanner()).
+  publishedConfigSnapshot = null;
   draft.templateId = templateId;
 
   const saved = loadDraft();
@@ -7465,16 +7585,19 @@ function buildSiteCard(site) {
   badge.textContent = badgeLabel;
   meta.appendChild(badge);
 
-  if (site.url) {
+  // Inlined rather than calling siteDisplayUrl() — buildSiteCard() is
+  // extracted and eval'd standalone by isolated-extraction tests.
+  const displayUrl = site && (site.publicUrl || site.url);
+  if (displayUrl) {
     const link = document.createElement('a');
     link.className = 'site-live-link';
-    const liveHref = absoluteSiteUrl(site.url);
-    link.href = liveHref || site.url;
+    const liveHref = absoluteSiteUrl(displayUrl);
+    link.href = liveHref || displayUrl;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     // Soft-wrap only at `/` — same as success URL (W13 390 slug shred).
     // Show absolute same-origin so the stranger can open/copy a real URL.
-    fillUrlWithSlashWbr(link, liveHref || site.url);
+    fillUrlWithSlashWbr(link, liveHref || displayUrl);
     link.addEventListener('click', e => e.stopPropagation());
     meta.appendChild(link);
   }
@@ -7761,6 +7884,47 @@ function expectedDeleteSiteName() {
   return String(deleteSiteModalSite.projectName || deleteSiteModalSite.slug || '').trim();
 }
 
+/**
+ * PLAN-FEEDBACK-2026-09-14 (Suite A, delete-site follow-up) — a permanent
+ * delete must also retire any LOCAL draft bound to that same site. Without
+ * this, the browser's single hb.draft.v1 slot (and the in-memory
+ * currentSiteId/draft.config it mirrors) kept pointing at the now-gone site,
+ * so loadDashboard()'s "empty account → resume local draft" branch (or the
+ * next debounced server autosave — see runServerAutosave()'s `siteId:
+ * currentSiteId || undefined`) silently recreated a brand-new UNPAID site
+ * with the same name and a different id. From the owner's side that looked
+ * exactly like the delete had silently failed. Reproduced via
+ * bot/test/suite12-publish-lifecycle.test.js's delete-site scenario.
+ *
+ * Only clears local state that actually belongs to THIS site — an unrelated
+ * in-progress draft (a different template/site) is left untouched.
+ */
+function retireLocalDraftForDeletedSite(siteId) {
+  if (!siteId) return;
+  try {
+    const saved = loadDraft();
+    if (saved && saved.siteId === siteId) {
+      localStorage.removeItem(DRAFT_KEY);
+    }
+  } catch (_) { /* ignore */ }
+  try {
+    const replaced = loadReplacedDraft();
+    if (replaced && replaced.siteId === siteId) {
+      localStorage.removeItem(REPLACED_DRAFT_KEY);
+    }
+  } catch (_) { /* ignore */ }
+  if (currentSiteId === siteId) {
+    currentSiteId = null;
+    currentSitePaid = false;
+    currentSiteSlug = '';
+    publishedSiteId = null;
+    publishedSiteUrl = null;
+    draft.templateId = null;
+    draft.config = null;
+    if (typeof publishedConfigSnapshot !== 'undefined') publishedConfigSnapshot = null;
+  }
+}
+
 async function confirmDeleteSite() {
   const site = deleteSiteModalSite;
   if (!site) return;
@@ -7772,6 +7936,7 @@ async function confirmDeleteSite() {
     const input = $('input-delete-confirm');
     const confirmName = input ? input.value : '';
     await apiDelete('/api/sites/' + encodeURIComponent(site.id), { confirmName });
+    retireLocalDraftForDeletedSite(site.id);
     closeModal('modal-delete-site');
     deleteSiteModalSite = null;
     showToast('Site-ul „' + (site.projectName || site.slug || '') + '” a fost șters definitiv.');
@@ -7806,6 +7971,9 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
     draft.config = deepClone(config);
+    // Freshly loaded straight from the site's own last-published version —
+    // nothing local to resume yet (see notePublishedSnapshot()/defect #1).
+    publishedConfigSnapshot = site.paid ? deepClone(config) : null;
     if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
     // A saved/published site is the owner's own content, never demo filler.
     isFreshDemoDraft = false;
