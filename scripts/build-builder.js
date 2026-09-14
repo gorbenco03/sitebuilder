@@ -12,6 +12,10 @@
  *   templates/<id>.js   — heavy payload per template (schema, presets, files). Fetched
  *                         on demand at Start / Preview / editor restore.
  *   template-assets/<id>/images/* — real cacheable static image files (not base64-in-JS).
+ *   template-assets/<id>/fonts/*  — real cacheable static @font-face files (self-hosted
+ *                         template fonts, e.g. desserdirina's Cormorant Garamond/Montserrat).
+ *                         bot/server.js adds Access-Control-Allow-Origin to this path only —
+ *                         the opaque-origin srcdoc preview needs it for @font-face to load.
  *   thumbs/<id>.*       — catalog card thumbnails.
  *
  * Run:  node scripts/build-builder.js
@@ -363,6 +367,7 @@ fs.mkdirSync(ASSETS_DIR, { recursive: true });
 fs.mkdirSync(THUMBS_DIR, { recursive: true });
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
+const FONT_EXTS  = new Set(['.woff', '.woff2', '.ttf', '.otf']);
 
 function pickThumbnailSource(dir, id) {
     const preferred = [
@@ -468,6 +473,36 @@ for (const entry of registry.templates) {
             imageMap['images/' + name] = '/app/generated/template-assets/' + id + '/images/' + name;
         }
         if (Object.keys(imageMap).length) files.imageMap = imageMap;
+    }
+
+    // Copy self-hosted @font-face files (desserdirina only, today) to cacheable
+    // static files under the same template-assets tree as images, and rewrite
+    // the CSS's own url('fonts/…') references to point at them absolutely.
+    //
+    // A bare relative url('fonts/x.woff2') left inside the <style> block that
+    // renderPreview() inlines into srcdoc has no template-relative base URL to
+    // resolve against — a srcdoc iframe's base URL is the /app/ document's own
+    // URL (there is no <base> tag here; see renderPreview's comment above its
+    // qrcode.js rewrite for the same problem solved the same way), so the
+    // request lands on /app/fonts/… — a path that doesn't exist and falls
+    // through serveStatic's SPA fallback to index.html. Rewriting to the real,
+    // dedicated asset path fixes that; the opaque srcdoc origin still needs
+    // Access-Control-Allow-Origin on the response to actually use an @font-face
+    // resource (unlike <img>, font loads are always CORS-mode) — see
+    // bot/server.js's CORS header on this same template-assets/*/fonts/* tree.
+    const fontDir = path.join(dir, 'fonts');
+    if (fs.existsSync(fontDir) && fs.statSync(fontDir).isDirectory()) {
+        const fontAssetOut = path.join(ASSETS_DIR, id, 'fonts');
+        fs.mkdirSync(fontAssetOut, { recursive: true });
+        for (const name of fs.readdirSync(fontDir)) {
+            const abs = path.join(fontDir, name);
+            if (!fs.statSync(abs).isFile()) continue;
+            const ext = path.extname(name).toLowerCase();
+            if (!FONT_EXTS.has(ext)) continue;
+            fs.copyFileSync(abs, path.join(fontAssetOut, name));
+            const absoluteUrl = '/app/generated/template-assets/' + id + '/fonts/' + name;
+            files.stylesCss = files.stylesCss.split('fonts/' + name).join(absoluteUrl);
+        }
     }
 
     const heavy = { id, schema, presets, files };
