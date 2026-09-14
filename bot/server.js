@@ -213,6 +213,32 @@ const MIME_TYPES = {
 const staticFileCache = new Map();
 
 // ---------------------------------------------------------------------------
+// CORS for self-hosted template @font-face files (see scripts/build-builder.js's
+// font-copying block for how these paths are produced and why).
+//
+// The editor's preview is a sandboxed `srcdoc` iframe with no allow-same-origin
+// (bot/test/suite9-preview-sandbox.test.js guards that — it stays that way so a
+// customer's template code, and anything pasted into a field, never reaches the
+// builder's own origin). That gives the iframe an opaque "null" origin, and
+// @font-face resource loads — unlike <img src>, which is why images needed no
+// header here — are always CORS-mode fetches: the browser requires
+// Access-Control-Allow-Origin on the response before it will use the font, no
+// matter that the file is served from the very same host. Scoped to font files
+// (by extension) under generated/template-assets/ specifically — not a blanket
+// CORS grant on the rest of /app/ — because these are public, non-credentialed,
+// per-template static assets with no user data in them; nothing else under
+// /app/ gets this header, and no credentials flag is ever set alongside it.
+// ---------------------------------------------------------------------------
+const TEMPLATE_ASSETS_DIR = path.join(BUILDER_DIR, 'generated', 'template-assets');
+const CORS_FONT_EXTS = new Set(['.woff', '.woff2', '.ttf', '.otf']);
+
+function isPublicTemplateFontAsset(targetPath) {
+    if (!CORS_FONT_EXTS.has(path.extname(targetPath).toLowerCase())) return false;
+    const real = path.resolve(targetPath);
+    return real.startsWith(TEMPLATE_ASSETS_DIR + path.sep);
+}
+
+// ---------------------------------------------------------------------------
 // Cache-busting for our own HTML shells (/app/ and /calendar-native/owner/)
 //
 // The origin answers /app/app.js with `public, max-age=0, must-revalidate`,
@@ -376,6 +402,8 @@ function sendCachedFile(req, res, targetPath, stat) {
     const useGzip = COMPRESSIBLE_MIME_RE.test(mime) && cached.buf.length >= GZIP_MIN_BYTES && clientAcceptsGzip(req);
     const bodyBuf = useGzip ? getGzipBuf(cached) : cached.buf;
 
+    const isFontAsset = isPublicTemplateFontAsset(targetPath);
+
     const headers = {
         'Content-Type': mime,
         'Content-Length': bodyBuf.length,
@@ -385,18 +413,24 @@ function sendCachedFile(req, res, targetPath, stat) {
         'Vary': 'Accept-Encoding',
     };
     if (useGzip) headers['Content-Encoding'] = 'gzip';
+    // No credentials are ever issued on this response (no cookie is read for
+    // /app/generated/* static assets), so a bare '*' is correct and safe — see
+    // the file-header comment above isPublicTemplateFontAsset().
+    if (isFontAsset) headers['Access-Control-Allow-Origin'] = '*';
 
     const inm = req.headers['if-none-match'];
     if (inm) {
         // Allow weak/strong and comma-separated lists.
         const tags = String(inm).split(',').map((s) => s.trim());
         if (tags.includes(cached.etag) || tags.includes('W/' + cached.etag)) {
-            res.writeHead(304, {
+            const notModifiedHeaders = {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
                 'Vary': 'Accept-Encoding',
-            });
+            };
+            if (isFontAsset) notModifiedHeaders['Access-Control-Allow-Origin'] = '*';
+            res.writeHead(304, notModifiedHeaders);
             res.end();
             return;
         }
@@ -405,12 +439,14 @@ function sendCachedFile(req, res, targetPath, stat) {
     if (ims && !inm) {
         const since = Date.parse(ims);
         if (!Number.isNaN(since) && stat.mtimeMs <= since + 999) {
-            res.writeHead(304, {
+            const notModifiedHeaders = {
                 'ETag': cached.etag,
                 'Last-Modified': cached.lastModified,
                 'Cache-Control': headers['Cache-Control'],
                 'Vary': 'Accept-Encoding',
-            });
+            };
+            if (isFontAsset) notModifiedHeaders['Access-Control-Allow-Origin'] = '*';
+            res.writeHead(304, notModifiedHeaders);
             res.end();
             return;
         }
