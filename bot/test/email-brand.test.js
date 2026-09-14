@@ -47,14 +47,25 @@ async function run() {
         );
     });
 
-    await check('email.js subject and HTML name Hidook', () => {
+    // Wave 12: the whole product's copy is Romanian (audit finding — this
+    // magic-link email was the one English page left in an otherwise Romanian
+    // product). The literal "Sign in to Hidook" this check used to pin was
+    // the bug itself, not a brand requirement — the actual requirement (this
+    // is Hidook, never DESSERD) is unchanged and still asserted here, just no
+    // longer tied to one specific English phrasing. email-product-name.test.js
+    // covers the exact-phrase "Hidook Site Builder" requirement in more depth.
+    await check('email.js subject and HTML name Hidook (Romanian copy)', () => {
         assert.ok(
-            /subject\s*=\s*'Sign in to\s+Hidook/.test(emailSrc),
+            /subject\s*=\s*'[^']*\bHidook\b/.test(emailSrc),
             'subject must name Hidook'
         );
         assert.ok(
-            /<h2[^>]*>\s*Sign in to\s+Hidook/.test(emailSrc),
+            /<h2[^>]*>[^<]*\bHidook\b/.test(emailSrc),
             'HTML heading must name Hidook'
+        );
+        assert.ok(
+            /<html lang="ro">/.test(emailSrc),
+            'the magic-link email must be Romanian, matching the rest of the product'
         );
     });
 

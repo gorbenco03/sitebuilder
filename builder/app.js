@@ -8224,7 +8224,7 @@ async function openDomainModal(site) {
 }
 
 // ---------------------------------------------------------------------------
-// 22c. Invoices / billing history (Wave 8 reachability)
+// 22c. Invoices / billing history (Wave 8 reachability; Wave 12 trial truth)
 // ---------------------------------------------------------------------------
 //
 // GET /api/sites/:id/invoices returns the ledger-backed history (newest
@@ -8232,11 +8232,35 @@ async function openDomainModal(site) {
 // amountCents, currency, ts and — for a real Stripe renewal invoice —
 // hostedInvoiceUrl/invoicePdf. Same "findable" placement as the domain
 // panel: the "Proiectele mele" site card.
+//
+// Wave 12 — bot/webpublish.js#getInvoiceHistory now attaches a `status` to
+// every row: 'paid' (real money moved), 'trial_started' (the 7-day card
+// trial just began — $0 charged, the real charge is a separate later row
+// once Stripe actually collects it on day 7) or 'failed' (a declined
+// attempt). A trial-start row must never render like a paid invoice — that
+// was the audited bug (a customer reading "99€" next to today's date, a
+// week before any money moved).
 
 function invoiceKindLabel(kind) {
   if (kind === 'renewal') return 'Reînnoire hosting';
   if (kind === 'publish') return 'Publicare (primul an)';
   return kind || 'Plată';
+}
+
+/** Human status line for one invoice row — never claims money moved when it hasn't. */
+function invoiceStatusLabel(inv) {
+  if (inv.status === 'trial_started') {
+    const chargeDate = formatInvoiceDate(inv.scheduledChargeAt);
+    return chargeDate
+      ? 'Trial pornit · taxare programată pe ' + chargeDate
+      : 'Trial pornit · nicio taxare încă';
+  }
+  if (inv.status === 'failed') {
+    return inv.attemptCount
+      ? 'Card refuzat (încercarea ' + inv.attemptCount + ')'
+      : 'Card refuzat';
+  }
+  return 'Achitat';
 }
 
 function formatInvoiceAmount(amountCents, currency) {
@@ -8276,13 +8300,22 @@ function renderInvoicesList(invoices) {
     if (inv.invoicePdf) {
       links += `<a class="btn-ghost btn-sm" href="${escHtmlForAttr(inv.invoicePdf)}" target="_blank" rel="noopener noreferrer">PDF</a>`;
     }
+    // A failed attempt never charged anything — never print a fabricated
+    // amount next to "Card refuzat". A trial-start row DOES show the
+    // scheduled amount (that is the point — "99€ pe <date>", not paid yet),
+    // just visually de-emphasized and labelled via invoiceStatusLabel below.
+    const amountText = inv.status === 'failed'
+      ? '—'
+      : formatInvoiceAmount(inv.amountCents, inv.currency);
+    const amountClass = 'invoice-amount' + (inv.status === 'paid' ? '' : ' invoice-amount--pending');
     return `
-      <div class="invoice-item">
+      <div class="invoice-item invoice-item--${escHtmlForAttr(inv.status || 'paid')}">
         <div class="invoice-item-main">
           <span class="invoice-date">${escHtml(formatInvoiceDate(inv.ts))}</span>
           <span class="invoice-kind">${escHtml(invoiceKindLabel(inv.kind))}</span>
+          <span class="invoice-status">${escHtml(invoiceStatusLabel(inv))}</span>
         </div>
-        <span class="invoice-amount">${escHtml(formatInvoiceAmount(inv.amountCents, inv.currency))}</span>
+        <span class="${amountClass}">${escHtml(amountText)}</span>
         ${links ? `<div class="invoice-links">${links}</div>` : ''}
       </div>`;
   }).join('');
