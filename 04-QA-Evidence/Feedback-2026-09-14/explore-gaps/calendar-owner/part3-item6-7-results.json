@@ -1,0 +1,10 @@
+{
+  "resourcePickerCountSolo": 0,
+  "booking1Status": "Programare confirmată\n\nvineri, 18 septembrie la 09:00–09:45 · Consultație inițială\n\nVei primi email cu detaliile și un link de anulare / reprogramare (când livrarea email este activă).",
+  "bookingRow1Text": "vin., 18 sept., 09:00 · 45 min\nconfirmată\nVizitator Unu Explorare · Consultație inițială\nexplore-visitor1-2efb134f@example.com · 0711111111\nNotă test explorare item7\nReprogramează\nAnulează",
+  "hasConfirmBtn": 0,
+  "rescheduleModalOpened": true,
+  "visitor1Email": "explore-visitor1-2efb134f@example.com",
+  "visitor2Email": "explore-visitor2-2efb134f@example.com",
+  "visitor3Email": "explore-visitor3-2efb134f@example.com"
+}

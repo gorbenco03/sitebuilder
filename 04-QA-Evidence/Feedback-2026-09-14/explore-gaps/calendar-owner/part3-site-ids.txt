@@ -1,0 +1,4 @@
+customerId=70fbfbbb-ab8e-4924-b7fc-24b290ad4076
+siteId=02481b83-e542-469d-ba64-a1c014b010e9
+liveUrl=http://127.0.0.1:50688/live/explore-p3-2efb134f/
+DATA_DIR=/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/explore-cal-owner3-LtzkjV

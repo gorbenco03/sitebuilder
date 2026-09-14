@@ -1,0 +1,16 @@
+{
+  "startInputsCount": 1,
+  "endInputsCount": 1,
+  "targetMondayYmd": "2026-09-21",
+  "blackoutSlotCount": 0,
+  "targetTuesdayYmd": "2026-09-22",
+  "specialSlots": [
+    "10:00",
+    "11:00"
+  ],
+  "todayYmd": "2026-09-14",
+  "todaySlots": [],
+  "beyondYmd": "2026-09-19",
+  "beyondBtnExists": true,
+  "beyondSlots": []
+}

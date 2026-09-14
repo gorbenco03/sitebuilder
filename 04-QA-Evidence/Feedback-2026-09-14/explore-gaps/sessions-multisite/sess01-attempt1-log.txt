@@ -1,0 +1,12 @@
+user id db25b827-0539-41f2-a958-864ac25ce5ce
+draft has new name before revoke: Numele De Dupa Revocare
+revokedCount 1
+save-status state= error text= Nu s-a salvat title(tooltip)= Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.
+diag currentUser= {"id":"db25b827-0539-41f2-a958-864ac25ce5ce","createdAt":"2026-09-14T15:29:32.890Z","email":"sess01-e35ab51a@example.com"} badgeStyleDisplay= 
+draft survives after revoke, name= Numele De Dupa Revocare
+user-badge visible after revoke (no reload) = false text= (hidden)
+modal-publish visible after clicking Publish post-revoke = true
+toast after failed publish attempt: visible= true text= "Sign-in required."
+publishOutcome: no re-auth form shown
+draft survives full reload, name= Numele De Dupa Revocare
+user-badge visible after reload (session is dead) = false

@@ -1,0 +1,13 @@
+{
+  "resourcePickerVisible": 1,
+  "resourceChips": [
+    "Oricine disponibil",
+    "Dr. Bogdan Explorat",
+    "Personal implicit"
+  ],
+  "bookedForBogdan": true,
+  "targetYmd": "2026-09-16",
+  "bogdanBookingExists": 1,
+  "bogdanBookingText": "mie., 16 sept., 09:00 · 45 min\nconfirmată\nClient Al Lui Bogdan · Consultație inițială\nclient-bogdan-8f5d7f54@example.com\nCu: Dr. Bogdan Explorat\nReprogramează\nReatribuie\nAnulează",
+  "chipsAfterDeactivate": []
+}

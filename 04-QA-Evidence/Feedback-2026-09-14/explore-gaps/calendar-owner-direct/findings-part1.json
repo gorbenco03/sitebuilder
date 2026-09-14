@@ -1,0 +1,26 @@
+{
+  "findings": [
+    {
+      "id": "CAL-06",
+      "flow": "DST fold Oct 25 2026 03:30 local",
+      "severity": "major",
+      "note": "zonedWallTimeToUtcMs(2026,10,25,3,30,'Europe/Bucharest') returned 2026-10-25T01:30:00.000Z, expected 2026-10-25T00:30:00.000Z (EEST=UTC+3 still in effect before 04:00 local fold)",
+      "evidence": "dst-check.json"
+    }
+  ],
+  "working": [
+    "professionals site published + paid successfully via magic-link + test-pay flow: 21eade73-c433-4df8-bc42-930fab4e6db5",
+    "Cutover auto-seeded 3 services from appointment.types at publish time: [\"Consultație inițială\",\"Revizuire contract\",\"Discuție de urmărire\"]",
+    "Owner can edit an existing service (name/duration/buffer): {\"ok\":true,\"service\":{\"id\":\"consult-init\",\"name\":\"Consultație inițială (editat)\",\"durationMinutes\":45,\"bufferMinutes\":10,\"active\":true,\"sortOrder\":0}}",
+    "0-minute duration service edit correctly rejected: {\"status\":400,\"body\":{\"error\":\"Nume și durată valide sunt obligatorii.\",\"code\":\"VALIDATION\",\"status\":400}}",
+    "Owner can create a staff/resource: {\"ok\":true,\"resource\":{\"id\":\"res_6204e5b69ac3e47d8446fc0a\",\"name\":\"Av. Ionescu\",\"active\":true,\"sortOrder\":0,\"isDefault\":false}}",
+    "Owner can set weekly hours with a lunch-break gap (Mon split 9-13/14-17): {\"ok\":true,\"weekly\":[{\"id\":\"wav_2623bb8e6f74fd5f23dbec2c\",\"weekday\":1,\"startMinute\":540,\"endMinute\":780},{\"id\":\"wav_5f7d8eedbc412687e758e2f8\",\"weekday\":1,\"startMinute\":840,\"endMinute\":1020},{\"id\":\"wav_e5ba7d05f761219e9a9bd75e\",\"weekday\":2,\"startMinute\":540,\"endMinute\":1020},{\"id\":\"wav_1144ef056e606a",
+    "Owner can add a one-off holiday/closed-day override: {\"ok\":true,\"override\":{\"id\":\"ov_58cdd1e52d1143b863788b8b\",\"dateLocal\":\"2026-12-01\",\"kind\":\"blackout\",\"startMinute\":null,\"endMinute\":null,\"note\":\"Zi națională\"}}",
+    "Owner can set min-notice (120min) + max-advance (30 days): {\"ok\":true,\"settings\":{\"timezone\":\"Europe/Bucharest\",\"defaultBufferMinutes\":0,\"minCancelHours\":24,\"slotIntervalMinutes\":60,\"minNoticeMinutes\":120,\"maxAdvanceDays\":30,\"reminderHoursBefore\":24,\"reminderVisitorEnabled\":true,\"reminderOwnerEnabled\":false}}",
+    "Minimum-notice window (120min) correctly rejected a booking only 30min out: {\"error\":\"Această programare trebuie făcută cu mai mult timp înainte.\",\"code\":\"MIN_NOTICE\",\"status\":400}",
+    "Max-advance window (30 days) correctly rejected a booking 35 days out: {\"error\":\"Această dată este prea departe în viitor pentru o programare.\",\"code\":\"MAX_ADVANCE\",\"status\":400}",
+    "Valid booking created for next Monday 10:00 Europe/Bucharest: bk_4c3c6469cd5ea22a5cbc937e",
+    "Portfolio template DOES show the native-booking activation panel (contradicts the code comment claiming only professionals does)",
+    "DST post-fold (04:30 local, now EET/UTC+2) computed correctly: 2026-10-25T02:30:00.000Z"
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "state1_freshPaid": {
+    "text1280": "trw‑ui‑ed9d14ee\nActiv\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nEditează\nAnulează\nIstoric\nDomeniu\nFacturi\nȘterge",
+    "text390": "trw‑ui‑ed9d14ee\nActiv\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nEditează\nAnulează\nIstoric\nDomeniu\nFacturi\nȘterge"
+  },
+  "state2_trialing": {
+    "text1280": "trw‑ui‑ed9d14ee\nActiv\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nEditează\nAnulează\nIstoric\nDomeniu\nFacturi\nȘterge",
+    "text390": "trw‑ui‑ed9d14ee\nActiv\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nEditează\nAnulează\nIstoric\nDomeniu\nFacturi\nȘterge"
+  },
+  "state3_warning": {
+    "text1280": "trw‑ui‑ed9d14ee\nActiv — card refuzat\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nCard refuzat la încercarea 2. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.\nEditează\nAnulează\nActualizează cardul\nIstoric\nDomeniu\nFacturi\nȘterge",
+    "text390": "trw‑ui‑ed9d14ee\nActiv — card refuzat\nhttp://127.0.0.1:50508/live/trw-ui-ed9d14ee/\nTrial de 7 zile · prima taxare 99€ pe 21 septembrie 2026\nCard refuzat la încercarea 2. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.\nEditează\nAnulează\nActualizează cardul\nIstoric\nDomeniu\nFacturi\nȘterge"
+  },
+  "state4_critical": {
+    "text1280": "trw‑ui‑ed9d14ee\nPlată eșuată — site oprit\nSite-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. Adaugă un card nou din tabloul de bord ca să repornești site-ul.\nEditează\nActualizează cardul\nIstoric\nFacturi\nȘterge",
+    "text390": "trw‑ui‑ed9d14ee\nPlată eșuată — site oprit\nSite-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. Adaugă un card nou din tabloul de bord ca să repornești site-ul.\nEditează\nActualizează cardul\nIstoric\nFacturi\nȘterge"
+  },
+  "visitorStatusAfterUnpublish": 404,
+  "registryAfterRecovery": {
+    "status": "unpublished",
+    "url": null,
+    "stripeSubscriptionStatus": "active",
+    "paymentFailedAt": "2026-09-14T15:34:06.710Z"
+  },
+  "state5_stuckAfterRecovery": {
+    "text1280": "trw‑ui‑ed9d14ee\nAnulat\nCard refuzat la încercarea 2. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.\nEditează\nActualizează cardul\nIstoric\nFacturi\nȘterge",
+    "text390": "trw‑ui‑ed9d14ee\nAnulat\nCard refuzat la încercarea 2. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului.\nEditează\nActualizează cardul\nIstoric\nFacturi\nȘterge"
+  }
+}

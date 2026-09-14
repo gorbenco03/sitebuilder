@@ -1,0 +1,8 @@
+site A paid+published, slug= multi01-paid-bbf8dd
+control: paid site A /live/<slug>/ status = 200
+second draft autosaved with siteId = 2454a52c-51e5-41ef-a442-ad1da786de05
+second-site publish attempt HTTP status = 200
+second-site publish response body = {"site":{"id":"2454a52c-51e5-41ef-a442-ad1da786de05","userId":"a7e05dda-1d7e-46a4-b95a-dd27ec4a53b5","templateId":"product-menu","templateVersion":1,"slug":"casa-nord","projectName":"casa-nord","platform":"web","status":"draft","paid":false,"url":null,"createdAt":"2026-09-14T15:38:35.381Z"},"paymentUrl":"/app/#test-checkout=cs_test_1c323334a1b9028e346759fa"}
+is unpaid second site publicly reachable at /live/multi01-unpaid-c76e0f/  status = 404
+sites on account now: [object Object],[object Object]
+owner GET /api/sites/:id for the unpaid site (edit/preview access) status = 200

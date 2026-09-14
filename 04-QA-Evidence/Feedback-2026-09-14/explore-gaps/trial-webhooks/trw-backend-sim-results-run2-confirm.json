@@ -1,0 +1,260 @@
+[
+  {
+    "id": "TRW-01",
+    "desc": "trial start (checkout.session.completed payment_status=no_payment_required)",
+    "before": {
+      "paid": false,
+      "status": "draft"
+    },
+    "after": {
+      "paid": true,
+      "paidUntil": "2027-09-14T15:27:32.856Z",
+      "status": "needs-retry",
+      "stripeCustomerId": "cus_test_trial-start-5d6990",
+      "stripeSubscriptionId": "sub_test_trial-start-5d6990"
+    },
+    "dunningState": null
+  },
+  {
+    "id": "TRW-01b",
+    "desc": "customer.subscription.created status=trialing, right after trial-start checkout",
+    "stripeSubscriptionStatus": "trialing",
+    "paid": true,
+    "paidUntil": "2027-09-14T15:27:32.856Z",
+    "status": "needs-retry",
+    "dunningState": null
+  },
+  {
+    "id": "TRW-02",
+    "desc": "trial-end successful charge (invoice.payment_succeeded subscription_cycle) right after trial start",
+    "before": {
+      "paidUntil": "2027-09-14T15:27:32.856Z"
+    },
+    "after": {
+      "paidUntil": "2027-09-14T15:27:32.856Z",
+      "status": "needs-retry"
+    },
+    "paidUntilChanged": false,
+    "note": "RENEWAL_DUE_WINDOW_MS=45d guard should IGNORE this since paidUntil is already ~12mo out from trial-start checkout — expected: unchanged, no double-year-grant"
+  },
+  {
+    "id": "TRW-02b",
+    "desc": "subscription.updated status=active after trial converts to paid",
+    "stripeSubscriptionStatus": "active",
+    "dunningState": null
+  },
+  {
+    "id": "TRW-03",
+    "desc": "trial-end charge fails (attempt 1) -> subscription past_due",
+    "afterFail1": {
+      "paymentFailedAt": true,
+      "paymentFailedCount": 1,
+      "status": "live",
+      "url": "/live/trial-fail-fc6035/"
+    },
+    "afterPastDue": {
+      "status": "live",
+      "url": "/live/trial-fail-fc6035/",
+      "stripeSubscriptionStatus": "past_due"
+    },
+    "dunningState": {
+      "severity": "warning",
+      "code": "PAYMENT_RETRY_IN_PROGRESS",
+      "attemptCount": 1,
+      "lastFailedAt": "2026-09-14T15:27:32.878Z",
+      "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+    },
+    "expectation": "site must stay LIVE (status live/active, url set) during past_due"
+  },
+  {
+    "id": "TRW-03b",
+    "desc": "trial-end retries exhausted -> subscription unpaid -> unpublishSite",
+    "status": "unpublished",
+    "url": null,
+    "paid": true,
+    "paidUntil": "2027-09-14T15:27:32.877Z",
+    "dunningState": {
+      "severity": "critical",
+      "code": "SITE_DOWN_PAYMENT_FAILED",
+      "messageRo": "Site-ul a fost oprit pentru că plata nu a putut fi finalizată după mai multe încercări. Adaugă un card nou din tabloul de bord ca să repornești site-ul."
+    }
+  },
+  {
+    "id": "TRW-04",
+    "desc": "RECOVERY: card fixed after unpaid/unpublished -> invoice.payment_succeeded + subscription.updated(active)",
+    "before": {
+      "status": "unpublished",
+      "url": null,
+      "stripeSubscriptionStatus": "unpaid"
+    },
+    "afterInvoice": {
+      "status": "unpublished",
+      "url": null
+    },
+    "afterSubActive": {
+      "status": "unpublished",
+      "url": null,
+      "stripeSubscriptionStatus": "active",
+      "paid": true
+    },
+    "dunningStateAfter": {
+      "severity": "warning",
+      "code": "PAYMENT_RETRY_IN_PROGRESS",
+      "attemptCount": 1,
+      "lastFailedAt": "2026-09-14T15:27:32.878Z",
+      "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+    },
+    "question": "Is the site LIVE again (status live/active, url set)? Expected by an owner: yes. Actual: see afterSub.status/url above."
+  },
+  {
+    "id": "TRW-05",
+    "desc": "STALE DUNNING: paymentFailedAt cleared (or not) after the very next successful renewal charge",
+    "paymentFailedAt_afterFail": "2026-09-14T15:27:32.902Z",
+    "dunningAfterFail": {
+      "severity": "warning",
+      "code": "PAYMENT_RETRY_IN_PROGRESS",
+      "attemptCount": 1,
+      "lastFailedAt": "2026-09-14T15:27:32.902Z",
+      "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+    },
+    "paymentFailedAt_afterSuccess": "2026-09-14T15:27:32.902Z",
+    "paidUntil_before": "2026-09-24T15:27:32.902Z",
+    "paidUntil_after": "2027-09-24T15:27:32.902Z",
+    "dunningAfterSuccess": {
+      "severity": "warning",
+      "code": "PAYMENT_RETRY_IN_PROGRESS",
+      "attemptCount": 1,
+      "lastFailedAt": "2026-09-14T15:27:32.902Z",
+      "messageRo": "Card refuzat la încercarea 1. Stripe reîncearcă automat cardul; site-ul rămâne live. Actualizează cardul din portalul de facturare ca să eviți oprirea site-ului."
+    },
+    "bug": "CONFIRMED: dunning banner still present after a fully successful subsequent charge"
+  },
+  {
+    "id": "TRW-06",
+    "desc": "DUPLICATE checkout.session.completed (same event id) delivered twice",
+    "paidUntil_after1": "2027-09-14T15:27:32.908Z",
+    "paidUntil_after2": "2027-09-14T15:27:32.908Z",
+    "paidUntilChangedOnReplay": false,
+    "invoiceLedgerRows_after1": 1,
+    "invoiceLedgerRows_after2": 1,
+    "duplicateLedgerRowCreated": false
+  },
+  {
+    "id": "TRW-06b",
+    "desc": "DUPLICATE invoice.payment_failed (same event id) delivered twice",
+    "paymentFailedCount_after1": 1,
+    "paymentFailedCount_after2": 1,
+    "failedLedgerRows": [
+      1,
+      1
+    ],
+    "notifyLedgerRows": [
+      1,
+      1
+    ],
+    "duplicateSideEffect": "correctly no-op on replay"
+  },
+  {
+    "id": "TRW-06c",
+    "desc": "DUPLICATE customer.subscription.updated(unpaid) -- notify-once check",
+    "notifyLedgerRows": [
+      1,
+      1
+    ],
+    "unpublishedLedgerRows_expectedToReRunIdempotently": [
+      1,
+      2
+    ],
+    "duplicateEmailSent": "correctly sent once"
+  },
+  {
+    "id": "TRW-07",
+    "desc": "OUT-OF-ORDER: subscription.updated(active) + invoice.payment_succeeded arrive for a subscription id with no matching site yet",
+    "subscriptionEventThrew": null,
+    "invoiceEventThrew": null,
+    "expectation": "both should silently no-op (log a warning), never throw -- onStripeEvent wraps in try/catch anyway so even a throw would not crash the process"
+  },
+  {
+    "id": "TRW-07b",
+    "desc": "the late checkout.session.completed for the SAME subscription id finally arrives -- does it reconcile?",
+    "stripeSubscriptionId": "sub_test_orphan_f2ad3a9e",
+    "paid": true,
+    "note": "stripeSubscriptionStatus stays whatever _storeStripeBillingIds left it as (checkout does not re-derive status from the earlier orphaned subscription.updated/invoice events, which were dropped for want of a site)"
+  },
+  {
+    "id": "TRW-08",
+    "desc": "webhook events referencing a siteId/subscription that does not exist (never existed, or was deleted)",
+    "neverExisted_subscriptionDeleted_threw": null,
+    "neverExisted_invoicePaymentFailed_threw": null,
+    "wasDeleted_subscriptionUpdated_threw": null,
+    "expectation": "all three should be handled gracefully (log + return null), never throw an unhandled exception. onStripeEvent also try/catches every call, so even a handler throw would only log webhook.stripe.handler_error and never crash the HTTP server."
+  },
+  {
+    "id": "TRW-09a",
+    "desc": "CANCEL DURING TRIAL (customer.subscription.deleted, never charged)",
+    "before": {
+      "status": "live",
+      "paid": true,
+      "paidUntil": "2027-09-14T15:27:32.922Z"
+    },
+    "after": {
+      "status": "unpublished",
+      "paid": true,
+      "paidUntil": "2027-09-14T15:27:32.922Z",
+      "canceledAt": "2026-09-14T15:27:32.922Z",
+      "url": null,
+      "stripeSubscriptionStatus": "canceled"
+    },
+    "note": "paid stays true and paidUntil stays ~12mo in the future even though ZERO money was ever charged -- registry keeps the entitlement fields as \"paid\" history despite no real payment. Site itself correctly goes to status=unpublished/url=null."
+  },
+  {
+    "id": "TRW-09b",
+    "desc": "CANCEL AFTER PAID (customer.subscription.deleted, subscription had actually been charged/active)",
+    "after": {
+      "status": "unpublished",
+      "paid": true,
+      "paidUntil": "2027-09-14T15:27:32.924Z",
+      "url": null
+    },
+    "comparedToTrialCancel": "IDENTICAL immediate-unpublish behavior as cancel-during-trial (TRW-09a) -- no \"stays live until period end\" grace window exists for either case, despite OWNER-STRIPE-TRIAL.md not promising one either way"
+  },
+  {
+    "id": "TRW-10",
+    "desc": "malformed/edge-case Stripe event payloads passed directly to onStripeEvent",
+    "outcomes": [
+      {
+        "label": "missing data.object entirely",
+        "threw": null
+      },
+      {
+        "label": "data.object with no id",
+        "threw": null
+      },
+      {
+        "label": "subscription event with no data.object.id",
+        "threw": null
+      },
+      {
+        "label": "invoice event with no subscription field",
+        "threw": null
+      },
+      {
+        "label": "unexpected/garbage status string",
+        "threw": null
+      },
+      {
+        "label": "completely empty event object",
+        "threw": null
+      },
+      {
+        "label": "null event",
+        "threw": null
+      },
+      {
+        "label": "event with unknown type",
+        "threw": null
+      }
+    ],
+    "expectation": "none should throw out of onStripeEvent (it wraps everything in try/catch) -- confirms the HTTP webhook route can never 500/crash from a malformed handled-type payload"
+  }
+]

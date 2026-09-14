@@ -1,0 +1,73 @@
+{
+  "checks": [
+    {
+      "name": "Oct23 09:00 local -> UTC offset (+3, EEST)",
+      "expected": "2026-10-23T06:00:00.000Z",
+      "actual": "2026-10-23T06:00:00.000Z",
+      "pass": true
+    },
+    {
+      "name": "Oct26 09:00 local -> UTC offset (+2, EET)",
+      "expected": "2026-10-26T07:00:00.000Z",
+      "actual": "2026-10-26T07:00:00.000Z",
+      "pass": true
+    },
+    {
+      "name": "Oct25 03:30 (ambiguous) round-trips to itself via getZonedParts",
+      "expected": {
+        "hour": 3,
+        "minute": 30
+      },
+      "actual": {
+        "hour": 3,
+        "minute": 30
+      },
+      "pass": true,
+      "extra": {
+        "resolvedUtc": "2026-10-25T01:30:00.000Z"
+      }
+    },
+    {
+      "name": "Oct24 (pre-DST-end, EEST, normal day) slot count",
+      "expected": 23,
+      "actual": 23,
+      "pass": true,
+      "extra": {
+        "note": "00:00-23:00 window, 60min slots => 23 possible starts"
+      }
+    },
+    {
+      "name": "Oct26 (post-DST-end, EET, normal day) slot count",
+      "expected": 23,
+      "actual": 23,
+      "pass": true
+    },
+    {
+      "name": "Oct25 09:00 local slot exists in generateSlots output",
+      "expected": true,
+      "actual": true,
+      "pass": true
+    },
+    {
+      "name": "Oct25 09:00 local booking auto-confirms (single resource, free slot)",
+      "expected": "confirmed",
+      "actual": "confirmed",
+      "pass": true
+    },
+    {
+      "name": "Oct25 09:00 local booking stored start_utc is 07:00Z (EET, +2h)",
+      "expected": "2026-10-25T07:00:00.000Z",
+      "pass": false
+    },
+    {
+      "name": "DST booking email displays local time 09:00 (not shifted)",
+      "expected": true,
+      "actual": true,
+      "pass": true,
+      "extra": {
+        "mentionsWrongHour": false,
+        "bodyText": "Salut, Vizitator DST.\n\nProgramarea ta la cabinet pentru „Ședință DST” a fost confirmată.\nData și ora (ora cabinetului): 2026-10-25 09:00 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:0/calendar-native/manage?token=COlgygIXln-deH9D-vg3SQAsxWhnOh40\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta."
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "findings": [
+    {
+      "id": "CAL-01",
+      "area": 1,
+      "summary": "Portfolio template DOES support native booking (schema field + editor panel + cutover seeding + public widget all present), but the sites-dashboard card never shows a \"Programări\"/\"Configurează calendarul\" link for it — builder/app.js gates that button on templateId==='professionals' only (line ~7671), a stale check the portfolio schema addition outran.",
+      "detail": {
+        "nativeBookingFieldPresentInDrawer": true,
+        "dashboardBookingButtons_portfolio": 0
+      }
+    },
+    {
+      "id": "CAL-02",
+      "area": 2,
+      "summary": "Services have no price field anywhere (schema + UI), and the owner UI has no way to remove a service",
+      "detail": {
+        "svcEdgeResult": {
+          "flashText": "Nume și durată valide sunt obligatorii.",
+          "nameLenSubmitted": 200,
+          "nameValAfterFailedSave": 80
+        },
+        "deleteSvcBtnCount": 0,
+        "servicesSeeded": 3
+      }
+    },
+    {
+      "id": "CAL-03",
+      "area": 3,
+      "summary": "No way in the UI to remove/delete a staff member (resource) — only add + deactivate (active checkbox) exists",
+      "detail": {
+        "resBefore": 1,
+        "resAfter": 2,
+        "removeStaffBtnCount": 0
+      }
+    }
+  ],
+  "context": {
+    "customerId": "4dad799b-4102-4de1-9aaa-db6b985555fe",
+    "siteId": "67944cb1-d137-450f-b714-94bfbe43bbd9",
+    "slug": "explore-professionals-91cdb52f",
+    "dataDir": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/explore-cal-owner-b3xvlC"
+  }
+}

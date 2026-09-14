@@ -1,0 +1,296 @@
+{
+  "site": {
+    "id": "21eade73-c433-4df8-bc42-930fab4e6db5",
+    "userId": "9c726376-92bc-4c10-8d35-6ea1102414e1",
+    "templateId": "professionals",
+    "templateVersion": 1,
+    "slug": "explore-cal-prof-07cdfd51",
+    "projectName": "explore-cal-prof-07cdfd51",
+    "platform": "web",
+    "status": "live",
+    "paid": true,
+    "url": "/live/explore-cal-prof-07cdfd51/",
+    "createdAt": "2026-09-14T15:32:14.969Z",
+    "stripeCustomerId": "cus_test_cs_test_911de0edb4511613a05c5f50",
+    "stripeSubscriptionId": "sub_test_cs_test_911de0edb4511613a05c5f50",
+    "paidUntil": "2027-09-14T15:32:15.023Z",
+    "dunning": null
+  },
+  "config": {
+    "business": {
+      "name": "Cabinet Juridic Ionescu",
+      "tagline": "Claritate pentru deciziile importante.",
+      "title": "Cabinet Juridic Ionescu | Consultanță juridică | București",
+      "metaDescription": "Consultanță juridică pentru contracte, organizarea companiilor și negocieri. Consultații online sau la cabinet, numai cu programare.",
+      "about": "Lucrăm cu antreprenori și profesioniști care vor răspunsuri clare înainte să semneze. Pornim de la situația ta, nu de la un pachet standard. Nu promitem rezultate, ci analiză riguroasă și recomandări directe.",
+      "lang": "ro",
+      "profession": "Avocat — drept civil și comercial",
+      "languages": "Română, engleză și spaniolă",
+      "modes": "Online și la cabinet"
+    },
+    "labels": {
+      "whatsapp": "WhatsApp",
+      "close": "Închide",
+      "apptTypeLegend": "Tipul consultației",
+      "apptDate": "Data",
+      "apptTime": "Ora",
+      "apptName": "Nume",
+      "apptEmail": "Email",
+      "apptPhone": "Telefon (opțional)",
+      "apptNote": "Notă (opțional, fără informații confidențiale)",
+      "apptDoneTitle": "Cerere trimisă — așteaptă confirmarea",
+      "apptAltChannel": "Preferi altă cale de contact?",
+      "navServices": "Servicii",
+      "navAbout": "Despre",
+      "navFaq": "Întrebări",
+      "navContact": "Contact",
+      "navBook": "Programare",
+      "servicesEyebrow": "Servicii",
+      "processEyebrow": "Cum lucrăm",
+      "aboutEyebrow": "Despre noi",
+      "faqEyebrow": "Întrebări frecvente",
+      "bookEyebrow": "Programare",
+      "contactEyebrow": "Contact",
+      "secondaryCta": "Vezi serviciile",
+      "scroll": "Explorează",
+      "instaTitle": "Noutăți",
+      "instaFollow": "Urmărește",
+      "waQr": "Deschide WhatsApp pe telefon",
+      "waOpen": "Sau deschide WhatsApp Web"
+    },
+    "theme": {
+      "primary": "#9A4030",
+      "primaryLight": "#C4A574",
+      "primaryDark": "#14120F",
+      "cream": "#F3EFE8"
+    },
+    "logo": "",
+    "showWordmark": true,
+    "hero": {
+      "background": "linear-gradient(145deg, rgba(243, 239, 232, 0.32), rgba(20, 18, 15, 0.48)), url('images/hero.jpg') center / cover",
+      "ctaLabel": "Programează o consultație",
+      "qualifier": "Consultații online sau la cabinet, numai cu programare."
+    },
+    "servicesTitle": "Servicii",
+    "services": [
+      {
+        "label": "Contracte și negocieri",
+        "blurb": "Revizuire atentă, riscuri explicate clar și modificări pe care le poți folosi imediat."
+      },
+      {
+        "label": "Organizare și guvernanță corporativă",
+        "blurb": "Structuri simple, acte de înființare și acorduri clare între asociați."
+      },
+      {
+        "label": "Îndrumare în drept civil",
+        "blurb": "Opțiuni, termene și pași concreți înainte ca situația să se complice."
+      },
+      {
+        "label": "Verificări juridice esențiale",
+        "blurb": "Liste de verificare potrivite tranzacțiilor mici și mijlocii, fără jargon inutil."
+      }
+    ],
+    "process": {
+      "title": "De la cerere la consultație",
+      "steps": [
+        {
+          "title": "Trimite cererea",
+          "text": "Alege tema și ora potrivită. Programarea devine fermă după ce îți răspundem."
+        },
+        {
+          "title": "Confirmăm ora",
+          "text": "Te contactăm prin email sau telefon pentru confirmarea finală."
+        },
+        {
+          "title": "Analizăm opțiunile",
+          "text": "Discutăm online sau la cabinet, pornind de la întrebările tale."
+        }
+      ]
+    },
+    "credentials": {
+      "title": "Experiență",
+      "lead": "Rigoare, experiență și explicații directe.",
+      "items": [
+        {
+          "label": "Drept civil și comercial"
+        },
+        {
+          "label": "Limbi: română, engleză și spaniolă"
+        },
+        {
+          "label": "Consultații online sau la cabinet, cu programare"
+        }
+      ]
+    },
+    "faq": {
+      "title": "Întrebări frecvente",
+      "items": [
+        {
+          "q": "Cum mă pregătesc pentru consultație?",
+          "a": "Trimite un rezumat scurt și documentele publice relevante. Nu transmite informații confidențiale prin formularul de programare."
+        },
+        {
+          "q": "Putem discuta online?",
+          "a": "Da. Alege formatul dorit la programare, iar după confirmare îți trimitem linkul."
+        },
+        {
+          "q": "Cât durează prima discuție?",
+          "a": "De regulă, între 45 și 60 de minute, în funcție de tema aleasă."
+        },
+        {
+          "q": "Cererea confirmă automat programarea?",
+          "a": "Nu. Înregistrăm cererea și confirmăm disponibilitatea înainte ca întâlnirea să devină fermă."
+        }
+      ],
+      "nativeItems": [
+        {
+          "q": "Cum mă pregătesc pentru consultație?",
+          "a": "Trimite un rezumat scurt și documentele publice relevante. Nu transmite informații confidențiale prin calendarul de programare."
+        },
+        {
+          "q": "Putem discuta online?",
+          "a": "Da. Alege formatul dorit la rezervare, iar după confirmare îți trimitem linkul."
+        },
+        {
+          "q": "Cât durează prima discuție?",
+          "a": "De regulă, între 45 și 60 de minute, în funcție de tema aleasă."
+        },
+        {
+          "q": "Programarea se confirmă automat?",
+          "a": "Da. Dacă intervalul ales este liber, primești confirmarea instant, direct din calendarul de mai sus."
+        }
+      ]
+    },
+    "appointment": {
+      "nativeBooking": "da",
+      "enabled": "yes",
+      "title": "Solicită o programare",
+      "intro": "Alege o oră potrivită. Confirmăm cererea folosind datele de contact oferite; formularul nu face o rezervare automată.",
+      "nativeTitle": "Programează-te online",
+      "nativeIntro": "Alege ziua și ora din calendarul de mai jos. Dacă intervalul este liber, programarea se confirmă instant, fără să mai aștepți un răspuns din partea noastră.",
+      "timezone": "Europe/Bucharest",
+      "slotIntervalMinutes": "60",
+      "durationMin": "45",
+      "minLeadMinutes": "120",
+      "modeLabel": "Online sau la cabinet",
+      "types": [
+        {
+          "id": "consult-init",
+          "label": "Consultație inițială",
+          "durationMin": "45",
+          "mode": "online"
+        },
+        {
+          "id": "contract-review",
+          "label": "Revizuire contract",
+          "durationMin": "60",
+          "mode": "cabinet"
+        },
+        {
+          "id": "follow-up",
+          "label": "Discuție de urmărire",
+          "durationMin": "30",
+          "mode": "telefon"
+        }
+      ],
+      "weekly": [
+        {
+          "weekday": "1",
+          "start": "09:00",
+          "end": "17:00"
+        },
+        {
+          "weekday": "2",
+          "start": "09:00",
+          "end": "17:00"
+        },
+        {
+          "weekday": "3",
+          "start": "09:00",
+          "end": "17:00"
+        },
+        {
+          "weekday": "4",
+          "start": "09:00",
+          "end": "17:00"
+        },
+        {
+          "weekday": "5",
+          "start": "09:00",
+          "end": "15:00"
+        }
+      ],
+      "confirmationText": "Am înregistrat cererea. Confirmăm disponibilitatea înainte ca întâlnirea să devină fermă.",
+      "privacyNotice": "Folosim datele tale numai pentru a răspunde cererii de programare.",
+      "confidentialityWarning": "Nu trimite documente sau informații confidențiale prin acest formular.",
+      "emptySlotsText": "Nu sunt ore disponibile momentan. Lasă-ne datele tale și revenim cu opțiuni.",
+      "submitLabel": "Trimite cererea"
+    },
+    "contact": {
+      "title": "Contact",
+      "intro": "Preferi emailul sau telefonul? Contactează-ne — răspundem în zilele lucrătoare.",
+      "phone": "+40721555014",
+      "phoneDisplay": "+40 721 555 014",
+      "email": "contact@cabinetjuridicionescu.ro",
+      "whatsapp": "40721555014",
+      "waHref": "https://wa.me/40721555014?text=Bun%C4%83%20ziua!%20A%C8%99%20dori%20mai%20multe%20informa%C8%9Bii%20despre%20serviciile%20dumneavoastr%C4%83.",
+      "address": "Strada Academiei 12, etajul 4<br>București 010014",
+      "addressHref": "",
+      "hoursNote": "Luni–Vineri, numai cu programare",
+      "instagram": {
+        "url": "",
+        "label": "Instagram"
+      },
+      "facebook": {
+        "url": "",
+        "label": "Facebook"
+      },
+      "waMessage": "Bună ziua! Aș dori mai multe informații despre serviciile dumneavoastră."
+    },
+    "instagram": {
+      "handle": "",
+      "url": "",
+      "embedUrl": ""
+    },
+    "seo": {
+      "ogImage": "",
+      "canonical": "",
+      "jsonLd": "{\"@context\": \"https://schema.org\", \"@type\": \"ProfessionalService\", \"name\": \"Cabinet Juridic Ionescu\", \"description\": \"Consultanță juridică pentru contracte, organizarea companiilor și negocieri.\", \"telephone\": \"+40721555014\", \"email\": \"contact@cabinetjuridicionescu.ro\", \"address\": {\"@type\": \"PostalAddress\", \"streetAddress\": \"Strada Academiei 12, etajul 4\", \"addressLocality\": \"București\", \"postalCode\": \"010014\", \"addressCountry\": \"RO\"}, \"areaServed\": {\"@type\": \"City\", \"name\": \"București\"}, \"openingHoursSpecification\": [{\"@type\": \"OpeningHoursSpecification\", \"dayOfWeek\": [\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\"], \"opens\": \"09:00\", \"closes\": \"18:00\"}]}"
+    },
+    "footer": {
+      "address": "București · numai cu programare",
+      "year": "2026",
+      "note": "Cererile de programare se confirmă separat."
+    },
+    "sections": [
+      {
+        "id": "services",
+        "removed": false
+      },
+      {
+        "id": "process",
+        "removed": false
+      },
+      {
+        "id": "about",
+        "removed": false
+      },
+      {
+        "id": "appointment",
+        "removed": false
+      },
+      {
+        "id": "faq",
+        "removed": false
+      },
+      {
+        "id": "instagram",
+        "removed": false
+      },
+      {
+        "id": "contact",
+        "removed": false
+      }
+    ]
+  }
+}

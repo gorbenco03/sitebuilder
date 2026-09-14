@@ -1,0 +1,12 @@
+devLink captured from desktop send-magic response: /auth/verify?token=a44dd6289db0ffaf9b3c7935aec356010ea977dfd4c0dab1d1be06cf0d2cbd5b
+desktop now sitting on the "check your email" step, waiting for #dev-link click
+desktop state BEFORE phone opens the link: {"authSentVisible":true,"modalPublishVisible":true}
+phone URL after opening the link: http://127.0.0.1:51528/app/#dashboard
+phone /api/me after opening link: {"user":{"id":"dcec2c3d-c139-4a00-898d-219ff30dfe04","createdAt":"2026-09-14T15:34:33.195Z","email":"sess03-e6836d0b@example.com"}}
+desktop /api/me AFTER phone consumed the link (desktop never clicked its own link) = {"user":null}
+desktop UI state AFTER phone consumed the link (still stuck on auth-sent, no auto-advance) = {"authSentVisible":true,"modalPublishVisible":true}
+desktop URL after clicking its OWN (already-consumed) dev-link: http://127.0.0.1:51528/app/#templates
+desktop toast after reusing consumed token: true "Linkul de autentificare a expirat. Încearcă din nou."
+desktop /api/me after clicking its own already-used link: {"user":null}
+raw second-use of the SAME devLink from a fresh anonymous context -> final URL: http://127.0.0.1:51528/app/#templates status: 200
+fresh anonymous context /api/me after visiting an already-used link: {"user":null}
