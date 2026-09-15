@@ -14,11 +14,28 @@
  *     occurrence was never offered at all — a silently lost bookable hour.
  *
  * Proves:
+ *  0. Direct oracle on time.js's own DST resolver — the spring gap
+ *     genuinely does not exist under the OLD zonedWallTimeToUtcMs-only
+ *     approach (it silently maps the nonexistent local 03:00 onto the same
+ *     UTC instant as 02:00 — collision, not detection); resolveZonedWallTime
+ *     must report zero real instants for it, and two for the fall-back hour.
+ *     NOTE: at the engine.generateSlots() level (section 1 below), the
+ *     spring-forward collision happens to be invisible from the outside for
+ *     a single-resource tenant — engine.js merges slots into a Map keyed by
+ *     start_utc, so the colliding "local 03:00" duplicate silently collapses
+ *     onto the already-present "local 02:00" entry and the returned slot
+ *     COUNT for that day comes out right (46) by coincidence, not by
+ *     correctness. This section 0 is what actually catches the bug: it
+ *     fails red against the pre-fix time.js because
+ *     resolveZonedWallTime does not exist there at all.
  *  1. Spring-forward: the nonexistent local hour is never offered — every
  *     other half-hour slot that day is unaffected, count matches exactly.
  *  2. Fall-back: the ambiguous local hour is offered as TWO distinct,
  *     correctly time-tagged instants (never one lost, never one silently
- *     duplicated as the same start_utc).
+ *     duplicated as the same start_utc). THIS one fails red end-to-end
+ *     through engine.generateSlots() against the pre-fix code (48 vs the
+ *     expected 50) — the fall-back hour's lost occurrence is NOT masked by
+ *     the Map-merge the way the spring gap collision is.
  *  3. Both fall-back instants are independently bookable and confirm to
  *     different start_utc values exactly one hour apart — never the same
  *     UTC instant twice (no double-booking).
@@ -45,7 +62,29 @@ if (!process.execArgv.includes('--experimental-sqlite')) {
 const { openCalendarDb } = require('../calendar-native/db');
 const engine = require('../calendar-native/engine');
 const email = require('../calendar-native/email');
-const { getZonedParts } = require('../calendar-native/time');
+const timeModule = require('../calendar-native/time');
+const { getZonedParts } = timeModule;
+
+// === 0. Direct oracle on time.js's DST resolver (see doc comment above) ===
+(function directTimeModuleOracle() {
+    assert.strictEqual(
+        typeof timeModule.resolveZonedWallTime, 'function',
+        'time.js must export resolveZonedWallTime (CAL-07 fix) — this is the assertion that actually fails red pre-fix'
+    );
+    const gap = timeModule.resolveZonedWallTime(2026, 3, 29, 3, 0, 'Europe/Bucharest');
+    assert.strictEqual(gap.length, 0, 'the nonexistent spring-forward local time must resolve to zero real instants');
+
+    const overlap = timeModule.resolveZonedWallTime(2026, 10, 25, 3, 0, 'Europe/Bucharest');
+    assert.strictEqual(overlap.length, 2, 'the ambiguous fall-back local time must resolve to exactly two real instants');
+    assert.strictEqual(overlap[1].utcMs - overlap[0].utcMs, 3600000, 'the two instants must be exactly one hour apart');
+    assert.strictEqual(overlap[0].offsetMinutes, 180, 'the earlier instant must carry the EEST (+03:00) offset');
+    assert.strictEqual(overlap[1].offsetMinutes, 120, 'the later instant must carry the EET (+02:00) offset');
+
+    const normal = timeModule.resolveZonedWallTime(2026, 6, 15, 9, 0, 'Europe/Bucharest');
+    assert.strictEqual(normal.length, 1, 'an ordinary day must resolve to exactly one instant');
+
+    console.log('PASS suite13-dst (0) time.js resolveZonedWallTime: gap -> 0 instants, fall-back -> 2 correctly-offset instants, normal day -> 1');
+})();
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cal-native-dst-'));
 const db = openCalendarDb({
