@@ -422,10 +422,33 @@ ALTER TABLE calendar_settings ADD COLUMN notify_owner_rescheduled INTEGER NOT NU
 ALTER TABLE calendar_settings ADD COLUMN notify_owner_email TEXT;
 `;
 
+/**
+ * Numbered v7, not v6: the owner-notification columns (CAL-EMAIL) were
+ * developed in parallel as v6 and landed first. Two different migrations
+ * sharing one number would leave whichever ran second unapplied forever on
+ * any database that had already recorded version 6.
+ *
+ * v7 — owner CRUD audit (CAL-02): an optional list price per service.
+ * Minor units (bani), matching the amountCents convention already used by
+ * bot/pricing.js / bot/payments.js, so there is never a float-rounding
+ * question. RON only for now — the CHECK pins the currency column so a
+ * stray value can't silently mean something else; both columns stay NULL
+ * together for "no price set" (enforced in owner-api.js, not here — SQLite
+ * ADD COLUMN cannot attach a new cross-column CHECK without a full table
+ * rebuild, and this pairing is exactly the kind of thing already validated
+ * in JS for every other owner-settable field in this file).
+ */
+const SCHEMA_SQL_V7 = `
+ALTER TABLE calendar_services ADD COLUMN price_amount_cents INTEGER
+    CHECK (price_amount_cents IS NULL OR price_amount_cents >= 0);
+ALTER TABLE calendar_services ADD COLUMN price_currency TEXT
+    CHECK (price_currency IS NULL OR price_currency = 'RON');
+`;
+
 /** Full schema for brand-new databases. */
 const SCHEMA_SQL =
     SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3 + '\n' + SCHEMA_SQL_V4 + '\n' +
-    SCHEMA_SQL_V5 + '\n' + SCHEMA_SQL_V6;
+    SCHEMA_SQL_V5 + '\n' + SCHEMA_SQL_V6 + '\n' + SCHEMA_SQL_V7;
 
 module.exports = {
     SCHEMA_VERSION,
@@ -436,6 +459,7 @@ module.exports = {
     SCHEMA_SQL_V4,
     SCHEMA_SQL_V5,
     SCHEMA_SQL_V6,
+    SCHEMA_SQL_V7,
     BOOKING_STATUSES,
     ACTIVE_BOOKING_STATUSES,
     EMAIL_DELIVERY_STATUSES,

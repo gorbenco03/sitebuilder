@@ -137,13 +137,33 @@ function publicOwnerBooking(row, serviceMap, resourceMap) {
     };
 }
 
-function publicResourceAdmin(row) {
+/**
+ * @param {boolean} [hasHours] CAL-04 (M2 owner CRUD audit) — whether this
+ *   resource has at least one weekly-hours window of its own (see
+ *   engine.resourceHasWeeklyHours). Computed by the caller, which has the
+ *   db/tenant context this function doesn't — omitted callers (none left in
+ *   this file) would just not get the field.
+ */
+function publicResourceAdmin(row, hasHours) {
     return {
         id: row.id,
         name: row.name,
         active: !!row.active,
         sortOrder: row.sort_order,
         isDefault: !!row.is_default,
+        hasHours: !!hasHours,
+    };
+}
+
+/** RON minor units (bani) → { amount: "150.00", currency: "RON" } | null. */
+function publicPrice(row) {
+    if (row.price_amount_cents == null || row.price_currency == null) return null;
+    return {
+        amountCents: row.price_amount_cents,
+        currency: row.price_currency,
+        // Convenience decimal string for direct display — the widget/dashboard
+        // never has to redo the /100 + toFixed(2) dance itself.
+        amount: (row.price_amount_cents / 100).toFixed(2),
     };
 }
 
@@ -155,6 +175,7 @@ function publicServiceAdmin(row) {
         bufferMinutes: row.buffer_minutes,
         active: !!row.active,
         sortOrder: row.sort_order,
+        price: publicPrice(row),
     };
 }
 
@@ -230,7 +251,7 @@ function resourcesWithServiceIds(db, customerId, siteId) {
     }
     return resources.map((r) => {
         const serviceIds = services.filter((s) => eligibleByService.get(s.id).has(r.id)).map((s) => s.id);
-        const out = publicResourceAdmin(r);
+        const out = publicResourceAdmin(r, engine.resourceHasWeeklyHours(db, customerId, siteId, r.id));
         out.serviceIds = serviceIds;
         return out;
     });
@@ -472,7 +493,29 @@ function putOwnerResource(db, customerId, siteId, resourceId, body) {
                 }
             }
         }
-        return { ok: true, resource: publicResourceAdmin(row) };
+        return {
+            ok: true,
+            resource: publicResourceAdmin(row, engine.resourceHasWeeklyHours(db, customerId, siteId, row.id)),
+        };
+    } catch (e) {
+        return mapEngineError(e);
+    }
+}
+
+/**
+ * M2 owner CRUD audit (CAL-03) — hard delete a staff member / resource.
+ * Blocks (FUTURE_BOOKINGS, mapped to a Romanian message with the count) if
+ * the resource has any future active booking; deactivating
+ * (`putOwnerResource({ active: false })`) stays available and unaffected —
+ * it keeps future bookings intact, exactly as before this audit.
+ */
+function deleteOwnerResource(db, customerId, siteId, resourceId) {
+    if (!resourceId || typeof resourceId !== 'string') {
+        return { error: 'Persoană/resursă invalidă.', code: 'VALIDATION', status: 400 };
+    }
+    try {
+        const result = engine.deleteResource(db, customerId, siteId, resourceId);
+        return { ok: true, deleted: true, futureBookingsCount: result.futureBookingsCount };
     } catch (e) {
         return mapEngineError(e);
     }
@@ -504,6 +547,25 @@ function reassignOwnerBooking(db, customerId, siteId, bookingId, body) {
     }
 }
 
+var WEEKDAY_RO = Object.freeze({
+    1: 'luni', 2: 'marți', 3: 'miercuri', 4: 'joi', 5: 'vineri', 6: 'sâmbătă', 7: 'duminică',
+});
+
+function minutesToHhmm(m) {
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    return String(h).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+}
+
+/**
+ * CAL-05 (M2 owner CRUD audit) — the schema/engine already stored more than
+ * one window per weekday (a lunch-break split shift is just two rows with
+ * the same weekday); nothing ever validated that two windows on the same
+ * day don't overlap, or gave a clear Romanian message when the owner typed
+ * an end time before the start time. Both are now rejected here, before
+ * anything reaches engine.setWeeklyAvailability, with a message that names
+ * the day and the exact times so the owner can fix it without guessing.
+ */
 function putOwnerWeekly(db, customerId, siteId, body) {
     const windowsIn = (body && (body.windows || body.weekly)) || [];
     if (!Array.isArray(windowsIn)) {
@@ -515,15 +577,44 @@ function putOwnerWeekly(db, customerId, siteId, body) {
         const startMinute = Number(w.startMinute != null ? w.startMinute : w.start_minute);
         const endMinute = Number(w.endMinute != null ? w.endMinute : w.end_minute);
         if (!Number.isInteger(weekday) || weekday < 1 || weekday > 7) {
-            return { error: 'weekday invalid (1–7).', code: 'VALIDATION', status: 400 };
+            return { error: 'Ziua săptămânii este invalidă (trebuie 1–7).', code: 'VALIDATION', status: 400 };
         }
-        if (!Number.isFinite(startMinute) || !Number.isFinite(endMinute) || endMinute <= startMinute) {
-            return { error: 'interval orar invalid.', code: 'VALIDATION', status: 400 };
+        if (!Number.isFinite(startMinute) || !Number.isFinite(endMinute)) {
+            return { error: 'Interval orar invalid pentru ' + WEEKDAY_RO[weekday] + '.', code: 'VALIDATION', status: 400 };
         }
         if (startMinute < 0 || startMinute >= 1440 || endMinute <= 0 || endMinute > 1440) {
-            return { error: 'minutele trebuie să fie în 0–1440.', code: 'VALIDATION', status: 400 };
+            return { error: 'Orele trebuie să fie între 00:00 și 24:00 (' + WEEKDAY_RO[weekday] + ').', code: 'VALIDATION', status: 400 };
+        }
+        if (endMinute <= startMinute) {
+            return {
+                error: 'Ora de sfârșit trebuie să fie după ora de început (' + WEEKDAY_RO[weekday] + ', ' +
+                    minutesToHhmm(startMinute) + '–' + minutesToHhmm(endMinute) + ').',
+                code: 'VALIDATION',
+                status: 400,
+            };
         }
         windows.push({ weekday, start_minute: startMinute, end_minute: endMinute });
+    }
+    // Overlap check across windows sharing a weekday (a split shift is fine,
+    // e.g. 09:00–13:00 + 14:00–18:00; 09:00–13:00 + 12:00–17:00 is not).
+    const byDay = new Map();
+    for (const w of windows) {
+        if (!byDay.has(w.weekday)) byDay.set(w.weekday, []);
+        byDay.get(w.weekday).push(w);
+    }
+    for (const [weekday, dayWindows] of byDay) {
+        const sorted = dayWindows.slice().sort((a, b) => a.start_minute - b.start_minute);
+        for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].start_minute < sorted[i - 1].end_minute) {
+                return {
+                    error: 'Intervalele orare se suprapun în ' + WEEKDAY_RO[weekday] + ' (' +
+                        minutesToHhmm(sorted[i - 1].start_minute) + '–' + minutesToHhmm(sorted[i - 1].end_minute) + ' și ' +
+                        minutesToHhmm(sorted[i].start_minute) + '–' + minutesToHhmm(sorted[i].end_minute) + ').',
+                    code: 'VALIDATION',
+                    status: 400,
+                };
+            }
+        }
     }
     // Wave 7 (audit #25): resourceId scopes this write to one resource's own
     // hours; omitted keeps the exact pre-Wave-7 behavior (writes the
@@ -587,42 +678,133 @@ function removeOwnerOverride(db, customerId, siteId, overrideId) {
     return { ok: true, removed: true, id: overrideId };
 }
 
+/**
+ * Parse + validate the optional price pair shared by create/edit. Accepts
+ * either `priceAmountCents` (integer minor units) or the more natural
+ * `priceRon` (decimal RON the owner actually types, e.g. "150.5") — exactly
+ * one currency is supported today (RON, schema.js v6 CHECK) so there is no
+ * separate currency field to fill in.
+ * @returns {{ ok:true, amountCents: number|null, currency: string|null } | { ok:false, error:string }}
+ */
+function parseOwnerPrice(body, fallbackAmountCents, fallbackCurrency) {
+    const hasAmountCents = body && body.priceAmountCents != null && body.priceAmountCents !== '';
+    const hasRon = body && body.priceRon != null && body.priceRon !== '';
+    const hasClear = body && (
+        (Object.prototype.hasOwnProperty.call(body, 'priceAmountCents') && body.priceAmountCents === null) ||
+        (Object.prototype.hasOwnProperty.call(body, 'priceRon') && body.priceRon === null) ||
+        (Object.prototype.hasOwnProperty.call(body, 'priceRon') && body.priceRon === '')
+    );
+    if (!hasAmountCents && !hasRon) {
+        if (hasClear) return { ok: true, amountCents: null, currency: null };
+        return { ok: true, amountCents: fallbackAmountCents != null ? fallbackAmountCents : null, currency: fallbackCurrency != null ? fallbackCurrency : null };
+    }
+    let amountCents;
+    if (hasAmountCents) {
+        amountCents = Number(body.priceAmountCents);
+        if (!Number.isFinite(amountCents) || !Number.isInteger(amountCents)) {
+            return { ok: false, error: 'Prețul trebuie să fie un număr întreg de bani.' };
+        }
+    } else {
+        const ron = Number(body.priceRon);
+        if (!Number.isFinite(ron)) {
+            return { ok: false, error: 'Prețul trebuie să fie un număr (RON).' };
+        }
+        amountCents = Math.round(ron * 100);
+    }
+    if (amountCents < 0) {
+        return { ok: false, error: 'Prețul nu poate fi negativ.' };
+    }
+    if (amountCents > 100000000) { // 1,000,000.00 RON — generous sanity ceiling, not a real limit
+        return { ok: false, error: 'Prețul introdus este prea mare.' };
+    }
+    return { ok: true, amountCents, currency: 'RON' };
+}
+
+/**
+ * Create (serviceId falsy) or update (existing serviceId) a service. Create
+ * fills in a next sort_order (end of the list) unless the caller specifies
+ * one, so a newly added service always appears last, not first — CAL-02
+ * (M2 owner CRUD audit): before this, a service could only be renamed or
+ * retimed, never created from the dashboard.
+ */
 function putOwnerService(db, customerId, siteId, serviceId, body) {
-    if (!serviceId || typeof serviceId !== 'string') {
-        return { error: 'serviciu invalid.', code: 'VALIDATION', status: 400 };
+    const isCreate = !serviceId;
+    let existing = null;
+    if (!isCreate) {
+        if (typeof serviceId !== 'string') {
+            return { error: 'serviciu invalid.', code: 'VALIDATION', status: 400 };
+        }
+        existing = engine.getService(db, customerId, siteId, serviceId);
+        if (!existing) {
+            return { error: 'Serviciul nu a fost găsit.', code: 'NOT_FOUND', status: 404 };
+        }
     }
-    const existing = engine.getService(db, customerId, siteId, serviceId);
-    if (!existing) {
-        return { error: 'Serviciul nu a fost găsit.', code: 'NOT_FOUND', status: 404 };
-    }
-    const name = body && body.name != null ? String(body.name).trim().slice(0, 80) : existing.name;
+    const name = body && body.name != null ? String(body.name).trim().slice(0, 80) : (existing ? existing.name : '');
     const durationMinutes = body && (body.durationMinutes != null || body.duration_minutes != null)
         ? Number(body.durationMinutes != null ? body.durationMinutes : body.duration_minutes)
-        : existing.duration_minutes;
-    let bufferMinutes = existing.buffer_minutes;
+        : (existing ? existing.duration_minutes : NaN);
+    let bufferMinutes = existing ? existing.buffer_minutes : null;
     if (body && (body.bufferMinutes != null || body.buffer_minutes != null)) {
         const raw = body.bufferMinutes != null ? body.bufferMinutes : body.buffer_minutes;
         bufferMinutes = raw === null || raw === '' ? null : Number(raw);
     }
     const active = body && body.active != null
         ? (body.active ? 1 : 0)
-        : existing.active;
-    if (!name || !Number.isFinite(durationMinutes) || durationMinutes <= 0 || durationMinutes > 480) {
-        return { error: 'Nume și durată valide sunt obligatorii.', code: 'VALIDATION', status: 400 };
+        : (existing ? existing.active : 1);
+    const sortOrder = body && body.sortOrder != null
+        ? Number(body.sortOrder)
+        : (existing ? existing.sort_order : nextServiceSortOrder(db, customerId, siteId));
+    if (!name) {
+        return { error: 'Numele serviciului este obligatoriu.', code: 'VALIDATION', status: 400 };
     }
-    if (bufferMinutes != null && (!Number.isFinite(bufferMinutes) || bufferMinutes < 0)) {
-        return { error: 'Buffer invalid.', code: 'VALIDATION', status: 400 };
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0 || durationMinutes > 480) {
+        return { error: 'Durata trebuie să fie între 1 și 480 de minute.', code: 'VALIDATION', status: 400 };
+    }
+    if (bufferMinutes != null && (!Number.isFinite(bufferMinutes) || bufferMinutes < 0 || bufferMinutes > 240)) {
+        return { error: 'Pauza trebuie să fie între 0 și 240 de minute.', code: 'VALIDATION', status: 400 };
+    }
+    if (!Number.isFinite(sortOrder)) {
+        return { error: 'Ordinea trebuie să fie un număr.', code: 'VALIDATION', status: 400 };
+    }
+    const price = parseOwnerPrice(body, existing ? existing.price_amount_cents : null, existing ? existing.price_currency : null);
+    if (!price.ok) {
+        return { error: price.error, code: 'VALIDATION', status: 400 };
     }
     try {
         const row = engine.upsertService(db, customerId, siteId, {
-            id: serviceId,
+            id: isCreate ? undefined : serviceId,
             name,
             duration_minutes: durationMinutes,
             buffer_minutes: bufferMinutes,
             active,
-            sort_order: existing.sort_order,
+            sort_order: sortOrder,
+            price_amount_cents: price.amountCents,
+            price_currency: price.currency,
         });
         return { ok: true, service: publicServiceAdmin(row) };
+    } catch (e) {
+        return mapEngineError(e);
+    }
+}
+
+function nextServiceSortOrder(db, customerId, siteId) {
+    const all = engine.listServices(db, customerId, siteId, { activeOnly: false });
+    return all.reduce((max, s) => Math.max(max, Number(s.sort_order) || 0), -1) + 1;
+}
+
+/**
+ * M2 owner CRUD audit (CAL-02) — hard delete a service. Blocks
+ * (FUTURE_BOOKINGS, Romanian message with the exact count) if it has any
+ * future active booking; `putOwnerService({ active: false })` (deactivate)
+ * stays available and keeps existing bookings untouched, exactly as before.
+ */
+function deleteOwnerService(db, customerId, siteId, serviceId) {
+    if (!serviceId || typeof serviceId !== 'string') {
+        return { error: 'Serviciu invalid.', code: 'VALIDATION', status: 400 };
+    }
+    try {
+        const result = engine.deleteService(db, customerId, siteId, serviceId);
+        return { ok: true, deleted: true, futureBookingsCount: result.futureBookingsCount };
     } catch (e) {
         return mapEngineError(e);
     }
@@ -631,20 +813,30 @@ function putOwnerService(db, customerId, siteId, serviceId, body) {
 function putOwnerSettings(db, customerId, siteId, body) {
     const patch = {};
     if (body && body.timezone) patch.timezone = String(body.timezone).slice(0, 64);
+    // Every numeric field below is validated here (not left to the schema's
+    // own CHECK constraints) so an out-of-range value always comes back as a
+    // clean 400 with a specific Romanian message instead of a generic 500
+    // from a raw SQLite constraint failure (task: "nothing fails silently").
     if (body && (body.defaultBufferMinutes != null || body.default_buffer_minutes != null)) {
-        patch.default_buffer_minutes = Number(
-            body.defaultBufferMinutes != null ? body.defaultBufferMinutes : body.default_buffer_minutes
-        );
+        const v = Number(body.defaultBufferMinutes != null ? body.defaultBufferMinutes : body.default_buffer_minutes);
+        if (!Number.isFinite(v) || v < 0 || v > 240) {
+            return { error: 'Pauza implicită trebuie să fie între 0 și 240 de minute.', code: 'VALIDATION', status: 400 };
+        }
+        patch.default_buffer_minutes = v;
     }
     if (body && (body.minCancelHours != null || body.min_cancel_hours != null)) {
-        patch.min_cancel_hours = Number(
-            body.minCancelHours != null ? body.minCancelHours : body.min_cancel_hours
-        );
+        const v = Number(body.minCancelHours != null ? body.minCancelHours : body.min_cancel_hours);
+        if (!Number.isFinite(v) || v < 0 || v > 168) {
+            return { error: 'Termenul minim de anulare trebuie să fie între 0 și 168 de ore (7 zile).', code: 'VALIDATION', status: 400 };
+        }
+        patch.min_cancel_hours = v;
     }
     if (body && (body.slotIntervalMinutes != null || body.slot_interval_minutes != null)) {
-        patch.slot_interval_minutes = Number(
-            body.slotIntervalMinutes != null ? body.slotIntervalMinutes : body.slot_interval_minutes
-        );
+        const v = Number(body.slotIntervalMinutes != null ? body.slotIntervalMinutes : body.slot_interval_minutes);
+        if (!Number.isFinite(v) || v <= 0 || v > 1440) {
+            return { error: 'Pasul intervalelor trebuie să fie între 1 și 1440 de minute.', code: 'VALIDATION', status: 400 };
+        }
+        patch.slot_interval_minutes = v;
     }
 
     // Booking-window policy (audit #26) — same owner-configurable pattern as
@@ -735,8 +927,15 @@ function listOwnerSlots(db, customerId, siteId, opts) {
     return listPublicSlots(db, customerId, siteId, opts);
 }
 
+/**
+ * @param {number} [futureBookingsCount] CAL-02/CAL-03 (M2 owner CRUD audit)
+ *   — service/resource delete blocked by future bookings. Read straight off
+ *   the thrown error (engine.deleteService/deleteResource set it) so the
+ *   Romanian message can say exactly how many, not just "some".
+ */
 function mapEngineError(e) {
     const code = e && e.code ? String(e.code) : 'ERROR';
+    const futureBookingsCount = e && Number.isFinite(e.futureBookingsCount) ? e.futureBookingsCount : null;
     const status =
         code === 'VALIDATION' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST' ||
             code === 'STATE' || code === 'MIN_NOTICE' || code === 'MAX_ADVANCE' || code === 'RESOURCE_REQUIRED' ||
@@ -744,9 +943,18 @@ function mapEngineError(e) {
             ? 400
             : code === 'SERVICE_NOT_FOUND' || code === 'SETTINGS_MISSING' || code === 'NOT_FOUND' || code === 'RESOURCE_NOT_FOUND'
                 ? 404
-                : 500;
+                : code === 'FUTURE_BOOKINGS'
+                    ? 409
+                    : 500;
     const ro =
-        code === 'NO_RESOURCE'
+        code === 'FUTURE_BOOKINGS'
+            ? (
+                (futureBookingsCount === 1
+                    ? 'Există 1 programare viitoare pe acest element. '
+                    : 'Există ' + (futureBookingsCount != null ? futureBookingsCount : 'câteva') + ' programări viitoare pe acest element. ') +
+                'Anulează-le mai întâi sau dezactivează în loc să ștergi — dezactivat nu mai apare pe site, dar programările existente rămân neatinse.'
+            )
+            : code === 'NO_RESOURCE'
             ? 'Cabinetul nu are nicio persoană/resursă activă — adaugă una în tabul „Personal” înainte de a confirma.'
             : code === 'SLOT_OUTSIDE_AVAILABILITY'
             ? 'Intervalul ales nu este disponibil (în afara programului sau zi liberă).'
@@ -765,7 +973,9 @@ function mapEngineError(e) {
                                     : code === 'VALIDATION'
                                         ? 'Verifică datele introduse.'
                                         : 'Nu am putut salva. Încearcă din nou.';
-    return { error: ro, code, status };
+    return futureBookingsCount != null
+        ? { error: ro, code, status, futureBookingsCount }
+        : { error: ro, code, status };
 }
 
 module.exports = {
@@ -782,10 +992,12 @@ module.exports = {
     getOwnerAvailability,
     listOwnerResources,
     putOwnerResource,
+    deleteOwnerResource,
     putOwnerWeekly,
     addOwnerOverride,
     removeOwnerOverride,
     putOwnerService,
+    deleteOwnerService,
     putOwnerSettings,
     listOwnerSlots,
 };

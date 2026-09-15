@@ -19,6 +19,7 @@ const {
     SCHEMA_SQL_V4,
     SCHEMA_SQL_V5,
     SCHEMA_SQL_V6,
+    SCHEMA_SQL_V7,
     SCHEMA_VERSION,
 } = require('./schema');
 
@@ -195,6 +196,21 @@ function migrate(db) {
             ).run(6, ts);
             db.exec('COMMIT;');
             current = 6;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    if (current < 7) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V7);
+            db.prepare(
+                'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(7, ts);
+            db.exec('COMMIT;');
+            current = 7;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

@@ -164,12 +164,27 @@ function ensureDemoTenant(db) {
     return DEMO;
 }
 
+/**
+ * M2 owner CRUD audit (CAL-02) — additive field only: a service may now
+ * carry an optional RON price (see engine.upsertService / schema.js v6).
+ * Not wired into any widget markup here — widget/ is owned by a concurrent
+ * agent reworking the day picker; this only exposes the data so the widget
+ * can render it in a service card if/when it wants to. NULL when the owner
+ * never set a price, same "optional" contract as bufferMinutes above.
+ */
 function publicService(row) {
     return {
         id: row.id,
         name: row.name,
         durationMinutes: row.duration_minutes,
         bufferMinutes: row.buffer_minutes,
+        price: (row.price_amount_cents != null && row.price_currency != null)
+            ? {
+                amountCents: row.price_amount_cents,
+                currency: row.price_currency,
+                amount: (row.price_amount_cents / 100).toFixed(2),
+            }
+            : null,
     };
 }
 
@@ -187,8 +202,18 @@ function publicSlot(row) {
     };
 }
 
-function publicResource(row) {
-    return { id: row.id, name: row.name };
+/**
+ * @param {boolean} [hasHours] CAL-04 (M2 owner CRUD audit) — additive field:
+ * whether this resource has any weekly-hours window configured (see
+ * engine.resourceHasWeeklyHours). A resource with none can never actually
+ * be booked (createBooking's slotFitsOpenAvailability gate already rejects
+ * it, unchanged here — see engine.js). Exposed so the widget can choose to
+ * grey it out / hide it from the picker instead of offering a person who
+ * will always come back empty; not wired into any widget markup here —
+ * widget/ is owned by a concurrent agent.
+ */
+function publicResource(row, hasHours) {
+    return { id: row.id, name: row.name, hasHours: !!hasHours };
 }
 
 /**
@@ -239,7 +264,10 @@ function listPublicResources(db, customerId, siteId, { serviceId } = {}) {
     } else {
         rows = engine.listResources(db, customerId, siteId, { activeOnly: true });
     }
-    return { ok: true, resources: rows.map(publicResource) };
+    return {
+        ok: true,
+        resources: rows.map((r) => publicResource(r, engine.resourceHasWeeklyHours(db, customerId, siteId, r.id))),
+    };
 }
 
 // Widget month-grid calendar (owner request 2026-09-14) fetches one whole

@@ -54,6 +54,50 @@
       .replace(/"/g, '&quot;');
   }
 
+  /**
+   * M2 owner CRUD audit — inline, per-field validation errors. Shown right
+   * under the offending input (CSS: .hod-field-error) rather than only the
+   * page-level flash banner, which can be scrolled out of view on a long
+   * tab at 390px — "nothing fails silently" means the owner sees exactly
+   * which field is wrong without hunting for a banner above the fold.
+   */
+  function showFieldError(inputEl, message) {
+    if (!inputEl) return;
+    clearFieldError(inputEl);
+    var field = inputEl.closest('.hod-field') || inputEl.parentElement;
+    if (field) field.classList.add('hod-field--err');
+    var p = document.createElement('p');
+    p.className = 'hod-field-error';
+    p.setAttribute('role', 'alert');
+    p.textContent = message;
+    inputEl.insertAdjacentElement('afterend', p);
+    inputEl.setAttribute('aria-invalid', 'true');
+  }
+
+  function clearFieldError(inputEl) {
+    if (!inputEl) return;
+    inputEl.removeAttribute('aria-invalid');
+    var field = inputEl.closest('.hod-field') || inputEl.parentElement;
+    if (!field) return;
+    field.classList.remove('hod-field--err');
+    $all('.hod-field-error', field).forEach(function (p) { p.remove(); });
+  }
+
+  function clearFieldErrors(root2) {
+    $all('.hod-field-error', root2).forEach(function (p) { p.remove(); });
+    $all('.hod-field--err', root2).forEach(function (f) { f.classList.remove('hod-field--err'); });
+  }
+
+  /** Parse a RON amount the owner typed ("150", "150,50", "150.5") → cents, or null if blank. NaN if invalid. */
+  function parsePriceRonToCents(raw) {
+    var v = String(raw == null ? '' : raw).trim();
+    if (!v) return null;
+    v = v.replace(',', '.');
+    var n = Number(v);
+    if (!Number.isFinite(n) || n < 0) return NaN;
+    return Math.round(n * 100);
+  }
+
   function formatWhen(iso, tz) {
     try {
       var d = new Date(iso);
@@ -526,6 +570,36 @@
       });
     }
 
+    /** CAL-05 (M2 owner CRUD audit) — one weekly-hours window's markup. */
+    function weeklyWindowRowHtml(start, end, dayLabel) {
+      return '<div class="hod-week__row" data-hod-win>' +
+        '<input type="text" inputmode="numeric" data-hod-start placeholder="09:00" value="' + esc(start) +
+        '" aria-label="Ora de început, ' + esc(dayLabel) + '" maxlength="5" />' +
+        '<span aria-hidden="true">–</span>' +
+        '<input type="text" inputmode="numeric" data-hod-end placeholder="17:00" value="' + esc(end) +
+        '" aria-label="Ora de sfârșit, ' + esc(dayLabel) + '" maxlength="5" />' +
+        '<button type="button" class="hod-btn hod-btn--ghost hod-btn--small hod-week__remove" data-hod-win-remove ' +
+        'aria-label="Șterge intervalul ' + esc(start) + '–' + esc(end) + ', ' + esc(dayLabel) + '">&times;</button>' +
+        '</div>';
+    }
+
+    function attachWindowRemove(row) {
+      var btn = $('[data-hod-win-remove]', row);
+      if (!btn) return;
+      btn.addEventListener('click', function () {
+        var container = row.parentElement;
+        row.remove();
+        if (!container.querySelector('[data-hod-win]')) {
+          var p = document.createElement('p');
+          p.className = 'hod-hint';
+          p.setAttribute('data-hod-closed-hint', '');
+          p.style.margin = '0';
+          p.textContent = 'Închis';
+          container.appendChild(p);
+        }
+      });
+    }
+
     function paintAvail() {
       var panel = $('[data-hod-panel="avail"]', root);
       if (!panel) return;
@@ -533,9 +607,18 @@
         panel.innerHTML = '';
         return;
       }
+      // CAL-05 (M2 owner CRUD audit): a weekday can hold more than one
+      // window (a lunch-break split shift) — the schema/API always
+      // supported this (calendar_weekly_availability is just N rows per
+      // weekday), only this UI collapsed it to one start/end pair, silently
+      // dropping every window past the first the API ever returned.
       var byDay = {};
       (state.weekly || []).forEach(function (w) {
-        byDay[w.weekday] = w;
+        if (!byDay[w.weekday]) byDay[w.weekday] = [];
+        byDay[w.weekday].push(w);
+      });
+      Object.keys(byDay).forEach(function (k) {
+        byDay[k].sort(function (a, b) { return a.startMinute - b.startMinute; });
       });
       var html = '';
       html += '<div class="hod-card">';
@@ -558,31 +641,23 @@
         '. Zilele libere și orele speciale pe o dată anume înlocuiesc programul săptămânal.</p>';
       html += '<ul class="hod-week">';
       WEEKDAYS.forEach(function (d) {
-        var w = byDay[d.n];
-        var open = !!w;
-        var start = w ? minutesToTime(w.startMinute) : '09:00';
-        var end = w ? minutesToTime(w.endMinute) : '17:00';
+        var windows = byDay[d.n] || [];
         html += '<li data-weekday="' + d.n + '">';
         html += '<div class="hod-week__day">' + esc(d.label) + '</div>';
-        html += '<div class="hod-week__row">';
+        html += '<div class="hod-week__body">';
+        html += '<div class="hod-week__windows" data-hod-windows>';
+        if (!windows.length) {
+          html += '<p class="hod-hint" data-hod-closed-hint style="margin:0">Închis</p>';
+        }
+        windows.forEach(function (w) {
+          html += weeklyWindowRowHtml(minutesToTime(w.startMinute), minutesToTime(w.endMinute), d.label);
+        });
+        html += '</div>';
         html +=
-          '<label><input type="checkbox" data-hod-open ' +
-          (open ? 'checked' : '') +
-          ' /> Deschis</label>';
-        html +=
-          '<input type="text" inputmode="numeric" data-hod-start placeholder="09:00" value="' +
-          esc(start) +
-          '" ' +
-          (open ? '' : 'disabled') +
-          ' aria-label="Ora de început" maxlength="5" />';
-        html += '<span aria-hidden="true">–</span>';
-        html +=
-          '<input type="text" inputmode="numeric" data-hod-end placeholder="17:00" value="' +
-          esc(end) +
-          '" ' +
-          (open ? '' : 'disabled') +
-          ' aria-label="Ora de sfârșit" maxlength="5" />';
-        html += '</div></li>';
+          '<button type="button" class="hod-btn hod-btn--ghost hod-btn--small" data-hod-win-add aria-label="Adaugă un interval pentru ' +
+          esc(d.label) + '">+ Adaugă interval' + (windows.length ? ' (pauză de prânz etc.)' : '') + '</button>';
+        html += '</div>';
+        html += '</li>';
       });
       html += '</ul>';
       html +=
@@ -641,12 +716,19 @@
 
       panel.innerHTML = html;
 
-      $all('[data-hod-open]', panel).forEach(function (cb) {
-        cb.addEventListener('change', function () {
-          var li = cb.closest('li');
-          $all('input[data-hod-start], input[data-hod-end]', li).forEach(function (inp) {
-            inp.disabled = !cb.checked;
-          });
+      $all('[data-hod-win]', panel).forEach(attachWindowRemove);
+      $all('[data-hod-win-add]', panel).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var li = btn.closest('li');
+          var container = $('[data-hod-windows]', li);
+          var closedHint = $('[data-hod-closed-hint]', container);
+          if (closedHint) closedHint.remove();
+          var wrap = document.createElement('div');
+          wrap.innerHTML = weeklyWindowRowHtml('09:00', '17:00');
+          var row = wrap.firstElementChild;
+          container.appendChild(row);
+          attachWindowRemove(row);
+          $('[data-hod-start]', row).focus();
         });
       });
       var kindSel = $('[data-hod-ov-kind]', panel);
@@ -698,6 +780,15 @@
           (r.active ? '' : ' · <span class="hod-badge hod-badge--cancelled">inactiv</span>') +
           (r.isDefault ? ' · <span class="hod-hint" style="display:inline">implicit</span>' : '') +
           '</div>';
+        // CAL-04 (M2 owner CRUD audit): a resource with no weekly hours of
+        // its own can never actually be booked (engine.js already rejects
+        // any attempt — see slotFitsOpenAvailability) — say so here instead
+        // of letting the owner find out only when a client complains.
+        if (!r.hasHours) {
+          html +=
+            '<p class="hod-field-error" style="margin:4px 0 8px">Fără program setat — nu poate fi rezervat public. ' +
+            'Adaugă orele în tabul „Disponibilitate”.</p>';
+        }
         html += '<div class="hod-svc-edit">';
         html +=
           '<div class="hod-field">Nume<input type="text" data-hod-res-name value="' +
@@ -723,10 +814,15 @@
               '</label>';
           });
         }
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
         html +=
           '<button type="button" class="hod-btn hod-btn--small" data-hod-save-res="' +
           esc(r.id) +
           '">Salvează</button>';
+        html +=
+          '<button type="button" class="hod-btn hod-btn--small hod-btn--danger" data-hod-del-res="' +
+          esc(r.id) + '">Șterge</button>';
+        html += '</div>';
         html += '</div></li>';
       });
       html += '</ul>';
@@ -741,6 +837,11 @@
       $all('[data-hod-save-res]', panel).forEach(function (btn) {
         btn.addEventListener('click', function () {
           saveResource(btn.getAttribute('data-hod-save-res'), btn);
+        });
+      });
+      $all('[data-hod-del-res]', panel).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          deleteResource(btn.getAttribute('data-hod-del-res'), btn);
         });
       });
       var addRes = $('[data-hod-add-res]', panel);
@@ -771,9 +872,10 @@
     async function addResource() {
       var panel = $('[data-hod-panel="resources"]', root);
       var nameEl = $('[data-hod-res-new-name]', panel);
+      clearFieldError(nameEl);
       var name = (nameEl.value || '').trim();
       if (!name) {
-        setMsg('Completează un nume.', 'err');
+        showFieldError(nameEl, 'Completează un nume.');
         return;
       }
       var r = await api('POST', '/api/calendar-native/owner/resources', { name: name });
@@ -782,8 +884,34 @@
         return;
       }
       nameEl.value = '';
-      setMsg('Persoană/resursă adăugată. Setează-i acum programul în tabul „Disponibilitate”.', 'ok');
+      setMsg('Persoană/resursă adăugată — momentan fără program, deci nu poate fi rezervată public. Setează-i orele în tabul „Disponibilitate”.', 'ok');
       await loadAvailability();
+    }
+
+    /**
+     * CAL-03 (M2 owner CRUD audit): hard delete. Blocked (409,
+     * FUTURE_BOOKINGS) when this person/resource still has future active
+     * bookings — the Romanian message names exactly how many. Deactivating
+     * (the "Activ" checkbox above, saveResource) stays available and keeps
+     * future bookings intact, unlike delete.
+     */
+    async function deleteResource(id, btn) {
+      var res = state.resources.filter(function (r) { return r.id === id; })[0];
+      if (!window.confirm('Ștergi definitiv' + (res ? ' pe „' + res.name + '"' : ' această persoană/resursă') + '? Nu poate fi anulat.')) return;
+      btn.disabled = true;
+      var r = await api('DELETE', '/api/calendar-native/owner/resources/' + encodeURIComponent(id));
+      btn.disabled = false;
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut șterge.', 'err');
+        return;
+      }
+      setMsg('Persoană/resursă ștearsă.', 'ok');
+      await loadAvailability();
+    }
+
+    function priceLabel(s) {
+      if (!s.price) return 'fără preț afișat';
+      return s.price.amount + ' RON';
     }
 
     function paintServices() {
@@ -795,7 +923,8 @@
       }
       var html = '<div class="hod-card"><h2>Servicii</h2>';
       html +=
-        '<p class="hod-hint">Durata și pauza dintre programări se folosesc la generarea intervalelor libere pe site-ul public.</p>';
+        '<p class="hod-hint">Durata și pauza dintre programări se folosesc la generarea intervalelor libere pe site-ul public. ' +
+        'Prețul este opțional și informativ.</p>';
       html += '<ul class="hod-svc-list">';
       if (!state.services.length) {
         // "Niciun serviciu configurat." on its own reads as a broken page. The
@@ -808,11 +937,10 @@
           'Niciun serviciu încă. Serviciile de aici sunt <strong>tipurile de consultație</strong> ' +
           'din site-ul tău (Detalii → Programări) și apar automat după prima publicare cu ' +
           'programările native activate.<br>' +
-          'Le redenumești chiar aici; durata și pauza le ajustezi tot în acest tab. Un tip nou nu ' +
-          'se poate adăuga încă din editor.' +
+          'Le redenumești chiar aici; durata și pauza le ajustezi tot în acest tab, sau adaugi unul nou mai jos.' +
           '</li>';
       }
-      state.services.forEach(function (s) {
+      state.services.forEach(function (s, idx) {
         html += '<li data-svc-id="' + esc(s.id) + '">';
         html +=
           '<div><strong>' +
@@ -821,7 +949,10 @@
           esc(s.durationMinutes) +
           ' min · pauză ' +
           esc(s.bufferMinutes != null ? s.bufferMinutes : '—') +
-          ' min</div>';
+          ' min · ' +
+          esc(priceLabel(s)) +
+          (s.active ? '' : ' · <span class="hod-badge hod-badge--cancelled">inactiv</span>') +
+          '</div>';
         html += '<div class="hod-svc-edit">';
         html +=
           '<div class="hod-field">Nume<input type="text" data-hod-svc-name value="' +
@@ -829,7 +960,7 @@
           '" maxlength="80" /></div>';
         html += '<div class="hod-row2">';
         html +=
-          '<div class="hod-field">Durată (min)<input type="number" min="5" max="480" data-hod-svc-dur value="' +
+          '<div class="hod-field">Durată (min)<input type="number" min="1" max="480" data-hod-svc-dur value="' +
           esc(s.durationMinutes) +
           '" /></div>';
         html +=
@@ -838,18 +969,185 @@
           '" /></div>';
         html += '</div>';
         html +=
+          '<div class="hod-field">Preț (RON, opțional)<input type="text" inputmode="decimal" data-hod-svc-price ' +
+          'placeholder="ex. 150" value="' + esc(s.price ? s.price.amount : '') + '" /></div>';
+        html +=
+          '<label style="display:flex;align-items:center;gap:8px;font-size:14px;margin:4px 0">' +
+          '<input type="checkbox" data-hod-svc-active ' + (s.active ? 'checked' : '') +
+          ' /> Activ (apare pe site-ul public)</label>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+        html +=
           '<button type="button" class="hod-btn hod-btn--small" data-hod-save-svc="' +
-          esc(s.id) +
-          '">Salvează serviciul</button>';
+          esc(s.id) + '">Salvează serviciul</button>';
+        if (idx > 0) {
+          html +=
+            '<button type="button" class="hod-btn hod-btn--small hod-btn--ghost" data-hod-move-svc="' +
+            esc(s.id) + '" data-dir="up" aria-label="Mută ' + esc(s.name) + ' mai sus">&#8593; Mută sus</button>';
+        }
+        if (idx < state.services.length - 1) {
+          html +=
+            '<button type="button" class="hod-btn hod-btn--small hod-btn--ghost" data-hod-move-svc="' +
+            esc(s.id) + '" data-dir="down" aria-label="Mută ' + esc(s.name) + ' mai jos">&#8595; Mută jos</button>';
+        }
+        html +=
+          '<button type="button" class="hod-btn hod-btn--small hod-btn--danger" data-hod-del-svc="' +
+          esc(s.id) + '">Șterge serviciul</button>';
+        html += '</div>';
         html += '</div></li>';
       });
-      html += '</ul></div>';
+      html += '</ul>';
+      html +=
+        '<div class="hod-ov-form">' +
+        '<div class="hod-field">Nume serviciu nou<input type="text" data-hod-svc-new-name maxlength="80" placeholder="ex. Consultație" /></div>' +
+        '<div class="hod-row2">' +
+        '<div class="hod-field">Durată (min)<input type="number" min="1" max="480" data-hod-svc-new-dur value="30" /></div>' +
+        '<div class="hod-field">Pauză după (min)<input type="number" min="0" max="240" data-hod-svc-new-buf value="0" /></div>' +
+        '</div>' +
+        '<div class="hod-field">Preț (RON, opțional)<input type="text" inputmode="decimal" data-hod-svc-new-price placeholder="ex. 150" /></div>' +
+        '<button type="button" class="hod-btn hod-btn--ghost" data-hod-add-svc>+ Adaugă serviciu</button>' +
+        '</div>';
+      html += '</div>';
       panel.innerHTML = html;
       $all('[data-hod-save-svc]', panel).forEach(function (btn) {
         btn.addEventListener('click', function () {
           saveService(btn.getAttribute('data-hod-save-svc'), btn);
         });
       });
+      $all('[data-hod-del-svc]', panel).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          deleteService(btn.getAttribute('data-hod-del-svc'), btn);
+        });
+      });
+      $all('[data-hod-move-svc]', panel).forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          moveService(btn.getAttribute('data-hod-move-svc'), btn.getAttribute('data-dir'));
+        });
+      });
+      var addBtn = $('[data-hod-add-svc]', panel);
+      if (addBtn) addBtn.addEventListener('click', addService);
+    }
+
+    /**
+     * Validate one service's editable fields inline. Returns the parsed
+     * values on success, or null after painting field-level errors (never a
+     * silent no-op — every rejected save says exactly what's wrong and
+     * where). Shared by saveService and addService.
+     */
+    function readServiceForm(container, sel) {
+      var nameEl = $(sel.name, container);
+      var durEl = $(sel.dur, container);
+      var bufEl = $(sel.buf, container);
+      var priceEl = $(sel.price, container);
+      clearFieldErrors(container);
+      var ok = true;
+      var name = (nameEl.value || '').trim();
+      if (!name) {
+        showFieldError(nameEl, 'Numele serviciului este obligatoriu.');
+        ok = false;
+      }
+      var dur = Number(durEl.value);
+      if (!Number.isFinite(dur) || dur <= 0 || dur > 480) {
+        showFieldError(durEl, 'Durata trebuie să fie între 1 și 480 de minute.');
+        ok = false;
+      }
+      var bufRaw = bufEl.value;
+      var buf = bufRaw === '' ? 0 : Number(bufRaw);
+      if (!Number.isFinite(buf) || buf < 0 || buf > 240) {
+        showFieldError(bufEl, 'Pauza trebuie să fie între 0 și 240 de minute.');
+        ok = false;
+      }
+      var priceCents = priceEl ? parsePriceRonToCents(priceEl.value) : null;
+      if (priceEl && Number.isNaN(priceCents)) {
+        showFieldError(priceEl, 'Prețul trebuie să fie un număr pozitiv (ex. 150 sau 150,50).');
+        ok = false;
+      }
+      if (!ok) return null;
+      return { name: name, durationMinutes: dur, bufferMinutes: buf, priceAmountCents: priceCents };
+    }
+
+    async function saveService(id, btn) {
+      var li = btn.closest('li');
+      var form = readServiceForm(li, {
+        name: '[data-hod-svc-name]', dur: '[data-hod-svc-dur]', buf: '[data-hod-svc-buf]', price: '[data-hod-svc-price]',
+      });
+      if (!form) return;
+      var body = {
+        name: form.name,
+        durationMinutes: form.durationMinutes,
+        bufferMinutes: form.bufferMinutes,
+        priceAmountCents: form.priceAmountCents,
+        active: $('[data-hod-svc-active]', li) ? $('[data-hod-svc-active]', li).checked : true,
+      };
+      btn.disabled = true;
+      var r = await api(
+        'PUT',
+        '/api/calendar-native/owner/services/' + encodeURIComponent(id),
+        body
+      );
+      btn.disabled = false;
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut salva serviciul.', 'err');
+        return;
+      }
+      setMsg('Serviciu actualizat.', 'ok');
+      await loadAvailability();
+    }
+
+    async function addService() {
+      var panel = $('[data-hod-panel="services"]', root);
+      var form = readServiceForm(panel, {
+        name: '[data-hod-svc-new-name]', dur: '[data-hod-svc-new-dur]', buf: '[data-hod-svc-new-buf]', price: '[data-hod-svc-new-price]',
+      });
+      if (!form) return;
+      var r = await api('POST', '/api/calendar-native/owner/services', {
+        name: form.name,
+        durationMinutes: form.durationMinutes,
+        bufferMinutes: form.bufferMinutes,
+        priceAmountCents: form.priceAmountCents,
+      });
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut adăuga serviciul.', 'err');
+        return;
+      }
+      setMsg('Serviciu adăugat.', 'ok');
+      await loadAvailability();
+    }
+
+    /**
+     * CAL-02 (M2 owner CRUD audit): hard delete. The server blocks (409,
+     * FUTURE_BOOKINGS) when the service still has future active bookings
+     * and returns a Romanian message naming exactly how many — shown as-is
+     * via setMsg, same pattern every other action error already uses here.
+     */
+    async function deleteService(id, btn) {
+      var svc = state.services.filter(function (s) { return s.id === id; })[0];
+      if (!window.confirm('Ștergi definitiv serviciul' + (svc ? ' „' + svc.name + '"' : '') + '? Nu poate fi anulat.')) return;
+      btn.disabled = true;
+      var r = await api('DELETE', '/api/calendar-native/owner/services/' + encodeURIComponent(id));
+      btn.disabled = false;
+      if (!r.data || !r.data.ok) {
+        setMsg((r.data && r.data.error) || 'Nu am putut șterge serviciul.', 'err');
+        return;
+      }
+      setMsg('Serviciu șters.', 'ok');
+      await loadAvailability();
+    }
+
+    /** Reorder via sortOrder swap with the immediate neighbor — simplest UI that round-trips through the API's existing sortOrder field. */
+    async function moveService(id, dir) {
+      var idx = state.services.findIndex(function (s) { return s.id === id; });
+      if (idx < 0) return;
+      var otherIdx = dir === 'up' ? idx - 1 : idx + 1;
+      if (otherIdx < 0 || otherIdx >= state.services.length) return;
+      var a = state.services[idx];
+      var b = state.services[otherIdx];
+      var rA = await api('PUT', '/api/calendar-native/owner/services/' + encodeURIComponent(a.id), { sortOrder: otherIdx });
+      var rB = await api('PUT', '/api/calendar-native/owner/services/' + encodeURIComponent(b.id), { sortOrder: idx });
+      if (!rA.data || !rA.data.ok || !rB.data || !rB.data.ok) {
+        setMsg(((rA.data && rA.data.error) || (rB.data && rB.data.error)) || 'Nu am putut reordona.', 'err');
+        return;
+      }
+      await loadAvailability();
     }
 
     function paintSettings() {
@@ -910,14 +1208,43 @@
       if (saveReminders) saveReminders.addEventListener('click', saveReminderSettings);
     }
 
+    /**
+     * CAL-notice-ux (M2 owner CRUD audit) — a value beyond the 14-day
+     * (20160-minute) min-notice ceiling, or any other out-of-range/garbage
+     * settings input, used to have no visible client-side reaction at all:
+     * `Number.isFinite(minNotice) ? minNotice : 0` silently swapped a bad
+     * value for 0 and saved it — never told the owner their input was
+     * rejected. Every field here is now range-checked before the request
+     * even goes out, with the error painted right under that field (not
+     * only the page-level flash, which can scroll out of view on a long
+     * Setări tab at 390px) — mirrors the exact ranges putOwnerSettings
+     * enforces server-side.
+     */
     async function saveBookingWindow() {
       var panel = $('[data-hod-panel="settings"]', root);
-      var minNotice = Number($('[data-hod-set-min-notice]', panel).value);
-      var maxAdvRaw = $('[data-hod-set-max-advance]', panel).value;
-      var body = {
-        minNoticeMinutes: Number.isFinite(minNotice) ? minNotice : 0,
-        maxAdvanceDays: maxAdvRaw === '' ? null : Number(maxAdvRaw),
-      };
+      clearFieldErrors(panel);
+      var minNoticeEl = $('[data-hod-set-min-notice]', panel);
+      var maxAdvEl = $('[data-hod-set-max-advance]', panel);
+      var ok = true;
+      var minNotice = Number(minNoticeEl.value);
+      if (minNoticeEl.value === '' || !Number.isFinite(minNotice) || minNotice < 0 || minNotice > 20160) {
+        showFieldError(minNoticeEl, 'Trebuie să fie între 0 și 20160 de minute (14 zile).');
+        ok = false;
+      }
+      var maxAdvRaw = maxAdvEl.value;
+      var maxAdv = null;
+      if (maxAdvRaw !== '') {
+        maxAdv = Number(maxAdvRaw);
+        if (!Number.isFinite(maxAdv) || maxAdv <= 0 || maxAdv > 730) {
+          showFieldError(maxAdvEl, 'Trebuie să fie între 1 și 730 de zile (sau gol pentru fără limită).');
+          ok = false;
+        }
+      }
+      if (!ok) {
+        setMsg('Corectează valorile marcate mai jos.', 'err');
+        return;
+      }
+      var body = { minNoticeMinutes: minNotice, maxAdvanceDays: maxAdv };
       var r = await api('PUT', '/api/calendar-native/owner/settings', body);
       if (!r.data || !r.data.ok) {
         setMsg((r.data && r.data.error) || 'Nu am putut salva fereastra de rezervare.', 'err');
@@ -930,10 +1257,18 @@
 
     async function saveReminderSettings() {
       var panel = $('[data-hod-panel="settings"]', root);
+      clearFieldErrors(panel);
+      var hoursEl = $('[data-hod-set-reminder-hours]', panel);
+      var hours = Number(hoursEl.value);
+      if (hoursEl.value === '' || !Number.isFinite(hours) || hours < 0 || hours > 336) {
+        showFieldError(hoursEl, 'Trebuie să fie între 0 și 336 de ore (14 zile).');
+        setMsg('Corectează valoarea marcată mai jos.', 'err');
+        return;
+      }
       var body = {
         reminderVisitorEnabled: $('[data-hod-set-reminder-visitor]', panel).checked,
         reminderOwnerEnabled: $('[data-hod-set-reminder-owner]', panel).checked,
-        reminderHoursBefore: Number($('[data-hod-set-reminder-hours]', panel).value),
+        reminderHoursBefore: hours,
       };
       var r = await api('PUT', '/api/calendar-native/owner/settings', body);
       if (!r.data || !r.data.ok) {
@@ -964,21 +1299,55 @@
       paintSettings();
     }
 
+    /**
+     * CAL-05 (M2 owner CRUD audit) — gathers every window of every weekday
+     * (not just the first), validating end-after-start and same-day overlap
+     * inline (per-row hod-field-error) before ever calling the API, so a
+     * mistake is caught right where it was made instead of coming back as a
+     * page-level toast after a round trip. The server (putOwnerWeekly)
+     * re-validates the same two rules — this is belt-and-suspenders, not a
+     * replacement for it.
+     */
     async function saveWeekly() {
       var panel = $('[data-hod-panel="avail"]', root);
+      clearFieldErrors(panel);
       var windows = [];
+      var invalid = false;
       $all('li[data-weekday]', panel).forEach(function (li) {
-        var open = $('[data-hod-open]', li);
-        if (!open || !open.checked) return;
-        var sm = timeToMinutes($('[data-hod-start]', li).value);
-        var em = timeToMinutes($('[data-hod-end]', li).value);
-        if (sm == null || em == null || em <= sm) return;
-        windows.push({
-          weekday: Number(li.getAttribute('data-weekday')),
-          startMinute: sm,
-          endMinute: em,
+        var weekday = Number(li.getAttribute('data-weekday'));
+        var dayWindows = [];
+        $all('[data-hod-win]', li).forEach(function (row) {
+          var startEl = $('[data-hod-start]', row);
+          var endEl = $('[data-hod-end]', row);
+          var sm = timeToMinutes(startEl.value);
+          var em = timeToMinutes(endEl.value);
+          if (sm == null || em == null) {
+            showFieldError(endEl, 'Oră invalidă — folosește formatul HH:MM.');
+            invalid = true;
+            return;
+          }
+          if (em <= sm) {
+            showFieldError(endEl, 'Ora de sfârșit trebuie să fie după ora de început.');
+            invalid = true;
+            return;
+          }
+          dayWindows.push({ startMinute: sm, endMinute: em, row: row });
+        });
+        dayWindows.sort(function (a, b) { return a.startMinute - b.startMinute; });
+        for (var i = 1; i < dayWindows.length; i++) {
+          if (dayWindows[i].startMinute < dayWindows[i - 1].endMinute) {
+            showFieldError($('[data-hod-start]', dayWindows[i].row), 'Se suprapune cu intervalul anterior din aceeași zi.');
+            invalid = true;
+          }
+        }
+        dayWindows.forEach(function (w) {
+          windows.push({ weekday: weekday, startMinute: w.startMinute, endMinute: w.endMinute });
         });
       });
+      if (invalid) {
+        setMsg('Corectează orele marcate mai jos înainte de salvare.', 'err');
+        return;
+      }
       var r = await api('PUT', '/api/calendar-native/owner/availability/weekly', {
         windows: windows,
         resourceId: state.selectedAvailResourceId || undefined,
@@ -994,8 +1363,11 @@
 
     async function addOverride() {
       var panel = $('[data-hod-panel="avail"]', root);
-      var dateLocal = parseRoDate($('[data-hod-ov-date]', panel).value);
+      clearFieldErrors(panel);
+      var dateEl = $('[data-hod-ov-date]', panel);
+      var dateLocal = parseRoDate(dateEl.value);
       if (!dateLocal) {
+        showFieldError(dateEl, 'Completează data în format zz.ll.aaaa.');
         setMsg('Completează data în format zz.ll.aaaa.', 'err');
         return;
       }
@@ -1008,8 +1380,22 @@
         resourceId: state.selectedAvailResourceId || undefined,
       };
       if (kind === 'special_hours') {
-        body.startMinute = timeToMinutes($('[data-hod-ov-start]', panel).value);
-        body.endMinute = timeToMinutes($('[data-hod-ov-end]', panel).value);
+        var startEl = $('[data-hod-ov-start]', panel);
+        var endEl = $('[data-hod-ov-end]', panel);
+        var sm = timeToMinutes(startEl.value);
+        var em = timeToMinutes(endEl.value);
+        if (sm == null || em == null) {
+          showFieldError(endEl, 'Oră invalidă — folosește formatul HH:MM.');
+          setMsg('Corectează orele speciale.', 'err');
+          return;
+        }
+        if (em <= sm) {
+          showFieldError(endEl, 'Ora de sfârșit trebuie să fie după ora de început.');
+          setMsg('Corectează orele speciale.', 'err');
+          return;
+        }
+        body.startMinute = sm;
+        body.endMinute = em;
       }
       var r = await api('POST', '/api/calendar-native/owner/availability/overrides', body);
       if (!r.data || !r.data.ok) {

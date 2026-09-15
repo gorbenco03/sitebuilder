@@ -168,7 +168,20 @@ const migRow = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get
 // CAL-EMAIL added a v6 migration on top of this v5 wave — opening any pre-v6
 // database now advances all the way to 6, mechanically, same as this file's
 // own v5 bump over the v4 oracle before it.
-assert.strictEqual(Number(migRow.v), 6, 'schema_migrations must advance to 6');
+// The owner-CRUD audit then added v7 (calendar_services price columns),
+// so the latest version is now 7.
+assert.strictEqual(Number(migRow.v), 7, 'schema_migrations must advance to 7');
+// Both post-v5 migrations must have applied: v6 (owner notification toggles)
+// and v7 (service price). They were written in parallel and first both
+// numbered 6 — one number for two migrations leaves the second one
+// unapplied on any database already at 6, so assert each by its columns.
+{
+    const settingsCols = db.prepare('PRAGMA table_info(calendar_settings)').all().map((c) => c.name);
+    assert.ok(settingsCols.includes('notify_owner_new_confirmed'), 'v6 owner-notification columns must exist');
+    const serviceCols = db.prepare('PRAGMA table_info(calendar_services)').all().map((c) => c.name);
+    assert.ok(serviceCols.includes('price_amount_cents') && serviceCols.includes('price_currency'),
+        'v7 service price columns must exist');
+}
 
 // --- Step 3: the live booking survives, byte-identical on every pre-existing field. ---
 const booking = db.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_wave7_old_live');
@@ -272,7 +285,7 @@ assert.strictEqual(
 db.close();
 const db2 = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 const migRow2 = db2.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow2.v), 6, 'second open must not re-run migrations or fail');
+assert.strictEqual(Number(migRow2.v), 7, 'second open must not re-run migrations or fail');
 const resourcesAgain = db2.prepare(
     'SELECT * FROM calendar_resources WHERE customer_id = ? AND site_id = ?'
 ).all(C, S);

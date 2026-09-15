@@ -203,19 +203,36 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
     return getSettings(db, customerId, siteId);
 }
 
+/**
+ * @param {number|null} [service.price_amount_cents] Minor units (bani).
+ *   NULL (default) means "no price set" — omitted from the object entirely
+ *   also means "leave whatever is already there" on an update (see the
+ *   `!== undefined` guards below), matching every other optional field this
+ *   function already treats that way (buffer_minutes).
+ * @param {string|null} [service.price_currency] Always 'RON' when an amount
+ *   is set (schema.js v6 CHECK); paired with price_amount_cents by the
+ *   caller (owner-api.js putOwnerService/createOwnerService), not here.
+ */
 function upsertService(db, customerId, siteId, service) {
     assertTenant(customerId, siteId);
     if (!service || !service.name) throw new Error('service.name required');
     const id = service.id || newId('svc');
     const ts = nowIso();
     const existing = db.prepare(
-        `SELECT id FROM calendar_services WHERE id = ? AND customer_id = ? AND site_id = ?`
+        `SELECT * FROM calendar_services WHERE id = ? AND customer_id = ? AND site_id = ?`
     ).get(id, customerId, siteId);
+    const priceAmountCents = service.price_amount_cents !== undefined
+        ? service.price_amount_cents
+        : (existing ? existing.price_amount_cents : null);
+    const priceCurrency = service.price_currency !== undefined
+        ? service.price_currency
+        : (existing ? existing.price_currency : null);
     if (existing) {
         db.prepare(
             `UPDATE calendar_services SET
                 name = ?, duration_minutes = ?, buffer_minutes = ?,
-                active = ?, sort_order = ?, updated_at = ?
+                active = ?, sort_order = ?, price_amount_cents = ?, price_currency = ?,
+                updated_at = ?
              WHERE id = ? AND customer_id = ? AND site_id = ?`
         ).run(
             service.name,
@@ -223,6 +240,8 @@ function upsertService(db, customerId, siteId, service) {
             service.buffer_minutes != null ? service.buffer_minutes : null,
             service.active === 0 ? 0 : 1,
             service.sort_order != null ? service.sort_order : 0,
+            priceAmountCents,
+            priceCurrency,
             ts,
             id,
             customerId,
@@ -232,8 +251,8 @@ function upsertService(db, customerId, siteId, service) {
         db.prepare(
             `INSERT INTO calendar_services (
                 id, customer_id, site_id, name, duration_minutes, buffer_minutes,
-                active, sort_order, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                active, sort_order, price_amount_cents, price_currency, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).run(
             id,
             customerId,
@@ -243,11 +262,64 @@ function upsertService(db, customerId, siteId, service) {
             service.buffer_minutes != null ? service.buffer_minutes : null,
             service.active === 0 ? 0 : 1,
             service.sort_order != null ? service.sort_order : 0,
+            priceAmountCents,
+            priceCurrency,
             ts,
             ts
         );
     }
     return getService(db, customerId, siteId, id);
+}
+
+/**
+ * Active (requested/confirmed) bookings for a service that start in the
+ * future — the set a delete would either orphan or silently cancel if it
+ * didn't block. `nowMs` is injectable for tests, like every other clock in
+ * this file.
+ */
+function countFutureBookingsForService(db, customerId, siteId, serviceId, nowMs = Date.now()) {
+    assertTenant(customerId, siteId);
+    const row = db.prepare(
+        `SELECT COUNT(*) AS n FROM calendar_bookings
+         WHERE customer_id = ? AND site_id = ? AND service_id = ?
+           AND status IN ('requested', 'confirmed') AND start_utc > ?`
+    ).get(customerId, siteId, serviceId, toIsoUtc(nowMs));
+    return row ? Number(row.n) : 0;
+}
+
+/**
+ * M2 owner CRUD audit (CAL-02) — hard delete a service. Never silently
+ * orphans or cancels a future booking: any active (requested/confirmed)
+ * booking starting after `nowMs` blocks the delete outright (err.code
+ * FUTURE_BOOKINGS, err.futureBookingsCount set) so the owner sees exactly
+ * how many and can cancel them first or use `active: false` (deactivate,
+ * putOwnerService) instead, which already leaves existing bookings intact.
+ * A service with no future bookings is removed along with its
+ * service↔resource assignment rows (calendar_service_resources) — past
+ * bookings keep their service_id untouched (history is never rewritten).
+ */
+function deleteService(db, customerId, siteId, serviceId, { nowMs = Date.now() } = {}) {
+    assertTenant(customerId, siteId);
+    const existing = getService(db, customerId, siteId, serviceId);
+    if (!existing) {
+        const err = new Error('service not found');
+        err.code = 'NOT_FOUND';
+        throw err;
+    }
+    const futureBookingsCount = countFutureBookingsForService(db, customerId, siteId, serviceId, nowMs);
+    if (futureBookingsCount > 0) {
+        const err = new Error('service has future bookings');
+        err.code = 'FUTURE_BOOKINGS';
+        err.futureBookingsCount = futureBookingsCount;
+        throw err;
+    }
+    db.prepare(
+        `DELETE FROM calendar_service_resources WHERE customer_id = ? AND site_id = ? AND service_id = ?`
+    ).run(customerId, siteId, serviceId);
+    db.prepare(
+        `DELETE FROM calendar_services WHERE id = ? AND customer_id = ? AND site_id = ?`
+    ).run(serviceId, customerId, siteId);
+    return { deleted: true, futureBookingsCount: 0 };
 }
 
 function getService(db, customerId, siteId, serviceId) {
@@ -365,6 +437,83 @@ function listResources(db, customerId, siteId, { activeOnly = true } = {}) {
          WHERE customer_id = ? AND site_id = ?
          ORDER BY sort_order ASC, name ASC`
     ).all(customerId, siteId);
+}
+
+/**
+ * True once this resource has at least one weekly-hours window of its own
+ * (CAL-04, M2 owner CRUD audit). A resource with none can never actually be
+ * booked — openRangesForDate/generateSlotsForResource already return zero
+ * slots for it and createBooking's slotFitsOpenAvailability gate already
+ * rejects a direct request for it (see this file's booking-window doc
+ * comments) — this is purely a read for the owner dashboard to say so next
+ * to that person, before they find out the hard way from an empty slot
+ * list. Does not consider date overrides: a one-off special_hours day
+ * doesn't make a person "configured" in the recurring sense this flag means.
+ */
+function resourceHasWeeklyHours(db, customerId, siteId, resourceId) {
+    assertTenant(customerId, siteId);
+    const row = db.prepare(
+        `SELECT 1 FROM calendar_weekly_availability
+         WHERE customer_id = ? AND site_id = ? AND resource_id = ? LIMIT 1`
+    ).get(customerId, siteId, resourceId);
+    return !!row;
+}
+
+/**
+ * Active (requested/confirmed) bookings on this resource that start in the
+ * future — mirrors countFutureBookingsForService, same rationale.
+ */
+function countFutureBookingsForResource(db, customerId, siteId, resourceId, nowMs = Date.now()) {
+    assertTenant(customerId, siteId);
+    const row = db.prepare(
+        `SELECT COUNT(*) AS n FROM calendar_bookings
+         WHERE customer_id = ? AND site_id = ? AND resource_id = ?
+           AND status IN ('requested', 'confirmed') AND start_utc > ?`
+    ).get(customerId, siteId, resourceId, toIsoUtc(nowMs));
+    return row ? Number(row.n) : 0;
+}
+
+/**
+ * M2 owner CRUD audit (CAL-03) — hard delete a staff member / resource.
+ * Same never-orphan-or-cancel rule as deleteService: any future active
+ * booking on this resource blocks the delete (err.code FUTURE_BOOKINGS,
+ * err.futureBookingsCount set); `putOwnerResource({ active: false })`
+ * (deactivate) stays the safe default and — unlike delete — leaves future
+ * bookings on that person untouched, exactly as before this audit.
+ * Removes this resource's own weekly hours, date overrides, and
+ * service-eligibility rows along with it; past bookings keep their
+ * resource_id as a historical reference (harmless — publicOwnerBooking
+ * already renders a missing resource id as "Nealocat"/null, same as any
+ * other unresolved reference).
+ */
+function deleteResource(db, customerId, siteId, resourceId, { nowMs = Date.now() } = {}) {
+    assertTenant(customerId, siteId);
+    const existing = getResource(db, customerId, siteId, resourceId);
+    if (!existing) {
+        const err = new Error('resource not found');
+        err.code = 'NOT_FOUND';
+        throw err;
+    }
+    const futureBookingsCount = countFutureBookingsForResource(db, customerId, siteId, resourceId, nowMs);
+    if (futureBookingsCount > 0) {
+        const err = new Error('resource has future bookings');
+        err.code = 'FUTURE_BOOKINGS';
+        err.futureBookingsCount = futureBookingsCount;
+        throw err;
+    }
+    db.prepare(
+        `DELETE FROM calendar_service_resources WHERE customer_id = ? AND site_id = ? AND resource_id = ?`
+    ).run(customerId, siteId, resourceId);
+    db.prepare(
+        `DELETE FROM calendar_weekly_availability WHERE customer_id = ? AND site_id = ? AND resource_id = ?`
+    ).run(customerId, siteId, resourceId);
+    db.prepare(
+        `DELETE FROM calendar_date_overrides WHERE customer_id = ? AND site_id = ? AND resource_id = ?`
+    ).run(customerId, siteId, resourceId);
+    db.prepare(
+        `DELETE FROM calendar_resources WHERE id = ? AND customer_id = ? AND site_id = ?`
+    ).run(resourceId, customerId, siteId);
+    return { deleted: true, futureBookingsCount: 0 };
 }
 
 /**
@@ -1616,10 +1765,15 @@ module.exports = {
     upsertService,
     getService,
     listServices,
+    countFutureBookingsForService,
+    deleteService,
     getOrCreateDefaultResourceId,
     upsertResource,
     getResource,
     listResources,
+    resourceHasWeeklyHours,
+    countFutureBookingsForResource,
+    deleteResource,
     hasMultipleResources,
     setServiceResources,
     listResourcesForService,

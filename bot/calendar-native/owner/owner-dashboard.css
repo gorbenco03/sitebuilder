@@ -80,6 +80,7 @@ body.hod {
   cursor: pointer;
   color: var(--muted);
   white-space: nowrap;
+  min-height: 44px;
 }
 .hod-tab.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
 
@@ -130,6 +131,7 @@ body.hod {
   min-width: 0;
   width: 100%;
   max-width: 100%;
+  min-height: 44px;
 }
 /* Suite F (PLAN-FEEDBACK-2026-09-13, punct 7) — same shape of defect as the
    professionals booking form, checked defensively here even though this
@@ -175,6 +177,13 @@ body.hod {
   color: #fff;
   cursor: pointer;
   white-space: nowrap;
+  /* 44px tap target (WHAT TO BUILD §7) at every viewport, including the
+     small/ghost/danger variants below — these are real actions (Salvează,
+     Șterge, Anulează…), not decoration. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .hod-btn:disabled { opacity: 0.55; cursor: wait; }
 .hod-btn--ghost {
@@ -265,7 +274,21 @@ body.hod {
   border-bottom: 1px solid var(--line);
   font-size: 14px;
 }
-.hod-week__day { font-weight: 650; }
+.hod-week__day { font-weight: 650; padding-top: 10px; }
+/* CAL-05 (M2 owner CRUD audit) — a day's body stacks its window rows above
+   the "+ Adaugă interval" button (a split shift is 2+ rows here). */
+.hod-week__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.hod-week__windows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
 .hod-week__row {
   display: flex;
   flex-wrap: wrap;
@@ -288,6 +311,19 @@ body.hod {
   font-size: 12px;
   color: var(--muted);
   font-weight: 600;
+}
+.hod-week__row input[data-hod-start],
+.hod-week__row input[data-hod-end] {
+  flex: 1 1 5.5rem;
+  max-width: 6.5rem;
+  min-height: 44px;
+}
+.hod-week__remove {
+  flex: 0 0 auto;
+  min-width: 44px;
+  padding: 8px 10px;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .hod-ov-list { list-style: none; margin: 0 0 12px; padding: 0; }
@@ -369,6 +405,28 @@ body.hod {
   background: var(--accent-soft);
   color: var(--accent-2);
 }
+/* M2 owner CRUD audit — inline field-level validation error, shown right
+   under the offending input instead of (or in addition to) the page-level
+   flash banner, which can scroll out of view on a long tab at 390px. */
+.hod-field-error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--danger);
+  line-height: 1.35;
+}
+.hod-field--err input,
+.hod-field--err select {
+  border-color: var(--danger);
+}
+
+/* CAL-08 — a long service/staff name must wrap, never blow out the layout
+   at 390px (checklists, list titles). */
+.hod-svc-list li > div:first-child,
+.hod-svc-edit label {
+  overflow-wrap: anywhere;
+}
+
 .hod-auth {
   max-width: 420px;
   margin: 40px auto;

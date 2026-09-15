@@ -139,7 +139,9 @@ const migRow = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get
 // Every assertion below still targets the exact v4 columns/defaults this
 // oracle was written to guard; only the final schema_migrations version
 // number changed as a mechanical consequence of later waves existing.
-assert.strictEqual(Number(migRow.v), 6, 'schema_migrations must advance to the latest version (6)');
+// The owner-CRUD audit then added v7 (calendar_services price columns),
+// so the latest version is now 7.
+assert.strictEqual(Number(migRow.v), 7, 'schema_migrations must advance to the latest version (7)');
 
 // --- Step 3: the live booking survives, byte-identical on every pre-existing field ---
 const booking = db.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
@@ -196,7 +198,7 @@ assert.strictEqual(settings.notify_owner_email, null, 'no recipient override on 
 db.close();
 const db2 = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 const migRow2 = db2.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow2.v), 6, 'second open must not re-run migrations or fail');
+assert.strictEqual(Number(migRow2.v), 7, 'second open must not re-run migrations or fail');
 const booking2 = db2.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
 assert.strictEqual(booking2.status, 'confirmed', 'booking still intact after a second open');
 
