@@ -36,6 +36,17 @@ function extractFunction(source, name) {
       else if (char === quote) quote = null;
       continue;
     }
+    // Skip comments: an apostrophe in prose ("tab's") must not open a string.
+    if (char === '/' && source[i + 1] === '/') {
+      const nl = source.indexOf('\n', i);
+      i = nl === -1 ? source.length : nl;
+      continue;
+    }
+    if (char === '/' && source[i + 1] === '*') {
+      const end = source.indexOf('*/', i + 2);
+      i = end === -1 ? source.length : end + 1;
+      continue;
+    }
     if (char === '"' || char === "'" || char === '`') {
       quote = char;
     } else if (char === '{') {

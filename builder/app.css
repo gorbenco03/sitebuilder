@@ -488,6 +488,41 @@ body.details-drawer-open .editor-tpl-name {
    case (<=900px wide AND <=420px tall) alongside the original <=640px
    rule; either one being true still applies this whole block.
 */
+/* Tablet and small-laptop widths (641-1199px): the same backward overflow as
+   on a phone, one row instead of two. .editor-topbar-right is flex-end with
+   overflow:visible, so once its tools need more than the row leaves them, they
+   bleed LEFT over the undo/redo/device group — at 1024px the checklist pill
+   sat on top of the "Desktop" and "Mobil" preview buttons, visible and
+   unclickable. This was already live before the legend wave; the overlap test
+   (suite12-editor-topbar-no-overlap) found it. Here the tool rail keeps one
+   row but scrolls inside its own box, so it can shrink without covering
+   anything, and left/centre keep their real width. */
+@media (min-width: 641px) and (max-width: 1199px) {
+  .editor-topbar-left,
+  .editor-topbar-center {
+    flex-shrink: 0;
+  }
+  .editor-topbar-right {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .editor-topbar-scroll {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .editor-topbar-scroll::-webkit-scrollbar { display: none; }
+  .editor-topbar-scroll > * {
+    flex-shrink: 0;
+  }
+}
+
 @media (max-width: 640px), (max-width: 900px) and (max-height: 420px) {
   /* Same overflow-bleed shape appears a second time once touch targets
      grow below: left has flex-shrink:1 + min-width:0 + default
@@ -994,6 +1029,19 @@ body.details-drawer-open .editor-tpl-name {
   padding: 0 0.4rem;
   flex-shrink: 0;
   white-space: nowrap;
+}
+/* The full sentence only where the topbar has room for it. At 1280px it made
+   .editor-topbar-right wide enough to overflow backwards over the left group,
+   and the checklist pill sat on top of the "Mobil" preview button — visible,
+   enabled, and unclickable (caught by desserdirina-hero-no-desserd). The short
+   label stays everywhere; the full sentence is also the element's title, and
+   every marked field explains itself on hover and focus. */
+.demo-legend-more { display: none; }
+@media (max-width: 1199px) {
+  .demo-legend-text { display: none; }
+}
+@media (min-width: 1680px) {
+  .demo-legend-more { display: inline; }
 }
 .demo-legend-swatch {
   width: 0.7rem;
