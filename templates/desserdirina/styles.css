@@ -207,17 +207,19 @@
     --accent: var(--color-primary, #E8588C);
     --paper: var(--color-cream, #faf8f8);
     /* AA-safe text colour for normal/small brand-pink text on white or cream
-       (eyebrow label, language toggle, menu category titles). Audit
-       A11Y-05 / DSD-06 measured --color-primary-dark itself at 4.37:1 on
-       white — short of the 4.5:1 WCAG AA floor for normal text (it only
-       clears 4.5:1 at "large text" sizes/weights, which is why headings
-       using --color-primary-dark elsewhere were never flagged). Mixing
-       further toward black guarantees enough headroom regardless of which
-       accent colour a site picks (color-mix darkens whatever
-       --color-primary-dark resolves to, it never lightens it), while
-       staying visibly the same brand pink/berry hue. Verified 6.88:1 for
-       the default preset (measured on real rendered pixels, not just
-       getComputedStyle) — see bot/test/wave9-desserdirina-contrast.test.js. */
+       (eyebrow label, language toggle, menu category titles) — also used as
+       a solid fill behind white text (.menu-lang-btn's active "RO" pill).
+       Audit A11Y-05 / DSD-06 measured --color-primary-dark itself at 4.37:1
+       on white — short of the 4.5:1 WCAG AA floor for normal text.
+       Fallback only (no-JS / unrecognised colour): the pre-paint script in
+       template.html overwrites this with --color-primary-dark darkened by
+       just enough to clear 4.5:1 against white, computed from the real
+       colour on every real page load — see that script's comment and
+       bot/test/suite12-accent-contrast-sweep.test.js. This static 75%-toward
+       -black mix clears 6.88:1 on the default preset but not every custom
+       hue an owner can type (a cyan/green/teal custom accent measured as
+       low as 2.39:1 white-on-fill at a flat 75%), which is exactly what the
+       pre-paint script is for. */
     --color-primary-ink: color-mix(in srgb, var(--color-primary-dark) 75%, black);
     --font-serif: 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -461,7 +463,13 @@ body {
     gap: 0.55rem;
     margin-top: 2.4rem;
     padding: 1rem 2.6rem;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    /* --dd-cta-grad-1/--dd-cta-grad-2 are --color-primary/--color-primary-dark
+       each darkened (pre-paint, see template.html) by just enough that this
+       fixed white text clears 4.5:1 against either gradient stop — the raw
+       accent pair measured under 4.5:1 for real contact-card links on the
+       DEFAULT preset itself (bot/test/suite12-accent-contrast-sweep.test.js).
+       Fallback (no-JS) keeps the original gradient. */
+    background: linear-gradient(135deg, var(--dd-cta-grad-1, var(--color-primary)) 0%, var(--dd-cta-grad-2, var(--color-primary-dark)) 100%);
     color: var(--color-white);
     text-decoration: none;
     font-size: 0.78rem;
@@ -719,8 +727,12 @@ body {
 }
 
 /* Contact Card */
+/* Same computed --dd-cta-grad-1/--dd-cta-grad-2 pair as .hero-cta above —
+   this card's own .contact-item links (phone/WhatsApp/Instagram/address)
+   measured 3.89-4.16:1 white-on-gradient on the DEFAULT preset itself
+   (bot/test/suite12-accent-contrast-sweep.test.js), not just a custom hue. */
 .contact-card {
-    background: linear-gradient(150deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    background: linear-gradient(150deg, var(--dd-cta-grad-1, var(--color-primary)) 0%, var(--dd-cta-grad-2, var(--color-primary-dark)) 100%);
     color: var(--color-white);
 }
 
@@ -1260,8 +1272,9 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     letter-spacing: 0.04em;
 }
 
+/* Same computed --dd-cta-grad-1/--dd-cta-grad-2 pair as .hero-cta above. */
 .instagram-follow-btn {
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    background: linear-gradient(135deg, var(--dd-cta-grad-1, var(--color-primary)) 0%, var(--dd-cta-grad-2, var(--color-primary-dark)) 100%);
     color: white;
     padding: 0.75rem 2rem;
     border-radius: 30px;

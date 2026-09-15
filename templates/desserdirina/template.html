@@ -63,6 +63,82 @@
             --paper: {{theme.cream}};
         }
     </style>
+    <script>
+    // Auto-contrast (pre-paint, same reasoning/timing as the consent check
+    // above) for every spot that pairs fixed WHITE text with an
+    // owner-adjustable accent colour:
+    //   - --color-primary-ink: text on white/cream (.menu-cat, the inactive
+    //     language toggle) AND a solid fill behind white text (the active
+    //     "RO" pill) — the static color-mix(75%, black) fallback in
+    //     styles.css clears 6.88:1 on the default preset but not every
+    //     custom hue (measured as low as 2.39:1 white-on-fill).
+    //   - --dd-cta-grad-1/--dd-cta-grad-2: the two stops of the
+    //     var(--color-primary) -> var(--color-primary-dark) gradient behind
+    //     white text on .hero-cta, .contact-card (the phone/WhatsApp/
+    //     Instagram/address links) and .instagram-follow-btn — measured
+    //     failing on the DEFAULT preset itself (3.89-4.16:1 for
+    //     .contact-card's links, not just a custom hue).
+    // Same algorithm as local-service's --cta-safe: mix each source colour
+    // toward black by just enough to clear 4.5:1 against white, for any
+    // accent — see bot/test/suite12-accent-contrast-sweep.test.js.
+    (function () {
+        try {
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function hexToRgb(h) {
+                var m = /^#([0-9a-f]{6})$/i.exec(h);
+                return m ? [(parseInt(m[1], 16) >> 16) & 255, (parseInt(m[1], 16) >> 8) & 255, parseInt(m[1], 16) & 255] : null;
+            }
+            function toHex(c) {
+                return '#' + c.map(function (v) {
+                    return ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2);
+                }).join('');
+            }
+            // Darken `rgb` toward black by just enough that WHITE text on it
+            // clears `target` (a ratio, not the raw 4.5:1 floor — see each
+            // call site for why).
+            function darkenForWhiteText(rgb, target) {
+                var best = ratio(relLum(rgb), 1); // 1 = relative luminance of pure white
+                var safe = rgb.slice();
+                for (var t = 0.02; t <= 0.999 && best < target; t += 0.005) {
+                    var mixed = rgb.map(function (c) { return c * (1 - t); });
+                    var r2 = ratio(relLum(mixed), 1);
+                    if (r2 > best) { best = r2; safe = mixed; }
+                }
+                return safe;
+            }
+
+            var root = document.documentElement.style;
+
+            // Target 4.55, not 4.5: the mixing step can otherwise land one
+            // increment short of the real 4.5 floor — a rounding gap, not a
+            // colour-formula defect.
+            var darkRgb = hexToRgb("{{theme.primaryDark}}");
+            if (darkRgb) root.setProperty('--color-primary-ink', toHex(darkenForWhiteText(darkRgb, 4.55)));
+
+            // Target 8, well past the 4.5:1 floor: .contact-card layers a
+            // decorative rgba(255,255,255,0.16) radial glow (.contact-card
+            // ::before) OVER this gradient, right where its first link sits.
+            // That wash alone knocks a colour picked to just barely clear
+            // 4.5:1 back down under 4:1 (measured live — see suite12's own
+            // header comment on this file for the numbers). Targeting 8:1
+            // before the wash leaves enough headroom that the WASHED colour
+            // still clears 4.5:1 against white text.
+            var primaryRgb = hexToRgb("{{theme.primary}}");
+            if (primaryRgb) root.setProperty('--dd-cta-grad-1', toHex(darkenForWhiteText(primaryRgb, 8)));
+            if (darkRgb) root.setProperty('--dd-cta-grad-2', toHex(darkenForWhiteText(darkRgb, 8)));
+        } catch (e) {}
+    })();
+    </script>
 
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>

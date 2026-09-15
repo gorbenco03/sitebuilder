@@ -172,6 +172,32 @@ function dirTotalBytes(dir) {
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   portfolio         113867    116200
   //
+  // Re-measured on 2026-09-15 (accent-contrast fix, PLAN item "the builder's
+  // colour presets can put unreadable text on a button"): local-service,
+  // portfolio and professionals each gained a pre-paint <script> that
+  // computes a WCAG-safe ink/fill from the owner's real accent colour at
+  // render time instead of a fixed white/--ink that suite7-template-
+  // contract.test.js + suite12-accent-contrast-sweep.test.js measured
+  // failing 4.5:1 on real presets and custom hues (see those two files' own
+  // headers for the numbers). Real shipped fix, not drift, so only the
+  // three templates that gained a script move (local-service's stayed
+  // under its old ceiling). professionals grew the most (three separate
+  // CTA/ink pairs need their own computed colour: the header/hero button,
+  // the dark booking section's button, and the ghost button's text).
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   professionals     130767    133383
+  //   portfolio         116717    119052
+  //
+  // Re-measured on 2026-09-15 after integrating the accent-contrast wave (a
+  // pre-paint script deriving CTA ink from the owner's accent) together with
+  // the editor sweep that marks non-owner content (data-hb-non-owner on the
+  // WhatsApp QR image, stripped from published output). Each fit under the
+  // old local-service ceiling alone; combined they did not.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   local-service     110800    113100
+  //
   // Two properties have to hold, and both still do at minified + ~2%:
   //   1. Well under unminified, so deleting the minifier trips this gate. The
   //      earlier generation of these ceilings sat ABOVE the unminified size
@@ -181,9 +207,9 @@ function dirTotalBytes(dir) {
   // the direct minifier-ran assertion; this one is the growth guard.
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 88600,
-    'local-service': 110400,
-    portfolio: 116200,
-    professionals: 128300,
+    'local-service': 113100,
+    portfolio: 119052,
+    professionals: 133383,
   };
 
   for (const id of TPLS) {

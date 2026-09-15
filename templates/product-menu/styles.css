@@ -48,7 +48,10 @@
 }
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* scroll-padding-top: .pm-mast__bar is a sticky 52px header; without this,
+   an in-page anchor lands with its heading tucked under it (measured live:
+   bot/test/suite7-template-contract.test.js's in-page-anchor check). */
+html { scroll-behavior: smooth; scroll-padding-top: 64px; }
 body.pm-body {
     font-family: var(--font-text);
     background: var(--void);

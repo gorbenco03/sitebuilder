@@ -55,7 +55,12 @@
    just the scrollWidth number, since a position:fixed/sticky descendant can
    still nudge that number independently of what a visitor can actually
    scroll to) without affecting the sticky header or any vertical scroll. */
-html { scroll-behavior: smooth; overflow-x: hidden; }
+/* scroll-padding-top: .pr-nav is a sticky 59px header; without this, any
+   in-page anchor (#services, #appointment, …) lands with its heading tucked
+   under it (measured live: bot/test/suite7-template-contract.test.js's
+   in-page-anchor check). Pushes every anchor destination down by the
+   header's height + a little breathing room, for any anchor. */
+html { scroll-behavior: smooth; overflow-x: hidden; scroll-padding-top: 70px; }
 body.pr-page {
     font-family: var(--font);
     background: var(--paper);
@@ -508,15 +513,22 @@ button, input, select, textarea { font: inherit; color: inherit; }
     transition: transform 140ms var(--ease), background 160ms var(--ease), color 160ms var(--ease);
 }
 .pr-btn:active { transform: scale(0.98); }
+/* --cta-ink/--cta-bg are computed pre-paint from --accent's real luminance
+   (see template.html) — a fixed white fails WCAG AA on several builder
+   presets (Portocaliu measured 3.56:1). Fallback (no-JS) keeps white. */
 .pr-btn--primary {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
+    background: var(--cta-bg, var(--accent));
+    color: var(--cta-ink, #fff);
+    border-color: var(--cta-bg, var(--accent));
 }
 .pr-btn--primary:hover { filter: brightness(1.05); }
+/* --pr-ink-safe is --color-primary-dark darkened (if needed) until it clears
+   4.5:1 against white — the worst-case light background this text can land
+   on (a .pr-sec--alt card measured 4.28:1 with the raw --ink on Portocaliu).
+   Fallback (no-JS) keeps the plain --ink. */
 .pr-btn--ghost {
     background: transparent;
-    color: var(--ink);
+    color: var(--pr-ink-safe, var(--ink));
     border-color: var(--line);
 }
 .pr-btn--ghost:hover { border-color: var(--ink); }
@@ -576,10 +588,16 @@ button, input, select, textarea { font: inherit; color: inherit; }
    0.62 matches the alpha already established at the top of this file for
    the same shape of problem in light sections (see --mute). */
 .pr-sec--book .pr-type__meta { color: rgba(243, 239, 232, 0.62); }
+/* --cta-book-ink/--cta-book-bg are computed pre-paint from --brass's
+   (--color-primary-light) real luminance the same way --cta-ink/--cta-bg
+   are — --brass and --ink are both derived from the SAME owner hue, so a
+   fixed dark-on-light pairing isn't guaranteed dark/light ENOUGH relative to
+   each other (Portocaliu measured 2.16:1, Roz 2.03:1). Fallback (no-JS)
+   keeps the plain --brass/--ink pairing. */
 .pr-sec--book .pr-btn--primary {
-    background: var(--brass);
-    border-color: var(--brass);
-    color: var(--ink);
+    background: var(--cta-book-bg, var(--brass));
+    border-color: var(--cta-book-bg, var(--brass));
+    color: var(--cta-book-ink, var(--ink));
 }
 .pr-sec--book .pr-btn--ghost {
     color: var(--paper);
