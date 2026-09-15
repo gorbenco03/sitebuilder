@@ -1,0 +1,36 @@
+[PASS] portfolio nav toggle tap target :: 44x44
+[PASS] portfolio nav toggle opens panel :: aria-expanded=true panelVisible=true
+[PASS] portfolio Escape closes nav :: aria-expanded after Escape=false
+[PASS] professionals nav toggle tap target :: 44x44
+[PASS] professionals nav toggle opens panel :: aria-expanded=true panelVisible=true
+[PASS] professionals Escape closes nav :: aria-expanded after Escape=false
+[PASS] product-menu nav toggle tap target :: 44x44
+[PASS] product-menu nav toggle opens panel :: aria-expanded=true panelVisible=true
+[PASS] product-menu Escape closes nav :: aria-expanded after Escape=false
+[PASS] product-menu WhatsApp float visible @390 :: 48x48 @ (324,778)
+[PASS] product-menu WhatsApp float visible @1280 :: 48x48 @ (1214,834)
+[MAJOR] local-service WhatsApp float visible @390 :: not visible
+[MAJOR] local-service WhatsApp float visible @1280 :: not visible
+[PASS] portfolio WhatsApp float visible @390 :: 48x48 @ (324,778)
+[PASS] portfolio WhatsApp float visible @1280 :: 48x48 @ (1214,834)
+[PASS] professionals WhatsApp float visible @390 :: 48x48 @ (326,780)
+[PASS] professionals WhatsApp float visible @1280 :: 48x48 @ (1216,836)
+[PASS] desserdirina WhatsApp float visible @390 :: 60x60 @ (300,754)
+[MAJOR] desserdirina WhatsApp float overlaps fixed element @390 :: {"cls":"hero-background","overlapArea":3600}
+[PASS] desserdirina WhatsApp float visible @1280 :: 60x60 @ (1190,810)
+[MAJOR] desserdirina WhatsApp float overlaps fixed element @1280 :: {"cls":"hero-background","overlapArea":3600}
+[PASS] portfolio cookie banner shown on first load :: accept button visible=true
+[PASS] portfolio Accept dismisses cookie banner :: stillVisible=false
+[PASS] portfolio cookie consent persists across reload :: reappeared=false
+[PASS] product-menu cookie banner shown on first load :: accept button visible=true
+[PASS] product-menu Accept dismisses cookie banner :: stillVisible=false
+[PASS] product-menu cookie consent persists across reload :: reappeared=false
+[PASS] product-menu lightbox opens on photo click :: visible=true
+[PASS] product-menu Escape closes lightbox :: closed=true
+[PASS] portfolio lightbox opens on photo click :: visible=true
+[PASS] portfolio Escape closes lightbox :: closed=true
+[PASS] desserdirina lightbox opens on photo click :: visible=true
+[PASS] desserdirina Escape closes lightbox :: closed=true
+[PASS] desserdirina RO->EN menu toggle :: before=ro after=en aria-pressed=true
+[MAJOR] local-service hero CTA anchor scrolls to #contact :: inView=false
+[PASS] desserdirina hero CTA anchor scrolls to #contact :: inView=true
