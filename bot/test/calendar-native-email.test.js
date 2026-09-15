@@ -41,7 +41,11 @@ const { SCHEMA_VERSION, EMAIL_DELIVERY_STATUSES } = require('../calendar-native/
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cal-native-email-'));
 const db = openCalendarDb({ dbPath: path.join(tmp, 'email.sqlite') });
 
-assert.strictEqual(SCHEMA_VERSION, 2, 'schema must be v2 with email outbox');
+// SCHEMA_VERSION tracks the latest migration step (v6 as of the M2 owner-CRUD
+// audit, which added calendar_services price columns) — this oracle only
+// ever cared that the v2 email-outbox migration is included, so >= 2 is the
+// real invariant, not exact equality with a number later waves keep bumping.
+assert.ok(SCHEMA_VERSION >= 2, 'schema must be at least v2 with email outbox');
 
 const C = 'cust_email_A';
 const S = 'site_email_A';

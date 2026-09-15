@@ -7782,18 +7782,36 @@ function buildSiteCard(site) {
     actions.appendChild(invoicesBtn);
   }
 
-  // Native Hidook booking dashboard link (Wave 8 reachability fix): the owner
-  // dashboard exists and its API is fully authenticated + tenant-isolated
-  // (bot/server.js#resolveOwnerTenantOrReject), but nothing in the product
-  // ever linked to it with a real site's ids — only a hardcoded demo page did.
-  // Only professionals sites can opt into native booking (schema check), and
-  // only a published (paid + live/active) site has gone through the publish
+  // Native Hidook booking dashboard link (Wave 8 reachability fix, CAL-01):
+  // the owner dashboard exists and its API is fully authenticated +
+  // tenant-isolated (bot/server.js#resolveOwnerTenantOrReject), but nothing
+  // in the product ever linked to it with a real site's ids — only a
+  // hardcoded demo page did.
+  //
+  // Which templates can opt into native booking is a schema fact, not a
+  // fixed template-id list: CAL-01 (2026-09-14 audit) found this hardcoded
+  // to `site.templateId === 'professionals'`, silently hiding the entry for
+  // every other template whose schema.json also declares
+  // appointment.nativeBooking (portfolio does, and any future template
+  // might). Load that template's schema (cheap — cached after first use by
+  // ensureTemplateLoaded, same helper buildNativeBookingPanel uses in the
+  // editor) and ask it directly instead of guessing from the id.
+  //
+  // Only a published (paid + live/active) site has gone through the publish
   // cutover that actually seeds the calendar engine (bot/calendar-native/
   // cutover.js), so check the site's last-published config before showing
-  // this — a fetch per professionals card, not per every site.
-  if (site.paid && (site.status === 'live' || site.status === 'active') && site.templateId === 'professionals') {
-    apiGet('/api/sites/' + encodeURIComponent(site.id))
+  // this — a fetch per eligible card, not per every site.
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    ensureTemplateLoaded(site.templateId)
+      .then((tpl) => {
+        const schema = tpl && tpl.schema;
+        const supportsNativeBooking = !!schema &&
+          getAllSchemaFields(schema).some((f) => f && f.key === 'appointment.nativeBooking');
+        if (!supportsNativeBooking) return null;
+        return apiGet('/api/sites/' + encodeURIComponent(site.id));
+      })
       .then((data) => {
+        if (!data) return; // template doesn't support native booking at all
         const cfg = data && data.config;
         const nativeOn = isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking);
         if (!nativeOn) {

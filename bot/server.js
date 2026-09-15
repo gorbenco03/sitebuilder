@@ -2787,6 +2787,70 @@ async function handleOwnerPutService(req, res, serviceId) {
     return sendJson(res, 200, out);
 }
 
+/** CAL-02 (M2 owner CRUD audit): POST creates (mirrors handleOwnerCreateResource). */
+async function handleOwnerCreateService(req, res) {
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.putOwnerService(db, tenant.customerId, tenant.siteId, null, body || {});
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/** CAL-02 (M2 owner CRUD audit): hard delete, blocked by future bookings. */
+async function handleOwnerDeleteService(req, res, serviceId) {
+    let body = {};
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (_) {
+        body = {}; // DELETE may have no body — tenant falls back to query below
+    }
+    if (!body.customerId && !body.customer_id) {
+        const u = new URL(req.url || '/', 'http://local');
+        body.customerId = u.searchParams.get('customerId') || u.searchParams.get('customer_id');
+        body.siteId = u.searchParams.get('siteId') || u.searchParams.get('site_id');
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.deleteOwnerService(db, tenant.customerId, tenant.siteId, serviceId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
+/** CAL-03 (M2 owner CRUD audit): hard delete a staff member/resource, blocked by future bookings. */
+async function handleOwnerDeleteResource(req, res, resourceId) {
+    let body = {};
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (_) {
+        body = {};
+    }
+    if (!body.customerId && !body.customer_id) {
+        const u = new URL(req.url || '/', 'http://local');
+        body.customerId = u.searchParams.get('customerId') || u.searchParams.get('customer_id');
+        body.siteId = u.searchParams.get('siteId') || u.searchParams.get('site_id');
+    }
+    const tenant = resolveOwnerTenantOrReject(req, res, body);
+    if (!tenant) return;
+    const ownerApi = getCalendarOwnerApi();
+    const db = resolveCalendarNativeDb();
+    if (tenant.demo) getCalendarNativeApi().ensureDemoTenant(db);
+    const out = ownerApi.deleteOwnerResource(db, tenant.customerId, tenant.siteId, resourceId);
+    if (out.error) return sendJson(res, out.status || 400, out);
+    return sendJson(res, 200, out);
+}
+
 async function handleOwnerListSlots(req, res, query) {
     const src = {
         customerId: query.get('customerId') || query.get('customer_id'),
@@ -4141,6 +4205,10 @@ function createHandler({ onStripeEvent } = {}) {
                 if (req.method === 'PUT' && mRes) {
                     return await handleOwnerPutResource(req, res, decodeURIComponent(mRes[1]));
                 }
+                // CAL-03 (M2 owner CRUD audit): hard delete, blocked by future bookings.
+                if (req.method === 'DELETE' && mRes) {
+                    return await handleOwnerDeleteResource(req, res, decodeURIComponent(mRes[1]));
+                }
                 const mReassign = /^\/api\/calendar-native\/owner\/bookings\/([^/]+)\/reassign$/.exec(url);
                 if (req.method === 'POST' && mReassign) {
                     return await handleOwnerReassignBooking(req, res, decodeURIComponent(mReassign[1]));
@@ -4209,6 +4277,15 @@ function createHandler({ onStripeEvent } = {}) {
                 if (req.method === 'PUT' && mSvc) {
                     return await handleOwnerPutService(req, res, decodeURIComponent(mSvc[1]));
                 }
+                // CAL-02 (M2 owner CRUD audit): hard delete, blocked by future bookings.
+                if (req.method === 'DELETE' && mSvc) {
+                    return await handleOwnerDeleteService(req, res, decodeURIComponent(mSvc[1]));
+                }
+            }
+            // CAL-02 (M2 owner CRUD audit): POST creates a service — mirrors the
+            // existing POST /api/calendar-native/owner/resources create shape.
+            if (req.method === 'POST' && url === '/api/calendar-native/owner/services') {
+                return await handleOwnerCreateService(req, res);
             }
 
             if ((req.method === 'GET' || req.method === 'HEAD') && (

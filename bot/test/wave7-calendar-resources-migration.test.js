@@ -165,7 +165,13 @@ const TS = '2025-02-01T00:00:00.000Z';
 const db = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 
 const migRow = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow.v), 5, 'schema_migrations must advance to 5');
+// The M2 owner-CRUD audit (2026-09) added a v6 migration (calendar_services
+// price columns) on top of this wave's v5 — opening any pre-v6 database now
+// advances all the way to 6. Every assertion below still targets the exact
+// v5 columns/defaults this oracle was written to guard; only the final
+// version number changed as a mechanical consequence of a later wave
+// existing (same reasoning as wave6-calendar-migration.test.js).
+assert.strictEqual(Number(migRow.v), 6, 'schema_migrations must advance to 6');
 
 // --- Step 3: the live booking survives, byte-identical on every pre-existing field. ---
 const booking = db.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_wave7_old_live');
@@ -269,7 +275,7 @@ assert.strictEqual(
 db.close();
 const db2 = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 const migRow2 = db2.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow2.v), 5, 'second open must not re-run migrations or fail');
+assert.strictEqual(Number(migRow2.v), 6, 'second open must not re-run migrations or fail');
 const resourcesAgain = db2.prepare(
     'SELECT * FROM calendar_resources WHERE customer_id = ? AND site_id = ?'
 ).all(C, S);
