@@ -1,0 +1,10 @@
+site A published, slug= multi03-a-089406
+site B published (still signed in, same tab), slug= multi03-b-6ded17 paid-flow-shown= true
+siteA.id= f4da5da1-f257-45e4-932e-477639fcce3e siteA.slug= multi03-a-089406 siteB.id= f845a3be-5080-45c9-b60d-8366c33ad478 siteB.slug= multi03-b-6ded17
+tabB opened via dashboard Editeaza -> editor-template-name = Servicii profesionale (expect professionals/site A template)
+DRAFT_KEY after tabB edits site A: siteId= f4da5da1-f257-45e4-932e-477639fcce3e name= Editat In TabB Pe Situl A
+tabA in-memory business.name BEFORE its own reload (should still be site B/product-menu preset): Casa Nord
+tabA AFTER reload: #editor-template-name= Servicii profesionale  currentSiteId= f4da5da1-f257-45e4-932e-477639fcce3e (expect site B id f845a3be-5080-45c9-b60d-8366c33ad478 ) business.name= Editat In TabB Pe Situl A
+*** CROSS-SITE LEAK CHECK: tabA was editing site B (product-menu) and reloaded — did it silently resume site A (professionals) instead? *** YES — LEAK CONFIRMED
+server siteA.config.business.name = Cabinet Juridic Ionescu
+server siteB.config.business.name = Casa Nord

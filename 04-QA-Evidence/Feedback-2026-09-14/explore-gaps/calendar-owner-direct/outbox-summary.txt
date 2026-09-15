@@ -1,0 +1,43 @@
+[booking_confirmed] to=undefined subject=Programare confirmată — Consultație inițială
+---BODY---
+Salut, Maria Vizitator.
+
+Programarea ta la cabinet pentru „Consultație inițială” cu Personal implicit a fost confirmată.
+Data și ora (ora cabinetului): 2026-09-21 10:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Gestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:
+http://127.0.0.1:0/calendar-native/manage?token=HueFPowXaNVuobL_6RgTAgWNWtEoNEJu
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+
+====
+[booking_reschedule_confirmed] to=undefined subject=Programare reprogramată și confirmată — Consultație inițială
+---BODY---
+Salut, Maria Vizitator.
+
+Programarea ta pentru „Consultație inițială” cu Personal implicit la cabinet a fost reprogramată și confirmată.
+Noua dată și oră (ora cabinetului): 2026-09-15 11:00 (Europe/Bucharest).
+Stare: confirmată.
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+
+====
+[booking_cancelled] to=undefined subject=Programare anulată — Consultație inițială
+---BODY---
+Salut, Maria Vizitator.
+
+Programarea ta pentru „Consultație inițială” cu Personal implicit la cabinet a fost anulată.
+Data și ora (ora cabinetului): 2026-09-15 11:00 (Europe/Bucharest).
+Stare: anulată.
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+

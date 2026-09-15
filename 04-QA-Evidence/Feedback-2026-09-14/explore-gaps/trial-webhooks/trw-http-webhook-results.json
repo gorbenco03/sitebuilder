@@ -1,0 +1,64 @@
+[
+  {
+    "id": "TRW-11a",
+    "desc": "malformed JSON body to /webhooks/stripe",
+    "response": {
+      "status": 400,
+      "body": "{\"error\":\"invalid json\"}",
+      "ms": 401
+    },
+    "healthAfter": {
+      "status": 200,
+      "body": "{\"ok\":true,\"service\":\"hidook-bot\",\"uptimeSec\":2}"
+    }
+  },
+  {
+    "id": "TRW-11b",
+    "desc": "valid JSON but missing \"type\" field",
+    "response": {
+      "status": 200,
+      "body": "{\"received\":true}",
+      "ms": 8
+    },
+    "healthAfter": {
+      "status": 200,
+      "body": "{\"ok\":true,\"service\":\"hidook-bot\",\"uptimeSec\":2}"
+    }
+  },
+  {
+    "id": "TRW-11c",
+    "desc": "subscription.deleted for a siteId that does not exist, over real HTTP webhook route",
+    "response": {
+      "status": 200,
+      "body": "{\"received\":true}",
+      "ms": 154
+    },
+    "healthAfter": {
+      "status": 200,
+      "body": "{\"ok\":true,\"service\":\"hidook-bot\",\"uptimeSec\":3}"
+    }
+  },
+  {
+    "id": "TRW-11d",
+    "desc": "duplicate checkout.session.completed delivered twice over real HTTP (both ACKed 200 immediately, processed async)",
+    "firstAck": {
+      "status": 200,
+      "body": "{\"received\":true}",
+      "ms": 5
+    },
+    "secondAck": {
+      "status": 200,
+      "body": "{\"received\":true}",
+      "ms": 1
+    },
+    "ackIsImmediate200BeforeProcessing": true,
+    "paidUntilAfterFirst": "2027-09-14T15:28:43.582Z",
+    "paidUntilAfterSecond": "2027-09-14T15:28:43.582Z",
+    "noDoubleGrantOnReplay": true
+  },
+  {
+    "id": "TRW-12",
+    "desc": "delayed webhook delivery while owner watches a \"waiting for payment\" screen",
+    "finding": "UNTESTABLE under the mandated HIDOOK_TEST_PAY=1 environment: POST /api/test-pay/complete (bot/server.js#handleTestPayComplete) calls and awaits webpublish.handleStripePaid() synchronously in the SAME request/response cycle -- there is no webhook round-trip and no polling loop in builder/app.js for the offline test-pay path. The real /webhooks/stripe HTTP route (used only with a real STRIPE_SECRET_KEY+STRIPE_WEBHOOK_SECRET) DOES ack 200 immediately and process the event asynchronously afterward (confirmed above in TRW-11d), so a delayed-webhook scenario is structurally possible in production, but cannot be driven end-to-end without live Stripe test-mode credentials, which this exploration is forbidden from using."
+  }
+]

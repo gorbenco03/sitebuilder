@@ -1,0 +1,101 @@
+=== booking_confirmed -> explore-visitor1-2efb134f@example.com (status=sent, booking_status=confirmed) ===
+Subject: Programare confirmată — Consultație inițială
+
+Salut, Vizitator Unu Explorare.
+
+Programarea ta la cabinet pentru „Consultație inițială” a fost confirmată.
+Data și ora (ora cabinetului): 2026-09-18 09:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Gestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:
+http://127.0.0.1:0/calendar-native/manage?token=f4jU8wPy2lzAWsrWG5k44LZa1tZJXi1q
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+
+=== booking_confirmed -> explore-visitor2-2efb134f@example.com (status=sent, booking_status=confirmed) ===
+Subject: Programare confirmată — Consultație inițială
+
+Salut, Vizitator Doi Anulare.
+
+Programarea ta la cabinet pentru „Consultație inițială” a fost confirmată.
+Data și ora (ora cabinetului): 2026-09-18 10:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Gestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:
+http://127.0.0.1:0/calendar-native/manage?token=Ii48o1Z3P5xd4nRBp9UWeOrWZDe_4qm6
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+
+=== booking_confirmed -> explore-visitor3-2efb134f@example.com (status=sent, booking_status=confirmed) ===
+Subject: Programare confirmată — Consultație inițială
+
+Salut, Vizitator Trei Reprogramare.
+
+Programarea ta la cabinet pentru „Consultație inițială” a fost confirmată.
+Data și ora (ora cabinetului): 2026-09-23 09:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Gestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:
+http://127.0.0.1:0/calendar-native/manage?token=u_UADtFzL4zo8C8vmAsQvw0dDAXKoGm-
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+
+=== booking_cancelled -> explore-visitor2-2efb134f@example.com (status=sent, booking_status=cancelled) ===
+Subject: Programare anulată — Consultație inițială
+
+Salut, Vizitator Doi Anulare.
+
+Programarea ta pentru „Consultație inițială” la cabinet a fost anulată.
+Data și ora (ora cabinetului): 2026-09-18 10:00 (Europe/Bucharest).
+Stare: anulată.
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+
+=== booking_reschedule_confirmed -> explore-visitor3-2efb134f@example.com (status=sent, booking_status=confirmed) ===
+Subject: Programare reprogramată și confirmată — Consultație inițială
+
+Salut, Vizitator Trei Reprogramare.
+
+Programarea ta pentru „Consultație inițială” la cabinet a fost reprogramată și confirmată.
+Noua dată și oră (ora cabinetului): 2026-09-15 09:00 (Europe/Bucharest).
+Stare: confirmată.
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+
+=== booking_reminder -> explore-visitor3-2efb134f@example.com (status=sent, booking_status=confirmed) ===
+Subject: Reamintire programare — Consultație inițială
+
+Salut, Vizitator Trei Reprogramare.
+
+Îți reamintim de programarea ta la cabinet pentru „Consultație inițială”.
+Data și ora (ora cabinetului): 2026-09-15 09:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Dacă nu mai poți ajunge, te rugăm să anulezi sau să reprogramezi din timp.
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
+
+----------------------------------------------------------------
+

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "em_4abcb7159413d91a68d11e48",
+    "customer_id": "9c726376-92bc-4c10-8d35-6ea1102414e1",
+    "site_id": "21eade73-c433-4df8-bc42-930fab4e6db5",
+    "booking_id": "bk_4c3c6469cd5ea22a5cbc937e",
+    "template_key": "booking_confirmed",
+    "recipient_email": "maria@example.com",
+    "subject": "Programare confirmată — Consultație inițială",
+    "booking_status_snapshot": "confirmed",
+    "manage_link_present": 1,
+    "status": "queued",
+    "attempt_count": 0,
+    "max_attempts": 5,
+    "next_attempt_at": null,
+    "last_error": null,
+    "provider_name": "local-memory",
+    "provider_message_id": null,
+    "idempotency_key": "calmail:bk_4c3c6469cd5ea22a5cbc937e:booking_confirmed:confirmed:2026-09-14T15:32:19.187Z",
+    "created_at": "2026-09-14T15:32:19.230Z",
+    "updated_at": "2026-09-14T15:32:19.230Z",
+    "sent_at": null,
+    "has_ics": 1,
+    "body_text": "Salut, Maria Vizitator.\n\nProgramarea ta la cabinet pentru „Consultație inițială” cu Personal implicit a fost confirmată.\nData și ora (ora cabinetului): 2026-09-21 10:00 (Europe/Bucharest).\nStare: confirmată.\n\nGestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:\nhttp://127.0.0.1:0/calendar-native/manage?token=HueFPowXaNVuobL_6RgTAgWNWtEoNEJu\n\n—\nHidook Site Builder\nAcest mesaj este tranzacțional, legat de programarea ta.",
+    "body_html": "<!DOCTYPE html><html lang=\"ro\"><head><meta charset=\"UTF-8\"><title>Programare confirmată — Consultație inițială</title></head><body style=\"font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#222\"><h1 style=\"font-size:20px;line-height:1.3\">Programarea ta este confirmată</h1><p>Salut, Maria Vizitator.</p><p>Programarea ta la cabinet pentru „Consultație inițială” cu Personal implicit a fost confirmată. Data și ora (ora cabinetului): 2026-09-21 10:00 (Europe/Bucharest). Stare: confirmată.</p><p><strong>Stare:</strong> confirmată</p><p><strong>Serviciu:</strong> Consultație inițială<br><strong>Cu:</strong> Personal implicit<br><strong>Data/ora (cabinet):</strong> 2026-09-21 10:00 (Europe/Bucharest)</p><p style=\"margin:24px 0\"><a href=\"http://127.0.0.1:0/calendar-native/manage?token=HueFPowXaNVuobL_6RgTAgWNWtEoNEJu\" style=\"background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block\">Gestionează programarea</a></p><p style=\"font-size:12px;color:#666;word-break:break-all\">http://127.0.0.1:0/calendar-native/manage?token=HueFPowXaNVuobL_6RgTAgWNWtEoNEJu</p><p style=\"font-size:12px;color:#888;margin-top:32px\">Hidook Site Builder — mesaj tranzacțional</p></body></html>",
+    "ics_content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Hidook Site Builder//Calendar Native//RO\r\nCALSCALE:GREGORIAN\r\nMETHOD:REQUEST\r\nBEGIN:VEVENT\r\nUID:bk_4c3c6469cd5ea22a5cbc937e@calendar.hidook.invalid\r\nDTSTAMP:20260914T153219Z\r\nDTSTART:20260921T070000Z\r\nDTEND:20260921T074500Z\r\nSUMMARY:Programare: Consultație inițială cu Personal implicit — cabine\r\n t\r\nDESCRIPTION:Programare la cabinet pentru „Consultație inițială”\\, cu\r\n  Personal implicit.\r\nLOCATION:cabinet\r\nSTATUS:CONFIRMED\r\nSEQUENCE:0\r\nORGANIZER;CN=cabinet:mailto:explore-cal-prof-07cdfd51@example.com\r\nATTENDEE;CN=Maria Vizitator;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP\r\n =FALSE:mailto:maria@example.com\r\nTRANSP:OPAQUE\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+    "ics_filename": "programare.ics"
+  }
+]

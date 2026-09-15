@@ -1,0 +1,8 @@
+{
+  "base": "http://127.0.0.1:62465",
+  "customerId": "4ca99227-3da0-4671-b42a-06ddef3dec01",
+  "siteId": "9499a5bf-1ee8-491c-b351-8f92cec092a3",
+  "liveUrl": "http://127.0.0.1:62465/live/explore-p2-43fa2366/",
+  "ownerUrl": "http://127.0.0.1:62465/calendar-native/owner/?customerId=4ca99227-3da0-4671-b42a-06ddef3dec01&siteId=9499a5bf-1ee8-491c-b351-8f92cec092a3&brand=explore-p2-43fa2366",
+  "DATA_DIR": "/var/folders/zv/6bcdhxjn6hbfx6ckkg8j4wgh0000gp/T/explore-cal-owner2-km2ntO"
+}

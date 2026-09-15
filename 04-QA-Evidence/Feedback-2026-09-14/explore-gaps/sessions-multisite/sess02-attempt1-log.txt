@@ -1,0 +1,14 @@
+tab1 signed in and published site A
+tab2 opened #edit in the same context
+cookies BEFORE tab1 logout: [{"name":"hb_session","valLen":186}]
+tab1 logout response status = 200 set-cookie= (none in JS-visible headers)
+tab1 clicked Deconectare
+tab1 badge visible after its own logout = false
+cookies AFTER tab1 logout (context-wide, shared jar): []
+original session sid still valid server-side after tab1 logout?  false (sid= d5a20842c24d17359c63cbeb82f72d0f )
+tab2 #btn-account-menu still visible/unchanged right after tab1 logout (no tab2 action yet) = true
+tab2 save-status after edit post-tab1-logout: state= error text= Nu s-a salvat title= Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.
+tab2 draft survives, name= Editat Din Tab 2 Dupa Logout Tab 1
+cookies right before /api/me check: []
+tab2 /api/me request Cookie header actually sent = (no cookie header)
+tab2 GET /api/me status after tab1 logout = 200

@@ -1,0 +1,12 @@
+Salut, Vizitator DST.
+
+Programarea ta la cabinet pentru „Ședință DST” a fost confirmată.
+Data și ora (ora cabinetului): 2026-10-25 09:00 (Europe/Bucharest).
+Stare: confirmată.
+
+Gestionează programarea (anulare / reprogramare) cu linkul unic de mai jos. Linkul este valabil doar pentru această programare:
+http://127.0.0.1:0/calendar-native/manage?token=COlgygIXln-deH9D-vg3SQAsxWhnOh40
+
+—
+Hidook Site Builder
+Acest mesaj este tranzacțional, legat de programarea ta.
