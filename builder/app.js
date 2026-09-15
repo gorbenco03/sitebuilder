@@ -2553,8 +2553,21 @@ function prepareInteractivePreviewDocument(documentHtml, readyToken, cookieAccep
     'if(typeof window.__hbCookieAccept==="function"){try{if(btn.getAttribute("data-hb-bound")!=="1"){btn.setAttribute("data-hb-bound","1");btn._hbBound=true;btn.addEventListener("pointerdown",window.__hbCookieAccept);btn.addEventListener("click",window.__hbCookieAccept);btn.onclick=window.__hbCookieAccept;}if(el.hidden){el.hidden=false;try{el.removeAttribute("hidden");}catch(e){}}el.setAttribute("data-hb-consent-ready","true");}catch(e){}return true;}' +
     'return el.getAttribute("data-hb-consent-ready")==="true";};' +
     'var readyToSend=function(){return ensureConsent()&&document.documentElement.getAttribute("data-hb-forcer-done")==="1";};' +
-    'var finish=function(){if(readyToSend()){requestAnimationFrame(function(){requestAnimationFrame(send);});return true;}return false;};' +
-    'var arm=function(){if(finish())return;var n=0;var t=setInterval(function(){n++;if(finish()||n>80){clearInterval(t);if(!sent)requestAnimationFrame(function(){requestAnimationFrame(send);});}},25);};' +
+    // afterPaint(): wait for a painted frame before announcing ready, so a first
+    // click lands on real content — but never ONLY via requestAnimationFrame.
+    // Chromium (Chrome, Edge) stops rAF in a cross-origin iframe it considers
+    // not visible: an occluded or minimised window, a background tab. This
+    // preview is a sandboxed opaque-origin srcdoc, i.e. cross-origin. With rAF
+    // as the only path, including the n>80 fallback, the ready message was
+    // never sent and the landing preview sat on "Se încarcă previzualizarea…"
+    // forever — the owner's "does not work on Windows" report, reproduced on
+    // production in Chromium (parent rAF fired, the iframe's never did) and
+    // cured on the live page by swapping these calls alone. Safari does not
+    // throttle this way, which is why the Mac worked. A timer backs rAF up;
+    // `sent` already makes the second arrival a no-op.
+    'var afterPaint=function(fn){var done=false;var go=function(){if(done)return;done=true;fn();};try{requestAnimationFrame(function(){requestAnimationFrame(go);});}catch(e){}setTimeout(go,120);};' +
+    'var finish=function(){if(readyToSend()){afterPaint(send);return true;}return false;};' +
+    'var arm=function(){if(finish())return;var n=0;var t=setInterval(function(){n++;if(finish()||n>80){clearInterval(t);if(!sent)afterPaint(send);}},25);};' +
     'if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",arm,{once:true});else arm();})();</script>';
   const closeBodyAt = documentHtml.toLowerCase().lastIndexOf('</body>');
   if (closeBodyAt === -1) return documentHtml + readyScript;
