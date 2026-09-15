@@ -17,35 +17,40 @@
           "type": "text",
           "label": "Numele afacerii (restaurant, cafenea, magazin)",
           "required": true,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "business.tagline",
           "type": "text",
           "label": "Slogan scurt (ex. Cine de sezon, vinuri de pivniță)",
           "required": true,
-          "maxLen": 100
+          "maxLen": 100,
+          "identity": true
         },
         {
           "key": "business.title",
           "type": "text",
           "label": "Titlu pagină pentru browser și Google (include orașul)",
           "required": true,
-          "maxLen": 80
+          "maxLen": 80,
+          "identity": true
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
           "label": "Descriere scurtă pentru Google (ce oferi și unde ești — 1–2 propoziții)",
           "required": true,
-          "maxLen": 160
+          "maxLen": 160,
+          "identity": true
         },
         {
           "key": "business.about",
           "type": "textarea",
           "label": "Povestea restaurantului (secțiunea „Despre noi”) — scurtă și personală",
           "required": true,
-          "maxLen": 700
+          "maxLen": 700,
+          "identity": true
         },
         {
           "key": "business.lang",
@@ -225,7 +230,8 @@
           "max": 12,
           "itemShape": {
             "label": "text"
-          }
+          },
+          "identityItemKeys": ["label"]
         }
       ]
     },
@@ -250,7 +256,8 @@
           "itemShape": {
             "category": "text",
             "items": "list"
-          }
+          },
+          "identityNestedListKeys": ["items"]
         },
         {
           "key": "menu.ro",
@@ -262,7 +269,8 @@
           "itemShape": {
             "category": "text",
             "items": "list"
-          }
+          },
+          "identityNestedListKeys": ["items"]
         }
       ]
     },
@@ -288,7 +296,8 @@
             "title": "text",
             "blurb": "text",
             "photos": "photos"
-          }
+          },
+          "identityItemKeys": ["title", "blurb"]
         }
       ]
     },
@@ -301,20 +310,23 @@
           "type": "text",
           "label": "Utilizator Instagram (fără @)",
           "required": false,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "instagram.url",
           "type": "url",
           "label": "URL Instagram (https://www.instagram.com/...)",
           "hint": "Folosește exact același link ca la „Instagram (secțiune contact)” din secțiunea Contact — cele două butoane trebuie să ducă la același profil.",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
           "label": "URL feed Instafidget (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         }
       ]
     },
@@ -340,7 +352,8 @@
           "key": "contact.whatsapp",
           "type": "phone",
           "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.waMessage",
@@ -360,48 +373,55 @@
           "key": "contact.phone",
           "type": "phone",
           "label": "Telefon cu prefix de țară (ex. +40 721 234 567)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
           "label": "Număr afișat pe site (ex. +40 721 234 567)",
           "required": false,
-          "maxLen": 30
+          "maxLen": 30,
+          "identity": true
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
           "label": "Instagram (secțiune contact)",
           "hint": "Folosește exact același link ca la „URL Instagram” din secțiunea Instagram de mai sus — cele două butoane trebuie să ducă la același profil.",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
           "label": "Etichetă Instagram (ex. @restaurantul_tau)",
           "required": false,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
           "label": "Link Facebook (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
           "label": "Text link Facebook (ex. Restaurantul nostru)",
           "required": false,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "contact.address",
           "type": "textarea",
           "label": "Adresă fizică afișată (câte un rând pe linie)",
           "required": false,
-          "maxLen": 200
+          "maxLen": 200,
+          "identity": true
         },
         {
           "key": "contact.addressHref",
@@ -420,7 +440,8 @@
           "type": "text",
           "label": "Adresă scurtă în subsol (o singură linie)",
           "required": true,
-          "maxLen": 120
+          "maxLen": 120,
+          "identity": true
         },
         {
           "key": "footer.year",
@@ -434,7 +455,8 @@
           "type": "text",
           "label": "Notă caldă în subsol (ex. Poftă bună.)",
           "required": false,
-          "maxLen": 100
+          "maxLen": 100,
+          "identity": true
         }
       ]
     }

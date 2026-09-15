@@ -49,18 +49,25 @@
  *                                              build.js — export calls it with
  *                                              no opts at all).
  *
- * Provisional demo content (Wave 11):
+ * Provisional demo content (Wave 11; classification made schema-driven and
+ * consistent across all five templates, plus a legend + tooltip explaining
+ * it, in PLAN-FEEDBACK-2026-09-14 Suite B):
  *   A fresh draft is seeded from the template's own demo preset — a
  *   plausible name, phone, address and photos that read as a finished real
- *   site (see builder/app.js's IDENTITY_FIELD_KEYS doc comment). Nothing on
- *   the rendered canvas said "this is still the template's" — this overlay
- *   paints two purely-visual, purely-in-editor markers so a glance at the
- *   canvas answers that at once:
+ *   site (see builder/app.js's isIdentityField() doc comment for how a field
+ *   — scalar or a list item — is classified as "identity content"). Nothing
+ *   on the rendered canvas said "this is still the template's" — this
+ *   overlay paints two purely-visual, purely-in-editor markers so a glance
+ *   at the canvas answers that at once:
  *     - .hb-demo-text on an identity [data-hb-edit] span still at its demo
  *       value (parent-driven, see {hb:'demoText'} above) — a soft highlight,
  *       not an error state. Dropped the instant the field is edited (see
  *       setupTextFields()'s input handler) — no round trip needed, since
- *       touching it is definitionally "no longer the demo's".
+ *       touching it is definitionally "no longer the demo's". Carries a
+ *       hover/focus tooltip explaining what the highlight means (see
+ *       markDemoTextPaths() below) — the same wording as the topbar legend
+ *       (#demo-legend in builder/index.html, driven by app.js's
+ *       syncDemoLegend()), so the two never disagree.
  *     - .hb-demo-photo (a CSS-only ::after corner badge) on any photo
  *       (<img> or CSS background) whose src is
  *       not a data: URI — an owner's own upload is always inlined as one
@@ -441,6 +448,47 @@
       '  background: rgba(180,83,9,0.92);',
       '  box-shadow: 0 0 0 1px rgba(255,255,255,0.35) inset;',
       '}',
+
+      /* PLAN-FEEDBACK-2026-09-14 Suite B, item 2: the amber wash above tells
+         an owner THAT a field is still the template's, but never WHY — this
+         paints the same explanation the topbar legend gives (#demo-legend in
+         builder/index.html) directly on the field itself, on hover AND on
+         keyboard focus (a contenteditable span is a real tab stop). CSS-only
+         content:attr(), same technique already used for the empty-field
+         placeholder above (data-hb-placeholder) — no DOM node to create/tear
+         down per field, no positioning surprises from a real appended
+         element. position:relative is scoped to .hb-demo-text itself (never
+         forced globally onto every [data-hb-edit]), so it cannot fight a
+         template\'s own layout on a field that is not currently marked.
+         Dark-on-light bubble (#1F2937 / #fff is ~15.7:1) so it reads the same
+         over a dark hero band or a light card — unlike the amber wash itself,
+         this cue does not depend on the page\'s own background at all. A
+         second, non-visual channel for the same explanation — aria-describedby
+         pointing at a real (off-screen but accessible) node — is wired in
+         markDemoTextPaths() below, since generated ::after content is not
+         reliably exposed to assistive tech. */
+      '.hb-demo-text {',
+      '  position: relative;',
+      '}',
+      '.hb-demo-text:hover::after,',
+      '.hb-demo-text:focus::after {',
+      '  content: attr(data-hb-demo-tip);',
+      '  position: absolute;',
+      '  left: 0;',
+      '  bottom: 100%;',
+      '  margin-bottom: 6px;',
+      '  background: #1F2937;',
+      '  color: #fff;',
+      '  font: 500 12px/1.4 system-ui, sans-serif;',
+      '  padding: 5px 9px;',
+      '  border-radius: 5px;',
+      '  white-space: normal;',
+      '  width: max-content;',
+      '  max-width: 260px;',
+      '  box-shadow: 0 2px 8px rgba(0,0,0,0.28);',
+      '  pointer-events: none;',
+      '  z-index: 2147483647;',
+      '}',
     ].join('\n');
     document.head.appendChild(style);
   }());
@@ -487,6 +535,30 @@
     );
   }
 
+  /** Text of the explanation attached to every .hb-demo-text field — same
+   * wording as the topbar legend (#demo-legend in builder/index.html) so the
+   * two surfaces never disagree about what the highlight means. */
+  var DEMO_TIP_TEXT = 'Text de exemplu — înlocuiește-l cu datele tale.';
+  var DEMO_TIP_ID = 'hb-demo-tip-desc';
+
+  /** Create (once) the off-screen-but-accessible node aria-describedby points
+   * at — a screen reader announces it on focus even though the VISUAL bubble
+   * above is pure CSS generated content (not reliably exposed to assistive
+   * tech on its own, hence this separate real DOM node). Visually hidden the
+   * standard clip-to-1px way, not display:none/visibility:hidden, which
+   * screen readers skip entirely. */
+  function ensureDemoTipNode() {
+    var existing = document.getElementById(DEMO_TIP_ID);
+    if (existing) return existing;
+    var node = document.createElement('span');
+    node.id = DEMO_TIP_ID;
+    node.textContent = DEMO_TIP_TEXT;
+    node.style.cssText = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;' +
+      'overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+    document.body.appendChild(node);
+    return node;
+  }
+
   /**
    * Paint (or repaint) the provisional "still demo" marker on exactly the
    * given identity-field paths. Called on every {hb:'demoText'} — i.e. after
@@ -500,10 +572,21 @@
   function markDemoTextPaths(paths) {
     var wanted = {};
     paths.forEach(function (p) { wanted[p] = true; });
+    ensureDemoTipNode();
     var all = Array.prototype.slice.call(document.querySelectorAll('[data-hb-edit][data-hb-kind="text"]'));
     all.forEach(function (el) {
       var path = el.getAttribute('data-hb-edit');
-      el.classList.toggle('hb-demo-text', !!wanted[path]);
+      var isDemo = !!wanted[path];
+      el.classList.toggle('hb-demo-text', isDemo);
+      if (isDemo) {
+        el.setAttribute('data-hb-demo-tip', DEMO_TIP_TEXT);
+        el.setAttribute('aria-describedby', DEMO_TIP_ID);
+      } else {
+        el.removeAttribute('data-hb-demo-tip');
+        // Only ever removes what this same code set — never a describedby
+        // some other feature might have put on the field.
+        if (el.getAttribute('aria-describedby') === DEMO_TIP_ID) el.removeAttribute('aria-describedby');
+      }
     });
   }
 
@@ -915,6 +998,8 @@
         // markDemoTextPaths()'s doc comment; the parent will confirm/repaint
         // the full set once the debounced {hb:'text'} below lands anyway).
         el.classList.remove('hb-demo-text');
+        el.removeAttribute('data-hb-demo-tip');
+        if (el.getAttribute('aria-describedby') === DEMO_TIP_ID) el.removeAttribute('aria-describedby');
         // contact.address is stored the same way the Telegram bot's own
         // address formatter stores it (see bot/flow.js's formatAddressHtml
         // and build.js's sanitizeAddress): plain text with a literal "<br>"

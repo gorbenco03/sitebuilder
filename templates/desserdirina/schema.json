@@ -17,35 +17,40 @@
           "type": "text",
           "label": "Numele afacerii (cofetărie, patiserie)",
           "required": true,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "business.tagline",
           "type": "text",
           "label": "Slogan scurt (ex. Torturi artizanale, zilnic proaspete)",
           "required": true,
-          "maxLen": 100
+          "maxLen": 100,
+          "identity": true
         },
         {
           "key": "business.title",
           "type": "text",
           "label": "Titlu pagină pentru browser și Google (include orașul)",
           "required": true,
-          "maxLen": 80
+          "maxLen": 80,
+          "identity": true
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
           "label": "Descriere scurtă pentru Google (ce oferi și unde — 1–2 propoziții)",
           "required": true,
-          "maxLen": 160
+          "maxLen": 160,
+          "identity": true
         },
         {
           "key": "business.about",
           "type": "textarea",
           "label": "Povestea ta (secțiunea Despre noi) — scurt și personal",
           "required": true,
-          "maxLen": 700
+          "maxLen": 700,
+          "identity": true
         },
         {
           "key": "business.lang",
@@ -215,7 +220,8 @@
           "required": false,
           "min": 0,
           "max": 20,
-          "itemShape": { "category": "text", "items": "list" }
+          "itemShape": { "category": "text", "items": "list" },
+          "identityNestedListKeys": ["items"]
         },
         {
           "key": "menu.ro",
@@ -224,7 +230,8 @@
           "required": false,
           "min": 0,
           "max": 20,
-          "itemShape": { "category": "text", "items": "list" }
+          "itemShape": { "category": "text", "items": "list" },
+          "identityNestedListKeys": ["items"]
         }
       ]
     },
@@ -248,7 +255,8 @@
             "title": "text",
             "blurb": "text",
             "photos": "photos"
-          }
+          },
+          "identityItemKeys": ["title", "blurb"]
         }
       ]
     },
@@ -261,19 +269,22 @@
           "type": "text",
           "label": "Utilizator Instagram (fără @)",
           "required": false,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "instagram.url",
           "type": "url",
           "label": "URL Instagram",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
           "label": "URL feed Instafidget (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         }
       ]
     },
@@ -299,7 +310,8 @@
           "key": "contact.whatsapp",
           "type": "phone",
           "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.waMessage",
@@ -319,47 +331,54 @@
           "key": "contact.phone",
           "type": "phone",
           "label": "Telefon cu prefix țară",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
           "label": "Telefon afișat pe site",
           "required": false,
-          "maxLen": 30
+          "maxLen": 30,
+          "identity": true
         },
         {
           "key": "contact.instagram.url",
           "type": "url",
           "label": "Instagram (secțiune contact)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
           "label": "Etichetă Instagram (ex. @cofetarie)",
           "required": false,
-          "maxLen": 40
+          "maxLen": 40,
+          "identity": true
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
           "label": "Link Facebook (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
           "label": "Etichetă Facebook",
           "required": false,
-          "maxLen": 40
+          "maxLen": 40,
+          "identity": true
         },
         {
           "key": "contact.address",
           "type": "textarea",
           "label": "Adresă (poate include <br>)",
           "required": false,
-          "maxLen": 200
+          "maxLen": 200,
+          "identity": true
         },
         {
           "key": "contact.addressHref",
@@ -378,7 +397,8 @@
           "type": "text",
           "label": "Adresă scurtă footer",
           "required": false,
-          "maxLen": 120
+          "maxLen": 120,
+          "identity": true
         },
         {
           "key": "footer.year",
@@ -392,7 +412,8 @@
           "type": "text",
           "label": "Notă footer (editabilă — nu include badge-ul Hidook)",
           "required": false,
-          "maxLen": 120
+          "maxLen": 120,
+          "identity": true
         }
       ]
     },

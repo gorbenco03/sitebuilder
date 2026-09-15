@@ -6,7 +6,7 @@
  *
  * A brand-new draft is seeded from the template's own demo preset — a
  * plausible business name, phone, address, testimonials and photos that read
- * as a finished, real site (see builder/app.js's IDENTITY_FIELD_KEYS doc
+ * as a finished, real site (see builder/app.js's isIdentityField() doc
  * comment). Before this wave, the checklist pill (updateChecklist() ->
  * isFieldComplete()) only asked "is this field non-empty?" — so a draft
  * nobody had touched yet showed as fully done (N/N), the exact failure
