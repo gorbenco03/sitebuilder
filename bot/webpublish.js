@@ -159,19 +159,36 @@ function unpublishSite(siteOrId, meta = {}) {
     // later tell "customer canceled" apart from "card kept failing" — the
     // commercial outcome (not public) is the same either way.
     const nextSubscriptionStatus = meta.subscriptionStatus || 'canceled';
+
+    // TRW-09a — `paid: true` is kept across a cancel to preserve REAL payment
+    // history (a customer who paid for a year and then cancels genuinely was
+    // a paying customer). But a trial cancelled before Stripe ever actually
+    // billed it (payment_status=no_payment_required at checkout, no
+    // subscription_cycle charge yet) has no such history — keeping
+    // `paid: true` there is indistinguishable from a real former customer,
+    // which is exactly the money-truth problem this wave already fixed for
+    // the ledger (getInvoiceHistory) but had not yet fixed for this site
+    // field. Reuse getInvoiceHistory rather than re-deriving "was this site
+    // ever actually charged" a second way.
+    const everCharged = getInvoiceHistory(site).some((row) => row.status === 'paid');
+
+    const patch = {
+        status: 'unpublished',
+        url: null,
+        // Keep paid/paidUntil history — but ONLY when there is real history
+        // to keep (see everCharged above); cancel does not invent a charge.
+        canceledAt: site.canceledAt || new Date().toISOString(),
+        stripeSubscriptionStatus: nextSubscriptionStatus,
+        // Keep the legacy compatibility field in sync with the Stripe status.
+        // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
+        // through the plain persist path, which set this field; skipping it here
+        // would silently desynchronise the two.
+        subscriptionStatus: nextSubscriptionStatus,
+    };
+    if (!everCharged) patch.paid = false;
+
     try {
-        registry.updateSite(site.id, {
-            status: 'unpublished',
-            url: null,
-            // Keep paid/paidUntil history; cancel does not invent a charge.
-            canceledAt: site.canceledAt || new Date().toISOString(),
-            stripeSubscriptionStatus: nextSubscriptionStatus,
-            // Keep the legacy compatibility field in sync with the Stripe status.
-            // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
-            // through the plain persist path, which set this field; skipping it here
-            // would silently desynchronise the two.
-            subscriptionStatus: nextSubscriptionStatus,
-        });
+        registry.updateSite(site.id, patch);
     } catch (e) {
         log('webpublish.unpublish.update_failed', { siteId: site.id, err: e.message }, 'error');
         return null;
@@ -191,6 +208,142 @@ function unpublishSite(siteOrId, meta = {}) {
         alreadyDown: !!alreadyDown,
         subscriptionId: meta.subscriptionId || null,
     });
+    return registry.getSite(site.id);
+}
+
+// ---------------------------------------------------------------------------
+// Wave12/TRW-04, TRW-05 — recovery after an unpublish-for-non-payment
+// ---------------------------------------------------------------------------
+//
+// unpublishSite() above is used for two very different reasons that must
+// never be confused with each other:
+//   - the OWNER clicked Cancel in the Stripe Customer Portal (or the
+//     subscription was otherwise deleted) — terminal, by the owner's own
+//     choice. Stripe never transitions a truly canceled subscription back to
+//     'active' on its own; the only way back is a brand-new checkout (a
+//     different subscription id, a different code path — handleStripePaid's
+//     first-publish/reactivation branch).
+//   - STRIPE gave up on every dunning retry (status unpaid /
+//     incomplete_expired — see the isUnpaidUpdate branch below) — this IS
+//     recoverable on the SAME subscription: the owner adds a new card via
+//     the Customer Portal ("Actualizează cardul", already wired in
+//     builder/app.js — same billing-portal route as Cancel, Stripe's portal
+//     covers both), Stripe retries the failed invoice, and if it succeeds
+//     the subscription itself reports 'active'/'trialing' again.
+// Before this fix, NOTHING republished the site in the second case: the only
+// reactivation branches that existed anywhere checked site.status ===
+// 'expired', a different case entirely, so a genuinely-recovered owner
+// stayed offline forever (TRW-04) — directly contradicting this product's
+// own "de îndată ce plata trece, site-ul redevine live automat" promise in
+// buildSiteDownEmailRo above. Separately, paymentFailedAt/paymentFailedCount
+// were never cleared by any handler (TRW-05), so even a manual fix would
+// leave getDunningState() reporting a stale "card refuzat" warning forever,
+// masking whether the site actually came back.
+//
+// The dashboard already reads recoverable-vs-cancelled correctly with zero
+// UI changes needed: builder/app.js#buildSiteCard's 'unpublished' badge
+// branch already keys off dunning.severity === 'critical' (Plată eșuată —
+// site oprit) vs everything else (Anulat), and the "Actualizează cardul"
+// button already renders whenever `dunning` is present — both already read
+// getDunningState()/stripeSubscriptionStatus, which the fix below keeps
+// truthful. Once a recovered site's status flips back to 'live' and its
+// dunning fields clear, getDunningState() returns null and the card renders
+// as a plain, healthy "Activ" site on its own — no separate UI branch.
+
+/**
+ * True when this site's CURRENT 'unpublished' state was caused by Stripe
+ * exhausting every dunning retry (recoverable on the same subscription),
+ * never by an owner-initiated cancel/delete (terminal). Reads the Stripe
+ * status unpublishSite() itself recorded at the moment it unpublished —
+ * 'unpaid'/'incomplete_expired' only reach that call via the isUnpaidUpdate
+ * branch below; every other unpublish reason records 'canceled'/'cancelled'.
+ *
+ * Callers must pass the site record fetched BEFORE applying the current
+ * webhook's own patch (stripeSubscriptionStatus is exactly what this
+ * function reads) — see the call sites below for why this ordering, not
+ * post-patch state, is what keeps a canceled subscription from ever being
+ * resurrected by some later/out-of-order event for the same subscription id.
+ *
+ * @param {object} site
+ * @returns {boolean}
+ */
+function _isRecoverableNonPaymentUnpublish(site) {
+    if (!site || site.status !== 'unpublished') return false;
+    const subSt = String(site.stripeSubscriptionStatus || site.subscriptionStatus || '').toLowerCase();
+    return subSt === 'unpaid' || subSt === 'incomplete_expired';
+}
+
+/**
+ * Republish a site Stripe previously unpublished for non-payment, now that a
+ * real payment (or the subscription status itself) confirms the card
+ * actually went through. Never called for an owner-initiated cancel — see
+ * _isRecoverableNonPaymentUnpublish, which every call site below checks
+ * first against the PRE-webhook site record.
+ *
+ * Idempotent by construction, not by a separate claim: each caller re-fetches
+ * `site` fresh at the top of its own webhook handler, so a redelivered event
+ * (or the sibling event for the same recovery — e.g. both
+ * customer.subscription.updated AND invoice.paid can fire for one card
+ * update) sees site.status already 'live' from the first successful run and
+ * _isRecoverableNonPaymentUnpublish() returns false on every call after that.
+ *
+ * Clears paymentFailedAt/paymentFailedCount (TRW-05) so getDunningState()
+ * stops reporting a stale "card refuzat" warning once the card has actually
+ * gone through, and clears canceledAt (this unpublish is over) — matching
+ * the "Keep paid/paidUntil history" philosophy: only the fields that
+ * describe the CURRENT outage are reset, paid/paidUntil stay untouched.
+ *
+ * @param {object} site  the site record from BEFORE this webhook's own patch
+ * @param {{subscriptionId?: string, notifyAdmin?: Function}} [opts]
+ * @returns {Promise<object>} the current site record (updated on success)
+ */
+async function _reactivateFromNonPaymentUnpublish(site, { subscriptionId, notifyAdmin } = {}) {
+    if (!_isRecoverableNonPaymentUnpublish(site)) return registry.getSite(site.id) || site;
+
+    const versions = registry.listVersions(site.id);
+    const last = versions[versions.length - 1];
+    const lastConfig = last && registry.getVersionConfig(site.id, last.versionId);
+    if (!lastConfig) {
+        log('webpublish.recover.no_version', { siteId: site.id, subscriptionId: subscriptionId || null }, 'error');
+        try {
+            registry.updateSite(site.id, {
+                status: 'needs-retry',
+                paymentFailedAt: null,
+                paymentFailedCount: null,
+            });
+        } catch (_) {}
+        return registry.getSite(site.id);
+    }
+
+    try {
+        const result = await module.exports.publishSite({
+            site: { ...site, paid: true },
+            config: lastConfig,
+            images: [],
+            siteDirAlreadyBuilt: false,
+        });
+        registry.updateSite(site.id, {
+            status: 'live',
+            url: result.url,
+            paid: true,
+            canceledAt: null,
+            paymentFailedAt: null,
+            paymentFailedCount: null,
+        });
+        log('webpublish.recover.reactivated', {
+            siteId: site.id, subscriptionId: subscriptionId || null, url: result.url,
+        });
+        if (typeof notifyAdmin === 'function') {
+            try {
+                notifyAdmin(
+                    `🟢 Site repornit: „${site.slug || site.projectName}” este din nou public — plata a trecut.`
+                );
+            } catch (_) { /* best-effort — never let a notify failure undo the recovery */ }
+        }
+    } catch (e) {
+        log('webpublish.recover.failed', { siteId: site.id, err: e.message }, 'error');
+        try { registry.updateSite(site.id, { status: 'needs-retry' }); } catch (_) {}
+    }
     return registry.getSite(site.id);
 }
 
@@ -324,6 +477,19 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
         : (sub.customer && sub.customer.id);
     if (customerId) patch.stripeCustomerId = customerId;
 
+    // TRW-04 — a status transition back to 'active'/'trialing' (never
+    // 'past_due': that status alone never got the site unpublished in the
+    // first place, so it is not a "recovery") is the OTHER of the two
+    // webhooks that can report a successful card-update retry (the other is
+    // handleStripeInvoicePaid's invoice.paid/payment_succeeded below — order
+    // between the two is not guaranteed, so both check independently).
+    // Decide recoverability from `site` — fetched above, BEFORE this
+    // function's own patch — never from the freshly-patched record, so an
+    // owner-cancelled subscription (recorded status 'canceled') is never
+    // resurrected by this branch.
+    const isRecoveredStatus = status === 'active' || status === 'trialing';
+    const shouldRecover = isRecoveredStatus && _isRecoverableNonPaymentUnpublish(site);
+
     try {
         const updated = registry.updateSite(site.id, patch);
         log('webpublish.subscription.status_updated', {
@@ -331,6 +497,12 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
             status,
             subscriptionId: sub.id,
         });
+        if (shouldRecover) {
+            return await _reactivateFromNonPaymentUnpublish(site, {
+                subscriptionId: sub.id,
+                notifyAdmin: firstDelivery ? notifyAdmin : undefined,
+            });
+        }
         return updated;
     } catch (e) {
         log('webpublish.subscription.status_update_failed', {
@@ -489,17 +661,22 @@ async function handleStripeInvoicePaid(event) {
         return null;
     }
 
-    const currentPaidUntilMs = Date.parse(site.paidUntil || '');
-    if (Number.isFinite(currentPaidUntilMs) && currentPaidUntilMs > Date.now() + RENEWAL_DUE_WINDOW_MS) {
-        log('webpublish.invoice_paid.first_year_cycle_ignored', {
-            siteId: site.id,
-            subscriptionId,
-            invoiceId: invoice.id || null,
-            paidUntil: site.paidUntil,
-        });
-        return site;
-    }
+    // TRW-04 — decided from `site` as fetched here, BEFORE any updateSite
+    // call below touches it, exactly like handleStripeSubscriptionEvent's own
+    // check: a real charge succeeding is the other of the two webhooks that
+    // can report a card-update recovery (the other is
+    // customer.subscription.updated above) — order between them is not
+    // guaranteed, so both check independently, both against the pre-webhook
+    // record, so an owner-cancelled site is never resurrected by this event.
+    const wasUnpublishedForNonPayment = _isRecoverableNonPaymentUnpublish(site);
 
+    // Wave12 — idempotency claims now run BEFORE the first-year/renewal
+    // branch below (they used to run after it, which was harmless only
+    // because that branch used to return early and write nothing — see next
+    // comment). A webhook redelivery — same event id, or the same invoice
+    // delivered under both invoice.paid and invoice.payment_succeeded — must
+    // still never double-write anything once that branch starts appending a
+    // ledger row of its own.
     const eventId = event && event.id;
     if (eventId && typeof registry.claimStripeEvent === 'function' && !registry.claimStripeEvent(eventId)) {
         log('webpublish.invoice_paid.already_handled', { eventId, siteId: site.id });
@@ -512,48 +689,98 @@ async function handleStripeInvoicePaid(event) {
         return registry.getSite(site.id);
     }
 
-    const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
-        ? site.paidUntil
-        : new Date().toISOString();
-    const paidUntil = registry.addMonthsIso(baseIso, 12);
-    registry.updateSite(site.id, { paid: true, paidUntil });
+    // A subscription_cycle invoice ALWAYS means Stripe actually collected
+    // money — under this product's 99-then-29 contract it fires at two
+    // different moments, and this is the one place in the whole codebase
+    // that has to tell them apart:
+    //   - day 7 of a brand-new subscription: the trial ends and Stripe bills
+    //     the first period. The site was already published and fully
+    //     entitled for a full year at checkout.session.completed (trial
+    //     start, handleStripePaid) — that entitlement must not be extended a
+    //     second time here, only CONFIRMED as paid.
+    //   - a later year's renewal: paidUntil is at/near expiry, so this DOES
+    //     extend entitlement (and republishes an expired site).
+    // RENEWAL_DUE_WINDOW_MS is the same signal that always told these apart;
+    // it used to gate the ENTIRE function (including the ledger write below)
+    // and silently dropped the day-7 charge — the real money-moved event —
+    // on the floor. It now only gates the entitlement-extension side effect.
+    const currentPaidUntilMs = Date.parse(site.paidUntil || '');
+    const isFirstPeriodCompletion = Number.isFinite(currentPaidUntilMs)
+        && currentPaidUntilMs > Date.now() + RENEWAL_DUE_WINDOW_MS;
 
-    const fresh = registry.getSite(site.id);
-    if (fresh && fresh.status === 'expired') {
-        const versions = registry.listVersions(site.id);
-        const last = versions[versions.length - 1];
-        const lastConfig = last && registry.getVersionConfig(site.id, last.versionId);
-        if (!lastConfig) {
-            log('webpublish.invoice_paid.no_version_for_reactivation', { siteId: site.id }, 'error');
-            registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
-        } else {
-            try {
-                const result = await module.exports.publishSite({
-                    site: { ...fresh, paid: true },
-                    config: lastConfig,
-                    images: [],
-                    siteDirAlreadyBuilt: false,
-                });
-                registry.updateSite(site.id, { status: 'live', url: result.url, paid: true, paidUntil });
-                log('webpublish.invoice_paid.reactivated', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, url: result.url });
-            } catch (e) {
-                log('webpublish.invoice_paid.reactivate_failed', { siteId: site.id, err: e.message }, 'error');
-                registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
-            }
+    let paidUntil = site.paidUntil || null;
+
+    if (isFirstPeriodCompletion) {
+        log('webpublish.invoice_paid.first_year_charge_confirmed', {
+            siteId: site.id,
+            subscriptionId,
+            invoiceId: invoice.id || null,
+            paidUntil: site.paidUntil,
+        });
+        // TRW-04 — a first-time trial site can fail its day-7 charge, go
+        // through dunning, and reach terminal 'unpaid' WITHOUT paidUntil ever
+        // changing (it was only ever extended optimistically at trial start,
+        // 12 months out — see handleStripePaid) — so this branch, not just
+        // the renewal branch below, is exactly where that site's real
+        // recovery charge lands. paidUntil is correct already; only status/
+        // url/dunning fields need fixing.
+        if (wasUnpublishedForNonPayment) {
+            await _reactivateFromNonPaymentUnpublish(site, { subscriptionId });
         }
+    } else {
+        const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
+            ? site.paidUntil
+            : new Date().toISOString();
+        paidUntil = registry.addMonthsIso(baseIso, 12);
+        registry.updateSite(site.id, { paid: true, paidUntil });
+
+        const fresh = registry.getSite(site.id);
+        if (fresh && fresh.status === 'expired') {
+            const versions = registry.listVersions(site.id);
+            const last = versions[versions.length - 1];
+            const lastConfig = last && registry.getVersionConfig(site.id, last.versionId);
+            if (!lastConfig) {
+                log('webpublish.invoice_paid.no_version_for_reactivation', { siteId: site.id }, 'error');
+                registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
+            } else {
+                try {
+                    const result = await module.exports.publishSite({
+                        site: { ...fresh, paid: true },
+                        config: lastConfig,
+                        images: [],
+                        siteDirAlreadyBuilt: false,
+                    });
+                    registry.updateSite(site.id, { status: 'live', url: result.url, paid: true, paidUntil });
+                    log('webpublish.invoice_paid.reactivated', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, url: result.url });
+                } catch (e) {
+                    log('webpublish.invoice_paid.reactivate_failed', { siteId: site.id, err: e.message }, 'error');
+                    registry.updateSite(site.id, { status: 'needs-retry', paid: true, paidUntil });
+                }
+            }
+        } else if (wasUnpublishedForNonPayment) {
+            // TRW-04 — a later-year renewal charge succeeding after the
+            // subscription had reached terminal 'unpaid'/'incomplete_expired'
+            // (paidUntil already at/near expiry, so this took the renewal
+            // branch, not the isFirstPeriodCompletion one above).
+            await _reactivateFromNonPaymentUnpublish(site, { subscriptionId });
+        }
+        log('webpublish.invoice_paid.renewed', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, paidUntil });
     }
 
-    // Wave7 — invoice history: this is the ONE place a real renewal invoice's
-    // own Stripe id/hosted URL/PDF link ever reaches this codebase (a first-
-    // year subscription_create invoice is deliberately ignored above; that
-    // year's record is written by handleStripePaid instead). Best-effort —
-    // never let a ledger write turn a successful renewal into a failure.
+    // Wave7/Wave12 — invoice history: this is the ONE place a real charge's
+    // own Stripe id/hosted URL/PDF link ever reaches this codebase, for
+    // BOTH moments above — the day-7 first-period charge (a first-year
+    // subscription_create invoice is deliberately ignored above; the *trial
+    // start* itself was already recorded, unpaid, by handleStripePaid) and
+    // every later year's renewal. Best-effort — never let a ledger write
+    // turn a successful charge into a failure.
     try {
         ledger.append({
             event: 'invoice',
+            status: 'paid',
             siteId: site.id,
             subscriptionId,
-            kind: 'renewal',
+            kind: isFirstPeriodCompletion ? 'publish' : 'renewal',
             invoiceId: invoice.id || null,
             amountCents: invoice.amount_paid != null ? invoice.amount_paid : null,
             currency: invoice.currency || null,
@@ -562,7 +789,6 @@ async function handleStripeInvoicePaid(event) {
         });
     } catch (_) {}
 
-    log('webpublish.invoice_paid.renewed', { siteId: site.id, subscriptionId, invoiceId: invoice.id || null, paidUntil });
     return registry.getSite(site.id);
 }
 
@@ -1032,12 +1258,50 @@ function getDunningState(site) {
 }
 
 /**
- * Wave7 — invoice history for the owner dashboard (an owner paying yearly
- * previously had no way to see or download past invoices). Reads the
- * durable ledger 'invoice' entries this module appends on every successful
- * charge — handleStripePaid (first year, both HIDOOK_TEST_PAY and real
- * Stripe) and handleStripeInvoicePaid (real-Stripe renewals) — so this is
- * fully provable under HIDOOK_TEST_PAY without any real Stripe credentials.
+ * Wave12 — read-time correction for 'invoice' ledger rows written before
+ * this wave, which recorded a trial start (checkout.session.completed with
+ * payment_status=no_payment_required — $0 moved) with the exact same shape
+ * as a real charge, and carry no `status` field at all to say which one they
+ * were. Non-destructive by design (the append-only ledger file itself is
+ * never rewritten): this only affects what a reader sees.
+ *
+ * The correction is not a guess — it follows directly from how a checkout is
+ * ever created (bot/payments.js#createCheckout / bot/server.js#handleSiteCheckout):
+ * a 'renewal'-kind checkout always charges renewalCents immediately (trialDays
+ * is 0 whenever firstPeriodCents === renewalCents, which is exactly the
+ * renewal-kind amount) — a legacy renewal row was always real money. Every
+ * other kind ('publish' / first-time / reactivation) always uses the 7-day
+ * card trial (PRICE_CENTS !== RENEWAL_CENTS in bot/pricing.js, unconditionally)
+ * — a legacy non-renewal row could only ever have been a no_payment_required
+ * trial start, never an immediate real charge, and must not keep displaying
+ * as paid.
+ *
+ * @param {object} row  a raw ledger record with event === 'invoice'
+ * @returns {string} 'paid' | 'trial_started'
+ */
+function _resolveLegacyInvoiceStatus(row) {
+    if (row.status) return row.status; // written under this wave or later — trust it
+    return row.kind === 'renewal' ? 'paid' : 'trial_started';
+}
+
+/**
+ * Wave7/Wave12 — invoice + billing history for the owner dashboard (an owner
+ * paying yearly previously had no way to see or download past invoices, and
+ * — the Wave12 fix — a trial start used to display exactly like a real
+ * charge). Reads two durable ledger event kinds, both appended by this
+ * module and both scoped to this one site:
+ *   - 'invoice' — a scheduled-but-unpaid trial start (handleStripePaid,
+ *     payment_status=no_payment_required), a real charge at checkout
+ *     (handleStripePaid, payment_status=paid — always true for a renewal
+ *     checkout), or a real day-7/renewal charge confirmed by Stripe
+ *     (handleStripeInvoicePaid). `_resolveLegacyInvoiceStatus` normalizes
+ *     rows written before this wave, which never recorded `status` at all.
+ *   - 'payment_failed' — a declined charge attempt (handleStripeInvoicePaymentFailed),
+ *     surfaced here too so a customer looking at "Facturi" sees the failed
+ *     attempt in context rather than only in the separate dunning banner.
+ * Every row keeps its original ledger fields; only `status` is ever added or
+ * normalized here — nothing is invented and nothing on disk is rewritten.
+ * Fully provable under HIDOOK_TEST_PAY without any real Stripe credentials.
  * Newest first.
  *
  * @param {object} site
@@ -1046,7 +1310,8 @@ function getDunningState(site) {
 function getInvoiceHistory(site) {
     if (!site || !site.id) return [];
     return ledger.read()
-        .filter((r) => r && r.event === 'invoice' && r.siteId === site.id)
+        .filter((r) => r && r.siteId === site.id && (r.event === 'invoice' || r.event === 'payment_failed'))
+        .map((r) => (r.event === 'invoice' ? { ...r, status: _resolveLegacyInvoiceStatus(r) } : { ...r, status: 'failed' }))
         .sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
 }
 
@@ -2149,22 +2414,51 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     // Persist Stripe customer + subscription so cancel webhooks can unpublish.
     _storeStripeBillingIds(siteId, cs);
 
-    // Wave7 — invoice history record. This checkout.session.completed IS the
-    // first-year charge (subscription_create billing_reason, which
-    // handleStripeInvoicePaid deliberately ignores — see its docblock) as
-    // well as the HIDOOK_TEST_PAY path for a renewal (offline flows never
-    // send a real invoice.paid event). Best-effort: never let a ledger write
-    // turn a confirmed payment into a failure.
+    // Wave7/Wave12 — invoice history record. `paymentStatus` (checked above)
+    // is the only signal at this call site that tells "money actually moved"
+    // apart from "card confirmed, Stripe deferred the charge to day 7":
+    //   - 'paid'                → a real charge happened at checkout (always
+    //     true for a renewal/reactivation checkout — bot/payments.js#createCheckout
+    //     never attaches a trial when firstPeriodCents === renewalCents,
+    //     which is exactly the renewal-kind amount — and true for the
+    //     HIDOOK_TEST_PAY offline pay-button simulation, see
+    //     bot/server.js#handleTestPayComplete). Record a paid invoice.
+    //   - 'no_payment_required' → the 7-day card trial just started. $0
+    //     moved. The real charge is a SEPARATE later event
+    //     (handleStripeInvoicePaid, billing_reason=subscription_cycle, day
+    //     7) — recording a paid invoice here is exactly the bug this wave
+    //     fixes (a customer reading "99€" the day they entered a card, a
+    //     week before Stripe ever collects it). Record a scheduled/unpaid
+    //     entry instead, so the dashboard "Facturi" list can show "trial
+    //     started, first charge upcoming on <date>" and only flip to "paid"
+    //     once handleStripeInvoicePaid's day-7 webhook actually fires.
+    // Best-effort either way: never let a ledger write turn a confirmed
+    // payment (or a confirmed non-payment) into a failure.
     try {
-        ledger.append({
-            event: 'invoice',
-            siteId,
-            orderId,
-            kind,
-            invoiceId: (typeof cs.invoice === 'string' ? cs.invoice : (cs.invoice && cs.invoice.id)) || null,
-            amountCents: order.amountCents != null ? order.amountCents : null,
-            currency: order.currency || null,
-        });
+        if (paymentStatus === 'no_payment_required') {
+            ledger.append({
+                event: 'invoice',
+                status: 'trial_started',
+                siteId,
+                orderId,
+                kind,
+                invoiceId: null,
+                amountCents: order.amountCents != null ? order.amountCents : null,
+                currency: order.currency || null,
+                scheduledChargeAt: _estimateTrialChargeIso(cs),
+            });
+        } else {
+            ledger.append({
+                event: 'invoice',
+                status: 'paid',
+                siteId,
+                orderId,
+                kind,
+                invoiceId: (typeof cs.invoice === 'string' ? cs.invoice : (cs.invoice && cs.invoice.id)) || null,
+                amountCents: order.amountCents != null ? order.amountCents : null,
+                currency: order.currency || null,
+            });
+        }
     } catch (_) {}
 
     // Wave7 VAT — best-effort record of what the customer supplied at
@@ -2314,6 +2608,37 @@ function _storeStripeBillingIds(siteId, cs) {
     } catch (e) {
         log('webpublish.stripe_paid.store_billing_ids_failed', { siteId, err: e.message }, 'warn');
     }
+}
+
+/**
+ * Wave12 — best-effort ISO date for "when Stripe will actually charge" at
+ * the moment a 7-day card trial starts, for the ledger's scheduled/unpaid
+ * invoice entry (see handleStripePaid above). Stripe's real trial_end is
+ * only present here when the webhook payload happens to carry an expanded
+ * subscription object with a numeric trial_end (uncommon — Checkout webhooks
+ * normally carry just the subscription id string); otherwise this falls back
+ * to now + SUBSCRIPTION_TRIAL_DAYS, the same 7-day figure
+ * bot/payments.js#createCheckout actually requests from Stripe and the same
+ * one builder/app.js#getTrialEndIso already estimates the trial end with on
+ * the dashboard — so the ledger and the dashboard never show two different
+ * "first charge" dates for the same trial.
+ * Never throws.
+ *
+ * @param {object} cs checkout.session
+ * @returns {string} ISO 8601 date string
+ */
+function _estimateTrialChargeIso(cs) {
+    try {
+        const sub = cs && cs.subscription;
+        const trialEndUnix = sub && typeof sub === 'object' ? sub.trial_end : null;
+        if (Number.isFinite(trialEndUnix)) {
+            return new Date(trialEndUnix * 1000).toISOString();
+        }
+    } catch (_) {}
+    const days = (payments && Number.isFinite(payments.SUBSCRIPTION_TRIAL_DAYS))
+        ? payments.SUBSCRIPTION_TRIAL_DAYS
+        : 7;
+    return new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 }
 
 /**

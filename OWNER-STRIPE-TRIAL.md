@@ -325,13 +325,34 @@ and is a second independent chance for the message to land.
 ## Invoice history ("Facturi")
 
 **Audit:** "an owner paying yearly has no way to see or download past
-invoices." `webpublish.getInvoiceHistory(site)` returns every charge
-(first-year and renewal, `HIDOOK_TEST_PAY` and real Stripe alike) from a
-durable ledger record this branch appends on every successful payment —
-provable without real Stripe credentials. Real-Stripe renewals also carry
-Stripe's own `hostedInvoiceUrl`/`invoicePdf` links. `GET
-/api/sites/:id/invoices` is wired and reachable from the dashboard as of the
-2026-09-06 re-audit fixes — this is no longer a pending wiring step.
+invoices." `webpublish.getInvoiceHistory(site)` returns every billing event
+for the site (trial start, real charge, renewal, and a failed attempt) from a
+durable ledger record this branch appends — provable without real Stripe
+credentials. Real-Stripe charges also carry Stripe's own
+`hostedInvoiceUrl`/`invoicePdf` links. `GET /api/sites/:id/invoices` is wired
+and reachable from the dashboard as of the 2026-09-06 re-audit fixes — this
+is no longer a pending wiring step.
+
+**Wave12 — invoices tell the truth about money.** Every row now carries a
+`status`: `'paid'` (Stripe actually collected money), `'trial_started'` (the
+7-day card trial just began — $0 charged; carries `scheduledChargeAt`, the
+estimated day-7 date) or `'failed'` (a declined attempt). A trial start
+(`checkout.session.completed` with `payment_status=no_payment_required`)
+used to write the exact same row shape as a real charge — a customer reading
+the dashboard the day they entered a card would see a paid-looking 99€ line
+a full week before Stripe ever collected anything. It is now recorded
+unpaid/scheduled, and the REAL day-7 charge — `invoice.paid` /
+`invoice.payment_succeeded` with `billing_reason=subscription_cycle`,
+handled by `handleStripeInvoicePaid` — writes its own separate `'paid'` row
+once Stripe actually confirms it (that handler used to silently drop this
+exact event whenever `paidUntil` was already far in the future, i.e. every
+single time, because trial start already grants the full year up front).
+Ledger rows written before this wave carry no `status` field at all;
+`getInvoiceHistory` corrects them non-destructively at read time rather than
+rewriting the append-only ledger file — a legacy `kind:'renewal'` row is
+always real money (a renewal checkout never carries a trial), every other
+legacy row could only ever have been a trial start (the product always uses
+the 7-day trial on first publish) and is now reported as such.
 
 ---
 

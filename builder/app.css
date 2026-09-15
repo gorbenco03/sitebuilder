@@ -2560,6 +2560,11 @@ body.details-drawer-open .editor-tpl-name {
 .invoice-item-main { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
 .invoice-date { font-size: .84rem; color: var(--text); font-weight: 600; }
 .invoice-kind { font-size: .76rem; color: var(--text-muted); }
+/* Wave 12 — must never read like the amount on the same line: a trial-start
+   or failed row's status line is what tells the owner money did NOT move. */
+.invoice-status { font-size: .74rem; color: var(--text-muted); }
+.invoice-item--trial_started .invoice-status,
+.invoice-item--failed .invoice-status { color: var(--warning, #b45309); font-weight: 600; }
 .invoice-amount {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -2567,6 +2572,9 @@ body.details-drawer-open .editor-tpl-name {
   font-size: .9rem;
   white-space: nowrap;
 }
+/* Scheduled-not-yet-charged / failed amounts are de-emphasized, never bold
+   like a confirmed paid figure — the visual weight itself must not lie. */
+.invoice-amount--pending { color: var(--text-muted); font-weight: 600; }
 .invoice-links { display: flex; gap: .4rem; flex-shrink: 0; }
 
 /* ============================================================
