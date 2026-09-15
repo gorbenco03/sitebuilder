@@ -122,6 +122,16 @@
         </svg>
         <span id="checklist-text">...</span>
       </button>
+      <!-- PLAN-FEEDBACK-2026-09-14 Suite B: explains the amber "still demo
+           content" highlight the canvas paints on untouched identity fields
+           (see builder/edit-overlay.js's .hb-demo-text). Hidden by default —
+           app.js's syncDemoLegend() reveals it only while at least one field
+           is still marked, and hides it again the moment the last one is
+           edited, so it never sits there as decoration once a draft is done. -->
+      <span id="demo-legend" class="demo-legend" hidden>
+        <span class="demo-legend-swatch" aria-hidden="true"></span>
+        <span>Text de exemplu — înlocuiește-l cu datele tale</span>
+      </span>
       <button id="btn-add-instagram" class="btn-topbar" type="button" aria-label="Adaugă Instagram">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
           <rect x="2" y="2" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.4"/>

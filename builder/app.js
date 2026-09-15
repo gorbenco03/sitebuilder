@@ -1035,21 +1035,41 @@ function getRequiredFields(schema) {
 // is always inlined as a data: URI (see isDemoPhotoSrc / the upload pipeline
 // above) — that is the one reliable signal that a real photo replaced it.
 
-/** Keys whose preset default reads as a real (fake) business — must be
- * genuinely changed, not merely present, to count as "done". Shared verbatim
- * across all five templates' schemas. */
-const IDENTITY_FIELD_KEYS = new Set([
-  'business.name',
-  'business.tagline',
-  'business.title',
-  'business.metaDescription',
-  'business.about',
-  'business.zone',
-  'business.profession',
-  'contact.phoneDisplay',
-  'contact.address',
-  'footer.address',
-]);
+/**
+ * PLAN-FEEDBACK-2026-09-14 Suite B: "identity" fields — the ones whose preset
+ * default reads as a real (fake) business, so a value still equal to the
+ * demo's own is provisional, not finished — used to be a single hand-kept
+ * Set of ~10 dot-paths here, shared verbatim across all five templates. Two
+ * problems with that: (a) the list was hand-picked once and drifted — it only
+ * ever covered a handful of top-level business/contact/footer fields, so a
+ * template's team member bios, service names+prices, menu dishes,
+ * credentials and the like (all just as much "this is still the template's
+ * fake content" as business.about) never got flagged, however different two
+ * templates' actual shape of "identity content" was; (b) nothing told the
+ * owner WHY a handful of fields were highlighted amber and neighbouring ones
+ * (e.g. the very next section heading) were not — see the owner report this
+ * wave fixes.
+ *
+ * Fix: the classification lives in schema.json now, as data, next to the
+ * field it describes — `"identity": true` on a scalar field means "this
+ * describes THIS business (name, contact detail, address, hours, about/
+ * story, tagline, team name/bio, service name/price, menu item, …) — flag it
+ * while it still equals the preset's own value". A `type:"list"` field
+ * additionally carries `"identityItemKeys"` (which of its itemShape's own
+ * keys are identity content — e.g. services' `label`/`blurb`, or `"."` for a
+ * bare-scalar list like local-service's certifications) and/or
+ * `"identityNestedListKeys"` for a list nested inside each item (e.g.
+ * product-menu/desserdirina's `menu.en[].items` dish list nested inside each
+ * category). See computeDemoTextPaths() below for how these three are walked
+ * into a flat list of data-hb-edit paths. Generic structural copy — section
+ * titles, button labels, legal/aria labels, the appointment booking config —
+ * carries none of these and is never flagged, however identical it stays to
+ * the demo's own wording (a real business legitimately keeps "Servicii" as
+ * its services heading forever).
+ */
+function isIdentityField(field) {
+  return !!field && field.identity === true;
+}
 
 /** Schema field types that render a photo — logo/hero (single image or CSS
  * background) and photo galleries. */
@@ -1107,8 +1127,8 @@ function isFieldComplete(field) {
 }
 
 /**
- * The HONEST completeness check the checklist pill uses (see the "Honest
- * completion" doc comment above IDENTITY_FIELD_KEYS): on top of
+ * The HONEST completeness check the checklist pill uses (see isIdentityField()'s
+ * doc comment): on top of
  * isFieldComplete()'s structural check, an identity field must also differ
  * from the demo preset's own value, and a photo field must be a genuine
  * owner upload. Never used to gate publishing — see isFieldComplete().
@@ -1122,7 +1142,7 @@ function isFieldGenuinelyMade(field) {
     return !isDemoPhotoValue(val);
   }
 
-  if (IDENTITY_FIELD_KEYS.has(field.key)) {
+  if (isIdentityField(field)) {
     const preset = getDemoPresetConfig();
     if (preset) {
       const demoVal = getPath(preset, field.key);
@@ -1135,26 +1155,93 @@ function isFieldGenuinelyMade(field) {
   return true;
 }
 
-/** Identity-key paths whose current value is STILL the demo preset's own
- * value — used to mark provisional/untouched content on the canvas (see
+/** True iff both are non-empty strings that are the same once trimmed —
+ * the one comparison every "still the demo's own value" check below makes. */
+function isSameDemoString(val, demoVal) {
+  return typeof val === 'string' && typeof demoVal === 'string' &&
+    val.trim() !== '' && val.trim() === demoVal.trim();
+}
+
+/**
+ * Identity paths whose current value is STILL the demo preset's own value —
+ * used to mark provisional/untouched content on the canvas (see
  * edit-overlay.js's {hb:'demoText'} handler). Unlike isFieldGenuinelyMade()
  * this ignores field.required — a not-required identity field left at its
  * demo value (e.g. business.zone) should still read as provisional on
- * canvas. */
+ * canvas.
+ *
+ * Walks THREE shapes of "identity", all schema-declared (see isIdentityField()
+ * doc comment above for why this replaced a hand-kept flat key list):
+ *   1. A scalar field with `identity:true` — path is just the field's own key.
+ *   2. A `type:"list"` field's `identityItemKeys` — one dot-path per existing
+ *      item per key, e.g. services' `identityItemKeys:["label","blurb"]`
+ *      yields "services.0.label", "services.0.blurb", "services.1.label", …
+ *      `"."` (only ever alone) means the item itself is the leaf — a
+ *      bare-scalar list like local-service's certifications — yielding
+ *      "certifications.0", "certifications.1", … directly.
+ *   3. A `type:"list"` field's `identityNestedListKeys` — an itemShape key
+ *      that is itself a nested list (declared `"list"` in itemShape, no
+ *      schema entry of its own — see computeListSchemaInfo()'s doc comment),
+ *      e.g. product-menu/desserdirina's `menu.en[].items` dish list nested
+ *      inside each category. Every shipped nested list is bare-scalar
+ *      strings today, so each entry's path is the parent item path + the
+ *      nested key + its own index, e.g. "menu.ro.0.items.2" — no itemShape
+ *      key segment (mirrors certifications' "." leaf convention one level
+ *      down).
+ *
+ * An item with no counterpart in the preset (the owner added it) simply
+ * never matches — getPath/array access on the shorter preset array returns
+ * undefined, isSameDemoString() requires a string, so it is correctly never
+ * flagged as "still demo".
+ */
 function computeDemoTextPaths() {
   const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
   const preset = getDemoPresetConfig();
   if (!schema || !preset || !draft.config) return [];
   const out = [];
+
   getAllSchemaFields(schema).forEach((f) => {
-    if (!IDENTITY_FIELD_KEYS.has(f.key)) return;
+    if (f.type === 'list') {
+      const list = getPath(draft.config, f.key);
+      const demoList = getPath(preset, f.key);
+      if (!Array.isArray(list) || !Array.isArray(demoList)) return;
+
+      const itemKeys = Array.isArray(f.identityItemKeys) ? f.identityItemKeys : [];
+      const nestedKeys = Array.isArray(f.identityNestedListKeys) ? f.identityNestedListKeys : [];
+      if (itemKeys.length === 0 && nestedKeys.length === 0) return;
+
+      list.forEach((item, i) => {
+        const demoItem = demoList[i];
+        if (demoItem === undefined) return; // owner's own new item — never demo
+
+        itemKeys.forEach((k) => {
+          const val = k === '.' ? item : item && item[k];
+          const demoVal = k === '.' ? demoItem : demoItem && demoItem[k];
+          if (isSameDemoString(val, demoVal)) {
+            out.push(k === '.' ? f.key + '.' + i : f.key + '.' + i + '.' + k);
+          }
+        });
+
+        nestedKeys.forEach((nk) => {
+          const nestedList = item && item[nk];
+          const demoNestedList = demoItem && demoItem[nk];
+          if (!Array.isArray(nestedList) || !Array.isArray(demoNestedList)) return;
+          nestedList.forEach((nestedVal, j) => {
+            if (isSameDemoString(nestedVal, demoNestedList[j])) {
+              out.push(f.key + '.' + i + '.' + nk + '.' + j);
+            }
+          });
+        });
+      });
+      return;
+    }
+
+    if (!isIdentityField(f)) return;
     const val = getPath(draft.config, f.key);
     const demoVal = getPath(preset, f.key);
-    if (typeof val === 'string' && typeof demoVal === 'string' &&
-        val.trim() !== '' && val.trim() === demoVal.trim()) {
-      out.push(f.key);
-    }
+    if (isSameDemoString(val, demoVal)) out.push(f.key);
   });
+
   return out;
 }
 
@@ -1330,6 +1417,33 @@ function updateChecklist() {
   // handler's own deferred-rerender-on-close, drawerNeedsRerenderOnClose) — a canvas
   // text edit's own mark drop is instant regardless (edit-overlay.js clears
   // it locally the moment the field is touched, no round trip needed).
+  //
+  // syncDemoLegend() below is a DIFFERENT story from the postMessage concern
+  // above: it only ever touches the PARENT chrome's own DOM (no iframe, no
+  // postMessage), so it carries none of the render-contention risk that kept
+  // sendDemoTextMarks() out of this hot path — safe, and wanted, here: the
+  // legend must track the demo-content count at the same cadence as the
+  // checklist pill right next to it.
+  syncDemoLegend();
+}
+
+/**
+ * PLAN-FEEDBACK-2026-09-14 Suite B, item 2: explain the amber highlight where
+ * the owner actually sees it — a compact legend near the checklist pill
+ * (#demo-legend in builder/index.html), shown only while at least one field
+ * is still carrying the .hb-demo-text/.hb-demo-photo marker, hidden the
+ * moment the last one is cleared. Driven by the exact same
+ * computeDemoTextPaths() the marks themselves are painted from, so the
+ * legend can never say "you still have demo content" while the canvas shows
+ * none, or vice versa. Photo badges are not folded into this count — they
+ * are unconditionally visible (a small permanent "demo" corner tag) and
+ * need no legend to be self-explanatory; the ambiguous one is the amber
+ * text wash, which is what the owner report was actually about. */
+function syncDemoLegend() {
+  const el = $('demo-legend');
+  if (!el) return;
+  const hasMarks = computeDemoTextPaths().length > 0;
+  el.hidden = !hasMarks;
 }
 
 // ---------------------------------------------------------------------------

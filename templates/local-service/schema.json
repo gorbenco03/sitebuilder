@@ -33,35 +33,40 @@
           "type": "text",
           "label": "Numele firmei sau al meseriei",
           "required": true,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "business.tagline",
           "type": "text",
           "label": "Slogan scurt (ex. Renovări interioare de calitate)",
           "required": true,
-          "maxLen": 80
+          "maxLen": 80,
+          "identity": true
         },
         {
           "key": "business.title",
           "type": "text",
           "label": "Titlu pagină pentru browser (bara de sus)",
           "required": true,
-          "maxLen": 70
+          "maxLen": 70,
+          "identity": true
         },
         {
           "key": "business.metaDescription",
           "type": "textarea",
           "label": "Descriere scurtă pentru Google (max. 160 caractere)",
           "required": true,
-          "maxLen": 160
+          "maxLen": 160,
+          "identity": true
         },
         {
           "key": "business.about",
           "type": "textarea",
           "label": "Despre afacere (2–4 propoziții despre ce faci)",
           "required": true,
-          "maxLen": 500
+          "maxLen": 500,
+          "identity": true
         },
         {
           "key": "business.lang",
@@ -77,21 +82,24 @@
           "type": "text",
           "label": "Ani de experiență (ex. 12)",
           "required": false,
-          "maxLen": 4
+          "maxLen": 4,
+          "identity": true
         },
         {
           "key": "business.projectsDone",
           "type": "text",
           "label": "Proiecte finalizate (ex. 240) — pe deschidere și la statistici",
           "required": false,
-          "maxLen": 10
+          "maxLen": 10,
+          "identity": true
         },
         {
           "key": "business.zone",
           "type": "text",
           "label": "Zona de lucru (ex. București și împrejurimi)",
           "required": false,
-          "maxLen": 100
+          "maxLen": 100,
+          "identity": true
         }
       ]
     },
@@ -401,7 +409,8 @@
           "itemShape": {
             "icon": "text",
             "label": "text"
-          }
+          },
+          "identityItemKeys": ["label"]
         }
       ]
     },
@@ -420,7 +429,8 @@
             "icon": "text",
             "title": "text",
             "text": "text"
-          }
+          },
+          "identityItemKeys": ["title", "text"]
         }
       ]
     },
@@ -446,7 +456,8 @@
             "title": "text",
             "blurb": "text",
             "photos": "photos"
-          }
+          },
+          "identityItemKeys": ["title", "blurb"]
         }
       ]
     },
@@ -461,7 +472,8 @@
           "required": false,
           "min": 0,
           "max": 8,
-          "itemShape": "text"
+          "itemShape": "text",
+          "identityItemKeys": ["."]
         }
       ]
     },
@@ -487,20 +499,23 @@
           "key": "contact.phone",
           "type": "phone",
           "label": "Telefon (format internațional, ex. +40 721 234 567)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.phoneDisplay",
           "type": "text",
           "label": "Telefon afișat pe site (ex. +40 721 234 567)",
           "required": false,
-          "maxLen": 24
+          "maxLen": 24,
+          "identity": true
         },
         {
           "key": "contact.whatsapp",
           "type": "phone",
           "label": "Număr WhatsApp fără + (ex. 40721234567)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.waMessage",
@@ -520,33 +535,38 @@
           "key": "contact.instagram.url",
           "type": "url",
           "label": "Instagram (secțiune contact)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.instagram.label",
           "type": "text",
           "label": "Etichetă Instagram (ex. @afacerea_ta)",
           "required": false,
-          "maxLen": 40
+          "maxLen": 40,
+          "identity": true
         },
         {
           "key": "contact.facebook.url",
           "type": "url",
           "label": "Link Facebook (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.facebook.label",
           "type": "text",
           "label": "Text link Facebook (ex. Afacerea ta)",
           "required": false,
-          "maxLen": 40
+          "maxLen": 40,
+          "identity": true
         },
         {
           "key": "contact.address",
           "type": "textarea",
           "label": "Adresă fizică (câte un rând pe linie)",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "contact.addressHref",
@@ -565,19 +585,22 @@
           "type": "text",
           "label": "Utilizator Instagram fără @ (ex. afacerea_ta)",
           "required": false,
-          "maxLen": 60
+          "maxLen": 60,
+          "identity": true
         },
         {
           "key": "instagram.url",
           "type": "url",
           "label": "Profil Instagram",
-          "required": false
+          "required": false,
+          "identity": true
         },
         {
           "key": "instagram.embedUrl",
           "type": "url",
           "label": "URL feed Instafidget (opțional)",
-          "required": false
+          "required": false,
+          "identity": true
         }
       ]
     },
@@ -590,7 +613,8 @@
           "type": "text",
           "label": "Adresă scurtă în subsol",
           "required": true,
-          "maxLen": 120
+          "maxLen": 120,
+          "identity": true
         },
         {
           "key": "footer.year",
@@ -604,7 +628,8 @@
           "type": "text",
           "label": "Notă subsol (ex. Calitate garantată.)",
           "required": false,
-          "maxLen": 80
+          "maxLen": 80,
+          "identity": true
         }
       ]
     }

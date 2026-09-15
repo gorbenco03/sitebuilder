@@ -941,6 +941,31 @@ body.details-drawer-open .editor-tpl-name {
 .checklist-indicator.checklist-warn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .checklist-indicator svg { flex-shrink: 0; }
 
+/* Demo-content legend (PLAN-FEEDBACK-2026-09-14 Suite B) — explains the amber
+   .hb-demo-text highlight painted on the canvas (see edit-overlay.js). Same
+   warning pair as the checklist pill (--warning on --warning-bg is 4.84:1,
+   see the --warning doc comment above), so the two amber cues in this bar
+   read as one visual language instead of two unrelated colours. Hidden by
+   default in the markup; app.js's syncDemoLegend() toggles [hidden] to match
+   whether any field is still carrying the marker. */
+.demo-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-light);
+  padding: 0 0.4rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.demo-legend-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--warning);
+  flex-shrink: 0;
+}
+
 /* ---------- Buttons ---------- */
 .btn-primary {
   display: inline-flex;
