@@ -204,6 +204,14 @@ function listPublicServices(db, customerId, siteId) {
     return {
         ok: true,
         timezone: settings.timezone,
+        // Owner-configurable booking-window horizon (audit #26 / engine.js
+        // assertBookingWindow) — null means the tenant never configured a
+        // cap, which engine.js treats as permissive/unlimited. Exposed here
+        // so the widget's month-grid calendar (owner request 2026-09-14)
+        // knows how far forward "next month" may page; when null the widget
+        // applies its own sensible default (see DEFAULT_MAX_ADVANCE_DAYS in
+        // public-booking-widget.js) rather than paging forever.
+        maxAdvanceDays: settings.max_advance_days,
         services,
     };
 }
@@ -234,9 +242,17 @@ function listPublicResources(db, customerId, siteId, { serviceId } = {}) {
     return { ok: true, resources: rows.map(publicResource) };
 }
 
+// Widget month-grid calendar (owner request 2026-09-14) fetches one whole
+// visible month per request — the longest civil month is 31 days, so the
+// public range cap must cover at least that in a single call. Kept modest
+// (not, say, a full year) to keep the public surface bounded, same intent
+// as the pre-existing 21-day cap this replaces.
+const MAX_SLOT_RANGE_DAYS = 31;
+
 /**
  * GET free slots for one tenant + service across a date range (inclusive).
- * Caps range to 21 days to keep the public surface bounded.
+ * Caps range to MAX_SLOT_RANGE_DAYS days (one calendar month) to keep the
+ * public surface bounded.
  */
 function listPublicSlots(db, customerId, siteId, {
     serviceId,
@@ -259,12 +275,12 @@ function listPublicSlots(db, customerId, siteId, {
     let end = toDateLocal;
     let cursor = fromDateLocal;
     let days = 0;
-    while (cursor <= end && days < 22) {
+    while (cursor <= end && days < MAX_SLOT_RANGE_DAYS + 1) {
         cursor = addDaysLocal(cursor, 1);
         days += 1;
     }
-    if (days > 21) {
-        end = addDaysLocal(fromDateLocal, 20);
+    if (days > MAX_SLOT_RANGE_DAYS) {
+        end = addDaysLocal(fromDateLocal, MAX_SLOT_RANGE_DAYS - 1);
     }
 
     const settings = engine.getSettings(db, customerId, siteId);
