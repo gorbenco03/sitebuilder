@@ -67,6 +67,13 @@
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>
     <!-- @endif -->
+    <!-- "Visible without JS" fallback (see sibling templates) — was missing
+         here, leaving .service-card at opacity:0 with no JS. Also
+         re-activated unconditionally inside every srcdoc preview by
+         scripts/build-builder.js. -->
+    <noscript><style>
+        .fade-in-section, .hero-content, .service-card { opacity: 1 !important; transform: none !important; }
+    </style></noscript>
 </head>
 <body>
     <!-- Hero Section -->

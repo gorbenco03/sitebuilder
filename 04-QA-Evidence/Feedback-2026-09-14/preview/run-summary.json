@@ -1,0 +1,352 @@
+[
+  {
+    "engine": "chromium",
+    "condition": "baseline",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "baseline",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "baseline",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "baseline",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "baseline",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr125",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr125",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr125",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr125",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr125",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr150",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr150",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr150",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr150",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "dpr150",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "reducedMotion",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "reducedMotion",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "reducedMotion",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "reducedMotion",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "reducedMotion",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "forcedColors",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "forcedColors",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "forcedColors",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "forcedColors",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "forcedColors",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "shortViewport",
+    "templateId": "product-menu",
+    "bodyChars": 1412,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "shortViewport",
+    "templateId": "local-service",
+    "bodyChars": 3206,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "shortViewport",
+    "templateId": "portfolio",
+    "bodyChars": 2618,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "shortViewport",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "shortViewport",
+    "templateId": "desserdirina",
+    "bodyChars": 1318,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "windowsUA",
+    "templateId": "product-menu",
+    "bodyChars": 1423,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "windowsUA",
+    "templateId": "local-service",
+    "bodyChars": 3217,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "windowsUA",
+    "templateId": "portfolio",
+    "bodyChars": 2629,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "windowsUA",
+    "templateId": "professionals",
+    "bodyChars": 3496,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 0,
+    "pageErrors": 0
+  },
+  {
+    "engine": "chromium",
+    "condition": "windowsUA",
+    "templateId": "desserdirina",
+    "bodyChars": 1328,
+    "stuckCount": 0,
+    "consoleErrors": 0,
+    "knownFontIssueCount": 20,
+    "pageErrors": 0
+  }
+]
