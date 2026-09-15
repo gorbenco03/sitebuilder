@@ -47,7 +47,15 @@
    scroll" class of issue — it only clips the X axis (no effect on the
    normal vertical scroll or the .pf-chrome sticky header, verified against
    the existing lightbox/mobile-nav/sticky-header oracles). */
-html { scroll-behavior: smooth; overflow-x: hidden; }
+/* scroll-padding-top: every in-page anchor (#gallery-heading, #services-heading,
+   #appointment, #contact, …) scrolls to the top of the SCROLLING BOX, but
+   .pf-chrome is a sticky 61px header sitting on top of that — without this,
+   a scrolled-to heading lands 61px under the header, effectively cut off
+   (measured live: bot/test/suite7-template-contract.test.js's in-page-anchor
+   check). scroll-padding-top pushes every anchor destination down by the
+   header's own height (+ a little breathing room) so the target heading is
+   fully visible below it, for any anchor, not just one hand-picked target. */
+html { scroll-behavior: smooth; overflow-x: hidden; scroll-padding-top: 72px; }
 /* overflow-x:hidden must be repeated on body too: html's overflow-x alone
    governs the VIEWPORT's own scrollbar, but body remains its own box that
    can still be dragged/scrolled sideways within that viewport if it (not
@@ -155,7 +163,11 @@ ul { list-style: none; }
     /* No white-space:nowrap: a long custom CTA label (business-editable) must be
        able to wrap onto a second line at very narrow widths (200% zoom on a
        390px phone is ~195px) instead of forcing the pill past the viewport. */
-    background: var(--cta); color: #fff; border-radius: var(--r-pill);
+    /* --cta-ink/--cta-bg are computed pre-paint from the real accent's
+       luminance (see template.html) — a fixed white fails WCAG AA on several
+       builder presets (Portocaliu measured 3.56:1). Fallback (no-JS) keeps
+       the old white-on-accent look. */
+    background: var(--cta-bg, var(--cta)); color: var(--cta-ink, #fff); border-radius: var(--r-pill);
     padding: 10px 18px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
@@ -274,7 +286,8 @@ ul { list-style: none; }
 .pf-hero__cta, .hero-cta {
     display: inline-flex; align-items: center; min-height: 44px;
     margin-top: 1.35rem; padding: 10px 20px;
-    background: var(--cta); color: #fff; border: 0; border-radius: var(--r-pill);
+    /* See .pf-chrome__cta above — same computed --cta-ink/--cta-bg pair. */
+    background: var(--cta-bg, var(--cta)); color: var(--cta-ink, #fff); border: 0; border-radius: var(--r-pill);
     font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
     transition: transform 140ms var(--ease-out);
 }
@@ -431,7 +444,11 @@ ul { list-style: none; }
 .pf-about__rule {
     display: flex; align-items: center; gap: 0.75rem;
     font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: rgba(255,255,255,0.4);
+    /* 0.4 measured 3.73:1 against .pf-about's --void background (MINOR,
+       bot/test/suite7-template-contract.test.js) — under the 4.5:1 floor for
+       this 12px/400 caption ("01 — Salon/Studio"). 0.56 clears 4.5:1 with
+       margin (5.94:1 measured) while staying visibly the same faint label. */
+    color: rgba(255,255,255,0.56);
 }
 .pf-about__slash {
     flex: 1; height: 1px; background: rgba(255,255,255,0.18); max-width: 6rem;
@@ -603,7 +620,12 @@ ul { list-style: none; }
     padding: clamp(3rem, 8vw, 5rem) 0;
     background: var(--void); color: var(--snow);
 }
-.pf-appt .pf-kicker { color: rgba(255,255,255,0.48); }
+/* 0.48 measured 4.37:1 for the "Program" (schedule) eyebrow, which sits
+   inside .pf-appt__panel's translucent overlay (rgba(255,255,255,0.06) over
+   --void — a slightly lighter backdrop than the plain section) — MINOR,
+   bot/test/suite7-template-contract.test.js. 0.58 clears 4.5:1 with margin
+   (5.64:1 measured against the panel) for both kickers this rule reaches. */
+.pf-appt .pf-kicker { color: rgba(255,255,255,0.58); }
 .pf-appt .pf-display { color: var(--snow); }
 .pf-appt .pf-copy { color: rgba(255,255,255,0.72); }
 .pf-appt__grid {
@@ -641,7 +663,8 @@ ul { list-style: none; }
 .pf-appt__wa {
     display: inline-flex; width: 100%; justify-content: center;
     align-items: center; min-height: 44px;
-    background: var(--cta); color: #fff; border-radius: var(--r-pill);
+    /* Same computed --cta-ink/--cta-bg as .pf-chrome__cta/.hero-cta above. */
+    background: var(--cta-bg, var(--cta)); color: var(--cta-ink, #fff); border-radius: var(--r-pill);
     padding: 12px 16px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.25rem;
 }

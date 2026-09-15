@@ -156,10 +156,25 @@ function deriveAccent(primaryHex) {
     };
 }
 
+// ---------------------------------------------------------------------------
+// Every accent preset the builder's colour-picker popover actually offers —
+// read out of builder/app.js's own COLOR_PRESETS array (not copied), so a
+// preset added/removed there is picked up here automatically. The owner can
+// also type an arbitrary custom hex; that is covered separately by
+// suite12-accent-contrast-sweep.test.js's hue sweep, not enumerated here.
+// ---------------------------------------------------------------------------
+function loadColorPresets() {
+    const src = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
+    const m = /const COLOR_PRESETS\s*=\s*(\[[\s\S]*?\]);/.exec(src);
+    if (!m) throw new Error('Could not find COLOR_PRESETS in builder/app.js — suite7 reads the live list, it does not hardcode one.');
+    // eslint-disable-next-line no-new-func — trusted, same-repo source file, a plain array literal.
+    return new Function('return (' + m[1] + ');')();
+}
+const COLOR_PRESETS = loadColorPresets();
+
 const THEMES = [
     { name: 'preset (default)', accent: null },
-    { name: 'Portocaliu (paletă)', accent: deriveAccent('#EA580C') },
-    { name: 'Roz (paletă)', accent: deriveAccent('#DB2777') },
+    ...COLOR_PRESETS.map((p) => ({ name: `${p.label} (paletă)`, accent: deriveAccent(p.hex) })),
 ];
 
 const TEMPLATES = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
@@ -235,16 +250,19 @@ const TEXT_CASES = {
     'portfolio': [
         '.pf-kicker', '.pf-display', '.pf-hero__word', '.pf-hero__tag',
         '.pf-copy', '.pf-price__name', '.pf-price__val', '.pf-chip__price',
-        '.hero-cta', '.hb-built-by', '.hb-built-by a', '.hb-legal-links a',
+        '.hero-cta', '.pf-chrome__cta', '.pf-appt__wa', '.pf-about__num', '.pf-about__cap',
+        '.hb-built-by', '.hb-built-by a', '.hb-legal-links a',
     ],
     'professionals': [
         '.pr-kicker', '.pr-display', '.pr-lede', '.pr-copy',
         '.pr-cred__title', '.pr-svc__title', '.pr-steps__title', '.pr-type__meta',
-        '.pr-foot__name', '.hb-built-by', '.hb-built-by a', '.hb-legal-links a',
+        '.pr-foot__name', '.pr-btn--primary', '.pr-btn--ghost',
+        '.hb-built-by', '.hb-built-by a', '.hb-legal-links a',
     ],
     'desserdirina': [
         '.hero-wordmark', '.hero-tagline', '.section-eyebrow', '.section-title',
         '.services-title', '.category-title', '.footer-address',
+        '.hero-cta', '.instagram-follow-btn', '.menu-lang-btn', '.contact-item',
         '.hb-built-by', '.hb-built-by a', '.hb-legal-links a',
     ],
 };
@@ -328,12 +346,28 @@ async function prepareAndHideInk(page, textSelectors) {
                 const fontPx = parseFloat(cs.fontSize);
                 let weight = parseInt(cs.fontWeight, 10);
                 if (Number.isNaN(weight)) weight = cs.fontWeight === 'bold' ? 700 : 400;
+                // Snapshot the REAL ink/fill as plain strings before hiding —
+                // getComputedStyle() returns a live CSSStyleDeclaration, so
+                // reading `cs.color` (or `cs.backgroundColor`) after the
+                // classList.add below would usually read back the just-applied
+                // `color:transparent!important` instead of the original ink,
+                // silently making every such element look like it had no
+                // visible text at all (fg.a===0 skips it below). Confirmed live:
+                // on an ordinary own-fill pill button (portfolio's
+                // .pf-chrome__cta / .hero-cta) this returned rgba(0,0,0,0) post
+                // -hide where pre-hide read the real rgb(255,255,255), and it
+                // silently dropped the element from every check — the exact
+                // "nav CTA / hero CTA … 3.56:1" defect this contract exists to
+                // catch. Reading the strings out NOW, before the mutation,
+                // fixes that for every selector, not just the ones this task
+                // happened to add.
+                const realColor = cs.color, realBg = cs.backgroundColor;
                 el.classList.add('hb-s8a-hide-ink');
                 prepared.push({
                     sel, idx, text: text.slice(0, 40),
                     rect: { left: r.left, top: r.top, width: r.width, height: r.height },
                     tr: { left: tr.left, top: tr.top, width: tr.width, height: tr.height },
-                    fg: cs.color, bgOwn: cs.backgroundColor,
+                    fg: realColor, bgOwn: realBg,
                     fontPx, weight,
                 });
             });

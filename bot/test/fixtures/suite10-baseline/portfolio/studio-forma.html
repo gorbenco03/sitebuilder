@@ -31,6 +31,60 @@
             --color-cream:         #f4f1ea;
         }
     </style>
+    <script>
+    // CTA auto-contrast (pre-paint, same reasoning as product-menu's
+    // identical script): fixed white on #1c1c1c fails WCAG AA on
+    // ~half the builder's presets (Portocaliu 3.56:1 — suite7-template-
+    // contract.test.js). Picks whichever of near-black/near-white (this
+    // template's --void/--snow) contrasts best, nudging the fill toward it
+    // if even that falls short of 4.5:1. See --cta-ink/--cta-bg in styles.css.
+    (function () {
+        try {
+            var hex = "#1c1c1c";
+            var m = /^#([0-9a-f]{6})$/i.exec(hex);
+            if (!m) return;
+            var n = parseInt(m[1], 16), rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function hexToRgb(h) {
+                var v = parseInt(h.replace('#', ''), 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+            var VOID_HEX = '#1c2228', SNOW_HEX = '#fbfcfd';
+            var VOID_L = relLum(hexToRgb(VOID_HEX)), SNOW_L = relLum(hexToRgb(SNOW_HEX));
+            var lp = relLum(rgb);
+            var rVoid = ratio(lp, VOID_L), rSnow = ratio(lp, SNOW_L);
+            var useSnow = rSnow > rVoid;
+            var best = useSnow ? rSnow : rVoid;
+            var bg = rgb.slice();
+            if (best < 4.55) { // 4.55: absorbs the 0.02 mixing step's rounding gap
+                var target = useSnow ? [0, 0, 0] : [255, 255, 255];
+                for (var t = 0.02; t <= 0.7 && best < 4.55; t += 0.02) {
+                    var mixed = rgb.map(function (c, i) { return c + (target[i] - c) * t; });
+                    var r2 = ratio(relLum(mixed), useSnow ? SNOW_L : VOID_L);
+                    if (r2 > best) { best = r2; bg = mixed; }
+                }
+            }
+            function toHex(c) {
+                return '#' + c.map(function (v) {
+                    return ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2);
+                }).join('');
+            }
+            var root = document.documentElement.style;
+            root.setProperty('--cta-ink', useSnow ? SNOW_HEX : VOID_HEX);
+            root.setProperty('--cta-bg', toHex(bg));
+        } catch (e) {}
+    })();
+    </script>
     
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"BeautySalon","name":"Studio Forma","url":"https://studioforma.example","telephone":"+40724555046","address":{"@type":"PostalAddress","streetAddress":"Strada Polonă 24","addressLocality":"București","postalCode":"010493","addressCountry":"RO"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"19:00"}]}</script>
     

@@ -21,14 +21,20 @@
     --accent: var(--color-primary, #ff4d00);
     /* Same reasoning as .ls-meter__n / .ls-punch__n::before below, applied the
        other direction: an owner can set the accent to any of the colour
-       popover's presets (checked against all 6 — Indigo/Turcoaz/Violet/
-       Portocaliu/Roz/Verde), and several of those (Turcoaz 3.74:1, Portocaliu
-       3.56:1, Verde 3.30:1 white-on-fill; same numbers when used as text on
-       white) sit under the 4.5:1 floor a plain var(--cta) fill/text can't
-       guarantee. Mixed 80/20 toward black, the worst of the six clears
-       4.88:1 while the accent stays visibly the owner's chosen hue. Used
-       wherever --cta is either a text colour on a light card or a solid fill
-       behind white text (bot/test/suite7-template-contract.test.js). */
+       popover's presets, or type an arbitrary custom hex, and several of
+       those (e.g. Portocaliu measured 3.56:1 white-on-fill; same number when
+       used as text on white) sit under the 4.5:1 floor a plain var(--cta)
+       fill/text can't guarantee. Fallback only (no-JS / unrecognised
+       colour): the pre-paint script in template.html overwrites this with
+       the accent darkened by just enough to clear 4.5:1 against white,
+       computed from the real colour (not just these 6 presets) on every
+       real page load — see that script's comment and
+       bot/test/suite12-accent-contrast-sweep.test.js. This static 80/20 mix
+       covers the 6 presets (worst case 4.88:1) but not an arbitrary pale
+       custom colour, which is exactly what the pre-paint script is for.
+       Used wherever --cta is either a text colour on a light card or a
+       solid fill behind white text
+       (bot/test/suite7-template-contract.test.js). */
     --cta-safe: color-mix(in srgb, var(--cta) 80%, black);
     --link: #0b3d91;
     --void: #0f1720;
@@ -40,7 +46,10 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+/* scroll-padding-top: .ls-util is a sticky 48px header; without this, an
+   in-page anchor lands with its heading tucked under it (measured live:
+   bot/test/suite7-template-contract.test.js's in-page-anchor check). */
+html { scroll-behavior: smooth; scroll-padding-top: 60px; }
 body.ls-body {
     font-family: var(--font);
     background: var(--paper);

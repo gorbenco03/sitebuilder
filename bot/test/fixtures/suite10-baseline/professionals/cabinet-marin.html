@@ -76,6 +76,96 @@
         } catch (e) {}
     })();
     </script>
+    <script>
+    // CTA auto-contrast (pre-paint). 3 spots pair owner-adjustable colour
+    // with fixed text, measured under 4.5:1 on real presets (see
+    // suite7-template-contract.test.js): .pr-btn--primary white-on-accent
+    // (3.56:1); the book section's primary btn --ink-on-brass, both derived
+    // from the same hue (2.16:1); .pr-btn--ghost's --ink on .pr-sec--alt
+    // (4.28:1). Same pick-then-nudge algorithm as product-menu/portfolio,
+    // for --cta-ink/bg (vs accent), --cta-book-ink/bg (vs brass), and
+    // --pr-ink-safe (darken primaryDark vs white). See styles.css.
+    (function () {
+        try {
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function hexToRgb(h) {
+                var m = /^#([0-9a-f]{6})$/i.exec(h);
+                if (!m) return null;
+                var v = parseInt(m[1], 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+            function toHex(c) {
+                return '#' + c.map(function (v) {
+                    return ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2);
+                }).join('');
+            }
+            var INK_HEX = '#14120F', PAPER_HEX = '#F3EFE8';
+            var INK_L = relLum(hexToRgb(INK_HEX)), PAPER_L = relLum(hexToRgb(PAPER_HEX));
+
+            // Best of near-black/near-white vs `rgb`; nudge bg if still short.
+            function pickInkAndBg(rgb) {
+                var lp = relLum(rgb);
+                var rInk = ratio(lp, INK_L), rPaper = ratio(lp, PAPER_L);
+                var usePaper = rPaper > rInk;
+                var best = usePaper ? rPaper : rInk;
+                var bg = rgb.slice();
+                // 4.55 not 4.5: absorbs the 0.02 mixing step's rounding gap.
+                if (best < 4.55) {
+                    var target = usePaper ? [0, 0, 0] : [255, 255, 255];
+                    for (var t = 0.02; t <= 0.7 && best < 4.55; t += 0.02) {
+                        var mixed = rgb.map(function (c, i) { return c + (target[i] - c) * t; });
+                        var r2 = ratio(relLum(mixed), usePaper ? PAPER_L : INK_L);
+                        if (r2 > best) { best = r2; bg = mixed; }
+                    }
+                }
+                return { ink: usePaper ? PAPER_HEX : INK_HEX, bg: toHex(bg) };
+            }
+
+            var root = document.documentElement.style;
+
+            var accentRgb = hexToRgb("#9A4030");
+            if (accentRgb) {
+                var primary = pickInkAndBg(accentRgb);
+                root.setProperty('--cta-ink', primary.ink);
+                root.setProperty('--cta-bg', primary.bg);
+            }
+
+            var brassRgb = hexToRgb("#C4A574");
+            if (brassRgb) {
+                var book = pickInkAndBg(brassRgb);
+                root.setProperty('--cta-book-ink', book.ink);
+                root.setProperty('--cta-book-bg', book.bg);
+            }
+
+            var darkRgb = hexToRgb("#14120F");
+            if (darkRgb) {
+                // 0.65 not 1.0 (white): sits inside .pr-hero__card, a
+                // translucent cream panel over the hero photo, measured as
+                // dark as relLum ~0.74 — white understated the need.
+                var TARGET_L = 0.65;
+                var lp2 = relLum(darkRgb);
+                var best2 = ratio(lp2, TARGET_L);
+                var safe = darkRgb.slice();
+                for (var t2 = 0.02; t2 <= 0.98 && best2 < 4.55; t2 += 0.02) {
+                    var mixed2 = darkRgb.map(function (c) { return c * (1 - t2); });
+                    var r3 = ratio(relLum(mixed2), TARGET_L);
+                    if (r3 > best2) { best2 = r3; safe = mixed2; }
+                }
+                root.setProperty('--pr-ink-safe', toHex(safe));
+            }
+        } catch (e) {}
+    })();
+    </script>
     
     <script type="application/ld+json">{"@context": "https://schema.org", "@type": "ProfessionalService", "name": "Cabinet Juridic Ionescu", "description": "Consultanță juridică pentru contracte, organizarea companiilor și negocieri.", "telephone": "+40721555014", "email": "contact@cabinetjuridicionescu.ro", "address": {"@type": "PostalAddress", "streetAddress": "Strada Academiei 12, etajul 4", "addressLocality": "București", "postalCode": "010014", "addressCountry": "RO"}, "areaServed": {"@type": "City", "name": "București"}, "openingHoursSpecification": [{"@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "opens": "09:00", "closes": "18:00"}]}</script>
     

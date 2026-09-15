@@ -84,9 +84,13 @@
             var useSnow = rSnow > rVoid;
             var best = useSnow ? rSnow : rVoid;
             var bg = rgb.slice();
-            if (best < 4.5) {
+            // Target 4.55, not 4.5: the 0.02 mixing step can otherwise land
+            // one increment short of the real 4.5 floor (see
+            // bot/test/suite12-accent-contrast-sweep.test.js) — a rounding
+            // gap, not a colour-formula defect.
+            if (best < 4.55) {
                 var target = useSnow ? [0, 0, 0] : [255, 255, 255];
-                for (var t = 0.02; t <= 0.7 && best < 4.5; t += 0.02) {
+                for (var t = 0.02; t <= 0.7 && best < 4.55; t += 0.02) {
                     var mixed = rgb.map(function (c, i) { return c + (target[i] - c) * t; });
                     var r2 = ratio(relLum(mixed), useSnow ? SNOW_L : VOID_L);
                     if (r2 > best) { best = r2; bg = mixed; }
