@@ -47,18 +47,46 @@ function statusLabelRo(bookingStatus) {
     }
 }
 
+/** CAL-EMAIL: owner-facing booking-event template keys (v6). */
+const OWNER_EVENT_KEYS = Object.freeze([
+    'booking_owner_new_confirmed',
+    'booking_owner_new_pending',
+    'booking_owner_slot_taken',
+    'booking_owner_cancelled_by_visitor',
+    'booking_owner_rescheduled_by_visitor',
+]);
+
+/**
+ * Shared "who/what/when" block for every owner-facing booking-event email —
+ * client contact first (that's what the owner needs in order to act), then
+ * service/staff/time. `visitorNote` is the visitor's free-text note, if any.
+ */
+function ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) {
+    return (
+        'Client: ' + name +
+        (visitorEmail ? ' (' + visitorEmail + ')' : '') +
+        (visitorPhone ? ' · ' + visitorPhone : '') + '.\n' +
+        'Serviciu: ' + service + '.\n' +
+        (resourceName ? 'Cu: ' + resourceName + '.\n' : '') +
+        'Data și ora (ora cabinetului): ' + when + '.\n' +
+        (visitorNote ? 'Mesaj client: ' + visitorNote + '.\n' : '')
+    );
+}
+
 /**
  * @param {{
  *   templateKey: string,
  *   visitorName: string,
  *   visitorEmail?: string,
  *   visitorPhone?: string|null,
+ *   visitorNote?: string|null,
  *   serviceName: string,
  *   resourceName?: string|null,
  *   startOwnerLocal: string,
  *   startUtc: string,
  *   bookingStatus: string,
  *   manageUrl?: string|null,
+ *   ownerBookingUrl?: string|null,
  *   siteLabel?: string,
  * }} p
  */
@@ -73,6 +101,7 @@ function render(p) {
     const name = String(p.visitorName || 'Client').trim() || 'Client';
     const visitorEmail = String(p.visitorEmail || '').trim();
     const visitorPhone = p.visitorPhone != null ? String(p.visitorPhone).trim() : '';
+    const visitorNote = p.visitorNote != null ? String(p.visitorNote).trim() : '';
     const service = String(p.serviceName || 'Serviciu').trim() || 'Serviciu';
     // Wave 7 (audit #25): who the appointment is with. Empty string for a
     // legacy single-resource tenant or a still-unresolved booking — callers
@@ -87,10 +116,12 @@ function render(p) {
     const label = statusLabelRo(status);
     const site = String(p.siteLabel || 'cabinet').trim() || 'cabinet';
     const manageUrl = p.manageUrl ? String(p.manageUrl) : null;
+    const ownerBookingUrl = p.ownerBookingUrl ? String(p.ownerBookingUrl) : null;
 
     // Hard honesty: confirmed template only when status is confirmed
     if (
-        (key === 'booking_confirmed' || key === 'booking_reschedule_confirmed') &&
+        (key === 'booking_confirmed' || key === 'booking_reschedule_confirmed' ||
+            key === 'booking_owner_new_confirmed' || key === 'booking_owner_rescheduled_by_visitor') &&
         status !== 'confirmed'
     ) {
         const err = new Error('refusing confirmed copy for status=' + status);
@@ -102,7 +133,20 @@ function render(p) {
         err.code = 'HONESTY';
         throw err;
     }
-    if (key === 'booking_cancelled' && status !== 'cancelled') {
+    if (key === 'booking_owner_new_pending' && status !== 'requested') {
+        const err = new Error('refusing pending copy for status=' + status);
+        err.code = 'HONESTY';
+        throw err;
+    }
+    if (key === 'booking_owner_slot_taken' && status !== 'reschedule_needed') {
+        const err = new Error('refusing slot-taken copy for status=' + status);
+        err.code = 'HONESTY';
+        throw err;
+    }
+    if (
+        (key === 'booking_cancelled' || key === 'booking_owner_cancelled_by_visitor') &&
+        status !== 'cancelled'
+    ) {
         const err = new Error('refusing cancelled copy for status=' + status);
         err.code = 'HONESTY';
         throw err;
@@ -194,6 +238,51 @@ function render(p) {
                 'Data și ora (ora cabinetului): ' + when + '.\n' +
                 'Stare: ' + label + '.';
             break;
+        // --- CAL-EMAIL: owner-facing booking-event notifications ---
+        // Each shares the same "who/what/when" contact block (client-first,
+        // since that's what an owner needs to act) — see ownerContactBlock
+        // below — and always ends with a direct link to the booking.
+        case 'booking_owner_new_confirmed':
+            subject = 'Programare nouă (confirmată) — ' + service + ' · ' + name;
+            headline = 'Ai o programare nouă, confirmată';
+            bodyLead =
+                'Ai o programare nouă la ' + site + ', confirmată automat.\n\n' +
+                ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) +
+                'Stare: ' + label + '.';
+            break;
+        case 'booking_owner_new_pending':
+            subject = 'Cerere de programare nouă — ' + service + ' · ' + name;
+            headline = 'O cerere nouă așteaptă răspunsul tău';
+            bodyLead =
+                'Ai primit o cerere de programare la ' + site + ' care are nevoie de confirmarea ta.\n\n' +
+                ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) +
+                'Stare: ' + label + ' — confirm-o sau reprogram-o din panoul de control.';
+            break;
+        case 'booking_owner_slot_taken':
+            subject = 'Reprogramare necesară (interval ocupat) — ' + service + ' · ' + name;
+            headline = 'O programare nu a putut fi confirmată automat';
+            bodyLead =
+                'O cerere de programare la ' + site + ' a picat pe un interval deja ocupat și nu a putut fi ' +
+                'confirmată automat.\n\n' +
+                ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) +
+                'Stare: ' + label + ' — alege un alt interval sau reatribuie din panoul de control.';
+            break;
+        case 'booking_owner_cancelled_by_visitor':
+            subject = 'Programare anulată de client — ' + service + ' · ' + name;
+            headline = 'Un client și-a anulat programarea';
+            bodyLead =
+                'Clientul ' + name + ' și-a anulat programarea la ' + site + '.\n\n' +
+                ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) +
+                'Stare: ' + label + '.';
+            break;
+        case 'booking_owner_rescheduled_by_visitor':
+            subject = 'Programare reprogramată de client — ' + service + ' · ' + name;
+            headline = 'Un client și-a reprogramat programarea';
+            bodyLead =
+                'Clientul ' + name + ' și-a mutat programarea la ' + site + ' la o oră nouă, confirmată automat.\n\n' +
+                ownerContactBlock({ name, visitorEmail, visitorPhone, visitorNote, service, resourceName, when }) +
+                'Stare: ' + label + '.';
+            break;
         default:
             subject = 'Actualizare programare — ' + service;
             headline = 'Actualizare programare';
@@ -211,11 +300,18 @@ function render(p) {
             'Linkul este valabil doar pentru această programare:\n' + manageUrl;
     }
 
+    // CAL-EMAIL: owner-facing templates carry a direct link to the booking in
+    // the owner dashboard instead of a visitor manage link.
+    let ownerLinkBlock = '';
+    if (ownerBookingUrl) {
+        ownerLinkBlock = '\n\nVezi programarea în panoul de control:\n' + ownerBookingUrl;
+    }
+
     const footer =
         '\n\n—\nHidook Site Builder\n' +
         'Acest mesaj este tranzacțional, legat de programarea ta.';
 
-    const text = bodyLead + manageBlock + footer;
+    const text = bodyLead + manageBlock + ownerLinkBlock + footer;
 
     const manageHtml = manageUrl && key !== 'booking_cancelled'
         ? '<p style="margin:24px 0">' +
@@ -226,10 +322,20 @@ function render(p) {
           escapeHtml(manageUrl) + '</p>'
         : '';
 
-    // The owner-reminder copy addresses the site owner, not the visitor — no
-    // "Salut, {visitorName}" greeting, and the full lead paragraph (it has no
-    // separate greeting line to strip via slice(1) like every other template).
-    const isOwnerFacing = key === 'booking_reminder_owner';
+    const ownerLinkHtml = ownerBookingUrl
+        ? '<p style="margin:24px 0">' +
+          '<a href="' + escapeHtml(ownerBookingUrl) + '" ' +
+          'style="background:#1a1a1a;color:#fff;padding:12px 20px;border-radius:6px;' +
+          'text-decoration:none;display:inline-block">Vezi programarea</a></p>' +
+          '<p style="font-size:12px;color:#666;word-break:break-all">' +
+          escapeHtml(ownerBookingUrl) + '</p>'
+        : '';
+
+    // The owner-reminder + owner-event copy addresses the site owner, not
+    // the visitor — no "Salut, {visitorName}" greeting, and the full lead
+    // paragraph (it has no separate greeting line to strip via slice(1)
+    // like every visitor-facing template).
+    const isOwnerFacing = key === 'booking_reminder_owner' || OWNER_EVENT_KEYS.includes(key);
     const greetingHtml = isOwnerFacing ? '' : '<p>' + escapeHtml('Salut, ' + name + '.') + '</p>';
     const leadHtml = isOwnerFacing
         ? bodyLead.replace(/\n/g, ' ')
@@ -247,12 +353,16 @@ function render(p) {
         resourceName ? '<strong>Cu:</strong> ' + escapeHtml(resourceName) + '<br>' : '',
         '<strong>Data/ora (cabinet):</strong> ', escapeHtml(when), '</p>',
         manageHtml,
+        ownerLinkHtml,
         '<p style="font-size:12px;color:#888;margin-top:32px">Hidook Site Builder — mesaj tranzacțional</p>',
         '</body></html>',
     ].join('');
 
     // Forbidden phrases for non-confirmed templates
-    if (key !== 'booking_confirmed' && key !== 'booking_reschedule_confirmed') {
+    if (
+        key !== 'booking_confirmed' && key !== 'booking_reschedule_confirmed' &&
+        key !== 'booking_owner_new_confirmed' && key !== 'booking_owner_rescheduled_by_visitor'
+    ) {
         const lower = (subject + '\n' + text + '\n' + html).toLowerCase();
         // Allow "NU este o confirmare" / "când programarea este confirmată" explanatory,
         // but ban positive confirmation claims as the status.

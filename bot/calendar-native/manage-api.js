@@ -7,6 +7,27 @@
 const engine = require('./engine');
 
 /**
+ * Drain local email outbox after a visitor mutation — same fire-and-forget,
+ * non-blocking pattern as public-api.js createPublicBooking and
+ * owner-api.js kickEmailOutbox. Without this, cancelByToken/rescheduleByToken
+ * only ENQUEUED the visitor confirmation + owner notification and nothing
+ * ever sent them: unlike booking creation (public-api.js) and owner
+ * dashboard mutations (owner-api.js), this module had no drain call at all,
+ * so a real visitor cancelling or rescheduling via their manage link never
+ * actually received the "it worked" email in production — only the
+ * next unrelated reminder sweep or booking creation would happen to flush it.
+ */
+function kickEmailOutbox(db, nowMs) {
+    try {
+        const email = require('./email');
+        const p = email.processOutbox(db, { nowMs: nowMs != null ? nowMs : Date.now(), limit: 10 });
+        if (p && typeof p.then === 'function') p.catch(() => {});
+    } catch (_) {
+        /* booking mutation already committed; delivery audit retains queued/failed */
+    }
+}
+
+/**
  * Wave 7 (audit #25) — resolve the resource to show the visitor, applying
  * the same "only when meaningful" guard as email/index.js loadResourceName:
  * a single-resource tenant (every pre-Wave-7 tenant) never surfaces its one
@@ -91,6 +112,7 @@ function cancelByToken(db, rawToken, { nowMs = Date.now() } = {}) {
         const settings = engine.getSettings(db, row.customer_id, row.site_id);
         const booking = publicBookingView(row, service, resource);
         if (settings) booking.timezone = settings.timezone;
+        kickEmailOutbox(db, nowMs);
         return {
             ok: true,
             already: !!result.already,
@@ -182,6 +204,7 @@ function rescheduleByToken(db, rawToken, { startUtc, nowMs = Date.now() } = {}) 
         const booking = publicBookingView(row, service, resource);
         if (settings) booking.timezone = settings.timezone;
         booking.minCancelHours = settings ? settings.min_cancel_hours : 24;
+        kickEmailOutbox(db, nowMs);
         return { ok: true, booking };
     } catch (e) {
         const code = e && e.code ? String(e.code) : 'RESCHEDULE_ERROR';

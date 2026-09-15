@@ -15,7 +15,7 @@ const { createTransport, createMemoryTransport, createFailingTransport } = requi
 const policy = require('./policy');
 const secrets = require('./secrets');
 const ics = require('../ics');
-const { getZonedParts } = require('../time');
+const { getZonedParts, resolveZonedWallTime, formatUtcOffset } = require('../time');
 
 /** Templates that carry a calendar object (.ics) — one VEVENT per booking, RFC 5545. */
 const ICS_TEMPLATE_METHOD = Object.freeze({
@@ -54,8 +54,20 @@ function manageBaseUrl() {
         process.env.PUBLIC_URL,
     ];
     for (const candidate of candidates) {
-        if (candidate && String(candidate).trim()) {
-            return String(candidate).trim().replace(/\/$/, '');
+        const raw = candidate && String(candidate).trim();
+        if (!raw) continue;
+        // Aligned with cutover.js resolveNativeApiBase: only an absolute
+        // http(s) origin counts as configured — a path-only or malformed
+        // value is exactly as useless as an unset one, so it falls through
+        // to the next candidate / the loud loopback fallback below, rather
+        // than mailing a link nobody can follow.
+        if (!/^https?:\/\//i.test(raw)) continue;
+        try {
+            const u = new URL(raw);
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') continue;
+            return (u.origin + (u.pathname || '').replace(/\/$/, '')).replace(/\/$/, '');
+        } catch (_) {
+            continue;
         }
     }
     try {
@@ -78,8 +90,18 @@ function buildManageUrl(rawToken) {
     return manageBaseUrl() + '/calendar-native/manage?token=' + t;
 }
 
+/** ISO weekday 1..7 (Mon..Sun) -> Romanian weekday name. */
+const RO_WEEKDAYS = Object.freeze([
+    'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă', 'duminică',
+]);
+
 /**
- * Format start for owner timezone display.
+ * Format start for owner timezone display — includes the Romanian weekday
+ * name (every lifecycle/reminder/owner email needs it, not just some —
+ * "10:00" alone forces the reader to work out which day that is) and,
+ * CAL-07, the UTC offset when the local wall-clock reading is ambiguous
+ * (Europe/Bucharest fall-back day: the same "03:00" happens twice, an hour
+ * apart — the offset is the only thing in the copy that tells them apart).
  */
 function formatOwnerLocal(startUtc, timezone) {
     const ms = Date.parse(startUtc);
@@ -92,7 +114,16 @@ function formatOwnerLocal(startUtc, timezone) {
         const d = String(parts.day).padStart(2, '0');
         const h = String(parts.hour).padStart(2, '0');
         const mi = String(parts.minute).padStart(2, '0');
-        return y + '-' + mo + '-' + d + ' ' + h + ':' + mi + ' (' + tz + ')';
+        const weekday = RO_WEEKDAYS[(parts.weekday - 1 + 7) % 7];
+        let offsetSuffix = '';
+        try {
+            const instants = resolveZonedWallTime(parts.year, parts.month, parts.day, parts.hour, parts.minute, tz);
+            if (instants.length > 1) {
+                const match = instants.find((i) => i.utcMs === ms) || instants[0];
+                offsetSuffix = ' (' + formatUtcOffset(match.offsetMinutes) + ')';
+            }
+        } catch (_) { /* best-effort disambiguation only — never block the email */ }
+        return weekday + ', ' + y + '-' + mo + '-' + d + ' ' + h + ':' + mi + offsetSuffix + ' (' + tz + ')';
     } catch (_) {
         return String(startUtc);
     }
@@ -224,6 +255,42 @@ function loadOrganizerEmail(booking) {
         /* registry optional in pure unit harness */
     }
     return null;
+}
+
+/**
+ * Direct link to a booking in the owner dashboard — same base-URL rule as
+ * buildManageUrl (absolute on the configured public base, never the
+ * loopback default silently).
+ * @param {string} bookingId
+ */
+function buildOwnerBookingUrl(bookingId) {
+    const id = encodeURIComponent(String(bookingId || ''));
+    return manageBaseUrl() + '/calendar-native/owner/?bookingId=' + id;
+}
+
+/**
+ * CAL-EMAIL: recipient for an owner-facing booking-event notification.
+ * "Recipient: the owner's account email unless the tenant configured a
+ * notification address" — calendar_settings.notify_owner_email (nullable
+ * override, see schema.js SCHEMA_SQL_V6) wins when set; otherwise falls
+ * back to the same organizer email the .ics ORGANIZER / owner reminder
+ * already use. Returns null when neither resolves — enqueueOwnerBookingEmail
+ * treats that as "nothing to send" rather than guessing a recipient.
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {object} booking
+ * @returns {string|null}
+ */
+function resolveOwnerNotificationEmail(db, booking) {
+    try {
+        const row = db.prepare(
+            `SELECT notify_owner_email FROM calendar_settings WHERE customer_id = ? AND site_id = ?`
+        ).get(booking.customer_id, booking.site_id);
+        const override = row && row.notify_owner_email ? String(row.notify_owner_email).trim() : '';
+        if (override) return override;
+    } catch (_) {
+        /* column may be missing on a pre-v6 db mid-migration — fall through */
+    }
+    return loadOrganizerEmail(booking);
 }
 
 /**
@@ -367,6 +434,132 @@ function enqueueBookingEmailSafe(db, input) {
 }
 
 /**
+ * CAL-EMAIL — which owner template (and which per-event settings toggle)
+ * applies to a given engine.js emitOwnerNotification({ kind, booking })
+ * call, keyed by kind then the booking's CURRENT status at the moment of
+ * that event. Anything not listed here is simply not an owner-notified
+ * event (e.g. an owner-initiated mutation never calls emitOwnerNotification
+ * at all — see engine.js call sites).
+ */
+const OWNER_EVENT_MAP = Object.freeze({
+    // A brand-new booking lands in exactly one of these three states
+    // (engine.js createBooking) — each gets its own honest template.
+    created: {
+        confirmed: { templateKey: 'booking_owner_new_confirmed', settingsColumn: 'notify_owner_new_confirmed' },
+        requested: { templateKey: 'booking_owner_new_pending', settingsColumn: 'notify_owner_new_pending' },
+        reschedule_needed: { templateKey: 'booking_owner_slot_taken', settingsColumn: 'notify_owner_slot_taken' },
+    },
+    visitor_cancelled: {
+        cancelled: { templateKey: 'booking_owner_cancelled_by_visitor', settingsColumn: 'notify_owner_cancelled' },
+    },
+    // rescheduleBookingWithToken only ever commits with onConflict:'reject',
+    // so a written reschedule is always confirmed when the booking already
+    // had a resource assigned (the overwhelmingly common case) — see the
+    // doc comment on engine.js's applyReschedule/rescheduleBookingWithToken.
+    // A still-unresolved ("any available") booking staying unresolved after
+    // a visitor-moved time is the one path this intentionally does not
+    // cover; it was already an owner-action-needed booking before the move.
+    visitor_rescheduled: {
+        confirmed: { templateKey: 'booking_owner_rescheduled_by_visitor', settingsColumn: 'notify_owner_rescheduled' },
+    },
+});
+
+/**
+ * CAL-EMAIL: owner-facing booking-event notification — separate pipeline
+ * from enqueueBookingEmail above (own template set, own per-event settings
+ * toggle, own recipient resolution), sharing only the outbox/backoff/audit
+ * plumbing. Sync enqueue only; safe to call for events the owner is not
+ * notified about (returns null).
+ *
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {{ booking: object, kind: string, previousStatus?: string, nowMs?: number }} input
+ */
+function enqueueOwnerBookingEmail(db, input) {
+    const booking = input && input.booking;
+    if (!booking || !booking.id) return null;
+
+    const status = String(booking.status || '');
+    const byKind = OWNER_EVENT_MAP[String(input.kind || '')];
+    const mapping = byKind ? byKind[status] : null;
+    if (!mapping) return null; // not an owner-notified event/state combination
+
+    let settingsRow = null;
+    try {
+        settingsRow = db.prepare(
+            `SELECT * FROM calendar_settings WHERE customer_id = ? AND site_id = ?`
+        ).get(booking.customer_id, booking.site_id);
+    } catch (_) {
+        settingsRow = null;
+    }
+    // Explicit 0 = owner turned this one off. Missing/undefined (a pre-v6 db
+    // mid-migration) defaults to sending, same "on by default" posture as
+    // the ALTER TABLE ... DEFAULT 1 migration itself.
+    if (settingsRow && settingsRow[mapping.settingsColumn] === 0) return null;
+
+    const recipientEmail = resolveOwnerNotificationEmail(db, booking);
+    if (!recipientEmail) return null; // nothing configured to notify — never guess a recipient
+
+    const serviceName = loadServiceName(db, booking);
+    const resourceName = loadResourceName(db, booking);
+    const tz = loadTimezone(db, booking);
+    const startOwnerLocal = formatOwnerLocal(booking.start_utc, tz);
+    const siteLabel = loadSiteLabel(booking);
+    const ownerBookingUrl = buildOwnerBookingUrl(booking.id);
+
+    const rendered = templates.render({
+        templateKey: mapping.templateKey,
+        visitorName: booking.visitor_name,
+        visitorEmail: booking.visitor_email,
+        visitorPhone: booking.visitor_phone,
+        visitorNote: booking.note,
+        serviceName,
+        resourceName,
+        startOwnerLocal,
+        startUtc: booking.start_utc,
+        bookingStatus: status,
+        manageUrl: null,
+        ownerBookingUrl,
+        siteLabel,
+    });
+
+    // Idempotency: one owner email per booking + template + status + updated_at
+    // slice, exactly like the visitor pipeline's key, just namespaced 'owner:'
+    // (the different templateKey already prevents any collision — this just
+    // keeps the two families trivially greppable apart in the outbox/audit).
+    const idem =
+        'calmail:owner:' + booking.id + ':' + mapping.templateKey + ':' + status + ':' +
+        String(booking.updated_at || booking.created_at || '');
+
+    const row = outbox.enqueue(db, {
+        customerId: booking.customer_id,
+        siteId: booking.site_id,
+        bookingId: booking.id,
+        templateKey: rendered.templateKey,
+        recipientEmail,
+        subject: rendered.subject,
+        text: rendered.text,
+        html: rendered.html,
+        bookingStatus: status,
+        manageLinkPresent: false,
+        idempotencyKey: idem,
+        nowMs: input.nowMs,
+    });
+
+    return { outboxId: row.id, templateKey: rendered.templateKey, recipientEmail };
+}
+
+/**
+ * Engine-safe sync hook: enqueue only; never throws into booking path.
+ */
+function enqueueOwnerBookingEmailSafe(db, input) {
+    try {
+        return enqueueOwnerBookingEmail(db, input);
+    } catch (_) {
+        return null;
+    }
+}
+
+/**
  * Enqueue one appointment reminder (visitor or owner kind) — called only by
  * reminders.js's fireOneReminder(), after it has already re-validated the
  * booking is still confirmed/upcoming/unsent inside its own transaction.
@@ -482,15 +675,19 @@ function notifyBookingEventSafe(db, input) {
 module.exports = {
     enqueueBookingEmail,
     enqueueBookingEmailSafe,
+    enqueueOwnerBookingEmail,
+    enqueueOwnerBookingEmailSafe,
     enqueueReminderEmail,
     notifyBookingEvent,
     notifyBookingEventSafe,
     buildManageUrl,
+    buildOwnerBookingUrl,
     manageBaseUrl,
     ensureRawManageToken,
     formatOwnerLocal,
     loadSiteLabel,
     loadOrganizerEmail,
+    resolveOwnerNotificationEmail,
     loadResourceName,
     buildIcsForEvent,
     hashToken,
