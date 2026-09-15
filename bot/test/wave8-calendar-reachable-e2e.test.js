@@ -188,17 +188,28 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     await visitorPage.locator('.hnb__svc').first().click();
 
     // Slots may be empty for "today" (min-lead / closing hours) — the widget
-    // shows a 14-day strip of day buttons; walk forward until one has a slot.
+    // shows a month-grid calendar (2026-09-14 redesign, see
+    // bot/test/suite12-booking-month-calendar.test.js); walk the enabled
+    // days of the current month in order, then page to the next month, until
+    // one has a slot.
     let slotBtn = null;
-    for (let i = 0; i < 14; i++) {
-      await visitorPage.waitForTimeout(400);
-      const candidate = visitorPage.locator('.hnb__slot').first();
-      if (await candidate.count()) { slotBtn = candidate; break; }
-      const days = visitorPage.locator('.hnb__day');
-      const n = await days.count();
-      if (i + 1 < n) await days.nth(i + 1).click();
+    for (let month = 0; month < 3 && !slotBtn; month++) {
+      const enabledDays = visitorPage.locator('.hnb__cal-day:not([aria-disabled="true"])');
+      const n = await enabledDays.count();
+      for (let i = 0; i < n; i++) {
+        await enabledDays.nth(i).click();
+        await visitorPage.waitForTimeout(300);
+        const candidate = visitorPage.locator('.hnb__slot').first();
+        if (await candidate.count()) { slotBtn = candidate; break; }
+      }
+      if (!slotBtn) {
+        const nextMonthBtn = visitorPage.locator('.hnb__cal-next');
+        if (await nextMonthBtn.isDisabled()) break;
+        await nextMonthBtn.click();
+        await visitorPage.waitForTimeout(400);
+      }
     }
-    assert.ok(slotBtn, 'no bookable slot found across the 14-day window — cutover must have seeded weekly availability');
+    assert.ok(slotBtn, 'no bookable slot found across 3 months of the month-grid calendar — cutover must have seeded weekly availability');
     await slotBtn.click();
 
     await visitorPage.locator('.hnb__form input[name="name"]').fill(visitorName);

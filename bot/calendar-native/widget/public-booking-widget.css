@@ -122,46 +122,105 @@
   color: var(--hnb-muted);
   margin: 0 0 8px;
 }
-.hnb__days {
+/* Month-grid calendar (owner request 2026-09-14, replacing the old 5-21 day
+   horizontal scroller) — "someone may want to book 2-3 weeks ahead". */
+.hnb__cal { margin-bottom: 10px; width: 100%; max-width: 100%; min-width: 0; }
+.hnb__cal-head {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
   margin-bottom: 10px;
-  scrollbar-width: thin;
+}
+.hnb__cal-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--hnb-ink);
+  text-transform: capitalize;
+  text-align: center;
+  flex: 1;
+}
+.hnb__cal-nav {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--hnb-line);
+  background: #fff;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--hnb-ink);
+}
+.hnb__cal-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+.hnb__cal-weekdays,
+.hnb__cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
 }
-.hnb__day {
-  flex: 0 0 auto;
-  min-width: 56px;
-  min-height: 56px;
+.hnb__cal-weekdays { margin-bottom: 6px; }
+.hnb__cal-weekdays span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--hnb-muted);
+}
+.hnb__cal-pad { min-height: 44px; }
+.hnb__cal-day {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--hnb-line);
   background: #fff;
-  border-radius: 14px;
-  padding: 10px 8px;
+  border-radius: 12px;
   font: inherit;
-  cursor: pointer;
-  color: var(--hnb-muted);
-  line-height: 1.2;
-}
-.hnb__day strong {
-  display: block;
+  font-weight: 600;
   color: var(--hnb-ink);
-  font-size: 1.1rem;
-  margin-top: 2px;
+  cursor: pointer;
 }
-.hnb__day.is-selected {
+.hnb__cal-day.is-today {
+  border-color: var(--hnb-accent);
+  color: var(--hnb-accent-2);
+  font-weight: 750;
+}
+.hnb__cal-day.is-selected {
   background: var(--hnb-ink);
-  color: #c9d8d1;
   border-color: var(--hnb-ink);
+  color: #fff;
 }
-.hnb__day.is-selected strong { color: #fff; }
-.hnb__day:disabled { opacity: 0.35; cursor: not-allowed; }
+.hnb__cal-day.is-today.is-selected {
+  background: var(--hnb-accent);
+  border-color: var(--hnb-accent);
+  color: #fff;
+}
+.hnb__cal-day.is-unavailable,
+.hnb__cal-day[aria-disabled="true"] {
+  opacity: 0.35;
+  cursor: not-allowed;
+  color: var(--hnb-muted);
+}
+.hnb__cal-day:focus-visible,
+.hnb__cal-nav:focus-visible {
+  outline: 2px solid var(--hnb-accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hnb__cal-day { transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease; }
+}
 .hnb__day-label {
   font-size: 13px;
   color: var(--hnb-muted);
@@ -169,8 +228,8 @@
 }
 
 /* Wave 7 (audit #25): "pick a person or accept any available" chip row.
-   Same visual language as .hnb__day — horizontally scrollable, no wrapping,
-   so it degrades gracefully at 390px without needing its own breakpoint. */
+   Horizontally scrollable, no wrapping, so it degrades gracefully at 390px
+   without needing its own breakpoint. */
 .hnb__resources {
   display: flex;
   gap: 8px;
@@ -377,7 +436,9 @@
   .hnb { padding: 16px 12px 20px; }
   .hnb__slots { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .hnb__slot { padding: 11px 4px; font-size: 0.95rem; }
-  .hnb__day { min-width: 52px; }
+  .hnb__cal-weekdays,
+  .hnb__cal-grid { gap: 3px; }
+  .hnb__cal-day { font-size: 0.9rem; }
   .hnb__steps { gap: 6px; }
   .hnb__steps li { padding: 6px 10px; font-size: 11px; }
   .hnb__title { font-size: 1.35rem; }

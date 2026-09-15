@@ -26,7 +26,7 @@
  * off) is a plain WhatsApp link, and the native calendar widget itself
  * (bot/calendar-native/widget/public-booking-widget.js, used by portfolio
  * and professionals when native booking IS on) builds its day/slot chooser
- * out of `<button>` chips (`.hnb__day`/`.hnb__slot`), never a `<select>` —
+ * out of `<button>` chips (`.hnb__cal-day`/`.hnb__slot`), never a `<select>` —
  * confirmed by grepping every template.html and script.js under templates/
  * for `<select`/`createElement('select')`. So this suite exercises the one real
  * instance (professionals) plus, defensively, the owner dashboard's filter
