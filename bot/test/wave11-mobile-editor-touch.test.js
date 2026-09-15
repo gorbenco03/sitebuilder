@@ -111,6 +111,13 @@ test('mobile editor: topbar buttons neither overlap nor fall under 44x44 at 390p
 
     await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
     await page.waitForURL(/#edit$/);
+    // Suite 12: Details no longer auto-opens at phone width (<=640px) — see
+    // shouldAutoOpenDrawerOnThisViewport()'s doc comment in builder/app.js.
+    // It used to eclipse the canvas the owner just picked a design for,
+    // before they had even seen it; on desktop/tablet it still auto-opens
+    // (a side panel next to a still-visible canvas). Open it explicitly
+    // here to exercise the same open/close cycle this test always has.
+    await page.locator('#btn-open-drawer').tap();
     await page.locator('#details-drawer').waitFor({ state: 'visible' });
     await page.locator('#btn-close-drawer').tap();
     await page.locator('#details-drawer').waitFor({ state: 'hidden' });
@@ -217,8 +224,8 @@ test('mobile editor: color popover stays fully on-screen at 390px', { timeout: 6
     await page.locator('#hb-cookie-accept').tap();
     await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
     await page.waitForURL(/#edit$/);
-    await page.locator('#btn-close-drawer').tap();
-    await page.locator('#details-drawer').waitFor({ state: 'hidden' });
+    // Suite 12: Details no longer auto-opens at phone width — nothing to
+    // close here (see the doc comment in the test above).
 
     await page.locator('#btn-color-picker').tap();
     await page.locator('#color-popover').waitFor({ state: 'visible' });
@@ -238,6 +245,9 @@ test('mobile editor: details drawer close button meets the touch-target floor', 
     await page.locator('#hb-cookie-accept').tap();
     await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
     await page.waitForURL(/#edit$/);
+    // Suite 12: Details no longer auto-opens at phone width — open it
+    // explicitly (see the doc comment in the first test above).
+    await page.locator('#btn-open-drawer').tap();
     await page.locator('#details-drawer').waitFor({ state: 'visible' });
     const box = await page.locator('#btn-close-drawer').boundingBox();
     assert.ok(box.width >= MIN_TARGET && box.height >= MIN_TARGET, 'drawer close button must be >= 44x44px, got ' + JSON.stringify(box));
@@ -251,8 +261,8 @@ test('mobile editor: inline text edit stays above a simulated keyboard', { timeo
     await page.locator('#hb-cookie-accept').tap();
     await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
     await page.waitForURL(/#edit$/);
-    await page.locator('#btn-close-drawer').tap();
-    await page.locator('#details-drawer').waitFor({ state: 'hidden' });
+    // Suite 12: Details no longer auto-opens at phone width — nothing to
+    // close here (see the doc comment in the first test above).
 
     const nameField = page.frameLocator('#preview-iframe').locator('[data-hb-edit="business.name"]').first();
     await nameField.waitFor({ state: 'visible' });

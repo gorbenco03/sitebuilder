@@ -86,6 +86,66 @@ function syncDemoBanner() {
 let drawerOpen = false;
 /** localStorage key for Details drawer open/closed preference (VISION Flow 2). */
 const DRAWER_PREF_KEY = 'hb-details-drawer-pref';
+// Suite 12 — the freeze fix (#drawer-overlay outliving #details-drawer):
+// every rAF/timer this module ever schedules that can end in a drawer
+// open/close decision is tracked here so it can be cancelled outright, never
+// just out-raced by a state re-check. A re-check alone (the old approach —
+// see openDrawer()'s auto-open call site before this fix) only protects
+// against the exact state it happens to inspect; it does nothing once the
+// app has moved to a DIFFERENT screen entirely, which is exactly the gap a
+// stale auto-open rAF could still fall through (see cancelPendingDrawerAutoOpen()
+// and syncDrawerDom() below).
+let pendingDrawerAutoOpenRaf = null;
+let pendingDrawerFocusRaf = null;
+
+/** Cancel the auto-open rAF scheduled by showScreen('edit'), if one is still
+ * pending. Called whenever the drawer is explicitly closed AND whenever the
+ * app navigates away from the edit screen — the latter is the fix for the
+ * "editor freezes" bug: without it, a rAF scheduled right after selecting a
+ * design can still fire after the user has already left #edit (e.g. a fast
+ * back-navigation before the browser's next paint), showing #drawer-overlay
+ * — a fixed, inset:0 scrim — on top of whatever screen is now on display,
+ * with no #details-drawer content to go with it because that screen never
+ * built one. See suite12-drawer-overlay-never-blocks.test.js. */
+function cancelPendingDrawerAutoOpen() {
+  if (pendingDrawerAutoOpenRaf !== null) {
+    cancelAnimationFrame(pendingDrawerAutoOpenRaf);
+    pendingDrawerAutoOpenRaf = null;
+  }
+}
+
+function cancelPendingDrawerFocus() {
+  if (pendingDrawerFocusRaf !== null) {
+    cancelAnimationFrame(pendingDrawerFocusRaf);
+    pendingDrawerFocusRaf = null;
+  }
+}
+
+/** Single source of truth for #drawer-overlay / #details-drawer visibility —
+ * both always derive from `drawerOpen`, set here and ONLY here, so the two
+ * elements can never disagree (the overlay blocking clicks while the drawer
+ * itself is already hidden, or vice versa). Every call site that used to
+ * show()/hide() the pair directly now flips `drawerOpen` and calls this
+ * instead. Also the one place that cancels a still-pending auto-open —
+ * closing (by any path) must never leave a stale rAF free to reopen it. */
+function syncDrawerDom() {
+  const overlay = $('drawer-overlay');
+  const drawer = $('details-drawer');
+  const btn = $('btn-open-drawer');
+  if (drawerOpen) {
+    show(overlay);
+    show(drawer);
+    document.body.classList.add('details-drawer-open');
+    if (btn) btn.setAttribute('aria-expanded', 'true');
+  } else {
+    cancelPendingDrawerAutoOpen();
+    cancelPendingDrawerFocus();
+    hide(overlay);
+    hide(drawer);
+    document.body.classList.remove('details-drawer-open');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+}
 // Wave 11: was a drawer field edited since the drawer was last opened, in a
 // way that still needs a full re-render (not just the surgical {hb:'set'}
 // every drawer keystroke already sends) once the drawer closes? Used to be a
@@ -3755,6 +3815,28 @@ function shouldAutoOpenDrawer() {
   return true; // null (first entry) or 'open'
 }
 
+/** Suite 12 — the auto-open call: is THIS viewport one where Details
+ * eclipsing the canvas on open is a reasonable trade (desktop/tablet, where
+ * the drawer is a side panel next to a still-visible canvas), or one where
+ * it just replaces the freshly-selected design with a form before the owner
+ * has seen it (phone — `.details-drawer` is `min(400px, 94vw)` wide, plus
+ * `#drawer-overlay` dims the *entire* viewport behind it, so on a ~390px
+ * phone that is effectively the whole screen)?
+ *
+ * Decision: auto-open stays desktop/tablet-only. A first-time owner on a
+ * phone should see their new design before anything covers it; Details is
+ * one tap away (`#btn-open-drawer`, already in the topbar) whenever they do
+ * want it, same as choosing to close it manually on desktop already
+ * persists via DRAWER_PREF_KEY. 640px matches the existing phone-topbar
+ * breakpoint (app.css `@media (max-width: 640px)`, Wave 11) so "phone" means
+ * the same viewport here as it already does for the rest of the editor
+ * chrome. innerWidth is read fresh on every call (not cached) since a
+ * rotation or a resize between scheduling and firing should change the
+ * answer. */
+function shouldAutoOpenDrawerOnThisViewport() {
+  return typeof window === 'undefined' || typeof window.innerWidth !== 'number' || window.innerWidth > 640;
+}
+
 /** Scroll `key`'s field group into view inside the (already built, already
  * open) drawer and focus its control. Returns whether a matching field was
  * found — callers fall back to focusing the first field when it wasn't
@@ -3778,19 +3860,21 @@ function focusDrawerField(key) {
  * 7c), which needs one click to go from "this is unfinished" to "here is
  * where you fix it" rather than just opening Details at the top. */
 function openDrawer(focusKey) {
-  const overlay = $('drawer-overlay');
   const drawer = $('details-drawer');
   if (!drawer) return;
+  // A manual open (this function) always supersedes whatever the auto-open
+  // rAF from showScreen('edit') might still be waiting to decide — cancel it
+  // so it can never re-evaluate later against a state this call has already
+  // moved past.
+  cancelPendingDrawerAutoOpen();
+  cancelPendingDrawerFocus();
   buildDrawer();
-  show(overlay);
-  show(drawer);
   drawerOpen = true;
+  syncDrawerDom();
   setDrawerPref('open');
-  document.body.classList.add('details-drawer-open');
-  const btn = $('btn-open-drawer');
-  if (btn) btn.setAttribute('aria-expanded', 'true');
   // Focus the requested field if there is one, else the first field.
-  requestAnimationFrame(() => {
+  pendingDrawerFocusRaf = requestAnimationFrame(() => {
+    pendingDrawerFocusRaf = null;
     if (focusKey && focusDrawerField(focusKey)) return;
     const first = drawer.querySelector('input,textarea,select');
     if (first) first.focus();
@@ -3813,13 +3897,9 @@ function cssEscapeFieldKey(key) {
  * nicio reprezentare, nu-l lista ca acționabil".
  */
 function closeDrawer() {
-  hide($('drawer-overlay'));
-  hide($('details-drawer'));
   drawerOpen = false;
+  syncDrawerDom(); // also cancels any pending auto-open/focus rAF
   setDrawerPref('closed');
-  document.body.classList.remove('details-drawer-open');
-  const btn = $('btn-open-drawer');
-  if (btn) btn.setAttribute('aria-expanded', 'false');
   // Re-render if any drawer field was edited (deferred) — see
   // drawerNeedsRerenderOnClose's doc comment for why this is a plain flag,
   // not a self-expiring timer.
@@ -8652,10 +8732,25 @@ function showScreen(name) {
   if (name === 'edit') {
     if (topbar) show(topbar);
     if (header) hide(header);
-    // Details opens for every newly selected design; a manual close survives reload.
-    if (shouldAutoOpenDrawer() && !drawerOpen) {
-      requestAnimationFrame(() => {
-        if (shouldAutoOpenDrawer() && !drawerOpen) openDrawer();
+    // Details opens for every newly selected design on a screen wide enough
+    // that the drawer doesn't just eclipse the canvas the owner hasn't even
+    // seen yet — see shouldAutoOpenDrawerOnThisViewport()'s doc comment for
+    // the mobile call. A manual close survives reload either way.
+    //
+    // The rAF handle is tracked (pendingDrawerAutoOpenRaf) and cancelled by
+    // syncDrawerDom()/cancelPendingDrawerAutoOpen() rather than relied on to
+    // just self-cancel by re-checking state when it fires: re-checking only
+    // catches "the drawer's own state changed", not "the app isn't even on
+    // #edit any more" — see the 'else' branch below, which is exactly the
+    // gap suite12-drawer-overlay-never-blocks.test.js closes (the "editor
+    // freezes" bug: a stale rAF from THIS call firing after a fast
+    // navigate-away, showing #drawer-overlay over whatever screen replaced
+    // #edit with no #details-drawer content behind it).
+    cancelPendingDrawerAutoOpen();
+    if (shouldAutoOpenDrawer() && shouldAutoOpenDrawerOnThisViewport() && !drawerOpen) {
+      pendingDrawerAutoOpenRaf = requestAnimationFrame(() => {
+        pendingDrawerAutoOpenRaf = null;
+        if (shouldAutoOpenDrawer() && shouldAutoOpenDrawerOnThisViewport() && !drawerOpen) openDrawer();
       });
     }
     // #edit already auto-resumes the local draft on its own (resumeLocalDraft,
@@ -8667,14 +8762,15 @@ function showScreen(name) {
   } else {
     if (topbar) hide(topbar);
     if (header) show(header);
+    // Never let an auto-open scheduled for #edit survive past leaving it —
+    // unconditional (not gated on drawerOpen), because the whole point is a
+    // stale rAF that hasn't fired yet and so hasn't set drawerOpen either.
+    cancelPendingDrawerAutoOpen();
     // Close drawer and color picker when leaving edit (do not write 'closed' pref —
     // leaving the screen is not an intentional user close).
     if (drawerOpen) {
-      hide($('drawer-overlay'));
-      hide($('details-drawer'));
       drawerOpen = false;
-      const btn = $('btn-open-drawer');
-      if (btn) btn.setAttribute('aria-expanded', 'false');
+      syncDrawerDom();
     }
     if (colorPopoverOpen) closeColorPopover();
     if (accountMenuOpen) closeAccountMenu();

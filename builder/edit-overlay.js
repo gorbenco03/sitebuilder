@@ -1185,10 +1185,18 @@
     imgs.forEach(function (img) {
       // Skip images that are already inside a [data-hb-edit] image container
       // or that are the logo (handled separately via data-hb-edit if present).
-      // Also skip the Instagram teaser's example tiles (see section 5c below)
-      // — they are fixture photography, not an owner's content, and must
-      // never grow a "Înlocuiește fotografia" control.
-      if (img.closest('[data-hb-ig-teaser]')) return;
+      // Also skip anything structurally marked as not the owner's content —
+      // [data-hb-ig-teaser] (the Instagram teaser's fixture example tiles,
+      // see section 5c below) and [data-hb-non-owner] (the shared
+      // WhatsApp-QR <img id="wa-qr-img"> every template's qrcode.js paints
+      // at runtime, and local-service's #lightbox-img, which only ever
+      // mirrors whatever gallery photo is being zoomed). Structural markers
+      // instead of one-off id selectors per template — see this suite's own
+      // suite12-no-editor-controls-on-non-owner-content.test.js: a QR code
+      // is not owner photography and "Înlocuiește fotografia" attached to it
+      // (0x0, unresolvable src) was a dead control that could never do
+      // anything useful.
+      if (img.closest('[data-hb-ig-teaser], [data-hb-non-owner]')) return;
       var src = img.getAttribute('src') || '';
       // Do not wrap tiny icons (data: SVG icons used inline as service icons).
       if (src.startsWith('data:image/svg') || src.startsWith('data:image/svg+xml')) return;
@@ -1315,7 +1323,7 @@
 
     var allEls = Array.prototype.slice.call(document.querySelectorAll('[style]'));
     allEls.forEach(function (el) {
-      if (el.closest('[data-hb-ig-teaser]')) return;
+      if (el.closest('[data-hb-ig-teaser], [data-hb-non-owner]')) return;
       var style = el.getAttribute('style') || '';
       var bgUrls = extractBackgroundUrls(style);
       if (!bgUrls.length) return;
