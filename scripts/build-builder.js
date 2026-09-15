@@ -227,8 +227,26 @@ function renderPreview(files, config, opts) {
     // inside the srcdoc preview, never on published sites.
     // Synchronous on DOMContentLoaded/load (no 60/120ms timers): deferred force
     // reflows raced the first trusted Acceptă click after preview-ready.
+    //
+    // Second branch (transitionProperty check, added alongside the original
+    // animationName one): a reveal need not be a CSS @keyframes animation —
+    // desserdirina's \`.fade-in-section .service-card\` starts at opacity:0
+    // with a plain \`transition: opacity …\`, gated by an ancestor \`.visible\`
+    // class that only an IntersectionObserver adds, so it has no
+    // \`animation\` at all and the original check never matched it. Guard
+    // against false positives (a closed dropdown/mobile-nav/lightbox that
+    // uses \`opacity:0\` as ONE of several ways it stays hidden, or a native
+    // input visually hidden behind a styled custom control) two ways:
+    // \`transitionProperty !== "all"\` — its CSS-spec INITIAL value, so any
+    // element without its own explicit \`transition:\` declaration is
+    // excluded (a bare "opacity:0" is not enough on its own); and requiring
+    // "opacity" to appear in that (now guaranteed explicit) property list.
+    // Audited against every current template's CSS: no permanently-hidden
+    // UI (mobile nav, lightbox, cookie banner) matches both conditions —
+    // those all gate on max-height/visibility/display, never an explicit
+    // opacity transition list.
     html = insertBeforeBodyClose(html,
-        '<scr' + 'ipt data-hidook-forcer>(function(){var ran=false;function force(){if(ran)return;ran=true;var banner=document.getElementById("hb-cookie-banner");var els=document.querySelectorAll("*");for(var i=0;i<els.length;i++){var el=els[i];if(banner&&(el===banner||banner.contains(el)))continue;var cs=getComputedStyle(el);if(cs.opacity==="0"&&cs.animationName!=="none"){el.style.setProperty("opacity","1","important");el.style.setProperty("transform","none","important");}}try{document.documentElement.setAttribute("data-hb-forcer-done","1");}catch(e){}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",force);}else{force();}window.addEventListener("load",force);})();</scr' + 'ipt>'
+        '<scr' + 'ipt data-hidook-forcer>(function(){var ran=false;function force(){if(ran)return;ran=true;var banner=document.getElementById("hb-cookie-banner");var els=document.querySelectorAll("*");for(var i=0;i<els.length;i++){var el=els[i];if(banner&&(el===banner||banner.contains(el)))continue;var cs=getComputedStyle(el);var revealsByAnimation=cs.animationName!=="none";var revealsByTransition=cs.transitionProperty!=="all"&&/(^|,\\s*)opacity(\\s*,|$)/.test(cs.transitionProperty);if(cs.opacity==="0"&&(revealsByAnimation||revealsByTransition)){el.style.setProperty("opacity","1","important");el.style.setProperty("transform","none","important");}}try{document.documentElement.setAttribute("data-hb-forcer-done","1");}catch(e){}}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",force);}else{force();}window.addEventListener("load",force);})();</scr' + 'ipt>'
     );
 
     // EDIT MODE: inject the edit overlay (affordances + postMessage bridge) and

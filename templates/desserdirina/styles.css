@@ -547,6 +547,14 @@ body {
     height: 50px;
     background: linear-gradient(to bottom, var(--color-primary), transparent);
     animation: scrollPulse 2s ease-in-out infinite;
+    /* Windows High Contrast (forced-colors: active) forces any CSS <gradient>
+       image to `none` (images from a real url() are left alone — see
+       .whatsapp-float above — only generated-by-author gradients are
+       stripped), and this line has no background-color fallback, so the
+       whole scroll cue below "DERULEAZĂ" vanishes, no line at all. Purely
+       decorative, not page text — opt out like a brand mark instead of
+       fighting the remap with a fallback colour that would never match. */
+    forced-color-adjust: none;
 }
 
 /* ============================================================
@@ -1485,6 +1493,18 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     box-shadow: 0 4px 20px rgba(37, 211, 102, 0.45);
     z-index: 1000;
     transition: transform 0.3s var(--spring), box-shadow 0.3s var(--transition-smooth);
+    /* Windows High Contrast (forced-colors: active) independently remaps this
+       circle's #25D366 background AND its icon's `fill: currentColor` to the
+       SAME system colour (observed: both to white) with no coordination
+       between the two — the WhatsApp glyph disappears into its own button,
+       the one recognisable call-to-action on the page. The other four
+       templates never hit this: they draw the same icon as a CSS
+       `background-image: url("data:image/svg+xml,…")`, and forced-colors
+       only remaps live *paint* (fill/stroke/background-color), never actual
+       image resources. This button is a brand mark, not page text — opting
+       it out of the remap (like a logo) keeps it exactly as legible as it is
+       everywhere else, without a browser/OS sniff. */
+    forced-color-adjust: none;
 }
 
 /* ── WhatsApp QR modal (desktop) ── */
@@ -1615,6 +1635,11 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     width: 32px;
     height: 32px;
     fill: white;
+    /* Belt-and-suspenders with .whatsapp-float's own forced-color-adjust:
+       none above (which should already inherit here) — SVG paint is where
+       this bug actually manifested, so it stays pinned explicitly rather
+       than relying on inheritance alone. */
+    forced-color-adjust: none;
     position: relative;
     z-index: 1;
 }
