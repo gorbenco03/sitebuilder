@@ -347,6 +347,9 @@ function closeModal(id) {
   const el = $(id);
   if (el) el.style.display = 'none';
   if (id === 'modal-preview') document.body.classList.remove('preview-cookie-isolated');
+  // SESS-03: closing the auth/publish modal abandons whatever it was waiting
+  // for — never leave a poll loop ticking in the background after that.
+  if (id === 'modal-publish' && typeof stopAuthPolling === 'function') stopAuthPolling();
   const state = modalFocusState[id];
   if (state && state.opener && typeof state.opener.focus === 'function' && document.contains(state.opener)) {
     state.opener.focus();
@@ -1914,11 +1917,20 @@ function changedTopLevelSections(a, b) {
   return out;
 }
 
-/** Is this localStorage draft record the same draft this tab has open? */
+/** Is this localStorage draft record the same draft this tab has open?
+ * MULTI-03: a bound site is only ever "the same" when the siteId itself
+ * matches. Two UNBOUND drafts of the same template in two different tabs
+ * used to be treated as "the same draft" just because neither had a siteId
+ * yet — tightened to also compare the per-tab local draftId (see
+ * peekTabDraftId() below), so two strangers starting the same template
+ * independently are never mistaken for one shared draft. */
 function isSameDraftRecord(record) {
   if (!record || !draft.templateId) return false;
-  return record.templateId === draft.templateId &&
-    (!currentSiteId || !record.siteId || record.siteId === currentSiteId);
+  if (record.templateId !== draft.templateId) return false;
+  if (currentSiteId || record.siteId) return record.siteId === currentSiteId;
+  if (typeof peekTabDraftId !== 'function') return true; // pre-scoping fallback
+  const myDraftId = peekTabDraftId();
+  return !!record.draftId && !!myDraftId && record.draftId === myDraftId;
 }
 
 function showTabConflictBanner(sections) {
@@ -1947,10 +1959,27 @@ function hideTabConflictBanner() {
 
 function initTabConflictWatcher() {
   window.addEventListener('storage', (e) => {
-    if (e.key !== DRAFT_KEY || !e.newValue) return;
     if (!draft.templateId) return; // nothing open in this tab yet
-    let incoming;
-    try { incoming = JSON.parse(e.newValue); } catch (_) { return; }
+    let incoming = null;
+    if (e.key === DRAFT_KEY) {
+      // Legacy flat mirror — still the discovery signal a genuinely fresh
+      // (unpinned) tab relies on, and still fires for same-scope two-tab
+      // edits (both tabs write it on every save regardless of scope).
+      if (!e.newValue) return;
+      try { incoming = JSON.parse(e.newValue); } catch (_) { return; }
+    } else if (e.key === SCOPES_KEY) {
+      // MULTI-03: the authoritative per-scope map. A DIFFERENT scope's tab
+      // writing here must never trip this tab's conflict banner — only
+      // extract THIS tab's own scope before doing anything else.
+      if (!e.newValue) return;
+      let all;
+      try { all = JSON.parse(e.newValue); } catch (_) { return; }
+      const myScopeKey = typeof currentScopeKeyInternal === 'function' ? currentScopeKeyInternal(false) : null;
+      incoming = (all && myScopeKey) ? all[myScopeKey] : null;
+      if (!incoming) return;
+    } else {
+      return;
+    }
     if (!incoming || incoming.tabId === TAB_ID) return; // our own write (storage never fires for it, but be safe)
     if (!isSameDraftRecord(incoming)) return;
     // Name what changed there relative to what THIS tab currently shows —
@@ -1960,6 +1989,194 @@ function initTabConflictWatcher() {
     const sections = changedTopLevelSections(draft.config, incoming.config);
     showTabConflictBanner(sections);
   });
+}
+
+// ---------------------------------------------------------------------------
+// 7c-bis. Site-scoped draft storage (MULTI-03)
+// ---------------------------------------------------------------------------
+//
+// Before this fix, EVERY local draft — whichever site or not-yet-created
+// design — lived under one global localStorage key (DRAFT_KEY). Two
+// different sites open in two tabs looked fine right up until a reload:
+// the reloading tab's in-memory state is wiped, and #edit's auto-resume
+// (resumeLocalDraft → loadDraft) picked up whatever the OTHER tab had most
+// recently written there — silently swapping which site was being edited,
+// and the next save from the confused tab then overwrote the wrong site.
+//
+// Fix: every draft also lives under its own scope key — 'site:<siteId>'
+// once the server has assigned one, else 'local:<draftId>' for a
+// not-yet-created site/design — inside SCOPES_KEY (one JSON object holding
+// every scope, so this never grows into one physical localStorage key per
+// site). Each browser TAB pins itself, in sessionStorage (per-tab; survives
+// a reload of THAT tab, but a genuinely new tab starts unpinned), to
+// whichever scope it is editing. loadDraft() always reads the PINNED scope
+// first; only a tab with nothing pinned yet (a fresh tab landing on
+// #templates/#dashboard, or bare #edit with nothing loaded in memory) falls
+// back to the legacy flat DRAFT_KEY as a "what was last active anywhere"
+// mirror — exactly the old single-slot discovery behaviour, now used only
+// to seed a brand-new tab's pin, never to silently override an
+// already-pinned tab. This is also the migration path: an existing
+// installation's one global hb.draft.v1 record is naturally picked up by
+// whichever tab first calls loadDraft() with nothing pinned yet, and from
+// then on lives at its own scope key — no separate one-time migration step.
+//
+// DRAFT_KEY itself stays in use as that mirror — every scoped save also
+// refreshes it — so existing single-scope tooling/tests that read it
+// directly keep working unchanged, and two tabs on the SAME site still
+// share one physical record (and the pre-existing 3-way merge / tab-conflict
+// banner) exactly as before.
+
+const SCOPES_KEY = 'hb.draft.scopes.v1';
+const TAB_DRAFT_ID_SESSION_KEY = 'hb.tab.draftId.v1';
+const TAB_BOUND_SITE_SESSION_KEY = 'hb.tab.boundSiteId.v1';
+const MAX_DRAFT_SCOPES = 40;
+
+let lastPersistedScopeKey = null;
+let fallbackTabDraftId = null; // used only when sessionStorage itself is unavailable
+
+function newDraftId() {
+  try { if (window.crypto && typeof crypto.randomUUID === 'function') return 'd-' + crypto.randomUUID(); } catch (_) {}
+  return 'd-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+
+/** Read this tab's pinned local (not-yet-created-site) draft id, WITHOUT creating one. */
+function peekTabDraftId() {
+  try { return sessionStorage.getItem(TAB_DRAFT_ID_SESSION_KEY) || null; }
+  catch (_) { return fallbackTabDraftId; }
+}
+
+/** Get-or-create this tab's local draft id (stable for the tab's lifetime,
+ * or until it binds to a real site). */
+function ensureTabDraftId() {
+  const existing = peekTabDraftId();
+  if (existing) return existing;
+  const id = newDraftId();
+  try { sessionStorage.setItem(TAB_DRAFT_ID_SESSION_KEY, id); }
+  catch (_) { fallbackTabDraftId = id; }
+  return id;
+}
+
+/** Adopt a specific local draft id for this tab — used when resuming a
+ * record discovered via the legacy mirror (see loadDraft()) so this tab is
+ * pinned to the SAME scope it just resumed, not a freshly minted one. */
+function adoptTabDraftId(id) {
+  if (!id) return;
+  try { sessionStorage.setItem(TAB_DRAFT_ID_SESSION_KEY, id); }
+  catch (_) { fallbackTabDraftId = id; }
+}
+
+function getTabBoundSiteId() {
+  try { return sessionStorage.getItem(TAB_BOUND_SITE_SESSION_KEY) || null; }
+  catch (_) { return null; }
+}
+
+function setTabBoundSiteId(siteId) {
+  try {
+    if (siteId) sessionStorage.setItem(TAB_BOUND_SITE_SESSION_KEY, siteId);
+    else sessionStorage.removeItem(TAB_BOUND_SITE_SESSION_KEY);
+  } catch (_) { /* worst case this tab falls back to mirror discovery */ }
+}
+
+/** Clear this tab's site pin, but only if it currently points at `siteId` —
+ * used when that site is deleted, so it never lingers and gets silently
+ * resurrected by a later bare #edit in this tab. */
+function clearTabBoundSiteIdIfMatches(siteId) {
+  if (!siteId) return;
+  if (getTabBoundSiteId() === siteId) setTabBoundSiteId(null);
+}
+
+/**
+ * This tab's current scope key — 'site:<id>' once bound (in-memory
+ * currentSiteId, or the sessionStorage pin for a tab mid-reload before
+ * in-memory state is restored), else 'local:<draftId>'. `create` controls
+ * whether an unbound tab that has never had a local draft id yet gets one
+ * minted now (a writer needs a home to write to) or not (a reader should
+ * never fabricate a scope that has nothing in it).
+ */
+function currentScopeKeyInternal(create) {
+  if (typeof currentSiteId !== 'undefined' && currentSiteId) {
+    // Sync the sessionStorage pin the INSTANT this tab knows its siteId —
+    // this is what a later reload (in-memory currentSiteId reset to null)
+    // reads back to resume the SAME site regardless of what any other tab
+    // has since written to the shared discovery mirror (MULTI-03).
+    if (getTabBoundSiteId() !== currentSiteId) setTabBoundSiteId(currentSiteId);
+    return 'site:' + currentSiteId;
+  }
+  const pinnedSiteId = getTabBoundSiteId();
+  if (pinnedSiteId) return 'site:' + pinnedSiteId;
+  const draftId = create ? ensureTabDraftId() : peekTabDraftId();
+  return draftId ? ('local:' + draftId) : null;
+}
+function currentScopeKey() { return currentScopeKeyInternal(true); }
+
+function readAllDraftScopes() { return lsGet(SCOPES_KEY) || {}; }
+
+function readDraftScope(scopeKey) {
+  if (!scopeKey) return null;
+  return readAllDraftScopes()[scopeKey] || null;
+}
+
+/** Read a record for THIS tab's own pinned scope only — never falls back to
+ * the cross-scope discovery mirror. Used where reading the mirror would risk
+ * poaching a DIFFERENT tab's scope (see startWithTemplate()'s "am I
+ * replacing my own earlier draft" check). */
+function loadDraftPinnedOnly() {
+  const pinnedKey = currentScopeKeyInternal(false);
+  return pinnedKey ? readDraftScope(pinnedKey) : null;
+}
+
+function removeDraftScope(scopeKey) {
+  if (!scopeKey) return;
+  const all = readAllDraftScopes();
+  if (!(scopeKey in all)) return;
+  delete all[scopeKey];
+  if (Object.keys(all).length === 0) {
+    try { localStorage.removeItem(SCOPES_KEY); } catch (_) { /* ignore */ }
+  } else {
+    lsSet(SCOPES_KEY, all);
+  }
+}
+
+/**
+ * Cap storage growth: every started template/site adds its own scope, and
+ * trying several designs without publishing (or accumulating many real
+ * sites over time) would otherwise grow this forever. Only evicts scopes
+ * that are provably safe to lose — never the one just written, never THIS
+ * tab's own pinned scope, a bound/paid site only once it has nothing local
+ * left to resume (its config matches what was last published — the same
+ * "stillDirty" check maybeShowRecoveryBanner() uses), and an unbound local
+ * draft only once it is genuinely stale (30+ days untouched). Never evicts
+ * unsaved work: a scope with genuine local edits is never a candidate.
+ */
+function pruneDraftScopes(all, justWrittenKey) {
+  const keys = Object.keys(all);
+  if (keys.length <= MAX_DRAFT_SCOPES) return;
+  const myScopeKey = currentScopeKeyInternal(false);
+  const now = Date.now();
+  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+  const candidates = keys.filter((k) => {
+    if (k === justWrittenKey || k === myScopeKey) return false;
+    const rec = all[k];
+    if (!rec) return true;
+    if (rec.siteId) {
+      return !rec.publishedConfig || JSON.stringify(rec.config) === JSON.stringify(rec.publishedConfig);
+    }
+    return !rec.updatedAt || (now - rec.updatedAt) > THIRTY_DAYS;
+  });
+  candidates.sort((a, b) => (all[a].updatedAt || 0) - (all[b].updatedAt || 0));
+  let toRemove = keys.length - MAX_DRAFT_SCOPES;
+  for (let i = 0; i < candidates.length && toRemove > 0; i++) {
+    delete all[candidates[i]];
+    toRemove--;
+  }
+}
+
+function writeDraftScope(scopeKey, payload) {
+  if (!scopeKey) return false;
+  const all = readAllDraftScopes();
+  all[scopeKey] = payload;
+  pruneDraftScopes(all, scopeKey);
+  return lsSet(SCOPES_KEY, all);
 }
 
 // ---------------------------------------------------------------------------
@@ -2155,10 +2372,21 @@ async function runServerAutosave() {
   } catch (e) {
     serverSaveInFlight = false;
     serverSaveQueuedAgain = false;
-    let msg;
+    // SESS-01: a 401 here is never a generic save failure — the session is
+    // gone. Route it through the single session-expiry choke point (never
+    // the server's raw English 401 body) instead of the retry-a-save copy
+    // below, and hand it a retry that re-schedules the autosave once signed
+    // in again.
     if (e && e.status === 401) {
-      msg = 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.';
-    } else if (e && e.fromServer && e.message) {
+      if (typeof handleAuthExpired === 'function') {
+        handleAuthExpired(() => { scheduleServerAutosave(); });
+      } else {
+        setSaveState('error', 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.');
+      }
+      return;
+    }
+    let msg;
+    if (e && e.fromServer && e.message) {
       msg = 'Nu s-a putut salva în cont: ' + e.message;
     } else {
       msg = 'Nu s-a putut salva în cont — verifică conexiunea la internet.';
@@ -2308,6 +2536,22 @@ function maybeShowRecoveryBanner() {
 function discardLocalDraft() {
   recoveryBannerDismissedThisSession = true;
   if (recoveryBannerMode !== 'resume-live') {
+    // MULTI-03: also drop the scoped copy this record actually lives under
+    // (and unpin this tab from it), not just the legacy mirror — otherwise a
+    // later bare #edit in this same tab could silently resurrect it.
+    try {
+      const saved = typeof loadDraft === 'function' ? loadDraft() : null;
+      if (saved && typeof removeDraftScope === 'function') {
+        const scopeKey = saved.siteId ? ('site:' + saved.siteId)
+          : (saved.draftId ? ('local:' + saved.draftId) : null);
+        if (scopeKey) {
+          removeDraftScope(scopeKey);
+          if (saved.siteId && typeof clearTabBoundSiteIdIfMatches === 'function') {
+            clearTabBoundSiteIdIfMatches(saved.siteId);
+          }
+        }
+      }
+    } catch (_) { /* ignore */ }
     try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
     try { localStorage.removeItem(REPLACED_DRAFT_KEY); } catch (_) { /* ignore */ }
   }
@@ -5440,10 +5684,16 @@ function saveDraft() {
   // separate top-level function) never exists there; the guard keeps this a
   // silent no-op (plain overwrite, their pre-existing expected behavior)
   // instead of a ReferenceError.
+  // MULTI-03: resolve which scope THIS tab is saving to BEFORE the merge
+  // check below, so the merge only ever compares against another tab on the
+  // SAME site/draft — never a different one (see currentScopeKey() above).
+  const scopeKey = typeof currentScopeKey === 'function' ? currentScopeKey() : null;
   if (typeof mergeDraftConfigs === 'function' && typeof isSameDraftRecord === 'function' &&
       typeof loadDraft === 'function') {
     try {
-      const existing = loadDraft();
+      const existing = (typeof readDraftScope === 'function' && scopeKey)
+        ? readDraftScope(scopeKey)
+        : loadDraft();
       if (existing && isSameDraftRecord(existing) &&
           existing.tabId && typeof TAB_ID !== 'undefined' && existing.tabId !== TAB_ID) {
         const baseline = lastSyncedDraftConfig || existing.config;
@@ -5482,7 +5732,32 @@ function saveDraft() {
     payload.paid = !!currentSitePaid;
     if (currentSiteSlug) payload.slug = currentSiteSlug;
   }
-  const ok = lsSet(DRAFT_KEY, payload);
+  // MULTI-03: which scope this record belongs to, plus a timestamp used by
+  // pruneDraftScopes() to evict stale/clean scopes sensibly.
+  if (typeof scopeKey === 'string' && scopeKey.indexOf('local:') === 0) {
+    payload.draftId = scopeKey.slice('local:'.length);
+  }
+  payload.updatedAt = Date.now();
+
+  let ok;
+  if (typeof writeDraftScope === 'function' && scopeKey) {
+    ok = writeDraftScope(scopeKey, payload);
+    // Refresh the legacy flat mirror too — existing single-scope tooling
+    // reads it directly, and a genuinely fresh (unpinned) tab falls back to
+    // it for "what was last active anywhere" discovery (see loadDraft()).
+    lsSet(DRAFT_KEY, payload);
+    // If this save just moved scope (this tab's local draft got its first
+    // siteId), drop the OLD scope's slot — every field it had is already
+    // fully carried by this save, so leaving it behind is pure orphaned
+    // storage growth.
+    if (typeof removeDraftScope === 'function' &&
+        lastPersistedScopeKey && lastPersistedScopeKey !== scopeKey) {
+      removeDraftScope(lastPersistedScopeKey);
+    }
+    lastPersistedScopeKey = scopeKey;
+  } else {
+    ok = lsSet(DRAFT_KEY, payload);
+  }
   // This write is now our new common ancestor for the NEXT merge — same
   // guard as the merge attempt above (a no-op in the isolated sandboxes).
   if (ok && typeof mergeDraftConfigs === 'function') lastSyncedDraftConfig = deepClone(draft.config);
@@ -5492,7 +5767,30 @@ function saveDraft() {
   if (typeof noteLocalSaveResult === 'function') noteLocalSaveResult(ok);
   return ok;
 }
-function loadDraft() { return lsGet(DRAFT_KEY); }
+/**
+ * MULTI-03: returns THIS tab's pinned scope (site:<id> once bound, else
+ * local:<draftId>) when one exists; a genuinely fresh tab with nothing
+ * pinned yet falls back to the legacy flat mirror (DRAFT_KEY) — the old
+ * single-slot "what was last active anywhere" discovery — and adopts
+ * whatever scope that record belongs to, so this tab is pinned from here on
+ * and immune to any OTHER tab's later writes (the actual MULTI-03 bug: a
+ * reload silently resuming a DIFFERENT site because another tab wrote last).
+ */
+function loadDraft() {
+  const pinnedKey = typeof currentScopeKeyInternal === 'function' ? currentScopeKeyInternal(false) : null;
+  if (pinnedKey) {
+    return typeof readDraftScope === 'function' ? readDraftScope(pinnedKey) : lsGet(DRAFT_KEY);
+  }
+  const mirrored = lsGet(DRAFT_KEY);
+  if (mirrored && mirrored.templateId && mirrored.config) {
+    if (mirrored.siteId && typeof setTabBoundSiteId === 'function') {
+      setTabBoundSiteId(mirrored.siteId);
+    } else if (mirrored.draftId && typeof adoptTabDraftId === 'function') {
+      adoptTabDraftId(mirrored.draftId);
+    }
+  }
+  return mirrored;
+}
 
 /**
  * After pay, a fresh /app/#edit (or resume without loadSiteForEdit) must bind the
@@ -6454,6 +6752,7 @@ function updateUserUI(user) {
 async function doLogout() {
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
+  if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
   showToast('Te-ai deconectat.', '', 3000);
   window.location.hash = '#templates';
 }
@@ -6471,8 +6770,121 @@ async function doLogoutEverywhere() {
   if (!confirmed) return;
   try { await fetch('/api/auth/logout-everywhere', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
+  if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
   showToast('Te-ai deconectat de pe toate dispozitivele.', '', 3000);
   window.location.hash = '#templates';
+}
+
+// ---------------------------------------------------------------------------
+// 15c. Session-expiry recovery (SESS-01/02/03)
+// ---------------------------------------------------------------------------
+//
+// Before this fix, a session dying mid-edit (expired, revoked, or signed out
+// in another tab) showed only the tooltip-only "Nu s-a salvat" save-pill
+// state, and clicking «Publică» — which never re-checks auth once
+// currentUser is cached truthy — called the server and surfaced its raw
+// English 401 body ("Sign-in required.") as a toast, with no way to sign
+// back in without leaving the editor. Draft content was never lost (it is
+// local-first, see saveDraft()), only the path back to a working session.
+//
+// handleAuthExpired() is the single choke point every 401 (autosave,
+// publish) AND a same-account sign-out noticed in another tab now go
+// through: it flips the account UI to signed-out, shows one fixed Romanian
+// banner (never the server's own words), and offers the EXISTING magic-link
+// modal inline — reauthenticateInline() reuses modal-publish/wireAuthForm,
+// not a second auth UI — retrying whatever was interrupted once signed in
+// again.
+
+const AUTH_SIGNAL_KEY = 'hb.auth.signal.v1';
+let sessionExpiredActive = false;
+let sessionExpiredRetry = null; // () => Promise|void, run once re-authenticated
+
+/** SESS-02: tell every OTHER tab of this browser "this account just signed
+ * out here" — doLogout()/doLogoutEverywhere() call this after clearing
+ * their own state. A plain localStorage write is enough: the `storage`
+ * event fires in every other same-origin tab (never this one), which is
+ * exactly the audience that needs to know. */
+function broadcastAuthSignedOut() {
+  try {
+    localStorage.setItem(AUTH_SIGNAL_KEY, JSON.stringify({ type: 'signed-out', at: Date.now(), tabId: TAB_ID }));
+  } catch (_) { /* ignore — worst case that other tab only finds out on its next 401 */ }
+}
+
+function initCrossTabAuthWatcher() {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== AUTH_SIGNAL_KEY || !e.newValue) return;
+    let signal;
+    try { signal = JSON.parse(e.newValue); } catch (_) { return; }
+    if (!signal || signal.tabId === TAB_ID || signal.type !== 'signed-out') return;
+    // Only matters if THIS tab still thinks it is signed in — a tab that was
+    // never authenticated (or already knows it is not) has nothing to lose.
+    if (!currentUser) return;
+    handleAuthExpired(null);
+  });
+}
+
+function showSessionExpiredBanner() {
+  const banner = $('session-expired-banner');
+  if (banner) { banner.style.display = ''; banner.setAttribute('aria-hidden', 'false'); }
+}
+
+function hideSessionExpiredBanner() {
+  const banner = $('session-expired-banner');
+  if (banner) { banner.style.display = 'none'; banner.setAttribute('aria-hidden', 'true'); }
+  sessionExpiredActive = false;
+}
+
+/**
+ * SESS-01/02: called on every 401 from autosave/publish, and on a same-
+ * account sign-out noticed from another tab. `retryFn`, if given, is run
+ * automatically once sign-in completes (e.g. re-scheduling the autosave
+ * that 401'd, or re-attempting the exact publish that was interrupted);
+ * omitted for the cross-tab case, where there is no one specific pending
+ * action to resume — see reauthenticateInline()'s fallback below.
+ */
+function handleAuthExpired(retryFn) {
+  updateUserUI(null); // badge/nav/save-pill all reflect signed-out immediately
+  sessionExpiredRetry = typeof retryFn === 'function' ? retryFn : null;
+  const msg = 'Sesiunea a expirat — conectează-te din nou ca să salvezi și să publici. ' +
+    'Modificările tale sunt păstrate pe acest dispozitiv.';
+  if (typeof setSaveState === 'function') setSaveState('error', msg);
+  if (sessionExpiredActive) return; // already showing — do not restack
+  sessionExpiredActive = true;
+  showSessionExpiredBanner();
+}
+
+/** Wired to the session-expired banner's own button — opens the SAME
+ * magic-link modal/flow as publish (no second auth system), inline, without
+ * leaving the editor. */
+function reauthenticateInline() {
+  const authTitleEl = $('modal-auth-title');
+  if (authTitleEl) authTitleEl.textContent = 'Sesiunea a expirat — conectează-te din nou';
+  hide($('publish-step-1'));
+  show($('publish-step-2'));
+  show($('form-auth-email'));
+  hide($('auth-sent'));
+  hideId('auth-error');
+  openModal('modal-publish');
+  wireAuthForm(async () => {
+    closeModal('modal-publish');
+    hideSessionExpiredBanner();
+    const retry = sessionExpiredRetry;
+    sessionExpiredRetry = null;
+    if (retry) {
+      try { await retry(); } catch (_) { /* the retried action reports its own failure */ }
+    } else if (currentUser && draft.templateId && draft.config) {
+      // Cross-tab sign-out (SESS-02) with no single pending action — resume
+      // normal autosave if there is anything to persist.
+      scheduleServerAutosave();
+    } else {
+      setSaveState('idle');
+    }
+  });
+}
+
+function initSessionExpiredBanner() {
+  const btn = $('btn-session-expired-reauth');
+  if (btn) btn.addEventListener('click', reauthenticateInline);
 }
 
 /** Editor-topbar account menu: "Proiectele mele" + "Deconectare" (audit medium #7). */
@@ -6804,6 +7216,28 @@ async function doActualPublish(chosenSlug) {
   try {
     await execPublish(chosenSlug);
   } catch (e) {
+    // SESS-01: a 401 here means the client's cached currentUser is stale —
+    // the session actually expired server-side since this modal opened, so
+    // the `!currentUser` check above never even ran. Without this branch,
+    // status 401 falls inside the 400-500 "deliberate refusal" window below
+    // and the server's raw English 401 body ("Sign-in required.") would be
+    // shown verbatim — exactly the SESS-01 leak. Route it through the same
+    // session-expiry recovery as autosave instead, retrying this same
+    // publish once signed in again.
+    if (e && e.status === 401) {
+      if (typeof handleAuthExpired === 'function') {
+        // The publish/slug modal is still open on top of the page — the
+        // session-expired banner lives outside it, so leaving the modal up
+        // would block its own re-auth button. Close it first; the retry
+        // below re-opens whatever is needed (the auth step, inline) once
+        // signed in again.
+        closeModal('modal-publish');
+        handleAuthExpired(() => doActualPublish(chosenSlug));
+      } else {
+        showToast('Sesiunea a expirat — conectează-te din nou ca să publici.', 'error', 6000);
+      }
+      return;
+    }
     // PLAN-QA-2026-09-12.md S3-1 / defect B1: a refusal the SERVER chose to
     // send (e.g. "Ai deja un site neplătit...", 409) is safe to show
     // verbatim -- apiPost() already marks it fromServer for exactly this.
@@ -6885,11 +7319,78 @@ function wireDashboardAuthButton() {
   };
 }
 
+// ---------------------------------------------------------------------------
+// SESS-03: desktop tab waiting on a magic link
+// ---------------------------------------------------------------------------
+//
+// Before this fix, the "Link trimis! Verifică inbox-ul." screen was a dead
+// end for the SPA — the tab had no way to learn the link had been used, so
+// finishing sign-in required a manual reload (losing the "resume this
+// action" continuation `onAuthSuccess` was there to provide). This polls
+// /api/me with backoff (and immediately on window focus — the common case
+// of tabbing back after checking email) so the SAME browser continues on
+// its own the moment a session cookie exists, exactly like clicking the dev
+// link already did.
+//
+// Cross-device decision: opening the link on a PHONE verifies and sets the
+// session cookie in the PHONE's browser only (hb_session is HttpOnly,
+// bot/auth.js) — there is no server-side channel that could promote this
+// desktop tab from that. Rather than fake a "continue here" button that
+// cannot actually work, #auth-sent explains this plainly and points back at
+// opening the link in THIS browser instead (see builder/index.html).
+let authPollTimer = null;
+let authPollAttempt = 0;
+let authPollActive = false;
+let authPollFocusHandler = null;
+
+function stopAuthPolling() {
+  authPollActive = false;
+  if (authPollTimer) { clearTimeout(authPollTimer); authPollTimer = null; }
+  if (authPollFocusHandler) { window.removeEventListener('focus', authPollFocusHandler); authPollFocusHandler = null; }
+}
+
+function startAuthPolling(onAuthSuccess) {
+  stopAuthPolling(); // only one poll loop live at a time
+  authPollActive = true;
+  authPollAttempt = 0;
+
+  async function tryOnce() {
+    if (!authPollActive) return;
+    const user = await fetchCurrentUser().catch(() => null);
+    if (!authPollActive) return; // the modal/form moved on while this was in flight
+    if (user) {
+      stopAuthPolling();
+      updateUserUI(user);
+      closeModal('modal-publish');
+      hideToast();
+      clearPreviewOverlays();
+      if (onAuthSuccess) {
+        setLoading(true, 'Se publică…');
+        try { await onAuthSuccess(); } catch (_) { /* ignore */ } finally { setLoading(false); }
+      } else if (await resumeLocalDraft()) {
+        window.location.hash = '#edit';
+      } else {
+        window.location.hash = '#dashboard';
+      }
+      return;
+    }
+    authPollAttempt++;
+    const delay = Math.min(2000 * Math.pow(1.6, authPollAttempt - 1), 15000);
+    authPollTimer = setTimeout(tryOnce, delay);
+  }
+
+  authPollFocusHandler = () => { if (authPollActive) tryOnce(); };
+  window.addEventListener('focus', authPollFocusHandler);
+  authPollTimer = setTimeout(tryOnce, 2000);
+}
+
 function wireAuthForm(onAuthSuccess) {
   const form = $('form-auth-email');
   const sentDiv = $('auth-sent');
   const errorDiv = $('auth-error');
   const devLink = $('dev-link');
+
+  stopAuthPolling(); // a fresh form submission supersedes any earlier wait
 
   if (form) form.style.display = '';
   if (sentDiv) sentDiv.style.display = 'none';
@@ -6911,11 +7412,23 @@ function wireAuthForm(onAuthSuccess) {
         const res = await apiPost('/api/auth/email', { email });
         if (form) hide(form);
         if (sentDiv) show(sentDiv);
+        // SESS-03: start waiting for the SAME browser to become signed in —
+        // covers both "clicked the link in this same browser" and the dev
+        // link below (which also stops this once it succeeds on its own).
+        startAuthPolling(onAuthSuccess);
         if (res.devLink && devLink) {
           devLink.href = res.devLink;
           devLink.textContent = 'Deschide site-ul';
           show(devLink);
-          devLink.addEventListener('click', async (ev) => {
+          // SESS-01: assignment (not addEventListener) — a second wireAuthForm()
+          // call on the SAME page (e.g. session-expiry reauthenticateInline()
+          // after an earlier publish/dashboard auth prompt) must REPLACE this
+          // handler, not stack a second one alongside it. Two live handlers
+          // on the same click used to both fire — the OLDER one's stale
+          // `onAuthSuccess` closure (e.g. a plain loadDashboard() refresh)
+          // ran right alongside the new one and could stomp on state it set,
+          // such as the newly (re)scheduled autosave retry.
+          devLink.onclick = async (ev) => {
             // Keep SPA: verify via fetch so draft/publish resume works (S62)
             ev.preventDefault();
             try {
@@ -6923,6 +7436,7 @@ function wireAuthForm(onAuthSuccess) {
               await fetch(href, { credentials: 'include', redirect: 'follow' });
               const user = await fetchCurrentUser().catch(() => null);
               if (user) {
+                stopAuthPolling(); // this click already finished what the poll loop was waiting for
                 updateUserUI(user);
                 closeModal('modal-publish');
                 hideToast();
@@ -6941,7 +7455,7 @@ function wireAuthForm(onAuthSuccess) {
             } catch (_) {
               window.location.href = devLink.href || res.devLink;
             }
-          });
+          };
         }
       } catch (err) {
         // audit medium #6: the server sends a specific reason (rate limit, invalid
@@ -7491,7 +8005,11 @@ async function startWithTemplate(templateId) {
   // but it must never be a SILENT loss either: best-effort back the old
   // draft up to the account when possible (recoverable afterwards from
   // "Proiectele mele"), and always say plainly what happened.
-  const existingDraftForSwitch = loadDraft();
+  // MULTI-03: "am I replacing an earlier draft" must only ever look at THIS
+  // tab's own prior work, never the cross-scope discovery mirror — a fresh
+  // tab that has never started anything must not treat some OTHER tab's
+  // in-progress site as "the draft being replaced here".
+  const existingDraftForSwitch = typeof loadDraftPinnedOnly === 'function' ? loadDraftPinnedOnly() : loadDraft();
   if (existingDraftForSwitch && existingDraftForSwitch.templateId &&
       existingDraftForSwitch.templateId !== templateId && existingDraftForSwitch.config) {
     const existingMeta = registry.find(t => t.id === existingDraftForSwitch.templateId);
@@ -7548,7 +8066,9 @@ async function startWithTemplate(templateId) {
   publishedConfigSnapshot = null;
   draft.templateId = templateId;
 
-  const saved = loadDraft();
+  // Same MULTI-03 reasoning as existingDraftForSwitch above — only THIS
+  // tab's own pinned draft can be "the one already open for this template".
+  const saved = typeof loadDraftPinnedOnly === 'function' ? loadDraftPinnedOnly() : loadDraft();
   if (saved && saved.templateId === templateId && saved.config) {
     draft.config = saved.config;
     isFreshDemoDraft = false;
@@ -8126,6 +8646,14 @@ function expectedDeleteSiteName() {
  */
 function retireLocalDraftForDeletedSite(siteId) {
   if (!siteId) return;
+  // MULTI-03: the deleted site's own scope slot, targeted directly by id —
+  // the CURRENT tab's loadDraft() may resolve to a completely different
+  // scope (e.g. the dashboard tab deleting a site it never had open), so it
+  // cannot be relied on to find this one.
+  try {
+    if (typeof removeDraftScope === 'function') removeDraftScope('site:' + siteId);
+    if (typeof clearTabBoundSiteIdIfMatches === 'function') clearTabBoundSiteIdIfMatches(siteId);
+  } catch (_) { /* ignore */ }
   try {
     const saved = loadDraft();
     if (saved && saved.siteId === siteId) {
@@ -9173,6 +9701,9 @@ function wireStaticButtons() {
   // Save state indicator + exit guard (Wave 9)
   initSaveGuard();
   initRecoveryBanner();
+  // Session-expiry recovery (SESS-01/02)
+  initCrossTabAuthWatcher();
+  initSessionExpiredBanner();
   const demoBannerDismissBtn = $('btn-dismiss-demo-banner');
   if (demoBannerDismissBtn) demoBannerDismissBtn.addEventListener('click', () => closeQuickstart());
   const quickstartForm = $('quickstart-form');
