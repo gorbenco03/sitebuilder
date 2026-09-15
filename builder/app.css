@@ -564,6 +564,25 @@ body.details-drawer-open .editor-tpl-name {
     flex-shrink: 0;
   }
 
+  /* Suite 12 QA (mobile topbar discoverability): every rail button already
+     has an accessible name (aria-label, checked by
+     suite12-mobile-topbar-discoverable.test.js) and most also have a
+     title="" tooltip — but a touchscreen has no hover, so title="" never
+     shows, and .btn-topbar-label text was hidden everywhere below the
+     min-width:720px rule above. The result: icon-only buttons at phone
+     width with literally no way for a sighted touch user to learn what
+     Instagram/Culoare/Poze/Detalii/the two downloads DO before tapping one.
+     The rail already scrolls horizontally to fit whatever it holds — a
+     rail full-length label costs scroll distance, not layout breakage — so
+     turn the label back on for exactly this width range instead of adding
+     a second UI (an overflow menu) on top of a control that already
+     scrolls. #btn-publish is unaffected: it lives outside the rail and
+     uses its own plain <span>, governed by the min-width:420px rule below,
+     not .btn-topbar-label. */
+  .editor-topbar-scroll .btn-topbar-label {
+    display: inline;
+  }
+
   /* Publish stays icon-only at phone width on purpose: showing the
      "Publică site-ul" label here needs ~140px, which doesn't fit next
      to the pinned-width left/center sections without reintroducing the

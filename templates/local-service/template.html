@@ -411,7 +411,7 @@
         <div class="wa-qr__card" role="dialog" aria-modal="true" aria-labelledby="wa-qr-title">
             <button class="wa-qr__close" type="button" data-wa-close aria-label="{{labels.close}}">&times;</button>
             <h3 class="wa-qr__title" id="wa-qr-title">{{labels.waQr}}</h3>
-            <div class="wa-qr__code"><img id="wa-qr-img" alt="{{labels.whatsapp}} QR" width="240" height="240"></div>
+            <div class="wa-qr__code"><img id="wa-qr-img" data-hb-non-owner alt="{{labels.whatsapp}} QR" width="240" height="240"></div>
             <a class="wa-qr__open" id="wa-qr-open" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.waOpen}}</a>
         </div>
     </div>
@@ -421,7 +421,7 @@
     <div class="lightbox" id="lightbox" hidden role="dialog" aria-modal="true" aria-label="{{labels.lightboxPreview}}">
         <button class="lightbox__close" id="lightbox-close" aria-label="{{labels.close}}">&times;</button>
         <button class="lightbox__nav lightbox__prev" id="lightbox-prev" aria-label="{{labels.lightboxPrev}}">‹</button>
-        <img class="lightbox__img" id="lightbox-img" src="" alt="">
+        <img class="lightbox__img" id="lightbox-img" data-hb-non-owner src="" alt="">
         <button class="lightbox__nav lightbox__next" id="lightbox-next" aria-label="{{labels.lightboxNext}}">›</button>
     </div>
 

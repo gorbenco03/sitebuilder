@@ -1100,6 +1100,21 @@ function renderHtml(templateHtml, config, opts) {
     if (Array.isArray(cfg.sections) && cfg.sections.length > 0) {
         html = reorderSections(html, cfg.sections);
     }
+    // Suite 12: [data-hb-non-owner] (stamped directly in templates/*/
+    // template.html, e.g. the shared WhatsApp QR-code <img id="wa-qr-img">
+    // and local-service's #lightbox-img) is a purely editor-side marker —
+    // builder/edit-overlay.js's setupImages() reads it to keep "Înlocuiește
+    // fotografia" off content that isn't the owner's own photography. Unlike
+    // data-hb-edit/data-hb-edit-img above, which are only ever injected
+    // inside the `if (editMode)` branches, this one is static markup baked
+    // into template.html itself — present in `html` regardless of editMode
+    // by the time execution reaches here. Strip it for every non-editMode
+    // call so renderHtml() keeps the guarantee its own doc comment makes:
+    // byte-identical to before the marker existed for every publish/export.
+    // See bot/test/suite12-no-editor-controls-on-non-owner-content.test.js.
+    if (!editMode) {
+        html = html.replace(/\s+data-hb-non-owner\b/g, '');
+    }
     return html;
 }
 
