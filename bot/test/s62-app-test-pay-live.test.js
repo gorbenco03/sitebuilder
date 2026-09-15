@@ -228,8 +228,15 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
     await check('HEAD builder magic-link resume: Open the site does not only hard-navigate away', () => {
         const wireSrc = extractFunction(appSrc, 'wireAuthForm') || '';
         assert.ok(wireSrc.length > 40, 'wireAuthForm must exist');
-        // Magic-link anchor click must preventDefault + fetch verify (keep SPA) or set resume flag
-        const devClick = (wireSrc.match(/devLink\.addEventListener\(\s*['"]click['"][\s\S]{0,800}/) || [''])[0];
+        // Magic-link anchor click must preventDefault + fetch verify (keep SPA) or set resume flag.
+        // SESS-01 (session-expiry recovery): wireAuthForm() can now legitimately run
+        // a second time in one page's lifetime (e.g. a session-expiry re-auth prompt
+        // after an earlier publish/dashboard auth prompt) — devLink.addEventListener
+        // used to accumulate a SECOND live listener with a stale closure instead of
+        // replacing the first, so both fired on the next click. Assignment
+        // (devLink.onclick =) replaces it instead, same idiom already used by the
+        // Instagram dev-link wiring a few hundred lines above for the same reason.
+        const devClick = (wireSrc.match(/devLink\.(?:addEventListener\(\s*['"]click['"]|onclick\s*=)[\s\S]{0,800}/) || [''])[0];
         assert.ok(devClick.length > 20, 'devLink click listener must exist');
         assert.ok(
             /preventDefault\s*\(/.test(devClick),

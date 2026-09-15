@@ -201,6 +201,17 @@
   </span>
 </div>
 
+<!-- ===== SESSION EXPIRED BANNER (SESS-01/02 — a 401 on autosave/publish, or
+     a sign-out noticed from another tab). Fixed Romanian explanation with an
+     inline re-auth button reusing the existing magic-link modal — never the
+     server's raw English 401 body. ===== -->
+<div id="session-expired-banner" class="session-expired-banner" role="alert" aria-live="assertive" aria-hidden="true" style="display:none">
+  <span class="session-expired-text" id="session-expired-text">Sesiunea a expirat — conectează-te din nou ca să salvezi și să publici. Modificările tale sunt păstrate pe acest dispozitiv.</span>
+  <span class="session-expired-actions">
+    <button type="button" class="btn-primary btn-sm" id="btn-session-expired-reauth">Conectează-te din nou</button>
+  </span>
+</div>
+
 <!-- ===== MAIN ===== -->
 <main id="app-main">
 
@@ -497,6 +508,8 @@
         </div>
         <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
         <p class="auth-sent-sub">Deschide emailul și apasă linkul ca să te autentifici.</p>
+        <p class="auth-sent-status">Rămâi pe această pagină — continuăm automat imediat ce te autentifici în acest browser.</p>
+        <p class="auth-sent-note">Dacă deschizi linkul pe telefon sau pe alt calculator, din siguranță sesiunea rămâne doar acolo — deschide linkul chiar în acest browser (sau retrimite-l mai sus) ca să continui aici.</p>
         <a id="dev-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none" class="dev-link" aria-label="Deschide site-ul">Deschide site-ul</a>
       </div>
     </div>

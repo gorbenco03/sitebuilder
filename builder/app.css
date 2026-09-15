@@ -718,6 +718,24 @@ body.details-drawer-open .editor-tpl-name {
   padding: 0.15rem 0.4rem;
 }
 
+/* ---------- Session-expired banner (SESS-01/02 — autosave/publish 401, or a
+   sign-out noticed from another tab) ---------- */
+.session-expired-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  background: var(--warning-bg);
+  color: #92400E;
+  border-bottom: 1px solid #FDE68A;
+  font-size: 0.82rem;
+  text-align: center;
+}
+.session-expired-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
 /* ---------- Recovery banner (Wave 9 — offer an unfinished local draft back) ---------- */
 .recovery-banner {
   display: flex;
@@ -2243,6 +2261,8 @@ body.details-drawer-open .editor-tpl-name {
 .auth-sent-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
 .auth-sent-title { font-size: 0.97rem; font-weight: 600; color: var(--text); }
 .auth-sent-sub { font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; }
+.auth-sent-status { font-size: 0.82rem; color: var(--accent-hover); line-height: 1.5; }
+.auth-sent-note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; opacity: 0.85; }
 .dev-link {
   font-size: 0.8rem; color: var(--text-muted);
   border: 1px dashed var(--border);
