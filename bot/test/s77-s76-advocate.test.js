@@ -194,17 +194,17 @@ check('HEAD: catalog chips name Restaurant + Salon + Meserii + Servicii profesio
   assert.ok(/data-filter=["']desserdirina["']/.test(chips), 'filter desserdirina');
 });
 
-check('HEAD: landing step 03 has 99€, step 04 has 29€, footer no AI agents', () => {
+check('HEAD: landing step 03 has 99€, no renewal price, footer no AI agents', () => {
   const src = read('builder/index.html');
   const how = howSection(src);
   assert.ok(how, 'how section');
   const step03 = how.match(/how-step-num">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
   assert.ok(step03, 'step 03');
   assert.ok(/99\s*€|99€/.test(step03[0]), 'step 03 has 99€');
-  // Current RO chrome: "29€</strong>/an" or "29€ /an" (HTML may sit between € and /an)
+  // Owner decision 2026-09-15: no renewal price on the landing page any more.
   assert.ok(
-    /29\s*€(?:\s|<\/?[^>]+>)*\/\s*an|29\s*€(?:\s|<\/?[^>]+>)*\/\s*year|29€\/year/i.test(how),
-    'how section has 29€/an (RO) or 29€/year'
+    !/29\s*€(?:\s|<\/?[^>]+>)*\/\s*an|29\s*€(?:\s|<\/?[^>]+>)*\/\s*year|29€\/year/i.test(how),
+    'how section shows no 29€/an renewal price'
   );
   assert.ok(!/AI agents/i.test(src), 'no English AI agents in landing');
   // footer denies unpaid bots in Romanian product chrome

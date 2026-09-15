@@ -412,10 +412,11 @@ check('HEAD non-regress: catalog chips still name five systems', () => {
   assert.ok(/Cofetărie|Desserdirina/.test(chips), 'Cofetărie chip');
 });
 
-check('HEAD non-regress: landing still shows 99€ / 29€ and Fără boți', () => {
+check('HEAD non-regress: landing shows 99€, no renewal price, and Fără boți', () => {
   const html = read('builder/index.html');
   assert.ok(/99\s*€|99€/.test(html), '99€');
-  assert.ok(/29\s*€|29€/.test(html), '29€');
+  // Owner decision 2026-09-15: no renewal price (was 29€/an) on the landing page.
+  assert.ok(!/29\s*€|29€/.test(html), 'no 29€ renewal price on the landing page');
   assert.ok(/Fără boți|Fara boti/i.test(html), 'Fără boți RO denial');
   assert.ok(!/No bots/i.test(html), 'no English No bots on landing');
 });

@@ -1374,8 +1374,13 @@ body.details-drawer-open .editor-tpl-name {
   margin: 1.75rem auto 0.5rem;
   padding: 0 1.25rem;
 }
+/* Three tiles since the renewal-price tile was removed from the landing page:
+   three columns on wide screens, and on two-column phones the odd last tile
+   takes the full row instead of sitting alone beside an empty cell. */
+.proof-row > .proof-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
 @media (min-width: 720px) {
-  .proof-row { grid-template-columns: repeat(4, 1fr); }
+  .proof-row { grid-template-columns: repeat(3, 1fr); }
+  .proof-row > .proof-item:last-child:nth-child(odd) { grid-column: auto; }
 }
 .proof-item {
   border-top: 1px solid var(--border);

@@ -191,13 +191,16 @@ async function run() {
         const html = read(BUILDER_HTML);
         // Product-visible landing must not hardcode EUR major units in how-step / success
         assert.ok(/id=["']how-price["']/.test(html), 'how-price id');
-        assert.ok(/id=["']how-renewal["']/.test(html), 'how-renewal id');
-        assert.ok(/id=["']how-renewal-step["']/.test(html), 'how-renewal-step id');
+        // Owner decision 2026-09-15: the landing page no longer advertises a
+        // renewal price, so its renewal spans are gone; the success modal
+        // keeps its config-driven one.
+        assert.ok(!/id=["']how-renewal["']/.test(html), 'landing has no how-renewal span');
+        assert.ok(!/id=["']how-renewal-step["']/.test(html), 'landing has no how-renewal-step span');
         assert.ok(/id=["']success-renewal["']/.test(html), 'success-renewal id');
         assert.ok(/id=["']hero-price["']/.test(html), 'hero-price');
         assert.ok(/id=["']proof-price["']/.test(html), 'proof-price');
         assert.ok(/id=["']footer-price["']/.test(html), 'footer-price');
-        assert.ok(/id=["']footer-renewal["']/.test(html), 'footer-renewal');
+        assert.ok(!/id=["']footer-renewal["']/.test(html), 'landing footer has no renewal span');
         // Stale hardcodes on landing chrome
         assert.ok(!/Taxăm\s+99€/.test(html), 'no hard-coded Taxăm 99€');
         assert.ok(!/reînnoire\s+29€\/an/.test(html), 'no hard-coded 29€/an in how');
