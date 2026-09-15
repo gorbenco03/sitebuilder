@@ -280,8 +280,10 @@ test('suite6: the checklist pill jumps to the missing SEO field instead of a dea
     await seoItem.click();
     await page.locator('#details-drawer').waitFor({ state: 'visible', timeout: 5000 });
 
-    // openDrawer() focuses inside a requestAnimationFrame after the body is
-    // rebuilt, so "drawer visible" is not yet "field focused".
+    // openDrawer() focuses synchronously now (it used to defer one animation
+    // frame, which let a keystroke land in the wrong field — see
+    // bot/test/drawer-open-focus-steal.test.js); the short wait only lets the
+    // smooth scrollIntoView settle before reading the active element.
     await page.waitForTimeout(400);
     const focusedKey = await page.evaluate(() => {
       const el = document.activeElement;
