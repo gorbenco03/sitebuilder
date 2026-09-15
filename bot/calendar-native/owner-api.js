@@ -179,6 +179,13 @@ function publicSettings(row) {
         reminderHoursBefore: row.reminder_hours_before,
         reminderVisitorEnabled: !!row.reminder_visitor_enabled,
         reminderOwnerEnabled: !!row.reminder_owner_enabled,
+        // CAL-EMAIL — per-event owner booking notification toggles (v6).
+        notifyOwnerNewConfirmed: row.notify_owner_new_confirmed == null ? true : !!row.notify_owner_new_confirmed,
+        notifyOwnerNewPending: row.notify_owner_new_pending == null ? true : !!row.notify_owner_new_pending,
+        notifyOwnerSlotTaken: row.notify_owner_slot_taken == null ? true : !!row.notify_owner_slot_taken,
+        notifyOwnerCancelled: row.notify_owner_cancelled == null ? true : !!row.notify_owner_cancelled,
+        notifyOwnerRescheduled: row.notify_owner_rescheduled == null ? true : !!row.notify_owner_rescheduled,
+        notifyOwnerEmail: row.notify_owner_email || null,
     };
 }
 
@@ -680,6 +687,36 @@ function putOwnerSettings(db, customerId, siteId, body) {
         patch.reminder_owner_enabled = Boolean(
             body.reminderOwnerEnabled != null ? body.reminderOwnerEnabled : body.reminder_owner_enabled
         );
+    }
+
+    // CAL-EMAIL — per-event owner booking notification toggles (v6):
+    // new-booking confirmed/pending, slot-taken, visitor cancel, visitor
+    // reschedule. Each defaults to ON (schema.js SCHEMA_SQL_V6); an owner
+    // turns off exactly the ones they don't want.
+    const OWNER_NOTIFY_FIELDS = [
+        ['notifyOwnerNewConfirmed', 'notify_owner_new_confirmed'],
+        ['notifyOwnerNewPending', 'notify_owner_new_pending'],
+        ['notifyOwnerSlotTaken', 'notify_owner_slot_taken'],
+        ['notifyOwnerCancelled', 'notify_owner_cancelled'],
+        ['notifyOwnerRescheduled', 'notify_owner_rescheduled'],
+    ];
+    for (const [camel, snake] of OWNER_NOTIFY_FIELDS) {
+        if (body && (body[camel] != null || body[snake] != null)) {
+            patch[snake] = Boolean(body[camel] != null ? body[camel] : body[snake]);
+        }
+    }
+    if (body && (Object.prototype.hasOwnProperty.call(body, 'notifyOwnerEmail')
+        || Object.prototype.hasOwnProperty.call(body, 'notify_owner_email'))) {
+        const raw = body.notifyOwnerEmail !== undefined ? body.notifyOwnerEmail : body.notify_owner_email;
+        if (raw === null || raw === '') {
+            patch.notify_owner_email = null;
+        } else {
+            const v = String(raw).trim().slice(0, 160);
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+                return { error: 'Adresa de email pentru notificări trebuie să fie validă (sau goală pentru adresa contului).', code: 'VALIDATION', status: 400 };
+            }
+            patch.notify_owner_email = v;
+        }
     }
 
     try {

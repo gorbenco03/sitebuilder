@@ -116,6 +116,77 @@ function toIsoUtc(ms) {
     return new Date(ms).toISOString();
 }
 
+/**
+ * UTC offset (minutes, e.g. +180 for EEST) actually in effect at `utcMs` in
+ * `timeZone`. Shared building block for DST-aware wall-time resolution below.
+ */
+function offsetMinutesAtUtc(utcMs, timeZone) {
+    const parts = getZonedParts(new Date(utcMs), timeZone);
+    const asUtc = Date.UTC(
+        parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second || 0, 0
+    );
+    return (asUtc - utcMs) / 60000;
+}
+
+/**
+ * CAL-07 — resolve every UTC instant that realizes a given local wall-clock
+ * time in `timeZone`, explicit about the two DST-transition hazards instead
+ * of quietly picking one arbitrary answer the way zonedWallTimeToUtcMs's
+ * simple fixed-point iteration does:
+ *
+ *  - Normal day: exactly one instant.
+ *  - Spring-forward gap (e.g. Europe/Bucharest 2026-03-29 03:00-03:59 never
+ *    happens — clocks jump 03:00 -> 04:00): zero instants. Neither the
+ *    pre-transition nor the post-transition offset round-trips back to the
+ *    requested wall clock, so both candidates are rejected.
+ *  - Fall-back overlap (e.g. Europe/Bucharest 2026-10-25 03:00-03:59 happens
+ *    twice — clocks fall back 04:00 -> 03:00): two distinct instants, one
+ *    hour apart, each carrying its own UTC offset. Both are real, bookable,
+ *    non-colliding moments (different start_utc), ordered earliest first.
+ *
+ * Works by taking the UTC offset that prevailed a day before and a day after
+ * the requested date (correct for any single-transition day, since a zone's
+ * offset is constant for months at a time) as the two only possible
+ * candidates, then keeping only the ones that are self-consistent AND
+ * round-trip to the exact requested wall clock.
+ *
+ * @returns {{ utcMs: number, offsetMinutes: number }[]} sorted ascending by utcMs
+ */
+function resolveZonedWallTime(year, month, day, hour, minute, timeZone) {
+    const naiveUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+    const offsetBefore = offsetMinutesAtUtc(naiveUtc - 24 * 3600000, timeZone);
+    const offsetAfter = offsetMinutesAtUtc(naiveUtc + 24 * 3600000, timeZone);
+
+    const candidates = new Map();
+    for (const offset of [offsetBefore, offsetAfter]) {
+        const utcMs = naiveUtc - offset * 60000;
+        const selfCheck = offsetMinutesAtUtc(utcMs, timeZone);
+        if (selfCheck !== offset) continue; // this offset does not actually hold at utcMs
+        const parts = getZonedParts(new Date(utcMs), timeZone);
+        if (
+            parts.year !== year || parts.month !== month || parts.day !== day ||
+            parts.hour !== hour || parts.minute !== minute
+        ) continue; // wall clock does not round-trip — not a real instant
+        candidates.set(utcMs, offset);
+    }
+    return Array.from(candidates.entries())
+        .map(([utcMs, offsetMinutes]) => ({ utcMs, offsetMinutes }))
+        .sort((a, b) => a.utcMs - b.utcMs);
+}
+
+/**
+ * "+03:00" / "-05:30" style UTC offset label for confirmation copy on an
+ * ambiguous (fall-back) local time.
+ * @param {number} offsetMinutes
+ */
+function formatUtcOffset(offsetMinutes) {
+    const sign = offsetMinutes < 0 ? '-' : '+';
+    const abs = Math.abs(offsetMinutes);
+    const h = String(Math.floor(abs / 60)).padStart(2, '0');
+    const m = String(abs % 60).padStart(2, '0');
+    return 'UTC' + sign + h + ':' + m;
+}
+
 module.exports = {
     zonedWallTimeToUtcMs,
     getZonedParts,
@@ -124,4 +195,7 @@ module.exports = {
     isoWeekdayForDateLocal,
     minutesToHourMinute,
     toIsoUtc,
+    offsetMinutesAtUtc,
+    resolveZonedWallTime,
+    formatUtcOffset,
 };

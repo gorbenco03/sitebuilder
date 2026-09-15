@@ -17,6 +17,7 @@ const {
     minutesToHourMinute,
     toIsoUtc,
     getZonedParts,
+    resolveZonedWallTime,
 } = require('./time');
 const { ACTIVE_BOOKING_STATUSES } = require('./schema');
 
@@ -29,6 +30,26 @@ function emitBookingEmail(db, payload) {
     try {
         const email = require('./email');
         email.enqueueBookingEmailSafe(db, payload);
+    } catch (_) {
+        /* ignore — booking path stays authoritative */
+    }
+}
+
+/**
+ * CAL-EMAIL: owner-facing booking-event notification hook — deliberately
+ * separate from emitBookingEmail/the visitor pipeline above (own function,
+ * own outbox rows, own per-event settings toggle) so it stays easy to keep
+ * isolated from concurrent work elsewhere in this file. Sync enqueue only;
+ * never breaks the booking write; never fires for the owner's OWN dashboard
+ * actions (only the three call sites below — new booking, visitor cancel,
+ * visitor reschedule — invoke this; cancelBookingAsOwner /
+ * rescheduleBookingAsOwner / reassignBookingAsOwner / confirmBookingAsOwner
+ * do not, since notifying an owner about their own action is just noise).
+ */
+function emitOwnerNotification(db, payload) {
+    try {
+        const email = require('./email');
+        email.enqueueOwnerBookingEmailSafe(db, payload);
     } catch (_) {
         /* ignore — booking path stays authoritative */
     }
@@ -106,8 +127,10 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
                 min_cancel_hours, slot_interval_minutes,
                 min_notice_minutes, max_advance_days,
                 reminder_hours_before, reminder_visitor_enabled, reminder_owner_enabled,
+                notify_owner_new_confirmed, notify_owner_new_pending, notify_owner_slot_taken,
+                notify_owner_cancelled, notify_owner_rescheduled, notify_owner_email,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         ).run(
             customerId,
             siteId,
@@ -120,6 +143,15 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
             patch.reminder_hours_before != null ? patch.reminder_hours_before : 24,
             patch.reminder_visitor_enabled != null ? (patch.reminder_visitor_enabled ? 1 : 0) : 1,
             patch.reminder_owner_enabled != null ? (patch.reminder_owner_enabled ? 1 : 0) : 0,
+            // CAL-EMAIL: owner booking-event notifications default ON for a
+            // brand-new tenant too, same posture as the ALTER TABLE DEFAULT 1
+            // that backfills every pre-existing tenant (schema.js SCHEMA_SQL_V6).
+            patch.notify_owner_new_confirmed != null ? (patch.notify_owner_new_confirmed ? 1 : 0) : 1,
+            patch.notify_owner_new_pending != null ? (patch.notify_owner_new_pending ? 1 : 0) : 1,
+            patch.notify_owner_slot_taken != null ? (patch.notify_owner_slot_taken ? 1 : 0) : 1,
+            patch.notify_owner_cancelled != null ? (patch.notify_owner_cancelled ? 1 : 0) : 1,
+            patch.notify_owner_rescheduled != null ? (patch.notify_owner_rescheduled ? 1 : 0) : 1,
+            patch.notify_owner_email !== undefined ? patch.notify_owner_email : null,
             ts,
             ts
         );
@@ -137,6 +169,12 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
                 reminder_hours_before = COALESCE(?, reminder_hours_before),
                 reminder_visitor_enabled = COALESCE(?, reminder_visitor_enabled),
                 reminder_owner_enabled = COALESCE(?, reminder_owner_enabled),
+                notify_owner_new_confirmed = COALESCE(?, notify_owner_new_confirmed),
+                notify_owner_new_pending = COALESCE(?, notify_owner_new_pending),
+                notify_owner_slot_taken = COALESCE(?, notify_owner_slot_taken),
+                notify_owner_cancelled = COALESCE(?, notify_owner_cancelled),
+                notify_owner_rescheduled = COALESCE(?, notify_owner_rescheduled),
+                notify_owner_email = CASE WHEN ? THEN ? ELSE notify_owner_email END,
                 updated_at = ?
              WHERE customer_id = ? AND site_id = ?`
         ).run(
@@ -150,6 +188,13 @@ function ensureSettings(db, customerId, siteId, patch = {}) {
             patch.reminder_hours_before != null ? patch.reminder_hours_before : null,
             patch.reminder_visitor_enabled != null ? (patch.reminder_visitor_enabled ? 1 : 0) : null,
             patch.reminder_owner_enabled != null ? (patch.reminder_owner_enabled ? 1 : 0) : null,
+            patch.notify_owner_new_confirmed != null ? (patch.notify_owner_new_confirmed ? 1 : 0) : null,
+            patch.notify_owner_new_pending != null ? (patch.notify_owner_new_pending ? 1 : 0) : null,
+            patch.notify_owner_slot_taken != null ? (patch.notify_owner_slot_taken ? 1 : 0) : null,
+            patch.notify_owner_cancelled != null ? (patch.notify_owner_cancelled ? 1 : 0) : null,
+            patch.notify_owner_rescheduled != null ? (patch.notify_owner_rescheduled ? 1 : 0) : null,
+            patch.notify_owner_email !== undefined ? 1 : 0,
+            patch.notify_owner_email !== undefined ? patch.notify_owner_email : null,
             ts,
             customerId,
             siteId
@@ -591,25 +636,52 @@ function generateSlotsForResource(db, customerId, siteId, settings, service, dat
     for (const range of ranges) {
         for (let startMin = range.start_minute; startMin + duration <= range.end_minute; startMin += interval) {
             const hm = minutesToHourMinute(startMin);
-            const startMs = zonedWallTimeToUtcMs(year, month, day, hm.hour, hm.minute, tz);
-            const endMs = startMs + duration * 60000;
-            if (startMs < earliest) continue;
 
-            // span must fit in open range (already checked by loop) — also end wall inside range
-            const endWallMin = startMin + duration;
-            if (endWallMin > range.end_minute) continue;
+            // CAL-07: resolve every real UTC instant for this local wall
+            // clock instead of blindly trusting zonedWallTimeToUtcMs's single
+            // (sometimes wrong-on-a-transition-day) answer.
+            //  - 0 instants (spring-forward gap, e.g. 2026-03-29 03:00-03:59
+            //    in Europe/Bucharest): the wall time never happens — offer
+            //    nothing for it, silently skip.
+            //  - 2 instants (fall-back overlap, e.g. 2026-10-25 03:00-03:59):
+            //    both are real, distinct moments one hour apart — offer both,
+            //    never collapsed into one and never colliding (different
+            //    start_utc, so the UNIQUE active-slot index never double-books
+            //    either).
+            const instants = resolveZonedWallTime(year, month, day, hm.hour, hm.minute, tz);
+            if (!instants.length) continue;
 
-            const startIso = toIsoUtc(startMs);
-            const endIso = toIsoUtc(endMs);
-            const blocked = occupied.some((b) => {
-                const bStart = Date.parse(b.start_utc);
-                const bEnd = Date.parse(b.end_utc) + buffer * 60000;
-                const slotEndWithBuffer = endMs + buffer * 60000;
-                // overlap with buffer after existing booking
-                return startMs < bEnd && slotEndWithBuffer > bStart;
-            });
-            if (blocked) continue;
-            slots.push({ start_utc: startIso, end_utc: endIso });
+            for (const instant of instants) {
+                const startMs = instant.utcMs;
+                const endMs = startMs + duration * 60000;
+                if (startMs < earliest) continue;
+
+                // span must fit in open range (already checked by loop) — also end wall inside range
+                const endWallMin = startMin + duration;
+                if (endWallMin > range.end_minute) continue;
+
+                const startIso = toIsoUtc(startMs);
+                const endIso = toIsoUtc(endMs);
+                const blocked = occupied.some((b) => {
+                    const bStart = Date.parse(b.start_utc);
+                    const bEnd = Date.parse(b.end_utc) + buffer * 60000;
+                    const slotEndWithBuffer = endMs + buffer * 60000;
+                    // overlap with buffer after existing booking
+                    return startMs < bEnd && slotEndWithBuffer > bStart;
+                });
+                if (blocked) continue;
+                slots.push({
+                    start_utc: startIso,
+                    end_utc: endIso,
+                    // Only present when this local wall-clock reading is
+                    // ambiguous (fall-back day) — lets a caller disambiguate
+                    // two same-looking-local-time slots without every other
+                    // day's slot growing new fields.
+                    ...(instants.length > 1
+                        ? { ambiguousLocal: true, utcOffsetMinutes: instant.offsetMinutes }
+                        : null),
+                });
+            }
         }
     }
     return slots;
@@ -675,6 +747,13 @@ function generateSlots(db, customerId, siteId, {
                     date_local: dateLocal,
                     resource_id: rid,
                     resource_ids: [rid],
+                    // CAL-07: carry the per-instant DST-ambiguity tag through
+                    // the cross-resource merge — dropping it here would
+                    // silently un-flag a real fall-back-day slot the moment
+                    // a tenant has more than one resource.
+                    ...(s.ambiguousLocal
+                        ? { ambiguousLocal: true, utcOffsetMinutes: s.utcOffsetMinutes }
+                        : null),
                 });
             }
         }
@@ -966,6 +1045,10 @@ function createBooking(db, customerId, siteId, input) {
         manageToken,
         kind: 'created',
     });
+    // CAL-EMAIL: the owner learns about every new booking regardless of who
+    // created it — email/index.js maps booking.status (confirmed / requested
+    // / reschedule_needed) to the three distinct "new booking" owner templates.
+    emitOwnerNotification(db, { booking, kind: 'created' });
 
     return { booking, manageToken, status: booking.status };
 }
@@ -1083,6 +1166,9 @@ function cancelBookingWithToken(db, rawToken, { nowMs = Date.now() } = {}) {
         const updated = getBooking(db, row.customer_id, row.site_id, row.id);
         db.exec('COMMIT;');
         emitBookingEmail(db, { booking: updated, kind: 'cancelled' });
+        // CAL-EMAIL: a VISITOR cancelled — the owner needs to know (never
+        // fired for cancelBookingAsOwner above, which is the owner's own action).
+        emitOwnerNotification(db, { booking: updated, kind: 'visitor_cancelled' });
         return { booking: updated, already: false };
     } catch (e) {
         try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
@@ -1400,6 +1486,14 @@ function rescheduleBookingWithToken(db, rawToken, { startUtc, nowMs = Date.now()
         emitBookingEmail(db, {
             booking: updated,
             kind: 'reschedule_confirmed',
+            previousStatus,
+        });
+        // CAL-EMAIL: a VISITOR rescheduled — the owner needs to know (never
+        // fired for rescheduleBookingAsOwner/reassignBookingAsOwner, which
+        // are the owner's own actions).
+        emitOwnerNotification(db, {
+            booking: updated,
+            kind: 'visitor_rescheduled',
             previousStatus,
         });
         return { booking: updated, already: false };

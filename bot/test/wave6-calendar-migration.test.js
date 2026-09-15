@@ -133,12 +133,13 @@ const dbPath = path.join(tmp, 'old-install.sqlite');
 const db = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 
 const migRow = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-// Wave 7 (audit #25, resources/staff) added a v5 migration on top of this
-// v4 wave — opening any pre-v5 database now advances all the way to 5.
+// Wave 7 (audit #25, resources/staff) added a v5 migration, and CAL-EMAIL
+// (owner booking-event notifications) added a v6 migration, both on top of
+// this v4 wave — opening any pre-v5 database now advances all the way to 6.
 // Every assertion below still targets the exact v4 columns/defaults this
 // oracle was written to guard; only the final schema_migrations version
-// number changed as a mechanical consequence of a later wave existing.
-assert.strictEqual(Number(migRow.v), 5, 'schema_migrations must advance to the latest version (5)');
+// number changed as a mechanical consequence of later waves existing.
+assert.strictEqual(Number(migRow.v), 6, 'schema_migrations must advance to the latest version (6)');
 
 // --- Step 3: the live booking survives, byte-identical on every pre-existing field ---
 const booking = db.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
@@ -182,11 +183,20 @@ assert.strictEqual(Number(settings.reminder_hours_before), 24, 'reminder default
 assert.strictEqual(Number(settings.reminder_visitor_enabled), 1, 'visitor reminder defaults ON');
 assert.strictEqual(Number(settings.reminder_owner_enabled), 0, 'owner reminder defaults OFF (optional)');
 
+// --- Step 6b (v6, CAL-EMAIL): owner notification toggles backfill to ON,
+// so a pre-existing tenant starts receiving them without a separate opt-in.
+assert.strictEqual(Number(settings.notify_owner_new_confirmed), 1, 'owner new-confirmed notification defaults ON');
+assert.strictEqual(Number(settings.notify_owner_new_pending), 1, 'owner new-pending notification defaults ON');
+assert.strictEqual(Number(settings.notify_owner_slot_taken), 1, 'owner slot-taken notification defaults ON');
+assert.strictEqual(Number(settings.notify_owner_cancelled), 1, 'owner cancelled-by-visitor notification defaults ON');
+assert.strictEqual(Number(settings.notify_owner_rescheduled), 1, 'owner rescheduled-by-visitor notification defaults ON');
+assert.strictEqual(settings.notify_owner_email, null, 'no recipient override on a pre-v6 row — falls back to the account email');
+
 // --- Step 7: re-opening again is a no-op (idempotent migration) ---
 db.close();
 const db2 = openCalendarDb({ dbPath, skipRetentionSweep: true, skipReminderSweep: true });
 const migRow2 = db2.prepare('SELECT MAX(version) AS v FROM schema_migrations').get();
-assert.strictEqual(Number(migRow2.v), 5, 'second open must not re-run migrations or fail');
+assert.strictEqual(Number(migRow2.v), 6, 'second open must not re-run migrations or fail');
 const booking2 = db2.prepare('SELECT * FROM calendar_bookings WHERE id = ?').get('bk_old_live_001');
 assert.strictEqual(booking2.status, 'confirmed', 'booking still intact after a second open');
 

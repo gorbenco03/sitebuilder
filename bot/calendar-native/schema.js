@@ -12,6 +12,13 @@
  * Secrets (API keys, SMTP passwords) are NEVER stored in these tables.
  */
 
+// NOTE: kept at 2 deliberately — v3/v4/v5 (and now v6 below) were added the
+// same way: an explicit `if (current < N)` stepwise block in db.js's
+// migrate(), without bumping this constant. calendar-native-email.test.js
+// asserts SCHEMA_VERSION === 2 ("schema must be v2 with email outbox",
+// meaning "the email-outbox tier of the schema exists"), so this stays 2;
+// db.js's migrate() reaches every version through its own explicit ladder,
+// not through this constant (see the "safety net" comment there).
 const SCHEMA_VERSION = 2;
 
 const BOOKING_STATUSES = Object.freeze([
@@ -44,6 +51,13 @@ const EMAIL_TEMPLATE_KEYS = Object.freeze([
     'booking_reschedule_confirmed',
     'booking_reminder',
     'booking_reminder_owner',
+    // v6 — CAL-EMAIL: owner-facing booking-event notifications (see
+    // SCHEMA_SQL_V6 below and email/index.js enqueueOwnerBookingEmail).
+    'booking_owner_new_confirmed',
+    'booking_owner_new_pending',
+    'booking_owner_slot_taken',
+    'booking_owner_cancelled_by_visitor',
+    'booking_owner_rescheduled_by_visitor',
 ]);
 
 const SCHEMA_SQL_V1 = `
@@ -365,9 +379,53 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_calendar_bookings_active_slot
     WHERE status IN ('requested', 'confirmed');
 `;
 
+/**
+ * v6 — CAL-EMAIL (audit follow-up): across a full booking lifecycle the
+ * outbox held emails to the visitor only — the business owner was never
+ * told about a new booking, a visitor cancellation, or a visitor
+ * reschedule. For a one-person cabinet that means bookings arrive and
+ * nobody notices.
+ *
+ * calendar_settings gains five owner-configurable, per-event toggles (same
+ * ADD COLUMN ... DEFAULT pattern as reminder_owner_enabled in v4) plus one
+ * optional recipient override:
+ *   - notify_owner_new_confirmed / notify_owner_new_pending /
+ *     notify_owner_slot_taken: the three possible outcomes of a NEW booking
+ *     (instantly confirmed / needs the owner to act / the visitor's exact
+ *     slot was already taken — see engine.js createBooking's status branches).
+ *   - notify_owner_cancelled / notify_owner_rescheduled: a VISITOR-initiated
+ *     cancel or reschedule via their manage link (never fired for the
+ *     owner's own dashboard actions — see engine.js emitOwnerNotification
+ *     call sites: createBooking, cancelBookingWithToken,
+ *     rescheduleBookingWithToken only).
+ *   - notify_owner_email: optional override recipient; NULL (the default)
+ *     falls back to the tenant owner's account email
+ *     (email/index.js resolveOwnerNotificationEmail).
+ *
+ * DEFAULT 1 on every toggle: SQLite backfills every existing row, so every
+ * pre-v6 tenant starts receiving these emails the moment this migration
+ * runs, same as a brand-new tenant created after it — no separate opt-in
+ * step. An owner who does not want a given email turns it off from the
+ * calendar dashboard (owner-api.js putOwnerSettings).
+ */
+const SCHEMA_SQL_V6 = `
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_new_confirmed INTEGER NOT NULL DEFAULT 1
+    CHECK (notify_owner_new_confirmed IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_new_pending INTEGER NOT NULL DEFAULT 1
+    CHECK (notify_owner_new_pending IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_slot_taken INTEGER NOT NULL DEFAULT 1
+    CHECK (notify_owner_slot_taken IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_cancelled INTEGER NOT NULL DEFAULT 1
+    CHECK (notify_owner_cancelled IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_rescheduled INTEGER NOT NULL DEFAULT 1
+    CHECK (notify_owner_rescheduled IN (0, 1));
+ALTER TABLE calendar_settings ADD COLUMN notify_owner_email TEXT;
+`;
+
 /** Full schema for brand-new databases. */
 const SCHEMA_SQL =
-    SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3 + '\n' + SCHEMA_SQL_V4 + '\n' + SCHEMA_SQL_V5;
+    SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3 + '\n' + SCHEMA_SQL_V4 + '\n' +
+    SCHEMA_SQL_V5 + '\n' + SCHEMA_SQL_V6;
 
 module.exports = {
     SCHEMA_VERSION,
@@ -377,6 +435,7 @@ module.exports = {
     SCHEMA_SQL_V3,
     SCHEMA_SQL_V4,
     SCHEMA_SQL_V5,
+    SCHEMA_SQL_V6,
     BOOKING_STATUSES,
     ACTIVE_BOOKING_STATUSES,
     EMAIL_DELIVERY_STATUSES,
