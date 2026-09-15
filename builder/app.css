@@ -1033,7 +1033,7 @@ body.details-drawer-open .editor-tpl-name {
 /* The full sentence only where the topbar has room for it. At 1280px it made
    .editor-topbar-right wide enough to overflow backwards over the left group,
    and the checklist pill sat on top of the "Mobil" preview button — visible,
-   enabled, and unclickable (caught by desserdirina-hero-no-desserd). The short
+   enabled, and unclickable (caught by the patisserie hero OCR test). The short
    label stays everywhere; the full sentence is also the element's title, and
    every marked field explains itself on hover and focus. */
 .demo-legend-more { display: none; }
