@@ -159,19 +159,36 @@ function unpublishSite(siteOrId, meta = {}) {
     // later tell "customer canceled" apart from "card kept failing" — the
     // commercial outcome (not public) is the same either way.
     const nextSubscriptionStatus = meta.subscriptionStatus || 'canceled';
+
+    // TRW-09a — `paid: true` is kept across a cancel to preserve REAL payment
+    // history (a customer who paid for a year and then cancels genuinely was
+    // a paying customer). But a trial cancelled before Stripe ever actually
+    // billed it (payment_status=no_payment_required at checkout, no
+    // subscription_cycle charge yet) has no such history — keeping
+    // `paid: true` there is indistinguishable from a real former customer,
+    // which is exactly the money-truth problem this wave already fixed for
+    // the ledger (getInvoiceHistory) but had not yet fixed for this site
+    // field. Reuse getInvoiceHistory rather than re-deriving "was this site
+    // ever actually charged" a second way.
+    const everCharged = getInvoiceHistory(site).some((row) => row.status === 'paid');
+
+    const patch = {
+        status: 'unpublished',
+        url: null,
+        // Keep paid/paidUntil history — but ONLY when there is real history
+        // to keep (see everCharged above); cancel does not invent a charge.
+        canceledAt: site.canceledAt || new Date().toISOString(),
+        stripeSubscriptionStatus: nextSubscriptionStatus,
+        // Keep the legacy compatibility field in sync with the Stripe status.
+        // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
+        // through the plain persist path, which set this field; skipping it here
+        // would silently desynchronise the two.
+        subscriptionStatus: nextSubscriptionStatus,
+    };
+    if (!everCharged) patch.paid = false;
+
     try {
-        registry.updateSite(site.id, {
-            status: 'unpublished',
-            url: null,
-            // Keep paid/paidUntil history; cancel does not invent a charge.
-            canceledAt: site.canceledAt || new Date().toISOString(),
-            stripeSubscriptionStatus: nextSubscriptionStatus,
-            // Keep the legacy compatibility field in sync with the Stripe status.
-            // Statuses that now unpublish (unpaid, incomplete_expired) used to fall
-            // through the plain persist path, which set this field; skipping it here
-            // would silently desynchronise the two.
-            subscriptionStatus: nextSubscriptionStatus,
-        });
+        registry.updateSite(site.id, patch);
     } catch (e) {
         log('webpublish.unpublish.update_failed', { siteId: site.id, err: e.message }, 'error');
         return null;

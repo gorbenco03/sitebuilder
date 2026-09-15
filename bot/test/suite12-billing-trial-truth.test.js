@@ -435,6 +435,57 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         assert.strictEqual(finalSite.url, firstUrl, 'republishing again must not change the already-recovered site');
     });
 
+    // ── TRW-09a — cancel before any real charge must not keep reading paid ─
+    await check('TRW-09a: cancelling a trial BEFORE Stripe ever charged it clears paid — no invented payment history', async () => {
+        const { site, subscriptionId } = await startTrial('trw09a-never-charged');
+        assert.strictEqual(registry.getSite(site.id).paid, true, 'sanity: entitled to be live during the trial');
+        assert.strictEqual(
+            webpublish.getInvoiceHistory(registry.getSite(site.id)).some((r) => r.status === 'paid'),
+            false,
+            'sanity: no real charge on record yet — only the trial_started row'
+        );
+
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'canceled',
+        }));
+
+        const cancelled = registry.getSite(site.id);
+        assert.strictEqual(cancelled.status, 'unpublished');
+        assert.strictEqual(
+            cancelled.paid, false,
+            'TRW-09a: a trial cancelled before any real charge must not keep reading as a paid site'
+        );
+    });
+
+    await check('TRW-09a: cancelling AFTER a real charge still keeps paid:true — real payment history is not erased', async () => {
+        const { site, subscriptionId } = await startTrial('trw09a-charged-then-cancel');
+        // The real day-7 charge succeeds before the owner cancels.
+        await onStripeEvent(subscriptionCycleInvoiceEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            invoiceId: 'in_' + crypto.randomUUID().slice(0, 10),
+            subscriptionId,
+        }));
+        assert.ok(
+            webpublish.getInvoiceHistory(registry.getSite(site.id)).some((r) => r.status === 'paid'),
+            'sanity: a real charge is now on record'
+        );
+
+        await onStripeEvent(subscriptionStatusEvent({
+            eventId: 'evt_' + crypto.randomUUID(),
+            subscriptionId,
+            status: 'canceled',
+        }));
+
+        const cancelled = registry.getSite(site.id);
+        assert.strictEqual(cancelled.status, 'unpublished');
+        assert.strictEqual(
+            cancelled.paid, true,
+            'TRW-09a: cancelling after a real charge must still keep paid:true — that payment history is real, not invented'
+        );
+    });
+
     if (failed) {
         console.error(`\n${failed} failure(s)`);
         process.exit(1);
