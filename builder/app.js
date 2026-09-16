@@ -6496,17 +6496,19 @@ async function fetchAppConfig() {
   } catch (_) {}
   const priceLabel = formatPriceLabel(appConfig);
   const renewalLabel = formatRenewalLabel(appConfig);
+  // Landing page (owner 2026-09-16): show only the number, no currency sign.
+  const landingPrice = formatLandingPriceLabel(appConfig);
   const heroPrice = $('hero-price');
   const heroRenewal = $('hero-renewal');
-  if (heroPrice) heroPrice.textContent = priceLabel;
+  if (heroPrice) heroPrice.textContent = landingPrice;
   if (heroRenewal) heroRenewal.textContent = renewalLabel;
   const proofPrice = $('proof-price');
   const proofRenewal = $('proof-renewal');
-  if (proofPrice) proofPrice.textContent = priceLabel;
+  if (proofPrice) proofPrice.textContent = landingPrice;
   if (proofRenewal) proofRenewal.textContent = renewalLabel;
   const footerPrice = $('footer-price');
   const footerRenewal = $('footer-renewal');
-  if (footerPrice) footerPrice.textContent = priceLabel;
+  if (footerPrice) footerPrice.textContent = landingPrice;
   if (footerRenewal) footerRenewal.textContent = renewalLabel;
   const bulletPrice = $('publish-price');
   const bulletRenewal = $('publish-renewal');
@@ -6516,7 +6518,7 @@ async function fetchAppConfig() {
   const howPrice = $('how-price');
   const howRenewal = $('how-renewal');
   const howRenewalStep = $('how-renewal-step');
-  if (howPrice) howPrice.textContent = priceLabel;
+  if (howPrice) howPrice.textContent = landingPrice;
   if (howRenewal) howRenewal.textContent = renewalLabel;
   if (howRenewalStep) howRenewalStep.textContent = renewalLabel;
   const successRenewal = $('success-renewal');
@@ -6530,6 +6532,11 @@ function formatPriceLabel(cfg) {
   if (cur === 'gbp') return '£' + amount;
   if (cur === 'eur') return amount + '€';
   return '$' + amount;
+}
+
+function formatLandingPriceLabel(cfg) {
+  const amount = cfg.amount != null ? cfg.amount : cfg.priceEur;
+  return amount == null ? '—' : String(amount);
 }
 
 function formatRenewalLabel(cfg) {

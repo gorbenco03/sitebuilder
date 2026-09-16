@@ -291,7 +291,7 @@ check('HEAD non-regress: catalog chips still name five systems', () => {
 
 check('HEAD non-regress: landing shows 99€, no renewal price, and Fără boți', () => {
   const html = read('builder/index.html');
-  assert.ok(/99\s*€|99€/.test(html), '99€');
+  assert.ok(/id="hero-price">99</.test(html) && !/99\s*€|\$99|£99/.test(html), '99 without currency on landing (owner 2026-09-16)');
   // Owner decision 2026-09-15: no renewal price (was 29€/an) on the landing page.
   assert.ok(!/29\s*€|29€/.test(html), 'no 29€ renewal price on the landing page');
   assert.ok(/Fără boți|Fara boti/i.test(html), 'Fără boți RO denial');

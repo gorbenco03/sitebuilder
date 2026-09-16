@@ -200,7 +200,7 @@ check('HEAD: landing step 03 has 99€, no renewal price, footer no AI agents', 
   assert.ok(how, 'how section');
   const step03 = how.match(/how-step-num">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
   assert.ok(step03, 'step 03');
-  assert.ok(/99\s*€|99€/.test(step03[0]), 'step 03 has 99€');
+  assert.ok(/\b99\b/.test(step03[0]) && !/99\s*€|\$99|£99/.test(step03[0]), 'step 03 has 99 without currency (owner 2026-09-16)');
   // Owner decision 2026-09-15: no renewal price on the landing page any more.
   assert.ok(
     !/29\s*€(?:\s|<\/?[^>]+>)*\/\s*an|29\s*€(?:\s|<\/?[^>]+>)*\/\s*year|29€\/year/i.test(how),
