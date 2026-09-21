@@ -61,7 +61,7 @@ function assertTrialFlow(src, label) {
     // card → trial de 14 zile → live imediat → taxare ziua 14 dacă nu anulezi (VISION RO)
     assert.ok(/\bcard\b/i.test(src), `${label}: must mention card`);
     assert.ok(
-        /7[\s-]*day\s+trial|trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(src),
+        /14[\s-]*day\s+trial|trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(src),
         `${label}: must state trial 14 zile`
     );
     assert.ok(
@@ -69,7 +69,7 @@ function assertTrialFlow(src, label) {
         `${label}: must state site goes live now/immediately`
     );
     assert.ok(
-        (/day\s+7|on\s+day\s+7|ziua\s+14/i.test(src)) && /cancel|anulez/i.test(src),
+        (/day\s+14|on\s+day\s+14|ziua\s+14/i.test(src)) && /cancel|anulez/i.test(src),
         `${label}: must state charge on day 14 unless cancelled`
     );
     assert.ok(
@@ -106,7 +106,7 @@ check('HEAD builder landing states card → trial 14 zile → live imediat → t
     assert.ok(how, 'how section');
     const step03 = how[0].match(/how-step-num">03[\s\S]*?<\/article>/i);
     assert.ok(step03, 'how-step 03');
-    assert.ok(/7[\s-]*day\s+trial|trial|7\s*zile/i.test(step03[0]), 'step 03 trial');
+    assert.ok(/14[\s-]*day\s+trial|trial|14\s*zile/i.test(step03[0]), 'step 03 trial');
     assert.ok(!/pay\s+once/i.test(step03[0]), 'step 03 no pay once');
 
     const footer = html.match(/landing-footer[\s\S]*?<\/footer>/i);
