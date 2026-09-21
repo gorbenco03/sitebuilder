@@ -8164,6 +8164,17 @@ async function openPreviewModal(templateId) {
       return;
     }
     const replacement = iframe.cloneNode(false);
+    // cloneNode copies the srcdoc ATTRIBUTE too — here the "Se încarcă
+    // previzualizarea…" placeholder set by the previous call. Inserting that
+    // clone starts a navigation to the placeholder, and in Chromium (Chrome,
+    // Edge) the srcdoc assigned right after insertion never took: the frame
+    // kept showing the placeholder, the real template never ran, the ready
+    // message never came, and the landing preview spun forever. Reproduced on
+    // production on 2026-09-21; removing the attribute before insertion made
+    // the real document run and report ready. Safari settled on the second
+    // navigation, which is why it worked on a Mac. One navigation, one
+    // document.
+    replacement.removeAttribute('srcdoc');
     iframe.replaceWith(replacement);
     iframe = replacement;
     if (readyOnLoad) clearPreviewReadyListener = waitForInteractivePreview(replacement, readyToken);
