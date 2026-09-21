@@ -475,6 +475,22 @@ async function attachFirstThenRenewalSchedule({
         proration_behavior: 'none',
     };
     if (trialEnd) phase0Update.trial_end = trialEnd;
+    // `from_subscription` copies the Checkout-applied promo into phase 0,
+    // but this explicit phase update otherwise replaces it. Reuse Stripe's
+    // existing Discount object so the first invoice retains the exact code
+    // Checkout showed as applied (including its own duration/restrictions).
+    const phase0Discounts = Array.isArray(phase0.discounts)
+        ? phase0.discounts
+            .map((discount) => {
+                if (typeof discount === 'string' && discount) return { discount };
+                if (discount && typeof discount.id === 'string' && discount.id) {
+                    return { discount: discount.id };
+                }
+                return null;
+            })
+            .filter(Boolean)
+        : [];
+    if (phase0Discounts.length) phase0Update.discounts = phase0Discounts;
 
     const phase1Update = {
         items: [{ price: renPriceId, quantity: 1 }],

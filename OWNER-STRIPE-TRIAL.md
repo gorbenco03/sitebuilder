@@ -22,6 +22,12 @@ Webhook success for first live publish:
 - `checkout.session.completed` with `payment_status=paid` **or** `no_payment_required` (trial / card-on-file) → order paid + **immediate** public deploy + **subscription schedule attach** (99 then 29).
 - `unpaid` / open → **no** publish.
 
+### Promo codes
+
+- Stripe-hosted Checkout receives `allow_promotion_codes=true`; this is the server-side switch that makes a customer-entered promotion code apply to the Subscription rather than being a Builder-only visual state.
+- The 99→29 schedule setup preserves an existing Checkout-applied Stripe Discount on its first phase. A valid code therefore changes the first invoice exactly as Stripe Checkout displayed it; the coupon's own duration and eligibility decide whether any later invoice is discounted.
+- Before a campaign, verify its eligible Product/Price, currency, duration, redemption limit, and whether it is intended to affect only the first invoice or future renewals. Test the exact configured code in **Stripe test mode** before sharing it.
+
 Webhook cancel → site comes down:
 
 - `customer.subscription.deleted` → **unpublish** (isolated: remove `$DATA_DIR/published/<slug>/`; registry status not live). Idempotent.
