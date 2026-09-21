@@ -2,7 +2,7 @@
 /**
  * bot/test/wave9-cancel-unpublish.test.js — Wave 9 cancel → unpublish.
  *
- * VISION: card → 7-day trial → live immediately → charge 99 on day 7 unless
+ * VISION: card → 14-day trial → live immediately → charge 99 on day 14 unless
  * cancelled. When Stripe subscription is cancelled (trial or later), the public
  * site is unpublished (not live). Refunds stay Dashboard / Customer Portal.
  *
@@ -473,7 +473,7 @@ function chargeRecords() {
         assert.ok(!/sk_live_[a-zA-Z0-9]{8,}|sk_test_[a-zA-Z0-9]{8,}|whsec_[a-zA-Z0-9]{8,}/.test(md), 'no secrets printed');
         // Out-of-date "separate product decision" line must be gone once Wave 9 ships
         assert.ok(
-            !/Cancel-day-7 site teardown policy \(separate product decision\)/i.test(md),
+            !/Cancel-day-14 site teardown policy \(separate product decision\)/i.test(md),
             'must no longer park cancel teardown as undecided'
         );
     });

@@ -174,13 +174,13 @@ function withBusinessName(config, name) {
             'unpaid success must prompt add card to go live'
         );
         assert.ok(
-            /Adaugă un card — începe trialul de 7 zile/i.test(htmlSrc) ||
-                /Adaugă un card — începe trialul de 7 zile/i.test(appSrc),
+            /Adaugă un card — începe trialul de 14 zile/i.test(htmlSrc) ||
+                /Adaugă un card — începe trialul de 14 zile/i.test(appSrc),
             'pay CTA must be RO trial card verb'
         );
         assert.ok(
-            /7-day trial|trial(?:ul)? de 7 zile|7 zile/i.test(htmlSrc + showSuccessSrc),
-            'success chrome must mention trial 7 zile'
+            /14-day trial|trial(?:ul)? de 14 zile|14 zile/i.test(htmlSrc + showSuccessSrc),
+            'success chrome must mention trial 14 zile'
         );
         assert.ok(
             !/Pay and publish/i.test(htmlSrc + appSrc) &&

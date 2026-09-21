@@ -8,7 +8,7 @@
  *   .site-live-link word-break:break-all shreds slug at 390
  *   Details drawer: images/cn-hero.jpg + Instagram feed link + INTERFACE LABELS
  *
- * VISION 2026-08-26: card → 7-day trial → live now → charge day 7 unless cancel.
+ * VISION 2026-08-26: card → 14-day trial → live now → charge day 14 unless cancel.
  *
  * Run: node bot/test/wave14-w13-qa-fail.test.js
  */
@@ -145,17 +145,17 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
 
   assert.ok(/Adaugă un card ca să fii live/.test(blob), 'unpaid success title');
   assert.ok(
-    /Adaugă un card ca să începi trialul de 7 zile\./.test(blob),
+    /Adaugă un card ca să începi trialul de 14 zile\./.test(blob),
     'unpaid success note'
   );
   assert.ok(/Site-ul e live imediat\./.test(blob), 'unpaid success note');
-  assert.ok(/Ești taxat în ziua 7 dacă nu anulezi\./.test(blob), 'unpaid success note');
+  assert.ok(/Ești taxat în ziua 14 dacă nu anulezi\./.test(blob), 'unpaid success note');
   assert.ok(
-    /Adaugă un card — începe trialul de 7 zile/.test(blob),
+    /Adaugă un card — începe trialul de 14 zile/.test(blob),
     'unpaid CTA label'
   );
   assert.ok(
-    /Adaugă un card ca să începi trialul de 7 zile/.test(blob),
+    /Adaugă un card ca să începi trialul de 14 zile/.test(blob),
     'aria / long trial phrase'
   );
 
@@ -173,7 +173,7 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
 check('HEAD live success + toast are trial started, not paid year', () => {
   const js = headRead(BUILDER_JS);
   assert.ok(
-    /Site-ul tău e live — trial de 7 zile început/.test(js),
+    /Site-ul tău e live — trial de 14 zile început/.test(js),
     'live success title'
   );
   assert.ok(
@@ -194,7 +194,7 @@ check('HEAD dashboard trial line during trial; Hosting until only after', () => 
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || js;
   assert.ok(
-    (/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) && /first charge|prima taxare/i.test(card),
+    (/14-day trial|Trial de 7|7\u2011zile|14 zile/i.test(card)) && /first charge|prima taxare/i.test(card),
     'buildSiteCard trial hosting line'
   );
   assert.ok(/Hosting until |Hosting până pe /.test(card), 'Hosting until remains for non-trial paid');

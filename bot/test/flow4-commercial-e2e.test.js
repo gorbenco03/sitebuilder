@@ -3,10 +3,10 @@
  * bot/test/flow4-commercial-e2e.test.js — VISION Flow 4.2 commercial E2E.
  *
  * Causal contracts (HIDOOK_TEST_PAY + HIDOOK_ISOLATED_DEPLOY, no live Stripe):
- *   1. Fake/test checkout (card-required 7-day trial) → site live immediately.
+ *   1. Fake/test checkout (card-required 14-day trial) → site live immediately.
  *   2. Cancel before trial end → public site unpublished/locked; /live shows
  *      clear Romanian product state (not stale live HTML).
- *   3. Product-visible surfaces state trial 7 zile, card, 99 after trial,
+ *   3. Product-visible surfaces state trial 14 zile, card, 99 after trial,
  *      renewal 29/an — no pay-before-publish / one-time 99 / 100 price leak.
  *
  * Run: node bot/test/flow4-commercial-e2e.test.js
@@ -143,16 +143,16 @@ const STALE_PRODUCT = [
 
 (async () => {
     // ── Causal RED on required base (English commercial chrome / bare EN 404) ─
-    await check('causal RED: base ' + BASE_SHA.slice(0, 7) + ' builder lacks RO trial 7 zile chrome', () => {
+    await check('causal RED: base ' + BASE_SHA.slice(0, 7) + ' builder lacks RO trial 14 zile chrome', () => {
         const html = baseBlob('builder/index.html') || '';
         const js = baseBlob('builder/app.js') || '';
         const blob = html + '\n' + js;
         assert.ok(blob.length > 100, 'base builder readable');
-        // Base still sells English "7-day trial" without Romanian "7 zile"
-        assert.ok(/7[\s-]*day\s+trial/i.test(blob), 'base has EN 7-day trial');
+        // Base still sells English "14-day trial" without Romanian "14 zile"
+        assert.ok(/7[\s-]*day\s+trial/i.test(blob), 'base has EN 14-day trial');
         assert.ok(
             !/trial\s+de\s+7\s+zile|7\s+zile/i.test(blob),
-            'base must not already claim Romanian 7 zile trial chrome'
+            'base must not already claim Romanian 14 zile trial chrome'
         );
     });
 
@@ -166,11 +166,11 @@ const STALE_PRODUCT = [
     });
 
     // ── HEAD: product-visible commercial copy ───────────────────────────────
-    await check('HEAD product surfaces: trial 7 zile + card + 99 + 29/an', () => {
+    await check('HEAD product surfaces: trial 14 zile + card + 99 + 29/an', () => {
         const surface = productSurface();
         assert.ok(
-            /7\s*zile|trial\s+de\s+7\s+zile/i.test(surface),
-            'must state trial 7 zile on product surface'
+            /14\s*zile|trial\s+de\s+14\s+zile/i.test(surface),
+            'must state trial 14 zile on product surface'
         );
         assert.ok(
             /card/i.test(surface),
@@ -382,8 +382,8 @@ const STALE_PRODUCT = [
             'renewal 29'
         );
         assert.ok(
-            c.trialDays === 7 || c.trial_period_days === 7,
-            'trial days must be 7, got ' + JSON.stringify(c)
+            c.trialDays === 14 || c.trial_period_days === 14,
+            'trial days must be 14, got ' + JSON.stringify(c)
         );
     });
 

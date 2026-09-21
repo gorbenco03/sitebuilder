@@ -181,7 +181,7 @@ function freshEnv() {
             await payments.attachFirstThenRenewalSchedule({
                 subscriptionId: 'sub_test_taxbehavior',
                 currency: 'eur',
-                contract: { firstPeriodCents: 9900, renewalCents: 2900, trialDays: 7 },
+                contract: { firstPeriodCents: 9900, renewalCents: 2900, trialDays: 14 },
             });
             const pricePost = rec.posts.find((p) => /\/prices$/.test(p.url));
             assert.ok(pricePost, 'must create a renewal Price via /prices');

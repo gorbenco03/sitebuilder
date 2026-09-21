@@ -2,11 +2,11 @@
 /**
  * bot/test/wave8-stripe-99-then-29.test.js — Wave 8-R2 commercial billing contract.
  *
- * VISION: $0 now (7-day card trial) → first charge PRICE_CENTS (9900) on day 7 →
+ * VISION: $0 now (14-day card trial) → first charge PRICE_CENTS (9900) on day 14 →
  * later years RENEWAL_CENTS (2900) via a real Stripe Subscription Schedule phase.
  *
  * Rejected hybrids (must stay RED):
- *   - recurring 2900 + one-time 7000 + trial_period_days=7 (Stripe bills 70 now)
+ *   - recurring 2900 + one-time 7000 + trial_period_days=14 (Stripe bills 70 now)
  *   - catalog first-year Price only with renewal in metadata (Stripe bills 99 forever)
  *
  * Run: node bot/test/wave8-stripe-99-then-29.test.js
@@ -151,8 +151,8 @@ function assertCheckoutFirstPeriodOnly(form) {
     assert.strictEqual(form.mode, 'subscription', 'mode must be subscription');
     assert.strictEqual(
         form['subscription_data[trial_period_days]'],
-        '7',
-        'trial_period_days must stay 7'
+        '14',
+        'trial_period_days must stay 14'
     );
     assert.strictEqual(
         form.allow_promotion_codes,
@@ -165,8 +165,8 @@ function assertCheckoutFirstPeriodOnly(form) {
     );
     assert.ok(
         !hasOneTimeLineItem(form),
-        'Checkout must not send a one-time line item together with trial_period_days=7 ' +
-            '(Stripe charges one-time up front; wanted $0 now then 99 on day 7)'
+        'Checkout must not send a one-time line item together with trial_period_days=14 ' +
+            '(Stripe charges one-time up front; wanted $0 now then 99 on day 14)'
     );
     const audit = lineItemAudit(form);
     if (audit.priceIds.length === 0) {
@@ -386,7 +386,7 @@ function installFetchRecorder(responder) {
                 contract: co.contract || {
                     firstPeriodCents: pricing.PRICE_CENTS,
                     renewalCents: pricing.RENEWAL_CENTS,
-                    trialDays: 7,
+                    trialDays: 14,
                     interval: 'year',
                 },
             });
@@ -561,7 +561,7 @@ function installFetchRecorder(responder) {
             const checkoutPosts = rec.posts.filter((p) => /\/checkout\/sessions/.test(p.url));
             const form = parseStripeForm(checkoutPosts[0].body);
             assert.strictEqual(form.mode, 'subscription');
-            assert.strictEqual(form['subscription_data[trial_period_days]'], '7');
+            assert.strictEqual(form['subscription_data[trial_period_days]'], '14');
             assert.strictEqual(form['line_items[0][price]'], 'price_test_first_99_eur');
             assert.ok(!hasOneTimeLineItem(form), 'no one-time with trial');
             // Renewal must NOT be only metadata — schedule attach required.
@@ -593,8 +593,8 @@ function installFetchRecorder(responder) {
         }
     });
 
-    // ── HIDOOK_TEST_PAY offline records same 99-then-29 / 7-day contract ───
-    await check('HIDOOK_TEST_PAY offline createCheckout records 99-then-29 / 7-day trial contract', async () => {
+    // ── HIDOOK_TEST_PAY offline records same 99-then-29 / 14-day contract ───
+    await check('HIDOOK_TEST_PAY offline createCheckout records 99-then-29 / 14-day trial contract', async () => {
         process.env.HIDOOK_TEST_PAY = '1';
         delete process.env.STRIPE_SECRET_KEY;
         assert.ok(payments.isConfigured());
@@ -611,7 +611,7 @@ function installFetchRecorder(responder) {
         assert.ok(co.contract && typeof co.contract === 'object', 'offline path must return contract');
         assert.strictEqual(co.contract.firstPeriodCents, pricing.PRICE_CENTS, 'contract first 9900');
         assert.strictEqual(co.contract.renewalCents, pricing.RENEWAL_CENTS, 'contract renewal 2900');
-        assert.strictEqual(co.contract.trialDays, 7, 'contract trial 7 days');
+        assert.strictEqual(co.contract.trialDays, 14, 'contract trial 7 days');
         assert.strictEqual(co.contract.interval, 'year', 'contract yearly');
         assert.notStrictEqual(
             co.contract.firstPeriodCents,
@@ -639,7 +639,7 @@ function installFetchRecorder(responder) {
         const fs = require('fs');
         const doc = fs.readFileSync(path.join(__dirname, '..', '..', 'OWNER-STRIPE-TRIAL.md'), 'utf8');
         assert.ok(/Hidook Site Builder/i.test(doc), 'owner doc names Hidook Site Builder');
-        assert.ok(/7[\s-]*day/i.test(doc), 'owner doc mentions 7-day trial');
+        assert.ok(/14[\s-]*day/i.test(doc), 'owner doc mentions 14-day trial');
         assert.ok(
             /STRIPE_PRICE_ID_RENEWAL/i.test(doc),
             'owner doc must document STRIPE_PRICE_ID_RENEWAL_* env'

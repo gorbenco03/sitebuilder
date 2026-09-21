@@ -16,8 +16,8 @@
  * When no Price id is set, Checkout uses inline price_data (test/local friendly;
  * no Product/Price pre-creation required). Studio must not demand production keys.
  *
- * Commercial model (VISION 2026-08-26): mode=subscription with a 7-day trial.
- * Card is collected at signup ($0 now); first charge is automatic on day 7 at
+ * Commercial model (VISION 2026-08-26): mode=subscription with a 14-day trial.
+ * Card is collected at signup ($0 now); first charge is automatic on day 14 at
  * first-period amount (99); subsequent years are renewal amount (29) via a
  * Stripe Subscription Schedule phase — never forever-99, never one-time+trial.
  * Checkout sets allow_promotion_codes so Stripe shows a promo-code field;
@@ -211,8 +211,8 @@ function resolveStripeRenewalPriceId(currency) {
     return null;
 }
 
-/** Fixed 7-day subscription trial (VISION). Not a free unpaid live window. */
-const SUBSCRIPTION_TRIAL_DAYS = 7;
+/** Fixed 14-day subscription trial (owner decision 2026-09-21, was 7). Not a free unpaid live window. */
+const SUBSCRIPTION_TRIAL_DAYS = 14;
 
 /**
  * Resolve first-period + renewal minor units for a checkout.
@@ -242,7 +242,7 @@ function buildBillingContract({ amountCents, renewalCents } = {}) {
  * Build Checkout Session line_items + billing metadata for 99-then-29 (or pure renewal).
  *
  * First-then-renewal Checkout is a **single recurring** line at first-period cents
- * (9900) with trial_period_days=7. No one-time companion (Stripe would charge it now).
+ * (9900) with trial_period_days=14. No one-time companion (Stripe would charge it now).
  * Year-2+ step-down to renewal (2900) is a Subscription Schedule phase attached after
  * the subscription exists — not metadata alone.
  *
@@ -504,8 +504,8 @@ function isConfigured() {
 }
 
 /**
- * Create a Stripe Checkout Session for a subscription with a 7-day card-on-file trial.
- * On trial start Stripe reports payment_status=no_payment_required ($0 now); after day 7
+ * Create a Stripe Checkout Session for a subscription with a 14-day card-on-file trial.
+ * On trial start Stripe reports payment_status=no_payment_required ($0 now); after day 14
  * the first period charges PRICE_CENTS (99). Year-2+ charges RENEWAL_CENTS (29) only after
  * attachFirstThenRenewalSchedule runs on the subscription (webhook / paid handler).
  *
@@ -568,7 +568,7 @@ async function createCheckout({
         };
     }
 
-    // First-period publish uses a 7-day trial; pure renewal checkouts charge immediately.
+    // First-period publish uses a 14-day trial; pure renewal checkouts charge immediately.
     const trialDays = contract.firstPeriodCents === contract.renewalCents
         ? 0
         : SUBSCRIPTION_TRIAL_DAYS;
@@ -581,7 +581,7 @@ async function createCheckout({
         metadata: sessionMeta,
         // Stripe Checkout promo-code field. Do not pair with `discounts`
         // (Stripe rejects both on the same session). Billing model stays
-        // subscription + 7-day trial + 99 then 29 via schedule.
+        // subscription + 14-day trial + 99 then 29 via schedule.
         allow_promotion_codes: true,
     };
     if (trialDays > 0) {

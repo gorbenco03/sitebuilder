@@ -3,7 +3,7 @@
  * bot/test/wave4-subscription-trial.test.js — Wave 4 commercial trial card.
  *
  * Invariants (VISION 2026-08-26):
- *   (a) createCheckout Stripe body uses mode=subscription + trial_period_days=7
+ *   (a) createCheckout Stripe body uses mode=subscription + trial_period_days=14
  *   (b) HIDOOK_TEST_PAY offline complete still publishes on the paid path
  *   (c) checkout.session.completed with payment_status=no_payment_required
  *       is accepted as card-on-file / trial start (site.paid + deploy)
@@ -108,8 +108,8 @@ function parseStripeForm(body) {
         assert.strictEqual(pricing.PRICE_CENTS, 9900);
     });
 
-    // ── (a) createCheckout Stripe params: subscription + 7-day trial ────────
-    await check('createCheckout Stripe body: mode=subscription + trial_period_days=7', async () => {
+    // ── (a) createCheckout Stripe params: subscription + 14-day trial ────────
+    await check('createCheckout Stripe body: mode=subscription + trial_period_days=14', async () => {
         const prevTestPay = process.env.HIDOOK_TEST_PAY;
         const prevKey = process.env.STRIPE_SECRET_KEY;
         process.env.HIDOOK_TEST_PAY = '0';
@@ -142,8 +142,8 @@ function parseStripeForm(body) {
             assert.strictEqual(form.mode, 'subscription', 'mode must be subscription, got ' + form.mode);
             assert.strictEqual(
                 form['subscription_data[trial_period_days]'],
-                '7',
-                'trial_period_days must be 7'
+                '14',
+                'trial_period_days must be 14'
             );
             assert.strictEqual(
                 form.allow_promotion_codes,
@@ -160,7 +160,7 @@ function parseStripeForm(body) {
                 'subscription price_data must include recurring interval'
             );
             assert.notStrictEqual(form.mode, 'payment', 'must not use mode=payment');
-            assert.strictEqual(payments.SUBSCRIPTION_TRIAL_DAYS, 7);
+            assert.strictEqual(payments.SUBSCRIPTION_TRIAL_DAYS, 14);
         } finally {
             global.fetch = origFetch;
             if (prevTestPay === undefined) delete process.env.HIDOOK_TEST_PAY;
@@ -202,7 +202,7 @@ function parseStripeForm(body) {
             const form = parseStripeForm(capturedBody);
             assert.strictEqual(form.mode, 'subscription');
             assert.strictEqual(form['line_items[0][price]'], 'price_test_eur_wave4');
-            assert.strictEqual(form['subscription_data[trial_period_days]'], '7');
+            assert.strictEqual(form['subscription_data[trial_period_days]'], '14');
             assert.strictEqual(form.allow_promotion_codes, 'true');
             assert.ok(!form['line_items[0][price_data][unit_amount]'], 'catalog path must not send unit_amount price_data');
         } finally {

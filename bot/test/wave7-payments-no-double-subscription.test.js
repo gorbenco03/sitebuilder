@@ -244,7 +244,7 @@ function installFetchRecorder(responder) {
         const { site, order, sessionId, user } = seedPendingSite('e2e');
         const subscriptionId = 'sub_test_e2e_' + crypto.randomBytes(4).toString('hex');
 
-        // 1) First publish (7-day trial start).
+        // 1) First publish (14-day trial start).
         await onStripeEvent({
             id: 'evt_' + crypto.randomUUID(),
             type: 'checkout.session.completed',

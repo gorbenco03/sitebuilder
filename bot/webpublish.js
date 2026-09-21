@@ -90,7 +90,7 @@ const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
 const SITES_DIR     = path.join(process.env.DATA_DIR || PROJECT_ROOT, 'sites');
 
 const TEMPLATE_EXCLUDES = /^(schema\.json|presets\.json)$|\.md$/i;
-// Checkout grants the first hosting year before Stripe's day-7 trial
+// Checkout grants the first hosting year before Stripe's day-14 trial
 // collection. Only cycle invoices at/near the existing entitlement end renew.
 const RENEWAL_DUE_WINDOW_MS = 45 * 24 * 60 * 60 * 1000;
 
@@ -693,7 +693,7 @@ async function handleStripeInvoicePaid(event) {
     // money — under this product's 99-then-29 contract it fires at two
     // different moments, and this is the one place in the whole codebase
     // that has to tell them apart:
-    //   - day 7 of a brand-new subscription: the trial ends and Stripe bills
+    //   - day 14 of a brand-new subscription: the trial ends and Stripe bills
     //     the first period. The site was already published and fully
     //     entitled for a full year at checkout.session.completed (trial
     //     start, handleStripePaid) — that entitlement must not be extended a
@@ -702,7 +702,7 @@ async function handleStripeInvoicePaid(event) {
     //     extend entitlement (and republishes an expired site).
     // RENEWAL_DUE_WINDOW_MS is the same signal that always told these apart;
     // it used to gate the ENTIRE function (including the ledger write below)
-    // and silently dropped the day-7 charge — the real money-moved event —
+    // and silently dropped the day-14 charge — the real money-moved event —
     // on the floor. It now only gates the entitlement-extension side effect.
     const currentPaidUntilMs = Date.parse(site.paidUntil || '');
     const isFirstPeriodCompletion = Number.isFinite(currentPaidUntilMs)
@@ -717,7 +717,7 @@ async function handleStripeInvoicePaid(event) {
             invoiceId: invoice.id || null,
             paidUntil: site.paidUntil,
         });
-        // TRW-04 — a first-time trial site can fail its day-7 charge, go
+        // TRW-04 — a first-time trial site can fail its day-14 charge, go
         // through dunning, and reach terminal 'unpaid' WITHOUT paidUntil ever
         // changing (it was only ever extended optimistically at trial start,
         // 12 months out — see handleStripePaid) — so this branch, not just
@@ -769,7 +769,7 @@ async function handleStripeInvoicePaid(event) {
 
     // Wave7/Wave12 — invoice history: this is the ONE place a real charge's
     // own Stripe id/hosted URL/PDF link ever reaches this codebase, for
-    // BOTH moments above — the day-7 first-period charge (a first-year
+    // BOTH moments above — the day-14 first-period charge (a first-year
     // subscription_create invoice is deliberately ignored above; the *trial
     // start* itself was already recorded, unpaid, by handleStripePaid) and
     // every later year's renewal. Best-effort — never let a ledger write
@@ -1270,7 +1270,7 @@ function getDunningState(site) {
  * a 'renewal'-kind checkout always charges renewalCents immediately (trialDays
  * is 0 whenever firstPeriodCents === renewalCents, which is exactly the
  * renewal-kind amount) — a legacy renewal row was always real money. Every
- * other kind ('publish' / first-time / reactivation) always uses the 7-day
+ * other kind ('publish' / first-time / reactivation) always uses the 14-day
  * card trial (PRICE_CENTS !== RENEWAL_CENTS in bot/pricing.js, unconditionally)
  * — a legacy non-renewal row could only ever have been a no_payment_required
  * trial start, never an immediate real charge, and must not keep displaying
@@ -1293,7 +1293,7 @@ function _resolveLegacyInvoiceStatus(row) {
  *   - 'invoice' — a scheduled-but-unpaid trial start (handleStripePaid,
  *     payment_status=no_payment_required), a real charge at checkout
  *     (handleStripePaid, payment_status=paid — always true for a renewal
- *     checkout), or a real day-7/renewal charge confirmed by Stripe
+ *     checkout), or a real day-14/renewal charge confirmed by Stripe
  *     (handleStripeInvoicePaid). `_resolveLegacyInvoiceStatus` normalizes
  *     rows written before this wave, which never recorded `status` at all.
  *   - 'payment_failed' — a declined charge attempt (handleStripeInvoicePaymentFailed),
@@ -2341,7 +2341,7 @@ async function deployPlaceholder(_site) {
 /**
  * Idempotent: called after Stripe confirms card-on-file / payment for any order (web or telegram).
  * - Accepts checkout.session.completed when payment_status is `paid` OR `no_payment_required`
- *   (subscription trial start — card collected, charge deferred to day 7).
+ *   (subscription trial start — card collected, charge deferred to day 14).
  * - Unpaid / open / missing payment_status must not publish.
  * - Marks order paid once (markOrderPaid returns null if already paid).
  * - Same Stripe event id is claimed once (claimStripeEvent).
@@ -2416,14 +2416,14 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
 
     // Wave7/Wave12 — invoice history record. `paymentStatus` (checked above)
     // is the only signal at this call site that tells "money actually moved"
-    // apart from "card confirmed, Stripe deferred the charge to day 7":
+    // apart from "card confirmed, Stripe deferred the charge to day 14":
     //   - 'paid'                → a real charge happened at checkout (always
     //     true for a renewal/reactivation checkout — bot/payments.js#createCheckout
     //     never attaches a trial when firstPeriodCents === renewalCents,
     //     which is exactly the renewal-kind amount — and true for the
     //     HIDOOK_TEST_PAY offline pay-button simulation, see
     //     bot/server.js#handleTestPayComplete). Record a paid invoice.
-    //   - 'no_payment_required' → the 7-day card trial just started. $0
+    //   - 'no_payment_required' → the 14-day card trial just started. $0
     //     moved. The real charge is a SEPARATE later event
     //     (handleStripeInvoicePaid, billing_reason=subscription_cycle, day
     //     7) — recording a paid invoice here is exactly the bug this wave
@@ -2431,7 +2431,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     //     week before Stripe ever collects it). Record a scheduled/unpaid
     //     entry instead, so the dashboard "Facturi" list can show "trial
     //     started, first charge upcoming on <date>" and only flip to "paid"
-    //     once handleStripeInvoicePaid's day-7 webhook actually fires.
+    //     once handleStripeInvoicePaid's day-14 webhook actually fires.
     // Best-effort either way: never let a ledger write turn a confirmed
     // payment (or a confirmed non-payment) into a failure.
     try {
@@ -2612,12 +2612,12 @@ function _storeStripeBillingIds(siteId, cs) {
 
 /**
  * Wave12 — best-effort ISO date for "when Stripe will actually charge" at
- * the moment a 7-day card trial starts, for the ledger's scheduled/unpaid
+ * the moment a 14-day card trial starts, for the ledger's scheduled/unpaid
  * invoice entry (see handleStripePaid above). Stripe's real trial_end is
  * only present here when the webhook payload happens to carry an expanded
  * subscription object with a numeric trial_end (uncommon — Checkout webhooks
  * normally carry just the subscription id string); otherwise this falls back
- * to now + SUBSCRIPTION_TRIAL_DAYS, the same 7-day figure
+ * to now + SUBSCRIPTION_TRIAL_DAYS, the same 14-day figure
  * bot/payments.js#createCheckout actually requests from Stripe and the same
  * one builder/app.js#getTrialEndIso already estimates the trial end with on
  * the dashboard — so the ledger and the dashboard never show two different

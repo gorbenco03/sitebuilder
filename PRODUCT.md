@@ -12,10 +12,10 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 
 ## Commercial model
 
-- Stripe subscription with **7-day trial**.
+- Stripe subscription with **14-day trial**.
 - Card required at signup; no card means no live site.
 - Site is live/public immediately after a valid card starts the trial.
-- First charge happens automatically on day 7 if the customer does not cancel.
+- First charge happens automatically on day 14 if the customer does not cancel.
 - Price: **99** in the customer currency bucket — EUR (EU), GBP (UK), USD (rest of world).
 - Renewal: **29/year** in the same currency.
 - No promise of permanent hosting from one payment.

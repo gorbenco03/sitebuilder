@@ -198,12 +198,12 @@ check('HEAD authority docs keep 12-month free + new-tab rule', () => {
 });
 
 // Stripe commercial model must remain untouched by this correction
-check('HEAD Stripe commercial model unchanged (7-day trial, 99, renewal 29)', () => {
+check('HEAD Stripe commercial model unchanged (14-day trial, 99, renewal 29)', () => {
   const pricing = require('../pricing.js');
   assert.strictEqual(pricing.PRICE_CENTS, 9900, 'PRICE_CENTS 9900');
   assert.strictEqual(pricing.RENEWAL_CENTS, 2900, 'RENEWAL_CENTS 2900');
   const product = headRead('PRODUCT.md');
-  assert.ok(/7-day trial|trial de 7/i.test(product), '7-day trial');
+  assert.ok(/14-day trial|trial de 14/i.test(product), '14-day trial');
   assert.ok(/\b99\b/.test(product), '99 price');
   assert.ok(/29\/year|29\/an/i.test(product), '29/year renewal');
 });

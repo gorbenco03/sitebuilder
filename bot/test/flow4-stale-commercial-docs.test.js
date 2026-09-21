@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Flow 4.1 oracle: operator commercial docs must describe the current model
- * (Stripe subscription, 7-day card trial → auto-charge 99 → renewal 29/year
+ * (Stripe subscription, 14-day card trial → auto-charge 99 → renewal 29/year
  * via subscription schedule). Fails on leftover 100 / manual-renewal /
  * pay-before-publish-as-current-model copy.
  *
@@ -84,7 +84,7 @@ const STALE_PHRASES = [
     },
     {
         name: 'pay-before-publish as current model: unpaid drafts + pay-before-publish without trial framing',
-        // Affirmative old happy path: unpaid → pay-before-publish (no 7-day card trial nearby on same line)
+        // Affirmative old happy path: unpaid → pay-before-publish (no 14-day card trial nearby on same line)
         re: /Unpaid\s+sites\s+stay\s+drafts\s+until\s+pay-before-publish/i,
     },
 ];
@@ -92,7 +92,7 @@ const STALE_PHRASES = [
 /** Required current-model signals somewhere across the six docs (not every file). */
 const REQUIRED_CURRENT = [
     {
-        name: 'current model: Stripe subscription + 7-day trial',
+        name: 'current model: Stripe subscription + 14-day trial',
         re: /subscription[\s\S]{0,80}7[-\s]?day\s+trial|7[-\s]?day\s+trial[\s\S]{0,80}subscription/i,
     },
     {
@@ -104,7 +104,7 @@ const REQUIRED_CURRENT = [
         re: /live\s+(immediately|\/\s*public)\s+after|immediately\s+after\s+(a\s+)?valid\s+card|site\s+.*live.*after.*card/i,
     },
     {
-        name: 'current model: auto-charge 99 after trial / day 7',
+        name: 'current model: auto-charge 99 after trial / day 14',
         re: /(?:auto(?:matic(?:ally)?)?[-\s]?charge|charged?\s+automatically|first\s+charge).{0,60}\b99\b|\b99\b.{0,60}(?:after\s+(?:day\s+)?7|after\s+the\s+trial)|day\s+7.{0,40}\b99\b/i,
     },
     {

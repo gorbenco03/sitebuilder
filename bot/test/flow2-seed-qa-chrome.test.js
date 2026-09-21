@@ -126,7 +126,7 @@ check('customer-visible preset emails and professional renders never use reserve
 });
 
 check('trial and color controls use customer-facing Romanian copy', () => {
-    assert.ok(appSrc.includes('Trial de 7 zile'), 'cabinet trial label is missing ordinary Romanian spacing');
+    assert.ok(appSrc.includes('Trial de 14 zile'), 'cabinet trial label is missing ordinary Romanian spacing');
     for (const leak of ['7\u2011zile', '7-zile', '\\u2011zile']) {
         assert.ok(!appSrc.includes(leak), `cabinet trial label contains forbidden spelling: ${leak}`);
     }

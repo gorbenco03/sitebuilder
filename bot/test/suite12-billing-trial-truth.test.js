@@ -4,14 +4,14 @@
  * truth about money.
  *
  * VERIFIED FINDING (root cause, pre-fix): the dashboard "Facturi" list
- * showed a paid-looking 99€ line dated the day the 7-day free trial starts —
- * before any charge (the real charge lands on day 7). Two bugs in
+ * showed a paid-looking 99€ line dated the day the 14-day free trial starts —
+ * before any charge (the real charge lands on day 14). Two bugs in
  * bot/webpublish.js combined to cause it:
  *   1. handleStripePaid wrote the same ledger 'invoice' row whether Stripe's
  *      checkout payment_status was 'paid' (real money) or
  *      'no_payment_required' (trial start with a saved card, $0 moved) —
  *      nothing marked the trial row as pending/scheduled.
- *   2. handleStripeInvoicePaid — the handler for the REAL day-7 charge —
+ *   2. handleStripeInvoicePaid — the handler for the REAL day-14 charge —
  *      short-circuited before ever reaching its ledger write whenever
  *      paidUntil was already far in the future (RENEWAL_DUE_WINDOW_MS),
  *      which is exactly the case right after a trial start. So the one
@@ -20,9 +20,9 @@
  *
  * Proven failing-first: reverting the two webpublish.js fixes (git stash /
  * diff of this branch) makes 'trial start records NO paid invoice' and
- * 'real day-7 charge ... records a paid invoice' both fail — the first
+ * 'real day-14 charge ... records a paid invoice' both fail — the first
  * because the trial row's status becomes 'paid', the second because
- * getInvoiceHistory(after the day-7 event) still has length 1 (the charge
+ * getInvoiceHistory(after the day-14 event) still has length 1 (the charge
  * was silently ignored). See the report for the exact RED transcript.
  *
  * Run: node bot/test/suite12-billing-trial-truth.test.js
@@ -133,7 +133,7 @@ function subscriptionStatusEvent({ eventId, subscriptionId, status, type = 'cust
     };
 }
 
-/** A real day-7 (or later renewal) Stripe invoice event. */
+/** A real day-14 (or later renewal) Stripe invoice event. */
 function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, type = 'invoice.paid', amountPaid }) {
     return {
         id: eventId,
@@ -169,7 +169,7 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         );
     });
 
-    await check('real day-7 charge (invoice.paid, subscription_cycle) records a paid invoice and does not extend paidUntil a second time', async () => {
+    await check('real day-14 charge (invoice.paid, subscription_cycle) records a paid invoice and does not extend paidUntil a second time', async () => {
         const { site, subscriptionId } = await startTrial('trial-real-charge');
         const paidUntilAtTrialStart = site.paidUntil;
         assert.ok(paidUntilAtTrialStart, 'trial start already grants a full year of entitlement (site is live during the trial)');
@@ -184,7 +184,7 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         const afterSite = registry.getSite(site.id);
         assert.strictEqual(
             afterSite.paidUntil, paidUntilAtTrialStart,
-            'the day-7 charge only CONFIRMS the year already granted at trial start — it must not add a second year'
+            'the day-14 charge only CONFIRMS the year already granted at trial start — it must not add a second year'
         );
 
         const history = webpublish.getInvoiceHistory(afterSite);
@@ -339,7 +339,7 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         assert.strictEqual(recoveredDunning, null, 'TRW-05: a recovered site must stop reporting a dunning warning/critical state entirely');
     });
 
-    await check('TRW-04: a site Stripe exhausted retries on republishes once the real day-7 charge succeeds (invoice.paid, isFirstPeriodCompletion branch)', async () => {
+    await check('TRW-04: a site Stripe exhausted retries on republishes once the real day-14 charge succeeds (invoice.paid, isFirstPeriodCompletion branch)', async () => {
         const { site, subscriptionId } = await startTrial('trw04-invoice-first');
         const paidUntilBeforeOutage = registry.getSite(site.id).paidUntil;
 
@@ -351,7 +351,7 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
         assert.strictEqual(registry.getSite(site.id).status, 'unpublished', 'sanity: down before recovery');
 
         // The recovery charge succeeds — this is the SAME event type that
-        // originally confirmed the day-7 charge (isFirstPeriodCompletion),
+        // originally confirmed the day-14 charge (isFirstPeriodCompletion),
         // since paidUntil (granted a full year at trial start) never moved
         // during the whole outage.
         const invoiceId = 'in_recovery_' + crypto.randomUUID().slice(0, 10);
@@ -461,7 +461,7 @@ function subscriptionCycleInvoiceEvent({ eventId, invoiceId, subscriptionId, typ
 
     await check('TRW-09a: cancelling AFTER a real charge still keeps paid:true — real payment history is not erased', async () => {
         const { site, subscriptionId } = await startTrial('trw09a-charged-then-cancel');
-        // The real day-7 charge succeeds before the owner cancels.
+        // The real day-14 charge succeeds before the owner cancels.
         await onStripeEvent(subscriptionCycleInvoiceEvent({
             eventId: 'evt_' + crypto.randomUUID(),
             invoiceId: 'in_' + crypto.randomUUID().slice(0, 10),

@@ -6,7 +6,7 @@
  * messages around publish/auth (m9, m10, m22, m1). Each sub-test checks the
  * ACTUAL text a real browser shows, not the code that produces it.
  *
- * - m9:  republishing an ALREADY-PAID/live site re-shows "trial de 7 zile
+ * - m9:  republishing an ALREADY-PAID/live site re-shows "trial de 14 zile
  *        început" — no trial started, nothing to announce. A genuine first
  *        publish (unpaid draft → pay → live) must keep the trial message.
  * - m10: a reserved slug ("www") shows the generic "deja folosită" message

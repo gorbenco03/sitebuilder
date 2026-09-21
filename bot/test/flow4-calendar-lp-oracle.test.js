@@ -15,7 +15,7 @@
  * 1) No fake production cal.diy embed / "book now on hosted calendar" on
  *    public templates (professionals stays local appointment *request*).
  * 2) Builder landing/product chrome prices match commercial model from
- *    bot/pricing.js (trial 7 zile, 99 then 29/an) — no stale one-time/100/
+ *    bot/pricing.js (trial 14 zile, 99 then 29/an) — no stale one-time/100/
  *    pay-before-publish-as-model numbers on product-visible surfaces.
  * 3) Option C documented; boundary module present; brand tokens not invented.
  *
@@ -211,8 +211,8 @@ async function run() {
         assert.ok(!/pay-before-publish/i.test(html), 'no pay-before-publish as model');
         assert.ok(!/\bPays?\s+100\b/i.test(html), 'no Pay 100');
         assert.ok(!/one-?time\s+99/i.test(html), 'no one-time 99');
-        // Trial 7 zile still stated
-        assert.ok(/trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(html), 'trial 7 zile');
+        // Trial 14 zile still stated
+        assert.ok(/trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(html), 'trial 14 zile');
     });
 
     await check('builder/app.js fills how/success prices from /api/config', () => {
@@ -267,7 +267,7 @@ async function run() {
             assert.strictEqual(body.renewal, 29);
             assert.strictEqual(body.renewalCents, 2900);
             assert.strictEqual(String(body.currency).toLowerCase(), 'eur');
-            assert.strictEqual(body.trialDays, 7);
+            assert.strictEqual(body.trialDays, 14);
             assert.ok(body.calendar, 'calendar object');
             assert.strictEqual(body.calendar.chosenOption, 'C');
             assert.strictEqual(body.calendar.publicMode, 'local-request');

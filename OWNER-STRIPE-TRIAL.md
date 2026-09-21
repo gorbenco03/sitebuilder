@@ -2,9 +2,9 @@
 
 **Audience:** product owner only. Studio does **not** need production Stripe keys or live Product/Price IDs to ship the builder path.
 
-**Product rule (VISION 2026-08-26):** stranger enters a valid card → **7-day trial starts** ($0 now) → site goes **live immediately** → Stripe **auto-charges 99** after the trial if not cancelled → **29/year** after the first paid year via a **Subscription Schedule** phase → **Cancel** in the builder opens **Stripe Customer Portal** → when the subscription is cancelled, the **public site is unpublished** (not live). Refunds stay **Stripe Dashboard / Customer Portal** (no custom refund API).
+**Product rule (VISION 2026-08-26):** stranger enters a valid card → **14-day trial starts** ($0 now) → site goes **live immediately** → Stripe **auto-charges 99** after the trial if not cancelled → **29/year** after the first paid year via a **Subscription Schedule** phase → **Cancel** in the builder opens **Stripe Customer Portal** → when the subscription is cancelled, the **public site is unpublished** (not live). Refunds stay **Stripe Dashboard / Customer Portal** (no custom refund API).
 
-**Commercial amounts (Hidook Site Builder):** first period **99** (after the 7-day card trial), then **29**/year renewal in the same currency. Never a forever-99 yearly Price. Never a one-time Checkout line next to the trial (that would charge immediately).
+**Commercial amounts (Hidook Site Builder):** first period **99** (after the 14-day card trial), then **29**/year renewal in the same currency. Never a forever-99 yearly Price. Never a one-time Checkout line next to the trial (that would charge immediately).
 
 ---
 
@@ -14,7 +14,7 @@
 |------|------|-----------|
 | `HIDOOK_TEST_PAY=1` (non-production) | Local / E2E | Offline `cs_test_*` checkout + `#test-checkout=` return. **No network, no charge.** Returns the same **99-then-29** billing contract. Offline **Cancel** opens `#test-billing-portal=bps_test_*` and finishes cancel without network (site unpublished). |
 | `STRIPE_SECRET_KEY=sk_test_…` without Price env | Stripe **test** mode | Checkout `mode=subscription`, `allow_promotion_codes=true`, `subscription_data.trial_period_days=7`, **single** inline recurring `price_data` at **99**/year. On `checkout.session.completed`, app attaches a **Subscription Schedule**: phase 0 = 99 through trial + first paid year; phase 1 = **29**/year thereafter. Builder **Cancel** → `billing_portal.sessions`. |
-| `STRIPE_SECRET_KEY` + first-year `STRIPE_PRICE_ID_*` | Test or live | Same subscription + 7-day trial on your first-year Dashboard **Price**. Schedule phase 1 uses `STRIPE_PRICE_ID_RENEWAL_*` when set, else creates a **29**/year Price from `bot/pricing.js`. |
+| `STRIPE_SECRET_KEY` + first-year `STRIPE_PRICE_ID_*` | Test or live | Same subscription + 14-day trial on your first-year Dashboard **Price**. Schedule phase 1 uses `STRIPE_PRICE_ID_RENEWAL_*` when set, else creates a **29**/year Price from `bot/pricing.js`. |
 | + optional `STRIPE_PRICE_ID_RENEWAL_*` | Test or live | Schedule phase 1 uses your **29**/year Catalog Price id (preferred for live). |
 
 Webhook success for first live publish:
@@ -27,7 +27,7 @@ Webhook cancel → site comes down:
 - `customer.subscription.deleted` → **unpublish** (isolated: remove `$DATA_DIR/published/<slug>/`; registry status not live). Idempotent.
 - `customer.subscription.updated` with `status=canceled` → same unpublish.
 - Other `customer.subscription.updated` lifecycle states are persisted on the site. Export remains available only for `active` / `trialing`; `past_due`, `unpaid`, `incomplete`, `incomplete_expired` and `paused` block HTML/ZIP even when historical `paid=true` and `paidUntil` is still in the future.
-- Cancel during the 7-day trial does **not** charge (no invoice paid yet). Refunds for any later charge stay owner-side via **Dashboard / Customer Portal**.
+- Cancel during the 14-day trial does **not** charge (no invoice paid yet). Refunds for any later charge stay owner-side via **Dashboard / Customer Portal**.
 
 Amounts stay in `bot/pricing.js` (`PRICE_CENTS=9900` first period, `RENEWAL_CENTS=2900` yearly after). Price env vars point at Stripe catalog IDs — they do **not** reprice the product in code. Session metadata alone does **not** change Stripe invoices; the schedule does.
 
@@ -63,7 +63,7 @@ Studio will not ask for these until you decide. Steps:
 
 1. Stripe Dashboard (live) → **Product** “Hidook Site Builder” (or equivalent).
 2. Create **two** recurring yearly **Prices** per currency you sell (EUR / GBP / USD):
-   - **First year:** amount **99** (first period after the 7-day trial). Used on Checkout.
+   - **First year:** amount **99** (first period after the 14-day trial). Used on Checkout.
    - **Renewal:** amount **29** (every later year, same currency). Used on **Subscription Schedule** phase 1.
 3. Copy each Price id (`price_…`) into host env:
    - First-year: `STRIPE_PRICE_ID_EUR` / `STRIPE_PRICE_ID_GBP` / `STRIPE_PRICE_ID_USD`
@@ -90,7 +90,7 @@ If you set a first-year Price env without a renewal Price env, the app still att
 | Action | Result |
 |--------|--------|
 | Customer cancels in **Customer Portal** (trial or later) | Stripe ends the subscription → webhook → **site unpublished** (not publicly served). |
-| Cancel during 7-day trial | **No charge.** Site comes down. |
+| Cancel during 14-day trial | **No charge.** Site comes down. |
 | Refund after a charge | Owner issues refund in **Stripe Dashboard** or Portal. No in-app refund API. |
 
 ---
@@ -335,7 +335,7 @@ is no longer a pending wiring step.
 
 **Wave12 — invoices tell the truth about money.** Every row now carries a
 `status`: `'paid'` (Stripe actually collected money), `'trial_started'` (the
-7-day card trial just began — $0 charged; carries `scheduledChargeAt`, the
+14-day card trial just began — $0 charged; carries `scheduledChargeAt`, the
 estimated day-7 date) or `'failed'` (a declined attempt). A trial start
 (`checkout.session.completed` with `payment_status=no_payment_required`)
 used to write the exact same row shape as a real charge — a customer reading
@@ -352,7 +352,7 @@ Ledger rows written before this wave carry no `status` field at all;
 rewriting the append-only ledger file — a legacy `kind:'renewal'` row is
 always real money (a renewal checkout never carries a trial), every other
 legacy row could only ever have been a trial start (the product always uses
-the 7-day trial on first publish) and is now reported as such.
+the 14-day trial on first publish) and is now reported as such.
 
 ---
 

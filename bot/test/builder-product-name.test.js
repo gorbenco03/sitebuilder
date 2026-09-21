@@ -78,8 +78,8 @@ check('builder/index.html must not introduce DESSERD / desserdina', () => {
     );
 });
 
-check('builder/index.html states card 7-day trial (not pay-once / keep-site)', () => {
-    assert.ok(/7[\s-]*day\s+trial|trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(src), 'builder chrome must state trial 7 zile');
+check('builder/index.html states card 14-day trial (not pay-once / keep-site)', () => {
+    assert.ok(/14[\s-]*day\s+trial|trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(src), 'builder chrome must state trial 14 zile');
     assert.ok(!/pay\s+once/i.test(src), 'builder chrome must not say pay once');
     assert.ok(
         !/keep-site|keep site/i.test(src),

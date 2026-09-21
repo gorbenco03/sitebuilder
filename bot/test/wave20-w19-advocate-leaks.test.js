@@ -9,7 +9,7 @@
  * Restaurant / trades / salon already use human RO labels (Imagine pentru partajare
  * socială…). Labels only — no key/type/value changes.
  *
- * VISION 2026-08-26: card → 7-day trial → live now → charge day 7 unless cancel.
+ * VISION 2026-08-26: card → 14-day trial → live now → charge day 14 unless cancel.
  *
  * Run: node bot/test/wave20-w19-advocate-leaks.test.js
  */

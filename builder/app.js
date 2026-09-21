@@ -26,7 +26,7 @@ let currentSiteSlug = '';
 let currentTemplate = null;
 
 // Runtime config from /api/config
-let appConfig = { amount: null, currency: 'usd', renewal: null, priceEur: null, brandDomain: null, contactUrl: null };
+let appConfig = { amount: null, currency: 'usd', renewal: null, priceEur: null, brandDomain: null, contactUrl: null, trialDays: 14 };
 
 // Preview/iframe state
 let previewTimer       = null;
@@ -6314,7 +6314,7 @@ async function downloadDraftHtml() {
       const msg = res.status === 401
         ? 'Intră în cont ca să descarci HTML-ul.'
         : res.status === 402
-          ? 'Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul.'
+          ? 'Activează trialul de 14 zile sau abonamentul ca să descarci HTML-ul.'
           : 'Nu am putut descărca HTML-ul.';
       showToast(msg, 'error', 5000);
       return;
@@ -6349,7 +6349,7 @@ async function downloadDraftHtml() {
     const msg = status === 401
       ? 'Autentifică-te ca să descarci HTML-ul.'
       : status === 402
-        ? 'Activează trialul de 7 zile sau abonamentul ca să descarci HTML-ul.'
+        ? 'Activează trialul de 14 zile sau abonamentul ca să descarci HTML-ul.'
         : 'Nu am putut descărca HTML-ul.';
     showToast(msg, 'error', 5000);
   } finally {
@@ -6401,7 +6401,7 @@ async function downloadDraftZip() {
       const msg = res.status === 401
         ? 'Autentifică-te ca să descarci ZIP-ul.'
         : res.status === 402
-          ? 'Activează trialul de 7 zile sau abonamentul ca să descarci ZIP-ul.'
+          ? 'Activează trialul de 14 zile sau abonamentul ca să descarci ZIP-ul.'
           : 'Nu am putut descărca ZIP-ul.';
       showToast(msg, 'error', 5000);
       return;
@@ -6614,10 +6614,16 @@ function absoluteSiteUrl(url) {
   return u;
 }
 
+/** Card trial length in days, from /api/config (server: SUBSCRIPTION_TRIAL_DAYS). */
+function trialDaysConfigured() {
+  const n = Number(appConfig && appConfig.trialDays);
+  return Number.isFinite(n) && n > 0 ? n : 14;
+}
+
 /**
  * Trial end ISO for dashboard chrome.
- * Prefer site.trialEnd / Stripe trial fields; else checkout start + 7 days;
- * else derive from paidUntil (first hosting year start + 7 days).
+ * Prefer site.trialEnd / Stripe trial fields; else checkout start + trial days;
+ * else derive from paidUntil (first hosting year start + trial days).
  */
 function getTrialEndIso(site) {
   if (!site) return null;
@@ -6632,24 +6638,24 @@ function getTrialEndIso(site) {
   if (start) {
     const d = new Date(start);
     if (Number.isFinite(d.getTime())) {
-      d.setUTCDate(d.getUTCDate() + 7);
+      d.setUTCDate(d.getUTCDate() + trialDaysConfigured());
       return d.toISOString();
     }
   }
-  // paidUntil ≈ checkout + 12 months on first publish → trial end ≈ paidUntil − 1y + 7d
+  // paidUntil ≈ checkout + 12 months on first publish → trial end ≈ paidUntil − 1y + trial days
   if (site.paidUntil) {
     const until = new Date(site.paidUntil);
     if (Number.isFinite(until.getTime())) {
       const trialEnd = new Date(until);
       trialEnd.setUTCFullYear(trialEnd.getUTCFullYear() - 1);
-      trialEnd.setUTCDate(trialEnd.getUTCDate() + 7);
+      trialEnd.setUTCDate(trialEnd.getUTCDate() + trialDaysConfigured());
       return trialEnd.toISOString();
     }
   }
   if (site.createdAt) {
     const d = new Date(site.createdAt);
     if (Number.isFinite(d.getTime())) {
-      d.setUTCDate(d.getUTCDate() + 7);
+      d.setUTCDate(d.getUTCDate() + trialDaysConfigured());
       return d.toISOString();
     }
   }
@@ -6657,7 +6663,7 @@ function getTrialEndIso(site) {
 }
 
 /**
- * Paid + live, not yet first invoice: show 7-day trial line instead of Hosting until.
+ * Paid + live, not yet first invoice: show 14-day trial line instead of Hosting until.
  * After first charge / non-trial paid year, Hosting until remains.
  */
 function isSiteInTrial(site) {
@@ -7532,7 +7538,7 @@ function showSuccessScreen(url, paymentUrl, alreadyPaidBefore) {
     if (titleEl) {
       titleEl.textContent = alreadyPaidBefore
         ? 'Modificările sunt live'
-        : 'Site-ul tău e live — trial de 7 zile început';
+        : 'Site-ul tău e live — trial de 14 zile început';
     }
     if (draftNote) hide(draftNote);
     if (urlText) {
@@ -8348,7 +8354,7 @@ function buildSiteCard(site) {
   info.appendChild(name);
   info.appendChild(meta);
 
-  // During live/active trial only: trial de 7 zile · prima taxare 99 pe <day-7 date>
+  // During live/active trial only: trial de 14 zile · prima taxare 99 pe <day-14 date>
   // Cancelled / unpublished Draft must not promise a first charge (W15).
   // After first charge / non-trial paid year: Hosting until …
   const isLiveActive = site.status === 'live' || site.status === 'active';
@@ -8359,7 +8365,7 @@ function buildSiteCard(site) {
       const price = formatPriceLabel(appConfig);
       const hostLine = document.createElement('div');
       hostLine.className = 'site-hosting-until site-trial-line';
-      const trialLabel = 'Trial de 7 zile · prima taxare ' + price;
+      const trialLabel = 'Trial de 14 zile · prima taxare ' + price;
       hostLine.textContent = day7 ? trialLabel + ' pe ' + day7 : trialLabel;
       info.appendChild(hostLine);
     } else if (site.paidUntil) {
@@ -8413,8 +8419,8 @@ function buildSiteCard(site) {
       payLabel = 'Reînnoiește hosting — ' + formatRenewalLabel(appConfig);
       payAriaLabel = 'Reînnoiește hostingul pentru acest site';
     } else {
-      payLabel = 'Adaugă un card — începe trialul de 7 zile';
-      payAriaLabel = 'Adaugă un card ca să începi trialul de 7 zile';
+      payLabel = 'Adaugă un card — începe trialul de 14 zile';
+      payAriaLabel = 'Adaugă un card ca să începi trialul de 14 zile';
     }
     keepBtn.textContent = payLabel;
     keepBtn.setAttribute('aria-label', payAriaLabel);
@@ -9171,9 +9177,9 @@ async function openDomainModal(site) {
 // panel: the "Proiectele mele" site card.
 //
 // Wave 12 — bot/webpublish.js#getInvoiceHistory now attaches a `status` to
-// every row: 'paid' (real money moved), 'trial_started' (the 7-day card
+// every row: 'paid' (real money moved), 'trial_started' (the 14-day card
 // trial just began — $0 charged, the real charge is a separate later row
-// once Stripe actually collects it on day 7) or 'failed' (a declined
+// once Stripe actually collects it on day 14) or 'failed' (a declined
 // attempt). A trial-start row must never render like a paid invoice — that
 // was the audited bug (a customer reading "99€" next to today's date, a
 // week before any money moved).

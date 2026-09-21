@@ -5,8 +5,8 @@
  * STALE ORACLE refresh (S-legacy G5, 2026-09): source lock-ins still asserted
  * English pay-once chrome ("Renew hosting", "hosting 12 months", no-trial
  * success). Current commercial contract (VISION): RO customer surfaces,
- * Stripe 7-day trial live-on-card, renewal CTA «Reînnoiește hosting» + 29,
- * success title «Site-ul tău e live — trial de 7 zile început». HTTP renewal
+ * Stripe 14-day trial live-on-card, renewal CTA «Reînnoiește hosting» + 29,
+ * success title «Site-ul tău e live — trial de 14 zile început». HTTP renewal
  * journey (9900 → paidUntil → expire → 2900 durable pending) remains live.
  *
  * Causal lock-in for /app/ commercial renewal loop:
@@ -227,12 +227,12 @@ function readOrdersForSite(siteId) {
         );
     });
 
-    await check('showSuccessScreen paid/live: trial 7 zile chrome + pay CTA hidden', () => {
+    await check('showSuccessScreen paid/live: trial 14 zile chrome + pay CTA hidden', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
-        // Current contract: live success states trial de 7 zile (not pay-once "hosting 12 months")
+        // Current contract: live success states trial de 14 zile (not pay-once "hosting 12 months")
         assert.ok(
             /trial\s+de\s+7\s+zile|Site-ul tău e live/i.test(showSuccessSrc),
-            'live success title/copy must state trial de 7 zile / site live'
+            'live success title/copy must state trial de 14 zile / site live'
         );
         // When live, pay button must be hidden (not only when paymentUrl null)
         assert.ok(

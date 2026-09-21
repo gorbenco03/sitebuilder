@@ -1,10 +1,10 @@
 'use strict';
 /**
  * bot/test/wave6-trial-copy.test.js — Wave 6 opened builder chrome matches
- * card → 7-day trial → live now (not pay-once).
+ * card → 14-day trial → live now (not pay-once).
  *
- * VISION 2026-08-26: stranger adds a valid card → 7-day trial starts → site
- * goes live immediately → Stripe auto-charges on day 7 unless cancelled.
+ * VISION 2026-08-26: stranger adds a valid card → 14-day trial starts → site
+ * goes live immediately → Stripe auto-charges on day 14 unless cancelled.
  *
  * Causal RED on parent Wave 5 SHA (pay-once leftover strings).
  * HEAD GREEN: no pay-once / live-only-after-payment; trial flow stated.
@@ -58,19 +58,19 @@ function assertNoPayOnce(src, label) {
 }
 
 function assertTrialFlow(src, label) {
-    // card → trial de 7 zile → live imediat → taxare ziua 7 dacă nu anulezi (VISION RO)
+    // card → trial de 14 zile → live imediat → taxare ziua 14 dacă nu anulezi (VISION RO)
     assert.ok(/\bcard\b/i.test(src), `${label}: must mention card`);
     assert.ok(
         /7[\s-]*day\s+trial|trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(src),
-        `${label}: must state trial 7 zile`
+        `${label}: must state trial 14 zile`
     );
     assert.ok(
         /goes\s+live\s+(now|immediately)|live\s+now|live\s+imediat|site-ul e live imediat|e live imediat/i.test(src),
         `${label}: must state site goes live now/immediately`
     );
     assert.ok(
-        (/day\s+7|on\s+day\s+7|ziua\s+7/i.test(src)) && /cancel|anulez/i.test(src),
-        `${label}: must state charge on day 7 unless cancelled`
+        (/day\s+7|on\s+day\s+7|ziua\s+14/i.test(src)) && /cancel|anulez/i.test(src),
+        `${label}: must state charge on day 14 unless cancelled`
     );
     assert.ok(
         /charge|charged|auto-?charge|taxăm|taxat|taxare/i.test(src),
@@ -84,7 +84,7 @@ check(`parent ${PARENT_SHA.slice(0, 7)} builder still sells pay-once / live-afte
     assert.ok(/Pay once and your site goes live/i.test(html), 'parent hero pay-once');
     assert.ok(/goes live right after payment/i.test(html), 'parent proof live-after-payment');
     assert.ok(/Pay once, then publish/i.test(html), 'parent how-step / footer pay-once');
-    assert.ok(!/7[\s-]*day\s+trial/i.test(html), 'parent must not already claim 7-day trial');
+    assert.ok(!/7[\s-]*day\s+trial/i.test(html), 'parent must not already claim 14-day trial');
 });
 
 // ── HEAD GREEN ───────────────────────────────────────────────────────────
@@ -93,13 +93,13 @@ check('HEAD builder/index.html has no pay-once / live-only-after-payment leftove
     assertNoPayOnce(html, 'HEAD builder');
 });
 
-check('HEAD builder landing states card → trial 7 zile → live imediat → taxare ziua 7 dacă nu anulezi', () => {
+check('HEAD builder landing states card → trial 14 zile → live imediat → taxare ziua 14 dacă nu anulezi', () => {
     const html = headRead('builder/index.html');
     assertTrialFlow(html, 'HEAD builder');
     // Hero / how-step / footer are the opened landing surface
     const hero = html.match(/id=["']hero-sub["'][\s\S]*?<\/p>/i);
     assert.ok(hero, 'hero-sub present');
-    assert.ok(/7[\s-]*day\s+trial|trial(?:ul)?\s+de\s+7\s+zile|7\s*zile/i.test(hero[0]), 'hero states trial 7 zile');
+    assert.ok(/14[\s-]*day\s+trial|trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(hero[0]), 'hero states trial 14 zile');
     assert.ok(!/pay\s+once/i.test(hero[0]), 'hero must not say pay once');
 
     const how = html.match(/id=["']cum-e["'][\s\S]*?<\/section>/i) || html.match(/how-section[\s\S]*?<\/section>/i);

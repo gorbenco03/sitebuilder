@@ -7,7 +7,7 @@
  *   Trial line also stacks one token per line
  *   After cancel: badge Draft but card still promises "first charge 99… on <date>"
  *
- * VISION 2026-08-26: card → 7-day trial → live now → charge day 7 unless cancel.
+ * VISION 2026-08-26: card → 14-day trial → live now → charge day 14 unless cancel.
  * Trial first-charge line only while site is actually live/active in trial.
  *
  * Run: node bot/test/wave17-w15-qa-fail.test.js
@@ -238,7 +238,7 @@ check('HEAD trial first-charge line only while live/active (not Draft after canc
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || '';
   assert.ok(card.length > 40, 'buildSiteCard');
-  assert.ok((/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) && /first charge|prima taxare/i.test(card), 'trial line copy retained');
+  assert.ok((/14-day trial|Trial de 7|7\u2011zile|14 zile/i.test(card)) && /first charge|prima taxare/i.test(card), 'trial line copy retained');
   assert.ok(
     trialLineRequiresLiveActive(card),
     'first charge line must require status live or active (same as Active badge)'
@@ -249,11 +249,11 @@ check('HEAD trial first-charge line only while live/active (not Draft after canc
   );
 });
 
-check('HEAD live-in-trial copy still trial 7 zile · prima taxare 99 pe <date>', () => {
+check('HEAD live-in-trial copy still trial 14 zile · prima taxare 99 pe <date>', () => {
   const js = headRead(BUILDER_JS);
   const card = extractFunction(js, 'buildSiteCard') || js;
   assert.ok(
-    (/7-day trial|Trial de 7|7\u2011zile|7 zile/i.test(card)) &&
+    (/14-day trial|Trial de 7|7\u2011zile|14 zile/i.test(card)) &&
       /first charge|prima taxare/i.test(card) &&
       (/\\u00b7|·/.test(card) || /\u00b7/.test(card) || /·/.test(card)),
     'live trial line keeps middot form'

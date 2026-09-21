@@ -756,8 +756,8 @@ function sendHtmlNotFound(res, opts = {}) {
         : 'Pagină negăsită';
     const body = isUnpublished
         ? (kind === 'unpublished'
-            ? 'Abonamentul a fost anulat (inclusiv în trialul de 7 zile). Site-ul nu mai este disponibil public — nu se servește conținut live vechi.'
-            : 'Acest site nu este public încă. Adaugă un card pentru trialul de 7 zile ca să fie live imediat.')
+            ? 'Abonamentul a fost anulat (inclusiv în trialul de 14 zile). Site-ul nu mai este disponibil public — nu se servește conținut live vechi.'
+            : 'Acest site nu este public încă. Adaugă un card pentru trialul de 14 zile ca să fie live imediat.')
         : 'Linkul pe care l-ai deschis nu există sau a fost mutat.';
     const html = `<!DOCTYPE html>
 <html lang="ro">
@@ -3314,7 +3314,7 @@ async function resolveExportDraft(req, res, query) {
 
     if (!hasActiveCommercialEntitlement(site)) {
         sendJson(res, 402, {
-            error: 'Exportul este disponibil după activarea trialului de 7 zile sau cu un abonament activ.',
+            error: 'Exportul este disponibil după activarea trialului de 14 zile sau cu un abonament activ.',
             code: 'EXPORT_REQUIRES_SUBSCRIPTION',
         });
         return null;

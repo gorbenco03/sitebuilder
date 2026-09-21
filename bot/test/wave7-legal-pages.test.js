@@ -177,7 +177,7 @@ function httpGet(port, urlPath) {
         }
 
         assert.ok(
-            /7[\s-]*day\s+trial|Card\s*→\s*7-day\s+trial|\bcard\b/i.test(footer),
+            /7[\s-]*day\s+trial|Card\s*→\s*14-day\s+trial|\bcard\b/i.test(footer),
             'footer still mentions trial/card flow'
         );
     });

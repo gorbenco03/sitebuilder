@@ -210,7 +210,7 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
             'showSuccessScreen must not rely only on indexOf(http)===0'
         );
         assert.ok(
-            /Site-ul tău e live — trial de 7 zile început/.test(showSrc),
+            /Site-ul tău e live — trial de 14 zile început/.test(showSrc),
             'live title line present'
         );
         assert.ok(/function\s+absoluteSiteUrl\s*\(/.test(app), 'absoluteSiteUrl for cabinet/success href');
