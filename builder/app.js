@@ -2180,6 +2180,45 @@ function writeDraftScope(scopeKey, payload) {
 }
 
 // ---------------------------------------------------------------------------
+// 7c-ter. Per-account draft ownership (gap-cross-account-draft-leak-depth#1)
+// ---------------------------------------------------------------------------
+//
+// Every scope above (site:<id>, local:<draftId>) and the legacy DRAFT_KEY
+// mirror were scoped only per-origin, never per-account — a brand-new tab
+// with nothing pinned yet fell back to "whatever was last written anywhere"
+// (loadDraft()'s mirror branch) with zero regard for WHICH account wrote it.
+// Signing in as a different account in that fresh tab silently adopted the
+// previous account's business name, phone, WhatsApp and address, and any
+// autosave/publish from there persisted it under the new account.
+//
+// Fix: every record now carries `ownerUserId` — the signed-in account it was
+// last saved under, or null for a draft nobody has signed in on yet. A record
+// with no owner stays adoptable by whichever account signs in first (the
+// existing, legitimate "I designed anonymously, now I'm signing up to
+// publish" flow) but is re-stamped to that account the moment it saves again
+// — from then on it is that account's alone.
+
+/** The signed-in account a draft record may belong to, or null when nobody
+ * is signed in. Never derived from anything the page itself can forge —
+ * `currentUser` only ever comes from the session cookie's own /api/me
+ * response (see fetchCurrentUser/updateUserUI). */
+function currentAccountKey() {
+  return (typeof currentUser !== 'undefined' && currentUser && currentUser.id)
+    ? String(currentUser.id)
+    : null;
+}
+
+/** May THIS signed-in-or-anonymous visitor read `record` back? An unowned
+ * record (never saved under any account) is always readable — that is the
+ * one-time adoption path. An owned record is readable only by the exact same
+ * account; a different account (or nobody signed in at all) must never see
+ * it — this is the whole fix for gap-cross-account-draft-leak-depth#1..#3. */
+function draftOwnedByCurrentAccount(record) {
+  if (!record || !record.ownerUserId) return true;
+  return record.ownerUserId === currentAccountKey();
+}
+
+// ---------------------------------------------------------------------------
 // 7d. Save state — visible saving/saved/failed + exit guard (Wave 9)
 // ---------------------------------------------------------------------------
 //
@@ -2347,6 +2386,21 @@ function scheduleServerAutosave() {
 async function runServerAutosave() {
   serverSaveTimer = null;
   if (!currentUser || !draft.templateId || !draft.config) { setSaveState('saved'); return; }
+  // gap-cross-account-draft-leak-depth: second, independent check of the
+  // same invariant loadDraft()/resumeLocalDraft() already enforce when
+  // populating draft.config in the first place — never POST this tab's
+  // scoped local record to the server under an account it is not stamped
+  // to. Reads straight from storage rather than trusting in-memory state
+  // alone, so it still holds even if some future code path populated
+  // draft.config a different way.
+  try {
+    const scopeKeyForCheck = typeof currentScopeKeyInternal === 'function' ? currentScopeKeyInternal(false) : null;
+    const scopedForCheck = (scopeKeyForCheck && typeof readDraftScope === 'function') ? readDraftScope(scopeKeyForCheck) : null;
+    if (scopedForCheck && scopedForCheck.ownerUserId && scopedForCheck.ownerUserId !== String(currentUser.id)) {
+      setSaveState('saved');
+      return;
+    }
+  } catch (_) { /* fail open — storage errors here must not block a legitimate autosave */ }
   if (serverSaveInFlight) { serverSaveQueuedAgain = true; return; }
   serverSaveInFlight = true;
   const snapshotTemplateId = draft.templateId;
@@ -2461,6 +2515,9 @@ function hideRecoveryBanner() {
 function loadReplacedDraft() {
   const r = lsGet(REPLACED_DRAFT_KEY);
   if (!r || !r.templateId || !r.config) return null;
+  // gap-cross-account-draft-leak-depth: same account gate as loadDraft() —
+  // a design a DIFFERENT account replaced must never be offered back here.
+  if (typeof draftOwnedByCurrentAccount === 'function' && !draftOwnedByCurrentAccount(r)) return null;
   // A week is long enough to cover "I'll come back to it tomorrow" and short
   // enough that we are not offering someone a draft they have forgotten.
   if (r.replacedAt && (Date.now() - r.replacedAt) > 7 * 24 * 60 * 60 * 1000) return null;
@@ -5746,6 +5803,22 @@ function saveDraft() {
   if (typeof scopeKey === 'string' && scopeKey.indexOf('local:') === 0) {
     payload.draftId = scopeKey.slice('local:'.length);
   }
+  // gap-cross-account-draft-leak-depth: stamp which account this save
+  // belongs to. Only ever ASSIGNS an owner (anonymous draft adopted by
+  // whoever is signed in right now) — never ERASES one, so a session
+  // expiring mid-edit can't accidentally un-scope an already-owned record
+  // back to "anonymous" and leave it adoptable by the next account that
+  // happens to sign in on this browser.
+  try {
+    var priorOwnerForStamp = null;
+    var priorRecordForStamp = (typeof readDraftScope === 'function' && scopeKey)
+      ? readDraftScope(scopeKey)
+      : (typeof loadDraft === 'function' ? loadDraft() : null);
+    if (priorRecordForStamp && priorRecordForStamp.ownerUserId) priorOwnerForStamp = priorRecordForStamp.ownerUserId;
+    payload.ownerUserId = (typeof currentAccountKey === 'function' && currentAccountKey())
+      || priorOwnerForStamp
+      || null;
+  } catch (_) { payload.ownerUserId = null; }
   payload.updatedAt = Date.now();
 
   let ok;
@@ -5788,9 +5861,21 @@ function saveDraft() {
 function loadDraft() {
   const pinnedKey = typeof currentScopeKeyInternal === 'function' ? currentScopeKeyInternal(false) : null;
   if (pinnedKey) {
-    return typeof readDraftScope === 'function' ? readDraftScope(pinnedKey) : lsGet(DRAFT_KEY);
+    const pinned = typeof readDraftScope === 'function' ? readDraftScope(pinnedKey) : lsGet(DRAFT_KEY);
+    // gap-cross-account-draft-leak-depth: even a record THIS tab is already
+    // pinned to must never be handed back once it is stamped to a different
+    // account than whoever is signed in right now (e.g. this same tab
+    // reused, without a reload, right after a logout — see doLogout()).
+    if (pinned && typeof draftOwnedByCurrentAccount === 'function' && !draftOwnedByCurrentAccount(pinned)) return null;
+    return pinned;
   }
   const mirrored = lsGet(DRAFT_KEY);
+  // gap-cross-account-draft-leak-depth#1: the exact leak this fixes — a
+  // genuinely fresh tab (nothing pinned yet) used to adopt whatever the
+  // legacy mirror last held with zero regard for which account wrote it.
+  if (mirrored && typeof draftOwnedByCurrentAccount === 'function' && !draftOwnedByCurrentAccount(mirrored)) {
+    return null;
+  }
   if (mirrored && mirrored.templateId && mirrored.config) {
     if (mirrored.siteId && typeof setTabBoundSiteId === 'function') {
       setTabBoundSiteId(mirrored.siteId);
@@ -6763,6 +6848,56 @@ function updateUserUI(user) {
 }
 
 /**
+ * gap-cross-account-draft-leak-depth: called by doLogout()/doLogoutEverywhere()
+ * BEFORE currentUser is cleared (it needs to still know WHOSE data to
+ * remove). Deletes every local draft record — every scope, the legacy
+ * mirror, and the "replaced design" slot — stamped to the account that is
+ * signing out here, and resets this tab's own in-memory editor state so a
+ * same-tab reuse (no reload in between) can't hand it to whichever account
+ * signs in here next either. Anonymous-owned records (never stamped to any
+ * account) are left untouched — they are not this account's data to clear,
+ * and remain the existing "adopt on next sign-in" recovery path.
+ */
+function clearOwnedLocalDraftState() {
+  const accountKey = typeof currentAccountKey === 'function' ? currentAccountKey() : null;
+  if (!accountKey) return; // this tab never bound anything to a signed-in account
+  try {
+    const all = typeof readAllDraftScopes === 'function' ? readAllDraftScopes() : {};
+    let changed = false;
+    Object.keys(all).forEach((key) => {
+      const rec = all[key];
+      if (rec && rec.ownerUserId === accountKey) { delete all[key]; changed = true; }
+    });
+    if (changed) {
+      if (Object.keys(all).length === 0) localStorage.removeItem(SCOPES_KEY);
+      else lsSet(SCOPES_KEY, all);
+    }
+  } catch (_) { /* ignore */ }
+  try {
+    const mirrored = lsGet(DRAFT_KEY);
+    if (mirrored && mirrored.ownerUserId === accountKey) localStorage.removeItem(DRAFT_KEY);
+  } catch (_) { /* ignore */ }
+  try {
+    const replaced = lsGet(REPLACED_DRAFT_KEY);
+    if (replaced && replaced.ownerUserId === accountKey) localStorage.removeItem(REPLACED_DRAFT_KEY);
+  } catch (_) { /* ignore */ }
+  // This tab's in-memory editor state must not linger for whoever signs in
+  // here next either, without a full page reload in between.
+  draft.templateId = null;
+  draft.config = null;
+  currentSiteId = null;
+  currentSitePaid = false;
+  currentSiteSlug = '';
+  currentTemplate = null;
+  publishedSiteId = null;
+  publishedSiteUrl = null;
+  publishedConfigSnapshot = null;
+  try { sessionStorage.removeItem(TAB_BOUND_SITE_SESSION_KEY); } catch (_) { /* ignore */ }
+  try { sessionStorage.removeItem(TAB_DRAFT_ID_SESSION_KEY); } catch (_) { /* ignore */ }
+  lastPersistedScopeKey = null;
+}
+
+/**
  * Shared logout — used by the header "Deconectare" button (visible outside the
  * editor) AND the editor topbar account menu (audit medium #7: there was no
  * way to reach logout, or the project list, once inside the editor).
@@ -6770,8 +6905,14 @@ function updateUserUI(user) {
  * Wave 8 (AUDIT-07 re-audit): this now also revokes the session server-side
  * (bot/server.js POST /api/auth/logout), not just clears client-side state —
  * see bot/auth.js#revokeSession.
+ *
+ * gap-cross-account-draft-leak-depth: also clears this account's local draft
+ * state (see clearOwnedLocalDraftState() above) BEFORE the account is
+ * cleared from memory — the next person to sign in on this browser must
+ * never be able to resume, autosave, or publish this account's business data.
  */
 async function doLogout() {
+  clearOwnedLocalDraftState();
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
@@ -6790,6 +6931,7 @@ async function doLogoutEverywhere() {
     'Sigur vrei să te deconectezi de pe toate telefoanele și calculatoarele conectate la acest cont?'
   );
   if (!confirmed) return;
+  clearOwnedLocalDraftState();
   try { await fetch('/api/auth/logout-everywhere', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
@@ -8062,6 +8204,13 @@ async function startWithTemplate(templateId) {
         // shelved it here.
         paid: !!existingDraftForSwitch.paid,
         publishedConfig: existingDraftForSwitch.publishedConfig || null,
+        // gap-cross-account-draft-leak-depth: carry the same ownership stamp
+        // saveDraft() would have used, so loadReplacedDraft()'s account gate
+        // applies here too — a replaced design must stay exactly as private
+        // as the draft it replaced.
+        ownerUserId: (typeof currentAccountKey === 'function' && currentAccountKey())
+          || existingDraftForSwitch.ownerUserId
+          || null,
         replacedAt: Date.now(),
       });
     } catch (_) { /* storage full: the toast below still tells them */ }
