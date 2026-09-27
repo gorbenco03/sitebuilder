@@ -2301,11 +2301,14 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     if (!siteDirAlreadyBuilt && config) {
         const cfgToSave = JSON.parse(JSON.stringify(config || {}));
         // rewrite dataUrls already happened in cfgCopy above; use the saved config.json
+        // R-03 (Audit 2026-09-27, data-integrity#2): mark this row as a real
+        // Publică so it outlives ordinary autosave churn in the shared
+        // MAX_VERSIONS FIFO cap — see bot/registry-sqlite.js#saveVersion.
         try {
             const saved = JSON.parse(fs.readFileSync(path.join(siteDir, 'config.json'), 'utf8'));
-            registry.saveVersion(site.id, saved);
+            registry.saveVersion(site.id, saved, { published: true });
         } catch (_) {
-            registry.saveVersion(site.id, cfgToSave);
+            registry.saveVersion(site.id, cfgToSave, { published: true });
         }
     }
 

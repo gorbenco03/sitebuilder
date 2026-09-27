@@ -1681,10 +1681,17 @@ async function handleGetSite(req, res, siteId) {
     const site = await getRegistry().getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site not found.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    // R-03 (Audit 2026-09-27, instafidget-social#1 / calendar-native#3):
+    // listVersions() is chronological push order (oldest first) in both
+    // registry backends — versions[0] was the FIRST-ever-published config,
+    // not the latest. Re-editing a site that had been republished even once
+    // silently reloaded that stale first version, discarding every change
+    // (including a connected Instagram feed) made since. versions[length-1]
+    // is the same "latest" pattern latestSiteConfig() already uses below.
     const versions = await getRegistry().listVersions(siteId);
     let config = null;
     if (versions.length > 0) {
-        config = await getRegistry().getVersionConfig(siteId, versions[0].versionId);
+        config = await getRegistry().getVersionConfig(siteId, versions[versions.length - 1].versionId);
     }
     sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config });
 }
@@ -3730,6 +3737,31 @@ async function handlePublish(req, res) {
         site = await reg.getSite(siteId);
         if (!site) return sendJson(res, 404, { error: 'Site not found.' });
         if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+
+        // R-03 (Audit 2026-09-27, editor-text-images#2): this branch never
+        // looked at `slugHint` at all, so an address explicitly chosen and
+        // validated in the publish modal was silently dropped whenever
+        // autosave (POST /api/draft) had already created this site earlier
+        // — which is the ordinary case, not an edge one. The site republished
+        // under whatever slug autosave had derived from the business name,
+        // while the success modal and dashboard went on showing the address
+        // the owner actually picked. Same validation as a brand-new site
+        // below; only acts when the owner asked for a different address.
+        if (slugHint) {
+            const wantedSlug = normalizeSlug(slugHint);
+            if (wantedSlug !== site.slug) {
+                if (!SLUG_RE.test(wantedSlug)) {
+                    return sendJson(res, 422, { error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
+                }
+                if (isReservedSlug(wantedSlug)) {
+                    return sendJson(res, 409, { error: 'Această adresă este rezervată de platformă. Alege alta.' });
+                }
+                if (!isSlugAvailable(wantedSlug)) {
+                    return sendJson(res, 409, { error: 'Această adresă este deja folosită. Încearcă alta.' });
+                }
+                site = await reg.updateSite(site.id, { slug: wantedSlug });
+            }
+        }
     } else {
         // Max 1 unpaid site per user (prevents abuse)
         const existing = await reg.listSites(userId);
