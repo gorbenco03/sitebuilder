@@ -46,6 +46,11 @@
   --shadow-feature: 0 12px 40px rgba(20,18,15,.08);
   --header-h:      56px;
   --topbar-h:      52px;
+  /* Single source of truth for how much horizontal room the open Details
+     drawer takes on the right edge — used by every piece of persistent
+     chrome (topbar, quickstart banner, canvas) that must stay clear of it
+     instead of each re-deriving its own copy of min(400px, 94vw). */
+  --drawer-inset:  min(400px, 94vw);
   --transition:    0.16s ease;
   --transition-md: 0.18s ease;
   --font-display:  "Newsreader", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -422,7 +427,7 @@ input, textarea, select {
 
 /* Details drawer overlays the right edge — reserve space so topbar labels never clip under it. */
 body.details-drawer-open .editor-topbar {
-  padding-right: calc(min(400px, 94vw) + 0.5rem);
+  padding-right: calc(var(--drawer-inset) + 0.5rem);
 }
 body.details-drawer-open .editor-topbar-left {
   max-width: 18%;
@@ -826,6 +831,14 @@ body.details-drawer-open .editor-tpl-name {
   text-align: center;
 }
 .recovery-banner-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+
+/* gap-drawer-backdrop-audit#3: unlike .editor-topbar (padding-right rule
+   above), this banner never got a matching reservation, so its own submit
+   button (#btn-quickstart-apply) sat fully under the open drawer at several
+   common widths. Same --drawer-inset variable, same treatment. */
+body.details-drawer-open .demo-content-banner {
+  padding-right: calc(var(--drawer-inset) + 1rem);
+}
 
 /* On a phone the demo banner is advice, and the canvas is the work. Giving its
    controls the 44px touch floor (Suite 4, m16) pushed the banner from 164px to
@@ -1703,6 +1716,22 @@ body.details-drawer-open .editor-tpl-name {
   }
 }
 
+/* whatsapp-contact#2 / gap-drawer-backdrop-audit#3: the live preview iframe
+   never narrowed for the open drawer, so anything the previewed site itself
+   pins to its own bottom-right corner (the WhatsApp float badge) rendered
+   directly under the opaque drawer panel — confirmed at 1440px, badge fully
+   inside the drawer's rect. Reserving the same --drawer-inset here, exactly
+   as the topbar's own padding-right rule already does, moves the iframe's
+   effective right edge (and anything the previewed page pins to it) clear of
+   the drawer. Left off below 768px on purpose: the drawer already takes
+   ~94vw of a phone screen, and narrowing the previewed page to the sliver
+   left over would break its own layout rather than just relocate a badge. */
+@media (min-width: 768px) {
+  body.details-drawer-open .editor-canvas-wrap {
+    padding-right: var(--drawer-inset);
+  }
+}
+
 /* Mobile mode */
 .editor-canvas-wrap.mode-mobile .preview-iframe--edit {
   width: 390px;
@@ -1801,9 +1830,25 @@ body.details-drawer-open .editor-tpl-name {
    DETAILS DRAWER
    ============================================================ */
 
+/* gap-drawer-backdrop-audit#1/#2 (audit 2026-09-27): both this backdrop and
+   the drawer itself used to start at the very top of the viewport (inset:0 /
+   top:0), painted at z-index 450/460 — well above .editor-topbar's own
+   z-index:200. .editor-topbar reserves horizontal room for the drawer
+   (padding-right above) so its in-flow buttons sit clear of it, but that
+   does nothing for #btn-publish at phone width, which is `position:absolute`
+   inside the topbar and therefore never affected by that padding. Either way,
+   a real click anywhere over the topbar's row hit this backdrop/drawer first
+   and just closed the panel instead of reaching the button underneath —
+   confirmed with real Playwright clicks at 768–1920px (backdrop) and 390px
+   manual-open (the drawer panel itself). Starting both at `--topbar-h`
+   instead removes the overlap at its root: the topbar's own row is simply
+   never inside either element's box, at any width, auto-opened or manual. */
 .drawer-overlay {
   position: fixed;
-  inset: 0;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: 0;
+  left: 0;
   background: rgba(20,18,15,.28);
   z-index: 450;
   animation: fadeIn .15s ease;
@@ -1811,10 +1856,10 @@ body.details-drawer-open .editor-tpl-name {
 
 .details-drawer {
   position: fixed;
-  top: 0;
+  top: var(--topbar-h);
   right: 0;
   bottom: 0;
-  width: min(400px, 94vw);
+  width: var(--drawer-inset);
   background: var(--surface);
   border-left: 1px solid var(--border);
   box-shadow: var(--shadow-lg);
