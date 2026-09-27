@@ -794,3 +794,15 @@ ul { list-style: none; }
     html { scroll-behavior: auto; }
     .fade-in-section, .hero-content { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
+
+/* Keyboard bypass link (WCAG 2.4.1) — hidden until it takes focus. */
+.skip-link {
+    position: absolute; left: 0.5rem; top: -3rem; z-index: 9999;
+    padding: 0.6rem 1.1rem; border-radius: 8px;
+    background: var(--ink); color: var(--paper);
+    font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: 0.5rem; }
+
+/* Neutral placeholder swapped in when an <img> source fails to load. */
+.img-fallback { background: #e4e4e4; border: 1px solid rgba(0, 0, 0, 0.06); }

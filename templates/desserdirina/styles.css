@@ -1952,3 +1952,15 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
         transform: scale(1.08) !important;
     }
 }
+
+/* Keyboard bypass link (WCAG 2.4.1) — hidden until it takes focus. */
+.skip-link {
+    position: absolute; left: 0.5rem; top: -3rem; z-index: 9999;
+    padding: 0.6rem 1.1rem; border-radius: 8px;
+    background: var(--color-black); color: var(--color-white);
+    font-weight: 600; text-decoration: none;
+}
+.skip-link:focus { top: 0.5rem; }
+
+/* Neutral placeholder swapped in when an <img> source fails to load. */
+.img-fallback { background: #e4e4e4; border: 1px solid rgba(0, 0, 0, 0.06); }

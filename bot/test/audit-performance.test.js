@@ -205,11 +205,21 @@ function dirTotalBytes(dir) {
   //   2. Tight enough to notice real payload growth rather than absorb it.
   // The "embedded styles.css is smaller than the raw source" check below is
   // the direct minifier-ran assertion; this one is the growth guard.
+  //
+  // Re-measured for R-22 (skip link + WhatsApp modal focus trap + broken-<img>
+  // fallback, shipped in all 5 templates): raised only the 4 ceilings this
+  // real shipped markup/JS actually crossed, to measured size + 1%.
+  //
+  //   template        minified   ceiling (minified * 1.01, rounded up)
+  //   product-menu       90570     91476
+  //   local-service     113755    114893
+  //   portfolio         120179    121381
+  //   professionals     134227    135570
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 88600,
-    'local-service': 113100,
-    portfolio: 119052,
-    professionals: 133383,
+    'product-menu': 91476,
+    'local-service': 114893,
+    portfolio: 121381,
+    professionals: 135570,
   };
 
   for (const id of TPLS) {

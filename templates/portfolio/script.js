@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initScrollIndicator();
     initWhatsAppQR();
     initMobileNav();
+    initImageFallback();
+    initSkipLink();
 });
 
 function sanitizeIconHrefs() {
@@ -114,6 +116,11 @@ function initWhatsAppQR() {
     if (isMobileUa && narrow) return;
 
     var openBtn = document.getElementById('wa-qr-open');
+    var lastFocused = null;
+
+    function focusables() {
+        return Array.prototype.slice.call(modal.querySelectorAll('a[href], button:not([disabled])'));
+    }
 
     function paintQr(waUrl) {
         var svg = (typeof window.generateQRSVG === 'function') ? window.generateQRSVG(waUrl, 240) : '';
@@ -126,15 +133,21 @@ function initWhatsAppQR() {
             if (old) old.remove();
         }
         if (openBtn) openBtn.href = waUrl;
+        lastFocused = document.activeElement;
         modal.hidden = false;
         try { modal.removeAttribute('hidden'); } catch (_) {}
         document.body.style.overflow = 'hidden';
+        // Move keyboard focus into the dialog (WCAG 2.4.3 / 4.1.2).
+        var items = focusables();
+        if (items.length) items[0].focus();
     }
 
     function closeQr() {
         modal.hidden = true;
         try { modal.setAttribute('hidden', ''); } catch (_) {}
         document.body.style.overflow = '';
+        if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+        lastFocused = null;
     }
 
     links.forEach(function (a) {
@@ -149,8 +162,55 @@ function initWhatsAppQR() {
         el.addEventListener('click', closeQr);
     });
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && !modal.hidden) closeQr();
+        if (modal.hidden) return;
+        if (e.key === 'Escape') {
+            closeQr();
+            return;
+        }
+        // Trap Tab inside the dialog while it is open.
+        if (e.key === 'Tab') {
+            var items = focusables();
+            if (!items.length) return;
+            var firstEl = items[0];
+            var lastEl = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === firstEl) {
+                e.preventDefault();
+                lastEl.focus();
+            } else if (!e.shiftKey && document.activeElement === lastEl) {
+                e.preventDefault();
+                firstEl.focus();
+            }
+        }
     });
+}
+
+// Smooth-scroll only scrolls; the skip link needs its own focus-moving handler.
+function initSkipLink() {
+    var link = document.querySelector('.skip-link');
+    if (!link) return;
+    link.addEventListener('click', function (e) {
+        var id = link.getAttribute('href');
+        var target = id && document.querySelector(id);
+        if (!target) return;
+        e.preventDefault();
+        target.focus({ preventScroll: true });
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+// Broken <img> gets a neutral placeholder instead of the browser's icon.
+function initImageFallback() {
+    var FALLBACK = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240"><rect width="240" height="240" fill="#e4e4e4"/><circle cx="86" cy="86" r="20" fill="#c9c9c9"/><path d="M20 190 L92 118 L134 156 L172 108 L220 190 Z" fill="#c9c9c9"/></svg>'
+    );
+    document.addEventListener('error', function (e) {
+        var t = e.target;
+        if (!t || t.tagName !== 'IMG' || t.dataset.hbFallback) return;
+        t.dataset.hbFallback = '1';
+        t.removeAttribute('srcset');
+        t.src = FALLBACK;
+        t.classList.add('img-fallback');
+    }, true);
 }
 
 /**
@@ -225,7 +285,7 @@ function initParallax() {
  * Smooth scrolling for in-page anchors.
  */
 function initSmoothScrolling() {
-    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+    document.querySelectorAll('a[href^="#"]:not(.skip-link)').forEach(function (a) {
         a.addEventListener('click', function (e) {
             var id = this.getAttribute('href');
             if (id === '#') return;
