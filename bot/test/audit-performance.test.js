@@ -205,13 +205,13 @@ function dirTotalBytes(dir) {
   //   2. Tight enough to notice real payload growth rather than absorb it.
   // The "embedded styles.css is smaller than the raw source" check below is
   // the direct minifier-ran assertion; this one is the growth guard.
-  // product-menu/portfolio/professionals raised again (measured + ~1%) for the
-  // pre-paint contrast script added in 90dfe97.
+  // Raised to measured + 1% for the contrast script (90dfe97) plus the skip
+  // link, QR focus trap and image fallback (bd33769) — 2026-09-28.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 90082,
-    'local-service': 113100,
-    portfolio: 120332,
-    professionals: 135545,
+    'product-menu': 93014,
+    'local-service': 116258,
+    portfolio: 123139,
+    professionals: 138477,
   };
 
   for (const id of TPLS) {
