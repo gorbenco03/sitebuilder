@@ -640,10 +640,20 @@ async function startDomainConnection({ siteId, projectName, domain, currentOrigi
 
     // Reconnecting to a different domain while an old one was attached/active:
     // detach the stale hostname from Cloudflare first (best-effort) so it
-    // does not linger pointed at nothing useful.
+    // does not linger pointed at nothing useful, then fall the SEO origin
+    // back to the Hidook subdomain right away — the old domain no longer
+    // resolves anywhere, so it must not stay canonical until the new one
+    // verifies (same reset disconnectDomainConnection() already does).
     if (existing && existing.targetHost && existing.targetHost !== targetHost &&
         existing.status !== 'disconnected') {
         try { await cfDeploy.detachDomain(existing.projectName, existing.targetHost); } catch (_) {}
+        try {
+            await getWebpublish().applyCustomDomainOrigin({
+                siteId,
+                domain: null,
+                fallbackOrigin: existing.previousOrigin,
+            });
+        } catch (_) {}
     }
 
     const reuseToken = existing && existing.domain === normalized && existing.verificationToken;
