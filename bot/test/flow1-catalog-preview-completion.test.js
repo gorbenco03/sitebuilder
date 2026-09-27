@@ -31,11 +31,17 @@ function extractFunction(source, name) {
 
 const generationDeclaration = app.match(/let previewModalGeneration\s*=\s*0\s*;/);
 const openPreviewSource = extractFunction(app, 'openPreviewModal');
-const replaceDocumentSource = extractFunction(app, 'replacePreviewModalDocument');
+// The real function is `replacePreviewDocument`, nested INSIDE openPreviewModal
+// (app.js:8146) — openPreviewSource above already carries its full body. This
+// extraction is a redundant, harmless duplicate (shadowed by the nested
+// declaration at call time); it exists only so the assertion below still
+// catches it if the function is ever renamed or hoisted out.
+const replaceDocumentSource = extractFunction(app, 'replacePreviewDocument');
 const prepareInteractivePreviewSource = extractFunction(app, 'prepareInteractivePreviewDocument');
 const waitForInteractivePreviewSource = extractFunction(app, 'waitForInteractivePreview');
 assert.ok(generationDeclaration, 'Catalog previews need a request generation counter');
 assert.ok(openPreviewSource, 'openPreviewModal remains extractable');
+assert.ok(replaceDocumentSource, 'replacePreviewDocument remains extractable');
 assert.ok(prepareInteractivePreviewSource, 'Shared preview document readiness helper remains extractable');
 assert.ok(waitForInteractivePreviewSource, 'Shared preview frame readiness helper remains extractable');
 
@@ -58,6 +64,14 @@ function makeHarness(ensureTemplateLoaded, { engineAvailable = true } = {}) {
       classList: { add() {}, remove() {} },
       setAttribute() {},
       getAttribute() { return 'true'; },
+      // The real fix (app.js:8177) calls removeAttribute('srcdoc') on the
+      // freshly cloned iframe before assigning the new document, clearing
+      // the placeholder srcdoc that cloneNode() copies from the original —
+      // without this stub, the fix throws "removeAttribute is not a
+      // function" the first time it runs (test-health#1).
+      removeAttribute(name) {
+        if (name === 'srcdoc') { acceptedDocument = ''; assignmentCount = 0; }
+      },
       get srcdoc() { return acceptedDocument; },
       set srcdoc(value) {
         assignmentCount++;

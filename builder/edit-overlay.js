@@ -810,6 +810,16 @@
     });
   }
 
+  /* preview-fidelity#2: is this keydown the Select-All shortcut (Ctrl+A on
+   * Windows/Linux, Cmd+A on macOS) and nothing else — not Ctrl+Shift+A, not
+   * Alt+A? Named and extracted so a regression oracle can exercise it in
+   * isolation, independent of whatever a given browser build's own native
+   * Select-All handling does inside an opaque-origin sandboxed iframe. */
+  function isSelectAllShortcut(e) {
+    var key = (e.key || '').toLowerCase();
+    return key === 'a' && (e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey;
+  }
+
   function setupTextFields() {
     var fields = Array.prototype.slice.call(
       document.querySelectorAll('[data-hb-edit][data-hb-kind="text"]')
@@ -930,6 +940,25 @@
         }
       }, true);
 
+      /* Ctrl/Cmd+A must select this field's own text, not fall through to
+       * the browser default. The srcdoc iframe has no allow-same-origin
+       * (security posture at the top of this file), and in that opaque
+       * origin the native Select-All accelerator does not reliably reach
+       * the focused contenteditable the way execCommand('selectAll') does
+       * when called directly — so typing right after Ctrl+A concatenated
+       * onto the old text instead of replacing it (preview-fidelity#2).
+       * Scope the command explicitly to this element via a Range so a
+       * multi-field page never selects more than the focused field. */
+      el.addEventListener('keydown', function (e) {
+        if (!isSelectAllShortcut(e)) return;
+        e.preventDefault();
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
+
       /* Single-line: prevent Enter from inserting a line break */
       if (isSingleLine) {
         el.addEventListener('keydown', function (e) {
@@ -983,6 +1012,14 @@
         // limit is usually hit typing forward).
         if (maxLen && value.length > maxLen) {
           value = value.slice(0, maxLen);
+          // edge-errors#2: slice() cuts by UTF-16 code unit, so a maxLen
+          // boundary landing inside a surrogate pair (e.g. an emoji) leaves
+          // a lone high surrogate — invisible here, but rendered as U+FFFD
+          // on the published site. Drop it too if the cut was mid-pair.
+          var lastCode = value.charCodeAt(value.length - 1);
+          if (lastCode >= 0xd800 && lastCode <= 0xdbff) {
+            value = value.slice(0, -1);
+          }
           if (allowsBr) { setBrContent(el, value); } else { el.textContent = value; }
           var range = document.createRange();
           range.selectNodeContents(el);
