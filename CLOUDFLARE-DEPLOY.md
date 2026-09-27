@@ -1,6 +1,6 @@
 # Cloudflare and customer-site hosting (Hidook Site Builder)
 
-**Product:** **Hidook Site Builder**. The commercial product is the **browser builder** (account, editor, card/trial, publish, edit, renew). Customer live sites are conceptually `https://{slug}.sites.hidook.agency` after **payment before first public publish** — Stripe **subscription** with a **7-day card trial**; site **live immediately after a valid card**.
+**Product:** **Hidook Site Builder**. The commercial product is the **browser builder** (account, editor, card/trial, publish, edit, renew). Customer live sites are conceptually `https://{slug}.sites.hidook.agency` after **payment before first public publish** — Stripe **subscription** with a **14-day card trial**; site **live immediately after a valid card**.
 
 This note is for the engineering team. It is **not** a checklist to cut over live DNS or create production Cloudflare resources for `hidook.agency` in this slice. Those remain **owner-only launch gates** (`PRODUCT.md`).
 

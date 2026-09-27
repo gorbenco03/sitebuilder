@@ -2,7 +2,7 @@
 
 Public name: **Hidook Site Builder**. Commercial product is the **browser builder** (account, editor, card/trial, publish, edit, renew). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor — not a second checkout or deploy state machine.
 
-**Payment before first public publish** = Stripe **subscription** with a **7-day trial**, **card required**. Site is **live immediately after a valid card**. If the customer does not cancel, Stripe **auto-charges 99 EUR / 99 GBP / 99 USD** (country bucket) after day 7; **renewal 29** same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
+**Payment before first public publish** = Stripe **subscription** with a **14-day trial**, **card required**. Site is **live immediately after a valid card**. If the customer does not cancel, Stripe **auto-charges 99 EUR / 99 GBP / 99 USD** (country bucket) after day 14; **renewal 29** same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Pricing authority: `bot/pricing.js`. Product contract: `PRODUCT.md`. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_USD` packaging as the product.
 
@@ -36,9 +36,9 @@ Do not treat legacy DESSERD / desserdina Telegram-publish or `$29` / `BUILD_FEE_
 
 1. Open the browser builder → pick a design → replace copy/images → preview.
 2. Sign in (magic link when email is configured).
-3. Start **subscription checkout** (card required, **7-day trial**).
+3. Start **subscription checkout** (card required, **14-day trial**).
 4. Site goes **live immediately after a valid card**; first public publish is allowed on trial/card-on-file status.
-5. After day 7, Stripe **auto-charges 99** unless cancelled; then edit + republish; renew at **29** / year via subscription schedule.
+5. After day 14, Stripe **auto-charges 99** unless cancelled; then edit + republish; renew at **29** / year via subscription schedule.
 6. Cancel during trial → live site is **unpublished** (no charge).
 
 Telegram never replaces steps 3–6. Ops detail: `bot/README.md`.

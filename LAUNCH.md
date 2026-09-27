@@ -3,9 +3,9 @@
 Authority: `VISION.md` is the synchronized source of truth for product scope and
 commercial rules; if anything here conflicts with it, `VISION.md` wins.
 
-Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, start a **Stripe subscription with a 7-day trial** (**card required**; **payment before first public publish** = card-on-file trial, not a one-shot prepay), then go **live immediately after a valid card** on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
+Commercial product: **Hidook Site Builder** — the **browser builder**. Customers open the builder, pick a design, edit copy/images, sign in, start a **Stripe subscription with a 14-day trial** (**card required**; **payment before first public publish** = card-on-file trial, not a one-shot prepay), then go **live immediately after a valid card** on the agency hosting path. Telegram is **draft-intake** into the **same** unpaid draft/editor — not the product that publishes a live site in minutes.
 
-**Price:** after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
+**Price:** after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 14 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. Authority: `bot/pricing.js` and `PRODUCT.md`. Do not sell legacy `$29` / `BUILD_FEE_USD` or `BUILD_FEE_EUR` 49 as the commercial price. Do not market old DESSERD / desserdina portfolio URLs as this product.
 
 ---
 
@@ -13,7 +13,7 @@ Commercial product: **Hidook Site Builder** — the **browser builder**. Custome
 
 | Offer | Price | Includes |
 |---|---|---|
-| **Brochure / lead-gen site** | **99** EUR or GBP or USD (bucket) after 7-day card trial | Builder + live site during trial + first-year managed hosting on agency subdomain after charge + self-service edits + basic SEO/contact + version history |
+| **Brochure / lead-gen site** | **99** EUR or GBP or USD (bucket) after 14-day card trial | Builder + live site during trial + first-year managed hosting on agency subdomain after charge + self-service edits + basic SEO/contact + version history |
 | **Renewal** | **29** / year (same currency, subscription schedule) | Continued hosting + edit/republish |
 | **Custom domain** | At cost (+ optional concierge) | After card/trial; not required for the launch happy path |
 | **Bespoke work** | Quote separately | Manual design/features outside the product SKU |
@@ -31,8 +31,8 @@ Do **not** promise permanent hosting from one payment. No public unpaid trial (c
 Happy path a stranger can complete (team verifies end-to-end; client does not QA slices):
 
 1. Open builder → design → copy/images → preview
-2. Sign in → **card on file (7-day trial)** → **live HTTPS immediately after valid card**
-3. Return later → edit → republish; after day 7 auto-charge **99**; renew at **29** / year via schedule
+2. Sign in → **card on file (14-day trial)** → **live HTTPS immediately after valid card**
+3. Return later → edit → republish; after day 14 auto-charge **99**; renew at **29** / year via schedule
 4. Cancel during trial → site unpublished, no charge
 
 ## 3. In-scope for the team (local / staging)
@@ -63,7 +63,7 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 
 - Lead with the **browser builder** and a live example on the agency domain — not a Telegram-only “site in minutes” pitch.
 - Small local businesses without a site remain the ICP (cafés, salons, trades, events, portfolios).
-- Message shape: professional brochure site, edit yourself after card/trial, **99** after 7 days then **29** / year hosting — open the builder link (Telegram optional as intake).
+- Message shape: professional brochure site, edit yourself after card/trial, **99** after 14 days then **29** / year hosting — open the builder link (Telegram optional as intake).
 - Collect testimonials after real publishes; referral and short demo video of the **builder** card → live path.
 
 ## 6. Operating model
@@ -85,4 +85,4 @@ When the owner runs those gates, follow their runbooks — not an ad-hoc “put 
 
 ---
 
-**TL;DR:** Sell **Hidook Site Builder** (browser builder). Telegram = same-draft intake. **Stripe subscription**, **7-day card trial**, site **live immediately after valid card**; **auto-charge 99** EUR/GBP/USD after day 7; renewal **29** / year via subscription schedule (`bot/pricing.js`, `PRODUCT.md`). Cancel during trial unpublishes. Team works local/test Stripe and isolated deploy; **owner-only** for live keys, live DNS, Customer Portal, and production cutover.
+**TL;DR:** Sell **Hidook Site Builder** (browser builder). Telegram = same-draft intake. **Stripe subscription**, **14-day card trial**, site **live immediately after valid card**; **auto-charge 99** EUR/GBP/USD after day 14; renewal **29** / year via subscription schedule (`bot/pricing.js`, `PRODUCT.md`). Cancel during trial unpublishes. Team works local/test Stripe and isolated deploy; **owner-only** for live keys, live DNS, Customer Portal, and production cutover.
