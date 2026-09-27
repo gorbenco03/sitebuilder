@@ -218,7 +218,71 @@ function mimeTypeForImage(filename) {
     return 'image/jpeg';
 }
 
+/** True when `src` is already a fully-qualified absolute URL. */
+function isAbsoluteImageUrl(src) {
+    return /^https?:\/\//i.test(String(src || '')) || /^\/\//.test(String(src || ''));
+}
+
+// og:image/twitter:image on the export path (ZIP + standalone HTML) —
+// PLAN-AUDIT-2026-09-27.md images-media#1. build.js's deriveSocialImage()
+// always emits a path relative to the site root (right for the in-app
+// preview; not a valid og:image per the Open Graph spec once downloaded).
+// bot/webpublish.js has the equivalent for the live-publish path
+// (absolutizeSocialImageMeta, its F3 section); the same small regex is
+// duplicated here rather than required from there, since webpublish.js
+// already requires this module and the reverse require would be circular.
+const OG_IMAGE_META_RE = /<meta\s+property=(["'])og:image\1\s+content=(["'])([^"']*)\2\s*\/?>\s*/gi;
+const TWITTER_IMAGE_META_RE = /<meta\s+name=(["'])twitter:image\1\s+content=(["'])([^"']*)\2\s*\/?>\s*/gi;
+
+/**
+ * Rewrite og:image/twitter:image to an absolute URL under `origin` when the
+ * site already has a real public URL (previously published, live slug or
+ * custom domain), or drop both meta tags entirely otherwise — a relative
+ * path is not a valid og:image, and neither was the old data: URI.
+ */
+function finalizeSocialImageMeta(html, origin) {
+    const absolute = !!(origin && /^https?:\/\//i.test(String(origin)));
+    const base = absolute ? String(origin).replace(/\/+$/, '') : '';
+    let out = String(html || '');
+    for (const re of [OG_IMAGE_META_RE, TWITTER_IMAGE_META_RE]) {
+        out = out.replace(re, (full, _q1, _q2, value) => {
+            if (!absolute) return '';
+            if (!value || isAbsoluteImageUrl(value)) return full;
+            const rel = value.replace(/^\.?\//, '');
+            return full.replace(value, base + '/' + rel);
+        });
+    }
+    return out;
+}
+
+/**
+ * Shield og:image/twitter:image from the generic "images/<name>" -> data:
+ * URI substitution inlineTreeAssets does below (images-media#2: that photo
+ * would otherwise be embedded a second, purely wasted time inside a meta
+ * tag that never renders — and once finalizeSocialImageMeta has made its
+ * content an absolute URL, that URL still contains the bare filename as a
+ * substring, e.g. ".../images/hero.jpg", so the blind replace would corrupt
+ * it mid-URL if it ran unshielded).
+ */
+function shieldSocialImageMeta(html, transform) {
+    const saved = [];
+    const stash = (full) => {
+        saved.push(full);
+        return '\u0000HB-OGIMG-' + (saved.length - 1) + '\u0000';
+    };
+    let out = String(html || '').replace(OG_IMAGE_META_RE, stash).replace(TWITTER_IMAGE_META_RE, stash);
+    out = transform(out);
+    for (let i = 0; i < saved.length; i++) {
+        out = out.split('\u0000HB-OGIMG-' + i + '\u0000').join(saved[i]);
+    }
+    return out;
+}
+
 function inlineTreeAssets(html, siteDir) {
+    return shieldSocialImageMeta(html, (shielded) => inlineTreeAssetsUnshielded(shielded, siteDir));
+}
+
+function inlineTreeAssetsUnshielded(html, siteDir) {
     let out = String(html || '');
     for (const name of ['styles.css', 'cookie-banner.css']) {
         const file = path.join(siteDir, name);
@@ -400,11 +464,12 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     // seo.canonical origin is the real live/custom domain, reuse it. Never
     // published (fresh ZIP/HTML export) → fall back to the same RFC 2606
     // placeholder buildSeoFiles uses, so the template's `@if seo.canonical`
-    // guard still emits <link rel="canonical">/<meta property="og:url">
-    // (own og:image stays relative — build.js's deriveSocialImage is
-    // deliberately host-agnostic for offline exports; see webpublish.js's F3
-    // section). README-EXPORT.txt below tells the client to regenerate the
-    // export after publishing so both correct themselves automatically.
+    // guard still emits <link rel="canonical">/<meta property="og:url">.
+    // og:image/twitter:image get the matching treatment right below (R-14):
+    // absolute under the real origin when published, dropped otherwise —
+    // never build.js's bare relative path, and never a data: URI.
+    // README-EXPORT.txt below tells the client to regenerate the export
+    // after publishing so both correct themselves automatically.
     cfgCopy.seo = (cfgCopy.seo && typeof cfgCopy.seo === 'object') ? cfgCopy.seo : {};
     const exportOrigin = baseFromCanonical(cfgCopy.seo.canonical) || SEO_PLACEHOLDER_ORIGIN;
     if (!cfgCopy.seo.canonical) {
@@ -415,6 +480,20 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     build(dir);
     // build.js already writes legal pages; ensure present even if older build
     writeLegalSiteFiles(dir, cfgCopy);
+
+    // R-14: fix up og:image/twitter:image on the just-built index.html, once,
+    // on disk — the ZIP export ships this file as-is; the standalone HTML
+    // export (exportSiteHtml) reads it afterwards and shields these same two
+    // tags from its own data: URI inlining (see shieldSocialImageMeta above).
+    const indexPathForSocialMeta = path.join(dir, 'index.html');
+    if (fs.existsSync(indexPathForSocialMeta)) {
+        const realOrigin = exportOrigin === SEO_PLACEHOLDER_ORIGIN ? '' : exportOrigin;
+        const fixedIndexHtml = finalizeSocialImageMeta(
+            fs.readFileSync(indexPathForSocialMeta, 'utf8'),
+            realOrigin
+        );
+        fs.writeFileSync(indexPathForSocialMeta, fixedIndexHtml, 'utf8');
+    }
     // Minify the shared consent stylesheet on the way out, the same as every
     // template stylesheet above. It cannot happen inside site-legal.js: that
     // module is bundled into the browser engine and renderHtml must stay pure,
