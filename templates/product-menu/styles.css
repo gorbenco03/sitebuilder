@@ -279,7 +279,10 @@ ul { list-style: none; }
 .pm-ticket, .service-card {
     display: flex; align-items: center; gap: 0.75rem;
     background: var(--snow); border-radius: var(--r);
-    padding: 14px 16px; color: var(--ink);
+    /* Fixed, not var(--ink): this card's background is always --snow
+       (never --paper), so its text must stay the shipped dark ink even
+       when --ink itself goes light for a dark "Fundal pagină" elsewhere. */
+    padding: 14px 16px; color: #1a1410;
     border: 1px solid rgba(26, 20, 16, 0.06);
 }
 .pm-ticket__stub, .pm-ticket__perf { display: none; }
@@ -312,7 +315,9 @@ ul { list-style: none; }
     font: inherit; font-family: var(--font-ui); font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; padding: 6px 10px; border-radius: var(--r-pill); cursor: pointer;
 }
-.menu-lang-btn.is-active { background: var(--ink); color: var(--snow); }
+/* Fixed, not var(--ink): --snow text needs a guaranteed-dark fill, not one
+   that may flip light for a dark "Fundal pagină" elsewhere on the page. */
+.menu-lang-btn.is-active { background: #1a1410; color: var(--snow); }
 .pm-group { border-bottom: 1px solid rgba(26, 20, 16, 0.1); }
 .pm-cat {
     font-family: var(--font-display); font-weight: 500;
@@ -536,7 +541,8 @@ ul { list-style: none; }
 .wa-qr__backdrop { position: absolute; inset: 0; background: rgba(12, 18, 16, 0.62); backdrop-filter: blur(4px); }
 .wa-qr__card {
     position: relative;
-    background: var(--snow); color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.72); border-radius: var(--r-media);
+    /* Fixed, not var(--ink): this modal's background is always --snow. */
+    background: var(--snow); color: #1a1410; border: 1px solid rgba(255, 255, 255, 0.72); border-radius: var(--r-media);
     padding: 2rem; width: min(92vw, 380px); text-align: center; box-shadow: 0 28px 72px rgba(12, 18, 16, 0.28);
 }
 .wa-qr__close { position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(15, 29, 25, 0.07); font-size: 1.5rem; line-height: 1; cursor: pointer; }

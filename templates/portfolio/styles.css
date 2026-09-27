@@ -461,7 +461,10 @@ ul { list-style: none; }
 .pf-svc__intro {
     max-width: 40rem; margin: 0 auto 1.75rem; padding: 1.5rem 1.75rem;
     background: color-mix(in srgb, var(--snow) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    /* Fixed #2a3340, not var(--ink): this panel is always snow-toned (also
+       covers the heading inside it, which sets no colour of its own). */
+    color: #2a3340;
+    border: 1px solid color-mix(in srgb, #2a3340 16%, transparent);
     border-radius: var(--r);
 }
 /* rgb(89,96,106) is a fixed 78%-ink/22%-white mix (--ink and white are both
@@ -485,7 +488,8 @@ ul { list-style: none; }
 @media (min-width: 640px) { .pf-chips { grid-template-columns: repeat(2, 1fr); } }
 .pf-chip {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem;
-    background: var(--snow); border-radius: var(--r); padding: 16px 18px;
+    /* Fixed, not var(--ink): this card's background is always --snow. */
+    background: var(--snow); color: #2a3340; border-radius: var(--r); padding: 16px 18px;
     border: 1px solid rgba(42, 51, 64, 0.06);
 }
 .pf-chip__icon { width: 22px; height: 22px; color: var(--cta); display: inline-flex; }
@@ -508,8 +512,10 @@ ul { list-style: none; }
 .pf-price {
     margin-top: 2rem; max-width: 32rem; margin-left: auto; margin-right: auto;
     padding: 0.25rem 1.5rem;
+    /* Fixed #2a3340, not var(--ink): this panel is always snow-toned. */
     background: color-mix(in srgb, var(--snow) 92%, transparent);
-    border: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+    color: #2a3340;
+    border: 1px solid color-mix(in srgb, #2a3340 16%, transparent);
     border-radius: var(--r);
 }
 .pf-price__row {
@@ -534,7 +540,8 @@ ul { list-style: none; }
 }
 @media (min-width: 640px) { .pf-team__grid { grid-template-columns: repeat(3, 1fr); } }
 .pf-person {
-    background: var(--snow); border-radius: var(--r); padding: 1rem;
+    /* Fixed, not var(--ink): this card's background is always --snow. */
+    background: var(--snow); color: #2a3340; border-radius: var(--r); padding: 1rem;
     border: 1px solid rgba(42, 51, 64, 0.06);
 }
 .pf-person__pic { border-radius: var(--r); overflow: hidden; margin-bottom: 0.85rem; }
@@ -740,7 +747,8 @@ ul { list-style: none; }
 .wa-qr__backdrop { position: absolute; inset: 0; background: rgba(18, 22, 31, 0.64); backdrop-filter: blur(4px); }
 .wa-qr__card {
     position: relative;
-    background: var(--snow); color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.72); border-radius: 18px;
+    /* Fixed, not var(--ink): this modal's background is always --snow. */
+    background: var(--snow); color: #2a3340; border: 1px solid rgba(255, 255, 255, 0.72); border-radius: 18px;
     padding: 2rem; width: min(92vw, 380px); text-align: center; box-shadow: 0 28px 72px rgba(18, 22, 31, 0.3);
 }
 .wa-qr__close { position: absolute; right: 12px; top: 10px; width: 36px; height: 36px; border: 0; border-radius: 50%; background: rgba(42, 51, 64, 0.07); font-size: 1.5rem; line-height: 1; cursor: pointer; }

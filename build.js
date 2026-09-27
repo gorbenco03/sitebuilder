@@ -914,6 +914,26 @@ function expandEach(str, scope, editOpts) {
 const NON_REMOVABLE_SECTION_IDS = new Set(['about', 'contact']);
 
 /**
+ * Strip any `<a … data-nav-for="ID">…</a>` element still left in `html` for
+ * each ID in `removedIds` — sections-structure#1: hiding a `<section id="ID">`
+ * (above) never touched a nav link or hero CTA pointing at it elsewhere in
+ * the page, so the anchor kept its `href="#ID"` after the section it named
+ * was gone. Templates mark those anchors with `data-nav-for="ID"` (see
+ * templates/portfolio and templates/professionals) precisely so this single
+ * pass can find and remove all of them, in one nav list or ten, without
+ * needing to know each template's markup.
+ */
+function stripOrphanedNavLinks(html, removedIds) {
+    if (!removedIds || removedIds.size === 0) return html;
+    let out = html;
+    removedIds.forEach((id) => {
+        const re = new RegExp('\\s*<a\\b[^>]*\\bdata-nav-for="' + id + '"[^>]*>[\\s\\S]*?<\\/a>', 'g');
+        out = out.replace(re, '');
+    });
+    return out;
+}
+
+/**
  * Reorder/remove the top-level `<section id="…">` blocks inside the
  * already-fully-rendered `html` string, according to `sectionsMeta` — an
  * ordered array of `{ id, removed }` read from `config.sections`.
@@ -975,13 +995,14 @@ function reorderSections(html, sectionsMeta) {
 
     const seen = new Set();
     const ordered = [];
+    const removedIds = new Set();
     sectionsMeta.forEach((entry) => {
         if (!entry || typeof entry.id !== 'string') return;
         const block = byId.get(entry.id);
         if (!block || seen.has(entry.id)) return;
         seen.add(entry.id);
         const removed = !!entry.removed && !NON_REMOVABLE_SECTION_IDS.has(entry.id);
-        if (!removed) ordered.push(block);
+        if (!removed) ordered.push(block); else removedIds.add(entry.id);
     });
     // Any rendered section NOT mentioned in sectionsMeta (older config saved
     // before a template gained a new section, or a section id the config
@@ -1012,7 +1033,8 @@ function reorderSections(html, sectionsMeta) {
     }
 
     const replacement = ordered.map((b) => html.slice(b.start, b.end)).join('\n\n        ');
-    return html.slice(0, spanStart) + replacement + html.slice(spanEnd);
+    const reordered = html.slice(0, spanStart) + replacement + html.slice(spanEnd);
+    return stripOrphanedNavLinks(reordered, removedIds);
 }
 
 /**
@@ -1266,6 +1288,7 @@ module.exports = {
     isConnectedSocialFeedEmbed,
     normalizeInstagramForPublic,
     reorderSections,
+    stripOrphanedNavLinks,
     NON_REMOVABLE_SECTION_IDS,
     injectResponsiveImages,
     decodeRasterDims,

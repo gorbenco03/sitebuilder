@@ -87,7 +87,9 @@
     // from the same hue (2.16:1); .pr-btn--ghost's --ink on .pr-sec--alt
     // (4.28:1). Same pick-then-nudge algorithm as product-menu/portfolio,
     // for --cta-ink/bg (vs accent), --cta-book-ink/bg (vs brass), and
-    // --pr-ink-safe (darken primaryDark vs white). See styles.css.
+    // --pr-ink-safe (darken primaryDark vs white). Also overrides the
+    // general --ink/--soft/--mute vs the real paper (theme-typography#1/#2
+    // — see bot/test/audit27-r12-*.test.js). See styles.css.
     (function () {
         try {
             function relLum(c) {
@@ -166,6 +168,34 @@
                 }
                 root.setProperty('--pr-ink-safe', toHex(safe));
             }
+
+            // theme-typography#1: --ink follows theme.primaryDark (styles.css),
+            // so a light accent read as near-illegible body/heading text on
+            // the page's own paper (1.33:1 measured) — the CTA-style pick
+            // covers it here: whichever of pure black/white contrasts best
+            // against the REAL paper always clears >=4.58:1 (theme-typography#2,
+            // any Fundal pagină colour), so --ink only overrides away from the
+            // brand-derived default when that default actually fails.
+            var paperRgb = hexToRgb("{{theme.cream}}");
+            if (darkRgb && paperRgb) {
+                var paperL = relLum(paperRgb);
+                if (ratio(relLum(darkRgb), paperL) < 4.5) {
+                    var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
+                    var safeInk = whiteR > blackR ? '#ffffff' : '#000000';
+                    // --soft/--mute are literal rgba(...) tied to the SHIPPED
+                    // default ink, not var(--ink) — their alpha would only
+                    // dilute a safe solid colour back toward the failing
+                    // paper, so they get the same flat override, not a
+                    // translucent one.
+                    // --soft/--mute are NOT touched here on purpose: several
+                    // shipped cards (.pr-svc__card, .pr-cred, the Instagram
+                    // teaser badge, select.pr-input option) pair --ink
+                    // directly with a --snow background that stays light
+                    // regardless of --paper — those get their own fixed pin
+                    // below in styles.css instead of reacting to --paper here.
+                    root.setProperty('--ink', safeInk);
+                }
+            }
         } catch (e) {}
     })();
     </script>
@@ -209,24 +239,49 @@
             <!-- @if showWordmark --><!-- @if !logo --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
             <!-- @if !logo --><!-- @if !showWordmark --><a href="#top" class="pr-nav__brand pr-nav__word">{{business.name}}</a><!-- @endif --><!-- @endif -->
             <nav class="pr-nav__links" aria-label="Navigație">
-                <a href="#services">{{labels.navServices}}</a>
+                <!-- @if services -->
+                <a href="#services" data-nav-for="services">{{labels.navServices}}</a>
+                <!-- @endif -->
                 <a href="#about">{{labels.navAbout}}</a>
-                <a href="#faq">{{labels.navFaq}}</a>
+                <!-- nav-for-faq: mirrors the #faq section's own visibility guard below -->
+                <!-- @if appointment.nativeBooking --><!-- @if faq.nativeItems -->
+                <a href="#faq" data-nav-for="faq">{{labels.navFaq}}</a>
+                <!-- @endif --><!-- @endif -->
+                <!-- @if !appointment.nativeBooking --><!-- @if faq.items -->
+                <a href="#faq" data-nav-for="faq">{{labels.navFaq}}</a>
+                <!-- @endif --><!-- @endif -->
                 <a href="#contact">{{labels.navContact}}</a>
             </nav>
             <div class="pr-nav__actions">
-                <a href="#appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+                <!-- @if appointment.enabled -->
+                <a href="#appointment" data-nav-for="appointment" class="pr-nav__cta">{{labels.navBook}}</a>
+                <!-- @endif -->
+                <!-- @if !appointment.enabled -->
+                <a href="#contact" class="pr-nav__cta">{{labels.navBook}}</a>
+                <!-- @endif -->
                 <button type="button" class="pr-nav__toggle" id="pr-nav-toggle" aria-expanded="false" aria-controls="pr-nav-mobile" aria-label="Deschide meniul">
                     <span class="pr-nav__toggle-bars" aria-hidden="true"></span>
                 </button>
             </div>
         </div>
         <nav class="pr-nav__mobile" id="pr-nav-mobile" aria-label="Navigație mobilă" hidden>
-            <a href="#services">{{labels.navServices}}</a>
+            <!-- @if services -->
+            <a href="#services" data-nav-for="services">{{labels.navServices}}</a>
+            <!-- @endif -->
             <a href="#about">{{labels.navAbout}}</a>
-            <a href="#faq">{{labels.navFaq}}</a>
+            <!-- @if appointment.nativeBooking --><!-- @if faq.nativeItems -->
+            <a href="#faq" data-nav-for="faq">{{labels.navFaq}}</a>
+            <!-- @endif --><!-- @endif -->
+            <!-- @if !appointment.nativeBooking --><!-- @if faq.items -->
+            <a href="#faq" data-nav-for="faq">{{labels.navFaq}}</a>
+            <!-- @endif --><!-- @endif -->
             <a href="#contact">{{labels.navContact}}</a>
-            <a href="#appointment" class="pr-nav__mobile-cta">{{labels.navBook}}</a>
+            <!-- @if appointment.enabled -->
+            <a href="#appointment" data-nav-for="appointment" class="pr-nav__mobile-cta">{{labels.navBook}}</a>
+            <!-- @endif -->
+            <!-- @if !appointment.enabled -->
+            <a href="#contact" class="pr-nav__mobile-cta">{{labels.navBook}}</a>
+            <!-- @endif -->
         </nav>
     </header>
 
@@ -246,8 +301,15 @@
                 <p class="pr-lede">{{hero.qualifier}}</p>
                 <!-- @endif -->
                 <div class="pr-hero__actions">
-                    <a href="#appointment" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
-                    <a href="#services" class="pr-btn pr-btn--ghost">{{labels.secondaryCta}}</a>
+                    <!-- @if appointment.enabled -->
+                    <a href="#appointment" data-nav-for="appointment" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if !appointment.enabled -->
+                    <a href="#contact" class="pr-btn pr-btn--primary"><span>{{hero.ctaLabel}}</span></a>
+                    <!-- @endif -->
+                    <!-- @if services -->
+                    <a href="#services" data-nav-for="services" class="pr-btn pr-btn--ghost">{{labels.secondaryCta}}</a>
+                    <!-- @endif -->
                 </div>
                 <!-- @if business.modes -->
                 <!-- m6: business.profession/.languages/.modes used to also
@@ -273,9 +335,16 @@
                 <!-- @endif -->
             </div>
         </div>
-        <a href="#services" class="pr-scroll" aria-label="{{labels.scroll}}">
+        <!-- @if services -->
+        <a href="#services" data-nav-for="services" class="pr-scroll" aria-label="{{labels.scroll}}">
             <span>{{labels.scroll}}</span>
         </a>
+        <!-- @endif -->
+        <!-- @if !services -->
+        <a href="#about" class="pr-scroll" aria-label="{{labels.scroll}}">
+            <span>{{labels.scroll}}</span>
+        </a>
+        <!-- @endif -->
     </section>
 
     <main>
