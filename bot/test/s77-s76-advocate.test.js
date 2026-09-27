@@ -194,18 +194,16 @@ check('HEAD: catalog chips name Restaurant + Salon + Meserii + Servicii profesio
   assert.ok(/data-filter=["']desserdirina["']/.test(chips), 'filter desserdirina');
 });
 
-check('HEAD: landing step 03 has 99€, no renewal price, footer no AI agents', () => {
+check('HEAD: landing step 03 has price+renewal spans (owner 2026-09-27), footer no AI agents', () => {
   const src = read('builder/index.html');
   const how = howSection(src);
   assert.ok(how, 'how section');
   const step03 = how.match(/how-step-num">03[\s\S]*?<\/article>/i) || how.match(/03<\/div>[\s\S]*?<\/article>/i);
   assert.ok(step03, 'step 03');
-  assert.ok(/\b99\b/.test(step03[0]) && !/99\s*€|\$99|£99/.test(step03[0]), 'step 03 has 99 without currency (owner 2026-09-16)');
-  // Owner decision 2026-09-15: no renewal price on the landing page any more.
-  assert.ok(
-    !/29\s*€(?:\s|<\/?[^>]+>)*\/\s*an|29\s*€(?:\s|<\/?[^>]+>)*\/\s*year|29€\/year/i.test(how),
-    'how section shows no 29€/an renewal price'
-  );
+  assert.ok(/id=["']how-price["']/.test(step03[0]), 'step 03 has config-driven how-price span');
+  // Owner decision 2026-09-27: the landing shows the 29/year renewal again,
+  // with the currency symbol filled in by app.js from /api/config.
+  assert.ok(/id=["']how-renewal["']/.test(step03[0]), 'how section shows the config-driven renewal span');
   assert.ok(!/AI agents/i.test(src), 'no English AI agents in landing');
   // footer denies unpaid bots in Romanian product chrome
   assert.ok(/Fără boți|Fara boti/i.test(src), 'footer RO denial');

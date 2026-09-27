@@ -6496,19 +6496,20 @@ async function fetchAppConfig() {
   } catch (_) {}
   const priceLabel = formatPriceLabel(appConfig);
   const renewalLabel = formatRenewalLabel(appConfig);
-  // Landing page (owner 2026-09-16): show only the number, no currency sign.
-  const landingPrice = formatLandingPriceLabel(appConfig);
+  // Landing price honesty (owner 2026-09-27): the currency symbol and the
+  // 29/year renewal are back on every landing zone — see builder/terms.html
+  // §3 and the publish/success modals for the wording this must match.
   const heroPrice = $('hero-price');
   const heroRenewal = $('hero-renewal');
-  if (heroPrice) heroPrice.textContent = landingPrice;
+  if (heroPrice) heroPrice.textContent = priceLabel;
   if (heroRenewal) heroRenewal.textContent = renewalLabel;
   const proofPrice = $('proof-price');
   const proofRenewal = $('proof-renewal');
-  if (proofPrice) proofPrice.textContent = landingPrice;
+  if (proofPrice) proofPrice.textContent = priceLabel;
   if (proofRenewal) proofRenewal.textContent = renewalLabel;
   const footerPrice = $('footer-price');
   const footerRenewal = $('footer-renewal');
-  if (footerPrice) footerPrice.textContent = landingPrice;
+  if (footerPrice) footerPrice.textContent = priceLabel;
   if (footerRenewal) footerRenewal.textContent = renewalLabel;
   const bulletPrice = $('publish-price');
   const bulletRenewal = $('publish-renewal');
@@ -6518,7 +6519,7 @@ async function fetchAppConfig() {
   const howPrice = $('how-price');
   const howRenewal = $('how-renewal');
   const howRenewalStep = $('how-renewal-step');
-  if (howPrice) howPrice.textContent = landingPrice;
+  if (howPrice) howPrice.textContent = priceLabel;
   if (howRenewal) howRenewal.textContent = renewalLabel;
   if (howRenewalStep) howRenewalStep.textContent = renewalLabel;
   const successRenewal = $('success-renewal');
@@ -6532,11 +6533,6 @@ function formatPriceLabel(cfg) {
   if (cur === 'gbp') return '£' + amount;
   if (cur === 'eur') return amount + '€';
   return '$' + amount;
-}
-
-function formatLandingPriceLabel(cfg) {
-  const amount = cfg.amount != null ? cfg.amount : cfg.priceEur;
-  return amount == null ? '—' : String(amount);
 }
 
 function formatRenewalLabel(cfg) {
