@@ -12,6 +12,86 @@ Not exhaustive — the full history is `git log main`. This file covers
 user-visible or architecturally significant changes, the way the audit
 expected a changelog to.
 
+## 2026-09-27 — Audit (36 lenses, score 4/10) and remediation round 1
+
+`ec75ba1..958726f`, merging ten worktrees (`wf_f7ec38f0-c31-1`…`-10`). Full
+findings and plan: `04-QA-Evidence/Audit-2026-09-27-b45a3e4/findings-all.json`
+and `PLAN-AUDIT-2026-09-27.md`. Round 1 (R-01, R-02, R-03, R-06, R-08, R-09,
+R-10, R-11, R-12, R-26 — the ten tasks that shared no file with each other):
+
+- Landing shows the 29/year renewal again instead of implying a one-time
+  charge (`27e63d8`); a signed-out account's local draft no longer leaks into
+  the next account's session (`061d0f8`); re-editing or republishing a site
+  now reads its own latest version instead of its first (`fbc295b`).
+- The Details drawer no longer blocks the "Publică site-ul" button or hides
+  the quickstart bar/WhatsApp badge underneath it (`587f4a3`); Ctrl/Cmd+A
+  selects the preview field being edited, and a character-limit cut can no
+  longer strand half a surrogate pair as U+FFFD on the live site (`eafb6ac`).
+- A downloaded ZIP/HTML export with native booking enabled no longer needs a
+  live Hidook origin to work (`28f2832`); the native calendar sends real
+  email through Resend instead of a local-only transport (`251df47`); its
+  timezone, slot step, cancellation window and buffer are now editable from
+  the owner dashboard, not hardcoded (`2005f99`).
+- Every commercial doc says "14-day trial", not "7" (`011a349`, `8a371eb`) —
+  closing the gap where the trial itself moved on 2026-09-21 (see below) but
+  the anti-stale-docs oracle's own regex still required the old wording.
+- Text stays readable on any owner-picked page background, and hiding a
+  section no longer leaves a dead nav/CTA link, on all five templates
+  (`90dfe97`).
+
+Owner decisions taken alongside this round (`PLAN-AUDIT-2026-09-27.md` §9):
+the currency symbol returns everywhere a price shows; self-serve GDPR will
+cover both data export and full account deletion (tracked as R-27, not yet
+built); Stripe and DNS were verified live by the owner; no paying customers
+exist yet, so none of the above needs a batch republish. Rounds 2-4 (docs,
+test-health, template a11y, editor polish, security-in-depth, GDPR) are
+planned but not yet integrated as of this entry.
+
+## 2026-09-21 — Trial moves from 7 to 14 days; promo-code and preview fixes
+
+`2f1bb95` changes the Stripe subscription trial from 7 to 14 days (test
+`23fc757` pins it). `340a89b` fixes a promo code applied at Checkout being
+dropped from the first invoice. `b45a3e4` fixes the landing template preview
+failing to load in Chrome/Edge (a swapped iframe was inheriting the
+placeholder's `srcdoc`).
+
+## 2026-09-15/16 — Owner feedback: pricing copy, sessions, calendar CRUD
+
+Two owner feedback rounds (`PLAN-FEEDBACK-2026-09-13.md`,
+`PLAN-FEEDBACK-2026-09-14.md`). Per an explicit 2026-09-16 owner request, the
+landing price display drops the currency symbol and is described as a
+one-time charge (`76a35b0`, `c121df3`) — this wording was itself reversed by
+the 2026-09-27 owner decision above once it was flagged as contradicting the
+actual 29/year renewal. Also shipped: two sites open in two tabs stay two
+separate drafts and an expired session prompts sign-in again instead of
+silently failing (`272fb0d`, `e3a5959`); the owner can add, price and delete
+calendar services and staff, and set split-shift hours, from the dashboard
+(`fd56d7c`, `5dc3728`); CTA and body text stay readable on any accent or
+custom colour the owner picks (`44af0c6`, `6083b08`); the demo-content
+highlight follows one schema-driven rule across all five templates instead of
+being guessed per template (`b2ee530`); the booking widget's date picker is a
+real month-grid calendar (`974be4c`, `b5b4e62`); DST-correct slot generation
+and owner booking-event notifications (`4101763`).
+
+## 2026-09-14 — Owner feedback: publish lifecycle, demo highlight, billing
+
+`PLAN-FEEDBACK-2026-09-14.md`. A paid, live site no longer shows as
+"proiect neterminat", republish always displays the real address, and delete
+actually deletes (`ffccce8`, `313c9cb`); a trial's start is no longer shown as
+an already-paid invoice, and the magic-link email is in Romanian (`f381fc0`);
+a site that recovers from a payment-failure unpublish can be republished
+(`6ca036c`); desserdirina's own fonts load inside the editor preview
+(`4361dfb`, `b7893bf`).
+
+## 2026-09-13 — Owner feedback: 10 points, six root-cause suites
+
+`PLAN-FEEDBACK-2026-09-13.md`. Contact address and WhatsApp label become
+editable inline instead of hardcoded (`080d353`, `b063eef`); a product added
+in Romanian now exists in the English list too, and RO/EN menu lists stay
+structurally aligned (`4f5ddb0`, `22512b9`); a new portfolio team member can be
+given a photo without a broken-image fallback (`8045006`, `562f18e`); booking
+date/time `<select>` options are readable on the dark theme (`83220ed`).
+
 ## 2026-09-12 — Details drawer: typing right after opening went to the wrong field
 
 Branch commit, pending integration. The "Cal.com race" `PLAN-QA-2026-09-12.md`
