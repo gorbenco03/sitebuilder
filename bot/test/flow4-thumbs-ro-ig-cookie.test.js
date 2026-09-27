@@ -323,6 +323,10 @@ check('HEAD: cookie consent dual-persists and survives simulated post-login /app
     id: 'hb-cookie-banner',
     hidden: true,
     _shown: false,
+    // R-05 (3288bf0): show() now binds a keydown (Escape) listener directly
+    // on the banner element itself, not just the accept button — a minimal
+    // no-op recorder is enough here, this probe never simulates Escape.
+    addEventListener: function (t, fn) { if (t === 'keydown') this._keydownFn = fn; },
   };
   const btn = { id: 'hb-cookie-accept', _fn: null, addEventListener: function (t, fn) { if (t === 'click') this._fn = fn; } };
 

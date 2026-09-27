@@ -3257,7 +3257,15 @@ function initPostMessageListener() {
         // the focused field — apply it (and let it push its own history step)
         // BEFORE undo()/redo(), all within this one synchronous handler, so
         // there is no separate message whose delivery order could be in doubt.
-        if (msg.flush && msg.flush.path) onInlineTextEdit(msg.flush.path, msg.flush.value);
+        // Clear the undebounced live-edit mirror for this same path first,
+        // same guard as the 'text' case above — otherwise a later deferred
+        // cascade re-render (business.name's businessNameCascadeRerenderTimer)
+        // calls flushPendingLiveEdits(), finds this exact value still marked
+        // pending, and re-commits it right on top of the undo/redo that just ran.
+        if (msg.flush && msg.flush.path) {
+          if (pendingLiveEdits[msg.flush.path] === msg.flush.value) delete pendingLiveEdits[msg.flush.path];
+          onInlineTextEdit(msg.flush.path, msg.flush.value);
+        }
         if (msg.hb === 'undo') undo(); else redo();
         break;
     }
