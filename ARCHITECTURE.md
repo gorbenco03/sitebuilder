@@ -79,6 +79,9 @@ the 2026-09-06 audit flagged. As of this writing it documents, among others:
 - `GET /app/*` — static builder SPA files
 - `GET /live/<slug>/*` — isolated local publish output (`$DATA_DIR/published/`)
 - `/api/auth/*`, `/api/me`, `/api/sites*` — account + site management
+- `GET /api/sites/:id/invoices`, `GET|POST|DELETE /api/sites/:id/domain`,
+  `POST /api/sites/:id/domain/verify`, `POST /api/sites/:id/domain/status` —
+  billing history and self-serve custom domain (see §8a)
 - `/api/publish`, `/api/draft`, `/api/export-html`, `/api/export-zip`
 - `/api/appointments` — legacy local appointment-*request* form (non-native)
 - `/api/calendar-native/*` and `/calendar-native/*` — native calendar public
@@ -216,6 +219,30 @@ new code path with its own rules.
   `bot/bot.js`) — see §2.
 
 Full operator detail: `OWNER-STRIPE-TRIAL.md`, `GO-LIVE.md` §4.
+
+## 8a. Custom domains and invoice history
+
+Two dashboard-reachable features that used to have a complete server side and
+no way for a customer to find them (fixed — see AGENTS.md "A feature is not
+done until a customer can reach it"):
+
+- **Self-serve custom domain** (`bot/domains.js`, "Wave 7" section of that
+  file) — an owner connects a domain they already own to their Hidook site
+  with no concierge step: `startDomainConnection` → DNS instructions,
+  `checkDomainConnection`/`activateDomainConnection` (chained once DNS
+  resolves) → `checkTlsStatus` → `disconnectDomainConnection`. Rides on
+  Cloudflare Pages (`bot/deploy-cloudflare.js`), the deploy provider this
+  codebase actually uses. Reachable from the dashboard's "Domeniu" button
+  (`builder/app.js`, `openDomainModal`).
+- **Invoice history** (`handleSiteInvoices` in `bot/server.js`, reading
+  `getInvoiceHistory` from `bot/webpublish.js`) — ledger-backed, so it works
+  even when Stripe itself is unreachable, and identically under
+  `HIDOOK_TEST_PAY`. Reachable from the dashboard's "Facturi" button
+  (`builder/app.js`, `openInvoicesModal`).
+
+`bot/domains.js` also holds an unrelated, older feature in the same file: the
+Vercel Domains Registrar API (buy a brand-new domain for a client) — see that
+file's own header for the split.
 
 ## 9. Native calendar — `bot/calendar-native/`
 
