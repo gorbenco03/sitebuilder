@@ -276,7 +276,7 @@
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.example\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
         },
         "footer": {
           "address": "Strada Icoanei 18, București 020451",
@@ -552,7 +552,7 @@
         },
         "seo": {
           "ogImage": "images/sf-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Studio Forma\",\"url\":\"https://studioforma.example\",\"telephone\":\"+40724555046\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Polonă 24\",\"addressLocality\":\"București\",\"postalCode\":\"010493\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Studio Forma\",\"telephone\":\"+40724555046\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Polonă 24\",\"addressLocality\":\"București\",\"postalCode\":\"010493\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\"],\"opens\":\"09:00\",\"closes\":\"19:00\"}]}"
         },
         "footer": {
           "address": "Strada Polonă 24, București 010493",
@@ -837,7 +837,7 @@
         },
         "seo": {
           "ogImage": "images/iv-og.jpg",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"url\":\"https://atelierivoire.example\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"BeautySalon\",\"name\":\"Atelier Ivoire\",\"telephone\":\"+40721234567\",\"address\":{\"@type\":\"PostalAddress\",\"streetAddress\":\"Strada Icoanei 18\",\"addressLocality\":\"București\",\"postalCode\":\"020451\",\"addressCountry\":\"RO\"},\"openingHoursSpecification\":[{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":[\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\"],\"opens\":\"09:00\",\"closes\":\"20:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Saturday\",\"opens\":\"09:00\",\"closes\":\"18:00\"},{\"@type\":\"OpeningHoursSpecification\",\"dayOfWeek\":\"Sunday\",\"opens\":\"10:00\",\"closes\":\"15:00\"}]}"
         },
         "footer": {
           "address": "Strada Icoanei 18, București 020451",
