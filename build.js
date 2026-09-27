@@ -914,14 +914,7 @@ function expandEach(str, scope, editOpts) {
 const NON_REMOVABLE_SECTION_IDS = new Set(['about', 'contact']);
 
 /**
- * Strip any `<a … data-nav-for="ID">…</a>` element still left in `html` for
- * each ID in `removedIds` — sections-structure#1: hiding a `<section id="ID">`
- * (above) never touched a nav link or hero CTA pointing at it elsewhere in
- * the page, so the anchor kept its `href="#ID"` after the section it named
- * was gone. Templates mark those anchors with `data-nav-for="ID"` (see
- * templates/portfolio and templates/professionals) precisely so this single
- * pass can find and remove all of them, in one nav list or ten, without
- * needing to know each template's markup.
+ * Removes any `<a … data-nav-for="ID">…</a>` left pointing at a removed section.
  */
 function stripOrphanedNavLinks(html, removedIds) {
     if (!removedIds || removedIds.size === 0) return html;

@@ -279,9 +279,7 @@ ul { list-style: none; }
 .pm-ticket, .service-card {
     display: flex; align-items: center; gap: 0.75rem;
     background: var(--snow); border-radius: var(--r);
-    /* Fixed, not var(--ink): this card's background is always --snow
-       (never --paper), so its text must stay the shipped dark ink even
-       when --ink itself goes light for a dark "Fundal pagină" elsewhere. */
+    /* Fixed, not var(--ink): this card's background is always --snow. */
     padding: 14px 16px; color: #1a1410;
     border: 1px solid rgba(26, 20, 16, 0.06);
 }
@@ -315,8 +313,7 @@ ul { list-style: none; }
     font: inherit; font-family: var(--font-ui); font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; padding: 6px 10px; border-radius: var(--r-pill); cursor: pointer;
 }
-/* Fixed, not var(--ink): --snow text needs a guaranteed-dark fill, not one
-   that may flip light for a dark "Fundal pagină" elsewhere on the page. */
+/* Fixed, not var(--ink): needs a guaranteed-dark fill regardless of --ink. */
 .menu-lang-btn.is-active { background: #1a1410; color: var(--snow); }
 .pm-group { border-bottom: 1px solid rgba(26, 20, 16, 0.1); }
 .pm-cat {

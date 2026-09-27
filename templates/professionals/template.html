@@ -87,9 +87,7 @@
     // from the same hue (2.16:1); .pr-btn--ghost's --ink on .pr-sec--alt
     // (4.28:1). Same pick-then-nudge algorithm as product-menu/portfolio,
     // for --cta-ink/bg (vs accent), --cta-book-ink/bg (vs brass), and
-    // --pr-ink-safe (darken primaryDark vs white). Also overrides the
-    // general --ink/--soft/--mute vs the real paper (theme-typography#1/#2
-    // — see bot/test/audit27-r12-*.test.js). See styles.css.
+    // --pr-ink-safe (darken primaryDark vs white). See styles.css.
     (function () {
         try {
             function relLum(c) {
@@ -169,30 +167,14 @@
                 root.setProperty('--pr-ink-safe', toHex(safe));
             }
 
-            // theme-typography#1: --ink follows theme.primaryDark (styles.css),
-            // so a light accent read as near-illegible body/heading text on
-            // the page's own paper (1.33:1 measured) — the CTA-style pick
-            // covers it here: whichever of pure black/white contrasts best
-            // against the REAL paper always clears >=4.58:1 (theme-typography#2,
-            // any Fundal pagină colour), so --ink only overrides away from the
-            // brand-derived default when that default actually fails.
+            // --ink also overrides here if theme.primaryDark fails WCAG AA against a custom Fundal pagină colour.
             var paperRgb = hexToRgb("{{theme.cream}}");
             if (darkRgb && paperRgb) {
                 var paperL = relLum(paperRgb);
                 if (ratio(relLum(darkRgb), paperL) < 4.5) {
                     var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
                     var safeInk = whiteR > blackR ? '#ffffff' : '#000000';
-                    // --soft/--mute are literal rgba(...) tied to the SHIPPED
-                    // default ink, not var(--ink) — their alpha would only
-                    // dilute a safe solid colour back toward the failing
-                    // paper, so they get the same flat override, not a
-                    // translucent one.
-                    // --soft/--mute are NOT touched here on purpose: several
-                    // shipped cards (.pr-svc__card, .pr-cred, the Instagram
-                    // teaser badge, select.pr-input option) pair --ink
-                    // directly with a --snow background that stays light
-                    // regardless of --paper — those get their own fixed pin
-                    // below in styles.css instead of reacting to --paper here.
+                    // --soft/--mute stay untouched; snow-background cards get their own fixed color in styles.css instead.
                     root.setProperty('--ink', safeInk);
                 }
             }

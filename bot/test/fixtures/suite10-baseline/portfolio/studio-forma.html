@@ -85,6 +85,40 @@
         } catch (e) {}
     })();
     </script>
+    <script>
+    // Pre-paint contrast fix: swaps --ink to black/white if the shipped default fails WCAG AA against a custom Fundal pagină colour.
+    (function () {
+        try {
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function hexToRgb(h) {
+                var m = /^#([0-9a-f]{6})$/i.exec(h);
+                if (!m) return null;
+                var v = parseInt(m[1], 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+            var paperRgb = hexToRgb("#f4f1ea");
+            var inkRgb = hexToRgb('#2a3340');
+            if (!paperRgb || !inkRgb) return;
+            var paperL = relLum(paperRgb);
+            if (ratio(relLum(inkRgb), paperL) >= 4.5) return;
+            var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
+            var safeInk = whiteR > blackR ? '#ffffff' : '#000000';
+            var root2 = document.documentElement.style;
+            // --soft/--mute stay untouched; snow-background cards get their own fixed color in styles.css instead.
+            root2.setProperty('--ink', safeInk);
+        } catch (e) {}
+    })();
+    </script>
     
     <script type="application/ld+json">{"@context":"https://schema.org","@type":"BeautySalon","name":"Studio Forma","url":"https://studioforma.example","telephone":"+40724555046","address":{"@type":"PostalAddress","streetAddress":"Strada Polonă 24","addressLocality":"București","postalCode":"010493","addressCountry":"RO"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"09:00","closes":"19:00"}]}</script>
     
@@ -107,10 +141,12 @@
                 <span class="pf-chrome__toggle-bar"></span>
             </button>
             <nav class="pf-chrome__nav" aria-label="Navigație">
-                <a href="#gallery-heading">Galerie</a>
-                <a href="#services-heading">Servicii</a>
+                <a href="#gallery-heading" data-nav-for="gallery">Galerie</a>
                 
-                <a href="#appointment">Programare</a>
+                <a href="#services-heading" data-nav-for="services">Servicii</a>
+                
+                
+                <a href="#appointment" data-nav-for="appointment">Programare</a>
                 
                 
             </nav>
@@ -123,10 +159,12 @@
          a new containing block that would confine a nested position:fixed element to
          the header's own box instead of the full viewport. Same links as .pf-chrome__nav. -->
     <nav class="pf-mobile-nav" id="pf-mobile-nav" aria-label="Navigație mobilă">
-        <a href="#gallery-heading">Galerie</a>
-        <a href="#services-heading">Servicii</a>
+        <a href="#gallery-heading" data-nav-for="gallery">Galerie</a>
         
-        <a href="#appointment">Programare</a>
+        <a href="#services-heading" data-nav-for="services">Servicii</a>
+        
+        
+        <a href="#appointment" data-nav-for="appointment">Programare</a>
         
         
     </nav>

@@ -46,7 +46,7 @@ process.env.DATA_DIR = sqliteDir;
 delete process.env.REGISTRY_BACKEND; // sqlite is the default
 
 const { DatabaseSync } = require('node:sqlite');
-const { SCHEMA_SQL_V1 } = require('../registry-schema.js');
+const { SCHEMA_SQL_V1, SCHEMA_VERSION } = require('../registry-schema.js');
 
 const dbPath = path.join(sqliteDir, 'registry.sqlite'); // matches bot/registry-db.js's default path
 const seedUserId = 'seed-user-v1';
@@ -91,11 +91,11 @@ check('pre-migration: seeded DB really is at schema version 1', () => {
 // at module load, against the SAME DATA_DIR/registry.sqlite file seeded above.
 const registrySqlite = require('../registry-sqlite.js');
 
-check('migration ran: schema version is now 2', () => {
+check('migration ran: schema version is now the latest', () => {
     const raw = new DatabaseSync(dbPath);
     const row = raw.prepare('SELECT MAX(version) AS v FROM registry_schema_migrations').get();
     raw.close();
-    assert.strictEqual(Number(row.v), 2);
+    assert.strictEqual(Number(row.v), SCHEMA_VERSION);
 });
 
 check('migration is additive: sessions table now exists', () => {
@@ -135,7 +135,7 @@ check('re-running the migration path (server restart) is a no-op, not an error',
     const { openRegistryDb } = require('../registry-db.js');
     const db2 = openRegistryDb({ dataDir: sqliteDir });
     const row = db2.prepare('SELECT MAX(version) AS v FROM registry_schema_migrations').get();
-    assert.strictEqual(Number(row.v), 2, 'schema stays at version 2, not reapplied');
+    assert.strictEqual(Number(row.v), SCHEMA_VERSION, 'schema stays at the latest version, not reapplied');
     const stillThere = db2.prepare('SELECT email FROM users WHERE id = ?').get(seedUserId);
     assert.strictEqual(stillThere.email, 'seed@old-shape.test');
     db2.close();

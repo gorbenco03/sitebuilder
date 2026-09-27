@@ -89,14 +89,7 @@
     })();
     </script>
     <script>
-    // Body-text auto-contrast (pre-paint, same helpers as the CTA script
-    // above): the owner can set {{theme.cream}} ("Fundal pagină") to any
-    // colour, and the fixed --ink/--soft/--mute fail WCAG AA against a
-    // medium/dark custom paper (theme-typography#2). Picks whichever of pure
-    // black/white contrasts best against the real paper — that pick always
-    // clears >=4.58:1 — so --ink only moves away from the shipped default
-    // when it actually fails. See styles.css and
-    // bot/test/audit27-r12-template-contrast-and-dead-nav.test.js.
+    // Pre-paint contrast fix: swaps --ink to black/white if the shipped default fails WCAG AA against a custom Fundal pagină colour.
     (function () {
         try {
             function relLum(c) {
@@ -124,11 +117,7 @@
             var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
             var safeInk = whiteR > blackR ? '#ffffff' : '#000000';
             var root2 = document.documentElement.style;
-            // --soft/--mute are NOT touched here on purpose: several shipped
-            // cards (.pf-price, .pf-chip, .pf-person, .wa-qr__card) pair
-            // --ink directly with a --snow background that stays light
-            // regardless of --paper — those get their own fixed pin below in
-            // styles.css instead of reacting to --paper here.
+            // --soft/--mute stay untouched; snow-background cards get their own fixed color in styles.css instead.
             root2.setProperty('--ink', safeInk);
         } catch (e) {}
     })();

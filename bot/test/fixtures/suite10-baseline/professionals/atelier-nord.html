@@ -163,6 +163,18 @@
                 }
                 root.setProperty('--pr-ink-safe', toHex(safe));
             }
+
+            // --ink also overrides here if theme.primaryDark fails WCAG AA against a custom Fundal pagină colour.
+            var paperRgb = hexToRgb("#F7F4EE");
+            if (darkRgb && paperRgb) {
+                var paperL = relLum(paperRgb);
+                if (ratio(relLum(darkRgb), paperL) < 4.5) {
+                    var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
+                    var safeInk = whiteR > blackR ? '#ffffff' : '#000000';
+                    // --soft/--mute stay untouched; snow-background cards get their own fixed color in styles.css instead.
+                    root.setProperty('--ink', safeInk);
+                }
+            }
         } catch (e) {}
     })();
     </script>
@@ -202,24 +214,41 @@
             <a href="#top" class="pr-nav__brand pr-nav__word">Consultanță Atelier Nord</a>
             
             <nav class="pr-nav__links" aria-label="Navigație">
-                <a href="#services">Servicii</a>
+                
+                <a href="#services" data-nav-for="services">Servicii</a>
+                
                 <a href="#about">Despre</a>
-                <a href="#faq">Întrebări</a>
+                <!-- nav-for-faq: mirrors the #faq section's own visibility guard below -->
+                
+                
+                <a href="#faq" data-nav-for="faq">Întrebări</a>
+                
                 <a href="#contact">Contact</a>
             </nav>
             <div class="pr-nav__actions">
-                <a href="#appointment" class="pr-nav__cta">Programare</a>
+                
+                <a href="#appointment" data-nav-for="appointment" class="pr-nav__cta">Programare</a>
+                
+                
                 <button type="button" class="pr-nav__toggle" id="pr-nav-toggle" aria-expanded="false" aria-controls="pr-nav-mobile" aria-label="Deschide meniul">
                     <span class="pr-nav__toggle-bars" aria-hidden="true"></span>
                 </button>
             </div>
         </div>
         <nav class="pr-nav__mobile" id="pr-nav-mobile" aria-label="Navigație mobilă" hidden>
-            <a href="#services">Servicii</a>
+            
+            <a href="#services" data-nav-for="services">Servicii</a>
+            
             <a href="#about">Despre</a>
-            <a href="#faq">Întrebări</a>
+            
+            
+            <a href="#faq" data-nav-for="faq">Întrebări</a>
+            
             <a href="#contact">Contact</a>
-            <a href="#appointment" class="pr-nav__mobile-cta">Programare</a>
+            
+            <a href="#appointment" data-nav-for="appointment" class="pr-nav__mobile-cta">Programare</a>
+            
+            
         </nav>
     </header>
 
@@ -239,8 +268,13 @@
                 <p class="pr-lede">Sesiuni online sau la birou, numai cu programare.</p>
                 
                 <div class="pr-hero__actions">
-                    <a href="#appointment" class="pr-btn pr-btn--primary"><span>Programează o consultație</span></a>
-                    <a href="#services" class="pr-btn pr-btn--ghost">Descoperă serviciile</a>
+                    
+                    <a href="#appointment" data-nav-for="appointment" class="pr-btn pr-btn--primary"><span>Programează o consultație</span></a>
+                    
+                    
+                    
+                    <a href="#services" data-nav-for="services" class="pr-btn pr-btn--ghost">Descoperă serviciile</a>
+                    
                 </div>
                 
                 <!-- m6: business.profession/.languages/.modes used to also
@@ -266,9 +300,12 @@
                 
             </div>
         </div>
-        <a href="#services" class="pr-scroll" aria-label="Explorează">
+        
+        <a href="#services" data-nav-for="services" class="pr-scroll" aria-label="Explorează">
             <span>Explorează</span>
         </a>
+        
+        
     </section>
 
     <main>

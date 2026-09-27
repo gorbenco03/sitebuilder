@@ -461,8 +461,7 @@ ul { list-style: none; }
 .pf-svc__intro {
     max-width: 40rem; margin: 0 auto 1.75rem; padding: 1.5rem 1.75rem;
     background: color-mix(in srgb, var(--snow) 92%, transparent);
-    /* Fixed #2a3340, not var(--ink): this panel is always snow-toned (also
-       covers the heading inside it, which sets no colour of its own). */
+    /* Fixed #2a3340, not var(--ink): this panel is always snow-toned. */
     color: #2a3340;
     border: 1px solid color-mix(in srgb, #2a3340 16%, transparent);
     border-radius: var(--r);
