@@ -139,6 +139,47 @@
         } catch (e) {}
     })();
     </script>
+    <script>
+    // Body-text auto-contrast (pre-paint, same helpers as the script above):
+    // the owner can set {{theme.cream}} ("Fundal pagină") to any colour, and
+    // the fixed --color-text/--color-text-light fail WCAG AA against a
+    // medium/dark custom paper (theme-typography#2). Picks whichever of pure
+    // black/white contrasts best against the real paper — that pick always
+    // clears >=4.58:1 — so these only move away from the shipped default
+    // when they actually fail. See styles.css and
+    // bot/test/audit27-r12-template-contrast-and-dead-nav.test.js.
+    (function () {
+        try {
+            function relLum(c) {
+                var f = c.map(function (v) {
+                    v /= 255;
+                    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+                });
+                return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+            }
+            function ratio(l1, l2) {
+                var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+                return (hi + 0.05) / (lo + 0.05);
+            }
+            function hexToRgb(h) {
+                var m = /^#([0-9a-f]{6})$/i.exec(h);
+                if (!m) return null;
+                var v = parseInt(m[1], 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+            var paperRgb = hexToRgb("{{theme.cream}}");
+            var textRgb = hexToRgb('#2d2d2d');
+            if (!paperRgb || !textRgb) return;
+            var paperL = relLum(paperRgb);
+            if (ratio(relLum(textRgb), paperL) >= 4.5) return;
+            var blackR = ratio(0, paperL), whiteR = ratio(1, paperL);
+            var safeText = whiteR > blackR ? '#ffffff' : '#000000';
+            var root2 = document.documentElement.style;
+            root2.setProperty('--color-text', safeText);
+            root2.setProperty('--color-text-light', safeText);
+        } catch (e) {}
+    })();
+    </script>
 
     <!-- @if seo.jsonLd -->
     <script type="application/ld+json">{{& seo.jsonLd}}</script>
