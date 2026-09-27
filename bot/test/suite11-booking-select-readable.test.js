@@ -207,8 +207,14 @@ function serveDir(dir) {
             fs.createReadStream(full).pipe(res);
         } catch (e) { res.writeHead(500); res.end(String(e)); }
     });
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+        // Under full-suite load (many parallel agents/servers) `listen` can
+        // fail (port/fd exhaustion) instead of succeeding — without this
+        // handler that left the promise unsettled forever, hanging the test
+        // well past its own per-action timeouts rather than failing fast.
+        server.once('error', reject);
         server.listen(0, '127.0.0.1', () => {
+            server.off('error', reject);
             const port = server.address().port;
             resolve({ server, base: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(r)) });
         });
@@ -227,7 +233,7 @@ const THEMES = [
     })),
 ];
 
-test('professionals booking form: Data/Ora <select> options are dark-on-light on every accent', async () => {
+test('professionals booking form: Data/Ora <select> options are dark-on-light on every accent', { timeout: 120_000 }, async () => {
     const { chromium } = loadPlaywright();
     const browser = await chromium.launch();
     try {
@@ -309,7 +315,7 @@ test('professionals booking form: Data/Ora <select> options are dark-on-light on
     }
 });
 
-test('owner dashboard filter <select>s: options are dark-on-light and color-scheme is pinned', async () => {
+test('owner dashboard filter <select>s: options are dark-on-light and color-scheme is pinned', { timeout: 60_000 }, async () => {
     const { chromium } = loadPlaywright();
     const browser = await chromium.launch();
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'suite11-owner-dashboard-'));
