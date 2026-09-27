@@ -73,10 +73,11 @@ test('the editor is operable and containable from the keyboard', async () => {
         page.setDefaultTimeout(25000);
         await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(900);
-        // Dismiss consent first. The banner is a dialog and correctly takes
-        // focus when it appears, so on a first-ever visit the first Tab stays
-        // inside it — that is right, not a bypass failure. The skip link's job
-        // is the ordinary case: a visitor who has already answered.
+        // Dismiss consent first, so this test's own bypass-blocks assertion
+        // below is about the ordinary case (a visitor who has already
+        // answered), not the cookie banner itself — audit a11y#1 covers the
+        // banner's own first-visit Tab order (it is a non-modal region, not a
+        // dialog, and must never trap focus).
         await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
         await page.waitForTimeout(400);
         await page.evaluate(() => { if (document.activeElement) document.activeElement.blur(); });

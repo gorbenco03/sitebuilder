@@ -492,13 +492,13 @@ async function parseJson(req, limit = MAX_BODY_BYTES) {
     try {
         raw = await readRawBody(req, limit);
     } catch (e) {
-        if (e.code === 'BODY_TOO_LARGE') throw Object.assign(new Error('The request body is too large.'), { status: 413 });
+        if (e.code === 'BODY_TOO_LARGE') throw Object.assign(new Error('Cererea este prea mare.'), { status: 413 });
         throw e;
     }
     try {
         return JSON.parse(raw.toString('utf8'));
     } catch {
-        throw Object.assign(new Error('Invalid JSON.'), { status: 400 });
+        throw Object.assign(new Error('JSON invalid.'), { status: 400 });
     }
 }
 
@@ -1102,7 +1102,7 @@ function requireAuth(req, res) {
         userId = null;
     }
     if (!userId) {
-        sendJson(res, 401, { error: 'Sign-in required.' });
+        sendJson(res, 401, { error: 'Autentificare necesară.' });
         return null;
     }
     return userId;
@@ -1193,7 +1193,7 @@ function serveStatic(req, res, urlPath) {
     let relative = urlPath.replace(/^\/app\/?/, '') || 'index.html';
     const normalised = path.normalize(relative);
     if (normalised.startsWith('..') || path.isAbsolute(normalised)) {
-        sendJson(res, 403, { error: 'Access denied.' });
+        sendJson(res, 403, { error: 'Acces refuzat.' });
         return;
     }
 
@@ -1201,7 +1201,7 @@ function serveStatic(req, res, urlPath) {
     const realBuilder = path.resolve(BUILDER_DIR);
     const realFile    = path.resolve(filePath);
     if (!realFile.startsWith(realBuilder + path.sep) && realFile !== realBuilder) {
-        sendJson(res, 403, { error: 'Access denied.' });
+        sendJson(res, 403, { error: 'Acces refuzat.' });
         return;
     }
 
@@ -1220,7 +1220,7 @@ function serveStatic(req, res, urlPath) {
             const indexStat = fs.statSync(indexPath);
             sendCachedFile(req, res, indexPath, indexStat);
         } catch {
-            sendJson(res, 404, { error: 'File not found.' });
+            sendJson(res, 404, { error: 'Fișier negăsit.' });
         }
         return;
     }
@@ -1265,9 +1265,11 @@ function serveLive(req, res, urlPath) {
     }
 
     const slug = parts[0];
-    // Slug must be a single safe path segment (no traversal)
+    // Slug must be a single safe path segment (no traversal). audit
+    // publish-live#3: a malformed slug must show the branded RO 404, not a
+    // raw JSON error, for a real browser visitor.
     if (!/^[a-z0-9-]{3,40}$/i.test(slug) || slug.includes('..')) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendNotFound(req, res, 'Acces refuzat.', { kind: 'not_found' });
     }
 
     const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
@@ -1275,7 +1277,7 @@ function serveLive(req, res, urlPath) {
     const siteRoot = path.resolve(path.join(publishedRoot, slug.toLowerCase()));
 
     if (!siteRoot.startsWith(publishedRoot + path.sep) && siteRoot !== publishedRoot) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendNotFound(req, res, 'Acces refuzat.', { kind: 'not_found' });
     }
 
     let rel = parts.slice(1).join('/') || 'index.html';
@@ -1283,11 +1285,11 @@ function serveLive(req, res, urlPath) {
     try {
         rel = decodeURIComponent(rel);
     } catch {
-        return sendJson(res, 400, { error: 'bad path' });
+        return sendNotFound(req, res, 'Cale invalidă.', { kind: 'not_found' });
     }
     const normalised = path.normalize(rel);
     if (normalised.startsWith('..') || path.isAbsolute(normalised) || normalised.includes('..' + path.sep)) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendNotFound(req, res, 'Acces refuzat.', { kind: 'not_found' });
     }
 
     let filePath = path.join(siteRoot, normalised);
@@ -1295,10 +1297,10 @@ function serveLive(req, res, urlPath) {
     try {
         realFile = path.resolve(filePath);
     } catch {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendNotFound(req, res, 'Acces refuzat.', { kind: 'not_found' });
     }
     if (!realFile.startsWith(siteRoot + path.sep) && realFile !== siteRoot) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendNotFound(req, res, 'Acces refuzat.', { kind: 'not_found' });
     }
 
     let stat;
@@ -1403,7 +1405,7 @@ async function handleSlugCheck(req, res, query) {
     const raw  = (query.get('slug') || '').trim();
     const slug = normalizeSlug(raw);
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 200, { available: false, slug, error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
+        return sendJson(res, 200, { available: false, slug, error: 'Adresă invalidă (3-40 caractere, a-z 0-9 -).' });
     }
     if (isReservedSlug(slug)) {
         return sendJson(res, 200, { available: false, slug, error: 'Această adresă este rezervată de platformă. Alege alta.' });
@@ -1470,7 +1472,7 @@ async function handleAuthEmail(req, res) {
         ({ token } = await reg.createLoginToken({ email, purpose: 'login' }));
     } catch (e) {
         log('server.auth.email.token_error', { err: e.message }, 'error');
-        return sendJson(res, 503, { error: 'Service temporarily unavailable.' });
+        return sendJson(res, 503, { error: 'Serviciu temporar indisponibil.' });
     }
 
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
@@ -1628,7 +1630,7 @@ async function handleGetMe(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const user = await getRegistry().getUser(userId);
-    if (!user) return sendJson(res, 401, { error: 'User not found.' });
+    if (!user) return sendJson(res, 401, { error: 'Utilizator negăsit.' });
     sendJson(res, 200, { user });
 }
 
@@ -1679,8 +1681,8 @@ async function handleGetSite(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const site = await getRegistry().getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
     const versions = await getRegistry().listVersions(siteId);
     let config = null;
     if (versions.length > 0) {
@@ -1693,8 +1695,8 @@ async function handleGetVersions(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const site = await getRegistry().getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
     const versions = await getRegistry().listVersions(siteId);
     sendJson(res, 200, { versions });
 }
@@ -1704,18 +1706,18 @@ async function handleRollback(req, res, siteId) {
     if (!userId) return;
     const body = await parseJson(req);
     const { versionId } = body || {};
-    if (!versionId) return sendJson(res, 400, { error: 'Missing versionId.' });
+    if (!versionId) return sendJson(res, 400, { error: 'Lipsește versionId.' });
 
     const reg  = getRegistry();
     const site = await reg.getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
     if (!hasActiveCommercialEntitlement(site)) {
         return sendJson(res, 402, { error: 'Site-ul necesită un abonament sau trial activ.' });
     }
 
     const config = await reg.getVersionConfig(siteId, versionId);
-    if (!config) return sendJson(res, 404, { error: 'Version not found.' });
+    if (!config) return sendJson(res, 404, { error: 'Versiune negăsită.' });
 
     const webpublish = require('./webpublish.js');
     try {
@@ -1723,7 +1725,7 @@ async function handleRollback(req, res, siteId) {
         sendJson(res, 200, { ok: true, url: result.url });
     } catch (e) {
         log('server.rollback.error', { siteId, err: e.message }, 'error');
-        sendJson(res, 500, { error: 'Republish failed: ' + e.message });
+        sendJson(res, 500, { error: 'Republicare eșuată: ' + e.message });
     }
 }
 
@@ -1859,8 +1861,8 @@ function resolveOwnedSite(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return null;
     const site = getRegistry().getSite(siteId);
-    if (!site) { sendJson(res, 404, { error: 'Site not found.' }); return null; }
-    if (site.userId !== userId) { sendJson(res, 403, { error: 'Access denied.' }); return null; }
+    if (!site) { sendJson(res, 404, { error: 'Site negăsit.' }); return null; }
+    if (site.userId !== userId) { sendJson(res, 403, { error: 'Acces refuzat.' }); return null; }
     return site;
 }
 
@@ -1900,7 +1902,7 @@ async function handleStartDomain(req, res, siteId) {
     try {
         body = await parseJson(req, 8 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     try {
         return sendJson(res, 200, await require('./domains.js').startDomainConnection({
@@ -2006,15 +2008,15 @@ async function handleCreateAppointment(req, res) {
     try {
         body = await parseJson(req, 64 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
 
     const slug = String((body && body.slug) || '').toLowerCase().trim();
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 400, { error: 'Invalid site.' });
+        return sendJson(res, 400, { error: 'Site invalid.' });
     }
     if (!liveSiteExists(slug)) {
-        return sendJson(res, 404, { error: 'This site is not published.' });
+        return sendJson(res, 404, { error: 'Acest site nu este publicat.' });
     }
 
     const visitorName = String((body && body.visitorName) || '').trim().slice(0, 80);
@@ -2029,21 +2031,21 @@ async function handleCreateAppointment(req, res) {
     const mode = String((body && body.mode) || '').trim().slice(0, 40);
 
     if (!visitorName || !visitorEmail) {
-        return sendJson(res, 400, { error: 'Name and email are required.' });
+        return sendJson(res, 400, { error: 'Numele și emailul sunt obligatorii.' });
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(visitorEmail)) {
-        return sendJson(res, 400, { error: 'Invalid email address.' });
+        return sendJson(res, 400, { error: 'Adresă de email invalidă.' });
     }
     const startMs = Date.parse(requestedStartISO);
     if (!Number.isFinite(startMs)) {
-        return sendJson(res, 400, { error: 'Invalid time slot.' });
+        return sendJson(res, 400, { error: 'Interval orar invalid.' });
     }
     // Soft lead: reject far-past starts (allow 5 min clock skew)
     if (startMs < Date.now() - 5 * 60 * 1000) {
-        return sendJson(res, 400, { error: 'That time slot is no longer available.' });
+        return sendJson(res, 400, { error: 'Acest interval orar nu mai este disponibil.' });
     }
     if (!appointmentTypeId) {
-        return sendJson(res, 400, { error: 'Missing appointment type.' });
+        return sendJson(res, 400, { error: 'Lipsește tipul de programare.' });
     }
 
     const id = crypto.randomBytes(12).toString('hex');
@@ -2094,7 +2096,7 @@ async function handleCreateAppointment(req, res) {
         saveAppointmentRequests(slug, trimmed);
     } catch (e) {
         log('appointments.save_error', { slug, err: e.message }, 'error');
-        return sendJson(res, 500, { error: "We couldn't save your request." });
+        return sendJson(res, 500, { error: 'Cererea ta nu a putut fi salvată.' });
     }
 
     log('appointments.requested', { slug, id, type: appointmentTypeId });
@@ -2118,10 +2120,10 @@ async function handleListAppointments(req, res, query) {
 
     const slug = String((query && typeof query.get === 'function' ? query.get('slug') : '') || '').toLowerCase().trim();
     if (!SLUG_RE.test(slug)) {
-        return sendJson(res, 400, { error: 'Invalid site.' });
+        return sendJson(res, 400, { error: 'Site invalid.' });
     }
     if (!liveSiteExists(slug)) {
-        return sendJson(res, 404, { error: 'This site is not published.' });
+        return sendJson(res, 404, { error: 'Acest site nu este publicat.' });
     }
 
     const reg = getRegistry();
@@ -2132,7 +2134,7 @@ async function handleListAppointments(req, res, query) {
         )
     );
     if (!owned) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendJson(res, 403, { error: 'Acces refuzat.' });
     }
 
     const requests = loadAppointmentRequests(slug).map((r) => ({
@@ -2222,7 +2224,7 @@ async function handleCalendarNativeServices(req, res, query) {
         return sendJson(res, 200, out);
     } catch (e) {
         const status = e.status || 400;
-        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+        return sendJson(res, status, { error: e.message || 'Cerere invalidă.', code: e.code || 'ERROR' });
     }
 }
 
@@ -2243,7 +2245,7 @@ async function handleCalendarNativeResources(req, res, query) {
         return sendJson(res, 200, out);
     } catch (e) {
         const status = e.status || 400;
-        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+        return sendJson(res, status, { error: e.message || 'Cerere invalidă.', code: e.code || 'ERROR' });
     }
 }
 
@@ -2269,7 +2271,7 @@ async function handleCalendarNativeSlots(req, res, query) {
         return sendJson(res, 200, out);
     } catch (e) {
         const status = e.status || 400;
-        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+        return sendJson(res, status, { error: e.message || 'Cerere invalidă.', code: e.code || 'ERROR' });
     }
 }
 
@@ -2279,7 +2281,7 @@ async function handleCalendarNativeBookings(req, res) {
     try {
         body = await parseJson(req, 64 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     try {
         const api = getCalendarNativeApi();
@@ -2332,7 +2334,7 @@ async function handleCalendarNativeBookings(req, res) {
         return sendJson(res, 200, out);
     } catch (e) {
         const status = e.status || 400;
-        return sendJson(res, status, { error: e.message || 'Invalid request.', code: e.code || 'ERROR' });
+        return sendJson(res, status, { error: e.message || 'Cerere invalidă.', code: e.code || 'ERROR' });
     }
 }
 
@@ -2359,7 +2361,7 @@ async function handleCalendarNativeManageCancel(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const token = String((body && body.token) || '').trim();
     const db = resolveCalendarNativeDb();
@@ -2393,7 +2395,7 @@ async function handleCalendarNativeManageReschedule(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const token = String((body && body.token) || '').trim();
     const startUtc = String((body && body.startUtc) || '').trim();
@@ -2579,7 +2581,7 @@ async function handleOwnerRescheduleBooking(req, res, bookingId) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2630,7 +2632,7 @@ async function handleOwnerPutWeekly(req, res) {
     try {
         body = await parseJson(req, 32 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2662,7 +2664,7 @@ async function handleOwnerCreateResource(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2680,7 +2682,7 @@ async function handleOwnerPutResource(req, res, resourceId) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2697,7 +2699,7 @@ async function handleOwnerReassignBooking(req, res, bookingId) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2714,7 +2716,7 @@ async function handleOwnerPutSettings(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2734,7 +2736,7 @@ async function handleOwnerAddOverride(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2775,7 +2777,7 @@ async function handleOwnerPutService(req, res, serviceId) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2793,7 +2795,7 @@ async function handleOwnerCreateService(req, res) {
     try {
         body = await parseJson(req, 16 * 1024);
     } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
     }
     const tenant = resolveOwnerTenantOrReject(req, res, body);
     if (!tenant) return;
@@ -2911,7 +2913,7 @@ async function handleTestPayComplete(req, res) {
     try {
         body = await parseJson(req);
     } catch {
-        return sendJson(res, 400, { error: 'Invalid request.' });
+        return sendJson(res, 400, { error: 'Cerere invalidă.' });
     }
     const sessionId = body && typeof body.sessionId === 'string' ? body.sessionId.trim() : '';
     if (!sessionId || !/^cs_test_[A-Za-z0-9]+$/.test(sessionId)) {
@@ -2926,12 +2928,12 @@ async function handleTestPayComplete(req, res) {
         return sendJson(res, 404, { error: 'Order not found.' });
     }
     if (order.userId && order.userId !== userId) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendJson(res, 403, { error: 'Acces refuzat.' });
     }
 
     const sitePre = order.siteId ? await reg.getSite(order.siteId) : null;
     if (sitePre && sitePre.userId !== userId) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendJson(res, 403, { error: 'Acces refuzat.' });
     }
 
     const kind = order.kind || 'publish';
@@ -2987,8 +2989,8 @@ async function handleSiteCheckout(req, res, siteId) {
 
     const reg  = getRegistry();
     let site = await reg.getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
 
     if (!payments.isConfigured()) {
         return sendJson(res, 503, { error: payments.RO_ERRORS.NOT_CONFIGURED });
@@ -3075,8 +3077,8 @@ async function handleSiteBillingPortal(req, res, siteId) {
 
     const reg  = getRegistry();
     const site = await reg.getSite(siteId);
-    if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-    if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+    if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+    if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
 
     if (!payments.isConfigured()) {
         return sendJson(res, 503, { error: payments.RO_ERRORS.NOT_CONFIGURED });
@@ -3270,11 +3272,11 @@ async function resolveExportDraft(req, res, query) {
         // someone else. A generic "no draft" 400 for both cases used to hide an
         // ownership mismatch behind the same status as an honest empty draft.
         if (!site) {
-            sendJson(res, 404, { error: 'Site not found.' });
+            sendJson(res, 404, { error: 'Site negăsit.' });
             return null;
         }
         if (site.userId !== userId) {
-            sendJson(res, 403, { error: 'Access denied.' });
+            sendJson(res, 403, { error: 'Acces refuzat.' });
             return null;
         }
     } else {
@@ -3289,26 +3291,26 @@ async function resolveExportDraft(req, res, query) {
             }
         }
         if (!site) {
-            sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+            sendJson(res, 400, { error: 'Nicio ciornă de descărcat. Salvează sau publică o ciornă mai întâi.' });
             return null;
         }
     }
 
     const versions = reg.listVersions(site.id) || [];
     if (!versions.length) {
-        sendJson(res, 400, { error: 'No draft to download. Save or publish a draft first.' });
+        sendJson(res, 400, { error: 'Nicio ciornă de descărcat. Salvează sau publică o ciornă mai întâi.' });
         return null;
     }
     const config = latestSiteConfig(reg, site.id);
     if (!config || typeof config !== 'object' || !Object.keys(config).length) {
-        sendJson(res, 400, { error: 'No draft to download.' });
+        sendJson(res, 400, { error: 'Nicio ciornă de descărcat.' });
         return null;
     }
 
     const templateId = site.templateId || 'product-menu';
     const templatePath = path.join(TEMPLATES_DIR, templateId, 'template.html');
     if (!fs.existsSync(templatePath)) {
-        sendJson(res, 400, { error: 'No draft to download.' });
+        sendJson(res, 400, { error: 'Nicio ciornă de descărcat.' });
         return null;
     }
 
@@ -3348,11 +3350,11 @@ async function handleExportHtml(req, res, query) {
         }).html;
     } catch (e) {
         log('server.export_html.render_error', { siteId: site.id, err: e.message }, 'error');
-        return sendJson(res, 500, { error: 'Could not build the HTML file.' });
+        return sendJson(res, 500, { error: 'Fișierul HTML nu a putut fi generat.' });
     }
 
     if (!html || typeof html !== 'string') {
-        return sendJson(res, 500, { error: 'Could not build the HTML file.' });
+        return sendJson(res, 500, { error: 'Fișierul HTML nu a putut fi generat.' });
     }
 
     const filename = exportHtmlFilename(site, config);
@@ -3391,11 +3393,11 @@ async function handleExportZip(req, res, query) {
         });
     } catch (e) {
         log('server.export_zip.error', { siteId: site.id, err: e && e.message }, 'error');
-        return sendJson(res, 500, { error: 'Could not build the ZIP export.' });
+        return sendJson(res, 500, { error: 'Exportul ZIP nu a putut fi generat.' });
     }
 
     if (!result || !result.zip || !Buffer.isBuffer(result.zip)) {
-        return sendJson(res, 500, { error: 'Could not build the ZIP export.' });
+        return sendJson(res, 500, { error: 'Exportul ZIP nu a putut fi generat.' });
     }
 
     const filename = (result.filename || 'site.zip').replace(/"/g, '');
@@ -3501,22 +3503,22 @@ async function requireOwnedSiteWithEmail(req, res, siteId) {
     const reg = getRegistry();
     const site = await reg.getSite(siteId);
     if (!site) {
-        sendJson(res, 404, { error: 'Site not found.' });
+        sendJson(res, 404, { error: 'Site negăsit.' });
         return null;
     }
     if (site.userId !== userId) {
-        sendJson(res, 403, { error: 'Access denied.' });
+        sendJson(res, 403, { error: 'Acces refuzat.' });
         return null;
     }
     const user = await reg.getUser(userId);
     const email = user && typeof user.email === 'string' ? user.email.trim().toLowerCase() : '';
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        sendJson(res, 400, { error: "Sign in with email to connect Instagram. We don't create a separate account for this." });
+        sendJson(res, 400, { error: 'Autentifică-te cu email ca să conectezi Instagram. Nu creăm un cont separat pentru asta.' });
         return null;
     }
     const partner = getPartner();
     if (!partner.isConfigured() && !isIsolatedTestSocial()) {
-        sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
+        sendJson(res, 503, { error: 'Conectarea la Instagram nu este configurată pe acest server.' });
         return null;
     }
     return { reg, site, email, partnerConfigured: partner.isConfigured() };
@@ -3530,10 +3532,10 @@ async function requireOwnedSiteWithEmail(req, res, siteId) {
 async function handleSocialFeedGrant(req, res, siteId) {
     let body;
     try { body = await parseJson(req); } catch (e) {
-        return sendJson(res, e.status || 400, { error: e.message || 'Invalid request body.' });
+        return sendJson(res, e.status || 400, { error: e.message || 'Corp de cerere invalid.' });
     }
     if (!body || body.acceptedTerms !== true) {
-        return sendJson(res, 400, { error: 'Please accept the Instafidget Terms and Privacy Policy.' });
+        return sendJson(res, 400, { error: 'Acceptă Termenii și Politica de confidențialitate Instafidget.' });
     }
     const ctx = await requireOwnedSiteWithEmail(req, res, siteId);
     if (!ctx) return;
@@ -3565,20 +3567,20 @@ async function handleSocialFeedGrant(req, res, siteId) {
         partnerRes = await getPartner().grantYear1(ctx.email);
     } catch (e) {
         if (e && e.code === 'SECRET_MISSING') {
-            return sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
+            return sendJson(res, 503, { error: 'Conectarea la Instagram nu este configurată pe acest server.' });
         }
         log('server.social_feed.grant.error', { siteId, err: e.message }, 'error');
-        return sendJson(res, 502, { error: "We couldn't reach Instafidget. Please try again." });
+        return sendJson(res, 502, { error: 'Nu am putut contacta Instafidget. Încearcă din nou.' });
     }
 
     if (partnerRes.status === 401) {
-        return sendJson(res, 502, { error: 'Instafidget refused the connection. Check the server configuration.' });
+        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurarea serverului.' });
     }
     if (partnerRes.status === 400) {
-        return sendJson(res, 400, { error: 'Instafidget refused the request. Check the Terms and Privacy agreement.' });
+        return sendJson(res, 400, { error: 'Instafidget a refuzat cererea. Verifică acordul Termeni și Confidențialitate.' });
     }
     if (partnerRes.status < 200 || partnerRes.status >= 300) {
-        return sendJson(res, 502, { error: 'Instafidget could not create the Instagram bonus.' });
+        return sendJson(res, 502, { error: 'Instafidget nu a putut crea bonusul Instagram.' });
     }
 
     const saved = persistEmbedUrlIfCurrent(
@@ -3623,30 +3625,30 @@ async function handleSocialFeedEditor(req, res, siteId) {
         partnerRes = await getPartner().editorSession(ctx.email);
     } catch (e) {
         if (e && e.code === 'SECRET_MISSING') {
-            return sendJson(res, 503, { error: 'Instagram connection is not configured on this server.' });
+            return sendJson(res, 503, { error: 'Conectarea la Instagram nu este configurată pe acest server.' });
         }
         log('server.social_feed.editor.error', { siteId, err: e.message }, 'error');
-        return sendJson(res, 502, { error: "We couldn't open the Instagram editor. Please try again." });
+        return sendJson(res, 502, { error: 'Nu am putut deschide editorul Instagram. Încearcă din nou.' });
     }
 
     if (partnerRes.status === 401) {
-        return sendJson(res, 502, { error: 'Instafidget refused the connection. Check the server configuration.' });
+        return sendJson(res, 502, { error: 'Instafidget a refuzat conexiunea. Verifică configurarea serverului.' });
     }
     if (partnerRes.status === 404) {
-        return sendJson(res, 404, { error: 'Connect Instagram first (accept the terms, then add Instagram).' });
+        return sendJson(res, 404, { error: 'Conectează Instagram mai întâi (acceptă termenii, apoi adaugă Instagram).' });
     }
     if (partnerRes.status === 400) {
-        return sendJson(res, 400, { error: "We couldn't open the Instagram editor." });
+        return sendJson(res, 400, { error: 'Nu am putut deschide editorul Instagram.' });
     }
     if (partnerRes.status < 200 || partnerRes.status >= 300) {
-        return sendJson(res, 502, { error: 'Instafidget could not open the editor.' });
+        return sendJson(res, 502, { error: 'Instafidget nu a putut deschide editorul.' });
     }
 
     const editorUrl = partnerRes.json && typeof partnerRes.json.editorUrl === 'string'
         ? partnerRes.json.editorUrl
         : null;
     if (!editorUrl) {
-        return sendJson(res, 502, { error: 'Instafidget did not return an editor link.' });
+        return sendJson(res, 502, { error: 'Instafidget nu a returnat un link de editor.' });
     }
     sendJson(res, 200, { editorUrl });
 }
@@ -3662,10 +3664,10 @@ async function handleSocialFeedDisconnect(req, res, siteId) {
     const reg = getRegistry();
     const site = await reg.getSite(siteId);
     if (!site) {
-        return sendJson(res, 404, { error: 'Site not found.' });
+        return sendJson(res, 404, { error: 'Site negăsit.' });
     }
     if (site.userId !== userId) {
-        return sendJson(res, 403, { error: 'Access denied.' });
+        return sendJson(res, 403, { error: 'Acces refuzat.' });
     }
     const config = clearEmbedUrl(reg, siteId);
     const embedUrl = config && config.instagram ? String(config.instagram.embedUrl || '') : '';
@@ -3700,7 +3702,7 @@ async function handlePublish(req, res) {
     // Validate templateId
     const templates = loadTemplates();
     const tpl = templates.find(t => t.id === templateId);
-    if (!tpl) return sendJson(res, 422, { error: 'Unknown template: ' + templateId });
+    if (!tpl) return sendJson(res, 422, { error: 'Șablon necunoscut: ' + templateId });
 
     // Validate images
     const MAX_IMAGES   = 12;
@@ -3708,16 +3710,16 @@ async function handlePublish(req, res) {
     const ALLOWED_MIME = /^image\/(jpeg|png|webp)$/;
     const imgList = Array.isArray(images) ? images : [];
     if (imgList.length > MAX_IMAGES) {
-        return sendJson(res, 422, { error: `A maximum of ${MAX_IMAGES} images is allowed.` });
+        return sendJson(res, 422, { error: `Sunt permise maximum ${MAX_IMAGES} imagini.` });
     }
     for (const img of imgList) {
         if (!img || !img.dataUrl) continue;
         if (img.dataUrl.length > MAX_DATA_URL * 1.4) {
-            return sendJson(res, 422, { error: `Image "${img.name}" exceeds 2.5 MB.` });
+            return sendJson(res, 422, { error: `Imaginea „${img.name}” depășește 2,5 MB.` });
         }
         const mimeMatch = /^data:([^;]+);/.exec(img.dataUrl);
         if (!mimeMatch || !ALLOWED_MIME.test(mimeMatch[1])) {
-            return sendJson(res, 422, { error: `Image type for "${img.name}" is not supported (jpeg/png/webp).` });
+            return sendJson(res, 422, { error: `Tipul imaginii „${img.name}” nu este acceptat (jpeg/png/webp).` });
         }
     }
 
@@ -3728,8 +3730,8 @@ async function handlePublish(req, res) {
     let site;
     if (siteId) {
         site = await reg.getSite(siteId);
-        if (!site) return sendJson(res, 404, { error: 'Site not found.' });
-        if (site.userId !== userId) return sendJson(res, 403, { error: 'Access denied.' });
+        if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
+        if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
     } else {
         // Max 1 unpaid site per user (prevents abuse)
         const existing = await reg.listSites(userId);
@@ -3748,7 +3750,7 @@ async function handlePublish(req, res) {
         if (slugHint) {
             slug = normalizeSlug(slugHint);
             if (!SLUG_RE.test(slug)) {
-                return sendJson(res, 422, { error: 'Invalid slug (3-40 characters, a-z 0-9 -).' });
+                return sendJson(res, 422, { error: 'Adresă invalidă (3-40 caractere, a-z 0-9 -).' });
             }
             if (isReservedSlug(slug)) {
                 return sendJson(res, 409, { error: 'Această adresă este rezervată de platformă. Alege alta.' });
@@ -3795,10 +3797,10 @@ async function handlePublish(req, res) {
             const updated = await reg.getSite(site.id);
             return sendJson(res, 200, { site: withPublicUrl(updated), paymentUrl: null });
         } catch (e) {
-            if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Your images were blocked by moderation.' });
+            if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile tale au fost blocate de moderare.' });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
             const updated = await reg.getSite(site.id);
-            return sendJson(res, 500, { error: 'Publish failed: ' + e.message, site: updated });
+            return sendJson(res, 500, { error: 'Publicare eșuată: ' + e.message, site: updated });
         }
     };
 
@@ -3895,7 +3897,7 @@ async function handlePublish(req, res) {
     } catch (e) {
         log('server.publish.draft.error', { siteId: site.id, err: e.message }, 'error');
         const updated = await reg.getSite(site.id);
-        return sendJson(res, 500, { error: 'Saving your draft failed: ' + e.message, site: updated });
+        return sendJson(res, 500, { error: 'Salvarea ciornei a eșuat: ' + e.message, site: updated });
     }
 }
 

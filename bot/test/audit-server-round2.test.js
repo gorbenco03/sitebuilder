@@ -263,7 +263,8 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
                 headers: { Cookie: cookieA, Accept: 'text/html' },
             });
             assert.strictEqual(res.status, 403, 'expected 403, got ' + res.status + ' body=' + res.body.slice(0, 200));
-            assert.strictEqual(res.json && res.json.error, 'Access denied.');
+            // audit27-r-05: customer-reachable server errors are Romanian now.
+            assert.strictEqual(res.json && res.json.error, 'Acces refuzat.');
         });
 
         await check('BE-09: cross-user GET /api/export-zip → 403 Access denied (was 400)', async () => {
@@ -271,7 +272,7 @@ function ymd(d) { return d.toISOString().slice(0, 10); }
                 headers: { Cookie: cookieA, Accept: 'application/zip' },
             });
             assert.strictEqual(res.status, 403, 'expected 403, got ' + res.status + ' body=' + res.body.slice(0, 200));
-            assert.strictEqual(res.json && res.json.error, 'Access denied.');
+            assert.strictEqual(res.json && res.json.error, 'Acces refuzat.');
         });
 
         await check('BE-09 baseline: nonexistent siteId still 404 (own vs missing stay distinct from ownership)', async () => {
