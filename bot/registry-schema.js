@@ -32,7 +32,7 @@
  * Object.values() gave the JSON backend for free.
  */
 
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 const SCHEMA_SQL_V1 = `
 CREATE TABLE IF NOT EXISTS users (
@@ -156,14 +156,29 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_exp ON sessions(exp);
 `;
 
+/**
+ * Audit 2026-09-27 (R-03, data-integrity#2): 'versions' had no column
+ * distinguishing a real Publică from a draft autosave, so saveVersion()'s
+ * MAX_VERSIONS FIFO cap evicted both identically — a few ordinary autosaves
+ * right after a real publish could evict that publish's own row before the
+ * owner ever republished again. `published` marks a row saved from an
+ * actual publish (bot/webpublish.js#publishSite persists it as 1); an
+ * ordinary autosave (bot/server.js#handleSaveDraft) leaves it at the
+ * default 0. See bot/registry-sqlite.js#saveVersion for the eviction order.
+ */
+const SCHEMA_SQL_V3 = `
+ALTER TABLE versions ADD COLUMN published INTEGER NOT NULL DEFAULT 0;
+`;
+
 // SCHEMA_SQL is the union applied to a brand-new database. Kept as a
 // separate name (matching the bot/calendar-native/db.js migration pattern)
-// so a v3 can be added later without changing the shape of migrate().
-const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2;
+// so a v4 can be added later without changing the shape of migrate().
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3;
 
 module.exports = {
     SCHEMA_VERSION,
     SCHEMA_SQL,
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
+    SCHEMA_SQL_V3,
 };

@@ -271,17 +271,44 @@ function commitUnpaidDraft(userId, siteId, isEntitled) {
 
 const MAX_VERSIONS = 10;
 
-function saveVersion(siteId, config) {
+/**
+ * @param {string} siteId
+ * @param {object} config
+ * @param {{ published?: boolean }} [opts] `published: true` marks this row
+ *   as a real Publică (bot/webpublish.js#publishSite) rather than an
+ *   ordinary draft autosave. Not part of the public return/listVersions
+ *   shape (registry-characterization.test.js pins that to
+ *   {versionId, publishedAt}) — it only steers which rows the FIFO cap
+ *   below evicts first. Mirrors bot/registry-sqlite.js#saveVersion.
+ */
+function saveVersion(siteId, config, opts) {
     const db = _load();
     db.versions = db.versions || {};
     db.versions[siteId] = db.versions[siteId] || [];
 
     const versionId   = crypto.randomUUID();
     const publishedAt = new Date().toISOString();
-    db.versions[siteId].push({ versionId, publishedAt, config: JSON.parse(JSON.stringify(config)) });
+    const published   = !!(opts && opts.published);
+    db.versions[siteId].push({ versionId, publishedAt, published, config: JSON.parse(JSON.stringify(config)) });
 
-    if (db.versions[siteId].length > MAX_VERSIONS) {
-        db.versions[siteId] = db.versions[siteId].slice(-MAX_VERSIONS);
+    // data-integrity#2: evict the oldest UNPUBLISHED (autosave) rows first,
+    // in insertion order, so ordinary autosave churn never evicts a real
+    // publish's own row. Only fall back to plain oldest-first FIFO across
+    // ALL rows once no unpublished row is left to take their place.
+    let list = db.versions[siteId];
+    let excess = list.length - MAX_VERSIONS;
+    if (excess > 0) {
+        const kept = [];
+        let toDrop = excess;
+        for (const v of list) {
+            if (toDrop > 0 && !v.published) {
+                toDrop--;
+                continue;
+            }
+            kept.push(v);
+        }
+        list = kept.length > MAX_VERSIONS ? kept.slice(-MAX_VERSIONS) : kept;
+        db.versions[siteId] = list;
     }
 
     _save(db);

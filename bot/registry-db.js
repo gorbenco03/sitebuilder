@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_SQL_V2, SCHEMA_VERSION } = require('./registry-schema');
+const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_SQL_V2, SCHEMA_SQL_V3, SCHEMA_VERSION } = require('./registry-schema');
 
 function loadSqlite() {
     try {
@@ -88,6 +88,25 @@ function migrateSchema(db) {
             ).run(2, ts);
             db.exec('COMMIT;');
             current = 2;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    // v3 (Audit 2026-09-27, R-03 / data-integrity#2): adds versions.published
+    // so a real publish can be told apart from a draft autosave — purely
+    // additive (ALTER TABLE ADD COLUMN with a default), no existing row is
+    // rewritten. See bot/registry-schema.js#SCHEMA_SQL_V3.
+    if (current < 3) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V3);
+            db.prepare(
+                'INSERT OR IGNORE INTO registry_schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(3, ts);
+            db.exec('COMMIT;');
+            current = 3;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

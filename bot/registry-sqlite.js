@@ -322,18 +322,64 @@ function commitUnpaidDraft(userId, siteId, isEntitled) {
 
 const MAX_VERSIONS = 10;
 
-function saveVersion(siteId, config) {
+/** Delete the given `versions.seq` rows (Audit 2026-09-27 R-03 FIFO helper). */
+function _deleteVersionsBySeq(seqs) {
+    if (!seqs || !seqs.length) return;
+    const placeholders = seqs.map(() => '?').join(',');
+    db.prepare(`DELETE FROM versions WHERE seq IN (${placeholders})`).run(...seqs);
+}
+
+/**
+ * @param {string} siteId
+ * @param {object} config
+ * @param {{ published?: boolean }} [opts] `published: true` marks this row
+ *   as a real Publică (bot/webpublish.js#publishSite) rather than an
+ *   ordinary draft autosave. Not part of the public return/listVersions
+ *   shape (registry-characterization.test.js pins that to
+ *   {versionId, publishedAt}) — it only steers which rows the FIFO cap
+ *   below evicts first.
+ */
+function saveVersion(siteId, config, opts) {
     const versionId   = crypto.randomUUID();
     const publishedAt = new Date().toISOString();
-    db.prepare('INSERT INTO versions (version_id, site_id, published_at, config) VALUES (?, ?, ?, ?)')
-        .run(versionId, siteId, publishedAt, JSON.stringify(config));
+    const published   = !!(opts && opts.published);
 
-    // Keep only the MAX_VERSIONS most recently inserted rows for this site.
-    db.prepare(`
-        DELETE FROM versions
-        WHERE site_id = ?
-          AND seq NOT IN (SELECT seq FROM versions WHERE site_id = ? ORDER BY seq DESC LIMIT ?)
-    `).run(siteId, siteId, MAX_VERSIONS);
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        db.prepare('INSERT INTO versions (version_id, site_id, published_at, config, published) VALUES (?, ?, ?, ?, ?)')
+            .run(versionId, siteId, publishedAt, JSON.stringify(config), published ? 1 : 0);
+
+        // data-integrity#2: draft autosaves (POST /api/draft, ~1.2s debounce)
+        // used to compete with a real Publică for the same MAX_VERSIONS FIFO
+        // slots — a handful of small edits after a real publish could evict
+        // that publish's own row before the owner ever republished again.
+        // Evict the oldest UNPUBLISHED rows first; only reach into published
+        // rows once no unpublished row is left to take their place, so
+        // ordinary autosave churn never costs a real publish its history.
+        const countRow = db.prepare('SELECT COUNT(*) AS c FROM versions WHERE site_id = ?').get(siteId);
+        let excess = (countRow ? countRow.c : 0) - MAX_VERSIONS;
+        if (excess > 0) {
+            const unpublished = db.prepare(
+                'SELECT seq FROM versions WHERE site_id = ? AND published = 0 ORDER BY seq ASC LIMIT ?'
+            ).all(siteId, excess).map((r) => r.seq);
+            _deleteVersionsBySeq(unpublished);
+            excess -= unpublished.length;
+        }
+        if (excess > 0) {
+            // Every remaining row is published — same plain oldest-first
+            // FIFO this cap always used, now only reached once autosave
+            // rows are exhausted.
+            const oldest = db.prepare(
+                'SELECT seq FROM versions WHERE site_id = ? ORDER BY seq ASC LIMIT ?'
+            ).all(siteId, excess).map((r) => r.seq);
+            _deleteVersionsBySeq(oldest);
+        }
+
+        db.exec('COMMIT;');
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
 
     return { versionId, publishedAt };
 }
