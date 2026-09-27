@@ -1,15 +1,18 @@
 'use strict';
 /**
  * Flow 4.1 oracle: operator commercial docs must describe the current model
- * (Stripe subscription, 14-day card trial → auto-charge 99 → renewal 29/year
- * via subscription schedule). Fails on leftover 100 / manual-renewal /
- * pay-before-publish-as-current-model copy.
+ * (Stripe subscription, 14-day card trial → auto-charge 99 on day 14 →
+ * renewal 29/year via subscription schedule). Fails on leftover 100 /
+ * manual-renewal / pay-before-publish-as-current-model copy, and on any
+ * reappearance of the old 7-day trial wording (audit 2026-09-27,
+ * docs-consistency#2: the regex used to require "7-day trial" instead of
+ * rejecting it).
  *
- * Scope (six files only; historical 00-Governance/ and old QA evidence exempt):
+ * Scope (nine files; historical 00-Governance/ and old QA evidence exempt):
  *   GO-LIVE.md, README.md, LAUNCH.md, bot/README.md, bot/DEPLOY.md,
- *   CLOUDFLARE-DEPLOY.md
+ *   CLOUDFLARE-DEPLOY.md, VISION.md, ARCHITECTURE.md, PROJECT_STATUS.md
  *
- * Run:  node bot/test/flow4-stale-commercial-docs.test.js
+ * Run:  node --experimental-sqlite bot/test/flow4-stale-commercial-docs.test.js
  * Exits non-zero on failed assertion.
  */
 
@@ -26,6 +29,9 @@ const DOC_RELS = [
     path.join('bot', 'README.md'),
     path.join('bot', 'DEPLOY.md'),
     'CLOUDFLARE-DEPLOY.md',
+    'VISION.md',
+    'ARCHITECTURE.md',
+    'PROJECT_STATUS.md',
 ];
 
 /** Stale phrases verified on e06ef00 — must not teach as current commercial model. */
@@ -87,13 +93,32 @@ const STALE_PHRASES = [
         // Affirmative old happy path: unpaid → pay-before-publish (no 14-day card trial nearby on same line)
         re: /Unpaid\s+sites\s+stay\s+drafts\s+until\s+pay-before-publish/i,
     },
+    {
+        // audit 2026-09-27 docs-consistency#2: the trial moved from 7 to 14
+        // days in 2f1bb95; these must never reappear next to trial/subscription
+        // wording, in either language.
+        name: 'stale trial length: "7-day trial" / "7 day trial" near trial/subscription',
+        re: /\bsubscription\b[\s\S]{0,80}\b7[-\s]?days?\s+trial\b|\b7[-\s]?days?\s+trial\b[\s\S]{0,80}\bsubscription\b|\b7[-\s]?days?\s+trial\b/i,
+    },
+    {
+        name: 'stale trial length: "day 7" charge/auto-charge wording',
+        re: /\bday\s+7\b/i,
+    },
+    {
+        name: 'stale trial length (RO): "trial de 7 zile" / "7 zile"',
+        re: /\btrial(?:ul)?\s+de\s+7\s+zile\b|\b7\s+zile\b/i,
+    },
+    {
+        name: 'stale trial length (RO): "ziua 7"',
+        re: /\bziua\s+7\b/i,
+    },
 ];
 
-/** Required current-model signals somewhere across the six docs (not every file). */
+/** Required current-model signals somewhere across the nine docs (not every file). */
 const REQUIRED_CURRENT = [
     {
         name: 'current model: Stripe subscription + 14-day trial',
-        re: /subscription[\s\S]{0,80}7[-\s]?day\s+trial|7[-\s]?day\s+trial[\s\S]{0,80}subscription/i,
+        re: /subscription[\s\S]{0,80}14[-\s]?day\s+trial|14[-\s]?day\s+trial[\s\S]{0,80}subscription/i,
     },
     {
         name: 'current model: card required',
@@ -105,7 +130,7 @@ const REQUIRED_CURRENT = [
     },
     {
         name: 'current model: auto-charge 99 after trial / day 14',
-        re: /(?:auto(?:matic(?:ally)?)?[-\s]?charge|charged?\s+automatically|first\s+charge).{0,60}\b99\b|\b99\b.{0,60}(?:after\s+(?:day\s+)?7|after\s+the\s+trial)|day\s+7.{0,40}\b99\b/i,
+        re: /(?:auto(?:matic(?:ally)?)?[-\s]?charge|charged?\s+automatically|first\s+charge).{0,60}\b99\b|\b99\b.{0,60}(?:after\s+(?:day\s+)?14|after\s+the\s+trial)|day\s+14.{0,40}\b99\b/i,
     },
     {
         name: 'current model: renewal 29/year via subscription schedule',
@@ -159,8 +184,8 @@ async function run() {
     const docs = readDocs();
     const corpus = docs.map((d) => d.text).join('\n\n');
 
-    await check('all six commercial docs exist', () => {
-        assert.strictEqual(docs.length, 6);
+    await check('all nine commercial docs exist', () => {
+        assert.strictEqual(docs.length, DOC_RELS.length);
     });
 
     for (const stale of STALE_PHRASES) {

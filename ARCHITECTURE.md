@@ -208,7 +208,7 @@ new code path with its own rules.
   `Accept-Language` guess → isolated-local-boot RO/EUR default → USD default.
 - **`bot/payments.js`** — Stripe Checkout and Subscription Schedules via
   direct REST calls (no `stripe` npm package). `mode=subscription` with a
-  7-day trial; on `checkout.session.completed` the app attaches a schedule so
+  14-day trial; on `checkout.session.completed` the app attaches a schedule so
   year 1 stays at 99 and year 2+ renews at 29 in the same currency.
   `createBillingPortalSession` backs the in-app Cancel button.
 - Webhook dispatch (`POST /webhooks/stripe`) is verified in `bot/server.js`

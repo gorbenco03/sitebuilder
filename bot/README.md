@@ -3,9 +3,9 @@
 Authority: `../VISION.md` is the synchronized source of truth for product scope and
 commercial rules; this file documents the operator/ops surface and defers to it on conflict.
 
-Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers complete **payment before first public publish** in the builder as a **Stripe subscription with a 7-day trial** (**card required**) — site is **live immediately after a valid card**. There is no unpaid free live window and no second Telegram checkout/deploy happy path.
+Commercial product is the **browser builder** (`/app/` on the same process). Telegram is acquisition / guided intake that creates or opens the **same** unpaid draft in that editor. Customers complete **payment before first public publish** in the builder as a **Stripe subscription with a 14-day trial** (**card required**) — site is **live immediately after a valid card**. There is no unpaid free live window and no second Telegram checkout/deploy happy path.
 
-Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 7 unless cancelled); **renewal 29** in the same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
+Public name: **Hidook Site Builder**. Pricing authority: `bot/pricing.js` — after trial, **99 EUR / 99 GBP / 99 USD** by country bucket (auto-charged on day 14 unless cancelled); **renewal 29** in the same currency / year via **subscription schedule**. Cancel during trial **unpublishes** the live site. Do not hardcode legacy `BUILD_FEE_EUR=49` as the commercial price. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 ## Surfaces
 
@@ -39,9 +39,9 @@ Step-by-step: business name, slogan, about, products/services, optional socials/
 
 1. Open builder → pick design → replace copy/images → preview.
 2. Sign in (magic link when email is configured).
-3. Start **Stripe subscription checkout** — **7-day trial**, **card required** (`pricing.js` amounts).
+3. Start **Stripe subscription checkout** — **14-day trial**, **card required** (`pricing.js` amounts).
 4. Site goes **live immediately after a valid card**; first **public** production publish is allowed on trial/card-on-file status.
-5. After day 7, Stripe **auto-charges 99** unless cancelled; edit + republish; renew at **29** / year via subscription schedule.
+5. After day 14, Stripe **auto-charges 99** unless cancelled; edit + republish; renew at **29** / year via subscription schedule.
 6. Cancel during trial → live site **unpublished** (no charge).
 
 Local/staging may use test Stripe and `HIDOOK_FAKE_DEPLOY=1` (refused when `NODE_ENV=production`). Fake deploy is not the client journey.

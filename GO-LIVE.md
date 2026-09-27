@@ -17,9 +17,9 @@ on conflict), [`PRODUCT.md`](PRODUCT.md) (product contract), [`ARCHITECTURE.md`]
 
 1. Customer opens the builder → picks one of five designs → edits copy and photos.
 2. Signs in with a **magic link** sent by email (no password).
-3. Starts a **Stripe subscription** with a **7-day trial** (**card required**).
+3. Starts a **Stripe subscription** with a **14-day trial** (**card required**).
 4. Their site goes **live immediately after a valid card** (trial period; no charge yet).
-5. If they do not cancel, Stripe **auto-charges 99** (EUR / GBP / USD by country bucket) after day 7.
+5. If they do not cancel, Stripe **auto-charges 99** (EUR / GBP / USD by country bucket) after day 14.
 6. They come back, edit, republish. **Renewal is 29/year** in the same currency via a
    **subscription schedule**. Cancel during trial **unpublishes** the live site (no charge).
 
@@ -35,7 +35,7 @@ builder — not a one-time charge before go-live, and not an unpaid free live wi
 
 | Service | What for | Cost |
 |---|---|---|
-| **Stripe** | Subscription checkout (7-day trial), first-year **99** charge, **29**/year renewal schedule, Customer Portal | % per transaction |
+| **Stripe** | Subscription checkout (14-day trial), first-year **99** charge, **29**/year renewal schedule, Customer Portal | % per transaction |
 | **Resend** | Magic-link sign-in emails + receipts | Free tier available |
 | **Cloudflare** | Hosting the customer sites you publish | Pages free tier is generous |
 | A host (**Railway**, Fly, Render, a VPS…) | Running this app itself, 24/7 | ~$5–20/mo |
@@ -71,7 +71,7 @@ prerequisite, not a technical one, but it blocks going live just as hard.
 Commercial **amounts** are **not** free-form env prices. Cents come from
 [`bot/pricing.js`](bot/pricing.js): **99** first-year charge after trial, **29**/year
 renewal, bucketed EUR (EU) / GBP (UK) / USD (rest). Leave any legacy `BUILD_FEE_*`
-override unset. Checkout is a **subscription with a 7-day trial** (card required;
+override unset. Checkout is a **subscription with a 14-day trial** (card required;
 site live during trial).
 
 ### 2.3 Required for customers to be able to sign in
@@ -213,7 +213,7 @@ checkout can succeed in Stripe while the product never goes live.
 3. Copy the endpoint's **Signing secret** (`whsec_…`) into `STRIPE_WEBHOOK_SECRET`.
 4. Set `PAYMENT_PROVIDER=stripe`.
 5. **Subscription trial (default in code):** Checkout uses `mode=subscription` and a
-   **7-day** trial. Optional catalog Price ids (create Product/Price in Dashboard when
+   **14-day** trial. Optional catalog Price ids (create Product/Price in Dashboard when
    you are ready — not required for test/local inline `price_data`):
    - First year: `STRIPE_PRICE_ID_EUR` / `STRIPE_PRICE_ID_GBP` / `STRIPE_PRICE_ID_USD`
      or fallback `STRIPE_PRICE_ID`

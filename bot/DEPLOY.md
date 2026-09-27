@@ -14,12 +14,12 @@ Telegram long-polling — keep replicas at 1, one poller per token).
 
 One process serves:
 
-- **Browser builder** (commercial product): static UI under `/app/*`, account/API, **payment before public publish** via Stripe **subscription + 7-day card trial**
+- **Browser builder** (commercial product): static UI under `/app/*`, account/API, **payment before public publish** via Stripe **subscription + 14-day card trial**
 - **Telegram bot**: long-polling intake that opens the **same** unpaid draft in the builder (not a second checkout/deploy state machine)
 
 Telegram long-polling needs no public URL for polling itself; the HTTP server still needs a public URL for webhooks, magic links, and the builder. Railway runs the `Dockerfile` at the repo root.
 
-**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket after the trial (auto-charged on day 7 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. **Card required**; site **live immediately after a valid card**. Cancel during trial **unpublishes**. No unpaid free live window. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
+**Product:** Hidook Site Builder. **Pricing source:** `bot/pricing.js` — **99 EUR / 99 GBP / 99 USD** by country bucket after the trial (auto-charged on day 14 unless cancelled); **renewal 29** same currency / year via **subscription schedule**. **Card required**; site **live immediately after a valid card**. Cancel during trial **unpublishes**. No unpaid free live window. Owner owns live Stripe Product/Prices, Customer Portal, and refunds.
 
 ## 1. Push the repo to GitHub
 
@@ -67,13 +67,13 @@ Railway deploys from a Git repo. Ensure the repo (with `Dockerfile`) is on GitHu
 
 Commercial amounts are **not** `BUILD_FEE_EUR` default 49. Operators should leave fee overrides unset and rely on **`bot/pricing.js`**:
 
-| | After 7-day card trial | Renewal (subscription schedule) |
+| | After 14-day card trial | Renewal (subscription schedule) |
 |---|---|---|
 | EU → EUR | **99** | **29** / year |
 | UK → GBP | **99** | **29** / year |
 | Rest → USD | **99** | **29** / year |
 
-Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “sites are published immediately for free” model. Drafts without a card stay non-public; **payment before first public publish** is the **7-day card-required subscription trial** (live immediately after a valid card). Cancel during trial unpublishes.
+Do **not** set `TRIAL_DAYS` for a free live publish window. There is **no** “sites are published immediately for free” model. Drafts without a card stay non-public; **payment before first public publish** is the **14-day card-required subscription trial** (live immediately after a valid card). Cancel during trial unpublishes.
 
 ### Test-only (never production)
 

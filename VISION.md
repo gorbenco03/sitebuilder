@@ -16,7 +16,7 @@ Un străin trebuie să poată:
 4. vedea preview clar;
 5. crea cont / intra în cont;
 6. introduce card test în staging;
-7. porni trialul de 7 zile;
+7. porni trialul de 14 zile;
 8. avea site live imediat după card valid;
 9. reveni, edita și republica;
 10. anula în trial fără taxare;
@@ -29,15 +29,17 @@ Un străin trebuie să poată:
 
 Decizia owner ulterioară specului Opus suprascrie lista inițială „one-time 99 USD / 30 dacă deployăm noi”. Modelul curent este:
 
-- **Stripe subscription cu trial de 7 zile.**
+- **Stripe subscription cu trial de 14 zile.**
 - **Card obligatoriu** la începutul trialului.
 - Site-ul devine **live/public imediat** după card valid.
-- Dacă userul nu anulează, se taxează automat în ziua 7.
+- Dacă userul nu anulează, se taxează automat în ziua 14.
 - Preț start: **99** în bucket-ul clientului: EUR pentru UE, GBP pentru UK, USD pentru restul lumii.
 - Renewal: **29/an** în aceeași monedă, necondiționat.
 - Nu promite hosting permanent dintr-o plată unică.
 - Owner creează Stripe live Product/Prices, policy de refund/cancellation și Customer Portal în producție.
 - Studio implementează test/staging/env templates/runbook până în punctul unde rămân doar secretele și producția.
+
+**Confirmare owner 2026-09-27 (audit remediere):** modelul de mai sus rămâne cel curent — landing-ul (`/app/`) și restul funnel-ului (fereastră de publicare, dashboard, facturi) trebuie să arate explicit reînnoirea de **29/an**, nu „o singură plată”/„fără abonament”, și trebuie să afișeze simbolul de monedă (€/£/$) lângă preț, nu doar cifra goală. Corecția de cod (landing + `builder/app.js`) e task separat (`R-01`/`R-16`, `PLAN-AUDIT-2026-09-27.md`); acest fișier nu s-a schimbat de model, doar confirmă ce era deja scris mai sus.
 
 ## 3. Șabloane și design
 
@@ -153,6 +155,8 @@ Owner trebuie să furnizeze înainte de producție:
 - jurisdicție și text legal final.
 
 Nu se livrează la clienți plătitori cu text legal inventat.
+
+**Decizie owner 2026-09-27 — autoservire GDPR (țintă, nu implementat încă):** clientul autentificat trebuie să găsească, din contul lui în produsul browser (nu doar din Telegram, care e înghețat), două acțiuni: **descarcă datele mele** (export) și **șterge contul** (ștergere completă, ireversibilă). Scopul confirmat de owner e amândouă, nu doar exportul. Implementare: task `R-27` (`PLAN-AUDIT-2026-09-27.md`, Val 4), condiționată în continuare de textul legal final de mai sus (nume companie/CUI/subprocessors/jurisdicție).
 
 ## 6. Export / self-deploy
 
