@@ -21,7 +21,7 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 
 - `VISION.md` is the source of truth.
 - Browser builder is the commercial product. Telegram only creates/opens the same draft.
-- Current model: Stripe 7-day trial, card required, site live immediately, auto-charge day 7, price 99 EUR/GBP/USD bucket, renewal 29/year.
+- Current model: Stripe 14-day trial, card required, site live immediately, auto-charge day 14, price 99 EUR/GBP/USD bucket, renewal 29/year.
 - Template scope: **five** design systems total (`templates/registry.json`) — product-menu, local-service, portfolio, professionals, and the Desserdirina remake of the root bakery sample. Do not write "four" anywhere that counts templates; that miscount was an audit finding (docs medium #17) once fixed — don't reintroduce it.
 - Product language: Romanian for visible customer/site surfaces.
 - Every generated site template must include `Build by hidook.tech powered by hidook.agency` in a non-editable attribution.
