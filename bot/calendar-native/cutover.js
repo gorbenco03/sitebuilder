@@ -296,6 +296,35 @@ function seedTenantFromProfessionalConfig(db, customerId, siteId, config) {
 }
 
 /**
+ * Force native booking off in a config about to be rendered into an OFFLINE
+ * export (ZIP / standalone HTML). Publish already wrote
+ * appointment.nativeApiBase to the bot's own origin (applyCutoverToConfig,
+ * above), and an export reads that same saved config — so an "independent"
+ * export shipped a widget that kept quietly calling home to this customer's
+ * own Hidook account, forever, contrary to VISION §6 ("no requests to a
+ * Hidook domain to work"). Falls back to the local request-form branch
+ * template.html already renders whenever nativeBooking is off; that branch
+ * posts same-origin and already fails honestly with no backend behind it
+ * (see bot/test/wave5-professionals-mobile-nav-and-export.test.js).
+ *
+ * Never mutates the caller's config. A no-op (returns an equivalent clone)
+ * when nativeBooking was never on.
+ *
+ * @param {object} config
+ * @returns {object} new config
+ */
+function disableNativeBookingForExport(config) {
+    const cfg = JSON.parse(JSON.stringify(config || {}));
+    if (!cfg.appointment || typeof cfg.appointment !== 'object') return cfg;
+    if (!isNativeBookingEnabled(cfg.appointment.nativeBooking)) return cfg;
+    cfg.appointment.nativeBooking = false;
+    cfg.appointment.nativeApiBase = '';
+    cfg.appointment.nativeCustomerId = '';
+    cfg.appointment.nativeSiteId = '';
+    return cfg;
+}
+
+/**
  * Full publish-time cutover: inject ids into config + seed engine when opted in.
  * When opted out, only clears injected ids (engine data retained).
  *
@@ -325,6 +354,7 @@ module.exports = {
     configHasNativeBooking,
     resolveNativeApiBase,
     applyCutoverToConfig,
+    disableNativeBookingForExport,
     seedTenantFromProfessionalConfig,
     preparePublishCutover,
     parseHmToMinute,
