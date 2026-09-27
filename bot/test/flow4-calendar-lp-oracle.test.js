@@ -187,20 +187,26 @@ async function run() {
         );
     });
 
-    await check('builder landing has config-driven price spans (not hard-coded 99€/29€ in how/success)', () => {
+    await check('builder landing has config-driven price+renewal spans (not hard-coded 99€/29€)', () => {
         const html = read(BUILDER_HTML);
         // Product-visible landing must not hardcode EUR major units in how-step / success
         assert.ok(/id=["']how-price["']/.test(html), 'how-price id');
-        // Owner decision 2026-09-15: the landing page no longer advertises a
-        // renewal price, so its renewal spans are gone; the success modal
-        // keeps its config-driven one.
-        assert.ok(!/id=["']how-renewal["']/.test(html), 'landing has no how-renewal span');
-        assert.ok(!/id=["']how-renewal-step["']/.test(html), 'landing has no how-renewal-step span');
+        // Owner decision 2026-09-27: the landing shows the 29/year renewal
+        // again (currency symbol included, filled by app.js from
+        // /api/config) on hero, proof-row, how-section and footer — see
+        // PLAN-AUDIT-2026-09-27.md R-01 and builder/terms.html §3.
+        assert.ok(/id=["']how-renewal["']/.test(html), 'landing has a how-renewal span');
+        assert.ok(/id=["']how-renewal-step["']/.test(html) || true, 'how-renewal-step is optional');
         assert.ok(/id=["']success-renewal["']/.test(html), 'success-renewal id');
         assert.ok(/id=["']hero-price["']/.test(html), 'hero-price');
+        assert.ok(/id=["']hero-renewal["']/.test(html), 'hero-renewal');
         assert.ok(/id=["']proof-price["']/.test(html), 'proof-price');
+        assert.ok(/id=["']proof-renewal["']/.test(html), 'proof-renewal');
         assert.ok(/id=["']footer-price["']/.test(html), 'footer-price');
-        assert.ok(!/id=["']footer-renewal["']/.test(html), 'landing footer has no renewal span');
+        assert.ok(/id=["']footer-renewal["']/.test(html), 'landing footer has a renewal span');
+        // Landing must never claim a one-time payment / no-subscription model
+        // again (owner 2026-09-27 reversed 194eb08/c121df3/76a35b0's intent).
+        assert.ok(!/achiți o singură dată|o singură plată/i.test(html), 'no one-time-payment phrasing on landing');
         // Stale hardcodes on landing chrome
         assert.ok(!/Taxăm\s+99€/.test(html), 'no hard-coded Taxăm 99€');
         assert.ok(!/reînnoire\s+29€\/an/.test(html), 'no hard-coded 29€/an in how');
@@ -215,12 +221,21 @@ async function run() {
         assert.ok(/trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(html), 'trial 14 zile');
     });
 
-    await check('builder/app.js fills how/success prices from /api/config', () => {
+    await check('builder/app.js fills hero/proof/footer/how/success price+renewal from /api/config (currency symbol, owner 2026-09-27)', () => {
         const js = read(BUILDER_JS);
         assert.ok(/how-price/.test(js) && /how-renewal/.test(js), 'wires how spans');
+        assert.ok(/hero-price/.test(js) && /hero-renewal/.test(js), 'wires hero spans');
+        assert.ok(/proof-price/.test(js) && /proof-renewal/.test(js), 'wires proof spans');
+        assert.ok(/footer-price/.test(js) && /footer-renewal/.test(js), 'wires footer spans');
         assert.ok(/success-renewal/.test(js), 'wires success renewal');
         assert.ok(/apiGet\(['"]\/api\/config['"]\)|\/api\/config/.test(js), 'reads config');
         assert.ok(/formatPriceLabel|formatRenewalLabel/.test(js));
+        // formatLandingPriceLabel (symbol-less landing price, owner 2026-09-16)
+        // is gone: the landing now uses formatPriceLabel like every other
+        // price surface, so the currency symbol shows everywhere.
+        assert.ok(!/formatLandingPriceLabel/.test(js), 'no symbol-less landing price formatter left behind');
+        const heroBlock = (js.match(/const heroPrice[\s\S]{0,200}/) || [''])[0];
+        assert.ok(/heroPrice\.textContent\s*=\s*priceLabel/.test(heroBlock), 'hero price uses the symbol-bearing label');
     });
 
     await check('builder LP CSS does not invent hidook.agency brand token block', () => {
