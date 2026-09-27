@@ -80,4 +80,53 @@ async function sendMagicLink(email, url) {
     return { sent: true };
 }
 
-module.exports = { sendMagicLink };
+/**
+ * Generic Resend send, sharing the endpoint/RESEND_API_KEY/EMAIL_FROM this
+ * file already uses for the magic link — so a second feature (calendar-native
+ * email, CAL-N-02) that wants real delivery does not open its own copy of
+ * this fetch call. Throws on a missing key or a non-2xx response; the caller
+ * decides how to log/fall back (see calendar-native/email/provider.js).
+ *
+ * @param {{ to: string, subject: string, html: string, text: string, attachments?: Array<{filename: string, content: string}> }} message
+ * @returns {Promise<{ sent: true }>}
+ */
+async function sendResendEmail(message) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        const err = new Error('RESEND_API_KEY not set');
+        err.code = 'NO_API_KEY';
+        throw err;
+    }
+
+    const from = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const payload = {
+        from,
+        to: message.to,
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+    };
+    if (message.attachments && message.attachments.length) {
+        payload.attachments = message.attachments;
+    }
+
+    const res = await fetch(RESEND_API, {
+        method:  'POST',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type':  'application/json',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+        const bodyText = await res.text().catch(() => '');
+        const err = new Error(`Resend API error ${res.status}: ${bodyText.slice(0, 200)}`);
+        err.code = 'RESEND_HTTP_' + res.status;
+        throw err;
+    }
+
+    return { sent: true };
+}
+
+module.exports = { sendMagicLink, sendResendEmail, RESEND_API };

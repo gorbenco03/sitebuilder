@@ -314,6 +314,17 @@
         box.appendChild(el('p', 'hnb__result-hint',
           'Intervalul ales nu a putut fi confirmat automat. Status: în așteptare. Nu e o confirmare falsă.'));
       }
+      // Fallback for when email delivery is not armed (CAL-N-02): the same
+      // token the email would carry, shown here too, not only mailed.
+      if (payload.manageToken) {
+        var manageP = el('p', 'hnb__result-hint', '');
+        manageP.appendChild(document.createTextNode('Salvează acest link ca să-ți gestionezi programarea: '));
+        var manageA = document.createElement('a');
+        manageA.href = '/calendar-native/manage/?token=' + encodeURIComponent(payload.manageToken);
+        manageA.textContent = 'Gestionează programarea';
+        manageP.appendChild(manageA);
+        box.appendChild(manageP);
+      }
       root.appendChild(box);
       setStep(3);
     }
