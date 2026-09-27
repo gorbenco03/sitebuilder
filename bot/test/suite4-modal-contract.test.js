@@ -113,11 +113,20 @@ if (!chromium) throw new Error('playwright not found; install or link node_modul
 const VIEWPORT = { width: 390, height: 844 };
 const MIN_CLOSE = 44;
 
-async function displayOf(page, id) {
-  return page.evaluate((elId) => {
-    const el = document.getElementById(elId);
-    return el ? getComputedStyle(el).display : 'MISSING';
-  }, id);
+// Polls the real DOM state instead of sleeping a fixed duration — under
+// concurrent system load a close animation/handler can legitimately take
+// longer than any fixed sleep would allow, which used to read as "did not
+// close" (a false fail) or leave the modal open to block the next check's
+// click (a hang). waitFor's own polling absorbs that variance; it returns
+// as soon as the real condition is true instead of always waiting the full
+// timeout.
+async function waitForClosed(page, id, timeout = 5000) {
+  try {
+    await page.locator('#' + id).waitFor({ state: 'hidden', timeout });
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 async function focusableCountIn(page, id) {
@@ -202,8 +211,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
 
       // 3) Escape.
       await page.keyboard.press('Escape');
-      await page.waitForTimeout(150);
-      const escCloses = (await displayOf(page, modalId)) === 'none';
+      const escCloses = await waitForClosed(page, modalId, 5000);
       if (!escCloses) failures.push(`${name}: Escape did not close the modal`);
       if (escCloses) {
         if (triggerHandle) await triggerHandle.dispose().catch(() => {});
@@ -220,8 +228,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
         if (!hasAttr) failures.push(`${name}: declared as a backdrop-close exception but is missing the data-no-backdrop-close attribute`);
       } else {
         await page.mouse.click(4, 4);
-        await page.waitForTimeout(150);
-        const backdropCloses = (await displayOf(page, modalId)) === 'none';
+        const backdropCloses = await waitForClosed(page, modalId, 5000);
         if (!backdropCloses) failures.push(`${name}: clicking the backdrop did not close the modal`);
         if (backdropCloses) {
           if (triggerHandle) await triggerHandle.dispose().catch(() => {});
@@ -232,9 +239,23 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
 
       // 5) Guaranteed close via X (whatever state the modal is in after the
       // checks above) + focus-return check against the trigger captured
-      // by the most recent openFn() call.
+      // by the most recent openFn() call. This step is cleanup, not a
+      // contract assertion — but the *next* contractCheck's openFn() clicks
+      // a trigger button elsewhere on the page, and a still-open modal-box
+      // intercepts that click until Playwright's own actionability timeout,
+      // which used to surface as an unrelated "hang" on the next modal
+      // under load rather than as a failure here. A generous wait (real
+      // condition, not a fixed sleep) absorbs slow-machine variance; the
+      // forced hide below is a last-resort isolation guarantee so one
+      // modal's close animation can never block a later, unrelated check.
       await page.locator('#' + closeBtnId).click({ force: true, timeout: 5000 }).catch(() => {});
-      await page.locator('#' + modalId).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      const closedViaX = await waitForClosed(page, modalId, 10000);
+      if (!closedViaX) {
+        await page.evaluate((id) => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        }, modalId).catch(() => {});
+      }
       if (triggerHandle && !opts.skipRefocusCheck) {
         const refocused = await page.evaluate((el) => document.activeElement === el, triggerHandle).catch(() => false);
         if (!refocused) failures.push(`${name}: focus did not return to the trigger element after the modal closed`);
@@ -321,8 +342,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
 
     // Backdrop close, on the real (checkout-opened) instance.
     await page.mouse.click(4, 4);
-    await page.waitForTimeout(150);
-    const successBackdropCloses = (await displayOf(page, 'modal-success')) === 'none';
+    const successBackdropCloses = await waitForClosed(page, 'modal-success', 5000);
     if (!successBackdropCloses) failures.push('success: clicking the backdrop did not close the modal');
 
     // Escape + focus-return checks reuse the exact function the real
@@ -330,13 +350,20 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await page.evaluate(() => openModal('modal-success'));
     await page.locator('#modal-success').waitFor({ state: 'visible' });
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(150);
-    const successEscCloses = (await displayOf(page, 'modal-success')) === 'none';
+    const successEscCloses = await waitForClosed(page, 'modal-success', 5000);
     if (!successEscCloses) failures.push('success: Escape did not close the modal');
     if (!successEscCloses) {
       await page.locator('#btn-close-success').click({ force: true }).catch(() => {});
     }
-    await page.locator('#modal-success').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    // Guaranteed isolation for the dashboard checks that follow — same
+    // reasoning as contractCheck's own step 5 above.
+    const successClosed = await waitForClosed(page, 'modal-success', 10000);
+    if (!successClosed) {
+      await page.evaluate(() => {
+        const el = document.getElementById('modal-success');
+        if (el) el.style.display = 'none';
+      }).catch(() => {});
+    }
 
     // -----------------------------------------------------------------
     // Dashboard modals: Istoric, Domeniu, Facturi, Șterge — same site,

@@ -33,7 +33,6 @@ const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping
 const R8_PARENT_SHA = '56f7de08c909807320707d02f0d6140139abf2be'; // retained legal scroll + process copy
 const R10_PARENT_SHA = 'fa6f80c9fd005a2f8a89cf58cb758ded30708295'; // deferred ready commit crosses generations
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-const BRAVE = '/Applications/Brave Browser.app/Contents/MacOS/Brave Browser';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 
 const SERVER_SECRET = 'flow3-server-secret-' + crypto.randomBytes(8).toString('hex');
@@ -589,7 +588,7 @@ function unzipStore(zipBuf, destDir) {
             });
             try {
                 const staticPort = staticServer.address().port;
-                await withBrave(async (browser) => {
+                await withBrowser(async (browser) => {
                     const page = await browser.newPage();
                     const requests = [];
                     const notFound = [];
@@ -749,8 +748,8 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/\/app\/privacy\.html/.test(res.bodyText), 'builder privacy link');
         });
 
-        await check('HEAD Brave: Salon first trusted Accept works after Mobile → Desktop once generated controls report ready', async () => {
-            await withBrave(async (browser) => {
+        await check('HEAD: Salon first trusted Accept works after Mobile → Desktop once generated controls report ready', async () => {
+            await withBrowser(async (browser) => {
                 const context = await browser.newContext();
                 try {
                     const page = await context.newPage();
@@ -791,8 +790,8 @@ function unzipStore(zipBuf, destDir) {
             });
         });
 
-        await check('HEAD Brave: catalog and editor previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
-            await withBrave(async (browser) => {
+        await check('HEAD: catalog and editor previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
+            await withBrowser(async (browser) => {
                 const context = await browser.newContext({ acceptDownloads: true });
                 const page = await context.newPage();
                 await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
@@ -940,7 +939,11 @@ function unzipStore(zipBuf, destDir) {
                 let unpaidDownloadStarted = false;
                 page.once('download', () => { unpaidDownloadStarted = true; });
                 await page.click('#btn-download-zip');
-                await page.waitForFunction(() => /Activează trialul de 7 zile/.test(document.getElementById('toast').textContent));
+                // 14-day trial (commit 2f1bb95); this oracle only started
+                // actually exercising this Playwright path once the
+                // hard-coded Brave-only loadPlaywright() above was fixed —
+                // it had been silently inert on machines without Brave.
+                await page.waitForFunction(() => /Activează trialul de 14 zile/.test(document.getElementById('toast').textContent), null, { timeout: 10000 });
                 await page.waitForTimeout(250);
                 assert.strictEqual(unpaidDownloadStarted, false, 'unpaid browser export starts no download');
 
@@ -1011,20 +1014,30 @@ function unzipStore(zipBuf, destDir) {
     }
 
 
-    // ── Brave/Playwright causal click probes ─────────────────────────────
+    // ── Playwright causal click probes ─────────────────────────────
     // Sandboxed srcdoc iframes without allow-same-origin block parent
     // contentDocument access. Drive clicks via Playwright frame handles (CDP).
     function loadPlaywright() {
-        return require(PW_PATH);
+        // Bundled Chromium from the repo's own node_modules first (portable —
+        // works on any machine with `npm install` run), then the two absolute
+        // fallbacks other oracles in this suite use. Never require a specific
+        // installed browser (e.g. Brave): that only exists on one machine.
+        const candidates = [
+            path.join(ROOT, 'node_modules', 'playwright'),
+            '/Users/Work/Desktop/sitebuilder/node_modules/playwright',
+            PW_PATH,
+        ];
+        for (const cand of candidates) {
+            try {
+                return require(cand);
+            } catch (_) {}
+        }
+        throw new Error('playwright not found in any candidate location');
     }
 
-    async function withBrave(fn) {
-        assert.ok(fs.existsSync(BRAVE), 'Brave binary missing at ' + BRAVE);
+    async function withBrowser(fn) {
         const { chromium } = loadPlaywright();
-        const browser = await chromium.launch({
-            headless: true,
-            executablePath: BRAVE,
-        });
+        const browser = await chromium.launch({ headless: true });
         try {
             return await fn(browser);
         } finally {
@@ -1135,8 +1148,8 @@ function unzipStore(zipBuf, destDir) {
         assert.ok(!/owner-gated|owner-ului/i.test(t), which + ' no owner-gated jargon');
     }
 
-    await check('causal RED: data:text/html target=_blank legal click does not open a page in Brave', async () => {
-        await withBrave(async (browser) => {
+    await check('causal RED: data:text/html target=_blank legal click does not open a page in Chromium', async () => {
+        await withBrowser(async (browser) => {
             const page = await browser.newPage();
             const legalHtml =
                 '<!DOCTYPE html><html lang="ro"><body><main class="hb-legal"><h1>Politica de confidențialitate</h1><p>' +
@@ -1180,7 +1193,7 @@ function unzipStore(zipBuf, destDir) {
         });
     });
 
-    await check('HEAD Brave: catalog + editor preview legal clicks open generated RO pages for all five templates', async () => {
+    await check('HEAD: catalog + editor preview legal clicks open generated RO pages for all five templates', async () => {
         execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
             cwd: ROOT,
             stdio: ['ignore', 'ignore', 'pipe'],
@@ -1190,7 +1203,7 @@ function unzipStore(zipBuf, destDir) {
         vm.runInNewContext(engineSrc, sandbox);
         const engine = sandbox.window.HidookEngine;
 
-        await withBrave(async (browser) => {
+        await withBrowser(async (browser) => {
             for (const id of TPLS) {
                 const dir = path.join(ROOT, 'templates', id);
                 const files = {
