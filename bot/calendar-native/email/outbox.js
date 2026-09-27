@@ -24,7 +24,12 @@ function newId(prefix) {
 let defaultTransport = null;
 
 function getTransport() {
-    if (!defaultTransport) defaultTransport = createTransport('local-memory');
+    // No name pinned here: createTransport() reads CALENDAR_EMAIL_TRANSPORT
+    // itself (falling back to local-memory when unset) — pinning 'local-memory'
+    // here, as before, silently ignored that env var everywhere in production
+    // (calendar-native#2). Explicit setTransport()/resetTransport() calls
+    // (tests) are unaffected — they replace this singleton outright.
+    if (!defaultTransport) defaultTransport = createTransport();
     return defaultTransport;
 }
 

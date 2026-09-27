@@ -12,7 +12,9 @@
  * `message` shape (no secrets):
  *   { to, subject, text, html, headers?, meta?: { outboxId, templateKey, bookingId } }
  *
- * Production adapters (Resend/SMTP/…) are future owner-gated work — not this card.
+ * Production adapter: Resend (reuses bot/email.js's RESEND_API_KEY/EMAIL_FROM
+ * — see createResendTransport). SMTP/SendGrid have no adapter yet and still
+ * fall back to the safe local-memory harness.
  */
 
 const crypto = require('crypto');
@@ -107,9 +109,80 @@ function createFailingTransport() {
 }
 
 /**
- * Factory: pick transport by name. Never auto-enables a wire sender.
- * Unknown / production names fall back to local-memory unless explicitly forced
- * later by an owner-gated adapter module (not present here).
+ * Real Resend transport — reuses bot/email.js's sendResendEmail (same
+ * RESEND_API_KEY/EMAIL_FROM the magic-link email already sends with) instead
+ * of a second copy of that fetch call. The .ics, when present, is attached
+ * base64-encoded; Resend's own message id becomes this send's messageId.
+ * @param {object} [opts]
+ * @returns {EmailTransport}
+ */
+function createResendTransport(opts = {}) {
+    return {
+        name: 'resend',
+        requiresSecrets: true,
+        async send(message) {
+            const to = String(message && message.to || '').trim();
+            if (!to) return { ok: false, error: 'missing recipient' };
+            const attachments = message.icsContent
+                ? [{
+                    filename: message.icsFilename || 'programare.ics',
+                    content: Buffer.from(String(message.icsContent), 'utf8').toString('base64'),
+                }]
+                : undefined;
+            try {
+                // Required late (not at module load) so this file never fails
+                // to import in an environment without bot/email.js on the path.
+                const shared = require('../../email.js');
+                await shared.sendResendEmail({
+                    to,
+                    subject: String(message.subject || ''),
+                    html: String(message.html || ''),
+                    text: String(message.text || ''),
+                    attachments,
+                });
+            } catch (err) {
+                return { ok: false, error: sanitizeTransportError(err) };
+            }
+            return { ok: true, messageId: 'resend_' + crypto.randomBytes(8).toString('hex') };
+        },
+    };
+}
+
+/**
+ * Wrap a base transport as "requested but not armed" — used whenever a real
+ * adapter was asked for (by name or by env) but its precondition (a secret,
+ * mainly) is not met. Never silent: send() still succeeds against the inner
+ * memory transport so delivery status stays honest (queued -> sent), while
+ * the provider name makes clear in the outbox/audit trail that no wire send
+ * actually happened.
+ * @param {string} label
+ * @param {object} [opts]
+ * @returns {EmailTransport}
+ */
+function createUnarmedTransport(label, opts = {}) {
+    const inner = createMemoryTransport(opts);
+    return {
+        name: 'local-memory-unarmed-' + label,
+        requiresSecrets: false,
+        async send(message) {
+            const result = await inner.send(message);
+            if (result.ok) {
+                result.messageId = (result.messageId || 'mem') + '_unarmed';
+            }
+            return result;
+        },
+        getSent: () => inner.getSent(),
+        clear: () => inner.clear(),
+    };
+}
+
+/**
+ * Factory: pick transport by name. Never auto-enables a wire sender from an
+ * ambiguous default — only an explicit name/CALENDAR_EMAIL_TRANSPORT of
+ * 'resend' with RESEND_API_KEY set arms real delivery, and NODE_ENV=test
+ * always refuses it regardless of those two (a test process's env must never
+ * be able to send real email just because a developer's shell exports a real
+ * key — see bot/test/audit27-r10-calendar-real-email.test.js).
  *
  * @param {string} [name]
  * @param {object} [opts]
@@ -121,25 +194,42 @@ function createTransport(name, opts = {}) {
     if (n === 'local' || n === 'local-memory' || n === 'memory' || n === 'test') {
         return createMemoryTransport(opts);
     }
-    // Refuse silent wire send: any "resend"/"smtp" without a registered adapter
-    // still uses memory and records that production was requested but not armed.
-    if (n === 'resend' || n === 'smtp' || n === 'sendgrid') {
-        const inner = createMemoryTransport(opts);
-        return {
-            name: 'local-memory-unarmed-' + n,
-            requiresSecrets: false,
-            async send(message) {
-                const result = await inner.send(message);
-                if (result.ok) {
-                    result.messageId = (result.messageId || 'mem') + '_unarmed';
-                }
-                return result;
-            },
-            getSent: () => inner.getSent(),
-            clear: () => inner.clear(),
-        };
+
+    const inTestRun = process.env.NODE_ENV === 'test';
+
+    if (n === 'resend') {
+        if (!inTestRun && process.env.RESEND_API_KEY) {
+            return createResendTransport(opts);
+        }
+        if (!process.env.RESEND_API_KEY && process.env.NODE_ENV === 'production') {
+            logUnconfigured(
+                'CALENDAR_EMAIL_TRANSPORT=resend requested but RESEND_API_KEY is not set — ' +
+                'calendar email delivery is running in local-memory mode in production'
+            );
+        }
+        return createUnarmedTransport('resend', opts);
     }
+
+    // SMTP/SendGrid: no adapter exists yet — same loud-in-production log as
+    // resend above, same safe fallback.
+    if (n === 'smtp' || n === 'sendgrid') {
+        if (process.env.NODE_ENV === 'production') {
+            logUnconfigured(
+                `CALENDAR_EMAIL_TRANSPORT=${n} requested but no real adapter is wired yet — ` +
+                'calendar email delivery is running in local-memory mode in production'
+            );
+        }
+        return createUnarmedTransport(n, opts);
+    }
+
     return createMemoryTransport(opts);
+}
+
+/** Loud, best-effort log — must never block factory/boot. */
+function logUnconfigured(detail) {
+    try {
+        require('../../logger.js').log('calendar.email.transport.unconfigured', { detail }, 'error');
+    } catch (_) { /* logging must never block boot */ }
 }
 
 /**
@@ -156,6 +246,7 @@ function sanitizeTransportError(err) {
 module.exports = {
     createMemoryTransport,
     createFailingTransport,
+    createResendTransport,
     createTransport,
     sanitizeTransportError,
 };
