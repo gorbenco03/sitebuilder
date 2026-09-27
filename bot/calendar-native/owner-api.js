@@ -812,7 +812,22 @@ function deleteOwnerService(db, customerId, siteId, serviceId) {
 
 function putOwnerSettings(db, customerId, siteId, body) {
     const patch = {};
-    if (body && body.timezone) patch.timezone = String(body.timezone).slice(0, 64);
+    // calendar-native#1 (audit 2026-09-27) — this was the only settings
+    // field the dashboard never let an owner set at all, so it never had a
+    // clean-400 guard either: a typo (or a value copy-pasted from the wrong
+    // place) went straight into calendar_settings and only broke, silently,
+    // the next time engine.js asked Intl for that zone's offset. Reject it
+    // here instead, the same way every numeric field below already does.
+    if (body && body.timezone != null && String(body.timezone).trim() !== '') {
+        const tz = String(body.timezone).trim().slice(0, 64);
+        try {
+            // eslint-disable-next-line no-new
+            new Intl.DateTimeFormat('en-US', { timeZone: tz });
+        } catch (_) {
+            return { error: 'Fus orar necunoscut. Folosește un nume IANA valid (ex. Europe/Bucharest).', code: 'VALIDATION', status: 400 };
+        }
+        patch.timezone = tz;
+    }
     // Every numeric field below is validated here (not left to the schema's
     // own CHECK constraints) so an out-of-range value always comes back as a
     // clean 400 with a specific Romanian message instead of a generic 500

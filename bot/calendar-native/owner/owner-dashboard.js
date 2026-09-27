@@ -16,6 +16,38 @@
     { n: 7, label: 'Duminică' },
   ];
 
+  // calendar-native#1 (audit 2026-09-27) — suggestions only, the field
+  // underneath accepts any IANA name the owner types (validated server-side
+  // by putOwnerSettings via Intl). Covers the zones a Romanian/Moldovan
+  // business or its EUR/GBP/USD customers are actually in.
+  var TIMEZONE_SUGGESTIONS = [
+    { v: 'Europe/Bucharest', label: 'Europe/Bucharest — România' },
+    { v: 'Europe/Chisinau', label: 'Europe/Chisinau — Moldova' },
+    { v: 'Europe/Sofia', label: 'Europe/Sofia — Bulgaria' },
+    { v: 'Europe/Athens', label: 'Europe/Athens — Grecia' },
+    { v: 'Europe/Kiev', label: 'Europe/Kiev — Ucraina' },
+    { v: 'Europe/Helsinki', label: 'Europe/Helsinki — Finlanda' },
+    { v: 'Europe/Istanbul', label: 'Europe/Istanbul — Turcia' },
+    { v: 'Europe/Berlin', label: 'Europe/Berlin — Germania' },
+    { v: 'Europe/Paris', label: 'Europe/Paris — Franța' },
+    { v: 'Europe/Madrid', label: 'Europe/Madrid — Spania' },
+    { v: 'Europe/Rome', label: 'Europe/Rome — Italia' },
+    { v: 'Europe/Amsterdam', label: 'Europe/Amsterdam — Olanda' },
+    { v: 'Europe/Vienna', label: 'Europe/Vienna — Austria' },
+    { v: 'Europe/Warsaw', label: 'Europe/Warsaw — Polonia' },
+    { v: 'Europe/Prague', label: 'Europe/Prague — Cehia' },
+    { v: 'Europe/Brussels', label: 'Europe/Brussels — Belgia' },
+    { v: 'Europe/Zurich', label: 'Europe/Zurich — Elveția' },
+    { v: 'Europe/Lisbon', label: 'Europe/Lisbon — Portugalia' },
+    { v: 'Europe/London', label: 'Europe/London — Marea Britanie' },
+    { v: 'Europe/Dublin', label: 'Europe/Dublin — Irlanda' },
+    { v: 'America/New_York', label: 'America/New_York — SUA (Est)' },
+    { v: 'America/Chicago', label: 'America/Chicago — SUA (Central)' },
+    { v: 'America/Denver', label: 'America/Denver — SUA (Munte)' },
+    { v: 'America/Los_Angeles', label: 'America/Los_Angeles — SUA (Pacific)' },
+    { v: 'UTC', label: 'UTC' },
+  ];
+
   function $(sel, root) {
     return (root || document).querySelector(sel);
   }
@@ -638,7 +670,7 @@
       html +=
         '<p class="hod-hint">Fus orar: ' +
         esc((state.settings && state.settings.timezone) || state.timezone) +
-        '. Zilele libere și orele speciale pe o dată anume înlocuiesc programul săptămânal.</p>';
+        ' (modifică din tab-ul Setări). Zilele libere și orele speciale pe o dată anume înlocuiesc programul săptămânal.</p>';
       html += '<ul class="hod-week">';
       WEEKDAYS.forEach(function (d) {
         var windows = byDay[d.n] || [];
@@ -1160,6 +1192,43 @@
       var s = state.settings || {};
       var html = '';
 
+      // calendar-native#1 (audit 2026-09-27) — fus orar, pasul intervalelor,
+      // fereastra de anulare și pauza implicită erau deja acceptate de
+      // putOwnerSettings și folosite de motor/widget-ul public, dar niciun
+      // ecran nu le expunea — owner-ul rămânea blocat pe valorile implicite.
+      html += '<div class="hod-card">';
+      html += '<h2>Fus orar și reguli de bază</h2>';
+      html +=
+        '<p class="hod-hint">Fusul orar se aplică orelor din Program săptămânal, excepțiilor și widget-ului public. Pasul intervalelor, fereastra de anulare și pauza implicită se aplică imediat pe site-ul public.</p>';
+      html += '<div class="hod-row2">';
+      html +=
+        '<div class="hod-field">Fus orar (IANA)<input type="text" data-hod-set-timezone list="hod-tz-list" autocomplete="off" value="' +
+        esc(s.timezone || 'Europe/Bucharest') +
+        '" /></div>';
+      html +=
+        '<div class="hod-field">Pasul intervalelor (minute)<input type="number" min="1" max="1440" step="5" data-hod-set-slot-interval value="' +
+        esc(s.slotIntervalMinutes != null ? s.slotIntervalMinutes : 30) +
+        '" /></div>';
+      html += '</div>';
+      html += '<div class="hod-row2">';
+      html +=
+        '<div class="hod-field">Fereastra minimă de anulare (ore)<input type="number" min="0" max="168" data-hod-set-min-cancel value="' +
+        esc(s.minCancelHours != null ? s.minCancelHours : 0) +
+        '" /></div>';
+      html +=
+        '<div class="hod-field">Pauza implicită între programări (minute)<input type="number" min="0" max="240" step="5" data-hod-set-default-buffer value="' +
+        esc(s.defaultBufferMinutes != null ? s.defaultBufferMinutes : 0) +
+        '" /></div>';
+      html += '</div>';
+      html += '<datalist id="hod-tz-list">';
+      TIMEZONE_SUGGESTIONS.forEach(function (tz) {
+        html += '<option value="' + esc(tz.v) + '">' + esc(tz.label) + '</option>';
+      });
+      html += '</datalist>';
+      html +=
+        '<button type="button" class="hod-btn" data-hod-save-base style="margin-top:10px">Salvează regulile calendarului</button>';
+      html += '</div>';
+
       html += '<div class="hod-card">';
       html += '<h2>Fereastră de rezervare</h2>';
       html +=
@@ -1202,10 +1271,76 @@
 
       panel.innerHTML = html;
 
+      var saveBase = $('[data-hod-save-base]', panel);
+      if (saveBase) saveBase.addEventListener('click', saveBaseRules);
       var saveWindow = $('[data-hod-save-window]', panel);
       if (saveWindow) saveWindow.addEventListener('click', saveBookingWindow);
       var saveReminders = $('[data-hod-save-reminders]', panel);
       if (saveReminders) saveReminders.addEventListener('click', saveReminderSettings);
+    }
+
+    /**
+     * calendar-native#1 (audit 2026-09-27) — fus orar, pasul intervalelor,
+     * fereastra de anulare și pauza implicită, validate inline cu aceleași
+     * limite pe care putOwnerSettings le impune și pe server (belt-and-
+     * suspenders, ca la saveBookingWindow/saveWeekly de mai sus).
+     */
+    async function saveBaseRules() {
+      var panel = $('[data-hod-panel="settings"]', root);
+      clearFieldErrors(panel);
+      var tzEl = $('[data-hod-set-timezone]', panel);
+      var slotEl = $('[data-hod-set-slot-interval]', panel);
+      var cancelEl = $('[data-hod-set-min-cancel]', panel);
+      var bufferEl = $('[data-hod-set-default-buffer]', panel);
+      var ok = true;
+
+      var timezone = tzEl.value.trim();
+      if (!timezone) {
+        showFieldError(tzEl, 'Fusul orar este obligatoriu.');
+        ok = false;
+      }
+
+      var slotInterval = Number(slotEl.value);
+      if (slotEl.value === '' || !Number.isFinite(slotInterval) || slotInterval <= 0 || slotInterval > 1440) {
+        showFieldError(slotEl, 'Trebuie să fie între 1 și 1440 de minute.');
+        ok = false;
+      }
+
+      var minCancel = Number(cancelEl.value);
+      if (cancelEl.value === '' || !Number.isFinite(minCancel) || minCancel < 0 || minCancel > 168) {
+        showFieldError(cancelEl, 'Trebuie să fie între 0 și 168 de ore (7 zile).');
+        ok = false;
+      }
+
+      var defaultBuffer = Number(bufferEl.value);
+      if (bufferEl.value === '' || !Number.isFinite(defaultBuffer) || defaultBuffer < 0 || defaultBuffer > 240) {
+        showFieldError(bufferEl, 'Trebuie să fie între 0 și 240 de minute.');
+        ok = false;
+      }
+
+      if (!ok) {
+        setMsg('Corectează valorile marcate mai jos.', 'err');
+        return;
+      }
+
+      var r = await api('PUT', '/api/calendar-native/owner/settings', {
+        timezone: timezone,
+        slotIntervalMinutes: slotInterval,
+        minCancelHours: minCancel,
+        defaultBufferMinutes: defaultBuffer,
+      });
+      if (!r.data || !r.data.ok) {
+        if (r.data && r.data.code === 'VALIDATION' && /fus orar/i.test(r.data.error || '')) {
+          showFieldError(tzEl, r.data.error);
+        }
+        setMsg((r.data && r.data.error) || 'Nu am putut salva regulile calendarului.', 'err');
+        return;
+      }
+      state.settings = r.data.settings;
+      state.timezone = r.data.settings.timezone || state.timezone;
+      setMsg('Regulile calendarului au fost salvate.', 'ok');
+      paintSettings();
+      paintAvail();
     }
 
     /**
