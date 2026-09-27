@@ -697,8 +697,11 @@
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
 
-<!-- Flow 3: builder-origin cookie banner (dismissible) -->
-<div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
+<!-- Flow 3: builder-origin cookie banner (dismissible).
+     role="region" not "dialog" — audit a11y#1: role="dialog" here trapped
+     Tab inside the banner forever (Chromium a11y-tree quirk), even with no
+     JS trap of our own; a non-modal banner must not use a modal role. -->
+<div id="hb-cookie-banner" class="hb-cookie-banner" role="region" aria-label="Consimțământ cookie-uri" hidden>
   <p>Folosim stocare esențială în browser ca să rămâi conectat și să păstrezi progresul ciornei. <a href="/app/cookies.html">Cookie-uri</a></p>
   <div class="hb-cookie-actions">
     <button type="button" id="hb-cookie-accept">Acceptă</button>
@@ -721,7 +724,16 @@ body.editor-preview-cookie-isolated > .hb-cookie-banner{display:none!important}
 .hb-cookie-actions .hb-cookie-link{display:inline-flex;align-items:center;min-height:44px}
 </style>
 <script>
-(function(){var K='hb-cookie-consent';function readCookie(){try{var p=document.cookie.split(';');for(var i=0;i<p.length;i++){var s=p[i].trim();if(s.indexOf(K+'=')===0)return decodeURIComponent(s.slice(K.length+1))}}catch(e){}return''}function ok(){try{if(localStorage.getItem(K))return true}catch(e){}var c=readCookie();if(c){try{localStorage.setItem(K,c)}catch(e){}return true}return false}function persist(){try{localStorage.setItem(K,'accepted')}catch(e){}try{document.cookie=K+'=accepted; Path=/; Max-Age=31536000; SameSite=Lax'}catch(e){}}function accept(){persist();var el=document.getElementById('hb-cookie-banner');if(el)el.hidden=true}function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
+(function(){var K='hb-cookie-consent';function readCookie(){try{var p=document.cookie.split(';');for(var i=0;i<p.length;i++){var s=p[i].trim();if(s.indexOf(K+'=')===0)return decodeURIComponent(s.slice(K.length+1))}}catch(e){}return''}function ok(){try{if(localStorage.getItem(K))return true}catch(e){}var c=readCookie();if(c){try{localStorage.setItem(K,c)}catch(e){}return true}return false}function persist(){try{localStorage.setItem(K,'accepted')}catch(e){}try{document.cookie=K+'=accepted; Path=/; Max-Age=31536000; SameSite=Lax'}catch(e){}}
+// audit a11y#1: an element inside the banner keeps "focus" (activeElement)
+// even after its ancestor gets [hidden] until the browser gets around to
+// noticing — blur it ourselves, synchronously, so focus never sits on an
+// invisible node even for one tick. Never call .focus() on some OTHER
+// element here (e.g. the skip link): that would consume ITS tab stop for
+// the very next keypress instead of leaving Tab to reach it normally.
+function dismiss(doPersist){var el=document.getElementById('hb-cookie-banner');if(!el)return;var active=document.activeElement;var wasInside=active&&el.contains(active);if(doPersist)persist();el.hidden=true;if(wasInside&&active.blur)active.blur()}
+function accept(){dismiss(true)}
+function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept);el.addEventListener('keydown',function(e){if(e.key==='Escape'){e.stopPropagation();dismiss(false)}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
 </script>
 
 <!-- Hidden file input for image replacement -->
