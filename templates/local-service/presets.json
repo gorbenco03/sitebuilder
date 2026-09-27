@@ -212,8 +212,7 @@
         },
         "seo": {
           "ogImage": "images/pr-og.jpg",
-          "canonical": "https://renovaricasanord.example",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Renovări Casa Nord\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721234567\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://renovaricasanord.example\"}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"HomeAndConstructionBusiness\",\"name\":\"Renovări Casa Nord\",\"description\":\"Renovări interioare complete în București și Ilfov\",\"telephone\":\"+40721234567\",\"areaServed\":\"București și Ilfov\"}"
         },
         "footer": {
           "address": "București și împrejurimi",
@@ -434,8 +433,7 @@
         },
         "seo": {
           "ogImage": "images/ct-og.jpg",
-          "canonical": "https://acoperisuridacia.example",
-          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"Acoperișuri Dacia\",\"description\":\"Acoperișuri și fațade în București și Ilfov\",\"telephone\":\"+40722333444\",\"areaServed\":\"București și Ilfov\",\"url\":\"https://acoperisuridacia.example\"}"
+          "jsonLd": "{\"@context\":\"https://schema.org\",\"@type\":\"RoofingContractor\",\"name\":\"Acoperișuri Dacia\",\"description\":\"Acoperișuri și fațade în București și Ilfov\",\"telephone\":\"+40722333444\",\"areaServed\":\"București și Ilfov\"}"
         },
         "footer": {
           "address": "București și Ilfov",
