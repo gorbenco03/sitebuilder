@@ -1,5 +1,5 @@
 {
-  "generatedAtCommit": "8a371eb1e73c3efa384ca843bcfeb80c9a0129dc",
+  "generatedAtCommit": "d1bd266d0def83c764f91ba4aeb590961c68963f",
   "templates": {
     "product-menu": [
       {
@@ -17,29 +17,29 @@
       {
         "id": "atelier-ivoire",
         "file": "portfolio/atelier-ivoire.html",
-        "bytes": 33722
+        "bytes": 33684
       },
       {
         "id": "studio-forma",
         "file": "portfolio/studio-forma.html",
-        "bytes": 32397
+        "bytes": 32361
       },
       {
         "id": "atelier-ivoire-ro",
         "file": "portfolio/atelier-ivoire-ro.html",
-        "bytes": 33613
+        "bytes": 33575
       }
     ],
     "local-service": [
       {
         "id": "renovari-bucuresti",
         "file": "local-service/renovari-bucuresti.html",
-        "bytes": 34380
+        "bytes": 34195
       },
       {
         "id": "acoperisuri-dacia",
         "file": "local-service/acoperisuri-dacia.html",
-        "bytes": 34339
+        "bytes": 34154
       }
     ],
     "professionals": [
