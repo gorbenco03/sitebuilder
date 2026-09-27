@@ -16,7 +16,9 @@
  *                         template fonts, e.g. desserdirina's Cormorant Garamond/Montserrat).
  *                         bot/server.js adds Access-Control-Allow-Origin to this path only —
  *                         the opaque-origin srcdoc preview needs it for @font-face to load.
- *   thumbs/<id>.*       — catalog card thumbnails.
+ *   thumbs/<id>.*       — catalog card thumbnails (prefers the pre-shrunk
+ *                         templates/<id>/catalog-thumb.* committed by
+ *                         scripts/generate-catalog-thumbnails.js; see that file).
  *
  * Run:  node scripts/build-builder.js
  *       npm run build:app
@@ -387,6 +389,51 @@ fs.mkdirSync(THUMBS_DIR, { recursive: true });
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg']);
 const FONT_EXTS  = new Set(['.woff', '.woff2', '.ttf', '.otf']);
 
+// Name a pre-shrunk, pre-committed catalog thumbnail can use (produced by hand,
+// offline, via scripts/generate-catalog-thumbnails.js — see that file's header
+// for why: this build script runs in Docker/CI on Linux, which has neither
+// `sips` nor `cwebp`, so it must never itself try to resize an image).
+// Lives at the template root, NOT under images/ — bot/test/s54-commercial-
+// photos.test.js and s55-subject-photos.test.js scan every file under
+// templates/<id>/images/ and fail on anything smaller than a real full-size
+// photo ("leftover chip" guard); this thumbnail is deliberately small, so it
+// must sit outside the directory those oracles police.
+const CATALOG_THUMB_NAMES = ['catalog-thumb.jpg', 'catalog-thumb.webp'];
+
+function pickCatalogThumbSource(dir) {
+    for (const rel of CATALOG_THUMB_NAMES) {
+        const abs = path.join(dir, rel);
+        if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return abs;
+    }
+    return null;
+}
+
+// Zero-dependency JPEG/PNG dimension reader (parses the PNG IHDR chunk or a
+// JPEG SOF0-SOF15 marker) — same technique bot/test/audit-performance.test.js
+// uses, so the numbers this script records match what that oracle verifies.
+// No decode, just header bytes, so it works the same on Linux as on macOS.
+function imageDims(absPath) {
+    const buf = fs.readFileSync(absPath);
+    if (buf.length >= 24 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+        return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+    }
+    if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
+    let offset = 2;
+    while (offset + 4 <= buf.length) {
+        if (buf[offset] !== 0xff) { offset++; continue; }
+        const marker = buf[offset + 1];
+        if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) { offset += 2; continue; }
+        if (marker === 0xd9 || offset + 4 > buf.length) break; // EOI / truncated
+        const segLen = buf.readUInt16BE(offset + 2);
+        const isSOF = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+        if (isSOF && offset + 9 <= buf.length) {
+            return { height: buf.readUInt16BE(offset + 5), width: buf.readUInt16BE(offset + 7) };
+        }
+        offset += 2 + segLen;
+    }
+    return null;
+}
+
 function pickThumbnailSource(dir, id) {
     const preferred = [
         'images/cn-hero.jpg', 'images/pr-hero.jpg', 'images/ct-hero.jpg',
@@ -532,14 +579,24 @@ for (const entry of registry.templates) {
     console.log('  templates/' + id + '.js written (' + heavyJs.length + ' bytes)');
 
     // Thumbnail for catalog cards (grid paints immediately without heavy payload).
+    // Prefer the pre-shrunk, committed catalog-thumb.jpg/.webp (~800px wide,
+    // recompressed) over the full-size hero/gallery photo, so a cold catalog
+    // load ships kilobytes per card instead of the ~250KB original photo at
+    // 3-4x more pixels than the ~360px card ever displays (catalog-firstrun#1 /
+    // performance#1, AUDIT-2026-09-27). Falls back to the full photo, unchanged,
+    // when a template has no pre-generated thumb yet — never a build failure.
     let thumbnail;
-    const thumbSrc = pickThumbnailSource(dir, id);
+    let thumbWidth;
+    let thumbHeight;
+    const thumbSrc = pickCatalogThumbSource(dir) || pickThumbnailSource(dir, id);
     if (thumbSrc) {
         const ext = path.extname(thumbSrc).toLowerCase() || '.jpg';
         const thumbName = id + ext;
         clearThumbsForId(id);
         fs.copyFileSync(thumbSrc, path.join(THUMBS_DIR, thumbName));
         thumbnail = '/app/generated/thumbs/' + thumbName;
+        const dims = imageDims(path.join(THUMBS_DIR, thumbName));
+        if (dims) { thumbWidth = dims.width; thumbHeight = dims.height; }
     } else {
         thumbnail = writeFallbackThumb(id);
     }
@@ -551,6 +608,12 @@ for (const entry of registry.templates) {
         description: entry.description || '',
         version: entry.version || 1,
         thumbnail: thumbnail,
+        // Intrinsic size of the thumbnail file actually shipped — undefined for
+        // the SVG placeholder. Not consumed by builder/app.js yet (that file is
+        // owned by a different task this round); recorded here so a future
+        // <img width height> pass has real numbers to read instead of guessing.
+        thumbWidth: thumbWidth,
+        thumbHeight: thumbHeight,
     });
 }
 
