@@ -11,6 +11,7 @@ const { minifyCss } = require('./css-minify.js');
 const { build } = require('../build.js');
 const { createZip } = require('./zip.js');
 const { writeLegalSiteFiles } = require('./site-legal.js');
+const { isNativeBookingEnabled, disableNativeBookingForExport } = require('./calendar-native/cutover.js');
 
 const PROJECT_ROOT = path.join(__dirname, '..');
 const TEMPLATES_DIR = path.join(PROJECT_ROOT, 'templates');
@@ -380,7 +381,19 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     const dir = siteDir || fs.mkdtempSync(path.join(os.tmpdir(), 'hb-export-'));
     const tpl = templateId || 'product-menu';
     copyTemplateTree(tpl, dir);
-    const cfgCopy = JSON.parse(JSON.stringify(config || {}));
+    // F1 (audit 2026-09-27, export#1): a published site's saved config carries
+    // appointment.nativeApiBase pointed at the Hidook bot origin (set at
+    // publish time, see calendar-native/cutover.js#applyCutoverToConfig). An
+    // offline export has no such backend behind it, so shipping that value
+    // verbatim makes the "independent" export quietly depend on this
+    // customer's Hidook account staying live, forever — contrary to VISION
+    // §6. Force it back to the local request-form fallback for the files we
+    // are about to render; the live/published site is untouched (config here
+    // is this function's own deep clone).
+    const wasNativeBookingOnForExport = isNativeBookingEnabled(
+        config && config.appointment && config.appointment.nativeBooking
+    );
+    const cfgCopy = disableNativeBookingForExport(config);
     materializeImages(cfgCopy, path.join(dir, 'images'), images || []);
 
     // F5/F6: this config was already published through Hidook → its
@@ -426,6 +439,12 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
         'Nu este necesar runtime Hidook. Pagini legale: privacy.html, terms.html, cookies.html.\n' +
         'robots.txt și sitemap.xml sunt incluse; dacă publici pe alt domeniu decât cel din\n' +
         'sitemap.xml, regenerează exportul din Hidook după publicare ca să se actualizeze automat.\n' +
+        (wasNativeBookingOnForExport
+            ? '\nProgramări online: pe site-ul publicat prin Hidook foloseai calendarul nativ. ' +
+              'Acest export static nu are un server Hidook în spate, așa că formularul clasic de ' +
+              'cerere programare a fost activat automat aici — vizitatorii pot cere în continuare ' +
+              'o programare prin formular, telefon sau WhatsApp.\n'
+            : '') +
         'Mențiune: Build by hidook.tech powered by hidook.agency\n';
     fs.writeFileSync(path.join(dir, 'README-EXPORT.txt'), readme, 'utf8');
 
