@@ -221,8 +221,13 @@ check('HEAD: deriveWaHref still encodes RO diacritics; empty number clears href'
   const app = read('builder/app.js');
   const m = app.match(/function deriveWaHref\(config\) \{[\s\S]*?\n\}/);
   assert.ok(m, 'extract deriveWaHref');
+  // whatsapp-contact#1 (audit 2026-09-27): deriveWaHref now routes the raw
+  // number through normalizeWhatsAppDigits() — extract that too,
+  // deriveWaHref is no longer self-contained.
+  const normFn = app.match(/function normalizeWhatsAppDigits\(raw\) \{[\s\S]*?\n\}/);
+  assert.ok(normFn, 'extract normalizeWhatsAppDigits');
   const fnSrc =
-    'const WA_DEFAULT_MSG = "Bună!";\n' + m[0] + '\nreturn deriveWaHref;';
+    'const WA_DEFAULT_MSG = "Bună!";\n' + normFn[0] + '\n' + m[0] + '\nreturn deriveWaHref;';
   // eslint-disable-next-line no-new-func
   const derive = new Function(fnSrc)();
   const cfg = {
@@ -232,10 +237,16 @@ check('HEAD: deriveWaHref still encodes RO diacritics; empty number clears href'
     },
   };
   derive(cfg);
+  assert.ok(cfg.contact.waHref.startsWith('https://wa.me/40721234567?text='), cfg.contact.waHref);
   assert.ok(cfg.contact.waHref.includes(encodeURIComponent('Bună ziua, aș dori o programare.')));
   const empty = { contact: { whatsapp: '', waMessage: 'x' } };
   derive(empty);
   assert.strictEqual(empty.contact.waHref, '');
+  // whatsapp-contact#1 repro: local format (leading 0, no country code)
+  // must resolve to a valid wa.me link — the defect the audit reproduced.
+  const local = { contact: { whatsapp: '0721234567', waMessage: 'x' } };
+  derive(local);
+  assert.ok(local.contact.waHref.startsWith('https://wa.me/40721234567?text='), local.contact.waHref);
 });
 
 if (failed) {

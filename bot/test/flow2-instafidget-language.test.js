@@ -145,6 +145,11 @@ check('Detalii select renders the Romanian label without changing the stored tag
     isSiteLocalAssetField: () => false,
     isPlausibleHttpUrl: () => true,
     isPlausibleSiteAssetPath: () => false,
+    // calendar-native#1 (audit 2026-09-27): buildDrawerField now checks these
+    // two module-level constants for its seed-only calendar-settings hint —
+    // stub them so this sandbox extraction of the function body still runs.
+    CALENDAR_SEED_ONLY_DRAWER_KEYS: new Set(),
+    CALENDAR_SEED_ONLY_HINT: '',
     escHtml: (value) => String(value),
     getPath: (object, key) => key.split('.').reduce((value, part) => value && value[part], object),
     setPath() {},

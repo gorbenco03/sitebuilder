@@ -801,6 +801,29 @@ function deriveColors(primaryHex) {
   };
 }
 
+/**
+ * theme-typography#2 (audit 2026-09-27): relative-luminance/contrast helpers,
+ * same formula each template's own pre-paint --ink/--cta-ink script already
+ * uses (see each template's template.html) — kept here only so the builder can
+ * warn the owner BEFORE publish, not to replace the templates' own runtime
+ * correction (that already guarantees ≥4.5:1 since 90dfe97).
+ */
+function relLuminance(hex) {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex || '');
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const f = rgb.map((v) => {
+    v /= 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+function contrastRatio(l1, l2) {
+  const hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 // ---------------------------------------------------------------------------
 // 5. Template data access (light registry + on-demand heavy payload)
 // ---------------------------------------------------------------------------
@@ -888,7 +911,21 @@ function designBadgeLabel(tpl) {
 
 // Field types that go in the drawer (not editable inline on the canvas)
 const DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background']);
-const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage'];
+// appointment.timezone / appointment.slotIntervalMinutes (calendar-native#1,
+// audit 2026-09-27): plain `type:"text"` schema fields, `required:true`, with
+// no on-canvas representation at all (templates only ever print them into a
+// data-tz/data-interval attribute, never into visible data-hb-edit text) — so
+// isDrawerField()'s type/key heuristics missed them exactly the way D1 missed
+// business.title/metaDescription, and an owner had NO editable surface for a
+// required field anywhere in the builder. Routed into Detalii below.
+const DRAWER_KEYS_PARTIAL = ['whatsapp', 'waMessage', 'instagram.url', 'facebook.url', 'addressHref', 'seo.', 'jsonLd', 'canonical', 'lang', 'ogImage', 'appointment.timezone', 'appointment.slotIntervalMinutes'];
+// calendar-native#1: once native booking is cut over, the owner dashboard's
+// own Setări tab (bot/calendar-native/owner/owner-dashboard.js, 2005f99) is
+// the live, authoritative source for these two — editing them here again
+// only reseeds a FUTURE first activation, so the drawer must say that
+// plainly instead of leaving the owner to guess which of two screens wins.
+const CALENDAR_SEED_ONLY_DRAWER_KEYS = new Set(['appointment.timezone', 'appointment.slotIntervalMinutes']);
+const CALENDAR_SEED_ONLY_HINT = 'După ce activezi și publici Programările native Hidook, schimbă asta din dashboard-ul de Programări → Setări — valoarea de aici mai contează doar pentru o viitoare primă activare.';
 // Factory/SEO machinery — keep in config for publish, never show in Detalii
 const HIDDEN_DRAWER_KEYS = ['seo.ogImage', 'seo.jsonLd', 'seo.canonical', 'contact.waHref'];
 
@@ -912,12 +949,40 @@ const SEO_CHAR_LIMITS = { 'business.title': 60, 'business.metaDescription': 160 
 /** Default prefilled WhatsApp inquiry (browser builder; RO product surface; do not edit flow.js). */
 const WA_DEFAULT_MSG = 'Bună ziua, aș dori mai multe informații despre serviciile dumneavoastră.';
 
-/** Derive contact.waHref from digits + plain waMessage. Empty when no number. */
+/**
+ * whatsapp-contact#1 (audit 2026-09-27): the field's own label instructs
+ * "internațional fără + (ex. 40721234567)" — a full country code, no plus —
+ * but a Romanian owner typing a number the way it appears on a business
+ * card ("0721234567", the local 10-digit mobile format WhatsApp's own public
+ * wa.me rules cannot resolve: no leading zero, full country code required)
+ * used to go through completely unchanged. Only that specific local shape is
+ * corrected here — deliberately NOT reusing normalizePhoneForConfig() (the
+ * Quickstart phone helper): that one treats ANY digits not already starting
+ * with "+"/"00" as local and always prepends "40", which would silently
+ * double the country code on the field's own documented already-international
+ * input ("40721234567" -> wrongly "4040721234567").
+ */
+function normalizeWhatsAppDigits(raw) {
+  let digits = String(raw == null ? '' : raw).replace(/\D/g, '');
+  if (digits.indexOf('00') === 0) {
+    digits = digits.slice(2); // "0040721234567" -> "40721234567"
+  } else if (digits.length === 10 && digits[0] === '0') {
+    // Local Romanian mobile shape (0 + 9 digits) — the exact repro shape.
+    digits = '40' + digits.slice(1);
+  }
+  return digits;
+}
+
+/** Derive contact.waHref from the WhatsApp number + plain waMessage. Empty when no number. */
 function deriveWaHref(config) {
   if (!config || typeof config !== 'object') return;
   if (!config.contact || typeof config.contact !== 'object') config.contact = {};
   const raw = config.contact.whatsapp;
-  const digits = raw == null ? '' : String(raw).replace(/\D/g, '');
+  if (raw == null || String(raw).trim() === '') {
+    config.contact.waHref = '';
+    return;
+  }
+  const digits = normalizeWhatsAppDigits(raw);
   if (!digits) {
     config.contact.waHref = '';
     return;
@@ -2251,6 +2316,10 @@ let hasEverEdited = false;
  * 'text-live' case in initPostMessageListener(). */
 let pendingLiveEdits = {};
 
+/** editor-text-images#1: debounce timer for the business.name identity
+ * cascade's OWN re-render — see onInlineTextEdit()'s business.name branch. */
+let businessNameCascadeRerenderTimer = null;
+
 /** Count of in-flight async operations that must finish before the canvas
  * is fully "safe" (currently: image resize between file-pick and the
  * saveDraft() that follows it — picking a photo and closing the tab before
@@ -3373,8 +3442,20 @@ function onInlineTextEdit(path, value) {
   pendingHistoryCoalesceKey = 'text:' + path;
   if (path === 'business.name' && prevName != null) {
     cascadeBusinessNameIdentity(draft.config, prevName, value);
-    // Re-render so about + social chips pick up cascaded identity immediately
-    scheduleRerender(true);
+    // editor-text-images#1 (audit 2026-09-27): an immediate scheduleRerender(true)
+    // here used to destroy+rebuild the whole preview iframe SYNCHRONOUSLY, at
+    // the exact moment another field's blur/debounce might still be in
+    // flight (measured: 0/100/250ms loses it, 400/600ms is safe) — see
+    // edit-overlay.js's per-path debounce. Wait past that window (and flush
+    // whatever live mirror is still pending right before finally rendering)
+    // instead of racing it. Re-render so about + social chips pick up
+    // cascaded identity — just not synchronously. scheduleRerender(true) below.
+    if (businessNameCascadeRerenderTimer) clearTimeout(businessNameCascadeRerenderTimer);
+    businessNameCascadeRerenderTimer = setTimeout(() => {
+      businessNameCascadeRerenderTimer = null;
+      flushPendingLiveEdits();
+      scheduleRerender(true);
+    }, 450);
     // Keep drawer fields for cascaded identity in sync when open
     [
       'business.title',
@@ -4075,14 +4156,43 @@ function applyThemeColor(hex) {
   fullRerender();
 }
 
+// theme-typography#2: near-black/near-white anchors, matching the constants
+// each template's own pre-paint contrast script already picks between.
+const BG_INK_VOID_L = 0.003035269835488375;
+const BG_INK_SNOW_L = 0.9405136905533645;
+// Coalesced across a whole color-picker drag/keystroke burst — only fire the
+// toast on the transition into "will flip to white text", never once per tick.
+let bgNeedsWhiteInkWarned = false;
+
 /** Page / paper background — theme.cream drives --color-cream → --paper in all templates. */
 function applyThemeBackground(hex) {
   if (!draft.config) return;
   if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
   setPath(draft.config, 'theme.cream', hex);
   pendingHistoryCoalesceKey = 'color:bg';
+  warnIfBackgroundFlipsInk(hex);
   saveDraft();
   fullRerender();
+}
+
+/**
+ * theme-typography#2 (audit 2026-09-27): the templates already auto-correct
+ * body text to whichever of black/white clears WCAG AA against the real
+ * "Fundal pagină" (90dfe97) — so a dark/saturated background never actually
+ * becomes unreadable. But before this, nothing in the builder told the owner
+ * WHY their text color just changed on its own. Warn once, on the transition
+ * into a background dark enough that the template will pick white ink.
+ */
+function warnIfBackgroundFlipsInk(hex) {
+  const l = relLuminance(hex);
+  if (l == null) return;
+  const needsWhiteInk = contrastRatio(l, BG_INK_SNOW_L) > contrastRatio(l, BG_INK_VOID_L);
+  if (needsWhiteInk && !bgNeedsWhiteInkWarned) {
+    bgNeedsWhiteInkWarned = true;
+    showToast('Fundal închis — textul site-ului devine automat alb, pentru lizibilitate.', '', 4000);
+  } else if (!needsWhiteInk) {
+    bgNeedsWhiteInkWarned = false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -4695,6 +4805,12 @@ function buildDrawerField(field, opts) {
     hint.className = 'field-hint';
     hint.textContent = field.hint;
     wrap.appendChild(hint);
+  }
+  if (CALENDAR_SEED_ONLY_DRAWER_KEYS.has(key)) {
+    const seedHint = document.createElement('p');
+    seedHint.className = 'field-hint';
+    seedHint.textContent = CALENDAR_SEED_ONLY_HINT;
+    wrap.appendChild(seedHint);
   }
 
   // Structured hero background: color + optional image (writes CSS string to config).
@@ -6959,6 +7075,95 @@ const AUTH_SIGNAL_KEY = 'hb.auth.signal.v1';
 let sessionExpiredActive = false;
 let sessionExpiredRetry = null; // () => Promise|void, run once re-authenticated
 
+/**
+ * journey-stranger#4 (audit 2026-09-27): startAuthPolling()/
+ * authPollFocusHandler and wireAuthForm()'s in-memory onAuthSuccess closure
+ * both assume THIS tab stays alive until sign-in completes. Clicking the
+ * magic link in the SAME tab instead navigates it straight to
+ * /auth/verify?token=... — a full page reload that wipes every one of those
+ * in-memory continuations before the server even redirects back. Persisted
+ * here (survives the reload) so the fresh boot() can tell "was this owner
+ * mid-publish when they left" and say so, instead of landing back on an
+ * ordinary-looking #edit with no sign that anything is still pending.
+ * 30 min ceiling: an old, abandoned attempt from days ago should not resurface
+ * a banner the next time this owner happens to sign in for something else.
+ */
+const PENDING_PUBLISH_INTENT_KEY = 'hb.publish.pendingAuth.v1';
+const PENDING_PUBLISH_INTENT_MAX_AGE_MS = 30 * 60 * 1000;
+
+function markPendingPublishIntent() {
+  try { localStorage.setItem(PENDING_PUBLISH_INTENT_KEY, String(Date.now())); } catch (_) { /* ignore quota/private mode */ }
+}
+function clearPendingPublishIntent() {
+  try { localStorage.removeItem(PENDING_PUBLISH_INTENT_KEY); } catch (_) { /* ignore */ }
+}
+function hasFreshPendingPublishIntent() {
+  let raw;
+  try { raw = localStorage.getItem(PENDING_PUBLISH_INTENT_KEY); } catch (_) { return false; }
+  if (!raw) return false;
+  const ts = Number(raw);
+  if (!Number.isFinite(ts) || Date.now() - ts > PENDING_PUBLISH_INTENT_MAX_AGE_MS) {
+    clearPendingPublishIntent();
+    return false;
+  }
+  return true;
+}
+
+/** Persistent, dismissible banner reusing the session-expired banner's own
+ * CSS (builder/app.css .session-expired-banner/-text/-actions) so this needs
+ * no new markup in builder/index.html — just a second element built the same
+ * way, with its own id/copy/action. */
+function showResumePublishBanner() {
+  if ($('resume-publish-banner')) return; // already showing
+  const banner = document.createElement('div');
+  banner.id = 'resume-publish-banner';
+  banner.className = 'session-expired-banner';
+  banner.setAttribute('role', 'alert');
+  banner.setAttribute('aria-live', 'assertive');
+
+  const text = document.createElement('span');
+  text.className = 'session-expired-text';
+  text.textContent = 'Ești conectat — continuă publicarea.';
+  banner.appendChild(text);
+
+  const actions = document.createElement('span');
+  actions.className = 'session-expired-actions';
+
+  const continueBtn = document.createElement('button');
+  continueBtn.type = 'button';
+  continueBtn.className = 'btn-primary btn-sm';
+  continueBtn.textContent = 'Continuă publicarea';
+  continueBtn.addEventListener('click', async () => {
+    hideResumePublishBanner();
+    clearPendingPublishIntent();
+    if (!draft.templateId) {
+      const resumed = await resumeLocalDraft().catch(() => false);
+      if (!resumed) { window.location.hash = '#dashboard'; return; }
+    }
+    if (window.location.hash !== '#edit') window.location.hash = '#edit';
+    openPublishModal();
+  });
+  actions.appendChild(continueBtn);
+
+  const dismissBtn = document.createElement('button');
+  dismissBtn.type = 'button';
+  dismissBtn.className = 'btn-ghost btn-sm';
+  dismissBtn.textContent = 'Închide';
+  dismissBtn.setAttribute('aria-label', 'Închide mesajul de reluare publicare');
+  dismissBtn.addEventListener('click', () => {
+    hideResumePublishBanner();
+    clearPendingPublishIntent();
+  });
+  actions.appendChild(dismissBtn);
+
+  banner.appendChild(actions);
+  document.body.appendChild(banner);
+}
+function hideResumePublishBanner() {
+  const el = $('resume-publish-banner');
+  if (el && el.parentNode) el.parentNode.removeChild(el);
+}
+
 /** SESS-02: tell every OTHER tab of this browser "this account just signed
  * out here" — doLogout()/doLogoutEverywhere() call this after clearing
  * their own state. A plain localStorage write is enough: the `storage`
@@ -7367,6 +7572,7 @@ async function doActualPublish(chosenSlug) {
     show($('publish-step-2'));
     show($('form-auth-email'));
     hide($('auth-sent'));
+    markPendingPublishIntent();
     wireAuthForm(() => doActualPublish(chosenSlug));
     return;
   }
@@ -7450,6 +7656,8 @@ async function execPublish(slug) {
   if (data.site.slug) currentSiteSlug = data.site.slug;
   saveDraft();
   if (typeof notePublishedSnapshot === 'function') notePublishedSnapshot();
+  clearPendingPublishIntent();
+  hideResumePublishBanner();
 
   showSuccessScreen(data.site.publicUrl || data.site.url, data.paymentUrl, wasAlreadyPaid);
 }
@@ -8592,6 +8800,31 @@ function buildSiteCard(site) {
       }
     });
     actions.appendChild(keepBtn);
+  } else if (site.status === 'unpublished') {
+    // owner-dashboard#4 (audit 2026-09-27): a customer-initiated cancel
+    // (unpublishSite()) leaves site.paid=true and paidUntil in the future on
+    // purpose (billing history kept), but flips status to 'unpublished' — so
+    // neither this branch's own condition (`!paid || hostingExpired`) nor the
+    // live/active "Anulează" branch below ever matched, and the card showed
+    // no way back at all while the hosting the owner already paid for was
+    // still valid. Same checkout route the "Adaugă un card" branch above
+    // uses — POST .../checkout re-publishes the last saved config.
+    const reactivateBtn = document.createElement('button');
+    reactivateBtn.className = 'btn-primary btn-sm';
+    reactivateBtn.textContent = 'Reactivează site-ul';
+    reactivateBtn.setAttribute('aria-label', 'Reactivează site-ul ' + (site.projectName || site.slug || ''));
+    reactivateBtn.addEventListener('click', async () => {
+      try {
+        setBtnLoading(reactivateBtn, true, 'Se procesează…');
+        const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
+        if (data.paymentUrl) window.location.href = data.paymentUrl;
+      } catch (e) {
+        showToast('Eroare: ' + e.message, 'error');
+      } finally {
+        setBtnLoading(reactivateBtn, false);
+      }
+    });
+    actions.appendChild(reactivateBtn);
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
     // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract)
     const cancelBtn = document.createElement('button');
@@ -9964,6 +10197,15 @@ async function boot() {
 
     window.addEventListener('hashchange', () => handleRoute(window.location.hash));
     await handleRoute(window.location.hash);
+
+    // journey-stranger#4: a same-tab magic-link verify reloads the whole
+    // page — this is the first moment after that reload where `user` reflects
+    // the now-real session AND handleRoute() has had a chance to restore any
+    // local draft, so it is the right place to ask "was this owner mid-
+    // publish when they left".
+    if (user && hasFreshPendingPublishIntent()) {
+      showResumePublishBanner();
+    }
   } catch (e) {
     console.error('Boot error:', e);
     showToast('Inițializarea a eșuat. Reîncarcă pagina.', 'error', 8000);

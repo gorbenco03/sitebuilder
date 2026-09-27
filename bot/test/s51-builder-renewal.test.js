@@ -188,13 +188,23 @@ function readOrdersForSite(siteId) {
             /Reînnoiește hosting/.test(buildSiteCardSrc),
             'expired/past-paidUntil CTA must say Reînnoiește hosting'
         );
+        // Scoped to the specific `site.paid && hostingExpired` branch this
+        // check is about — NOT the whole buildSiteCard function. Since
+        // owner-dashboard#4 (audit 2026-09-27), a DIFFERENT, mutually
+        // exclusive branch (status === 'unpublished', hosting still valid)
+        // legitimately shows "Reactivează site-ul"; a blanket ban across the
+        // whole function would reject that unrelated, correct button too.
+        const expiredBranch = buildSiteCardSrc.match(
+            /if \(site\.paid && hostingExpired\) \{[\s\S]*?\n    \} else \{[\s\S]*?\n    \}/
+        );
+        assert.ok(expiredBranch, 'locate the site.paid && hostingExpired branch');
         assert.ok(
-            !/Reactivează/.test(buildSiteCardSrc),
-            'buildSiteCard must not use factory Reactivează label'
+            !/Reactivează/.test(expiredBranch[0]),
+            'expired/past-paidUntil branch must not use factory Reactivează label'
         );
         assert.ok(
-            !/['\"]Păstrează['\"]/.test(buildSiteCardSrc),
-            'buildSiteCard must not use Păstrează'
+            !/['\"]Păstrează['\"]/.test(expiredBranch[0]),
+            'expired/past-paidUntil branch must not use Păstrează'
         );
         // Renewal price shown via formatRenewalLabel or 29
         assert.ok(
