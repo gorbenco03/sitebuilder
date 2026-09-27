@@ -153,9 +153,14 @@ check('item12: deriveWaHref encodes Romanian diacritics (unit via Function)', ()
   const app = read('builder/app.js');
   const m = app.match(/function deriveWaHref\(config\) \{[\s\S]*?\n\}/);
   assert.ok(m, 'extract deriveWaHref');
+  // whatsapp-contact#1 (audit 2026-09-27): deriveWaHref now routes the raw
+  // number through normalizeWhatsAppDigits() — extract that too.
+  const normFn = app.match(/function normalizeWhatsAppDigits\(raw\) \{[\s\S]*?\n\}/);
+  assert.ok(normFn, 'extract normalizeWhatsAppDigits');
   // Isolate function body with default msg constant
   const fnSrc =
     'const WA_DEFAULT_MSG = "Hello!";\n' +
+    normFn[0] + '\n' +
     m[0] +
     '\nreturn deriveWaHref;';
   // eslint-disable-next-line no-new-func
