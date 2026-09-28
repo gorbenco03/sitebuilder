@@ -1,0 +1,442 @@
+'use strict';
+/**
+ * bot/test/audit27-r-16-appjs-consistency-fixes.test.js
+ *
+ * AUDIT 2026-09-27 - R-16 + R-23 (builder/app.js consistency + small editor
+ * fixes; PLAN-AUDIT-2026-09-27.md section 4, round 3).
+ *
+ * Owner decision 2026-09-27: the currency symbol comes back everywhere a
+ * price shows (landing, publish/success modals, dashboard card, Facturi) -
+ * ONE formatter, not five independent ones drifting apart
+ * (gap-pricing-display-consistency-live#1/#2). Alongside that, this covers
+ * the small app.js fixes bundled into the same task:
+ *   - copy-i18n#1 (app.js part): "Proiectele mele" -> "Site-urile mele" and
+ *     its sibling strings ("proiect neterminat" -> "site neterminat", etc).
+ *   - copy-i18n#4: one Romanian date formatter for Facturi and the site
+ *     card (both used to disagree on month:'long' vs month:'short').
+ *   - a11y#2: Escape on the "Detalii" drawer returns focus to
+ *     #btn-open-drawer, the ARIA APG dialog pattern openModal()/closeModal()
+ *     already use elsewhere.
+ *   - builder-mobile#2: the pre-filled slug field auto-selects on focus, so
+ *     typing immediately replaces the suggestion instead of appending to it.
+ *   - edge-errors#4: a failed /api/slug-check shows a distinct "could not
+ *     check" state, never the same checkmark as a confirmed-free address.
+ *   - images-media#3/#4: an animated GIF keeps its animation and an SVG
+ *     logo stays vector, instead of both being silently rasterized to a
+ *     flat JPEG/PNG.
+ *   - images-media#5 (flagged mid-task by the coordinator, added to this
+ *     task's scope): a HEIC photo (iPhone's camera default) used to fail
+ *     with a half-Romanian, half-English message ("Nu am putut procesa
+ *     fotografia: Error reading the image") because canvas/FileReader can't
+ *     decode HEIC and the raw DOM error's English text got glued onto a
+ *     Romanian prefix. Detected up front now, one full Romanian sentence,
+ *     no attempted client-side conversion (no HEIC decoder dependency in
+ *     this zero-dep renderer).
+ *   - instafidget-social#3/#4: the terms-agreed status line clears once
+ *     ticked, and status text always lands on whichever Instagram-modal
+ *     panel is actually visible.
+ *
+ * Run: node --experimental-sqlite --test bot/test/audit27-r-16-appjs-consistency-fixes.test.js
+ */
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
+const ROOT = path.resolve(__dirname, '../..');
+const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
+
+process.env.NODE_ENV = 'test';
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'hidook-r16-appjs-'));
+process.env.SERVER_SECRET = 'r16-appjs-' + crypto.randomBytes(8).toString('hex');
+process.env.HIDOOK_TEST_PAY = '1';
+process.env.HIDOOK_ISOLATED_DEPLOY = '1';
+delete process.env.PUBLIC_URL;
+delete process.env.STRIPE_SECRET_KEY;
+delete process.env.CLOUDFLARE_API_TOKEN;
+delete process.env.VERCEL_TOKEN;
+
+require(path.join(ROOT, 'scripts', 'build-builder.js'));
+const { startServer } = require(path.join(ROOT, 'bot', 'server.js'));
+const { onStripeEvent } = require(path.join(ROOT, 'bot', 'web.js'));
+const APP_JS_PATH = path.join(ROOT, 'builder', 'app.js');
+let server;
+let base;
+
+test.before(async () => {
+  server = startServer({ port: 0, onStripeEvent });
+  await new Promise((resolve, reject) => {
+    server.once('listening', resolve);
+    server.once('error', reject);
+  });
+  base = 'http://127.0.0.1:' + server.address().port;
+});
+
+test.after(() => {
+  if (server) server.close();
+});
+
+// A tiny, real, decodable 1x1 GIF (not a fake extension on other bytes) —
+// the point is that resizeImageToDataUrl() must ship these exact bytes
+// back out under image/gif, not re-encode them.
+const TINY_GIF_BASE64 = 'R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
+const TINY_GIF_BUFFER = Buffer.from(TINY_GIF_BASE64, 'base64');
+
+const TINY_SVG_TEXT = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" width="10" height="10"><rect width="10" height="10" fill="#5B5BD6"/></svg>';
+const TINY_SVG_BUFFER = Buffer.from(TINY_SVG_TEXT, 'utf8');
+
+async function gotoEditorWithTemplate(page, templateId) {
+  await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
+  if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
+    await page.locator('#hb-cookie-accept').click().catch(() => {});
+  }
+  await page.locator('.template-card[data-template-id="' + templateId + '"] .btn-start-tpl').click();
+  await page.waitForURL(/#edit$/, { timeout: 30000 }).catch(() => {});
+  await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForTimeout(600);
+}
+
+async function closeDrawerIfOpen(page) {
+  const drawer = page.locator('#details-drawer');
+  if (await drawer.isVisible().catch(() => false)) {
+    await page.locator('#btn-close-drawer').click().catch(() => {});
+    await page.waitForTimeout(300);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Part 1: real-browser behaviour — the findings that depend on live DOM
+// state (focus, network failure, file bytes) rather than pure source logic.
+// ---------------------------------------------------------------------------
+
+test('a11y#2: Escape on the Detalii drawer returns focus to #btn-open-drawer', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    page.setDefaultTimeout(20000);
+    await gotoEditorWithTemplate(page, 'local-service');
+    await closeDrawerIfOpen(page);
+
+    await page.locator('#btn-open-drawer').click();
+    await page.locator('#details-drawer').waitFor({ state: 'visible' });
+    // Move focus off the opener first (into the drawer itself), so a pass
+    // here cannot be a false positive from focus never having left it.
+    await page.keyboard.press('Tab');
+    const focusedInsideDrawer = await page.evaluate(() => {
+      const d = document.getElementById('details-drawer');
+      return !!(d && d.contains(document.activeElement));
+    });
+    assert.ok(focusedInsideDrawer, 'focus-trap precondition: focus must be inside the drawer before Escape');
+
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => {
+      const d = document.getElementById('details-drawer');
+      return !d || d.style.display === 'none' || getComputedStyle(d).display === 'none';
+    }, { timeout: 5000 });
+
+    const activeId = await page.evaluate(() => document.activeElement && document.activeElement.id);
+    assert.equal(activeId, 'btn-open-drawer', 'a11y#2: focus must land on #btn-open-drawer after Escape, not be lost (got "' + activeId + '")');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('builder-mobile#2 + edge-errors#4: slug field auto-selects on focus, and a failed slug-check shows a distinct state', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.setDefaultTimeout(20000);
+    await gotoEditorWithTemplate(page, 'local-service');
+    await closeDrawerIfOpen(page);
+
+    await page.locator('#btn-publish').click();
+    await page.locator('#modal-publish').waitFor({ state: 'visible' });
+
+    const slugInput = page.locator('#input-slug');
+    await slugInput.waitFor({ state: 'visible' });
+    const prefilled = await slugInput.inputValue();
+    assert.ok(prefilled.length > 0, 'the slug field must open pre-filled with a suggested slug for this repro to be meaningful');
+
+    // builder-mobile#2: focusing the pre-filled field must select all of it,
+    // so an immediate keystroke REPLACES the suggestion instead of being
+    // inserted at a caret position, which would concatenate the two.
+    await slugInput.click();
+    const selectionOnFocus = await slugInput.evaluate((el) => el.selectionEnd - el.selectionStart);
+    assert.equal(selectionOnFocus, prefilled.length, 'builder-mobile#2: the whole pre-filled value must be selected on focus, not just placed a caret');
+
+    await page.keyboard.type('cafeneaua-mea', { delay: 0 });
+    const afterType = await slugInput.inputValue();
+    assert.equal(afterType, 'cafeneaua-mea', 'typing right after focus must REPLACE the suggestion, not append to it (would read "' + prefilled + 'cafeneaua-mea" otherwise)');
+
+    // edge-errors#4: fail every /api/slug-check request for the rest of
+    // this page's life and confirm the icon/error state is never "valid".
+    await page.route('**/api/slug-check*', (route) => route.abort('failed'));
+
+    await slugInput.fill('');
+    await slugInput.type('adresa-noua-test', { delay: 30 });
+    // scheduleSlugCheck() debounces 550ms before firing the (now-failing) check.
+    await page.waitForTimeout(1200);
+
+    const iconText = (await page.locator('#slug-status-icon').innerText()).trim();
+    assert.notEqual(iconText, '✓', 'edge-errors#4: a network-failed slug check must never show the same checkmark as a confirmed-free address');
+    assert.equal(iconText, '?', 'edge-errors#4: a network-failed slug check must show the distinct "could not check" icon');
+
+    const previewClass = await page.locator('#slug-preview').getAttribute('class');
+    assert.ok(!/\bvalid\b/.test(previewClass || ''), 'edge-errors#4: the preview element must not carry the "valid" class on a check failure');
+
+    const errorVisible = await page.locator('#slug-error').isVisible();
+    assert.ok(errorVisible, 'edge-errors#4: a visible message must explain the check could not run');
+    const errorText = (await page.locator('#slug-error').innerText()).trim();
+    assert.match(errorText, /nu am putut verifica/i, 'edge-errors#4: the message must say the check itself failed, in Romanian');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('images-media#3: an animated GIF logo upload keeps its original bytes (image/gif), not a flattened JPEG', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    page.setDefaultTimeout(20000);
+    await gotoEditorWithTemplate(page, 'product-menu');
+    await closeDrawerIfOpen(page);
+
+    await page.locator('#btn-open-gallery').click();
+    const modal = page.locator('#modal-gallery');
+    await modal.waitFor({ state: 'visible', timeout: 10000 });
+    const logoSection = modal.locator('.gallery-path-section').filter({
+      has: page.locator('.field-label', { hasText: 'Logo' }),
+    });
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
+    ]);
+    await fileChooser.setFiles({ name: 'anim.gif', mimeType: 'image/gif', buffer: TINY_GIF_BUFFER });
+
+    await page.waitForFunction(() => !!(draft && draft.config && draft.config.logo), { timeout: 10000 });
+    const storedSrc = await page.evaluate(() => draft.config.logo);
+    assert.ok(storedSrc.startsWith('data:image/gif'), 'images-media#3: a GIF upload must stay image/gif, got: ' + storedSrc.slice(0, 24));
+
+    const storedBase64 = storedSrc.slice(storedSrc.indexOf(',') + 1);
+    assert.equal(storedBase64, TINY_GIF_BASE64, 'images-media#3: the GIF bytes must be the ORIGINAL file, not a re-encode (a re-encode, even a lossless one, is not provably still animated)');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('images-media#4: an SVG logo upload stays vector (image/svg+xml), not rasterized to PNG', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    page.setDefaultTimeout(20000);
+    await gotoEditorWithTemplate(page, 'product-menu');
+    await closeDrawerIfOpen(page);
+
+    await page.locator('#btn-open-gallery').click();
+    const modal = page.locator('#modal-gallery');
+    await modal.waitFor({ state: 'visible', timeout: 10000 });
+    const logoSection = modal.locator('.gallery-path-section').filter({
+      has: page.locator('.field-label', { hasText: 'Logo' }),
+    });
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
+    ]);
+    await fileChooser.setFiles({ name: 'logo.svg', mimeType: 'image/svg+xml', buffer: TINY_SVG_BUFFER });
+
+    await page.waitForFunction(() => !!(draft && draft.config && draft.config.logo), { timeout: 10000 });
+    const storedSrc = await page.evaluate(() => draft.config.logo);
+    assert.ok(storedSrc.startsWith('data:image/svg+xml'), 'images-media#4: an SVG upload must stay image/svg+xml, got: ' + storedSrc.slice(0, 30));
+
+    const decoded = Buffer.from(decodeURIComponent(storedSrc.slice(storedSrc.indexOf(',') + 1)), 'utf8').toString('utf8');
+    const decodedViaAtob = storedSrc.includes(';base64,')
+      ? Buffer.from(storedSrc.slice(storedSrc.indexOf(',') + 1), 'base64').toString('utf8')
+      : decoded;
+    assert.ok(decodedViaAtob.includes('<svg'), 'images-media#4: the stored value must still be a real <svg> document, not a rasterized image');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('images-media#5: a HEIC upload gets one clear Romanian message, not a half-English decode error', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    page.setDefaultTimeout(20000);
+    await gotoEditorWithTemplate(page, 'product-menu');
+    await closeDrawerIfOpen(page);
+
+    await page.locator('#btn-open-gallery').click();
+    const modal = page.locator('#modal-gallery');
+    await modal.waitFor({ state: 'visible', timeout: 10000 });
+    const logoSection = modal.locator('.gallery-path-section').filter({
+      has: page.locator('.field-label', { hasText: 'Logo' }),
+    });
+    const [fileChooser] = await Promise.all([
+      page.waitForEvent('filechooser'),
+      logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
+    ]);
+    // Content doesn't matter — resizeImageToDataUrl() must reject on the
+    // file's HEIC type/extension before ever trying to decode it, so this
+    // never reaches (and can't accidentally pass because of) real pixels.
+    await fileChooser.setFiles({ name: 'iphone-photo.heic', mimeType: 'image/heic', buffer: Buffer.from('not a real heic decoder input', 'utf8') });
+
+    await page.locator('#toast').filter({ hasText: /HEIC/i }).waitFor({ state: 'visible', timeout: 8000 });
+    const toastText = (await page.locator('#toast').textContent() || '').trim();
+    assert.equal(
+      toastText,
+      'Fotografiile HEIC de pe iPhone nu sunt acceptate încă. Salvează poza ca JPEG sau PNG și încearcă din nou.',
+      'images-media#5: the HEIC message must be one complete, correct Romanian sentence — not glued to a generic prefix or an English decode error'
+    );
+    assert.doesNotMatch(toastText, /[A-Za-z]+ (reading|the) (image|photo)/i, 'no raw English decode-error fragment may leak into the toast');
+
+    // And the upload must not have silently "succeeded" with garbage data.
+    const logoAfter = await page.evaluate(() => (draft && draft.config && draft.config.logo) || null);
+    assert.ok(!logoAfter, 'a rejected HEIC upload must not land in draft.config.logo');
+  } finally {
+    await browser.close();
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Part 2: deterministic source-level checks for the remaining findings.
+// ---------------------------------------------------------------------------
+
+test('gap-pricing-display-consistency-live#1: one money formatter, used by every price surface', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  const formatMoneyFn = app.match(/function formatMoneyLabel\(amount, currency\) \{[\s\S]*?\n\}/);
+  assert.ok(formatMoneyFn, 'formatMoneyLabel must exist as a single shared formatter');
+
+  // eslint-disable-next-line no-new-func
+  const formatMoney = new Function(formatMoneyFn[0] + '\nreturn formatMoneyLabel;')();
+  assert.equal(formatMoney(99, 'eur'), '99€', 'EUR must render with the trailing € symbol');
+  assert.equal(formatMoney(99, 'gbp'), '£99', 'GBP must render with the leading £ symbol');
+  assert.equal(formatMoney(99, 'usd'), '$99', 'USD must render with the leading $ symbol');
+  assert.equal(formatMoney(null, 'eur'), '—', 'a missing amount must render as the placeholder, not throw');
+
+  const priceFn = app.match(/function formatPriceLabel\(cfg\) \{[\s\S]*?\n\}/);
+  const renewalFn = app.match(/function formatRenewalLabel\(cfg\) \{[\s\S]*?\n\}/);
+  assert.ok(priceFn, 'locate formatPriceLabel');
+  assert.ok(renewalFn, 'locate formatRenewalLabel');
+  assert.match(priceFn[0], /formatMoneyLabel/, 'formatPriceLabel (landing/publish/success/dashboard) must delegate to formatMoneyLabel');
+  assert.match(renewalFn[0], /formatMoneyLabel/, 'formatRenewalLabel (renewal CTA) must delegate to formatMoneyLabel');
+
+  // Every price-surface call site named in the finding must exist and go
+  // through one of the two formatters above.
+  const requiredCallSites = [
+    /heroPrice\.textContent\s*=\s*priceLabel/,
+    /successPrice\.textContent\s*=\s*formatPriceLabel\(appConfig\)/,
+    /const price = formatPriceLabel\(appConfig\)/, // dashboard trial line
+    /formatRenewalLabel\(appConfig\)/, // "Reînnoiește hosting" button
+  ];
+  for (const re of requiredCallSites) {
+    assert.match(app, re, 'missing expected price call-site: ' + re);
+  }
+});
+
+test('gap-pricing-display-consistency-live#2: Facturi renders amounts through the same formatMoneyLabel, not a fifth Intl format', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const invoiceAmountFn = app.match(/function formatInvoiceAmount\(amountCents, currency\) \{[\s\S]*?\n\}/);
+  assert.ok(invoiceAmountFn, 'locate formatInvoiceAmount');
+  assert.match(invoiceAmountFn[0], /formatMoneyLabel/, 'formatInvoiceAmount must delegate to formatMoneyLabel');
+  assert.doesNotMatch(invoiceAmountFn[0], /Intl\.NumberFormat/, 'the old independent Intl.NumberFormat(\'ro-RO\', {style:\'currency\'...}) implementation must be gone');
+});
+
+test('copy-i18n#4: Facturi and the site card share one Romanian date formatter', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const invoiceDateFn = app.match(/function formatInvoiceDate\(iso\) \{[\s\S]*?\n\}/);
+  assert.ok(invoiceDateFn, 'locate formatInvoiceDate');
+  assert.match(invoiceDateFn[0], /formatHostingUntilDate/, 'formatInvoiceDate must delegate to the same formatter the site card uses (formatHostingUntilDate)');
+
+  const hostingUntilFn = app.match(/function formatHostingUntilDate\(iso\) \{[\s\S]*?\n\}/);
+  assert.ok(hostingUntilFn, 'locate formatHostingUntilDate');
+  assert.match(hostingUntilFn[0], /month:\s*['"]long['"]/, 'the shared formatter must use the full month name, not an abbreviation');
+});
+
+test('copy-i18n#1 (app.js part): "proiect" no longer names the core site/draft concept in customer-facing app.js strings', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  // The exact offending strings the audit found must be gone.
+  const mustNotContain = [
+    'Autentifică-te ca să vezi proiectele',
+    'Ai un proiect neterminat',
+    'un proiect neterminat',
+    'proiect neterminat',
+    'Acest proiect e deschis',
+    'Proiectul a fost înlocuit',
+    'Proiectul pe designul',
+    'Autentifică-te ca să-ți vezi proiectele',
+  ];
+  for (const s of mustNotContain) {
+    assert.ok(!app.includes(s), 'stale "proiect" copy must be gone: "' + s + '"');
+  }
+
+  // And their renamed replacements must be present.
+  const mustContain = [
+    'Autentifică-te ca să vezi site-urile',
+    'Ai un site neterminat',
+    'site neterminat',
+    'Acest site e deschis',
+    'Site-ul pe designul',
+    'Autentifică-te ca să-ți vezi site-urile',
+  ];
+  for (const s of mustContain) {
+    assert.ok(app.includes(s), 'renamed RO copy missing: "' + s + '"');
+  }
+
+  // The only remaining "Proiect" in app.js is the account-menu doc-comment
+  // for openAccountMenu/closeAccountMenu — that markup is a DIFFERENT
+  // task's scope (GDPR items land in the same menu) and must stay untouched
+  // here. Anything else would mean this task reached into that code.
+  const proiectMatches = [...app.matchAll(/proiect/gi)].map((m) => {
+    const start = Math.max(0, m.index - 60);
+    return app.slice(start, m.index + 20);
+  });
+  for (const ctx of proiectMatches) {
+    assert.match(ctx, /Editor-topbar account menu/, 'unexpected leftover "proiect" outside the account-menu comment: ...' + ctx);
+  }
+});
+
+test('instafidget-social#3: the terms-agreed status message clears once the checkbox is ticked', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const wireStatic = app.match(/function wireStaticButtons\(\) \{[\s\S]*?\n\}\n/);
+  assert.ok(wireStatic, 'locate wireStaticButtons');
+  const igCheckBlock = wireStatic[0].match(/igCheck\.addEventListener\('change', \(\) => \{[\s\S]*?\n    \}\);/);
+  assert.ok(igCheckBlock, 'locate the ig-terms-check change handler');
+  assert.match(igCheckBlock[0], /igGo\.disabled = !igCheck\.checked/, 'the connect button must still be enabled/disabled by the checkbox');
+  assert.match(igCheckBlock[0], /if \(igCheck\.checked\) setIgStatus\(''\)/, 'instafidget-social#3: ticking the box must clear the stale "please tick it" status text');
+});
+
+test('instafidget-social#4: status text always writes into the Instagram-modal panel that is actually visible', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const setIgStatusFn = app.match(/function setIgStatus\(msg, isError\) \{[\s\S]*?\n\}/);
+  assert.ok(setIgStatusFn, 'locate setIgStatus');
+  assert.match(
+    setIgStatusFn[0],
+    /connectedInstagramEmbedUrl\(\)\s*\?\s*\$\('ig-editor-status'\)\s*:\s*\$\('ig-status'\)/,
+    'instafidget-social#4: setIgStatus must pick #ig-editor-status when the connected panel is showing, #ig-status otherwise — never hardcode the connect-panel element'
+  );
+});
+
+test('images-media#5: isHeicFile() detects HEIC by MIME type and by extension, and never flags an ordinary photo', () => {
+  const app = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const isHeicFn = app.match(/function isHeicFile\(file\) \{[\s\S]*?\n\}/);
+  assert.ok(isHeicFn, 'locate isHeicFile');
+  assert.match(app, /const HEIC_UNSUPPORTED_MESSAGE = '[^']*HEIC[^']*iPhone[^']*';/, 'the HEIC message constant must exist and mention iPhone (the repro device)');
+
+  const resizeFn = app.match(/function resizeImageToDataUrl\(file, maxPx, quality\) \{[\s\S]*?\n\}\n\n\/\/ ---/);
+  assert.ok(resizeFn, 'locate resizeImageToDataUrl');
+  assert.match(resizeFn[0], /isHeicFile\(file\)/, 'resizeImageToDataUrl must reject HEIC files before attempting to decode them');
+
+  // eslint-disable-next-line no-new-func
+  const isHeicFile = new Function(isHeicFn[0] + '\nreturn isHeicFile;')();
+  assert.equal(isHeicFile({ type: 'image/heic', name: 'IMG_0001.HEIC' }), true, 'the standard iOS MIME type must be detected');
+  assert.equal(isHeicFile({ type: 'image/heif', name: 'photo.heif' }), true, 'the HEIF sibling format must be detected too');
+  assert.equal(isHeicFile({ type: '', name: 'IMG_0002.heic' }), true, 'a blank/generic MIME type must fall back to the file extension');
+  assert.equal(isHeicFile({ type: 'image/jpeg', name: 'photo.jpg' }), false, 'an ordinary JPEG must never be flagged as HEIC');
+  assert.equal(isHeicFile({ type: 'image/png', name: 'logo.png' }), false, 'an ordinary PNG must never be flagged as HEIC');
+  assert.equal(isHeicFile(null), false, 'a missing file must not throw');
+});
