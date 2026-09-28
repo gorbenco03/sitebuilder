@@ -158,6 +158,18 @@
         </svg>
         <span class="btn-topbar-label">Adaugă Instagram</span>
       </button>
+      <!-- T-1A (PLAN-UX §5.2): secondary entry point — the primary one is the
+           "Adaugă o secțiune" button inside the "Secțiuni pagină" drawer
+           panel (builder/app.js's buildPageSectionsPanel). Same trigger id
+           real click (desktop/tablet) and proxied via "Mai mult" on phones
+           (MOBILE_MORE_MENU_ITEMS) — see builder/add-section.js. -->
+      <button id="btn-open-add-section" class="btn-topbar" type="button" aria-label="Adaugă o secțiune">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+          <rect x="1.5" y="2.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M7.5 5.5v4M5.5 7.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span class="btn-topbar-label">Adaugă secțiune</span>
+      </button>
       <button id="btn-color-picker" class="btn-topbar" aria-label="Culoare temă" title="Culoare temă">
         <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
           <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
@@ -636,6 +648,24 @@
   </div>
 </div>
 
+<!-- ===== MODAL: ADD SECTION (T-1A, PLAN-UX §5.2) =====
+     Markup only — builder/add-section.js owns everything rendered inside
+     #add-section-modal-body (the catalog list, or the empty state) and the
+     click handling on it; builder/app.js's minimal hook is exposing which
+     sections are addable (getAddableSectionDefs) and applying one
+     (hidookAddSection). Standard modal contract (suite4-modal-contract.test.js):
+     backdrop click / Escape / focus trap are already generic (app.js
+     enumerates `.modal-overlay[role="dialog"]`), so only .modal-close needs
+     to exist here at >=44x44px. -->
+<div id="modal-add-section" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-add-section-title" style="display:none">
+  <div class="modal-box modal-box--gallery">
+    <button class="modal-close" id="btn-close-add-section" aria-label="Închide">&times;</button>
+    <h2 id="modal-add-section-title" class="modal-title">Adaugă o secțiune</h2>
+    <p class="modal-sub">Alege un bloc pregătit pentru acest design — apare imediat pe pagină, cu conținut de pornire pe care îl poți edita.</p>
+    <div id="add-section-modal-body" class="add-section-list"></div>
+  </div>
+</div>
+
 <!-- ===== MODAL: ADD INSTAGRAM ===== -->
 <div id="modal-instagram" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-instagram-title" style="display:none">
   <div class="modal-box">
@@ -879,5 +909,6 @@ function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())
 <script src="/app/app.js"></script>
 <script src="/app/publish-checklist.js"></script>
 <script src="/app/onboarding.js"></script>
+<script src="/app/add-section.js"></script>
 </body>
 </html>

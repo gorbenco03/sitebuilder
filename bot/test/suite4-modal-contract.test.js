@@ -369,6 +369,17 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     }
 
     await contractCheck('gallery', 'modal-gallery', 'btn-close-gallery', () => clickAndHandle(page.locator('#btn-open-gallery')));
+    // modal-add-section (T-1A, PLAN-UX §5.2): same collapsed-behind-"Mai
+    // mult" situation as Instagram right below, at this file's 390px touch
+    // viewport (body.mobile-coarse-toolbar hides #btn-open-add-section
+    // itself — see builder/app.css). Always opens the modal regardless of
+    // whether the current template's schema declares any `addable: true`
+    // page section — "professionals" (this file's template) declares none
+    // today, so this drives the friendly empty state, not a real catalog
+    // card. That's still the real trigger and the real modal instance; the
+    // catalog-has-cards path is covered by
+    // bot/test/audit27-t-1a-add-section.test.js's own fixture schema.
+    await contractCheck('add-section', 'modal-add-section', 'btn-close-add-section', () => clickViaMoreMenu('Adaugă o secțiune'));
     await contractCheck('instagram', 'modal-instagram', 'btn-close-instagram', () => clickViaMoreMenu('Adaugă Instagram'));
     await contractCheck('publish', 'modal-publish', 'btn-close-publish', () => clickAndHandle(page.locator('#btn-publish')));
 
