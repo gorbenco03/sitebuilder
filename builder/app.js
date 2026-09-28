@@ -3932,12 +3932,9 @@ async function applySelectedImageFile(file, path, src, alt) {
   if (typeof noteAsyncSaveOpStart === 'function') noteAsyncSaveOpStart();
   try {
     showPreviewSpinner(true);
-    // images-media#3/#4: resizeImageToDataUrl() only keeps a GIF's animation
-    // or an SVG's vector quality below ORIGINAL_FORMAT_SIZE_CEILING — above
-    // it, it silently falls through to the same flattening every other
-    // image gets. That silent case is exactly what the audit flagged, so
-    // warn explicitly before the upload proceeds instead of saying nothing.
-    warnIfFormatWillBeFlattened(file);
+    // images-media#3/#4: the GIF/SVG flatten warning now fires from inside
+    // resizeImageToDataUrl() itself (single choke point for every upload
+    // path), so nothing extra is needed here.
     const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
     // Logo/src: bare data URL then full preview rebuild. Backgrounds: url() rewrite.
     if (/background|gradient/i.test(path || '')) {
@@ -3968,11 +3965,18 @@ const TRANSPARENT_PNG_SIZE_CEILING = 900 * 1024;
 // images-media#3/#4: canvas.drawImage() only ever captures one frame, so an
 // animated GIF run through it silently becomes a static JPEG, and an SVG run
 // through it silently becomes a fixed-resolution raster — both lose the
-// exact thing that made the format worth choosing, with no warning. Below
-// this size, keep the original file's own bytes for these two types instead
-// of rasterizing them at all.
-const ORIGINAL_FORMAT_SIZE_CEILING = 4 * 1024 * 1024;
-const KEEP_ORIGINAL_MIME_TYPES = ['image/gif', 'image/svg+xml'];
+// exact thing that made the format worth choosing, with no warning.
+//
+// Reviewer correction 2026-09-27: an earlier version of this fix kept the
+// original GIF/SVG bytes instead of rasterizing. That broke publishing —
+// POST /api/publish's server-side image allowlist (bot/server.js
+// handlePublish, commit 0a694b7, api-security#1) only accepts
+// image/jpeg|png|webp, so a site with such a logo failed the whole publish
+// with a 422 the owner never asked for, and this task does not own
+// bot/server.js to widen that allowlist. These two formats still rasterize
+// like every other upload; the fix here is only to warn about it up front,
+// every time, instead of doing it silently.
+const FLATTENED_ON_UPLOAD_MIME_TYPES = ['image/gif', 'image/svg+xml'];
 
 // images-media#5: an iPhone's camera saves in HEIC by default. Neither
 // <img>/canvas nor FileReader.readAsDataURL() can decode it in the browsers
@@ -4007,24 +4011,15 @@ function showImageProcessingError(e) {
   showToast('Nu am putut procesa fotografia: ' + msg, 'error');
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(new Error('Nu am putut citi imaginea.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-// images-media#3/#4 (the "or warn explicitly" half of the fix): a GIF/SVG
-// over ORIGINAL_FORMAT_SIZE_CEILING still gets flattened like any other
-// image — say so up front, in Romanian, instead of the silent conversion
-// the audit found.
+// images-media#3/#4 (the "or warn explicitly" half of the fix, since the
+// bytes themselves can no longer be kept — see FLATTENED_ON_UPLOAD_MIME_TYPES
+// above): every GIF/SVG upload gets flattened to JPEG/PNG so it can publish
+// at all — say so up front, in Romanian, unconditionally, instead of the
+// silent conversion the audit found.
 function warnIfFormatWillBeFlattened(file) {
-  if (!file || KEEP_ORIGINAL_MIME_TYPES.indexOf(file.type) === -1) return;
-  if (file.size <= ORIGINAL_FORMAT_SIZE_CEILING) return;
+  if (!file || FLATTENED_ON_UPLOAD_MIME_TYPES.indexOf(file.type) === -1) return;
   const lost = file.type === 'image/gif' ? 'animația' : 'calitatea vectorială';
-  showToast('Fișierul e prea mare ca să păstreze ' + lost + ' — va fi salvat ca imagine statică.', 'error', 6000);
+  showToast('Poza va fi salvată ca imagine statică — se pierde ' + lost + '.', 'error', 6000);
 }
 
 // Every pixel drawImage() puts on the canvas keeps its real alpha value even
@@ -4045,12 +4040,10 @@ function resizeImageToDataUrl(file, maxPx, quality) {
   if (isHeicFile(file)) {
     return Promise.reject(new Error(HEIC_UNSUPPORTED_MESSAGE));
   }
-  if (
-    file && KEEP_ORIGINAL_MIME_TYPES.indexOf(file.type) !== -1 &&
-    file.size <= ORIGINAL_FORMAT_SIZE_CEILING
-  ) {
-    return readFileAsDataUrl(file);
-  }
+  // images-media#3/#4: single choke point for the flatten warning, so it
+  // fires for every upload path (Logo, background, gallery, hero) rather
+  // than depending on each call site remembering to call it.
+  warnIfFormatWillBeFlattened(file);
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();

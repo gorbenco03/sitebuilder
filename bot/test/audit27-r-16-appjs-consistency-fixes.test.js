@@ -21,9 +21,17 @@
  *     typing immediately replaces the suggestion instead of appending to it.
  *   - edge-errors#4: a failed /api/slug-check shows a distinct "could not
  *     check" state, never the same checkmark as a confirmed-free address.
- *   - images-media#3/#4: an animated GIF keeps its animation and an SVG
- *     logo stays vector, instead of both being silently rasterized to a
- *     flat JPEG/PNG.
+ *   - images-media#3/#4: uploading a GIF/SVG logo used to silently
+ *     rasterize it to a flat JPEG/PNG with zero warning. Reviewer
+ *     correction 2026-09-27: an earlier version of this fix instead KEPT
+ *     the original GIF/SVG bytes — that broke publishing outright, because
+ *     POST /api/publish's server-side image allowlist (bot/server.js
+ *     handlePublish, main commit 0a694b7, api-security#1) only accepts
+ *     image/jpeg|png|webp and this task does not own bot/server.js to
+ *     widen it. Both formats still rasterize like before; the actual fix
+ *     is only the warning, shown unconditionally now (not just above a
+ *     size ceiling), plus a real end-to-end publish proving a GIF/SVG
+ *     logo still reaches a live site.
  *   - images-media#5 (flagged mid-task by the coordinator, added to this
  *     task's scope): a HEIC photo (iPhone's camera default) used to fail
  *     with a half-Romanian, half-English message ("Nu am putut procesa
@@ -195,7 +203,25 @@ test('builder-mobile#2 + edge-errors#4: slug field auto-selects on focus, and a 
   }
 });
 
-test('images-media#3: an animated GIF logo upload keeps its original bytes (image/gif), not a flattened JPEG', async () => {
+/** Uploads `buffer` as the Logo through the real gallery UI and returns the
+ * resulting draft.config.logo data URL. Shared by the GIF/SVG cases below. */
+async function uploadLogoAndGetStoredSrc(page, fileName, mimeType, buffer) {
+  await page.locator('#btn-open-gallery').click();
+  const modal = page.locator('#modal-gallery');
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  const logoSection = modal.locator('.gallery-path-section').filter({
+    has: page.locator('.field-label', { hasText: 'Logo' }),
+  });
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
+  ]);
+  await fileChooser.setFiles({ name: fileName, mimeType, buffer });
+  await page.waitForFunction(() => !!(draft && draft.config && draft.config.logo), { timeout: 10000 });
+  return page.evaluate(() => draft.config.logo);
+}
+
+test('images-media#3: an animated GIF logo upload is flattened to a publish-safe JPEG/PNG, with an explicit Romanian warning', async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
@@ -203,30 +229,25 @@ test('images-media#3: an animated GIF logo upload keeps its original bytes (imag
     await gotoEditorWithTemplate(page, 'product-menu');
     await closeDrawerIfOpen(page);
 
-    await page.locator('#btn-open-gallery').click();
-    const modal = page.locator('#modal-gallery');
-    await modal.waitFor({ state: 'visible', timeout: 10000 });
-    const logoSection = modal.locator('.gallery-path-section').filter({
-      has: page.locator('.field-label', { hasText: 'Logo' }),
-    });
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
-    ]);
-    await fileChooser.setFiles({ name: 'anim.gif', mimeType: 'image/gif', buffer: TINY_GIF_BUFFER });
+    const storedSrc = await uploadLogoAndGetStoredSrc(page, 'anim.gif', 'image/gif', TINY_GIF_BUFFER);
 
-    await page.waitForFunction(() => !!(draft && draft.config && draft.config.logo), { timeout: 10000 });
-    const storedSrc = await page.evaluate(() => draft.config.logo);
-    assert.ok(storedSrc.startsWith('data:image/gif'), 'images-media#3: a GIF upload must stay image/gif, got: ' + storedSrc.slice(0, 24));
+    // images-media#3 (reviewer correction): the server's image allowlist
+    // (bot/server.js handlePublish) only accepts jpeg/png/webp, so the
+    // stored value must be one of those, never the original image/gif —
+    // that's what made publishing fail outright before this fix.
+    assert.match(storedSrc, /^data:image\/(jpeg|png);base64,/, 'images-media#3: a GIF upload must be flattened to a publish-compatible jpeg/png, got: ' + storedSrc.slice(0, 24));
+    assert.notEqual(storedSrc.slice(0, 24).indexOf('image/gif'), 0, 'must not still be image/gif');
 
-    const storedBase64 = storedSrc.slice(storedSrc.indexOf(',') + 1);
-    assert.equal(storedBase64, TINY_GIF_BASE64, 'images-media#3: the GIF bytes must be the ORIGINAL file, not a re-encode (a re-encode, even a lossless one, is not provably still animated)');
+    // The warning must be unconditional (any GIF, not just an oversized
+    // one) and say plainly, in Romanian, that the animation is lost.
+    const toastText = (await page.locator('#toast').textContent() || '').trim();
+    assert.match(toastText, /animați/i, 'images-media#3: a GIF upload must warn about losing its animation, got toast: "' + toastText + '"');
   } finally {
     await browser.close();
   }
 });
 
-test('images-media#4: an SVG logo upload stays vector (image/svg+xml), not rasterized to PNG', async () => {
+test('images-media#4: an SVG logo upload is rasterized to a publish-safe JPEG/PNG, with an explicit Romanian warning', async () => {
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
@@ -234,27 +255,68 @@ test('images-media#4: an SVG logo upload stays vector (image/svg+xml), not raste
     await gotoEditorWithTemplate(page, 'product-menu');
     await closeDrawerIfOpen(page);
 
-    await page.locator('#btn-open-gallery').click();
-    const modal = page.locator('#modal-gallery');
-    await modal.waitFor({ state: 'visible', timeout: 10000 });
-    const logoSection = modal.locator('.gallery-path-section').filter({
-      has: page.locator('.field-label', { hasText: 'Logo' }),
-    });
-    const [fileChooser] = await Promise.all([
-      page.waitForEvent('filechooser'),
-      logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
-    ]);
-    await fileChooser.setFiles({ name: 'logo.svg', mimeType: 'image/svg+xml', buffer: TINY_SVG_BUFFER });
+    const storedSrc = await uploadLogoAndGetStoredSrc(page, 'logo.svg', 'image/svg+xml', TINY_SVG_BUFFER);
 
+    assert.match(storedSrc, /^data:image\/(jpeg|png);base64,/, 'images-media#4: an SVG upload must be rasterized to a publish-compatible jpeg/png, got: ' + storedSrc.slice(0, 30));
+    assert.notEqual(storedSrc.slice(0, 24).indexOf('image/svg'), 0, 'must not still be image/svg+xml');
+
+    const toastText = (await page.locator('#toast').textContent() || '').trim();
+    assert.match(toastText, /vectorial/i, 'images-media#4: an SVG upload must warn about losing its vector quality, got toast: "' + toastText + '"');
+  } finally {
+    await browser.close();
+  }
+});
+
+test('images-media#3/#4: a site with an uploaded GIF logo still publishes end-to-end (server allowlist compatibility)', async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    page.setDefaultTimeout(30000);
+    await gotoEditorWithTemplate(page, 'product-menu');
+    await closeDrawerIfOpen(page);
+
+    await uploadLogoAndGetStoredSrc(page, 'anim.gif', 'image/gif', TINY_GIF_BUFFER);
+    await page.locator('#btn-close-gallery').click();
+    await page.locator('#modal-gallery').waitFor({ state: 'hidden', timeout: 5000 });
+
+    // Sign in (POST /api/publish requires auth) through the same dev
+    // magic-link flow the other suites use.
+    await page.locator('#btn-account-menu').click();
+    await page.locator('#account-menu-projects').click();
+    await page.waitForURL(/#dashboard$/);
+    await page.locator('#btn-dashboard-auth').click();
+    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
+    await page.locator('#input-email').fill('r16-gif-publish@example.com');
+    await page.locator('#btn-send-magic').click();
+    await page.locator('#dev-link').waitFor({ state: 'visible' });
+    await page.locator('#dev-link').click();
+    await page.waitForURL(/#edit$/);
+    await page.locator('#preview-iframe').waitFor({ state: 'visible' });
+    await page.waitForTimeout(600);
+    await closeDrawerIfOpen(page);
+    // The logo survives sign-in (same draft, now attached to the account).
     await page.waitForFunction(() => !!(draft && draft.config && draft.config.logo), { timeout: 10000 });
-    const storedSrc = await page.evaluate(() => draft.config.logo);
-    assert.ok(storedSrc.startsWith('data:image/svg+xml'), 'images-media#4: an SVG upload must stay image/svg+xml, got: ' + storedSrc.slice(0, 30));
 
-    const decoded = Buffer.from(decodeURIComponent(storedSrc.slice(storedSrc.indexOf(',') + 1)), 'utf8').toString('utf8');
-    const decodedViaAtob = storedSrc.includes(';base64,')
-      ? Buffer.from(storedSrc.slice(storedSrc.indexOf(',') + 1), 'base64').toString('utf8')
-      : decoded;
-    assert.ok(decodedViaAtob.includes('<svg'), 'images-media#4: the stored value must still be a real <svg> document, not a rasterized image');
+    await page.locator('#btn-publish').click();
+    await page.locator('#modal-publish').waitFor({ state: 'visible' });
+    const slug = 'r16-gif-pub-' + crypto.randomBytes(4).toString('hex');
+    await page.locator('#input-slug').fill(slug);
+
+    // Capture the actual POST /api/publish response instead of only
+    // inferring success from the modal — a 422 here is exactly the
+    // reviewer-reproduced regression, and asserting on the real response
+    // makes that failure mode unambiguous instead of just "modal timed out".
+    const publishResponsePromise = page.waitForResponse((res) => res.url().includes('/api/publish') && res.request().method() === 'POST');
+    await page.locator('#btn-publish-continue').click();
+    const publishResponse = await publishResponsePromise;
+    let publishBody = null;
+    try { publishBody = await publishResponse.json(); } catch (_) { /* ignore */ }
+    assert.ok(
+      publishResponse.status() >= 200 && publishResponse.status() < 300,
+      'images-media#3/#4: POST /api/publish with an uploaded GIF logo must succeed, got ' + publishResponse.status() + ' ' + JSON.stringify(publishBody)
+    );
+
+    await page.locator('#modal-success').waitFor({ state: 'visible', timeout: 15000 });
   } finally {
     await browser.close();
   }
