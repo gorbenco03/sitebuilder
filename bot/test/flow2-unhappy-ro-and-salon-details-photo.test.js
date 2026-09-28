@@ -18,7 +18,19 @@ const ROOT = path.resolve(__dirname, '../..');
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 const appSrc = read('builder/app.js');
 const serverSrc = read('bot/server.js');
+const copyRoSrc = read('builder/copy-ro.js');
 const failures = [];
+
+// PLAN-UX-2026-09-27 §5.8 (T-3): app.js now sources its Romanian toasts/
+// fallbacks from the RO catalog (builder/copy-ro.js) instead of repeating
+// the literal string at each call site — read the catalog's own value
+// wherever this file used to assert against a literal in appSrc.
+function copyRoValue(key) {
+  const sandbox = {};
+  vm.runInNewContext(copyRoSrc + '\nthis.RO = RO;', sandbox);
+  assert.ok(Object.prototype.hasOwnProperty.call(sandbox.RO, key), `RO.${key} must exist in builder/copy-ro.js`);
+  return sandbox.RO[key];
+}
 
 function check(name, fn) {
   try {
@@ -76,8 +88,13 @@ check('auth email network failure copy', () => {
   // refused) produces a raw browser TypeError whose message is English
   // technical text. Displaying that verbatim is the regression this guards.
   assert.ok(
-    wireAuthForm.includes("'Nu am putut trimite linkul. Încearcă din nou.'"),
-    'auth email failure still keeps the Romanian fallback'
+    wireAuthForm.includes('safeServerMessage(err, RO.IG_LINK_SEND_FAILED)'),
+    'auth email failure still routes through the shared RO fallback'
+  );
+  assert.strictEqual(
+    copyRoValue('IG_LINK_SEND_FAILED'),
+    'Nu am putut trimite linkul. Încearcă din nou.',
+    'auth email failure still keeps the Romanian fallback text'
   );
   assert.ok(
     /safeServerMessage\s*\(\s*err\s*,/.test(wireAuthForm),
@@ -109,8 +126,13 @@ check('publish network failure copy', () => {
   // safeServerMessage() marks server-authored messages `fromServer` for
   // exactly this (checked directly, above).
   assert.ok(
-    doActualPublish.includes("'Publicarea a eșuat. Încearcă din nou.'"),
+    doActualPublish.includes('safeServerMessage(e, RO.PUBLISH_FAILED)'),
     'publish failure keeps the fixed Romanian fallback for non-server errors'
+  );
+  assert.strictEqual(
+    copyRoValue('PUBLISH_FAILED'),
+    'Publicarea a eșuat. Încearcă din nou.',
+    'publish failure fallback text is unchanged'
   );
   assert.ok(
     /safeServerMessage\s*\(\s*e\s*,/.test(doActualPublish),
@@ -120,8 +142,13 @@ check('publish network failure copy', () => {
 
 check('invalid payment copy', () => {
   assert.ok(
-    completeTestCheckout.includes("showToast('Sesiune de plată invalidă.', 'error')"),
+    completeTestCheckout.includes("showToast(RO.INVALID_PAYMENT_SESSION, 'error')"),
     'invalid test-payment hash toast is Romanian'
+  );
+  assert.strictEqual(
+    copyRoValue('INVALID_PAYMENT_SESSION'),
+    'Sesiune de plată invalidă.',
+    'invalid test-payment hash toast text is unchanged'
   );
   assert.ok(!completeTestCheckout.includes('Invalid payment session.'), 'invalid test-payment hash cannot toast English');
   assert.ok(serverSrc.includes("error: 'Sesiune de plată invalidă.'"), 'invalid test-payment API response is Romanian');
@@ -129,8 +156,9 @@ check('invalid payment copy', () => {
 });
 
 check('logout copy', () => {
-  assert.ok(appSrc.includes("showToast('Te-ai deconectat.', '', 3000)"), 'logout success toast is Romanian');
+  assert.ok(appSrc.includes("showToast(RO.LOGGED_OUT, '', 3000)"), 'logout success toast is Romanian');
   assert.ok(!appSrc.includes("showToast('Signed out.'"), 'logout success path cannot toast English');
+  assert.strictEqual(copyRoValue('LOGGED_OUT'), 'Te-ai deconectat.', 'logout success toast text is unchanged');
 });
 
 check('second unpaid site copy', () => {
@@ -161,7 +189,15 @@ async function runExportFailure(downloadFunction, response) {
     showToast: (...args) => toasts.push(args),
   };
   const functionName = downloadFunction.match(/function\s+(\w+)/)[1];
-  vm.runInNewContext(`${downloadFunction}\nthis.download = ${functionName};`, sandbox);
+  // T-3: downloadDraftHtml/downloadDraftZip now read their Romanian text from
+  // the RO catalog (builder/copy-ro.js) — load it into this sandbox too, same
+  // as the real page's <script> order (copy-ro.js before app.js).
+  // Strip copy-ro.js's own 'use strict' directive before splicing it into a
+  // concatenated script — otherwise it makes the WHOLE combined script
+  // strict, and downloadDraftHtml/downloadDraftZip's own (unrelated,
+  // pre-existing) implicit-global assignments would throw in strict mode.
+  const copyRoBody = copyRoSrc.replace(/^'use strict';\s*\n?/, '');
+  vm.runInNewContext(`${copyRoBody}\n${downloadFunction}\nthis.download = ${functionName};`, sandbox);
   await sandbox.download();
   assert.strictEqual(button.disabled, false, 'export button is restored after a failed download');
   assert.strictEqual(toasts.length, 1, 'failed export shows exactly one toast');

@@ -737,7 +737,7 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; }
   catch (e) {
     if (e.name === 'QuotaExceededError' || (e.code && e.code === 22)) {
-      showToast('Site-ul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.', 'error', 7000);
+      showToast(RO.SAVE_DRAFT_TOO_LARGE, 'error', 7000);
     }
     return false;
   }
@@ -1561,7 +1561,7 @@ function applyQuickstart() {
   updateChecklist();
   scheduleRerender(true);
   if (typeof showToast === 'function') {
-    showToast('Site-ul tău are acum datele tale — verifică pe canvas.', 'success', 4000);
+    showToast(RO.QUICKSTART_APPLIED, 'success', 4000);
   }
   if (nameEl) nameEl.value = '';
   if (phoneEl) phoneEl.value = '';
@@ -2150,12 +2150,9 @@ function showTabConflictBanner(sections) {
   if (textEl) {
     if (sections && sections.length) {
       const labels = sections.map(labelForConfigSection);
-      textEl.textContent = 'Acest site e deschis și în altă filă a browserului — acolo tocmai s-a ' +
-        'modificat: ' + labels.join(', ') + '. Am păstrat modificările din ambele file unde a fost posibil ' +
-        '(dacă amândouă au atins exact același câmp, câștigă ultima salvare).';
+      textEl.textContent = t('TAB_CONFLICT_WITH_SECTIONS', { sections: labels.join(', ') });
     } else {
-      textEl.textContent = 'Acest site e deschis și în altă filă a browserului. Îmbinăm modificările ' +
-        'câmp cu câmp — dacă amândouă tab-urile ating exact același câmp, câștigă ultima salvare.';
+      textEl.textContent = RO.TAB_CONFLICT_GENERIC;
     }
   }
   if (banner) { banner.style.display = ''; banner.setAttribute('aria-hidden', 'false'); }
@@ -2495,9 +2492,9 @@ function renderSaveIndicator() {
   show(el);
   el.dataset.state = saveState;
   el.title = saveState === 'error' ? saveErrorMessage : '';
-  if (saveState === 'saving') textEl.textContent = 'Se salvează…';
-  else if (saveState === 'saved') textEl.textContent = 'Salvat';
-  else if (saveState === 'error') textEl.textContent = 'Nu s-a salvat';
+  if (saveState === 'saving') textEl.textContent = RO.SAVE_STATE_SAVING;
+  else if (saveState === 'saved') textEl.textContent = RO.SAVE_STATE_SAVED;
+  else if (saveState === 'error') textEl.textContent = RO.SAVE_STATE_ERROR;
   if (retryBtn) retryBtn.style.display = saveState === 'error' ? '' : 'none';
 }
 
@@ -2517,7 +2514,7 @@ function noteEditingInProgress() {
 function settleAfterLocalSave() {
   if (!localSaveOk) {
     setSaveState('error', saveErrorMessage ||
-      'Site-ul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.');
+      RO.SAVE_DRAFT_TOO_LARGE);
     return;
   }
   if (Object.keys(pendingLiveEdits).length > 0 || pendingOpCount > 0) {
@@ -2649,11 +2646,11 @@ async function runServerAutosave() {
       if (typeof handleAuthExpired === 'function') {
         handleAuthExpired(() => { scheduleServerAutosave(); });
       } else {
-        setSaveState('error', 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Site-ul rămâne aici, pe acest calculator.');
+        setSaveState('error', RO.SESSION_EXPIRED_AUTOSAVE);
       }
       return;
     }
-    setSaveState('error', safeServerMessage(e, 'Nu s-a putut salva în cont.'));
+    setSaveState('error', safeServerMessage(e, RO.SAVE_ACCOUNT_FAILED));
   }
 }
 
@@ -2779,14 +2776,14 @@ function maybeShowRecoveryBanner() {
     if (!stillDirty) { hideRecoveryBanner(); return; }
     recoveryBannerMode = 'resume-live';
     const siteName = (getPath(saved.config, 'business.name') || templateName || 'site-ul tău').trim();
-    if (textEl) textEl.textContent = 'Ai modificări nesalvate la ' + siteName + '. Continui de unde ai rămas?';
+    if (textEl) textEl.textContent = t('UNSAVED_CHANGES_NAMED', { name: siteName });
     showRecoveryBanner();
     return;
   }
 
   recoveryBannerMode = 'unfinished';
   if (textEl) {
-    textEl.textContent = 'Ai un site neterminat' + (templateName ? (': ' + templateName) : '') + '. Continui de unde ai rămas?';
+    textEl.textContent = t('UNFINISHED_SITE', { template: templateName ? (': ' + templateName) : '' });
   }
   showRecoveryBanner();
 }
@@ -3378,7 +3375,7 @@ function initPostMessageListener() {
           const schema = tpl && tpl.schema;
           const field = schema && getAllSchemaFields(schema).find(f => f && f.key === msg.listPath);
           if (isBareScalarListField(field)) {
-            showToast('Pentru a adăuga o poză aici, folosește panoul „Poze".', 'error');
+            showToast(RO.PHOTO_LIST_USE_PANEL, 'error');
             return;
           }
           onListAdd(msg.listPath);
@@ -4188,7 +4185,7 @@ const HEIC_UNSUPPORTED_MESSAGE = 'Fotografiile HEIC de pe iPhone nu sunt accepta
 function showImageProcessingError(e) {
   const msg = (e && e.message) || '';
   if (msg === HEIC_UNSUPPORTED_MESSAGE) { showToast(msg, 'error', 6000); return; }
-  showToast('Nu am putut procesa fotografia: ' + msg, 'error');
+  showToast(t('IMAGE_PROCESS_FAILED_PREFIX', { msg: msg }), 'error');
 }
 
 // images-media#3/#4 (the "or warn explicitly" half of the fix, since the
@@ -4199,7 +4196,7 @@ function showImageProcessingError(e) {
 function warnIfFormatWillBeFlattened(file) {
   if (!file || FLATTENED_ON_UPLOAD_MIME_TYPES.indexOf(file.type) === -1) return;
   const lost = file.type === 'image/gif' ? 'animația' : 'calitatea vectorială';
-  showToast('Poza va fi salvată ca imagine statică — se pierde ' + lost + '.', 'error', 6000);
+  showToast(t('IMAGE_LOSES_QUALITY', { lost: lost }), 'error', 6000);
 }
 
 // Every pixel drawImage() puts on the canvas keeps its real alpha value even
@@ -4264,7 +4261,7 @@ function resizeImageToDataUrl(file, maxPx, quality) {
       }
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Nu am putut citi imaginea.')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error(RO.IMAGE_READ_FAILED)); };
     img.src = url;
   });
 }
@@ -4454,7 +4451,7 @@ function warnIfBackgroundFlipsInk(hex) {
   const needsWhiteInk = contrastRatio(l, BG_INK_SNOW_L) > contrastRatio(l, BG_INK_VOID_L);
   if (needsWhiteInk && !bgNeedsWhiteInkWarned) {
     bgNeedsWhiteInkWarned = true;
-    showToast('Fundal închis — textul site-ului devine automat alb, pentru lizibilitate.', '', 4000);
+    showToast(RO.BG_AUTO_WHITE_INK, '', 4000);
   } else if (!needsWhiteInk) {
     bgNeedsWhiteInkWarned = false;
   }
@@ -5813,7 +5810,7 @@ function openImagePickerForPath(configPath, cb) {
       if (typeof showToast === 'function') {
         // images-media#5: HEIC's own message is already the full, correct
         // thing to say — everything else keeps this path's plain generic text.
-        const msg = e && e.message === HEIC_UNSUPPORTED_MESSAGE ? HEIC_UNSUPPORTED_MESSAGE : 'Nu am putut procesa fotografia.';
+        const msg = e && e.message === HEIC_UNSUPPORTED_MESSAGE ? HEIC_UNSUPPORTED_MESSAGE : RO.IMAGE_PROCESS_FAILED_GENERIC;
         showToast(msg, 'error');
       }
       settlePendingOp();
@@ -6269,7 +6266,7 @@ function buildGallerySection(body, path, itemsAreStrings) {
         saveDraft();
         fullRerender();
         renderThumbs();
-        showToast('Poză ștearsă — apasă Anulează din bara de sus dacă a fost o greșeală.');
+        showToast(RO.PHOTO_DELETED_UNDO);
       });
       div.appendChild(del);
       card.appendChild(div);
@@ -6394,7 +6391,7 @@ function buildGallerySection(body, path, itemsAreStrings) {
         setPath(draft.config, path, arr);
         added++;
       } catch (e) {
-        showToast('Nu am putut procesa "' + file.name + '": ' + e.message, 'error');
+        showToast(t('PHOTO_UPLOAD_FAILED_NAMED', { name: file.name, msg: e.message }), 'error');
       }
     }
     dzLabel.textContent = 'Adaugă poze';
@@ -6403,7 +6400,7 @@ function buildGallerySection(body, path, itemsAreStrings) {
       saveDraft();
       fullRerender();
       renderThumbs();
-      showToast(added === 1 ? 'Poza a fost adăugată.' : (added + ' poze au fost adăugate.'), 'success');
+      showToast(added === 1 ? RO.PHOTO_ADDED_ONE : t('PHOTO_ADDED_MANY', { count: added }), 'success');
     }
     fileInput.value = '';
   });
@@ -6819,7 +6816,7 @@ async function prepareInstagramEditor() {
   if (!connectedInstagramEmbedUrl()) return;
   instagramEditorUrl = '';
   if (btn) btn.disabled = true;
-  if (status) status.textContent = 'Pregătim editorul Instafidget…';
+  if (status) status.textContent = RO.IG_EDITOR_PREPARING;
   try {
     const siteId = await ensureDraftSiteForInstagram();
     const session = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/editor-session', {});
@@ -6827,11 +6824,11 @@ async function prepareInstagramEditor() {
     if (btn) btn.disabled = !instagramEditorUrl;
     if (status) {
       status.textContent = instagramEditorUrl
-        ? 'Editorul este pregătit și se va deschide într-un tab nou.'
-        : 'Nu am putut pregăti editorul Instafidget. Încearcă din nou.';
+        ? RO.IG_EDITOR_READY
+        : RO.IG_EDITOR_PREPARE_FAILED_RETRY;
     }
   } catch (e) {
-    if (status) status.textContent = safeServerMessage(e, 'Nu am putut pregăti editorul Instafidget.');
+    if (status) status.textContent = safeServerMessage(e, RO.IG_EDITOR_PREPARE_FAILED);
   }
 }
 
@@ -6846,14 +6843,14 @@ async function disconnectInstagram() {
   cancelPendingInstagramConnect();
   instagramEditorUrl = '';
   applyEmbedUrl('');
-  setIgStatus('Instagram a fost deconectat. Feed-ul nu mai este afișat pe site.');
+  setIgStatus(RO.IG_DISCONNECTED);
   const siteId = siteIdForInstagram();
   if (!siteId || !currentUser || !currentUser.email) return;
   try {
     await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/disconnect', {});
   } catch (e) {
     setIgStatus(
-      safeServerMessage(e, 'Instagram a fost deconectat local, dar serverul nu a confirmat. Reîncearcă publicarea.'),
+      safeServerMessage(e, RO.IG_DISCONNECT_LOCAL_ONLY),
       true
     );
   }
@@ -6874,12 +6871,12 @@ async function ensureDraftSiteForInstagram() {
     return siteId;
   }
   if (!currentUser || !currentUser.email) {
-    throw new Error('Autentifică-te ca să salvezi ciorna.');
+    throw new Error(RO.SITE_SIGNIN_REQUIRED);
   }
   if (!draft.config || !draft.templateId) {
-    throw new Error('Alege mai întâi un design.');
+    throw new Error(RO.DESIGN_REQUIRED);
   }
-  setIgStatus('Salvăm ciorna pentru conectarea Instagram…');
+  setIgStatus(RO.IG_DRAFT_SAVING);
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
   const baseSlug = toSlug(
@@ -6901,7 +6898,7 @@ async function ensureDraftSiteForInstagram() {
     throw error;
   }
   if (!data.site || !data.site.id) {
-    throw new Error('Nu am putut salva ciorna. Încearcă din nou.');
+    throw new Error(RO.DRAFT_SAVE_FAILED_RETRY);
   }
   currentSiteId = data.site.id;
   publishedSiteId = data.site.id;
@@ -6929,7 +6926,7 @@ function wireIgAuthForm() {
     const emailInput = $('input-ig-email');
     const email = emailInput ? emailInput.value.trim() : '';
     if (!email) {
-      if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
+      if (errorDiv) { errorDiv.textContent = RO.AUTH_EMAIL_REQUIRED; show(errorDiv); }
       return;
     }
     const submitBtn = $('btn-ig-send-magic');
@@ -6953,12 +6950,12 @@ function wireIgAuthForm() {
             if (user) {
               updateUserUI(user);
               syncInstagramModalPanels();
-              setIgStatus('Cont activ. Pregătim conectarea…');
+              setIgStatus(RO.IG_ACCOUNT_ACTIVE);
               try {
                 await ensureDraftSiteForInstagram();
-                setIgStatus('Poți conecta Instagram. Bifează acordul, apoi apasă Conectează Instagram.');
+                setIgStatus(RO.IG_READY_TO_CONNECT);
               } catch (err) {
-                setIgStatus(safeServerMessage(err, 'Nu am putut salva ciorna.'), true);
+                setIgStatus(safeServerMessage(err, RO.IG_DRAFT_SAVE_FAILED), true);
               }
             } else {
               window.location.href = href;
@@ -6971,7 +6968,7 @@ function wireIgAuthForm() {
       }
     } catch (err) {
       if (errorDiv) {
-        errorDiv.textContent = safeServerMessage(err, 'Nu am putut trimite linkul. Încearcă din nou.');
+        errorDiv.textContent = safeServerMessage(err, RO.IG_LINK_SEND_FAILED);
         show(errorDiv);
       }
     } finally {
@@ -7007,7 +7004,7 @@ function openInstagramModal() {
       await ensureDraftSiteForInstagram();
       setIgStatus('');
     } catch (e) {
-      setIgStatus(safeServerMessage(e, 'Nu am putut pregăti Instagram. Încearcă din nou.'), true);
+      setIgStatus(safeServerMessage(e, RO.IG_PREPARE_FAILED_RETRY), true);
     }
   })();
 }
@@ -7016,21 +7013,21 @@ async function connectInstagram() {
   const check = $('ig-terms-check');
   const btn = $('btn-ig-connect');
   if (!currentUser || !currentUser.email) {
-    setIgStatus('Autentifică-te ca să conectezi Instagram.', true);
+    setIgStatus(RO.IG_AUTH_REQUIRED, true);
     syncInstagramModalPanels();
     wireIgAuthForm();
     return;
   }
   if (!check || !check.checked) {
-    setIgStatus('Bifează acordul pentru Termeni și Politica de confidențialitate.', true);
+    setIgStatus(RO.IG_TERMS_REQUIRED, true);
     return;
   }
   setBtnLoading(btn, true);
-  setIgStatus('Conectăm Instagram…');
+  setIgStatus(RO.IG_CONNECTING);
   try {
     const siteId = await ensureDraftSiteForInstagram();
     if (!siteId) {
-      setIgStatus('Salvează mai întâi ciorna.', true);
+      setIgStatus(RO.IG_SAVE_DRAFT_FIRST, true);
       return;
     }
     const grant1 = await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/grant', {
@@ -7044,13 +7041,13 @@ async function connectInstagram() {
     if (editorBtn) editorBtn.disabled = !instagramEditorUrl;
     if (editorStatus) {
       editorStatus.textContent = instagramEditorUrl
-        ? 'Editorul este pregătit și se va deschide într-un tab nou.'
-        : 'Nu am putut pregăti editorul Instafidget. Încearcă din nou.';
+        ? RO.IG_EDITOR_READY
+        : RO.IG_EDITOR_PREPARE_FAILED_RETRY;
     }
     // Isolated/test finish: grant already stored embed; no partner editor UI required
     if (grant1.embedUrl && !(session && session.editorUrl)) {
-      setIgStatus('Instagram este afișat pe site.');
-      showToast('Instagram a fost conectat.', 'success', 3500);
+      setIgStatus(RO.IG_ON_SITE);
+      showToast(RO.IG_CONNECTED, 'success', 3500);
       closeModal('modal-instagram');
       return;
     }
@@ -7059,7 +7056,7 @@ async function connectInstagram() {
       const editorTab = window.open(session.editorUrl, '_blank');
       if (editorTab) editorTab.opener = null;
     }
-    setIgStatus('După ce termini conectarea, revenim aici și actualizăm feed-ul de pe site.');
+    setIgStatus(RO.IG_AFTER_CONNECT_RETURN);
     // Drop any prior focus waiter so only this connect attempt can finish.
     cancelPendingInstagramConnect();
     const connectGen = instagramConnectGeneration;
@@ -7076,21 +7073,21 @@ async function connectInstagram() {
         if (connectGen !== instagramConnectGeneration) return;
         if (grant2.embedUrl) {
           applyEmbedUrl(grant2.embedUrl);
-          setIgStatus('Instagram e pe site.');
-          showToast('Instagram e conectat.', 'success', 3500);
+          setIgStatus(RO.IG_ON_SITE_ALT);
+          showToast(RO.IG_CONNECTED_ALT, 'success', 3500);
           closeModal('modal-instagram');
         } else {
-          setIgStatus('Feed-ul nu este gata încă. Redeschide Instagram după ce salvezi conectarea.');
+          setIgStatus(RO.IG_FEED_NOT_READY);
         }
       } catch (e) {
         if (connectGen !== instagramConnectGeneration) return;
-        setIgStatus(safeServerMessage(e, 'Nu am putut reîncărca feed-ul Instagram.'), true);
+        setIgStatus(safeServerMessage(e, RO.IG_FEED_RELOAD_FAILED), true);
       }
     };
     instagramConnectFocusHandler = onFocus;
     window.addEventListener('focus', onFocus);
   } catch (e) {
-    setIgStatus(safeServerMessage(e, 'Nu am putut conecta Instagram.'), true);
+    setIgStatus(safeServerMessage(e, RO.IG_CONNECT_FAILED), true);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -7161,7 +7158,7 @@ function maybeWarnBeforeExport(kind) {
  * for a code explicitly named in safeCodes.
  */
 function safeServerMessage(e, fallbackRo, safeCodes) {
-  fallbackRo = fallbackRo || 'Ceva nu a mers. Încearcă din nou.';
+  fallbackRo = fallbackRo || RO.GENERIC_FALLBACK;
   if (e && e.fromServer && typeof e.status === 'number') {
     if (e.status >= 400 && e.status < 500 && e.message) return e.message;
     if (e.status >= 500 && e.message && Array.isArray(safeCodes) && safeCodes.indexOf(e.code) !== -1) return e.message;
@@ -7181,7 +7178,7 @@ function safeServerMessage(e, fallbackRo, safeCodes) {
 async function downloadDraftHtml() {
   const btn = $('btn-download-html');
   if (!currentUser) {
-    showToast('Intră în cont ca să descarci HTML-ul.', 'error', 5000);
+    showToast(RO.DOWNLOAD_HTML_SIGNIN, 'error', 5000);
     return;
   }
   // Saving the draft + generating the export is a real network round-trip
@@ -7194,7 +7191,7 @@ async function downloadDraftHtml() {
   if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, true, 'Se pregătește…'); else btn.disabled = true; }
   try {
     if (!draft.templateId || !draft.config) {
-      showToast('Alege mai întâi un design.', 'error', 5000);
+      showToast(RO.DESIGN_REQUIRED, 'error', 5000);
       return;
     }
     const saved = await apiPost('/api/draft', {
@@ -7202,7 +7199,7 @@ async function downloadDraftHtml() {
       templateId: draft.templateId,
       config: draft.config,
     });
-    if (!saved.site || !saved.site.id) throw new Error('Ciorna nu a fost salvată.');
+    if (!saved.site || !saved.site.id) throw new Error(RO.DRAFT_NOT_SAVED);
     currentSiteId = saved.site.id;
     publishedSiteId = saved.site.id;
     currentSitePaid = !!saved.site.paid;
@@ -7220,10 +7217,10 @@ async function downloadDraftHtml() {
     });
     if (!res.ok) {
       const msg = res.status === 401
-        ? 'Intră în cont ca să descarci HTML-ul.'
+        ? RO.DOWNLOAD_HTML_SIGNIN
         : res.status === 402
-          ? 'Activează trialul de 14 zile sau abonamentul ca să descarci HTML-ul.'
-          : 'Nu am putut descărca HTML-ul.';
+          ? RO.DOWNLOAD_HTML_TRIAL_REQUIRED
+          : RO.DOWNLOAD_HTML_FAILED;
       showToast(msg, 'error', 5000);
       return;
     }
@@ -7251,14 +7248,14 @@ async function downloadDraftHtml() {
       try { document.body.removeChild(a); } catch (_) {}
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
-    showToast('HTML descărcat.', 'success', 2500);
+    showToast(RO.DOWNLOAD_HTML_DONE, 'success', 2500);
   } catch (err) {
     const status = err && err.status;
     const msg = status === 401
-      ? 'Autentifică-te ca să descarci HTML-ul.'
+      ? RO.DOWNLOAD_HTML_SIGNIN_ALT
       : status === 402
-        ? 'Activează trialul de 14 zile sau abonamentul ca să descarci HTML-ul.'
-        : 'Nu am putut descărca HTML-ul.';
+        ? RO.DOWNLOAD_HTML_TRIAL_REQUIRED
+        : RO.DOWNLOAD_HTML_FAILED;
     showToast(msg, 'error', 5000);
   } finally {
     if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, false); else btn.disabled = false; }
@@ -7272,7 +7269,7 @@ async function downloadDraftHtml() {
 async function downloadDraftZip() {
   const btn = $('btn-download-zip');
   if (!currentUser) {
-    showToast('Autentifică-te ca să descarci ZIP-ul.', 'error', 5000);
+    showToast(RO.DOWNLOAD_ZIP_SIGNIN, 'error', 5000);
     return;
   }
   // Same feedback fix as downloadDraftHtml() above — zipping is the slower
@@ -7281,7 +7278,7 @@ async function downloadDraftZip() {
   if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, true, 'Se pregătește…'); else btn.disabled = true; }
   try {
     if (!draft.templateId || !draft.config) {
-      showToast('Alege mai întâi un design.', 'error', 5000);
+      showToast(RO.DESIGN_REQUIRED, 'error', 5000);
       return;
     }
     const saved = await apiPost('/api/draft', {
@@ -7289,7 +7286,7 @@ async function downloadDraftZip() {
       templateId: draft.templateId,
       config: draft.config,
     });
-    if (!saved.site || !saved.site.id) throw new Error('Ciorna nu a fost salvată.');
+    if (!saved.site || !saved.site.id) throw new Error(RO.DRAFT_NOT_SAVED);
     currentSiteId = saved.site.id;
     publishedSiteId = saved.site.id;
     currentSitePaid = !!saved.site.paid;
@@ -7307,10 +7304,10 @@ async function downloadDraftZip() {
     });
     if (!res.ok) {
       const msg = res.status === 401
-        ? 'Autentifică-te ca să descarci ZIP-ul.'
+        ? RO.DOWNLOAD_ZIP_SIGNIN
         : res.status === 402
-          ? 'Activează trialul de 14 zile sau abonamentul ca să descarci ZIP-ul.'
-          : 'Nu am putut descărca ZIP-ul.';
+          ? RO.DOWNLOAD_ZIP_TRIAL_REQUIRED
+          : RO.DOWNLOAD_ZIP_FAILED;
       showToast(msg, 'error', 5000);
       return;
     }
@@ -7338,9 +7335,9 @@ async function downloadDraftZip() {
       try { document.body.removeChild(a); } catch (_) {}
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
-    showToast('ZIP descărcat.', 'success', 2500);
+    showToast(RO.DOWNLOAD_ZIP_DONE, 'success', 2500);
   } catch (_) {
-    showToast('Nu am putut descărca ZIP-ul.', 'error', 5000);
+    showToast(RO.DOWNLOAD_ZIP_FAILED, 'error', 5000);
   } finally {
     if (btn) { if (typeof setBtnLoading === 'function') setBtnLoading(btn, false); else btn.disabled = false; }
   }
@@ -7777,7 +7774,7 @@ async function doLogout() {
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
-  showToast('Te-ai deconectat.', '', 3000);
+  showToast(RO.LOGGED_OUT, '', 3000);
   window.location.hash = '#templates';
 }
 
@@ -7806,7 +7803,7 @@ async function confirmLogoutEverywhere() {
   closeModal('modal-logout-everywhere');
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
-  showToast('Te-ai deconectat de pe toate dispozitivele.', '', 3000);
+  showToast(RO.LOGGED_OUT_EVERYWHERE, '', 3000);
   window.location.hash = '#templates';
   if (confirmBtn) setBtnLoading(confirmBtn, false);
 }
@@ -7970,8 +7967,7 @@ function hideSessionExpiredBanner() {
 function handleAuthExpired(retryFn) {
   updateUserUI(null); // badge/nav/save-pill all reflect signed-out immediately
   sessionExpiredRetry = typeof retryFn === 'function' ? retryFn : null;
-  const msg = 'Sesiunea a expirat — conectează-te din nou ca să salvezi și să publici. ' +
-    'Modificările tale sunt păstrate pe acest dispozitiv.';
+  const msg = RO.SESSION_EXPIRED_FULL;
   if (typeof setSaveState === 'function') setSaveState('error', msg);
   if (sessionExpiredActive) return; // already showing — do not restack
   sessionExpiredActive = true;
@@ -7983,7 +7979,7 @@ function handleAuthExpired(retryFn) {
  * leaving the editor. */
 function reauthenticateInline() {
   const authTitleEl = $('modal-auth-title');
-  if (authTitleEl) authTitleEl.textContent = 'Sesiunea a expirat — conectează-te din nou';
+  if (authTitleEl) authTitleEl.textContent = RO.SESSION_EXPIRED_SHORT;
   hide($('publish-step-1'));
   show($('publish-step-2'));
   show($('form-auth-email'));
@@ -8183,7 +8179,7 @@ async function openPublishModal() {
 
   const invalidUrlInput = document.querySelector('.field-input--url[aria-invalid="true"]');
   if (invalidUrlInput) {
-    showToast(invalidUrlInput.validationMessage || 'Verifică linkul introdus.', 'error', 5000);
+    showToast(invalidUrlInput.validationMessage || RO.CHECK_LINK_INVALID, 'error', 5000);
     openDrawer();
     invalidUrlInput.focus();
     return;
@@ -8196,7 +8192,7 @@ async function openPublishModal() {
     if (missing.length > 0) {
       const firstMissing = missing[0];
       const msgParts = missing.map(f => f.label || f.key);
-      showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', '), 'error', 5000);
+      showToast(t('FIELDS_MISSING', { fields: msgParts.slice(0,3).join(', ') }), 'error', 5000);
       // Highlight in iframe
       sendHighlightToIframe(firstMissing.key);
       // Open drawer, scrolled to and focused on the actual missing field —
@@ -8287,7 +8283,7 @@ function applySlugNormalizeNote(typedValue, finalSlug) {
   const noteEl = $('slug-normalize-note');
   if (!noteEl) return;
   if (typedValue && finalSlug && typedValue !== finalSlug) {
-    noteEl.textContent = 'Adresele web nu au spații sau diacritice — am simplificat-o în „' + finalSlug + '”.';
+    noteEl.textContent = t('SLUG_NORMALIZED_NOTE', { slug: finalSlug });
     show(noteEl);
   } else {
     hide(noteEl);
@@ -8308,7 +8304,7 @@ async function checkSlug(rawSlug) {
 
   if (!/^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(rawSlug) && rawSlug.length < 3) {
     updateSlugPreview(rawSlug, 'invalid');
-    if (errorEl) { errorEl.textContent = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).'; show(errorEl); }
+    if (errorEl) { errorEl.textContent = RO.SLUG_MIN_LENGTH; show(errorEl); }
     slugValid = false;
     if (normNoteEl) hide(normNoteEl);
     return;
@@ -8353,7 +8349,7 @@ async function checkSlug(rawSlug) {
     slugValid = true;
     slugNormalized = rawSlug;
     if (errorEl) {
-      errorEl.textContent = 'Nu am putut verifica disponibilitatea acum — se confirmă la publicare.';
+      errorEl.textContent = RO.SLUG_CHECK_UNAVAILABLE;
       show(errorEl);
     }
     if (normNoteEl) hide(normNoteEl);
@@ -8364,7 +8360,7 @@ async function doActualPublish(chosenSlug) {
   if (!currentUser) {
     // m1: this IS the publish flow — the auth step's title should say so.
     const authTitleEl = $('modal-auth-title');
-    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să publici';
+    if (authTitleEl) authTitleEl.textContent = RO.AUTH_TITLE_PUBLISH;
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
@@ -8397,7 +8393,7 @@ async function doActualPublish(chosenSlug) {
         closeModal('modal-publish');
         handleAuthExpired(() => doActualPublish(chosenSlug));
       } else {
-        showToast('Sesiunea a expirat — conectează-te din nou ca să publici.', 'error', 6000);
+        showToast(RO.SESSION_EXPIRED_PUBLISH, 'error', 6000);
       }
       return;
     }
@@ -8405,7 +8401,7 @@ async function doActualPublish(chosenSlug) {
     // send (e.g. "Ai deja un site neplătit...", 409) is safe to show
     // verbatim — safeServerMessage() shows it only for a 4xx it marked
     // fromServer; a 5xx keeps the fixed Romanian fallback below.
-    showToast(safeServerMessage(e, 'Publicarea a eșuat. Încearcă din nou.'), 'error', 5000);
+    showToast(safeServerMessage(e, RO.PUBLISH_FAILED), 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }
@@ -8429,7 +8425,7 @@ async function execPublish(slug) {
   if (currentSiteId) payload.siteId = currentSiteId;
 
   const data = await apiPost('/api/publish', payload);
-  if (!data.site) { showToast('Răspuns neașteptat de la server.', 'error'); return; }
+  if (!data.site) { showToast(RO.UNEXPECTED_SERVER_RESPONSE, 'error'); return; }
 
   closeModal('modal-publish');
 
@@ -8460,7 +8456,7 @@ function wireDashboardAuthButton() {
     // publishing anything — set a context-appropriate title BEFORE opening it
     // (the static markup default is the publish-flow copy, for that caller).
     const authTitleEl = $('modal-auth-title');
-    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să-ți vezi site-urile';
+    if (authTitleEl) authTitleEl.textContent = RO.AUTH_TITLE_VIEW_SITES;
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
@@ -8559,7 +8555,7 @@ function wireAuthForm(onAuthSuccess) {
       const emailInput = $('input-email');
       const email = emailInput ? emailInput.value.trim() : '';
       if (!email) {
-        if (errorDiv) { errorDiv.textContent = 'Introdu adresa de email.'; show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = RO.AUTH_EMAIL_REQUIRED; show(errorDiv); }
         return;
       }
       const submitBtn = $('btn-send-magic');
@@ -8619,7 +8615,7 @@ function wireAuthForm(onAuthSuccess) {
         // invalid email, service unavailable) — safeServerMessage() shows it
         // for a 4xx it marked fromServer, never a transport failure's raw
         // browser text.
-        if (errorDiv) { errorDiv.textContent = safeServerMessage(err, 'Nu am putut trimite linkul. Încearcă din nou.'); show(errorDiv); }
+        if (errorDiv) { errorDiv.textContent = safeServerMessage(err, RO.IG_LINK_SEND_FAILED); show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
@@ -8738,7 +8734,7 @@ function showSuccessScreen(url, paymentUrl, alreadyPaidBefore) {
 async function completeTestCheckout(sessionId) {
   const id = String(sessionId || '').trim();
   if (!/^cs_test_[A-Za-z0-9]+$/.test(id)) {
-    showToast('Sesiune de plată invalidă.', 'error');
+    showToast(RO.INVALID_PAYMENT_SESSION, 'error');
     return;
   }
   setLoading(true, 'Se confirmă plata…');
@@ -8780,17 +8776,17 @@ async function completeTestCheckout(sessionId) {
           publishedSiteUrl = s.publicUrl || s.url;
           showSuccessScreen(s.publicUrl || s.url, null);
         } else {
-          showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
+          showToast(RO.TRIAL_STARTED, 'success', 6000);
         }
       } catch (_) {
-        showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
+        showToast(RO.TRIAL_STARTED, 'success', 6000);
       }
     } else {
-      showToast('Plata a fost procesată.', 'success', 5000);
+      showToast(RO.PAYMENT_PROCESSED, 'success', 5000);
     }
   } catch (e) {
     setLoading(false);
-    showToast('Nu am putut confirma plata. Încearcă din nou.', 'error', 6000);
+    showToast(RO.PAYMENT_CONFIRM_FAILED, 'error', 6000);
   } finally {
     setLoading(false);
   }
@@ -8958,7 +8954,7 @@ async function reloadTemplateRegistry() {
       button.disabled = false;
       button.textContent = 'Reîncearcă';
     }
-    showToast('Designurile nu s-au încărcat. Reîncearcă.', 'error');
+    showToast(RO.TEMPLATES_LOAD_FAILED, 'error');
   }
 }
 
@@ -9178,12 +9174,12 @@ async function startWithTemplate(templateId, onboardingIdentity) {
   try {
     tplData = await ensureTemplateLoaded(templateId);
   } catch (e) {
-    showToast('Nu am putut încărca designul. Încearcă din nou.', 'error');
+    showToast(RO.DESIGN_LOAD_FAILED, 'error');
     return;
   }
 
   if (!tplData || !meta) {
-    showToast('Nu am putut încărca designul. Încearcă din nou.', 'error');
+    showToast(RO.DESIGN_LOAD_FAILED, 'error');
     return;
   }
 
@@ -9245,8 +9241,10 @@ async function startWithTemplate(templateId, onboardingIdentity) {
 
     const switchNoticeSignedIn = typeof currentUser !== 'undefined' && !!currentUser;
     showToast(
-      'Site-ul pe designul „' + existingName + '” a fost înlocuit aici' +
-        (switchNoticeSignedIn ? ' — îl găsești în Site-urile mele.' : '.'),
+      t('SITE_SWITCHED_NAMED', {
+        name: existingName,
+        suffix: switchNoticeSignedIn ? RO.SITE_SWITCHED_SUFFIX_SIGNED_IN : RO.SITE_SWITCHED_SUFFIX_ANON,
+      }),
       '',
       6000
     );
@@ -9436,8 +9434,8 @@ async function loadDashboard() {
       }
       list.innerHTML = stateBlockHTML({
         icon: 'tray',
-        title: 'Nu ai creat încă niciun site',
-        desc: 'Alege un design și pornești în câteva minute.',
+        title: RO.DASHBOARD_EMPTY_TITLE,
+        desc: RO.DASHBOARD_EMPTY_DESC,
         actionHtml: '<a href="#templates" class="btn-primary">Creează primul site</a>',
       });
       return;
@@ -9455,8 +9453,8 @@ async function loadDashboard() {
     if (e.status === 401) {
       list.innerHTML = stateBlockHTML({
         icon: 'lock',
-        title: 'Autentifică-te ca să vezi site-urile',
-        desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+        title: RO.DASHBOARD_AUTH_REQUIRED_TITLE,
+        desc: RO.DASHBOARD_AUTH_REQUIRED_DESC,
         actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
       });
       wireDashboardAuthButton();
@@ -9464,8 +9462,8 @@ async function loadDashboard() {
       list.innerHTML = stateBlockHTML({
         icon: 'alert',
         isError: true,
-        title: 'Nu am putut încărca site-urile',
-        desc: safeServerMessage(e, 'Încearcă din nou.'),
+        title: RO.DASHBOARD_LOAD_FAILED_TITLE,
+        desc: safeServerMessage(e, RO.TRY_AGAIN),
         actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-dashboard">Reîncearcă</button>',
       });
       const retryBtn = $('btn-retry-dashboard');
@@ -9658,7 +9656,7 @@ function buildSiteCard(site) {
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
+        showToast(safeServerMessage(e, RO.ACTION_GENERIC_FAILED), 'error');
       } finally {
         setBtnLoading(keepBtn, false);
       }
@@ -9678,7 +9676,7 @@ function buildSiteCard(site) {
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
+        showToast(safeServerMessage(e, RO.ACTION_GENERIC_FAILED), 'error');
       } finally {
         setBtnLoading(reactivateBtn, false);
       }
@@ -9716,10 +9714,10 @@ function buildSiteCard(site) {
         if (portalUrl) {
           window.location.href = portalUrl;
         } else {
-          showToast('Portalul de facturare nu este disponibil acum.', 'error');
+          showToast(RO.BILLING_PORTAL_UNAVAILABLE, 'error');
         }
       } catch (e) {
-        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
+        showToast(safeServerMessage(e, RO.ACTION_GENERIC_FAILED), 'error');
       } finally {
         setBtnLoading(updateCardBtn, false);
       }
@@ -9930,12 +9928,12 @@ async function confirmCancelSubscription() {
       closeModal('modal-cancel-subscription');
       window.location.href = portalUrl;
     } else if (errEl) {
-      errEl.textContent = 'Portalul de facturare nu este disponibil acum.';
+      errEl.textContent = RO.BILLING_PORTAL_UNAVAILABLE;
       errEl.style.display = '';
     }
   } catch (e) {
     if (errEl) {
-      errEl.textContent = safeServerMessage(e, 'Nu am putut deschide anularea acum.');
+      errEl.textContent = safeServerMessage(e, RO.CANCEL_MODAL_UNAVAILABLE);
       errEl.style.display = '';
     }
   } finally {
@@ -10045,11 +10043,11 @@ async function confirmDeleteSite() {
     retireLocalDraftForDeletedSite(site.id);
     closeModal('modal-delete-site');
     deleteSiteModalSite = null;
-    showToast('Site-ul „' + (site.projectName || site.slug || '') + '” a fost șters definitiv.');
+    showToast(t('SITE_DELETED_NAMED', { name: site.projectName || site.slug || '' }));
     loadDashboard();
   } catch (e) {
     if (errEl) {
-      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.');
+      errEl.textContent = safeServerMessage(e, RO.DELETE_FAILED);
       errEl.style.display = '';
     }
   } finally {
@@ -10072,7 +10070,7 @@ async function confirmDeleteSite() {
  */
 async function downloadMyData() {
   if (!currentUser) {
-    showToast('Intră în cont ca să-ți descarci datele.', 'error', 5000);
+    showToast(RO.ACCOUNT_SIGNIN_DOWNLOAD_DATA, 'error', 5000);
     return;
   }
   try {
@@ -10083,10 +10081,10 @@ async function downloadMyData() {
     });
     if (!res.ok) {
       const msg = res.status === 401
-        ? 'Intră în cont ca să-ți descarci datele.'
+        ? RO.ACCOUNT_SIGNIN_DOWNLOAD_DATA
         : res.status === 429
-          ? 'Prea multe cereri. Încearcă din nou peste o oră.'
-          : 'Nu am putut descărca datele.';
+          ? RO.DATA_DOWNLOAD_RATE_LIMITED
+          : RO.DATA_DOWNLOAD_FAILED;
       showToast(msg, 'error', 5000);
       return;
     }
@@ -10112,9 +10110,9 @@ async function downloadMyData() {
       try { document.body.removeChild(a); } catch (_) {}
       try { URL.revokeObjectURL(objectUrl); } catch (_) {}
     }, 0);
-    showToast('Datele au fost descărcate.', 'success', 2500);
+    showToast(RO.DATA_DOWNLOADED, 'success', 2500);
   } catch (_) {
-    showToast('Nu am putut descărca datele.', 'error', 5000);
+    showToast(RO.DATA_DOWNLOAD_FAILED, 'error', 5000);
   }
 }
 
@@ -10135,11 +10133,11 @@ function expectedDeleteAccountEmail() {
  */
 function openDeleteAccountModal(opener) {
   if (!currentUser) {
-    showToast('Intră în cont ca să-ți ștergi contul.', 'error', 4000);
+    showToast(RO.ACCOUNT_SIGNIN_DELETE, 'error', 4000);
     return;
   }
   if (!currentUser.email) {
-    showToast('Ștergerea contului din browser cere un cont cu email.', 'error', 5000);
+    showToast(RO.ACCOUNT_DELETE_NEEDS_EMAIL, 'error', 5000);
     return;
   }
   const emailEl = $('delete-account-email');
@@ -10173,7 +10171,7 @@ async function confirmDeleteAccount() {
     closeModal('modal-delete-account');
     updateUserUI(null);
     if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
-    showToast('Contul tău a fost șters definitiv.', '', 4000);
+    showToast(RO.ACCOUNT_DELETED, '', 4000);
     window.location.hash = '#templates';
   } catch (e) {
     if (errEl) {
@@ -10181,7 +10179,7 @@ async function confirmDeleteAccount() {
       // with an exact Romanian message ("Stripe could not confirm the
       // cancellation, nothing was deleted") — customer-safe by name, unlike
       // any other 5xx. See safeServerMessage()'s doc comment.
-      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.', ['SUBSCRIPTION_CANCEL_FAILED']);
+      errEl.textContent = safeServerMessage(e, RO.DELETE_FAILED, ['SUBSCRIPTION_CANCEL_FAILED']);
       errEl.style.display = '';
     }
   } finally {
@@ -10245,7 +10243,7 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
       setTimeout(() => { try { openDrawer(key); } catch (_) { /* never block the load */ } }, 700);
     }
   } catch (e) {
-    showToast('Nu am putut încărca site-ul.', 'error');
+    showToast(RO.SITE_LOAD_FAILED, 'error');
   } finally {
     setLoading(false);
   }
@@ -10296,17 +10294,17 @@ async function loadVersions(siteId) {
         setBtnLoading(btn, true, 'Se restabilește…');
         try {
           await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/rollback', { versionId: v.versionId });
-          showToast('Versiunea a fost restabilită.', 'success');
+          showToast(RO.VERSION_RESTORED, 'success');
           closeModal('modal-versions');
         } catch (err) {
-          showToast(safeServerMessage(err, 'Nu am putut restabili versiunea. Încearcă din nou.'), 'error');
+          showToast(safeServerMessage(err, RO.VERSION_RESTORE_FAILED), 'error');
           setBtnLoading(btn, false);
         }
       });
       list.appendChild(item);
     });
   } catch (e) {
-    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca versiunile. Încearcă din nou.')) + '</p>';
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, RO.VERSIONS_LOAD_FAILED)) + '</p>';
   }
 }
 
@@ -10499,7 +10497,7 @@ function wireDnsCopyButtons(container) {
         btn.classList.add('copied');
         setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
       } catch (_) {
-        showToast('Nu am putut copia. Selectează textul manual.', 'error');
+        showToast(RO.COPY_FAILED, 'error');
       }
     });
   });
@@ -10529,7 +10527,7 @@ function wireDomainConnectForm() {
     const domain = input ? input.value.trim() : '';
     if (errEl) hide(errEl);
     if (!domain) {
-      if (errEl) { errEl.textContent = 'Introdu domeniul tău (ex: myshop.com).'; show(errEl); }
+      if (errEl) { errEl.textContent = RO.DOMAIN_INPUT_REQUIRED; show(errEl); }
       return;
     }
     try {
@@ -10541,7 +10539,7 @@ function wireDomainConnectForm() {
       cacheDomainInstructions(domainModalSiteId, instructions);
       await refreshDomainModal();
     } catch (err) {
-      if (errEl) { errEl.textContent = safeServerMessage(err, 'Nu am putut conecta domeniul.'); show(errEl); }
+      if (errEl) { errEl.textContent = safeServerMessage(err, RO.DOMAIN_CONNECT_FAILED); show(errEl); }
     } finally {
       setBtnLoading(btn, false);
     }
@@ -10631,7 +10629,7 @@ function renderDomainModal(record, lastPoll) {
         const result = await apiPost('/api/sites/' + encodeURIComponent(domainModalSiteId) + route, {});
         await refreshDomainModal(result);
       } catch (err) {
-        const msg = safeServerMessage(err, 'Eroare la verificare.');
+        const msg = safeServerMessage(err, RO.DOMAIN_VERIFY_FAILED);
         if (err && err.code === 'RATE_LIMITED') {
           showToast(msg, 'error', 6000);
         } else {
@@ -10685,11 +10683,11 @@ async function confirmDomainDisconnect() {
     await apiDelete('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
     try { localStorage.removeItem(domainInstructionsCacheKey(domainModalSiteId)); } catch (_) {}
     closeModal('modal-domain-disconnect');
-    showToast('Domeniul a fost deconectat.', 'success');
+    showToast(RO.DOMAIN_DISCONNECTED, 'success');
     await refreshDomainModal();
   } catch (err) {
     closeModal('modal-domain-disconnect');
-    showToast(safeServerMessage(err, 'Nu am putut deconecta domeniul.'), 'error');
+    showToast(safeServerMessage(err, RO.DOMAIN_DISCONNECT_FAILED), 'error');
   } finally {
     if (confirmBtn) setBtnLoading(confirmBtn, false);
   }
@@ -10722,7 +10720,7 @@ async function refreshDomainModal(lastPoll) {
     const data = await apiGet('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
     renderDomainModal(data.record, lastPoll);
   } catch (e) {
-    body.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca domeniul. Încearcă din nou.')) + '</p>';
+    body.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, RO.DOMAIN_LOAD_FAILED)) + '</p>';
   }
 }
 
@@ -10835,7 +10833,7 @@ async function openInvoicesModal(siteId) {
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/invoices');
     renderInvoicesList(data.invoices || []);
   } catch (e) {
-    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca facturile. Încearcă din nou.')) + '</p>';
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, RO.INVOICES_LOAD_FAILED)) + '</p>';
   }
 }
 
@@ -10873,7 +10871,7 @@ function renderSiteMessagesList(siteId, messages) {
         await reloadSiteMessagesModal(siteId);
       } catch (e) {
         setBtnLoading(btn, false);
-        showToast(safeServerMessage(e, 'Nu am putut marca mesajul citit.'), 'error');
+        showToast(safeServerMessage(e, RO.MESSAGE_MARK_READ_FAILED), 'error');
       }
     });
   });
@@ -10886,7 +10884,7 @@ function renderSiteMessagesList(siteId, messages) {
         await reloadSiteMessagesModal(siteId);
       } catch (e) {
         setBtnLoading(btn, false);
-        showToast(safeServerMessage(e, 'Nu am putut șterge mesajul.'), 'error');
+        showToast(safeServerMessage(e, RO.MESSAGE_DELETE_FAILED), 'error');
       }
     });
   });
@@ -10900,7 +10898,7 @@ async function reloadSiteMessagesModal(siteId) {
     renderSiteMessagesList(siteId, data.messages || []);
     refreshSiteMessagesBadge(siteId, data.unread || 0);
   } catch (e) {
-    showToast(safeServerMessage(e, 'Nu am putut reîncărca mesajele.'), 'error');
+    showToast(safeServerMessage(e, RO.MESSAGES_RELOAD_FAILED), 'error');
   }
 }
 
@@ -10919,7 +10917,7 @@ async function openSiteMessagesModal(siteId, opener) {
     renderSiteMessagesList(siteId, data.messages || []);
     refreshSiteMessagesBadge(siteId, data.unread || 0);
   } catch (e) {
-    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca mesajele. Încearcă din nou.')) + '</p>';
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, RO.MESSAGES_LOAD_FAILED)) + '</p>';
   }
 }
 
@@ -11028,14 +11026,14 @@ async function handleRoute(hash) {
     updateUserUI(user);
     if (user) {
       loadDashboard();
-      showToast('Abonamentul a fost anulat. Site-ul e ciornă.', 'success', 5000);
+      showToast(RO.SUBSCRIPTION_CANCELLED, 'success', 5000);
     } else {
       const list = $('sites-list');
       if (list) {
         list.innerHTML = stateBlockHTML({
           icon: 'lock',
-          title: 'Autentifică-te ca să vezi site-urile',
-          desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+          title: RO.DASHBOARD_AUTH_REQUIRED_TITLE,
+          desc: RO.DASHBOARD_AUTH_REQUIRED_DESC,
           actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
         });
         wireDashboardAuthButton();
@@ -11092,21 +11090,21 @@ async function handleRoute(hash) {
       if (list) {
         list.innerHTML = stateBlockHTML({
           icon: 'lock',
-          title: 'Autentifică-te ca să vezi site-urile',
-          desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+          title: RO.DASHBOARD_AUTH_REQUIRED_TITLE,
+          desc: RO.DASHBOARD_AUTH_REQUIRED_DESC,
           actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
         });
         wireDashboardAuthButton();
       }
     }
   } else if (route === 'paid') {
-    showToast('Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.', 'success', 6000);
+    showToast(RO.PAYMENT_PROCESSED_SITE_SOON, 'success', 6000);
     window.location.hash = '#dashboard';
   } else if (route === 'cancelled') {
-    showToast('Plata a fost anulată.', '', 4000);
+    showToast(RO.PAYMENT_CANCELLED, '', 4000);
     window.location.hash = '#edit';
   } else if (route === 'login-expired') {
-    showToast('Linkul de autentificare a expirat. Încearcă din nou.', 'error', 5000);
+    showToast(RO.LOGIN_LINK_EXPIRED, 'error', 5000);
     window.location.hash = '#templates';
   } else {
     showScreen('templates');
@@ -11266,7 +11264,7 @@ function wireStaticButtons() {
       const rawSlug = slugInput ? toSlug(slugInput.value) : '';
       if (!rawSlug || rawSlug.length < 3) {
         const err = $('slug-error');
-        if (err) { err.textContent = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).'; show(err); }
+        if (err) { err.textContent = RO.SLUG_MIN_LENGTH; show(err); }
         if (slugInput) slugInput.focus();
         return;
       }
@@ -11304,7 +11302,7 @@ function wireStaticButtons() {
           copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Copiază';
         }, 2000);
       } catch (_) {
-        showToast('Nu am putut copia adresa. Selectează textul manual.', 'error');
+        showToast(RO.COPY_ADDRESS_FAILED, 'error');
       }
     });
   }
@@ -11625,7 +11623,7 @@ async function boot() {
     }
   } catch (e) {
     console.error('Boot error:', e);
-    showToast('Inițializarea a eșuat. Reîncarcă pagina.', 'error', 8000);
+    showToast(RO.BOOT_FAILED, 'error', 8000);
   } finally {
     setLoading(false);
   }

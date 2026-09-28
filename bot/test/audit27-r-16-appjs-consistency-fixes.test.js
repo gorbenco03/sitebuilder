@@ -52,6 +52,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
@@ -436,17 +437,37 @@ test('copy-i18n#1 (app.js part): "proiect" no longer names the core site/draft c
     assert.ok(!app.includes(s), 'stale "proiect" copy must be gone: "' + s + '"');
   }
 
-  // And their renamed replacements must be present.
+  // And their renamed replacements must be present. PLAN-UX-2026-09-27 §5.8
+  // (T-3) moved these literals into the RO catalog (builder/copy-ro.js) —
+  // app.js now references them by key instead of repeating the text, so
+  // this checks the RO reference is wired up and the catalog still holds
+  // the renamed (site, not proiect) Romanian text.
   const mustContain = [
-    'Autentifică-te ca să vezi site-urile',
-    'Ai un site neterminat',
-    'site neterminat',
-    'Acest site e deschis',
-    'Site-ul pe designul',
-    'Autentifică-te ca să-ți vezi site-urile',
+    'RO.DASHBOARD_AUTH_REQUIRED_TITLE', // 'Autentifică-te ca să vezi site-urile'
+    "t('UNFINISHED_SITE'", // 'Ai un site neterminat{template}. ...'
+    "t('TAB_CONFLICT_WITH_SECTIONS'", // 'Acest site e deschis ...'
+    'RO.TAB_CONFLICT_GENERIC', // 'Acest site e deschis ...'
+    "t('SITE_SWITCHED_NAMED'", // 'Site-ul pe designul „{name}” ...'
+    'RO.AUTH_TITLE_VIEW_SITES', // 'Autentifică-te ca să-ți vezi site-urile'
   ];
   for (const s of mustContain) {
     assert.ok(app.includes(s), 'renamed RO copy missing: "' + s + '"');
+  }
+
+  const copyRoSrc = fs.readFileSync(path.join(path.dirname(APP_JS_PATH), 'copy-ro.js'), 'utf8');
+  const roSandbox = {};
+  vm.runInNewContext(copyRoSrc + '\nthis.RO = RO;', roSandbox);
+  const mustContainText = {
+    DASHBOARD_AUTH_REQUIRED_TITLE: 'Autentifică-te ca să vezi site-urile',
+    UNFINISHED_SITE: 'Ai un site neterminat{template}. Continui de unde ai rămas?',
+    TAB_CONFLICT_WITH_SECTIONS: 'Acest site e deschis',
+    TAB_CONFLICT_GENERIC: 'Acest site e deschis',
+    SITE_SWITCHED_NAMED: 'Site-ul pe designul',
+    AUTH_TITLE_VIEW_SITES: 'Autentifică-te ca să-ți vezi site-urile',
+  };
+  for (const [key, expectedStartsWith] of Object.entries(mustContainText)) {
+    assert.ok(!/roiect/.test(roSandbox.RO[key]), 'RO.' + key + ' must not say "proiect": "' + roSandbox.RO[key] + '"');
+    assert.ok(roSandbox.RO[key].includes(expectedStartsWith), 'RO.' + key + ' lost its renamed "site" copy: "' + roSandbox.RO[key] + '"');
   }
 
   // The only remaining "Proiect" in app.js is the account-menu doc-comment

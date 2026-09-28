@@ -30,6 +30,7 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS = path.join(ROOT, 'builder', 'app.js');
+const COPY_RO_JS = path.join(ROOT, 'builder', 'copy-ro.js');
 const BUILD_JS = path.join(ROOT, 'build.js');
 const PARENT_SHA = 'b1e5042df3f52378cc77cc643cd4ff6d23d29447';
 
@@ -207,8 +208,16 @@ async function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDa
     function $(id) { return null; }
   `;
 
+  // PLAN-UX-2026-09-27 §5.8 (T-3): startWithTemplate now reads its Romanian
+  // template-switch toast from the RO catalog (builder/copy-ro.js) via the
+  // t() helper — load the catalog into this sandbox too, same as the real
+  // page's <script> order.
+  // Stripped of its own 'use strict' — concatenated into one script it
+  // would make startWithTemplate's own (unrelated, pre-existing)
+  // implicit-global assignment (`publishedConfigSnapshot = null;`) throw.
+  const copyRoSrc = fs.readFileSync(COPY_RO_JS, 'utf8').replace(/^'use strict';\s*\n?/, '');
   vm.runInNewContext(
-    prelude + '\n' + startFn + '\n' +
+    copyRoSrc + '\n' + prelude + '\n' + startFn + '\n' +
       'this.__run = async function(tid) { await startWithTemplate(tid); return {' +
       ' currentSiteId, currentSitePaid, currentSiteSlug, publishedSiteId,' +
       ' draft: JSON.parse(JSON.stringify(draft)), saved: _saved ? JSON.parse(JSON.stringify(_saved)) : null }; };',
