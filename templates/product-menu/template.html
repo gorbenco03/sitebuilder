@@ -344,6 +344,51 @@
         </section>
         <!-- @endif -->
 
+        <!-- @if faq.items -->
+        <section id="faq" class="pm-faq-sec fade-in-section" aria-labelledby="faq-heading">
+            <div class="pm-faq-wrap">
+                <!-- @if faq.title -->
+                <h2 class="pm-title pm-title--center" id="faq-heading">{{faq.title}}</h2>
+                <!-- @endif -->
+                <div class="pm-faq">
+                    <!-- @each faq.items -->
+                    <details class="pm-faq__item" open>
+                        <summary class="pm-faq__q">{{q}}</summary>
+                        <p class="pm-faq__a">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if hours.items -->
+        <section id="hours" class="pm-hours-sec fade-in-section" aria-labelledby="hours-heading">
+            <div class="pm-hours-wrap">
+                <!-- @if hours.title -->
+                <h2 class="pm-title pm-title--center" id="hours-heading">{{hours.title}}</h2>
+                <!-- @endif -->
+                <ul class="pm-hours">
+                    <!-- @each hours.items -->
+                    <li class="pm-hours__row"><span class="pm-hours__day">{{day}}</span><span class="pm-hours__time">{{time}}</span></li>
+                    <!-- @end -->
+                </ul>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if location.address -->
+        <section id="location" class="pm-location-sec fade-in-section" aria-labelledby="location-heading">
+            <div class="pm-location-wrap">
+                <!-- @if location.title -->
+                <h2 class="pm-title pm-title--center" id="location-heading">{{location.title}}</h2>
+                <!-- @endif -->
+                <p class="pm-location__address" data-location-address>{{location.address}}</p>
+                <a class="pm-location__cta pm-hero__cta pm-hero__cta--fill" data-location-maps-link href="#" target="_blank" rel="noopener">Deschide în Google Maps</a>
+            </div>
+        </section>
+        <!-- @endif -->
+
         <section id="contact-form" class="pm-form-sec fade-in-section" aria-labelledby="contact-form-heading">
             <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
             <div class="pm-form-card">

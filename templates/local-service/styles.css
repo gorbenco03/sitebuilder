@@ -320,6 +320,37 @@ ul, ol { list-style: none; }
 .ls-testi__name { font-weight: 700; font-size: 0.9rem; }
 .ls-testi__role { font-size: 0.8rem; color: var(--mute); }
 
+/* FAQ — optional section, addable via schema.pageSections (§5.2). */
+.ls-faq { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.25rem; }
+.ls-faq__item {
+    background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: var(--r); padding: 1rem 1.25rem;
+}
+.ls-faq__q {
+    font-weight: 700; cursor: pointer; list-style: none; color: #fff;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.ls-faq__q::-webkit-details-marker { display: none; }
+.ls-faq__q::after { content: '−'; flex: none; font-size: 1.3rem; line-height: 1; color: var(--cta); }
+.ls-faq__item:not([open]) .ls-faq__q::after { content: '+'; }
+.ls-faq__a { color: rgba(255, 255, 255, 0.68); line-height: 1.6; margin: 0.6rem 0 0; }
+
+/* Program — optional section, addable via schema.pageSections (§5.2). */
+.ls-hours { list-style: none; margin: 1.25rem 0 0; padding: 0; }
+.ls-hours__row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem 0; border-bottom: 1px solid rgba(15, 23, 32, 0.12);
+}
+.ls-hours__day { font-weight: 700; }
+.ls-hours__time { color: var(--soft); }
+
+/* Unde ne găsești — optional section, addable via schema.pageSections
+   (§5.2). No map embed: a link to Google Maps built client-side from the
+   address text (initLocationMapsLink in script.js) — no iframe/external
+   script. */
+.ls-location { max-width: 32rem; }
+.ls-location .ls-text { margin-bottom: 1.5rem; }
+
 /* Contact form — optional section, §5.2 minimal section library. */
 .ls-form-wrap { max-width: 640px; }
 .ls-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.25rem; }

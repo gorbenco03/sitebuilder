@@ -1229,6 +1229,72 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 .testimonial-role { font-size: 0.8rem; color: var(--color-text-light); }
 
 /* ============================================================
+   FAQ — optional section, addable via schema.pageSections (§5.2).
+   ============================================================ */
+.faq-section {
+    grid-column: 1 / -1;
+    max-width: 760px; margin-inline: auto; width: 100%;
+    background: var(--color-white); padding: 3rem; border-radius: 28px;
+    box-shadow: var(--shadow-md); box-sizing: border-box;
+    /* Same overflow-x: clip reasoning as .testimonials-section above. */
+    overflow-x: clip;
+}
+.faq-list { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1.5rem; }
+.faq-item {
+    background: var(--color-cream); border-radius: 16px; padding: 1.1rem 1.4rem;
+    border: 1px solid rgba(232, 88, 140, 0.14);
+}
+.faq-q {
+    font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600;
+    color: var(--color-primary-dark); cursor: pointer; list-style: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.faq-q::-webkit-details-marker { display: none; }
+.faq-q::after { content: '−'; flex: none; font-size: 1.3rem; line-height: 1; color: var(--color-primary); }
+.faq-item:not([open]) .faq-q::after { content: '+'; }
+.faq-a { color: var(--color-text-light); line-height: 1.6; margin: 0.65rem 0 0; }
+
+/* ============================================================
+   PROGRAM — optional section, addable via schema.pageSections (§5.2).
+   ============================================================ */
+.hours-card {
+    grid-column: 1 / -1;
+    max-width: 520px; margin-inline: auto; width: 100%;
+    background: var(--color-white); padding: 3rem; border-radius: 28px;
+    box-shadow: var(--shadow-md); box-sizing: border-box;
+    overflow-x: clip;
+}
+.hours-list { list-style: none; margin: 1.5rem 0 0; padding: 0; }
+.hours-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem 0; border-bottom: 1px solid rgba(45, 45, 45, 0.1);
+}
+.hours-day { font-weight: 600; color: var(--color-primary-dark); }
+.hours-time { color: var(--color-text-light); }
+
+/* ============================================================
+   UNDE NE GĂSEȘTI — optional section, addable via schema.pageSections
+   (§5.2). No map embed: a link to Google Maps built client-side from the
+   address text (initLocationMapsLink in script.js) — no iframe/external
+   script.
+   ============================================================ */
+.location-card {
+    grid-column: 1 / -1;
+    max-width: 520px; margin-inline: auto; width: 100%;
+    background: var(--color-white); padding: 3rem; border-radius: 28px;
+    box-shadow: var(--shadow-md); box-sizing: border-box; text-align: center;
+    overflow-x: clip;
+}
+.location-card .about-text { margin-bottom: 1.5rem; }
+.location-cta {
+    display: inline-flex; align-items: center; min-height: 44px;
+    padding: 0.85rem 2rem; border-radius: 40px; text-decoration: none;
+    background: linear-gradient(135deg, var(--dd-cta-grad-1, var(--color-primary)) 0%, var(--dd-cta-grad-2, var(--color-primary-dark)) 100%);
+    color: var(--color-white); font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ============================================================
    CONTACT FORM — optional section, §5.2 minimal section library.
    ============================================================ */
 .contact-form-card {

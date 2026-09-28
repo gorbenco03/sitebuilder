@@ -144,6 +144,17 @@ test('page-sections reorder/remove works end-to-end (real DOM) on every newly-wi
             ? { title: 'Ce spun clienții', items: [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }] }
             : [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
         }
+        // T-1B (PLAN-UX §5.2 addable sections): faq/hours/location are
+        // content-gated like testimonials/instagram above, but declare their
+        // own realistic starter content right on schema.pageSections
+        // (CONTRACT field "seed") instead of needing a one-off here per id —
+        // apply every addable section's seed so it actually renders and is
+        // exercised by the reorder/remove assertions below.
+        for (const sec of schema.pageSections) {
+          if (sec.addable && sec.seed && typeof sec.seed === 'object') {
+            Object.assign(baseConfig, sec.seed);
+          }
+        }
         const effectiveIds = templateId === 'desserdirina' ? ids.filter((id) => id !== 'instagram') : ids;
         // Reversed order, with one removable section marked removed.
         const reversed = [...effectiveIds].reverse();

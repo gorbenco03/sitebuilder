@@ -228,9 +228,17 @@ function dirTotalBytes(dir) {
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   portfolio         133387    136055
   //   professionals      149843    152840
+  //
+  // Raised to measured + 2% for T-1B (PLAN-UX §5.2 addable section library):
+  // FAQ/Program/Unde-ne-găsești markup+CSS+JS on product-menu and
+  // local-service — real shipped feature, hidden until added — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   product-menu      107729    109884
+  //   local-service     129449    132038
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 102966,
-    'local-service': 125711,
+    'product-menu': 109884,
+    'local-service': 132038,
     portfolio: 136055,
     professionals: 152840,
   };

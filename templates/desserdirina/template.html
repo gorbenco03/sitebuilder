@@ -374,6 +374,45 @@
             </section>
             <!-- @endif -->
 
+            <!-- @if faq.items -->
+            <section id="faq" class="faq-section fade-in-section" aria-labelledby="faq-heading">
+                <!-- @if faq.title -->
+                <h2 class="section-title faq-heading" id="faq-heading">{{faq.title}}</h2>
+                <!-- @endif -->
+                <div class="faq-list">
+                    <!-- @each faq.items -->
+                    <details class="faq-item" open>
+                        <summary class="faq-q">{{q}}</summary>
+                        <p class="faq-a">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </section>
+            <!-- @endif -->
+
+            <!-- @if hours.items -->
+            <section id="hours" class="hours-card fade-in-section" aria-labelledby="hours-heading">
+                <!-- @if hours.title -->
+                <h2 class="section-title" id="hours-heading">{{hours.title}}</h2>
+                <!-- @endif -->
+                <ul class="hours-list">
+                    <!-- @each hours.items -->
+                    <li class="hours-row"><span class="hours-day">{{day}}</span><span class="hours-time">{{time}}</span></li>
+                    <!-- @end -->
+                </ul>
+            </section>
+            <!-- @endif -->
+
+            <!-- @if location.address -->
+            <section id="location" class="location-card fade-in-section" aria-labelledby="location-heading">
+                <!-- @if location.title -->
+                <h2 class="section-title" id="location-heading">{{location.title}}</h2>
+                <!-- @endif -->
+                <p class="about-text" data-location-address>{{location.address}}</p>
+                <a class="location-cta" data-location-maps-link href="#" target="_blank" rel="noopener">Deschide în Google Maps</a>
+            </section>
+            <!-- @endif -->
+
             <section id="contact-form" class="contact-form-card fade-in-section" aria-labelledby="contact-form-heading">
                 <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
                 <h2 class="section-title" id="contact-form-heading">Trimite-ne un mesaj</h2>
