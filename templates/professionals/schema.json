@@ -665,7 +665,7 @@
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "WhatsApp (cifre internaționale)",
+          "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
           "required": false,
           "maxLen": 20,
           "identity": true

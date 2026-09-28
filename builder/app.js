@@ -5116,6 +5116,51 @@ function buildDrawerField(field, opts) {
     counterEl.setAttribute('aria-live', 'polite');
   }
 
+  // whatsapp-contact lens (audit 2026-09-27, U-03): a live wa.me/… preview
+  // plus a "Testează" link right under the field that produces it, so the
+  // owner sees the actual result instead of trusting the label's example.
+  // The normalization hint documents the R-07 auto-correction above
+  // (normalizeWhatsAppDigits: a local "0721…" shape becomes "+40721…").
+  let waPreviewRow = null;
+  let waLinkText = null;
+  let waTestLink = null;
+  function refreshWaPreview() {
+    if (!waPreviewRow) return;
+    deriveWaHref(draft.config);
+    const href = (draft.config.contact && draft.config.contact.waHref) || '';
+    if (href) {
+      waLinkText.textContent = href.replace(/^https:\/\//, '');
+      waTestLink.href = href;
+      waTestLink.removeAttribute('aria-disabled');
+      waTestLink.classList.remove('field-wa-test--disabled');
+    } else {
+      waLinkText.textContent = 'completează numărul pentru un link valid';
+      waTestLink.removeAttribute('href');
+      waTestLink.setAttribute('aria-disabled', 'true');
+      waTestLink.classList.add('field-wa-test--disabled');
+    }
+  }
+  if (key === 'contact.whatsapp') {
+    const waHint = document.createElement('p');
+    waHint.className = 'field-hint';
+    waHint.textContent = 'Un număr local, ex. 0721234567, devine automat +40721234567.';
+    wrap.appendChild(waHint);
+
+    waPreviewRow = document.createElement('p');
+    waPreviewRow.className = 'field-hint field-wa-preview';
+    waPreviewRow.appendChild(document.createTextNode('Link rezultat: '));
+    waLinkText = document.createElement('span');
+    waPreviewRow.appendChild(waLinkText);
+    waTestLink = document.createElement('a');
+    waTestLink.className = 'btn-ghost btn-sm field-wa-test';
+    waTestLink.style.marginLeft = '0.5rem';
+    waTestLink.textContent = 'Testează';
+    waTestLink.target = '_blank';
+    waTestLink.rel = 'noopener noreferrer';
+    waPreviewRow.appendChild(waTestLink);
+    refreshWaPreview();
+  }
+
   // Sync to config on change
   input.addEventListener('input', () => {
     if (!updateUrlValidity()) return;
@@ -5131,6 +5176,14 @@ function buildDrawerField(field, opts) {
     if (key === 'contact.whatsapp' || key === 'contact.waMessage') {
       deriveWaHref(draft.config);
       scheduleRerender(true);
+      if (key === 'contact.whatsapp') {
+        refreshWaPreview();
+      } else {
+        // waMessage is a separate field/closure — reach the whatsapp field's
+        // own preview via the refresh function it stashed on its wrap.
+        const waWrap = document.querySelector('[data-field-key="contact.whatsapp"]');
+        if (waWrap && typeof waWrap._refreshWaPreview === 'function') waWrap._refreshWaPreview();
+      }
     }
     if (key === 'business.name' && prevName != null) {
       cascadeBusinessNameIdentity(draft.config, prevName, input.value);
@@ -5183,6 +5236,10 @@ function buildDrawerField(field, opts) {
   wrap.appendChild(input);
   if (urlError) wrap.appendChild(urlError);
   if (counterEl) { updateCounter(); wrap.appendChild(counterEl); }
+  if (waPreviewRow) {
+    wrap.appendChild(waPreviewRow);
+    wrap._refreshWaPreview = refreshWaPreview;
+  }
   wrap.dataset.fieldKey = key;
   return wrap;
 }

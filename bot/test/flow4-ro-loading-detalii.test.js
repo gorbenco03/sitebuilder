@@ -708,7 +708,9 @@ check('HEAD: positive RO family on professionals (opened leak system)', () => {
   assert.ok(labels.some((l) => l === 'Limba site-ului'), 'Limba site-ului');
   assert.ok(labels.some((l) => /Limbi în care lucrezi/i.test(l)), 'Limbi în care lucrezi');
   assert.ok(labels.some((l) => /Telefon \(format internațional\)/i.test(l)), 'Telefon RO');
-  assert.ok(labels.some((l) => /WhatsApp \(cifre internaționale\)/i.test(l)), 'WhatsApp RO');
+  // audit27-U-03: unified across all 5 templates onto product-menu's label —
+  // see PLAN-UX-2026-09-27.md §3 "Etichetă unificată pentru câmpul WhatsApp".
+  assert.ok(labels.some((l) => /Număr WhatsApp internațional fără \+/i.test(l)), 'WhatsApp RO');
   assert.ok(
     labels.some((l) => /Instagram \(secțiune contact\)/i.test(l)),
     'Instagram secțiune contact'
