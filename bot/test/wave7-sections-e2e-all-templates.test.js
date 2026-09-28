@@ -132,13 +132,17 @@ test('page-sections reorder/remove works end-to-end (real DOM) on every newly-wi
             handle: 'test', url: 'https://instagram.com/test', embedUrl: 'https://embedsocial.com/abc123',
           });
         }
-        // S-2A: local-service/product-menu/desserdirina also gained an optional
-        // "testimonials" section, content-gated (`@if testimonials`) like
-        // Instagram above — force it non-empty so its <section id="testimonials">
-        // actually renders and is exercised by this reorder/remove proof too
-        // (a template without the field, e.g. portfolio, just ignores it).
+        // S-2A (local-service/product-menu/desserdirina) and S-2B (portfolio)
+        // both gained an optional, content-gated "testimonials" section, but
+        // with two different config shapes: S-2A reads a flat array
+        // (`@if testimonials`), S-2B reads `{ title, items }`
+        // (`@if testimonials.items` — see audit27-s-2b's own oracle). Force
+        // whichever shape this template actually reads so its
+        // <section id="testimonials"> renders and is exercised here too.
         if (ids.includes('testimonials')) {
-          baseConfig.testimonials = [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
+          baseConfig.testimonials = templateId === 'portfolio'
+            ? { title: 'Ce spun clienții', items: [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }] }
+            : [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
         }
         const effectiveIds = templateId === 'desserdirina' ? ids.filter((id) => id !== 'instagram') : ids;
         // Reversed order, with one removable section marked removed.

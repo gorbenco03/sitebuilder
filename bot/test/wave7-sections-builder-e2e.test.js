@@ -120,8 +120,18 @@ test('Secțiuni pagină: move, remove, add back, undo, then publish and verify t
     // 3. MOVE — "Întrebări frecvente" (faq) to the very top, via keyboard-
     // operable move-up buttons only (no drag gesture used anywhere here).
     // =====================================================================
+    // movePageSection() swaps faq with its neighbour in the FULL canonical
+    // order (schema.pageSections), including content-gated sections that
+    // aren't rendered at all on this empty-content baseline (team/
+    // testimonials — added by S-2B — and instagram). A click that swaps faq
+    // past one of those hidden entries doesn't change the *visible* DOM
+    // order at all, so more clicks are needed than the number of visible
+    // sections faq must pass. Bound the loop by the full canonical list
+    // length (worst case: every remaining neighbour above faq is hidden)
+    // rather than a magic number tied to a section count that keeps growing.
     const faqUp = secUpBtn('Întrebări frecvente');
-    for (let i = 0; i < 5 && (await mainSectionIds())[0] !== 'faq'; i++) {
+    const maxSectionMoves = 9; // professionals: services,process,about,team,testimonials,appointment,faq,instagram,contact
+    for (let i = 0; i < maxSectionMoves && (await mainSectionIds())[0] !== 'faq'; i++) {
       await faqUp.click();
       await page.waitForTimeout(700);
     }
