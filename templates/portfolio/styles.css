@@ -548,6 +548,27 @@ ul { list-style: none; }
 .pf-person__name { font-family: var(--display); font-size: 1.15rem; font-weight: 500; }
 .pf-person__role { font-size: 0.85rem; color: var(--mute); margin-top: 0.2rem; }
 
+.pf-reviews { padding: clamp(3rem, 7vw, 4.5rem) 0; background: var(--paper); }
+.pf-reviews__grid {
+    display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.5rem;
+}
+@media (min-width: 640px) { .pf-reviews__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .pf-reviews__grid { grid-template-columns: repeat(3, 1fr); } }
+.pf-review {
+    /* Fixed, not var(--ink): this card's background is always --snow. */
+    background: var(--snow); color: #2a3340; border-radius: var(--r);
+    padding: 1.5rem 1.35rem 1.25rem; border: 1px solid rgba(42, 51, 64, 0.06);
+}
+.pf-review__quote {
+    font-family: var(--display); font-size: 1.05rem; line-height: 1.55;
+    font-style: italic; color: #2a3340;
+}
+.pf-review__quote::before { content: "\201C"; }
+.pf-review__quote::after { content: "\201D"; }
+.pf-review__who { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.pf-review__name { font-weight: 600; font-size: 0.92rem; }
+.pf-review__role { font-size: 0.82rem; color: var(--mute); }
+
 .pf-ig { padding: clamp(3rem, 7vw, 4.5rem) 0; background: var(--blush); }
 .pf-ig__head {
     display: flex; justify-content: space-between; align-items: flex-end;
@@ -679,6 +700,41 @@ ul { list-style: none; }
     padding: 0.4rem 0; font-size: 0.92rem; color: rgba(255,255,255,0.72);
 }
 .pf-appt__hr strong { color: #fff; font-weight: 600; }
+
+.pf-msg { margin-top: 2.75rem; padding-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.14); }
+.pf-msg__head { max-width: 34rem; margin-bottom: 1.25rem; }
+.pf-msg__title { font-family: var(--display); font-size: 1.3rem; font-weight: 500; color: var(--snow); margin-bottom: 0.35rem; }
+.pf-msg__form { max-width: 34rem; }
+.pf-msg__grid { display: grid; gap: 0.85rem; margin-bottom: 0.85rem; }
+@media (min-width: 560px) { .pf-msg__grid { grid-template-columns: 1fr 1fr; } }
+.pf-field { display: grid; gap: 0.35rem; margin-bottom: 0.85rem; }
+.pf-label { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.04em; color: rgba(255,255,255,0.78); }
+.pf-input {
+    min-height: 46px; padding: 0.55rem 0.75rem; border: 1px solid rgba(255,255,255,0.22);
+    border-radius: var(--r); background: rgba(255,255,255,0.06); color: var(--snow); width: 100%;
+    font: inherit;
+}
+.pf-input::placeholder { color: rgba(255,255,255,0.45); }
+.pf-input:focus { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 1px; }
+.pf-input--area { resize: vertical; min-height: 96px; }
+/* Honeypot — real users never see or tab into this; visually hidden, not
+   display:none, so basic bots that skip display:none fields still fill it. */
+.pf-msg__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.pf-msg__hint { margin: 0.35rem 0 0.85rem; font-size: 0.88rem; color: rgba(255,255,255,0.78); }
+.pf-msg__btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    background: var(--cta-bg, var(--cta)); color: var(--cta-ink, #fff); border: 0; border-radius: var(--r-pill);
+    padding: 12px 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; text-decoration: none;
+}
+.pf-msg__submit { width: min(100%, 14rem); margin-top: 0.25rem; }
+.pf-msg__fail, .pf-msg__done {
+    margin-top: 1.25rem; max-width: 34rem; padding: 1.1rem 1.15rem;
+    border: 1px solid rgba(255,255,255,0.18); border-radius: var(--r);
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.86);
+}
+.pf-msg__fail[hidden], .pf-msg__done[hidden] { display: none !important; }
+.pf-msg__fail-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.75rem; }
 
 .pf-foot {
     background: var(--paper); color: var(--mute); font-size: 12px;

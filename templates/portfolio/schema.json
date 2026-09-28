@@ -138,6 +138,13 @@
           "maxLen": 40
         },
         {
+          "key": "labels.testimonialsEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra recenziilor (ex. Recenzii)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
           "key": "labels.bookingEyebrow",
           "type": "text",
           "label": "Etichetă mică deasupra contactului (ex. Programări)",
@@ -392,6 +399,34 @@
             "photo": "image"
           },
           "identityItemKeys": ["name", "role", "bio"]
+        }
+      ]
+    },
+    {
+      "id": "testimonials",
+      "title": "Recenzii (opțional)",
+      "fields": [
+        {
+          "key": "testimonials.title",
+          "type": "text",
+          "label": "Titlu secțiune recenzii (ex. Ce spun clientele noastre)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "testimonials.items",
+          "type": "list",
+          "label": "Recenzii clienți (2-6 recomandate)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până adaugi cel puțin o recenzie.",
+          "required": false,
+          "min": 0,
+          "max": 6,
+          "itemShape": {
+            "quote": "text",
+            "name": "text",
+            "role": "text"
+          },
+          "identityItemKeys": ["quote", "name"]
         }
       ]
     },
@@ -691,6 +726,11 @@
     {
       "id": "team",
       "label": "Echipă",
+      "removable": true
+    },
+    {
+      "id": "testimonials",
+      "label": "Recenzii",
       "removable": true
     },
     {

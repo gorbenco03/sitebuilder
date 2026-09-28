@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initSmoothScroll();
     initMobileNav();
     initAppointment();
+    initMessageForm();
     initWhatsAppQR();
     initLocalBusinessJsonLd();
     initImageFallback();
@@ -697,6 +698,103 @@ function initWhatsAppQR() {
             }
         }
     });
+}
+
+/**
+ * General "Scrie-ne" contact form — the appointment form above is a booking
+ * request, not a general contact path. Contract: POST JSON
+ * {slug, name, contact, message, website} to
+ * `${data-site-messages-api}/api/site-messages`. Click path (not native
+ * form submit): builder preview iframe sandbox is allow-scripts only — form
+ * submit is blocked without allow-forms (same reasoning as initAppointment
+ * above).
+ */
+function initMessageForm() {
+    const form = document.getElementById('pr-msg-form');
+    if (!form) return;
+
+    const submitBtn = document.getElementById('pr-msg-submit');
+    const hint = document.getElementById('pr-msg-hint');
+    const fail = document.getElementById('pr-msg-fail');
+    const done = document.getElementById('pr-msg-done');
+
+    function setBusy(busy) {
+        if (!submitBtn) return;
+        submitBtn.disabled = busy;
+        const span = submitBtn.querySelector('span');
+        const text = busy ? 'Se trimite…' : 'Trimite mesajul';
+        if (span) span.textContent = text; else submitBtn.textContent = text;
+    }
+
+    async function send(e) {
+        if (e) e.preventDefault();
+        if (submitBtn && submitBtn.disabled) return;
+        if (fail) fail.hidden = true;
+
+        const name = (form.querySelector('#pr-msg-name') || {}).value || '';
+        const contact = (form.querySelector('#pr-msg-contact') || {}).value || '';
+        const message = (form.querySelector('#pr-msg-message') || {}).value || '';
+        const website = (form.querySelector('#pr-msg-website') || {}).value || '';
+
+        if (!name.trim() || !contact.trim() || !message.trim()) {
+            if (hint) {
+                hint.hidden = false;
+                hint.textContent = 'Completează numele, un contact și mesajul.';
+            }
+            return;
+        }
+
+        const apiBase = form.getAttribute('data-site-messages-api') || '';
+        const slug = form.getAttribute('data-site-slug') || detectLiveSlug();
+        const payload = {
+            slug,
+            name: name.trim(),
+            contact: contact.trim(),
+            message: message.trim(),
+            website,
+        };
+
+        function showDone() {
+            form.hidden = true;
+            if (done) done.hidden = false;
+        }
+
+        function showFail() {
+            if (hint) {
+                hint.hidden = false;
+                hint.textContent = 'Mesajul NU a fost trimis — încearcă din nou sau folosește un contact direct mai jos.';
+            }
+            if (fail) fail.hidden = false;
+            setBusy(false);
+        }
+
+        // No API base at all (static export / builder preview before
+        // publish) — nothing to POST to, go straight to the honest fallback.
+        if (!apiBase || !/^https?:/i.test(apiBase)) {
+            showFail();
+            return;
+        }
+
+        setBusy(true);
+        try {
+            const res = await fetch(apiBase + '/api/site-messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (res.ok && body && body.ok) {
+                showDone();
+            } else {
+                throw new Error((body && body.error) || 'Cererea nu a putut fi înregistrată.');
+            }
+        } catch (err) {
+            showFail();
+        }
+    }
+
+    if (submitBtn) submitBtn.addEventListener('click', send);
+    form.addEventListener('submit', send);
 }
 
 // Smooth-scroll only scrolls; the skip link needs its own focus-moving handler.

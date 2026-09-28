@@ -207,11 +207,19 @@ function dirTotalBytes(dir) {
   // the direct minifier-ran assertion; this one is the growth guard.
   // Raised to measured + 1% for the contrast script (90dfe97) plus the skip
   // link, QR focus trap and image fallback (bd33769) — 2026-09-28.
+  // Raised to measured + 2% for S-2B (PLAN-UX §5.2 section library): the
+  // Recenzii testimonials list on both templates, Echipa on professionals,
+  // and each template's new "Scrie-ne" contact form — real shipped
+  // markup+CSS+JS, not drift — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         133137    135800
+  //   professionals      149026    152007
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 93014,
     'local-service': 116258,
-    portfolio: 123139,
-    professionals: 138477,
+    portfolio: 135800,
+    professionals: 152007,
   };
 
   for (const id of TPLS) {

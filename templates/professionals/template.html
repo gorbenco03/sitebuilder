@@ -393,6 +393,47 @@
             </div>
         </section>
 
+        <!-- @if team.members -->
+        <section class="pr-sec pr-reveal" id="team" aria-labelledby="team-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.teamEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="team-heading">{{team.title}}</h2>
+                <div class="pr-team__grid">
+                    <!-- @each team.members -->
+                    <article class="pr-person">
+                        <!-- @if photo -->
+                        <div class="pr-person__pic"><img src="{{photo}}" alt="{{name}}" loading="lazy" decoding="async"></div>
+                        <!-- @endif -->
+                        <h3 class="pr-person__name">{{name}}</h3>
+                        <!-- @if role --><p class="pr-person__role">{{role}}</p><!-- @endif -->
+                        <!-- @if bio --><p class="pr-copy pr-copy--sm">{{bio}}</p><!-- @endif -->
+                    </article>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if testimonials.items -->
+        <section class="pr-sec pr-sec--alt pr-reveal" id="testimonials" aria-labelledby="reviews-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.testimonialsEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="reviews-heading">{{testimonials.title}}</h2>
+                <div class="pr-reviews__grid">
+                    <!-- @each testimonials.items -->
+                    <figure class="pr-review">
+                        <blockquote class="pr-review__quote">{{quote}}</blockquote>
+                        <figcaption class="pr-review__who">
+                            <span class="pr-review__name">{{name}}</span>
+                            <!-- @if role --><span class="pr-review__role">{{role}}</span><!-- @endif -->
+                        </figcaption>
+                    </figure>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
         <!-- @if appointment.enabled -->
         <section class="pr-sec pr-sec--book pr-reveal" id="appointment" aria-labelledby="book-heading"
             data-pr-appt="1"
@@ -668,6 +709,58 @@
                     </a></li>
                     <!-- @endif -->
                 </ul>
+            </div>
+
+            <!-- General "write to us" form — the appointment form above is a
+                 booking request, not a general contact path, so this fills
+                 that gap. data-site-messages-api/data-site-slug are filled
+                 in at publish time; empty here means the static export/
+                 local-preview case, handled entirely client-side in
+                 script.js. -->
+            <div class="pr-shell pr-msg">
+                <div class="pr-msg__head">
+                    <h3 class="pr-msg__title">Scrie-ne</h3>
+                    <p class="pr-copy">Lasă un mesaj și te contactăm noi.</p>
+                </div>
+                <form class="pr-msg__form" id="pr-msg-form" data-site-messages-api="" data-site-slug="" novalidate>
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-msg-name">Nume</label>
+                            <input class="pr-input" id="pr-msg-name" name="name" type="text" autocomplete="name" required maxlength="80">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-msg-contact">Telefon sau email</label>
+                            <input class="pr-input" id="pr-msg-contact" name="contact" type="text" autocomplete="email" required maxlength="120">
+                        </div>
+                    </div>
+                    <div class="pr-field">
+                        <label class="pr-label" for="pr-msg-message">Mesajul tău</label>
+                        <textarea class="pr-input pr-input--area" id="pr-msg-message" name="message" required maxlength="600" rows="4"></textarea>
+                    </div>
+                    <div class="pr-msg__hp" aria-hidden="true">
+                        <label for="pr-msg-website">Nu completa acest câmp</label>
+                        <input id="pr-msg-website" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="pr-appt__hint" id="pr-msg-hint" hidden></p>
+                    <button type="button" class="pr-btn pr-btn--primary pr-msg__submit" id="pr-msg-submit"><span>Trimite mesajul</span></button>
+                </form>
+                <div class="pr-msg__fail" id="pr-msg-fail" role="alert" hidden>
+                    <p class="pr-copy">Mesajul NU a fost trimis din site. Formularul rămâne completat — scrie-ne direct:</p>
+                    <div class="pr-msg__fail-actions">
+                        <!-- @if contact.phone -->
+                        <a class="pr-btn pr-btn--primary" href="tel:{{contact.phone}}">Sună la {{contact.phoneDisplay}}</a>
+                        <!-- @endif -->
+                        <!-- @if contact.waHref -->
+                        <a class="pr-btn pr-btn--ghost" href="{{contact.waHref}}" target="_blank" rel="noopener">{{labels.whatsapp}}</a>
+                        <!-- @endif -->
+                        <!-- @if contact.email -->
+                        <a class="pr-btn pr-btn--ghost" href="mailto:{{contact.email}}">{{contact.email}}</a>
+                        <!-- @endif -->
+                    </div>
+                </div>
+                <div class="pr-msg__done" id="pr-msg-done" hidden>
+                    <p class="pr-copy">Mulțumim! Mesajul a fost trimis — revenim cât mai curând.</p>
+                </div>
             </div>
         </section><!-- @if instagram.showTeaser -->
         <!-- Instagram teaser: editor-preview-only example section shown when
