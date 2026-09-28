@@ -280,7 +280,13 @@ test('owner connects a custom domain to active, and disconnects, entirely from t
         // 8. Disconnect from the UI -> back to the connect form; site stays
         //    live on its Hidook subdomain, never goes dark.
         // =====================================================================
+        // U-01 (PLAN-UX-2026-09-27 §3, merged after this oracle was written):
+        // "Deconectează" now opens the product's own modal-domain-disconnect
+        // instead of window.confirm() — the page-level dialog auto-accept
+        // above no longer fires for this action, so confirm through the modal.
         await page.locator('#btn-domain-disconnect').click();
+        await page.locator('#modal-domain-disconnect').waitFor({ state: 'visible' });
+        await page.locator('#btn-confirm-domain-disconnect').click();
         await page.locator('#domain-connect-form').waitFor({ state: 'visible', timeout: 15000 });
         assert.equal(fakeCf.isAttached(cnameName), false, 'must actually detach on Cloudflare, not just flip a local flag');
         assert.equal(domainsModule.getActiveDomainForSite(site.id), null, 'a disconnected domain must stop being reported active');

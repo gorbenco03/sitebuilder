@@ -2369,6 +2369,12 @@ body.details-drawer-open .demo-content-banner {
   position: relative;
   box-shadow: var(--shadow-lg);
   animation: slideUp .2s ease;
+  /* Content taller than the viewport (e.g. modal-domain once DNS records +
+     status are on screen) used to overflow top/bottom with no way to reach
+     it — a real "can the customer reach the button" defect on mobile, not
+     just a layout nit. Scroll the box itself instead of clipping it. */
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
 }
 @keyframes slideUp {
   from { transform: translateY(14px); opacity: 0; }

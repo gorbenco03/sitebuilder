@@ -6750,18 +6750,24 @@ function maybeWarnBeforeExport(kind) {
  *     message) is a deliberate refusal written in Romanian for a person to
  *     read — shown as-is;
  *   - a 5xx was never written for a customer (an internal failure, a stack,
- *     a driver error) and is never shown, whether or not it has a message;
+ *     a driver error) and is never shown, whether or not it has a message —
+ *     UNLESS its e.code is in the caller's own `safeCodes` allowlist (R-27:
+ *     a specific, hand-written Romanian message for a specific known 5xx
+ *     case, e.g. "the account delete aborted because Stripe could not be
+ *     reached" — still never a blanket "show any 5xx text" escape hatch);
  *   - a raw network/timeout failure (fetch's own TypeError, or an
  *     AbortError) never reached the server at all — the fallback gets a
  *     concrete next step instead of a bare "something failed";
  *   - anything else reaching here is one of this file's own local Romanian
  *     messages (never the browser's raw text), shown as-is.
- * Never returns a raw e.message the browser or a 5xx body produced.
+ * Never returns a raw e.message the browser or a 5xx body produced, except
+ * for a code explicitly named in safeCodes.
  */
-function safeServerMessage(e, fallbackRo) {
+function safeServerMessage(e, fallbackRo, safeCodes) {
   fallbackRo = fallbackRo || 'Ceva nu a mers. Încearcă din nou.';
   if (e && e.fromServer && typeof e.status === 'number') {
     if (e.status >= 400 && e.status < 500 && e.message) return e.message;
+    if (e.status >= 500 && e.message && Array.isArray(safeCodes) && safeCodes.indexOf(e.code) !== -1) return e.message;
     return fallbackRo;
   }
   if (e && (e.name === 'TypeError' || e.name === 'AbortError')) {
@@ -8990,12 +8996,7 @@ async function loadDashboard() {
     }
 
     list.innerHTML = '';
-    // U-01 (PLAN-UX-2026-09-27 §3): GET /api/sites has no ORDER BY in either
-    // registry backend, so the list came back in raw insertion order (oldest
-    // first) — the newest site an owner just created was buried at the
-    // bottom. createdAt is the one timestamp both backends actually stamp
-    // on every site (no updatedAt/lastPublishedAt field exists yet); sort by
-    // it, newest first, without waiting on a registry schema change.
+    // U-01: newest first by createdAt (API has no ORDER BY; see PLAN-UX-2026-09-27 §3).
     const sitesNewestFirst = sites.slice().sort((a, b) => {
       const ta = Date.parse(a && a.createdAt) || 0;
       const tb = Date.parse(b && b.createdAt) || 0;
@@ -9216,14 +9217,9 @@ function buildSiteCard(site) {
     });
     actions.appendChild(keepBtn);
   } else if (site.status === 'unpublished') {
-    // owner-dashboard#4 (audit 2026-09-27): a customer-initiated cancel
-    // (unpublishSite()) leaves site.paid=true and paidUntil in the future on
-    // purpose (billing history kept), but flips status to 'unpublished' — so
-    // neither this branch's own condition (`!paid || hostingExpired`) nor the
-    // live/active "Anulează" branch below ever matched, and the card showed
-    // no way back at all while the hosting the owner already paid for was
-    // still valid. Same checkout route the "Adaugă un card" branch above
-    // uses — POST .../checkout re-publishes the last saved config.
+    // owner-dashboard#4: an owner-canceled site (paid=true, hosting still
+    // valid) fell through every other branch with no way back. Reuses the
+    // "Adaugă un card" branch's own checkout route.
     const reactivateBtn = document.createElement('button');
     reactivateBtn.className = 'btn-primary btn-sm';
     reactivateBtn.textContent = 'Reactivează site-ul';
@@ -9716,7 +9712,11 @@ async function confirmDeleteAccount() {
     window.location.hash = '#templates';
   } catch (e) {
     if (errEl) {
-      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.');
+      // R-27: SUBSCRIPTION_CANCEL_FAILED is a 502 the server sends on purpose,
+      // with an exact Romanian message ("Stripe could not confirm the
+      // cancellation, nothing was deleted") — customer-safe by name, unlike
+      // any other 5xx. See safeServerMessage()'s doc comment.
+      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.', ['SUBSCRIPTION_CANCEL_FAILED']);
       errEl.style.display = '';
     }
   } finally {
@@ -10181,43 +10181,73 @@ function renderDomainModal(record, lastPoll) {
 
   const disconnectBtn = $('btn-domain-disconnect');
   if (disconnectBtn) {
-    disconnectBtn.addEventListener('click', async () => {
-      const confirmed = window.confirm(
-        'Sigur vrei să deconectezi domeniul „' + record.domain + '"? Site-ul tău rămâne disponibil pe subdomeniul Hidook.'
-      );
-      if (!confirmed) return;
-      try {
-        setBtnLoading(disconnectBtn, true, 'Se deconectează…');
-        await apiDelete('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
-        try { localStorage.removeItem(domainInstructionsCacheKey(domainModalSiteId)); } catch (_) {}
-        showToast('Domeniul a fost deconectat.', 'success');
-        await refreshDomainModal();
-      } catch (err) {
-        showToast(safeServerMessage(err, 'Nu am putut deconecta domeniul.'), 'error');
-      } finally {
-        setBtnLoading(disconnectBtn, false);
-      }
+    // U-01: the product's own modal instead of window.confirm() — same
+    // open/close contract (Esc, backdrop, 44px X, focus trap/return) as
+    // every other modal. See openDomainDisconnectModal()/confirmDomainDisconnect().
+    disconnectBtn.addEventListener('click', () => {
+      openDomainDisconnectModal(record.domain, disconnectBtn);
     });
   }
 
   const switchBtn = $('btn-domain-switch');
   if (switchBtn) {
     switchBtn.addEventListener('click', () => {
-      // Explicit confirm before wiping the current domain's progress — the
+      // U-01: explicit confirm (now the product's own modal, not
+      // window.confirm()) before wiping the current domain's progress — the
       // eventual submit has the same immediate real-world effect as
       // "Deconectează" (detaches the live Cloudflare hostname on an
-      // active/provisioning domain), but until now had no confirm() at all.
+      // active/provisioning domain).
       const attached = status === 'active' || status === 'provisioning' || status === 'dns_verified';
-      const question = attached
-        ? 'Sigur vrei să folosești alt domeniu? Domeniul „' + record.domain + '" va fi deconectat imediat, iar ' +
-          'site-ul tău rămâne disponibil pe subdomeniul Hidook cât timp conectezi și verifici noul domeniu.'
-        : 'Sigur vrei să introduci alt domeniu? Progresul pentru „' + record.domain + '" (înregistrările DNS ' +
-          'deja pregătite) se pierde. Site-ul tău rămâne disponibil pe subdomeniul Hidook.';
-      if (!window.confirm(question)) return;
-      body.innerHTML = domainStepsHtml(1) + domainConnectFormHtml(true);
-      wireDomainConnectForm();
+      openDomainSwitchModal(attached, record.domain, switchBtn);
     });
   }
+}
+
+// ---------------------------------------------------------------------------
+// 22b2. Disconnect / switch custom domain (own modals, not window.confirm — U-01)
+// ---------------------------------------------------------------------------
+
+function openDomainDisconnectModal(domain, opener) {
+  const nameEl = $('domain-disconnect-name');
+  if (nameEl) nameEl.textContent = domain;
+  openModal('modal-domain-disconnect', opener);
+}
+
+async function confirmDomainDisconnect() {
+  const confirmBtn = $('btn-confirm-domain-disconnect');
+  try {
+    if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se deconectează…');
+    await apiDelete('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
+    try { localStorage.removeItem(domainInstructionsCacheKey(domainModalSiteId)); } catch (_) {}
+    closeModal('modal-domain-disconnect');
+    showToast('Domeniul a fost deconectat.', 'success');
+    await refreshDomainModal();
+  } catch (err) {
+    closeModal('modal-domain-disconnect');
+    showToast(safeServerMessage(err, 'Nu am putut deconecta domeniul.'), 'error');
+  } finally {
+    if (confirmBtn) setBtnLoading(confirmBtn, false);
+  }
+}
+
+function openDomainSwitchModal(attached, domain, opener) {
+  const msgEl = $('domain-switch-message');
+  if (msgEl) {
+    msgEl.textContent = attached
+      ? 'Sigur vrei să folosești alt domeniu? Domeniul „' + domain + '" va fi deconectat imediat, iar ' +
+        'site-ul tău rămâne disponibil pe subdomeniul Hidook cât timp conectezi și verifici noul domeniu.'
+      : 'Sigur vrei să introduci alt domeniu? Progresul pentru „' + domain + '" (înregistrările DNS ' +
+        'deja pregătite) se pierde. Site-ul tău rămâne disponibil pe subdomeniul Hidook.';
+  }
+  openModal('modal-domain-switch', opener);
+}
+
+function confirmDomainSwitch() {
+  closeModal('modal-domain-switch');
+  const body = $('domain-modal-body');
+  if (!body) return;
+  body.innerHTML = domainStepsHtml(1) + domainConnectFormHtml(true);
+  wireDomainConnectForm();
 }
 
 async function refreshDomainModal(lastPoll) {
@@ -10752,6 +10782,16 @@ function wireStaticButtons() {
   // every other modal above.
   wireModalClose('btn-close-logout-everywhere', 'modal-logout-everywhere');
   wireModalClose('btn-close-cancel-subscription', 'modal-cancel-subscription');
+  wireModalClose('btn-close-domain-disconnect', 'modal-domain-disconnect');
+  wireModalClose('btn-close-domain-switch', 'modal-domain-switch');
+  const domainDisconnectDismissBtn = $('btn-dismiss-domain-disconnect');
+  if (domainDisconnectDismissBtn) domainDisconnectDismissBtn.addEventListener('click', () => closeModal('modal-domain-disconnect'));
+  const domainDisconnectConfirmBtn = $('btn-confirm-domain-disconnect');
+  if (domainDisconnectConfirmBtn) domainDisconnectConfirmBtn.addEventListener('click', confirmDomainDisconnect);
+  const domainSwitchDismissBtn = $('btn-dismiss-domain-switch');
+  if (domainSwitchDismissBtn) domainSwitchDismissBtn.addEventListener('click', () => closeModal('modal-domain-switch'));
+  const domainSwitchConfirmBtn = $('btn-confirm-domain-switch');
+  if (domainSwitchConfirmBtn) domainSwitchConfirmBtn.addEventListener('click', confirmDomainSwitch);
   const logoutEverywhereDismissBtn = $('btn-dismiss-logout-everywhere');
   if (logoutEverywhereDismissBtn) logoutEverywhereDismissBtn.addEventListener('click', () => closeModal('modal-logout-everywhere'));
   const logoutEverywhereConfirmBtn = $('btn-confirm-logout-everywhere');

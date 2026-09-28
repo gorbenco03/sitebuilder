@@ -176,9 +176,15 @@ check('HEAD live success + toast are trial started, not paid year', () => {
     /Site-ul tău e live — trial de 14 zile început/.test(js),
     'live success title'
   );
+  // U-01 (PLAN-UX-2026-09-27 §3, merged in a17d846) dropped the toast that
+  // used to repeat this same "trial started, site live" event on top of the
+  // modal-success title above — a double notification, not a second,
+  // different one. The trial-started fact is still asserted (the title
+  // above); the toast for the actual-live case is gone on purpose, so
+  // assert its absence instead of its old text.
   assert.ok(
-    /Trial început\. Site-ul tău e live\./.test(js),
-    'trial started toast'
+    !/Trial început\. Site-ul tău e live\./.test(js),
+    'the redundant live-success toast must not have come back'
   );
   assert.ok(
     !/Your site is live — 12 months hosting included/.test(js),

@@ -248,15 +248,21 @@ test('Domeniu modal shows numbered steps that track real DNS/TLS status, and swi
         //    leave the active domain exactly as it was — this is the assertion
         //    that fails outright on the pre-U-06 code (which had no confirm
         //    at all and switched unconditionally).
+        //
+        // U-01 (PLAN-UX-2026-09-27 §3, merged after this oracle was written)
+        // replaced window.confirm() here with the product's own
+        // modal-domain-switch (same open/close contract as every other
+        // modal — see suite4-modal-contract.test.js) — a real page.once('dialog')
+        // never fires anymore, so this drives the modal directly instead.
         // =====================================================================
-        let dialogMessage = null;
-        page.once('dialog', (d) => { dialogMessage = d.message(); d.dismiss(); });
         await page.locator('#btn-domain-switch').click();
-        await page.waitForTimeout(300);
-        assert.ok(dialogMessage, 'clicking "Folosește alt domeniu" must trigger a confirm dialog');
-        assert.match(dialogMessage, new RegExp(testDomain.replace(/[.]/g, '\\.')), 'the confirm must name the domain that will be disconnected');
-        assert.match(dialogMessage, /deconectat/i, 'the confirm must say the current domain gets disconnected');
-        assert.match(dialogMessage, /subdomeniul Hidook/, 'the confirm must reassure the site stays on its Hidook address meanwhile');
+        await page.locator('#modal-domain-switch').waitFor({ state: 'visible' });
+        const switchMessage = (await page.locator('#domain-switch-message').innerText()).trim();
+        assert.match(switchMessage, new RegExp(testDomain.replace(/[.]/g, '\\.')), 'the confirm must name the domain that will be disconnected');
+        assert.match(switchMessage, /deconectat/i, 'the confirm must say the current domain gets disconnected');
+        assert.match(switchMessage, /subdomeniul Hidook/, 'the confirm must reassure the site stays on its Hidook address meanwhile');
+        await page.locator('#btn-dismiss-domain-switch').click();
+        await page.locator('#modal-domain-switch').waitFor({ state: 'hidden' });
         await page.locator('#btn-domain-disconnect').waitFor({ state: 'visible' });
         assert.equal(await page.locator('#domain-connect-form').count(), 0, 'dismissing the confirm must NOT switch to the connect form — the active domain must stay connected');
         await page.screenshot({ path: path.join(SHOTS, '06-switch-confirm-dismissed-still-active.png') });
@@ -267,8 +273,9 @@ test('Domeniu modal shows numbered steps that track real DNS/TLS status, and swi
         //    action alone (only the eventual new-domain submit detaches it —
         //    covered server-side by audit27-r-15-domain-switch-seo-fallback).
         // =====================================================================
-        page.once('dialog', (d) => d.accept());
         await page.locator('#btn-domain-switch').click();
+        await page.locator('#modal-domain-switch').waitFor({ state: 'visible' });
+        await page.locator('#btn-confirm-domain-switch').click();
         await page.locator('#domain-connect-form').waitFor({ state: 'visible', timeout: 5000 });
         assert.deepStrictEqual(
             await stepStates(page),

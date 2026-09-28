@@ -113,6 +113,29 @@ if (!chromium) throw new Error('playwright not found; install or link node_modul
 const VIEWPORT = { width: 390, height: 844 };
 const MIN_CLOSE = 44;
 
+// modal-domain-disconnect / modal-domain-switch (U-01) only render once a
+// domain has actually been submitted (bot/domains.js#startDomainConnection),
+// which needs the *.pages.dev host lookup to succeed — the one Cloudflare
+// call this file needs, stubbed the same minimal way
+// audit27-u-06-domain-modal-steps.test.js does. Reaching the disconnect/
+// switch buttons never requires DNS/TLS to actually verify (they render for
+// ANY non-'disconnected' status, see renderDomainModal()'s else branch), so
+// unlike that oracle this stub never needs to handle the domain-attach or
+// DNS-verify calls at all — an unexpected one fails loudly instead of
+// silently succeeding.
+function fakePagesHostFetch(pagesHost) {
+  const orig = global.fetch;
+  global.fetch = async (url, opts) => {
+    const u = String(url);
+    const method = (opts && opts.method) || 'GET';
+    if (/\/pages\/projects\/[^/]+$/.test(u) && !u.includes('/domains') && method === 'GET') {
+      return { ok: true, status: 200, json: async () => ({ success: true, result: { subdomain: pagesHost } }) };
+    }
+    throw new Error('suite4 fake Cloudflare fetch: unhandled request ' + method + ' ' + u);
+  };
+  return () => { global.fetch = orig; };
+}
+
 // Polls the real DOM state instead of sleeping a fixed duration — under
 // concurrent system load a close animation/handler can legitimately take
 // longer than any fixed sleep would allow, which used to read as "did not
@@ -146,9 +169,12 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
   process.env.NODE_ENV = 'test';
   process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'suite4-modal-'));
   process.env.SERVER_SECRET = 'suite4-modal-' + crypto.randomBytes(8).toString('hex');
+  process.env.CLOUDFLARE_API_TOKEN = 'fake-token';
+  process.env.CLOUDFLARE_ACCOUNT_ID = 'fake-account';
   delete process.env.PUBLIC_URL;
   delete process.env.STRIPE_SECRET_KEY;
   delete process.env.VERCEL_TOKEN;
+  const restoreFetch = fakePagesHostFetch('suite4-modal-xyz.pages.dev');
 
   require(path.join(ROOT, 'scripts', 'build-builder.js'));
   const { startServer } = require(path.join(ROOT, 'bot', 'server.js'));
@@ -424,6 +450,51 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
 
     await contractCheck('versions', 'modal-versions', 'btn-close-versions', () => clickAndHandle(card.locator('button', { hasText: 'Istoric' })));
     await contractCheck('domain', 'modal-domain', 'btn-close-domain', () => clickAndHandle(card.locator('button', { hasText: 'Domeniu' })));
+
+    // -----------------------------------------------------------------
+    // modal-domain-disconnect / modal-domain-switch (U-01): both replace a
+    // window.confirm() and only render once a domain has actually been
+    // submitted (renderDomainModal()'s non-'disconnected' branch) — reached
+    // here through the real connect form, using the stubbed *.pages.dev
+    // lookup declared above (fakePagesHostFetch). Neither check ever clicks
+    // its own destructive confirm button, so the domain record this creates
+    // is simply left in 'awaiting_dns' — inert, nothing external attached.
+    // -----------------------------------------------------------------
+    await card.locator('button', { hasText: 'Domeniu' }).click();
+    await page.locator('#modal-domain').waitFor({ state: 'visible' });
+    await page.locator('#domain-input').fill('suite4-modal-' + Date.now().toString(36) + '.com');
+    await page.locator('#btn-domain-connect-submit').click();
+    await page.locator('#btn-domain-disconnect').waitFor({ state: 'visible', timeout: 10000 });
+
+    // modal-domain and its two child confirm modals are opened stacked
+    // (modal-domain is never closed underneath) — same reasoning as the
+    // delete-site/delete-account dropdown-toggle pattern elsewhere in this
+    // file: the real trigger for these two modals lives INSIDE another,
+    // already-open modal, so the opener re-establishes that outer modal
+    // whenever a prior Escape press (which closes every visible overlay)
+    // took it down too.
+    async function reopenDomainModalIfNeeded() {
+      if (!(await page.locator('#modal-domain').isVisible().catch(() => false))) {
+        await card.locator('button', { hasText: 'Domeniu' }).click();
+        await page.locator('#modal-domain').waitFor({ state: 'visible' });
+        await page.locator('#btn-domain-disconnect').waitFor({ state: 'visible', timeout: 10000 });
+      }
+    }
+
+    await contractCheck('domain-disconnect', 'modal-domain-disconnect', 'btn-close-domain-disconnect', async () => {
+      await reopenDomainModalIfNeeded();
+      return clickAndHandle(page.locator('#btn-domain-disconnect'));
+    });
+    await contractCheck('domain-switch', 'modal-domain-switch', 'btn-close-domain-switch', async () => {
+      await reopenDomainModalIfNeeded();
+      return clickAndHandle(page.locator('#btn-domain-switch'));
+    });
+
+    // Leave the dashboard clean for the checks that follow — same
+    // guaranteed-close reasoning as contractCheck's own step 5.
+    await page.locator('#btn-close-domain').click({ force: true, timeout: 5000 }).catch(() => {});
+    await waitForClosed(page, 'modal-domain', 5000);
+
     await contractCheck('invoices', 'modal-invoices', 'btn-close-invoices', () => clickAndHandle(card.locator('button', { hasText: 'Facturi' })));
     // modal-cancel-subscription (U-01): real trigger is the card's own
     // "Anulează" button (subscription still active — same site, straight
@@ -464,6 +535,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
     fs.rmSync(process.env.DATA_DIR, { recursive: true, force: true });
+    restoreFetch();
   }
 
   assert.deepStrictEqual(failures, [], 'modal contract failures:\n' + failures.join('\n'));

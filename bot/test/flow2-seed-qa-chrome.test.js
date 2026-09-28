@@ -407,7 +407,11 @@ check('Istoric loading, empty, and restore states are Romanian', () => {
     for (const phrase of ['Se încarcă…', 'Se restabilește…', 'Nu există versiuni salvate.']) {
         assert.ok(appSrc.includes(phrase), `Istoric Romanian state is missing: ${phrase}`);
     }
-    assert.ok(appSrc.includes('Eroare la restabilire:'), 'restore error is not Romanian');
+    // U-09 (PLAN-UX-2026-09-27 §5.8) replaced the old literal
+    // 'Eroare la restabilire: ' + err.message (which could leak a raw
+    // English browser/server string) with safeServerMessage()'s own fixed
+    // Romanian fallback — still Romanian, never raw text now.
+    assert.ok(appSrc.includes('Nu am putut restabili versiunea. Încearcă din nou.'), 'restore error is not Romanian');
 });
 
 check('catalog preview opens visibly before assigning rendered first-preset HTML', () => {
