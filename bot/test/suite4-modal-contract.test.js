@@ -330,6 +330,22 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await contractCheck('publish', 'modal-publish', 'btn-close-publish', () => clickAndHandle(page.locator('#btn-publish')));
 
     // -----------------------------------------------------------------
+    // modal-export-booking (U-04, export lens): only appears when
+    // appointment.nativeBooking is on, so turn it on via the real Detalii
+    // panel first, then trigger through the real "Descarcă HTML" button.
+    // contractCheck never clicks "Continuă descărcarea", so no download or
+    // network call actually happens here.
+    // -----------------------------------------------------------------
+    await page.locator('#btn-open-drawer').click({ timeout: 4000 });
+    await drawer.waitFor({ state: 'visible', timeout: 4000 });
+    await page.getByRole('button', { name: 'Activează calendarul nativ de programări Hidook' }).click({ timeout: 4000 });
+    await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
+      await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
+    });
+    await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
+    await contractCheck('export-booking', 'modal-export-booking', 'btn-close-export-booking', () => clickAndHandle(page.locator('#btn-download-html')));
+
+    // -----------------------------------------------------------------
     // modal-success: drive the real checkout once (see header comment).
     // -----------------------------------------------------------------
     tested.add('modal-success');

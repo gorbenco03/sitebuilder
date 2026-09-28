@@ -570,6 +570,7 @@
       <button id="btn-pay-publish" class="btn-primary btn-full" type="button" style="display:none" aria-label="Adaugă un card — nicio taxare acum, prima taxare abia după trialul de 14 zile">
         Adaugă un card — <span id="success-price">—</span> după trialul de 14 zile
       </button>
+      <p id="pay-assurance" class="field-hint" style="display:none">Nimic taxat azi. Taxăm <strong id="pay-assurance-price">—</strong> în ziua 14, dacă nu anulezi, apoi reînnoire anuală <strong id="pay-assurance-renewal">—</strong>. Anulezi oricând din Site-urile mele.</p>
       <button id="btn-share-wa" class="btn-whatsapp btn-full" type="button">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 9.5c-.2.6-1.1 1.1-1.6 1.1-.4 0-1.9-.5-3.2-1.8C5.4 8.5 4.9 7 4.9 6.6c0-.5.5-1.4 1.1-1.6.1 0 .3 0 .4.1l1 2c0 .1 0 .2-.1.3l-.5.5c0 .1 0 .1.1.2.3.5.7 1 1.2 1.3.1.1.2.1.3 0l.5-.5c.1-.1.2-.1.3-.1l2 1c.1.1.1.3.3.3z" fill="currentColor"/>
@@ -759,6 +760,19 @@
     <div class="modal-confirm-actions">
       <button class="btn-danger btn-full" type="button" id="btn-confirm-cancel-subscription">Anulează abonamentul</button>
       <button class="btn-ghost btn-full" type="button" id="btn-dismiss-cancel-subscription">Renunță</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EXPORT WITH NATIVE BOOKING ON (export lens, R-09/28f2832) ===== -->
+<div id="modal-export-booking" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-export-booking-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-export-booking" aria-label="Închide">&times;</button>
+    <h2 id="modal-export-booking-title" class="modal-title">Programările online în exportul static</h2>
+    <p class="modal-sub">Site-ul tău publicat pe Hidook folosește calendarul nativ, cu sloturi live. Exportul HTML/ZIP nu are un server Hidook în spate, așa că acolo calendarul live e dezactivat automat, iar vizitatorii văd formularul clasic de cerere programare — fără disponibilitate live, dar telefon și WhatsApp rămân disponibile. Site-ul publicat pe Hidook nu este afectat.</p>
+    <div class="success-actions">
+      <button class="btn-primary btn-full" type="button" id="btn-export-booking-continue">Continuă descărcarea</button>
+      <button class="btn-ghost btn-full" type="button" id="btn-export-booking-cancel">Renunță</button>
     </div>
   </div>
 </div>

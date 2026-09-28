@@ -46,6 +46,10 @@ let previewCookieAccepted = false;
 // Pending image replacement request
 let pendingImagePath = null;
 
+// U-04: which download the export-booking-warning modal is gating
+// ('html'|'zip'), while the customer decides whether to continue.
+let pendingExportKind = null;
+
 // Slug check debounce
 let slugCheckTimer = null;
 let slugValid      = false;
@@ -6659,6 +6663,29 @@ async function apiGet(url) {
 }
 
 /**
+ * U-04 (export lens, R-09/28f2832): a Professional site with the native
+ * Hidook booking calendar on stays that way only on the live Hidook-published
+ * site. bot/site-export.js#buildStaticSiteTree forces nativeBooking off in
+ * every offline export (ZIP/standalone HTML) — there is no Hidook server
+ * behind a self-hosted export — and falls back to the same local
+ * request-form the template already renders when native booking was never
+ * turned on. The owner clicking "Descarcă HTML"/"Descarcă ZIP" has no way to
+ * know that ahead of time, so gate the actual download behind a product
+ * modal (not window.confirm — suite4 modal contract) that explains it, and
+ * only calls through to the real download on "Continuă descărcarea".
+ * A no-op pass-through (downloads immediately) when native booking is off.
+ */
+function maybeWarnBeforeExport(kind) {
+  const nativeOn = isNativeBookingOn(getPath(draft.config, 'appointment.nativeBooking'));
+  if (!nativeOn) {
+    if (kind === 'zip') return downloadDraftZip();
+    return downloadDraftHtml();
+  }
+  pendingExportKind = kind;
+  openModal('modal-export-booking');
+}
+
+/**
  * Download the current paid/trial-active draft as a complete static HTML file.
  * Fetches GET /api/export-html (session cookie) and saves via blob + a[download].
  * Does not publish or open checkout.
@@ -8168,16 +8195,28 @@ function showSuccessScreen(url, paymentUrl, alreadyPaidBefore) {
 
   const payBtn = $('btn-pay-publish');
   const successPrice = $('success-price');
+  const payAssurance = $('pay-assurance');
+  const payAssurancePrice = $('pay-assurance-price');
+  const payAssuranceRenewal = $('pay-assurance-renewal');
   if (payBtn) {
     // Paid/live: never show first-publish pay CTA
     if (isLive) {
       hide(payBtn);
+      if (payAssurance) hide(payAssurance);
     } else if (paymentUrl) {
       show(payBtn);
       payBtn.onclick = () => { window.location.href = paymentUrl; };
       if (successPrice) successPrice.textContent = formatPriceLabel(appConfig);
+      // U-04 (legal-cookies-attribution lens): the reassurance text next to
+      // "Adaugă un card" — nothing charged today, real price/currency from
+      // /api/config, cancel anytime — read at the decision moment, not only
+      // buried in Termeni.
+      if (payAssurancePrice) payAssurancePrice.textContent = formatPriceLabel(appConfig);
+      if (payAssuranceRenewal) payAssuranceRenewal.textContent = formatRenewalLabel(appConfig);
+      if (payAssurance) show(payAssurance);
     } else {
       hide(payBtn);
+      if (payAssurance) hide(payAssurance);
     }
   }
 
@@ -10353,11 +10392,40 @@ function wireStaticButtons() {
   const pubBtn = $('btn-publish');
   if (pubBtn) pubBtn.addEventListener('click', openPublishModal);
 
-  // Download HTML of the current draft (server-rendered; not a live publish)
+  // Download HTML/ZIP of the current draft (server-rendered; not a live
+  // publish). U-04 (export lens): when appointment.nativeBooking is on,
+  // the export silently drops the live calendar for the local request-form
+  // fallback (bot/site-export.js#buildStaticSiteTree, since 28f2832) — warn
+  // in a product modal first instead of downloading straight away.
   const dlHtmlBtn = $('btn-download-html');
-  if (dlHtmlBtn) dlHtmlBtn.addEventListener('click', downloadDraftHtml);
+  if (dlHtmlBtn) dlHtmlBtn.addEventListener('click', () => maybeWarnBeforeExport('html'));
   const dlZipBtn = $('btn-download-zip');
-  if (dlZipBtn) dlZipBtn.addEventListener('click', downloadDraftZip);
+  if (dlZipBtn) dlZipBtn.addEventListener('click', () => maybeWarnBeforeExport('zip'));
+
+  const exportBookingContinueBtn = $('btn-export-booking-continue');
+  if (exportBookingContinueBtn) {
+    exportBookingContinueBtn.addEventListener('click', () => {
+      const kind = pendingExportKind;
+      pendingExportKind = null;
+      closeModal('modal-export-booking');
+      if (kind === 'zip') downloadDraftZip();
+      else if (kind === 'html') downloadDraftHtml();
+    });
+  }
+  const exportBookingCancelBtn = $('btn-export-booking-cancel');
+  if (exportBookingCancelBtn) {
+    exportBookingCancelBtn.addEventListener('click', () => {
+      pendingExportKind = null;
+      closeModal('modal-export-booking');
+    });
+  }
+  const exportBookingCloseBtn = $('btn-close-export-booking');
+  if (exportBookingCloseBtn) {
+    exportBookingCloseBtn.addEventListener('click', () => {
+      pendingExportKind = null;
+      closeModal('modal-export-booking');
+    });
+  }
 
   const igBtn = $('btn-add-instagram');
   if (igBtn) igBtn.addEventListener('click', openInstagramModal);
