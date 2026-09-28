@@ -214,11 +214,25 @@ function dirTotalBytes(dir) {
   //
   // Raised to measured + 1% for the optional testimonials/contact-form
   // sections (S-2A, PLAN-UX §5.2) — 2026-09-28.
+  //
+  // Raised to measured + 2% for S-2B (PLAN-UX §5.2 section library): the
+  // Recenzii testimonials list on both templates, Echipa on professionals,
+  // and each template's new "Scrie-ne" contact form — real shipped
+  // markup+CSS+JS, not drift, same convention as every entry above. S-2B's
+  // own commit (acd23f9) already raised these once; the UX-round-2 merge
+  // integration lost that change (portfolio/professionals silently reverted
+  // to their pre-S-2B values while product-menu/local-service's S-2A bump
+  // above survived), so this re-measures rather than trusts the old commit's
+  // numbers — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         133387    136055
+  //   professionals      149843    152840
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 102966,
     'local-service': 125711,
-    portfolio: 123139,
-    professionals: 138477,
+    portfolio: 136055,
+    professionals: 152840,
   };
 
   for (const id of TPLS) {
