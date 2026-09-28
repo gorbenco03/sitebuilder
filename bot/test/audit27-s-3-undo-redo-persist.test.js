@@ -31,6 +31,21 @@
  *      audit27-r-02-cross-account-draft-isolation.test.js, applied to the
  *      new persisted history store instead of the draft store.
  *
+ * Reviewer rejection (2026-09-27), fixed in this revision: resetHistory()'s
+ * resume check compared the PERSISTED top entry (image-stripped by
+ * historyStoreStripImages()) against the freshly-reloaded draft.config's raw
+ * JSON (never stripped) — any session whose current state included a real
+ * uploaded photo made that comparison fail on EVERY reload, silently
+ * discarding the persisted stack. Two more things this revision proves:
+ *
+ *   3. A real photo upload (over the strip threshold) as one of the edited
+ *      steps still resumes the persisted stack after a reload — not just
+ *      text-only sessions (E2E, real browser, real file-picker upload).
+ *   4. Unit-level: resetHistory()'s resume decision is symmetric about image
+ *      stripping — proven directly against the shipped functions (no
+ *      browser), so this invariant has a cheap regression guard that doesn't
+ *      depend on a photo's exact re-encoded byte size in a real browser.
+ *
  * Local only — HIDOOK_TEST_PAY offline stub, no real Stripe/DNS calls.
  * Run: node --experimental-sqlite --test bot/test/audit27-s-3-undo-redo-persist.test.js
  */
@@ -41,6 +56,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const vm = require('node:vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -145,6 +161,152 @@ async function signInFromDashboard(page, base, email) {
   await page.locator('#dev-link').waitFor({ state: 'visible' });
   await page.locator('#dev-link').click();
   await page.waitForTimeout(600);
+}
+
+/** Generates a genuinely large (noisy, near-incompressible) JPEG in-page —
+ * a real uploaded photo, not a fixture on disk — big enough after resize to
+ * exceed history-store.js's HISTORY_IMAGE_STRIP_THRESHOLD (20000 base64
+ * chars; an ordinary compressed photo clears this easily, a solid-color
+ * swatch like suite11's does not, which is why this generates per-pixel
+ * random noise instead). */
+async function genNoisyPhotoBuffer(page, w, h) {
+  const dataUrl = await page.evaluate(({ w, h }) => {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    const imgData = ctx.createImageData(w, h);
+    const buf = imgData.data;
+    for (let i = 0; i < buf.length; i += 4) {
+      buf[i] = Math.floor(Math.random() * 256);
+      buf[i + 1] = Math.floor(Math.random() * 256);
+      buf[i + 2] = Math.floor(Math.random() * 256);
+      buf[i + 3] = 255;
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return c.toDataURL('image/jpeg', 0.85);
+  }, { w, h });
+  return { dataUrl, buffer: Buffer.from(dataUrl.split(',')[1], 'base64') };
+}
+
+/** Uploads via the "Poze" gallery modal's Logo section — same real
+ * file-picker path as suite2-transparent-png.test.js / suite11-team-
+ * member-photo.test.js, not a direct draft.config write. */
+async function uploadLogoPhoto(page, buffer) {
+  await page.locator('#btn-open-gallery').click();
+  const modal = page.locator('#modal-gallery');
+  await modal.waitFor({ state: 'visible', timeout: 10000 });
+  const logoSection = modal.locator('.gallery-path-section').filter({
+    has: page.locator('.field-label', { hasText: 'Logo' }),
+  });
+  const [fileChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    logoSection.getByRole('button', { name: /Alege o poz|Înlocuiește/ }).click(),
+  ]);
+  await fileChooser.setFiles({ name: 'audit27-s3-photo.jpg', mimeType: 'image/jpeg', buffer });
+  await page.waitForFunction(() => !!(typeof draft !== 'undefined' && draft.config && draft.config.logo && draft.config.logo.indexOf('data:image/') === 0), { timeout: 10000 });
+  const closeBtn = modal.locator('#btn-close-gallery, .modal-close').first();
+  if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click().catch(() => {});
+  else await page.keyboard.press('Escape').catch(() => {});
+  await page.waitForTimeout(400);
+}
+
+// ---------------------------------------------------------------------------
+// Unit-level harness for the resume-vs-fresh-baseline invariant (reviewer
+// requirement: "add a unit-level check ... since this is exactly the kind of
+// invariant that's easy to silently break again later"). Extracts the real
+// resetHistory()/historyTrim()/historySnapshotBytes() functions straight out
+// of builder/app.js and runs them, together with the REAL builder/history-
+// store.js, in a vm sandbox — no reimplementation of either file's logic.
+// ---------------------------------------------------------------------------
+
+function extractFunction(source, name) {
+  const start = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{').exec(source);
+  if (!start) return '';
+  let index = start.index + start[0].length;
+  let depth = 1;
+  while (index < source.length && depth > 0) {
+    const char = source[index++];
+    if (char === '{') depth++;
+    else if (char === '}') depth--;
+  }
+  return source.slice(start.index, index);
+}
+
+function makeFakeSessionStorage() {
+  const store = {};
+  return {
+    getItem(k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
+    setItem(k, v) { store[k] = String(v); },
+    removeItem(k) { delete store[k]; },
+  };
+}
+
+/** Builds a sandboxed `resetHistory()` wired to the REAL history-store.js,
+ * with everything resetHistory() only reaches through a `typeof x ===
+ * 'function'` guard replaced by a harmless stub (updateHistoryButtons,
+ * hideTabConflictBanner) or a controllable fake (currentScopeKey,
+ * currentAccountKey, draft.config) — same isolated-extraction shape as
+ * s52-image-replace-live.test.js's runExtractImages(). */
+function buildHistorySandbox() {
+  const appSrc = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
+  const historyStoreSrc = fs.readFileSync(path.join(ROOT, 'builder/history-store.js'), 'utf8');
+
+  const resetHistorySrc = extractFunction(appSrc, 'resetHistory');
+  const historyTrimSrc = extractFunction(appSrc, 'historyTrim');
+  const historySnapshotBytesSrc = extractFunction(appSrc, 'historySnapshotBytes');
+  // resetHistory()'s no-persisted-match fallback path calls pushHistory(null)
+  // directly (not typeof-guarded, unlike most of its other cross-file calls)
+  // — needed here too, which in turn calls persistHistorySnapshot().
+  const pushHistorySrc = extractFunction(appSrc, 'pushHistory');
+  const persistHistorySnapshotSrc = extractFunction(appSrc, 'persistHistorySnapshot');
+  assert.ok(resetHistorySrc, 'resetHistory must exist in builder/app.js');
+  assert.ok(historyTrimSrc, 'historyTrim must exist in builder/app.js');
+  assert.ok(historySnapshotBytesSrc, 'historySnapshotBytes must exist in builder/app.js');
+  assert.ok(pushHistorySrc, 'pushHistory must exist in builder/app.js');
+  assert.ok(persistHistorySnapshotSrc, 'persistHistorySnapshot must exist in builder/app.js');
+
+  const maxEntriesMatch = /const HISTORY_MAX_ENTRIES\s*=\s*(\d+);/.exec(appSrc);
+  const maxBytesMatch = /const HISTORY_MAX_BYTES\s*=\s*([^;]+);/.exec(appSrc);
+  const coalesceMsMatch = /const HISTORY_COALESCE_MS\s*=\s*(\d+);/.exec(appSrc);
+  assert.ok(maxEntriesMatch, 'HISTORY_MAX_ENTRIES must exist in builder/app.js');
+  assert.ok(maxBytesMatch, 'HISTORY_MAX_BYTES must exist in builder/app.js');
+  assert.ok(coalesceMsMatch, 'HISTORY_COALESCE_MS must exist in builder/app.js');
+
+  const scaffold = [
+    'var HISTORY_MAX_ENTRIES = ' + maxEntriesMatch[1] + ';',
+    'var HISTORY_MAX_BYTES = ' + maxBytesMatch[1] + ';',
+    'var HISTORY_COALESCE_MS = ' + coalesceMsMatch[1] + ';',
+    'var historyState = { stack: [], index: -1, coalesceKey: null, coalesceAt: 0 };',
+    'var pendingHistoryCoalesceKey = null;',
+    'var draft = { config: null };',
+    'var __scopeKey = null;',
+    'var __accountId = null;',
+    'function updateHistoryButtons() {}',
+    'function hideTabConflictBanner() {}',
+    'function currentScopeKey() { return __scopeKey; }',
+    'function currentAccountKey() { return __accountId; }',
+    historyStoreSrc,
+    historySnapshotBytesSrc,
+    historyTrimSrc,
+    persistHistorySnapshotSrc,
+    pushHistorySrc,
+    resetHistorySrc,
+    'this.__api = {',
+    '  resetHistory: resetHistory,',
+    '  getHistoryState: function () { return historyState; },',
+    '  setDraftConfig: function (c) { draft.config = c; },',
+    '  setScope: function (s) { __scopeKey = s; },',
+    '  setAccount: function (a) { __accountId = a; },',
+    '  historyStoreSave: historyStoreSave,',
+    '  historyStoreLoad: historyStoreLoad,',
+    '  historyStoreStripImages: historyStoreStripImages,',
+    '};',
+  ].join('\n');
+
+  const sandbox = { sessionStorage: makeFakeSessionStorage(), console };
+  vm.createContext(sandbox);
+  vm.runInContext(scaffold, sandbox);
+  return sandbox.__api;
 }
 
 test('edit 3 fields, reload, undo twice restores the earlier values (persisted across the reload)', async () => {
@@ -354,4 +516,175 @@ test('logout clears this tab\'s persisted history, and a different account in an
       await browser.close().catch(() => {});
     }
   });
+});
+
+test('a session that includes a real photo upload still resumes its history after a reload (reviewer-found regression)', async () => {
+  const shotDir = fs.mkdtempSync(path.join(os.tmpdir(), 'audit27-s-3-photo-shots-'));
+  const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+
+  await withServer({
+    HIDOOK_TEST_PAY: '1',
+    HIDOOK_ISOLATED_DEPLOY: '1',
+    NODE_ENV: 'test',
+    DATA_DIR: freshTmpDataDir('audit27-s-3-photo-'),
+    SERVER_SECRET: 'audit27-s-3-photo-' + crypto.randomBytes(8).toString('hex'),
+  }, async (base) => {
+    const browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.setDefaultTimeout(30000);
+    try {
+      // product-menu ships a real single-image "Logo" field in the gallery
+      // modal (see suite2-transparent-png.test.js) — no list-add needed.
+      await acceptCookiesAndStart(page, base, 'product-menu');
+
+      const name0 = await readField(page, 'business.name');
+      const tagline0 = await readField(page, 'business.tagline');
+      assert.ok(name0, 'business.name must have preset text to begin with');
+      assert.ok(tagline0, 'business.tagline must have preset text to begin with');
+
+      // Step 1: a plain text edit.
+      await editField(page, 'business.name', 'Nume Inainte De Poza');
+
+      // Step 2: a REAL photo upload, big enough after resize to exceed
+      // history-store.js's HISTORY_IMAGE_STRIP_THRESHOLD (20000 base64
+      // chars) — this is the exact condition the reviewer found broken.
+      const { buffer } = await genNoisyPhotoBuffer(page, 600, 400);
+      await uploadLogoPhoto(page, buffer);
+      const uploadedLogo = await readField(page, 'logo');
+      assert.ok(uploadedLogo && uploadedLogo.indexOf('data:image/') === 0, 'the logo must actually be stored as a data: URL after upload');
+      assert.ok(uploadedLogo.length > 20000, `uploaded photo must exceed the strip threshold to exercise the bug (got ${uploadedLogo.length} chars)`);
+      await page.waitForTimeout(1600); // past the debounced server-save/history-persist window
+
+      // Step 3: another plain text edit, on top of the photo.
+      await editField(page, 'business.tagline', 'Tagline Dupa Poza');
+
+      const beforeReload = await page.evaluate(() => ({ index: historyState.index, length: historyState.stack.length }));
+      assert.ok(beforeReload.length >= 3, `expected baseline + name edit + photo + tagline edit, got stack length ${beforeReload.length}`);
+      assert.equal(beforeReload.index, beforeReload.length - 1);
+
+      // Sanity: at this point (no reload yet) the persisted sessionStorage
+      // copy of the TOP entry must already be stripped (this is what used to
+      // defeat the raw-string comparison in resetHistory()) while the live,
+      // in-memory top entry still carries the real image — proves this
+      // oracle is actually exercising the reported failure mode, not a
+      // no-op.
+      const persistedTopStripped = await page.evaluate(() => {
+        const all = JSON.parse(sessionStorage.getItem('hb.history.v1') || '{}');
+        const scopeKey = typeof currentScopeKey === 'function' ? currentScopeKey() : null;
+        const rec = scopeKey ? all[scopeKey] : null;
+        const top = rec && rec.entries && rec.entries[rec.index];
+        return !!(top && top.json.indexOf('__HB_HISTORY_IMAGE_OMITTED__') >= 0);
+      });
+      assert.equal(persistedTopStripped, true, 'sanity check: the persisted top entry must have its large image stripped before the reload (history-store.js contract)');
+
+      await page.screenshot({ path: path.join(shotDir, '01-photo-and-text-edits-before-reload.png') });
+
+      // ---- RELOAD — before the fix, resetHistory()'s raw string compare
+      // between the (stripped) persisted top entry and the (unstripped)
+      // freshly-reloaded draft.config always failed here, silently
+      // discarding the whole persisted stack back to a fresh 1-entry
+      // baseline. ----
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.locator('#preview-iframe').waitFor({ state: 'visible' });
+      await page.waitForTimeout(1200);
+      if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
+        await page.locator('#btn-close-drawer').click().catch(() => {});
+        await page.waitForTimeout(400);
+      }
+
+      assert.equal(await readField(page, 'business.name'), 'Nume Inainte De Poza', 'the edited values themselves must survive the reload');
+      assert.equal(await readField(page, 'business.tagline'), 'Tagline Dupa Poza');
+      const logoAfterReload = await readField(page, 'logo');
+      assert.ok(logoAfterReload && logoAfterReload.indexOf('data:image/') === 0, 'the real uploaded photo must survive the reload (ordinary draft persistence, unaffected by history stripping)');
+
+      const afterReload = await page.evaluate(() => ({ index: historyState.index, length: historyState.stack.length }));
+      assert.equal(afterReload.length, beforeReload.length, 'the persisted undo stack must be RESUMED, not reset to a fresh baseline, even though the session included a real photo upload');
+      assert.equal(afterReload.index, beforeReload.index, 'the pointer must resume at the same position, not reset to 0');
+
+      const undoBtn = page.locator('#btn-undo');
+      assert.equal(await undoBtn.isDisabled(), false, 'Undo must be enabled right after a reload that resumed real history');
+      await page.screenshot({ path: path.join(shotDir, '02-after-reload-history-resumed.png') });
+
+      // ---- Undo past the photo step: earlier text values must come back.
+      // The image placeholder left on the resumed photo-step entry itself is
+      // an accepted, documented trade-off (history-store.js file header) —
+      // what must NOT happen is the whole stack having been thrown away. ----
+      await undoBtn.click(); // undo tagline edit
+      await page.waitForTimeout(1200);
+      assert.equal(await readField(page, 'business.tagline'), tagline0, 'first undo (after reload) must revert business.tagline to its pre-edit value');
+      await page.screenshot({ path: path.join(shotDir, '03-after-undo-tagline.png') });
+
+      await undoBtn.click(); // undo the photo step
+      await page.waitForTimeout(1200);
+      assert.equal(await readField(page, 'business.name'), 'Nume Inainte De Poza', 'undoing the photo step must not disturb the earlier (still-intact) name edit');
+      await page.screenshot({ path: path.join(shotDir, '04-after-undo-photo-step.png') });
+
+      await undoBtn.click(); // undo the name edit — back to the original baseline
+      await page.waitForTimeout(1200);
+      assert.equal(await readField(page, 'business.name'), name0, 'undoing all the way must restore the original preset name');
+
+      console.log('PASS audit27-s-3 (photo-inclusive session resumes after reload): screenshots at', shotDir);
+    } finally {
+      await browser.close().catch(() => {});
+    }
+  });
+});
+
+test('unit: resetHistory() resumes a persisted stack whose top entry had a large image stripped (symmetric normalization)', () => {
+  const api = buildHistorySandbox();
+  const scopeKey = 'local:unit-test-photo-scope';
+  const accountId = 'acct-unit-test';
+  api.setScope(scopeKey);
+  api.setAccount(accountId);
+
+  const bigImage = 'data:image/jpeg;base64,' + 'A'.repeat(25000); // > HISTORY_IMAGE_STRIP_THRESHOLD (20000)
+  const configEarlier = { business: { name: 'Nume Zero' }, logo: '' };
+  const configWithImage = { business: { name: 'Nume Unu' }, logo: bigImage };
+
+  // Simulate what a real editing session would have already persisted: a
+  // 2-entry stack, written through the REAL historyStoreSave() — which
+  // strips the large image exactly like it would before any real reload.
+  const stack = [
+    { json: JSON.stringify(configEarlier), size: JSON.stringify(configEarlier).length },
+    { json: JSON.stringify(configWithImage), size: JSON.stringify(configWithImage).length },
+  ];
+  const saved = api.historyStoreSave(scopeKey, accountId, stack, 1);
+  assert.equal(saved, true, 'test setup: historyStoreSave() must succeed against the fake sessionStorage');
+
+  // The freshly "reloaded" draft.config, exactly as a real reload would hand
+  // it to resetHistory() — the REAL, unstripped image, never touched by
+  // history-store.js at all (it comes from the site's own saved config).
+  api.setDraftConfig(configWithImage);
+
+  api.resetHistory();
+
+  const hs = api.getHistoryState();
+  assert.equal(hs.stack.length, 2, 'the persisted 2-entry stack must be RESUMED, not collapsed to a fresh 1-entry baseline, even though its top entry had the image stripped');
+  assert.equal(hs.index, 1, 'the pointer must resume at the same index the session was persisted at');
+});
+
+test('unit: resetHistory() still falls back to a fresh baseline when the persisted top entry genuinely does not match the loaded draft', () => {
+  const api = buildHistorySandbox();
+  const scopeKey = 'local:unit-test-stale-scope';
+  const accountId = 'acct-unit-test';
+  api.setScope(scopeKey);
+  api.setAccount(accountId);
+
+  const bigImage = 'data:image/jpeg;base64,' + 'B'.repeat(25000);
+  const persistedConfig = { business: { name: 'Nume Persistat' }, logo: bigImage };
+  // A DIFFERENT current config (a stale/foreign persisted stack, or a config
+  // that genuinely changed some other way) — must NOT resume, even after
+  // stripping images symmetrically on both sides.
+  const liveConfig = { business: { name: 'Nume Cu Totul Altul' }, logo: bigImage };
+
+  const stack = [{ json: JSON.stringify(persistedConfig), size: JSON.stringify(persistedConfig).length }];
+  api.historyStoreSave(scopeKey, accountId, stack, 0);
+  api.setDraftConfig(liveConfig);
+
+  api.resetHistory();
+
+  const hs = api.getHistoryState();
+  assert.equal(hs.stack.length, 1, 'a genuinely mismatched persisted stack must fall back to a fresh baseline, not resume');
+  assert.equal(hs.index, 0);
+  assert.equal(hs.stack[0].json, JSON.stringify(liveConfig), 'the fresh baseline must be the actually-loaded draft.config, not the stale persisted one');
 });

@@ -1985,10 +1985,25 @@ function resetHistory() {
       const scopeKey = currentScopeKey();
       const persisted = scopeKey ? historyStoreLoad(scopeKey, currentAccountKey()) : null;
       if (persisted && Array.isArray(persisted.entries) && persisted.entries.length) {
+        // Reviewer fix (post-rejection, S-3): the persisted top entry has
+        // already had any large embedded image stripped by
+        // historyStoreSave()->historyStoreStripImages() (history-store.js) —
+        // draft.config, freshly reloaded from the site's own saved state, has
+        // not. Comparing the raw serialized JSON of the two therefore failed
+        // on every reload whose current state included a real uploaded photo
+        // (an ordinary compressed JPEG/PNG easily exceeds the strip
+        // threshold), silently discarding the persisted stack. Run
+        // currentJson through the SAME stripping function before comparing so
+        // both sides drop large images the same way — symmetric normalization,
+        // not a looser match (a genuinely different config still fails this
+        // comparison and correctly falls back to a fresh baseline below).
         const currentJson = JSON.stringify(draft.config);
+        const normalizedCurrentJson = typeof historyStoreStripImages === 'function'
+          ? historyStoreStripImages(currentJson)
+          : currentJson;
         const at = Math.max(0, Math.min(persisted.index, persisted.entries.length - 1));
         const cur = persisted.entries[at];
-        if (cur && cur.json === currentJson) {
+        if (cur && cur.json === normalizedCurrentJson) {
           historyState.stack = persisted.entries.map((e) => ({ json: e.json, size: e.size }));
           historyState.index = at;
           historyTrim(); // re-clamp against this tab's in-memory caps (smaller than the persisted ones)
