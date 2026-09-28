@@ -1151,12 +1151,16 @@ function headerRequestHost(headerValue) {
 
 function isSameOriginRequest(req) {
     if (!STATE_CHANGING_METHODS.has(req && req.method)) return true;
-    const expected = expectedRequestHost(req);
-    if (!expected) return true; // can't determine our own host — nothing to compare against
+    // Our own hosts: the public one (PUBLIC_URL) and the one this request reached
+    // (e.g. the Railway domain). A cross-site page can forge neither Origin value.
+    const rawHost = (req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
+    const reqHost = String(Array.isArray(rawHost) ? rawHost[0] : rawHost).split(',')[0].trim();
+    const allowed = new Set([expectedRequestHost(req), reqHost].filter(Boolean));
+    if (!allowed.size) return true; // can't determine our own host — nothing to compare against
     const originHost = headerRequestHost(req.headers && req.headers.origin);
-    if (originHost !== null) return originHost === expected;
+    if (originHost !== null) return allowed.has(originHost);
     const refererHost = headerRequestHost(req.headers && req.headers.referer);
-    if (refererHost !== null) return refererHost === expected;
+    if (refererHost !== null) return allowed.has(refererHost);
     return true; // neither header present (older browser, same-site nav, non-browser client)
 }
 
