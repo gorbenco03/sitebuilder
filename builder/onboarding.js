@@ -29,6 +29,13 @@
  * flag, set on completion AND on skip, read/written inside try/catch (a
  * blocked/full store just means the wizard is skipped outright instead of
  * nagging on every template click — see hidookOnboardingShouldRun()).
+ *
+ * PLAN-UX-2026-09-27 §5.1 remainder: onDone's 3rd argument, `completed`, is
+ * true only when the visitor actually reached and submitted step 2
+ * ("Deschide editorul") — false for Escape, the backdrop, or "Sari peste" at
+ * either step. app.js uses it to skip auto-opening Details for that one
+ * design (the wizard just collected those same fields) and show a hint
+ * instead; a skipped wizard keeps the old auto-open unchanged.
  */
 
 const ONBOARDING_SEEN_KEY = 'hb.onboarding.seen.v1';
@@ -143,7 +150,7 @@ function onbKeydownHandler(e) {
   if (!onbState) return;
   if (e.key === 'Escape') {
     e.preventDefault();
-    onbFinish(onbState.clickedTemplateId, null);
+    onbFinish(onbState.clickedTemplateId, null, false);
     return;
   }
   if (e.key === 'Tab') {
@@ -154,7 +161,7 @@ function onbKeydownHandler(e) {
 
 function onbBackdropClick(e) {
   if (!onbState) return;
-  if (e.target === e.currentTarget) onbFinish(onbState.clickedTemplateId, null);
+  if (e.target === e.currentTarget) onbFinish(onbState.clickedTemplateId, null, false);
 }
 
 /** Read whatever step 2 fields exist right now back into onbState, so
@@ -175,7 +182,7 @@ function onbRenderStep() {
   overlay.innerHTML = onbState.step === 2 ? onbStep2Html() : onbStep1Html();
 
   const skipBtn = $('onb-skip-btn');
-  if (skipBtn) skipBtn.addEventListener('click', () => onbFinish(onbState.clickedTemplateId, null));
+  if (skipBtn) skipBtn.addEventListener('click', () => onbFinish(onbState.clickedTemplateId, null, false));
 
   if (onbState.step === 2) {
     const nameEl = $('onb-name');
@@ -194,7 +201,7 @@ function onbRenderStep() {
         const identity = (onbState.name || onbState.phone || onbState.town)
           ? { name: onbState.name, phone: onbState.phone, town: onbState.town }
           : null;
-        onbFinish(templateId, identity);
+        onbFinish(templateId, identity, true);
       });
     }
     const backBtn = $('onb-back-btn');
@@ -224,9 +231,10 @@ function onbRenderStep() {
 
 /** Terminal step: mark the wizard seen, tear down the overlay, and hand the
  * result to whoever called hidookOnboardingStart() — app.js's
- * startWithTemplate(), re-invoked with (templateId, identity), which reuses
- * applyQuickstart() for `identity`. */
-function onbFinish(templateId, identity) {
+ * startWithTemplate(), re-invoked with (templateId, identity, completed),
+ * which reuses applyQuickstart() for `identity` and uses `completed` to
+ * decide whether Details should auto-open (see this file's header comment). */
+function onbFinish(templateId, identity, completed) {
   if (!onbState) return;
   const onDone = onbState.onDone;
   const opener = onbState.opener;
@@ -244,17 +252,18 @@ function onbFinish(templateId, identity) {
   if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
     try { opener.focus(); } catch (_) { /* ignore */ }
   }
-  if (typeof onDone === 'function') onDone(templateId, identity);
+  if (typeof onDone === 'function') onDone(templateId, identity, !!completed);
 }
 
 /** Entry point — app.js's startWithTemplate() calls this instead of running
  * its own body when hidookOnboardingShouldRun() is true.
  * `clickedTemplateId` is whichever catalog card the visitor actually
  * clicked (used to pre-select step 1, and as the fallback template if the
- * wizard is skipped outright). `onDone(templateId, identity)` always fires
- * exactly once — with `identity` null when nothing was filled in / the
- * wizard was skipped, or `{name, phone, town}` when step 2 had at least one
- * field filled in. */
+ * wizard is skipped outright). `onDone(templateId, identity, completed)`
+ * always fires exactly once — with `identity` null when nothing was filled
+ * in / the wizard was skipped, or `{name, phone, town}` when step 2 had at
+ * least one field filled in; `completed` is true only when step 2 was
+ * actually reached and submitted (false for Escape/backdrop/"Sari peste"). */
 function hidookOnboardingStart(clickedTemplateId, onDone) {
   const overlay = $('onboarding-wizard');
   if (!overlay) {
