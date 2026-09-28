@@ -3106,12 +3106,23 @@ function fullRerender(focusPath) {
     if (carryScroll) {
       try { iframe.contentWindow && iframe.contentWindow.scrollTo(carryScroll.x, carryScroll.y); } catch (e) { /* ignore */ }
     }
-    if (focusPath) sendFocusFieldToIframe(focusPath);
+    // A render that arrived while this one was still in flight (pendingRender)
+    // is about to replace this exact document immediately below — sending a
+    // focus/scrollIntoView message into a document that is torn down in the
+    // same tick it was sent is wasted at best; under load (see suite1's
+    // business-name-cascade bug and wave5-builder-undo-redo, which raced each
+    // other here) it measurably delayed/disrupted the FOLLOW-UP render this
+    // same tick starts, which is the one whose content/focus actually needs
+    // to stick. So: only restore focus on a settle that is not immediately
+    // superseded — the queued call below carries its own focusPath (or null)
+    // for the document that will actually survive.
     if (pendingRender) {
       pendingRender = false;
       const nextFocusPath = pendingRenderFocusPath;
       pendingRenderFocusPath = null;
       fullRerender(nextFocusPath);
+    } else if (focusPath) {
+      sendFocusFieldToIframe(focusPath);
     }
   };
   // Safety net: a missing/late ready message (render error, etc.) must never
@@ -3130,9 +3141,13 @@ function fullRerender(focusPath) {
 }
 
 // Debounce re-render (used after initial load)
-function scheduleRerender(immediate) {
+// `focusPath` (optional): forwarded to fullRerender() so a caller whose
+// rerender is specifically about one field (e.g. the business-name cascade
+// below) can land the owner back on that same field once the new document
+// is interactive — same mechanism onListAdd() uses for a freshly added item.
+function scheduleRerender(immediate, focusPath) {
   if (previewTimer) clearTimeout(previewTimer);
-  if (immediate) { fullRerender(); return; }
+  if (immediate) { fullRerender(focusPath); return; }
   previewTimer = setTimeout(fullRerender, 280);
 }
 
@@ -3470,7 +3485,24 @@ function onInlineTextEdit(path, value) {
     businessNameCascadeRerenderTimer = setTimeout(() => {
       businessNameCascadeRerenderTimer = null;
       flushPendingLiveEdits();
-      scheduleRerender(true);
+      // This full re-render tears down the whole iframe document (new
+      // srcdoc) and rebuilds it — whatever had focus in the old document is
+      // gone regardless, by construction (see fullRerender()'s own doc
+      // comment). When the owner just emptied the field (suite1's
+      // "click → select-all → delete → blur" repro), the emptied element
+      // collapses to a 0×0 box the instant this timer replaces the DOM out
+      // from under it, and a click that landed on it a moment ago has
+      // nothing left to hold focus — so it silently drops out entirely.
+      // Only THIS case (field now empty) asks fullRerender() to land the
+      // owner back on business.name, the same "focus the field this render
+      // is about" pattern onListAdd() uses via its own focusPath. A
+      // non-empty edit does not opt in: forcing focus back onto a field the
+      // owner has since moved away from (e.g. straight to Undo) raced that
+      // move under load — see wave5-builder-undo-redo's toolbar-undo case,
+      // which this exact unconditional focus-restore made intermittently
+      // fail — for no benefit, since nothing was actually broken there.
+      const stillEmpty = !getPath(draft.config, 'business.name');
+      scheduleRerender(true, stillEmpty ? 'business.name' : undefined);
     }, 450);
     // Keep drawer fields for cascaded identity in sync when open
     [
@@ -7381,7 +7413,7 @@ function initSessionExpiredBanner() {
 }
 
 /**
- * Account menu: "Proiectele mele" + "Deconectare" (audit medium #7), plus
+ * Account menu: "Site-urile mele" + "Deconectare" (audit medium #7), plus
  * (R-27) GDPR self-service + "Deconectare de pe toate dispozitivele".
  *
  * Two independent instances share this same open/close logic: the original
