@@ -1197,6 +1197,11 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     grid-column: 1 / -1;
     margin-bottom: var(--space-section);
     text-align: center;
+    /* Same reasoning as .gallery-section below and .contact-form-card
+       above: overflow-x: clip gives this grid item an automatic min-width
+       of 0, so a non-shrinking descendant can't widen content-wrapper's
+       shared grid column at a narrow/zoomed viewport. */
+    overflow-x: clip;
 }
 .testimonials-heading {
     text-align: center;
@@ -1230,11 +1235,23 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
     background: var(--color-white); padding: 3rem; max-width: 760px;
     margin-inline: auto; width: 100%; border-radius: 28px;
     box-shadow: var(--shadow-md); box-sizing: border-box;
+    /* Matches .about-card/.contact-card: content-wrapper's grid column is
+       1fr with an implicit auto (min-content) floor, so a card with
+       overflow:visible and any non-shrinking descendant (e.g. a form
+       control) widens that column — and every sibling in it — at a narrow
+       viewport. overflow:hidden gives this item an automatic min-width of
+       0 instead (CSS Box Alignment §4.2). */
+    overflow: hidden;
 }
 .cf-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .cf-form__row { display: flex; flex-direction: column; gap: 0.4rem; }
 .cf-form__label { font-size: 0.82rem; font-weight: 600; color: var(--color-text-light); }
 .cf-form__input {
+    /* width+min-width: a flex column item's automatic min-width is its
+       content's intrinsic size, and a text input's default intrinsic width
+       (~170px+) does not shrink below that on its own — it bled the whole
+       card (and document scrollWidth) past a narrow/zoomed viewport. */
+    width: 100%; min-width: 0; box-sizing: border-box;
     min-height: 44px; padding: 10px 14px; border-radius: 14px;
     border: 1px solid rgba(45,45,45,0.16); background: var(--color-cream);
     color: var(--color-text); font: inherit; font-size: 0.95rem;
