@@ -180,6 +180,27 @@
           "maxLen": 24
         },
         {
+          "key": "labels.faqEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra întrebărilor frecvente (ex. Întrebări)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.locationEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra secțiunii „Unde ne găsești” (ex. Locație)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.locationMapsBtn",
+          "type": "text",
+          "label": "Text buton hartă (ex. Deschide în Google Maps)",
+          "required": true,
+          "maxLen": 60
+        },
+        {
           "key": "labels.aboutCap",
           "type": "text",
           "label": "Etichetă scurtă lângă „Despre” (ex. Salon / Studio)",
@@ -342,8 +363,55 @@
             "day": "text",
             "hours": "text"
           },
-          "editable": false,
           "identityItemKeys": ["hours"]
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Întrebări frecvente (opțional)",
+      "fields": [
+        {
+          "key": "faq.title",
+          "type": "text",
+          "label": "Titlu secțiune întrebări (ex. Întrebări frecvente)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "faq.items",
+          "type": "list",
+          "label": "Întrebări și răspunsuri (2-8 recomandate)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până adaugi cel puțin o întrebare.",
+          "required": false,
+          "min": 0,
+          "max": 8,
+          "itemShape": {
+            "q": "text",
+            "a": "text"
+          },
+          "identityItemKeys": ["q"]
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "title": "Unde ne găsești (opțional)",
+      "fields": [
+        {
+          "key": "location.title",
+          "type": "text",
+          "label": "Titlu secțiune locație (ex. Unde ne găsești)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "location.address",
+          "type": "textarea",
+          "label": "Adresă fizică (câte un rând pe linie)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până completezi adresa. Linkul spre Google Maps se generează automat din adresă.",
+          "required": false,
+          "maxLen": 200
         }
       ]
     },
@@ -742,6 +810,31 @@
       "id": "appointment",
       "label": "Programări online",
       "removable": true
+    },
+    {
+      "id": "faq",
+      "label": "Întrebări frecvente",
+      "removable": true,
+      "addable": true,
+      "description": "Răspunde la întrebările pe care le primești des, înainte ca o programare să ajungă la tine.",
+      "seed": {
+        "title": "Întrebări frecvente",
+        "items": [
+          { "q": "Cum programez o vizită?", "a": "Scrie-ne pe WhatsApp sau completează formularul de contact și confirmăm cea mai apropiată oră liberă." },
+          { "q": "Cât durează o ședință?", "a": "Durata depinde de serviciul ales — timpul estimat apare la fiecare serviciu din listă." }
+        ]
+      }
+    },
+    {
+      "id": "location",
+      "label": "Unde ne găsești",
+      "removable": true,
+      "addable": true,
+      "description": "Arată adresa fizică și un link direct spre Google Maps, separat de restul datelor de contact.",
+      "seed": {
+        "title": "Unde ne găsești",
+        "address": "Strada Primăverii 22, București"
+      }
     },
     {
       "id": "contact",

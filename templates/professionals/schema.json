@@ -183,6 +183,27 @@
           "maxLen": 40
         },
         {
+          "key": "labels.scheduleEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra programului (ex. Program)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.locationEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra secțiunii „Unde ne găsești” (ex. Locație)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.locationMapsBtn",
+          "type": "text",
+          "label": "Text buton hartă (ex. Deschide în Google Maps)",
+          "required": true,
+          "maxLen": 60
+        },
+        {
           "key": "labels.secondaryCta",
           "type": "text",
           "label": "Buton secundar pe deschidere (ex. Vezi serviciile)",
@@ -499,6 +520,54 @@
             "role": "text"
           },
           "identityItemKeys": ["quote", "name"]
+        }
+      ]
+    },
+    {
+      "id": "schedule",
+      "title": "Program (opțional)",
+      "fields": [
+        {
+          "key": "schedule.title",
+          "type": "text",
+          "label": "Titlu secțiune program (ex. Program)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "schedule.rows",
+          "type": "list",
+          "label": "Rânduri program (zi + ore)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până adaugi cel puțin un rând.",
+          "required": false,
+          "min": 0,
+          "max": 7,
+          "itemShape": {
+            "day": "text",
+            "hours": "text"
+          },
+          "identityItemKeys": ["hours"]
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "title": "Unde ne găsești (opțional)",
+      "fields": [
+        {
+          "key": "location.title",
+          "type": "text",
+          "label": "Titlu secțiune locație (ex. Unde ne găsești)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "location.address",
+          "type": "textarea",
+          "label": "Adresă fizică (câte un rând pe linie)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până completezi adresa. Linkul spre Google Maps se generează automat din adresă.",
+          "required": false,
+          "maxLen": 200
         }
       ]
     },
@@ -898,6 +967,20 @@
       "removable": true
     },
     {
+      "id": "schedule",
+      "label": "Program",
+      "removable": true,
+      "addable": true,
+      "description": "Arată zilele și orele de program, separat de nota scurtă din secțiunea de contact.",
+      "seed": {
+        "title": "Program",
+        "rows": [
+          { "day": "Luni–Vineri", "hours": "09:00–18:00" },
+          { "day": "Sâmbătă", "hours": "Numai cu programare" }
+        ]
+      }
+    },
+    {
       "id": "appointment",
       "label": "Programări",
       "removable": true
@@ -906,6 +989,17 @@
       "id": "faq",
       "label": "Întrebări frecvente",
       "removable": true
+    },
+    {
+      "id": "location",
+      "label": "Unde ne găsești",
+      "removable": true,
+      "addable": true,
+      "description": "Arată adresa fizică și un link direct spre Google Maps, separat de restul datelor de contact.",
+      "seed": {
+        "title": "Unde ne găsești",
+        "address": "Strada Primăverii 22, București"
+      }
     },
     {
       "id": "instagram",

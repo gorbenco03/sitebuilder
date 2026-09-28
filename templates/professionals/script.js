@@ -12,7 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initLocalBusinessJsonLd();
     initImageFallback();
     initSkipLink();
+    initLocationMapsLink();
 });
+
+// "Unde ne găsești" — builds the Google Maps search link from the rendered
+// address text, client-side. No iframe, no external script: just a plain
+// https://www.google.com/maps/search/ deep link built with encodeURIComponent.
+function initLocationMapsLink() {
+    var addressEl = document.querySelector('[data-location-address]');
+    var linkEl = document.querySelector('[data-location-maps-link]');
+    if (!addressEl || !linkEl) return;
+    var address = (addressEl.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!address) return;
+    linkEl.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+}
 
 function initMobileNav() {
     const toggle = document.getElementById('pr-nav-toggle');

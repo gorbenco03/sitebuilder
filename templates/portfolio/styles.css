@@ -569,6 +569,34 @@ ul { list-style: none; }
 .pf-review__name { font-weight: 600; font-size: 0.92rem; }
 .pf-review__role { font-size: 0.82rem; color: var(--mute); }
 
+.pf-faq { padding: clamp(3rem, 7vw, 4.5rem) 0; }
+.pf-faq__wrap { max-width: 40rem; margin: 0 auto; }
+.pf-faq__list { display: grid; gap: 0.75rem; margin-top: 1.5rem; }
+.pf-faq__item {
+    border: 1px solid rgba(42, 51, 64, 0.12); border-radius: var(--r);
+    padding: 0.9rem 1.1rem;
+}
+.pf-faq__q {
+    cursor: pointer; font-weight: 600; list-style: none; min-height: 44px;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.pf-faq__q::-webkit-details-marker { display: none; }
+.pf-faq__q::after { content: "+"; font-size: 1.1rem; color: var(--mute); flex-shrink: 0; }
+.pf-faq__item[open] .pf-faq__q::after { content: "\2212"; }
+.pf-faq__item .pf-copy { margin-top: 0.5rem; }
+
+.pf-loc { padding: clamp(3rem, 7vw, 4.5rem) 0; background: var(--paper); }
+.pf-loc__inner { max-width: 34rem; margin: 0 auto; text-align: center; }
+/* Address is a textarea field (one line per row) — preserve those line
+   breaks visually without needing raw/unescaped HTML output. */
+.pf-loc__addr { white-space: pre-line; }
+.pf-loc__maps {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px;
+    margin-top: 1.25rem; padding: 10px 22px;
+    background: var(--cta-bg, var(--cta)); color: var(--cta-ink, #fff);
+    border-radius: var(--r-pill); font-weight: 600; font-size: 14px; letter-spacing: 0.04em;
+}
+
 .pf-ig { padding: clamp(3rem, 7vw, 4.5rem) 0; background: var(--blush); }
 .pf-ig__head {
     display: flex; justify-content: space-between; align-items: flex-end;
@@ -695,11 +723,11 @@ ul { list-style: none; }
     padding: 12px 16px; font-size: 12px; font-weight: 600;
     letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1.25rem;
 }
-.pf-appt__hr {
-    display: flex; justify-content: space-between; gap: 1rem;
-    padding: 0.4rem 0; font-size: 0.92rem; color: rgba(255,255,255,0.72);
+.pf-appt__hours-link {
+    display: inline-flex; align-items: center; min-height: 44px; margin-top: 0.25rem;
+    color: var(--snow); font-weight: 600; text-decoration: underline;
+    text-underline-offset: 3px;
 }
-.pf-appt__hr strong { color: #fff; font-weight: 600; }
 
 .pf-msg { margin-top: 2.75rem; padding-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.14); }
 .pf-msg__head { max-width: 34rem; margin-bottom: 1.25rem; }

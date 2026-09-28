@@ -657,6 +657,22 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'hours.items',
     'location.title',
     'location.address',
+    // audit27-T-1C (PLAN-AUDIT-2026-09-27.md §4): "Întrebări frecvente"
+    // (addable, portfolio only — professionals already had FAQ), "Program"
+    // (addable, professionals only — portfolio already had it) and "Unde
+    // ne găsești" (addable, both templates) — all hidden until content is
+    // added, same content-gated shape as testimonials/team above.
+    'labels.faqEyebrow',
+    'faq.title',
+    'faq.items',
+    'labels.scheduleEyebrow',
+    'schedule.title',
+    'schedule.rows',
+    'labels.locationEyebrow',
+    'labels.locationMapsBtn',
+    'location.title',
+    'location.address',
+    'location.addressHref',
   ]);
 
   // Same reason: declaring desserdirina's menu adds the section that holds it.
@@ -667,7 +683,8 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     // template-agnostic, only the presentation was wired to professionals.
     // S-2B then added the same optional testimonials section every other
     // template gained.
-    'templates/portfolio/schema.json': ['appointment', 'testimonials'],
+    // audit27-T-1C: addable "Întrebări frecvente" and "Unde ne găsești".
+    'templates/portfolio/schema.json': ['appointment', 'testimonials', 'faq', 'location'],
     // The owner can put the business name in the navbar instead of the phone
     // number, which needed a field of its own — the old workaround left a
     // tel: link pointing at a number the page no longer showed.
@@ -676,7 +693,8 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     // S-2B: professionals gained both the "Echipă" team section (matching
     // portfolio's pre-existing one) and the testimonials section every
     // other template gained.
-    'templates/professionals/schema.json': ['team', 'testimonials'],
+    // audit27-T-1C: addable "Program" and "Unde ne găsești".
+    'templates/professionals/schema.json': ['team', 'testimonials', 'schedule', 'location'],
   };
 
   function fieldMap(schema) {

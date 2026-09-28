@@ -434,6 +434,23 @@
         </section>
         <!-- @endif -->
 
+        <!-- @if schedule.rows -->
+        <section class="pr-sec pr-reveal" id="schedule" aria-labelledby="schedule-heading">
+            <div class="pr-shell">
+                <p class="pr-kicker">{{labels.scheduleEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="schedule-heading">{{schedule.title}}</h2>
+                <ul class="pr-sched__list" role="list">
+                    <!-- @each schedule.rows -->
+                    <li class="pr-sched__row">
+                        <span class="pr-sched__day">{{day}}</span>
+                        <span class="pr-sched__hours">{{hours}}</span>
+                    </li>
+                    <!-- @end -->
+                </ul>
+            </div>
+        </section>
+        <!-- @endif -->
+
         <!-- @if appointment.enabled -->
         <section class="pr-sec pr-sec--book pr-reveal" id="appointment" aria-labelledby="book-heading"
             data-pr-appt="1"
@@ -624,6 +641,17 @@
             </div>
         </section>
         <!-- @endif -->
+        <!-- @endif -->
+
+        <!-- @if location.address -->
+        <section class="pr-sec pr-reveal" id="location" aria-labelledby="loc-heading">
+            <div class="pr-shell pr-loc__inner">
+                <p class="pr-kicker">{{labels.locationEyebrow}}</p>
+                <h2 class="pr-display pr-display--sec" id="loc-heading">{{location.title}}</h2>
+                <p class="pr-copy pr-loc__addr" data-location-address>{{location.address}}</p>
+                <a href="#" class="pr-btn pr-btn--primary" data-location-maps-link target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
+            </div>
+        </section>
         <!-- @endif -->
 
         <!-- @if instagram.handle -->
