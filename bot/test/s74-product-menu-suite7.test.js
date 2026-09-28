@@ -151,7 +151,7 @@ test('D1: primary CTA border-radius is ~10px, not the 4px shared by professional
     await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
     const radii = await page.evaluate(() => ({
       pill: getComputedStyle(document.querySelector('.pm-mast__pill')).borderRadius,
-      heroFill: getComputedStyle(document.querySelector('.pm-hero__cta--fill')).borderRadius,
+      heroFill: getComputedStyle(document.querySelector('.pm-hero .pm-hero__cta--fill')).borderRadius,
     }));
     for (const [name, val] of Object.entries(radii)) {
       const px = parseFloat(val);
@@ -233,7 +233,10 @@ test('NEW: primary CTA text meets 4.5:1 on both shipped presets\' own accent (Tr
     try {
       const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
       await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
-      const { bg, fg } = await page.locator('.pm-hero__cta--fill').evaluate((el) => {
+      // Scoped to .pm-hero: S-2A gave the new contact-form submit button the
+      // same .pm-hero__cta--fill classes for a consistent fill-CTA look, so
+      // an unscoped locator now matches two elements (strict-mode error).
+      const { bg, fg } = await page.locator('.pm-hero .pm-hero__cta--fill').evaluate((el) => {
         const cs = getComputedStyle(el);
         return { bg: cs.backgroundColor, fg: cs.color };
       });
