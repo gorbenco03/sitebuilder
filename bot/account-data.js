@@ -101,6 +101,9 @@ async function buildUserDataExport(userId) {
         let contactRequests = [];
         try { contactRequests = _loadAppointmentRequests(site.slug) || []; } catch (_) { /* best-effort */ }
 
+        let siteMessages = [];
+        try { siteMessages = reg.listSiteMessagesBySite(site.id) || []; } catch (_) { /* best-effort */ }
+
         return {
             id: site.id,
             slug: site.slug,
@@ -118,6 +121,7 @@ async function buildUserDataExport(userId) {
             calendarServices: services,
             calendarBookings: bookings,
             contactRequests,
+            siteMessages,
         };
     });
 

@@ -496,6 +496,11 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await waitForClosed(page, 'modal-domain', 5000);
 
     await contractCheck('invoices', 'modal-invoices', 'btn-close-invoices', () => clickAndHandle(card.locator('button', { hasText: 'Facturi' })));
+    // modal-site-messages (S-2C, PLAN-UX §5.2 supporting piece): real
+    // trigger is the card's own "Mesaje" button — present for any paid,
+    // live site (same gate as Facturi), regardless of whether it has
+    // received any messages yet.
+    await contractCheck('site-messages', 'modal-site-messages', 'btn-close-site-messages', () => clickAndHandle(card.locator('button', { hasText: 'Mesaje' })));
     // modal-cancel-subscription (U-01): real trigger is the card's own
     // "Anulează" button (subscription still active — same site, straight
     // from checkout above). contractCheck never clicks the modal's own

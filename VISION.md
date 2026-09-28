@@ -134,18 +134,7 @@ Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Op
 
 Nu se rezolvă toate într-un singur task. Se lucrează pe flow-uri verticale verificate în browser.
 
-**Actualizare 2026-09-27 (audit27 S-2B):** șabloanele `portfolio` și
-`professionals` au acum o secțiune opțională „Recenzii" (2-6 testimoniale) și,
-doar la `professionals`, o secțiune opțională „Echipa" — predefinite per
-șablon, editabile din listă în builder, ascunse automat când nu au conținut.
-Nu e „section add/remove/reorder" generic (punctul de mai sus rămâne backlog
-neatins); e o bibliotecă mică, fixă, per șablon de secțiuni opționale. Ambele
-șabloane au primit și un formular general „Scrie-ne" (portfolio nu avea deloc
-un formular de contact; la professionals formularul de programare rămâne
-separat, neschimbat). Formularul e vizibil și onest cu fallback tel:/wa.me,
-dar livrarea efectivă a mesajului depinde de endpoint-ul `/api/site-messages`
-și de completarea atributului la publish (task separat S-2C) — până atunci
-formularul afișează mereu fallback-ul, niciodată eroare falsă de succes.
+**Actualizare 2026-09-28 (PLAN-UX §5.2):** toate cele 5 șabloane au o secțiune opțională „Recenzii” (2-6 testimoniale), iar `professionals` are și o secțiune opțională „Echipa”. Sunt predefinite per șablon, se editează ca liste în builder și se ascund automat când nu au conținut. Nu e „section add/remove/reorder” generic: punctul de mai sus rămâne în backlog. Șabloanele fără formular general au primit un formular de contact. Pe site-ul publicat, mesajele ajung prin `POST /api/site-messages`, cu limită de rată și honeypot, în „Mesaje” pe cardul site-ului din dashboard, cu email către proprietar, și sunt incluse în exportul GDPR. În exportul static, formularul trimite pe WhatsApp sau pe email. La `professionals`, formularul de programare rămâne separat.
 
 ## 5. Legal
 

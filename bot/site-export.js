@@ -488,10 +488,16 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     const indexPathForSocialMeta = path.join(dir, 'index.html');
     if (fs.existsSync(indexPathForSocialMeta)) {
         const realOrigin = exportOrigin === SEO_PLACEHOLDER_ORIGIN ? '' : exportOrigin;
-        const fixedIndexHtml = finalizeSocialImageMeta(
+        let fixedIndexHtml = finalizeSocialImageMeta(
             fs.readFileSync(indexPathForSocialMeta, 'utf8'),
             realOrigin
         );
+        // S-2C: a static export has no Hidook backend behind it — force any
+        // data-site-messages-api/data-site-slug back to '' regardless of
+        // what the saved config carried (mirrors disableNativeBookingForExport
+        // above for the same reason, VISION §6). The client-side form script
+        // (S-2A/S-2B) falls back to WhatsApp/mailto when this is empty.
+        fixedIndexHtml = require('./site-messages.js').blankMessagesApiInHtml(fixedIndexHtml);
         fs.writeFileSync(indexPathForSocialMeta, fixedIndexHtml, 'utf8');
     }
     // Minify the shared consent stylesheet on the way out, the same as every

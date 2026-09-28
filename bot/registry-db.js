@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_SQL_V2, SCHEMA_SQL_V3, SCHEMA_VERSION } = require('./registry-schema');
+const { SCHEMA_SQL, SCHEMA_SQL_V1, SCHEMA_SQL_V2, SCHEMA_SQL_V3, SCHEMA_SQL_V4, SCHEMA_VERSION } = require('./registry-schema');
 
 function loadSqlite() {
     try {
@@ -107,6 +107,25 @@ function migrateSchema(db) {
             ).run(3, ts);
             db.exec('COMMIT;');
             current = 3;
+        } catch (e) {
+            try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+            throw e;
+        }
+    }
+
+    // v4 (S-2C, PLAN-UX §5.2 supporting piece): adds the `site_messages`
+    // table for published-site contact-form submissions — purely additive
+    // (CREATE TABLE/INDEX IF NOT EXISTS), no existing row touched. See
+    // bot/registry-schema.js#SCHEMA_SQL_V4.
+    if (current < 4) {
+        db.exec('BEGIN IMMEDIATE;');
+        try {
+            db.exec(SCHEMA_SQL_V4);
+            db.prepare(
+                'INSERT OR IGNORE INTO registry_schema_migrations (version, applied_at) VALUES (?, ?)'
+            ).run(4, ts);
+            db.exec('COMMIT;');
+            current = 4;
         } catch (e) {
             try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
             throw e;

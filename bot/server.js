@@ -37,6 +37,10 @@
  *   GET  /api/export-zip    → paid/trial download of current draft as self-hostable static ZIP
  *   POST /api/test-pay/complete → HIDOOK_TEST_PAY only: finish #test-checkout=cs_test_* (same as unsigned webhook)
  *   POST /api/appointments      → public appointment *request* for a live slug (local isolated store; not a confirmed booking)
+ *   POST /api/site-messages     → public contact-form submission for a live slug (S-2C; honeypot + rate-limited)
+ *   GET  /api/sites/:id/messages           → owner: list contact-form messages (ownership-checked)
+ *   POST /api/sites/:id/messages/:mid/read → owner: mark one message read
+ *   DELETE /api/sites/:id/messages/:mid    → owner: delete one message
  *   GET  /api/calendar-native/services → public active services for one tenant (customerId+siteId)
  *   GET  /api/calendar-native/slots    → public free slots for one tenant+service (aggregated only)
  *   POST /api/calendar-native/bookings → public create booking via native engine (+ local email outbox)
@@ -2399,6 +2403,90 @@ async function handleListAppointments(req, res, query) {
 }
 
 // ---------------------------------------------------------------------------
+// Site contact-form messages (S-2C, PLAN-UX §5.2 supporting piece)
+//
+// POST is public — a published site's generic contact form, embedded on
+// arbitrary customer domains, so CORS here intentionally mirrors the native
+// calendar's applyPublicCalendarCors (see that function's doc comment): no
+// credentials are ever issued on this route, and the rate limit below is
+// the actual defense against a script on a third-party page flooding one
+// tenant's inbox.
+// ---------------------------------------------------------------------------
+
+function getSiteMessagesApi() { return require('./site-messages.js'); }
+
+/**
+ * POST /api/site-messages — public visitor contact-form submission for a
+ * live, paid slug. Honeypot ('website' non-empty) is accepted and silently
+ * dropped, never rejected, so a bot never learns its submission failed.
+ */
+async function handleCreateSiteMessage(req, res) {
+    applyPublicCalendarCors(req, res);
+    let body;
+    try {
+        body = await parseJson(req, 16 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
+    }
+
+    const slug = String((body && body.slug) || '').trim().toLowerCase();
+
+    // Two rate-limit windows, same shape as handleCalendarNativeBookings: a
+    // tight one per (IP, slug) to stop a single script looping, a looser one
+    // per slug alone (shared across every IP) as the backstop against a
+    // botnet spreading the same abuse across many addresses.
+    const perIp = ratelimit.allowAndConsume('site_msg_ip', `${getClientIp(req)}|${slug}`, {
+        max: 8, windowMs: 10 * 60 * 1000,
+    });
+    if (!perIp.ok) {
+        return sendJson(res, 429, {
+            error: 'Prea multe mesaje trimise de la aceeași sursă. Încearcă din nou peste câteva minute.',
+            code: 'RATE_LIMITED',
+        });
+    }
+    const perSlug = ratelimit.allowAndConsume('site_msg_slug', slug, {
+        max: 30, windowMs: 60 * 60 * 1000,
+    });
+    if (!perSlug.ok) {
+        return sendJson(res, 429, {
+            error: 'Prea multe mesaje pentru acest site în ultima oră. Încearcă din nou mai târziu.',
+            code: 'RATE_LIMITED',
+        });
+    }
+
+    const out = getSiteMessagesApi().createPublicMessage(body || {});
+    if (!out.ok) return sendJson(res, out.status || 400, { error: out.error, code: out.code });
+    return sendJson(res, 200, { ok: true });
+}
+
+/** GET /api/sites/:id/messages — owner-only list, newest first + unread count. */
+async function handleGetSiteMessages(req, res, siteId) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    const messages = getRegistry().listSiteMessagesBySite(site.id);
+    const unread = messages.filter((m) => !m.readAt).length;
+    return sendJson(res, 200, { ok: true, messages, unread });
+}
+
+/** POST /api/sites/:id/messages/:mid/read — owner-only, idempotent. */
+async function handleMarkSiteMessageRead(req, res, siteId, mid) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    const ok = getRegistry().markSiteMessageRead(site.id, mid);
+    if (!ok) return sendJson(res, 404, { error: 'Mesaj negăsit.' });
+    return sendJson(res, 200, { ok: true });
+}
+
+/** DELETE /api/sites/:id/messages/:mid — owner-only. */
+async function handleDeleteSiteMessage(req, res, siteId, mid) {
+    const site = resolveOwnedSite(req, res, siteId);
+    if (!site) return;
+    const ok = getRegistry().deleteSiteMessage(site.id, mid);
+    if (!ok) return sendJson(res, 404, { error: 'Mesaj negăsit.' });
+    return sendJson(res, 200, { ok: true });
+}
+
+// ---------------------------------------------------------------------------
 // Native calendar public widget API (VISION §8 step c) — separate from /api/appointments
 // ---------------------------------------------------------------------------
 
@@ -4378,6 +4466,20 @@ function createHandler({ onStripeEvent } = {}) {
             const invoicesMatch = url.match(/^\/api\/sites\/([^/]+)\/invoices$/);
             if (req.method === 'GET' && invoicesMatch) return await handleSiteInvoices(req, res, invoicesMatch[1]);
 
+            // /api/sites/:id/messages — contact-form inbox (S-2C)
+            const messagesMatch = url.match(/^\/api\/sites\/([^/]+)\/messages$/);
+            if (req.method === 'GET' && messagesMatch) return await handleGetSiteMessages(req, res, messagesMatch[1]);
+
+            const messageReadMatch = url.match(/^\/api\/sites\/([^/]+)\/messages\/([^/]+)\/read$/);
+            if (req.method === 'POST' && messageReadMatch) {
+                return await handleMarkSiteMessageRead(req, res, messageReadMatch[1], decodeURIComponent(messageReadMatch[2]));
+            }
+
+            const messageDeleteMatch = url.match(/^\/api\/sites\/([^/]+)\/messages\/([^/]+)$/);
+            if (req.method === 'DELETE' && messageDeleteMatch) {
+                return await handleDeleteSiteMessage(req, res, messageDeleteMatch[1], decodeURIComponent(messageDeleteMatch[2]));
+            }
+
             // /api/sites/:id/domain — self-serve custom domain (audit #47)
             const domainMatch = url.match(/^\/api\/sites\/([^/]+)\/domain$/);
             if (req.method === 'GET' && domainMatch)    return await handleGetDomain(req, res, domainMatch[1]);
@@ -4450,6 +4552,19 @@ function createHandler({ onStripeEvent } = {}) {
             }
             if (req.method === 'GET' && url === '/api/appointments') {
                 return await handleListAppointments(req, res, query);
+            }
+
+            // Public site contact-form submission (S-2C) — same open-CORS
+            // shape as the native calendar's public API (embedded on an
+            // arbitrary customer domain), so it needs the same OPTIONS
+            // preflight handling.
+            if (req.method === 'OPTIONS' && url === '/api/site-messages') {
+                applyPublicCalendarCors(req, res);
+                res.writeHead(204);
+                return res.end();
+            }
+            if (req.method === 'POST' && url === '/api/site-messages') {
+                return await handleCreateSiteMessage(req, res);
             }
 
             // Native calendar public widget API (not a cutover of /api/appointments)

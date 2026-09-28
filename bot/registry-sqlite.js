@@ -251,6 +251,10 @@ function deleteSite(siteId) {
     try {
         const result = db.prepare('DELETE FROM sites WHERE id = ?').run(siteId);
         db.prepare('DELETE FROM versions WHERE site_id = ?').run(siteId);
+        // S-2C: cascade contact-form messages — a deleted site's inbox must
+        // not survive it (also covers account erasure, which deletes every
+        // owned site via this same function).
+        db.prepare('DELETE FROM site_messages WHERE site_id = ?').run(siteId);
         db.exec('COMMIT;');
         return result.changes > 0;
     } catch (e) {
@@ -606,6 +610,97 @@ function claimStripeEvent(eventId) {
 }
 
 // ---------------------------------------------------------------------------
+// Site messages (S-2C, PLAN-UX §5.2 supporting piece: contact-form inbox)
+// ---------------------------------------------------------------------------
+
+const MAX_SITE_MESSAGES_PER_SITE = 500;
+
+function siteMessageRowToObj(row) {
+    if (!row) return null;
+    return {
+        id: row.id,
+        siteId: row.site_id,
+        name: row.name,
+        contact: row.contact,
+        message: row.message,
+        createdAt: row.created_at,
+        readAt: row.read_at || null,
+    };
+}
+
+/**
+ * @param {{ siteId: string, name: string, contact: string, message: string }} fields
+ * @returns {object} the created message
+ */
+function createSiteMessage({ siteId, name, contact, message }) {
+    if (!siteId) throw new Error('siteId is required');
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        db.prepare(`
+            INSERT INTO site_messages (id, site_id, name, contact, message, created_at, read_at)
+            VALUES (?, ?, ?, ?, ?, ?, NULL)
+        `).run(id, siteId, name, contact, message, createdAt);
+        // Bound growth per site — same FIFO-cap shape as saveVersion's
+        // MAX_VERSIONS, keyed on this site alone so one spammed inbox cannot
+        // starve another owner's.
+        db.prepare(`
+            DELETE FROM site_messages
+            WHERE site_id = ? AND seq NOT IN (
+                SELECT seq FROM site_messages WHERE site_id = ? ORDER BY seq DESC LIMIT ?
+            )
+        `).run(siteId, siteId, MAX_SITE_MESSAGES_PER_SITE);
+        db.exec('COMMIT;');
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+    return { id, siteId, name, contact, message, createdAt, readAt: null };
+}
+
+/** Newest first. */
+function listSiteMessagesBySite(siteId) {
+    if (!siteId) return [];
+    return db.prepare('SELECT * FROM site_messages WHERE site_id = ? ORDER BY seq DESC')
+        .all(siteId)
+        .map(siteMessageRowToObj);
+}
+
+function getSiteMessage(siteId, mid) {
+    if (!siteId || !mid) return null;
+    const row = db.prepare('SELECT * FROM site_messages WHERE site_id = ? AND id = ?').get(siteId, mid);
+    return siteMessageRowToObj(row);
+}
+
+function markSiteMessageRead(siteId, mid) {
+    if (!siteId || !mid) return false;
+    const result = db.prepare('UPDATE site_messages SET read_at = ? WHERE site_id = ? AND id = ? AND read_at IS NULL')
+        .run(new Date().toISOString(), siteId, mid);
+    if (result.changes > 0) return true;
+    // Already read (or existed) — idempotent success as long as the row exists.
+    const row = db.prepare('SELECT id FROM site_messages WHERE site_id = ? AND id = ?').get(siteId, mid);
+    return !!row;
+}
+
+function deleteSiteMessage(siteId, mid) {
+    if (!siteId || !mid) return false;
+    const result = db.prepare('DELETE FROM site_messages WHERE site_id = ? AND id = ?').run(siteId, mid);
+    return result.changes > 0;
+}
+
+/** GDPR export helper: every message across every site this user owns. */
+function listSiteMessagesForUser(userId) {
+    if (!userId) return [];
+    return db.prepare(`
+        SELECT sm.* FROM site_messages sm
+        JOIN sites s ON s.id = sm.site_id
+        WHERE s.user_id = ?
+        ORDER BY sm.seq DESC
+    `).all(userId).map(siteMessageRowToObj);
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -641,4 +736,10 @@ module.exports = {
     isSessionValid,
     revokeSession,
     revokeAllSessionsForUser,
+    createSiteMessage,
+    listSiteMessagesBySite,
+    getSiteMessage,
+    markSiteMessageRead,
+    deleteSiteMessage,
+    listSiteMessagesForUser,
 };
