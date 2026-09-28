@@ -459,7 +459,7 @@ test('defect #2b: a flaky ensureSubdomain reconfirmation on republish must not r
 // bot/test/wave9-save-recovery-banner.test.js, which this suite extends
 // rather than duplicates — that file still pins the never-published case).
 // ---------------------------------------------------------------------------
-test('defect #1: the recovery banner never calls a paid/live site "proiect neterminat"', async () => {
+test('defect #1: the recovery banner never calls a paid/live site "site neterminat"', async () => {
     fs.mkdirSync(EVIDENCE, { recursive: true });
     const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
 
@@ -561,7 +561,9 @@ test('defect #1: the recovery banner never calls a paid/live site "proiect neter
     try {
         // =====================================================================
         // A. Fresh, never-published draft — the banner SHOULD show, and must
-        //    still say "proiect neterminat" (unchanged baseline behaviour).
+        //    still say "site neterminat" (copy-i18n#1 renamed "proiect" ->
+        //    "site" everywhere in app.js; the underlying behaviour here is
+        //    otherwise unchanged).
         // =====================================================================
         const pageA1 = await context.newPage();
         pageA1.setDefaultTimeout(30000);
@@ -576,7 +578,7 @@ test('defect #1: the recovery banner never calls a paid/live site "proiect neter
         await assert.doesNotReject(bannerA.waitFor({ state: 'visible', timeout: 4000 }),
             'a never-published draft must still be offered back');
         const textA = (await bannerA.locator('.recovery-banner-text').innerText()).trim();
-        assert.match(textA, /proiect neterminat/i, 'a genuinely unfinished draft must say "proiect neterminat"');
+        assert.match(textA, /site neterminat/i, 'a genuinely unfinished draft must say "site neterminat"');
         await pageA2.screenshot({ path: path.join(EVIDENCE, '01-unfinished-draft-banner.png') });
 
         // Continue editing this same draft through to a paid/live site for
@@ -603,7 +605,7 @@ test('defect #1: the recovery banner never calls a paid/live site "proiect neter
         await pageB.goto(base + '/app/', { waitUntil: 'networkidle' });
         await pageB.waitForTimeout(600);
         assert.equal(await pageB.locator('#recovery-banner').isVisible(), false,
-            'defect #1: a paid/live site with nothing edited since publish must never show "proiect neterminat"');
+            'defect #1: a paid/live site with nothing edited since publish must never show "site neterminat"');
         await pageB.screenshot({ path: path.join(EVIDENCE, '02-paid-live-no-banner.png') });
 
         // =====================================================================
@@ -633,7 +635,7 @@ test('defect #1: the recovery banner never calls a paid/live site "proiect neter
         await assert.doesNotReject(bannerC.waitFor({ state: 'visible', timeout: 4000 }),
             'defect #1: genuine unpublished edits on a live site must still be offered back');
         const textC = (await bannerC.locator('.recovery-banner-text').innerText()).trim();
-        assert.doesNotMatch(textC, /proiect neterminat/i, 'a paid/live site\'s unsaved edits must never be called "proiect neterminat"');
+        assert.doesNotMatch(textC, /site neterminat/i, 'a paid/live site\'s unsaved edits must never be called "site neterminat"');
         assert.match(textC, /modificări nesalvate/i, 'must honestly say these are unsaved changes');
         assert.match(textC, /Suite12 Live Editat Din Nou|Suite12 Neterminat/, 'must name the site, not a generic label');
         await pageC.screenshot({ path: path.join(EVIDENCE, '03-live-site-unsaved-edits-banner.png') });

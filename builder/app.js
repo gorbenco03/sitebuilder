@@ -725,7 +725,7 @@ function lsSet(key, value) {
   try { localStorage.setItem(key, JSON.stringify(value)); return true; }
   catch (e) {
     if (e.name === 'QuotaExceededError' || (e.code && e.code === 22)) {
-      showToast('Proiectul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.', 'error', 7000);
+      showToast('Site-ul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.', 'error', 7000);
     }
     return false;
   }
@@ -2005,11 +2005,11 @@ function showTabConflictBanner(sections) {
   if (textEl) {
     if (sections && sections.length) {
       const labels = sections.map(labelForConfigSection);
-      textEl.textContent = 'Acest proiect e deschis și în altă filă a browserului — acolo tocmai s-a ' +
+      textEl.textContent = 'Acest site e deschis și în altă filă a browserului — acolo tocmai s-a ' +
         'modificat: ' + labels.join(', ') + '. Am păstrat modificările din ambele file unde a fost posibil ' +
         '(dacă amândouă au atins exact același câmp, câștigă ultima salvare).';
     } else {
-      textEl.textContent = 'Acest proiect e deschis și în altă filă a browserului. Îmbinăm modificările ' +
+      textEl.textContent = 'Acest site e deschis și în altă filă a browserului. Îmbinăm modificările ' +
         'câmp cu câmp — dacă amândouă tab-urile ating exact același câmp, câștigă ultima salvare.';
     }
   }
@@ -2372,7 +2372,7 @@ function noteEditingInProgress() {
 function settleAfterLocalSave() {
   if (!localSaveOk) {
     setSaveState('error', saveErrorMessage ||
-      'Proiectul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.');
+      'Site-ul are imagini mari — nu s-a putut salva ca ciornă. Publică înainte să închizi pagina.');
     return;
   }
   if (Object.keys(pendingLiveEdits).length > 0 || pendingOpCount > 0) {
@@ -2504,7 +2504,7 @@ async function runServerAutosave() {
       if (typeof handleAuthExpired === 'function') {
         handleAuthExpired(() => { scheduleServerAutosave(); });
       } else {
-        setSaveState('error', 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Proiectul rămâne aici, pe acest calculator.');
+        setSaveState('error', 'Sesiunea a expirat — reconectează-te ca să salvezi în cont. Site-ul rămâne aici, pe acest calculator.');
       }
       return;
     }
@@ -2598,7 +2598,7 @@ function loadReplacedDraft() {
  * snapshot the config that just went live into the local draft record. This
  * is what lets maybeShowRecoveryBanner() below tell "a paid site with
  * nothing left to resume" (the reported bug: fresh pay, nothing edited
- * since, dashboard shows a false "proiect neterminat") apart from "a paid
+ * since, dashboard shows a false "site neterminat") apart from "a paid
  * site with genuine local edits not yet republished" (decision: honest to
  * offer back, dishonest to call it "neterminat" — see the mode split below).
  * No snapshot on record (an older draft, or one never published from this
@@ -2630,7 +2630,7 @@ function maybeShowRecoveryBanner() {
   const textEl = $('recovery-banner-text');
 
   if (saved.siteId && saved.paid) {
-    // A paid/published site is never "un proiect neterminat" — it is live.
+    // A paid/published site is never "un site neterminat" — it is live.
     // Only offer it back when this browser's local draft genuinely differs
     // from the config that was last published (notePublishedSnapshot()
     // above); otherwise there is nothing left to resume, and the honest
@@ -2647,7 +2647,7 @@ function maybeShowRecoveryBanner() {
 
   recoveryBannerMode = 'unfinished';
   if (textEl) {
-    textEl.textContent = 'Ai un proiect neterminat' + (templateName ? (': ' + templateName) : '') + '. Continui de unde ai rămas?';
+    textEl.textContent = 'Ai un site neterminat' + (templateName ? (': ' + templateName) : '') + '. Continui de unde ai rămas?';
   }
   showRecoveryBanner();
 }
@@ -2658,7 +2658,7 @@ function maybeShowRecoveryBanner() {
  * edits belong to that site and must never be destroyed by what reads as a
  * "dismiss this reminder" button — only stop offering it back this session.
  * A paid/created site itself (siteId bound, server-side) is never touched
- * here either way and stays reachable from "Proiectele mele". */
+ * here either way and stays reachable from "Site-urile mele". */
 function discardLocalDraft() {
   recoveryBannerDismissedThisSession = true;
   if (recoveryBannerMode !== 'resume-live') {
@@ -3932,6 +3932,9 @@ async function applySelectedImageFile(file, path, src, alt) {
   if (typeof noteAsyncSaveOpStart === 'function') noteAsyncSaveOpStart();
   try {
     showPreviewSpinner(true);
+    // images-media#3/#4: the GIF/SVG flatten warning now fires from inside
+    // resizeImageToDataUrl() itself (single choke point for every upload
+    // path), so nothing extra is needed here.
     const dataUrl = await resizeImageToDataUrl(file, 1600, 0.82);
     // Logo/src: bare data URL then full preview rebuild. Backgrounds: url() rewrite.
     if (/background|gradient/i.test(path || '')) {
@@ -3942,7 +3945,7 @@ async function applySelectedImageFile(file, path, src, alt) {
     saveDraft();
     fullRerender();
   } catch (e) {
-    showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+    showImageProcessingError(e);
     showPreviewSpinner(false);
   } finally {
     if (typeof noteAsyncSaveOpEnd === 'function') noteAsyncSaveOpEnd();
@@ -3959,6 +3962,66 @@ async function applySelectedImageFile(file, path, src, alt) {
 // ordinary logo/icon PNG lands nowhere near it.
 const TRANSPARENT_PNG_SIZE_CEILING = 900 * 1024;
 
+// images-media#3/#4: canvas.drawImage() only ever captures one frame, so an
+// animated GIF run through it silently becomes a static JPEG, and an SVG run
+// through it silently becomes a fixed-resolution raster — both lose the
+// exact thing that made the format worth choosing, with no warning.
+//
+// Reviewer correction 2026-09-27: an earlier version of this fix kept the
+// original GIF/SVG bytes instead of rasterizing. That broke publishing —
+// POST /api/publish's server-side image allowlist (bot/server.js
+// handlePublish, commit 0a694b7, api-security#1) only accepts
+// image/jpeg|png|webp, so a site with such a logo failed the whole publish
+// with a 422 the owner never asked for, and this task does not own
+// bot/server.js to widen that allowlist. These two formats still rasterize
+// like every other upload; the fix here is only to warn about it up front,
+// every time, instead of doing it silently.
+const FLATTENED_ON_UPLOAD_MIME_TYPES = ['image/gif', 'image/svg+xml'];
+
+// images-media#5: an iPhone's camera saves in HEIC by default. Neither
+// <img>/canvas nor FileReader.readAsDataURL() can decode it in the browsers
+// this product supports, so the promise below used to reject with the raw
+// English DOM/decode error, which every catch site glued onto a Romanian
+// prefix ("Nu am putut procesa fotografia: Error reading the image") — a
+// customer's very first upload could read half in a language they don't
+// use. Detect it up front and say, in one full Romanian sentence, why it
+// doesn't work and what to do instead. (No client-side HEIC→JPEG decode is
+// attempted: that needs a real decoder, which is a dependency this
+// zero-dep renderer doesn't carry — see AGENTS.md "Stack".)
+function isHeicFile(file) {
+  if (!file) return false;
+  const type = String(file.type || '').toLowerCase();
+  if (type === 'image/heic' || type === 'image/heif') return true;
+  // Safari/iOS sometimes hands the picker an empty or generic MIME type for
+  // a HEIC file — the extension is always present from a real file picker.
+  return /\.hei[cf]$/i.test(String(file.name || ''));
+}
+
+const HEIC_UNSUPPORTED_MESSAGE = 'Fotografiile HEIC de pe iPhone nu sunt acceptate încă. Salvează poza ca JPEG sau PNG și încearcă din nou.';
+
+// Every other catch site already prefixes a raw error's .message with a
+// Romanian sentence ("Nu am putut procesa fotografia: " + e.message) — fine
+// for a short technical fragment, but HEIC_UNSUPPORTED_MESSAGE above is
+// already a complete, actionable sentence, and doubling it up would just
+// repeat itself. Route every such catch through this instead of the old
+// inline `showToast('Nu am putut procesa fotografia: ' + e.message, ...)`.
+function showImageProcessingError(e) {
+  const msg = (e && e.message) || '';
+  if (msg === HEIC_UNSUPPORTED_MESSAGE) { showToast(msg, 'error', 6000); return; }
+  showToast('Nu am putut procesa fotografia: ' + msg, 'error');
+}
+
+// images-media#3/#4 (the "or warn explicitly" half of the fix, since the
+// bytes themselves can no longer be kept — see FLATTENED_ON_UPLOAD_MIME_TYPES
+// above): every GIF/SVG upload gets flattened to JPEG/PNG so it can publish
+// at all — say so up front, in Romanian, unconditionally, instead of the
+// silent conversion the audit found.
+function warnIfFormatWillBeFlattened(file) {
+  if (!file || FLATTENED_ON_UPLOAD_MIME_TYPES.indexOf(file.type) === -1) return;
+  const lost = file.type === 'image/gif' ? 'animația' : 'calitatea vectorială';
+  showToast('Poza va fi salvată ca imagine statică — se pierde ' + lost + '.', 'error', 6000);
+}
+
 // Every pixel drawImage() puts on the canvas keeps its real alpha value even
 // though a canvas has no visible "background colour" of its own — this reads
 // that channel back to tell a genuinely transparent source (a logo cut out on
@@ -3972,6 +4035,15 @@ function hasTransparentPixel(ctx, w, h) {
 }
 
 function resizeImageToDataUrl(file, maxPx, quality) {
+  // images-media#5: fail fast, in Romanian, before ever handing an
+  // undecodable HEIC file to <img>/canvas — see isHeicFile() above.
+  if (isHeicFile(file)) {
+    return Promise.reject(new Error(HEIC_UNSUPPORTED_MESSAGE));
+  }
+  // images-media#3/#4: single choke point for the flatten warning, so it
+  // fires for every upload path (Logo, background, gallery, hero) rather
+  // than depending on each call site remembering to call it.
+  warnIfFormatWillBeFlattened(file);
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -4012,7 +4084,7 @@ function resizeImageToDataUrl(file, maxPx, quality) {
       }
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Error reading the image')); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Nu am putut citi imaginea.')); };
     img.src = url;
   });
 }
@@ -4335,6 +4407,11 @@ function closeDrawer() {
     drawerNeedsRerenderOnClose = false;
     fullRerender();
   }
+  // a11y#2 (ARIA APG Dialog pattern): focus returns to the control that
+  // opens Details, the same opener-restore openModal()/closeModal() already
+  // do for every other modal — Escape used to leave focus nowhere.
+  const openerBtn = $('btn-open-drawer');
+  if (openerBtn && typeof openerBtn.focus === 'function') openerBtn.focus();
 }
 
 // ---------------------------------------------------------------------------
@@ -5183,9 +5260,14 @@ function openImagePickerForPath(configPath, cb) {
       release();
       if (dataUrl && typeof cb === 'function') cb(dataUrl);
       settlePendingOp();
-    }).catch(() => {
+    }).catch((e) => {
       if (input._hbPathImagePicker === request) release();
-      if (typeof showToast === 'function') showToast('Nu am putut procesa fotografia.', 'error');
+      if (typeof showToast === 'function') {
+        // images-media#5: HEIC's own message is already the full, correct
+        // thing to say — everything else keeps this path's plain generic text.
+        const msg = e && e.message === HEIC_UNSUPPORTED_MESSAGE ? HEIC_UNSUPPORTED_MESSAGE : 'Nu am putut procesa fotografia.';
+        showToast(msg, 'error');
+      }
       settlePendingOp();
     });
   };
@@ -5561,7 +5643,7 @@ function buildSingleImageSection(body, opts) {
         render();
       }).catch((e) => {
         setBtnLoading(replaceBtn, false);
-        showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+        showImageProcessingError(e);
       });
     });
     actions.appendChild(replaceBtn);
@@ -5724,7 +5806,7 @@ function buildGallerySection(body, path, itemsAreStrings) {
           renderThumbs();
         }).catch((e) => {
           replaceBtn.disabled = false;
-          showToast('Nu am putut procesa fotografia: ' + e.message, 'error');
+          showImageProcessingError(e);
         });
       });
       actions.appendChild(replaceBtn);
@@ -6123,7 +6205,12 @@ function siteIdForInstagram() {
 }
 
 function setIgStatus(msg, isError) {
-  const el = $('ig-status');
+  // instafidget-social#4: #ig-status lives inside #ig-connect-panel and
+  // #ig-editor-status inside #ig-connected-panel (syncInstagramModalPanels()
+  // shows exactly one of the two) — write to whichever one is actually
+  // visible, or the message lands in a display:none element nobody sees
+  // ("revenim aici după ce termini conectarea" was doing exactly that).
+  const el = connectedInstagramEmbedUrl() ? $('ig-editor-status') : $('ig-status');
   if (!el) return;
   el.textContent = msg || '';
   el.classList.toggle('ig-error', !!isError);
@@ -6735,21 +6822,32 @@ async function fetchAppConfig() {
   if (successRenewal) successRenewal.textContent = renewalLabel;
 }
 
+/**
+ * ONE money formatter for every price surface (owner decision 2026-09-27,
+ * gap-pricing-display-consistency-live#1/#2): the currency symbol is back
+ * everywhere a price shows — landing, publish/success modals, dashboard
+ * card and Facturi all render through this, instead of five separate
+ * ad-hoc implementations that drifted apart (plain "99", "99€", and
+ * Intl's "99,00 EUR" were all live in production at once before this).
+ */
+function formatMoneyLabel(amount, currency) {
+  if (amount == null || !Number.isFinite(amount)) return '—';
+  const cur = String(currency || 'usd').toLowerCase();
+  const rounded = Math.round(amount * 100) / 100;
+  const num = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  if (cur === 'gbp') return '£' + num;
+  if (cur === 'eur') return num + '€';
+  return '$' + num;
+}
+
 function formatPriceLabel(cfg) {
   const amount = cfg.amount != null ? cfg.amount : cfg.priceEur;
-  const cur = String(cfg.currency || 'usd').toLowerCase();
-  if (amount == null) return '—';
-  if (cur === 'gbp') return '£' + amount;
-  if (cur === 'eur') return amount + '€';
-  return '$' + amount;
+  return formatMoneyLabel(amount, cfg.currency);
 }
 
 function formatRenewalLabel(cfg) {
   const amount = cfg.renewal != null ? cfg.renewal : 29;
-  const cur = String(cfg.currency || 'usd').toLowerCase();
-  if (cur === 'gbp') return '£' + amount;
-  if (cur === 'eur') return amount + '€';
-  return '$' + amount;
+  return formatMoneyLabel(amount, cfg.currency);
 }
 
 /** Human calendar date for hosting-until (not ISO dump, not trial countdown). Romanian chrome. */
@@ -7489,6 +7587,11 @@ function updateSlugPreview(slug, state) {
   if (icon) {
     if (state === 'checking') icon.textContent = '...';
     else if (state === 'valid') icon.textContent = '✓';
+    // edge-errors#4: a failed /api/slug-check (offline, timeout, a real 500)
+    // must never look identical to a confirmed-free address — the server
+    // still revalidates at publish time either way, so this never blocks
+    // the flow, but the icon says plainly "could not check" instead of "✓".
+    else if (state === 'unknown') icon.textContent = '?';
     else if (state === 'taken') icon.textContent = '✗';
     else icon.textContent = '';
   }
@@ -7563,10 +7666,17 @@ async function checkSlug(rawSlug) {
       if (normNoteEl) hide(normNoteEl);
     }
   } catch (_) {
-    updateSlugPreview(rawSlug, 'valid');
+    // edge-errors#4: a network/server failure is not the same thing as a
+    // confirmed-available address — slugValid stays true (the server
+    // revalidates for real at /api/publish, so this never blocks the
+    // flow), but the visible state must say "couldn't check", not "✓".
+    updateSlugPreview(rawSlug, 'unknown');
     slugValid = true;
     slugNormalized = rawSlug;
-    if (errorEl) hide(errorEl);
+    if (errorEl) {
+      errorEl.textContent = 'Nu am putut verifica disponibilitatea acum — se confirmă la publicare.';
+      show(errorEl);
+    }
     if (normNoteEl) hide(normNoteEl);
   }
 }
@@ -7679,7 +7789,7 @@ function wireDashboardAuthButton() {
     // publishing anything — set a context-appropriate title BEFORE opening it
     // (the static markup default is the publish-flow copy, for that caller).
     const authTitleEl = $('modal-auth-title');
-    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să-ți vezi proiectele';
+    if (authTitleEl) authTitleEl.textContent = 'Autentifică-te ca să-ți vezi site-urile';
     hide($('publish-step-1'));
     show($('publish-step-2'));
     show($('form-auth-email'));
@@ -8380,7 +8490,7 @@ async function startWithTemplate(templateId) {
   // fullpass oracle, click straight through it with no dialog to answer),
   // but it must never be a SILENT loss either: best-effort back the old
   // draft up to the account when possible (recoverable afterwards from
-  // "Proiectele mele"), and always say plainly what happened.
+  // "Site-urile mele"), and always say plainly what happened.
   // MULTI-03: "am I replacing an earlier draft" must only ever look at THIS
   // tab's own prior work, never the cross-scope discovery mirror — a fresh
   // tab that has never started anything must not treat some OTHER tab's
@@ -8412,7 +8522,7 @@ async function startWithTemplate(templateId) {
         // PLAN-FEEDBACK-2026-09-14 defect #1: carried through so
         // maybeShowRecoveryBanner() can tell a replaced PAID site's draft
         // apart from a genuinely unfinished one — a paid site is never
-        // "proiect neterminat", even when a template switch is what
+        // "site neterminat", even when a template switch is what
         // shelved it here.
         paid: !!existingDraftForSwitch.paid,
         publishedConfig: existingDraftForSwitch.publishedConfig || null,
@@ -8429,8 +8539,8 @@ async function startWithTemplate(templateId) {
 
     const switchNoticeSignedIn = typeof currentUser !== 'undefined' && !!currentUser;
     showToast(
-      'Proiectul pe designul „' + existingName + '” a fost înlocuit aici' +
-        (switchNoticeSignedIn ? ' — îl găsești în Proiectele mele.' : '.'),
+      'Site-ul pe designul „' + existingName + '” a fost înlocuit aici' +
+        (switchNoticeSignedIn ? ' — îl găsești în Site-urile mele.' : '.'),
       '',
       6000
     );
@@ -8589,7 +8699,7 @@ async function openPreviewModal(templateId) {
 async function loadDashboard() {
   const list = $('sites-list');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Se încarcă proiectele…</p>';
+  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Se încarcă site-urile…</p>';
 
   try {
     const data = await apiGet('/api/sites');
@@ -8610,7 +8720,7 @@ async function loadDashboard() {
     sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+      list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
       wireDashboardAuthButton();
     } else {
       list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
@@ -9242,7 +9352,7 @@ async function loadVersions(siteId) {
 // bot/domains.js implements the whole state machine and bot/server.js mounts
 // five auth-gated routes for it (GET/POST/DELETE /api/sites/:id/domain, POST
 // .../domain/verify, POST .../domain/status). None of it was reachable from
-// any UI. This panel lives in the "Proiectele mele" site card — the same
+// any UI. This panel lives in the "Site-urile mele" site card — the same
 // place the Wave 8 calendar fix put its own reachability link — because
 // that's where an owner already goes to manage a live site.
 //
@@ -9571,7 +9681,7 @@ async function openDomainModal(site) {
 // first already); each entry carries kind ('publish' | 'renewal'),
 // amountCents, currency, ts and — for a real Stripe renewal invoice —
 // hostedInvoiceUrl/invoicePdf. Same "findable" placement as the domain
-// panel: the "Proiectele mele" site card.
+// panel: the "Site-urile mele" site card.
 //
 // Wave 12 — bot/webpublish.js#getInvoiceHistory now attaches a `status` to
 // every row: 'paid' (real money moved), 'trial_started' (the 14-day card
@@ -9603,26 +9713,19 @@ function invoiceStatusLabel(inv) {
   return 'Achitat';
 }
 
+// gap-pricing-display-consistency-live#2: Facturi used to be a fifth,
+// independent price format ("99,00 EUR") that matched nothing else in the
+// product — now the same formatMoneyLabel() as every other price surface.
 function formatInvoiceAmount(amountCents, currency) {
   if (amountCents == null) return '—';
-  const amount = amountCents / 100;
-  const cur = String(currency || '').toUpperCase();
-  try {
-    return new Intl.NumberFormat('ro-RO', { style: 'currency', currency: cur || 'USD' }).format(amount);
-  } catch (_) {
-    return amount.toFixed(2) + (cur ? ' ' + cur : '');
-  }
+  return formatMoneyLabel(amountCents / 100, currency);
 }
 
+// copy-i18n#4: Facturi used to show an abbreviated month ("27 sept. 2026")
+// while the site card showed the full month for the same kind of date
+// ("11 octombrie 2026") — one Romanian date formatter for both now.
 function formatInvoiceDate(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return '';
-  try {
-    return d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short', year: 'numeric' });
-  } catch (_) {
-    return iso.slice(0, 10);
-  }
+  return formatHostingUntilDate(iso);
 }
 
 function renderInvoicesList(invoices) {
@@ -9765,7 +9868,7 @@ async function handleRoute(hash) {
     return;
   }
   // Offline Cancel return: #test-billing-portal=bps_test_* (unpublish already applied server-side)
-  // Also honour #sites return_url from billing-portal so stranger lands in Proiectele mele / Ciornă.
+  // Also honour #sites return_url from billing-portal so stranger lands in Site-urile mele / Ciornă.
   if (/^test-billing-portal=/.test(raw) || raw === 'sites') {
     if (history && history.replaceState) {
       try { history.replaceState(null, '', window.location.pathname + window.location.search + '#dashboard'); }
@@ -9782,7 +9885,7 @@ async function handleRoute(hash) {
     } else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
         wireDashboardAuthButton();
       }
     }
@@ -9835,7 +9938,7 @@ async function handleRoute(hash) {
     else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi proiectele.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
         wireDashboardAuthButton();
       }
     }
@@ -9912,7 +10015,12 @@ function wireStaticButtons() {
   const igCheck = $('ig-terms-check');
   const igGo = $('btn-ig-connect');
   if (igCheck && igGo) {
-    igCheck.addEventListener('change', () => { igGo.disabled = !igCheck.checked; });
+    igCheck.addEventListener('change', () => {
+      igGo.disabled = !igCheck.checked;
+      // instafidget-social#3: stop telling the owner to tick the box once
+      // it's already ticked and the button is already enabled.
+      if (igCheck.checked) setIgStatus('');
+    });
   }
   if (igGo) igGo.addEventListener('click', () => { connectInstagram(); });
   const igEditor = $('btn-ig-editor');
@@ -9944,6 +10052,14 @@ function wireStaticButtons() {
       slugInput.dataset.manuallyEdited = '1';
       const val = toSlug(slugInput.value);
       scheduleSlugCheck(val);
+    });
+    // builder-mobile#2: the field opens pre-filled with a suggested slug;
+    // without auto-select, tapping it and typing appends to the suggestion
+    // instead of replacing it ("casa-nord" + "cafeneaua-mea" published as
+    // "casa-nordcafeneaua-mea", no warning). Select-all on focus makes the
+    // first keystroke replace the suggestion, same as a normal search box.
+    slugInput.addEventListener('focus', () => {
+      try { slugInput.select(); } catch (_) { /* non-text input in some sandbox */ }
     });
   }
 

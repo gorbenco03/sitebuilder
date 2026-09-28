@@ -322,7 +322,9 @@ check('HEAD: professionals Detalii labels have no Link Instagram contact and no 
 check('HEAD: unauth dashboard empty-state source includes visible auth control', () => {
   const src = read(APP_JS);
   assert.ok(
-    /Autentifică-te ca să vezi proiectele|Sign in to see your projects/.test(src),
+    // copy-i18n#1 (audit27 R-16): "proiectele" -> "site-urile" — one term
+    // ("site") for the product's core concept, everywhere in app.js.
+    /Autentifică-te ca să vezi site-urile|Sign in to see your projects/.test(src),
     'unauth message remains (RO preferred)'
   );
   // Every unauth empty-state assignment includes an auth control
@@ -332,7 +334,7 @@ check('HEAD: unauth dashboard empty-state source includes visible auth control',
   let unauthBlocks = 0;
   while ((m = re.exec(src))) {
     const body = m[2];
-    if (!/Autentifică-te ca să vezi proiectele|Sign in to see your projects/.test(body)) continue;
+    if (!/Autentifică-te ca să vezi site-urile|Sign in to see your projects/.test(body)) continue;
     unauthBlocks++;
     assert.ok(
       /Autentificare|Sign in/.test(body),
