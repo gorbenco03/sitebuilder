@@ -9313,6 +9313,23 @@ function buildSiteCard(site) {
     actions.appendChild(invoicesBtn);
   }
 
+  // Contact-form inbox (S-2C, PLAN-UX §5.2 supporting piece): only a live,
+  // paid site has ever had its form's data-site-messages-api filled in (see
+  // bot/webpublish.js), so only such a site can have received any messages.
+  // Unread count is fetched async so it never blocks the card itself.
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    const messagesBtn = document.createElement('button');
+    messagesBtn.className = 'btn-ghost btn-sm';
+    messagesBtn.textContent = 'Mesaje';
+    messagesBtn.setAttribute('data-site-messages-btn', site.id);
+    messagesBtn.setAttribute('aria-label', 'Mesaje primite pe ' + (site.projectName || site.slug || 'acest site'));
+    messagesBtn.addEventListener('click', () => openSiteMessagesModal(site.id, messagesBtn));
+    actions.appendChild(messagesBtn);
+    apiGet('/api/sites/' + encodeURIComponent(site.id) + '/messages')
+      .then((data) => { if (data && data.unread) messagesBtn.textContent = `Mesaje (${data.unread})`; })
+      .catch(() => { /* unread badge is a bonus — never block the card on it */ });
+  }
+
   // Native Hidook booking dashboard link (Wave 8 reachability fix, CAL-01):
   // the owner dashboard exists and its API is fully authenticated +
   // tenant-isolated (bot/server.js#resolveOwnerTenantOrReject), but nothing
@@ -10375,6 +10392,90 @@ async function openInvoicesModal(siteId) {
 }
 
 // ---------------------------------------------------------------------------
+// Site contact-form messages (S-2C, PLAN-UX §5.2 supporting piece)
+// ---------------------------------------------------------------------------
+
+function renderSiteMessagesList(siteId, messages) {
+  const list = $('site-messages-list');
+  if (!list) return;
+  if (!messages || messages.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:1.5rem">Niciun mesaj primit încă pe acest site.</p>';
+    return;
+  }
+  list.innerHTML = messages.map((m) => `
+    <div class="site-message-item${m.readAt ? '' : ' site-message-item--unread'}">
+      <div class="site-message-meta">
+        <span class="site-message-date">${escHtml(formatHostingUntilDate(m.createdAt))}</span>
+        ${m.readAt ? '' : '<span class="site-message-badge">Necitit</span>'}
+      </div>
+      <div class="site-message-from"><strong>${escHtml(m.name)}</strong> — ${escHtml(m.contact)}</div>
+      <p class="site-message-text">${escHtml(m.message)}</p>
+      <div class="site-message-actions">
+        ${m.readAt ? '' : `<button type="button" class="btn-ghost btn-sm" data-action="read" data-mid="${escHtmlForAttr(m.id)}">Marchează citit</button>`}
+        <button type="button" class="btn-ghost btn-sm" data-action="delete" data-mid="${escHtmlForAttr(m.id)}">Șterge</button>
+      </div>
+    </div>`).join('');
+
+  list.querySelectorAll('[data-action="read"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const mid = btn.getAttribute('data-mid');
+      setBtnLoading(btn, true, 'Se salvează…');
+      try {
+        await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/messages/' + encodeURIComponent(mid) + '/read', {});
+        await reloadSiteMessagesModal(siteId);
+      } catch (e) {
+        setBtnLoading(btn, false);
+        showToast(safeServerMessage(e, 'Nu am putut marca mesajul citit.'), 'error');
+      }
+    });
+  });
+  list.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const mid = btn.getAttribute('data-mid');
+      setBtnLoading(btn, true, 'Se șterge…');
+      try {
+        await apiDelete('/api/sites/' + encodeURIComponent(siteId) + '/messages/' + encodeURIComponent(mid));
+        await reloadSiteMessagesModal(siteId);
+      } catch (e) {
+        setBtnLoading(btn, false);
+        showToast(safeServerMessage(e, 'Nu am putut șterge mesajul.'), 'error');
+      }
+    });
+  });
+}
+
+/** Re-fetch + re-render without touching modal open/focus state (used after
+ *  mark-read/delete, while the modal is already open). */
+async function reloadSiteMessagesModal(siteId) {
+  try {
+    const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/messages');
+    renderSiteMessagesList(siteId, data.messages || []);
+    refreshSiteMessagesBadge(siteId, data.unread || 0);
+  } catch (e) {
+    showToast(safeServerMessage(e, 'Nu am putut reîncărca mesajele.'), 'error');
+  }
+}
+
+/** Keep the dashboard card's "Mesaje (N)" button in sync after a read/delete. */
+function refreshSiteMessagesBadge(siteId, unread) {
+  const btn = document.querySelector('button[data-site-messages-btn="' + siteId + '"]');
+  if (btn) btn.textContent = unread ? `Mesaje (${unread})` : 'Mesaje';
+}
+
+async function openSiteMessagesModal(siteId, opener) {
+  const list = $('site-messages-list');
+  if (list) list.innerHTML = loadingStateHTML('Se încarcă…');
+  openModal('modal-site-messages', opener);
+  try {
+    const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/messages');
+    renderSiteMessagesList(siteId, data.messages || []);
+    refreshSiteMessagesBadge(siteId, data.unread || 0);
+  } catch (e) {
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca mesajele. Încearcă din nou.')) + '</p>';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 23. Router
 // ---------------------------------------------------------------------------
 
@@ -10776,6 +10877,7 @@ function wireStaticButtons() {
   wireModalClose('btn-close-gallery',  'modal-gallery');
   wireModalClose('btn-close-domain',   'modal-domain');
   wireModalClose('btn-close-invoices', 'modal-invoices');
+  wireModalClose('btn-close-site-messages', 'modal-site-messages');
   wireModalClose('btn-close-delete-site', 'modal-delete-site');
   wireModalClose('btn-close-delete-account', 'modal-delete-account');
   // U-01: window.confirm() replacements — same modal-close contract as

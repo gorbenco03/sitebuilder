@@ -249,9 +249,16 @@ function deleteSite(siteId) {
     const db = _load();
     db.sites = db.sites || {};
     db.versions = db.versions || {};
+    db.siteMessages = db.siteMessages || {};
     const existed = Object.prototype.hasOwnProperty.call(db.sites, siteId);
     delete db.sites[siteId];
     delete db.versions[siteId];
+    // S-2C: cascade contact-form messages — a deleted site's inbox must not
+    // survive it (also covers account erasure, which deletes every owned
+    // site via this same function).
+    for (const [mid, m] of Object.entries(db.siteMessages)) {
+        if (m && m.siteId === siteId) delete db.siteMessages[mid];
+    }
     _save(db);
     return existed;
 }
@@ -546,6 +553,95 @@ function claimStripeEvent(eventId) {
 }
 
 // ---------------------------------------------------------------------------
+// Site messages (S-2C, PLAN-UX §5.2 supporting piece: contact-form inbox)
+//
+// Mirrors registry-sqlite.js's site_messages table/functions exactly (same
+// contract on both backends) so REGISTRY_BACKEND=json stays a real fallback.
+// ---------------------------------------------------------------------------
+
+const MAX_SITE_MESSAGES_PER_SITE = 500;
+
+/**
+ * @param {{ siteId: string, name: string, contact: string, message: string }} fields
+ * @returns {object} the created message
+ */
+function createSiteMessage({ siteId, name, contact, message }) {
+    if (!siteId) throw new Error('siteId is required');
+    const db = _load();
+    db.siteMessages = db.siteMessages || {};
+    const id = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+    const record = { id, siteId, name, contact, message, createdAt, readAt: null };
+    db.siteMessages[id] = record;
+    // Bound growth per site — same FIFO-cap shape as the SQLite backend.
+    const forSite = Object.values(db.siteMessages)
+        .filter((m) => m.siteId === siteId)
+        .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    if (forSite.length > MAX_SITE_MESSAGES_PER_SITE) {
+        for (const m of forSite.slice(0, forSite.length - MAX_SITE_MESSAGES_PER_SITE)) {
+            delete db.siteMessages[m.id];
+        }
+    }
+    _save(db);
+    return { ...record };
+}
+
+/** Newest first. */
+function listSiteMessagesBySite(siteId) {
+    if (!siteId) return [];
+    const db = _load();
+    return Object.values(db.siteMessages || {})
+        .filter((m) => m.siteId === siteId)
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+        .map((m) => ({ ...m }));
+}
+
+function getSiteMessage(siteId, mid) {
+    if (!siteId || !mid) return null;
+    const db = _load();
+    const m = (db.siteMessages || {})[mid];
+    if (!m || m.siteId !== siteId) return null;
+    return { ...m };
+}
+
+function markSiteMessageRead(siteId, mid) {
+    if (!siteId || !mid) return false;
+    const db = _load();
+    db.siteMessages = db.siteMessages || {};
+    const m = db.siteMessages[mid];
+    if (!m || m.siteId !== siteId) return false;
+    if (!m.readAt) {
+        m.readAt = new Date().toISOString();
+        _save(db);
+    }
+    return true;
+}
+
+function deleteSiteMessage(siteId, mid) {
+    if (!siteId || !mid) return false;
+    const db = _load();
+    db.siteMessages = db.siteMessages || {};
+    const m = db.siteMessages[mid];
+    if (!m || m.siteId !== siteId) return false;
+    delete db.siteMessages[mid];
+    _save(db);
+    return true;
+}
+
+/** GDPR export helper: every message across every site this user owns. */
+function listSiteMessagesForUser(userId) {
+    if (!userId) return [];
+    const db = _load();
+    const ownedSiteIds = new Set(
+        Object.values(db.sites || {}).filter((s) => s.userId === userId).map((s) => s.id)
+    );
+    return Object.values(db.siteMessages || {})
+        .filter((m) => ownedSiteIds.has(m.siteId))
+        .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+        .map((m) => ({ ...m }));
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -581,4 +677,10 @@ module.exports = {
     isSessionValid,
     revokeSession,
     revokeAllSessionsForUser,
+    createSiteMessage,
+    listSiteMessagesBySite,
+    getSiteMessage,
+    markSiteMessageRead,
+    deleteSiteMessage,
+    listSiteMessagesForUser,
 };

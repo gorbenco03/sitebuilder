@@ -132,6 +132,8 @@ Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Op
 
 Nu se rezolvă toate într-un singur task. Se lucrează pe flow-uri verticale verificate în browser.
 
+„form builder limitat” — backend-ul și inbox-ul proprietarului pentru mesajele din formularul de contact generic al site-ului publicat au fost livrate (S-2C, piesă suport pentru PLAN-UX §5.2: `POST /api/site-messages` public, rută limitată + honeypot, „Mesaje” pe cardul din dashboard, incluse în exportul GDPR); marcajul formularului per șablon rămâne un task separat.
+
 ## 5. Legal
 
 Privacy / Cookies / Terms lipsesc ca produs complet.

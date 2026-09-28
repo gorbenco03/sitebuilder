@@ -2279,6 +2279,21 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         log('webpublish.seo_files.predeploy_failed', { siteId: site.id, err: e.message }, 'warn');
     }
 
+    // 5d. S-2C: fill data-site-messages-api/data-site-slug on every
+    // <form data-site-messages-api> the template rendered, using the same
+    // origin resolution the native calendar widget uses (empty = same-
+    // origin /live/<slug>/). A no-op for any template that has no such
+    // form yet. Best-effort — never blocks publish.
+    try {
+        const siteMessages = require('./site-messages.js');
+        siteMessages.injectPublishedHtml(indexPath, {
+            apiBase: siteMessages.resolveMessagesApiBase(),
+            slug: slugForUrl,
+        });
+    } catch (e) {
+        log('webpublish.site_messages.inject_failed', { siteId: site.id, err: e.message }, 'warn');
+    }
+
     // 6. Deploy
     let url;
     let deployProvider;

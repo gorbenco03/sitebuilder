@@ -32,7 +32,7 @@
  * Object.values() gave the JSON backend for free.
  */
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 const SCHEMA_SQL_V1 = `
 CREATE TABLE IF NOT EXISTS users (
@@ -170,10 +170,31 @@ const SCHEMA_SQL_V3 = `
 ALTER TABLE versions ADD COLUMN published INTEGER NOT NULL DEFAULT 0;
 `;
 
+/**
+ * S-2C (PLAN-UX §5.2 supporting piece): site contact-form messages. One row
+ * per submission of a published site's generic contact form
+ * (`data-site-messages-api`, see bot/site-messages.js). Purely additive —
+ * a new table, no existing row touched. `read_at` NULL means unread; the
+ * owner dashboard's "Mesaje" badge counts rows where it is NULL.
+ */
+const SCHEMA_SQL_V4 = `
+CREATE TABLE IF NOT EXISTS site_messages (
+    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT NOT NULL UNIQUE,
+    site_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    contact TEXT NOT NULL,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    read_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_site_messages_site_id_seq ON site_messages(site_id, seq);
+`;
+
 // SCHEMA_SQL is the union applied to a brand-new database. Kept as a
 // separate name (matching the bot/calendar-native/db.js migration pattern)
-// so a v4 can be added later without changing the shape of migrate().
-const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3;
+// so a v5 can be added later without changing the shape of migrate().
+const SCHEMA_SQL = SCHEMA_SQL_V1 + '\n' + SCHEMA_SQL_V2 + '\n' + SCHEMA_SQL_V3 + '\n' + SCHEMA_SQL_V4;
 
 module.exports = {
     SCHEMA_VERSION,
@@ -181,4 +202,5 @@ module.exports = {
     SCHEMA_SQL_V1,
     SCHEMA_SQL_V2,
     SCHEMA_SQL_V3,
+    SCHEMA_SQL_V4,
 };
