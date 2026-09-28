@@ -2501,6 +2501,44 @@ body.details-drawer-open .demo-content-banner {
 
 .success-actions { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
 
+/* U-01: a discreet third link (not a full-width button) so a route to the
+   dashboard doesn't compete visually with the two real primary actions
+   above it (WhatsApp share / back to editor). Same >=44px tap-target floor
+   as every other modal control, via padding rather than height. */
+.modal-link-quiet {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 0.6rem 0.25rem;
+  cursor: pointer;
+  align-self: center;
+}
+.modal-link-quiet:hover { color: var(--text); }
+
+/* U-01: two-button confirm row for the window.confirm() replacement
+   modals (logout-everywhere, cancel-subscription) — stacked full-width,
+   same pattern as .success-actions above. */
+.modal-confirm-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.85rem; }
+
+/* U-01: the delete-site modal's "subscription still active" notice — reuses
+   the dunning-banner warning palette (same "account needs attention before
+   you can continue" meaning) instead of a third color scheme. */
+.modal-notice--warning {
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #F3D9A8;
+  background: var(--warning-bg);
+  color: #92600A;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.modal-notice--warning p { margin: 0 0 0.5rem; }
+.modal-notice--warning .btn-ghost { border-color: #E0B876; }
+
 /* Wide modal */
 .modal-box--wide {
   max-width: none; width: 100%; height: 100%;
@@ -2575,18 +2613,23 @@ body.details-drawer-open .demo-content-banner {
 
 /* Versions list */
 .versions-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.75rem; max-height: 360px; overflow-y: auto; }
+/* U-01: column layout so an optional description line (business name +
+   tagline snippet at that version) can sit under the date/label/restore row
+   without disturbing that row's own alignment. */
 .version-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 0.3rem;
   padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 0.84rem;
-  gap: 0.5rem;
   background: var(--bg);
 }
+.version-item-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
 .version-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.version-label { font-size: .76rem; color: var(--text-light); flex: 1; padding: 0 .5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-item-desc { font-size: .74rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ============================================================
    CUSTOM DOMAIN MODAL (Wave 8 — self-serve BYO domain, audit #47)

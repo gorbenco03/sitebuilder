@@ -7120,8 +7120,10 @@ function updateUserUI(user) {
 }
 
 /**
- * gap-cross-account-draft-leak-depth: called by doLogout()/doLogoutEverywhere()
- * BEFORE currentUser is cleared (it needs to still know WHOSE data to
+ * gap-cross-account-draft-leak-depth: called by doLogout()/
+ * confirmLogoutEverywhere() (U-01: the former doLogoutEverywhere() split
+ * into openLogoutEverywhereModal()/confirmLogoutEverywhere() — own modal,
+ * not window.confirm()) BEFORE currentUser is cleared (it needs to still know WHOSE data to
  * remove). Deletes every local draft record — every scope, the legacy
  * mirror, and the "replaced design" slot — stamped to the account that is
  * signing out here, and resets this tab's own in-memory editor state so a
@@ -7197,18 +7199,29 @@ async function doLogout() {
  * account, not just the current browser (Wave 8 / AUDIT-07 re-audit). Meant
  * for the case where the account's magic-link email may have been read by
  * someone else: one click ends every device's access, not only this one.
+ *
+ * U-01 (PLAN-UX-2026-09-27 §3): opens the product's own modal instead of
+ * window.confirm() — same open/close contract (Esc, backdrop, 44px X, focus
+ * trap/return) as every other modal, via the shared openModal()/closeModal().
+ * `opener`: same reasoning as openDeleteAccountModal() — the real trigger is
+ * a dropdown item whose containing menu the caller already closed (hidden)
+ * before calling this, so callers pass the still-visible menu TOGGLE button.
  */
-async function doLogoutEverywhere() {
-  const confirmed = window.confirm(
-    'Sigur vrei să te deconectezi de pe toate telefoanele și calculatoarele conectate la acest cont?'
-  );
-  if (!confirmed) return;
+function openLogoutEverywhereModal(opener) {
+  openModal('modal-logout-everywhere', opener);
+}
+
+async function confirmLogoutEverywhere() {
+  const confirmBtn = $('btn-confirm-logout-everywhere');
+  if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se deconectează…');
   clearOwnedLocalDraftState();
   try { await fetch('/api/auth/logout-everywhere', { method: 'POST', credentials: 'include' }); } catch (_) {}
+  closeModal('modal-logout-everywhere');
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
   showToast('Te-ai deconectat de pe toate dispozitivele.', '', 3000);
   window.location.hash = '#templates';
+  if (confirmBtn) setBtnLoading(confirmBtn, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -7325,7 +7338,7 @@ function hideResumePublishBanner() {
 }
 
 /** SESS-02: tell every OTHER tab of this browser "this account just signed
- * out here" — doLogout()/doLogoutEverywhere() call this after clearing
+ * out here" — doLogout()/confirmLogoutEverywhere() call this after clearing
  * their own state. A plain localStorage write is enough: the `storage`
  * event fires in every other same-origin tab (never this one), which is
  * exactly the audience that needs to know. */
@@ -8161,8 +8174,10 @@ async function completeTestCheckout(sessionId) {
     clearPreviewOverlays();
     if (site && isLiveSiteUrl(site.url)) {
       sitePaymentUrl = null;
+      // U-01 (PLAN-UX-2026-09-27 §3): modal-success already says "Site-ul
+      // tău e live" — a toast repeating the same event on top of it was a
+      // double notification, not a second, different one.
       showSuccessScreen(site.publicUrl || site.url, null);
-      showToast('Trial început. Site-ul tău e live.', 'success', 6000);
     } else if (site && site.paid) {
       try {
         const fresh = await apiGet('/api/sites/' + encodeURIComponent(site.id));
@@ -8170,11 +8185,9 @@ async function completeTestCheckout(sessionId) {
         if (s && isLiveSiteUrl(s.url)) {
           publishedSiteUrl = s.publicUrl || s.url;
           showSuccessScreen(s.publicUrl || s.url, null);
-          showToast('Trial început. Site-ul tău e live.', 'success', 6000);
         } else if (s && s.url) {
           publishedSiteUrl = s.publicUrl || s.url;
           showSuccessScreen(s.publicUrl || s.url, null);
-          showToast('Trial început. Site-ul tău e live.', 'success', 6000);
         } else {
           showToast('Trial început. Publicarea se finalizează în câteva momente.', 'success', 6000);
         }
@@ -8792,7 +8805,18 @@ async function loadDashboard() {
     }
 
     list.innerHTML = '';
-    sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
+    // U-01 (PLAN-UX-2026-09-27 §3): GET /api/sites has no ORDER BY in either
+    // registry backend, so the list came back in raw insertion order (oldest
+    // first) — the newest site an owner just created was buried at the
+    // bottom. createdAt is the one timestamp both backends actually stamp
+    // on every site (no updatedAt/lastPublishedAt field exists yet); sort by
+    // it, newest first, without waiting on a registry schema change.
+    const sitesNewestFirst = sites.slice().sort((a, b) => {
+      const ta = Date.parse(a && a.createdAt) || 0;
+      const tb = Date.parse(b && b.createdAt) || 0;
+      return tb - ta;
+    });
+    sitesNewestFirst.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
       list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
@@ -9019,32 +9043,14 @@ function buildSiteCard(site) {
     });
     actions.appendChild(reactivateBtn);
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
-    // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract)
+    // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract).
+    // U-01: opens the product's own modal instead of window.confirm() —
+    // see openCancelSubscriptionModal()/confirmCancelSubscription() below.
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'btn-ghost btn-sm';
     cancelBtn.textContent = 'Anulează';
     cancelBtn.setAttribute('aria-label', 'Anulează abonamentul pentru ' + (site.projectName || site.slug || 'acest site'));
-    cancelBtn.addEventListener('click', async () => {
-      const projectLabel = site.projectName || site.slug || 'acest site';
-      const confirmed = window.confirm(
-        'Sigur vrei să anulezi abonamentul pentru „' + projectLabel + '”? Site-ul nu va mai fi public după confirmare.'
-      );
-      if (!confirmed) return;
-      try {
-        setBtnLoading(cancelBtn, true, 'Se deschide…');
-        const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
-        const portalUrl = data.portalUrl || data.url;
-        if (portalUrl) {
-          window.location.href = portalUrl;
-        } else {
-          showToast('Portalul de facturare nu este disponibil acum.', 'error');
-        }
-      } catch (e) {
-        showToast('Eroare: ' + e.message, 'error');
-      } finally {
-        setBtnLoading(cancelBtn, false);
-      }
-    });
+    cancelBtn.addEventListener('click', () => openCancelSubscriptionModal(site, cancelBtn));
     actions.appendChild(cancelBtn);
   }
 
@@ -9194,8 +9200,11 @@ function buildSiteCard(site) {
   // cleanup just as much as a cancelled one. Server enforces the real
   // refusal rules (active subscription / future bookings); this button only
   // opens the confirm-by-typing-the-name modal.
+  // U-01: distinct danger style — every other card action used the same
+  // btn-ghost as this one, so the one irreversible action on the card
+  // looked exactly as safe as "Editează" or "Istoric".
   const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'btn-ghost btn-sm';
+  deleteBtn.className = 'btn-danger btn-sm';
   deleteBtn.textContent = 'Șterge';
   deleteBtn.setAttribute('aria-label', 'Șterge definitiv site-ul ' + (site.projectName || site.slug || ''));
   deleteBtn.addEventListener('click', () => openDeleteSiteModal(site));
@@ -9208,11 +9217,81 @@ function buildSiteCard(site) {
 }
 
 // ---------------------------------------------------------------------------
+// 22c2. Cancel subscription (own modal, not window.confirm — U-01)
+// ---------------------------------------------------------------------------
+
+/** Same "is this site actively billed" test the card already used to decide
+ * whether to show its "Anulează" button at all — reused here so the
+ * delete-site modal's gate can never disagree with what the card shows. */
+function siteHasActiveSubscription(site) {
+  return !!(site && site.paid && (site.status === 'live' || site.status === 'active'));
+}
+
+let cancelSubscriptionModalSite = null;
+
+/**
+ * U-01 (PLAN-UX-2026-09-27 §3): replaces window.confirm() with the
+ * product's own modal, explaining what the bare native dialog did not —
+ * access stops immediately, no partial refund, reactivate anytime.
+ */
+function openCancelSubscriptionModal(site, opener) {
+  cancelSubscriptionModalSite = site;
+  const nameEl = $('cancel-subscription-name');
+  if (nameEl) nameEl.textContent = site.projectName || site.slug || 'acest site';
+  const errEl = $('cancel-subscription-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  openModal('modal-cancel-subscription', opener);
+}
+
+async function confirmCancelSubscription() {
+  const site = cancelSubscriptionModalSite;
+  if (!site) return;
+  const confirmBtn = $('btn-confirm-cancel-subscription');
+  const errEl = $('cancel-subscription-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  try {
+    if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se deschide…');
+    const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/billing-portal', {});
+    const portalUrl = data.portalUrl || data.url;
+    if (portalUrl) {
+      // Real Stripe portal URLs are a full off-app navigation, which tears
+      // the whole page (and this modal) down on its own. The offline
+      // HIDOOK_TEST_PAY portal is a same-app hash (#test-billing-portal),
+      // which does NOT reload — close this modal explicitly first, or it
+      // stays visibly open (and still intercepting clicks) behind whatever
+      // the hash change routes to next.
+      closeModal('modal-cancel-subscription');
+      window.location.href = portalUrl;
+    } else if (errEl) {
+      errEl.textContent = 'Portalul de facturare nu este disponibil acum.';
+      errEl.style.display = '';
+    }
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = e.fromServer ? e.message : 'Eroare: ' + e.message;
+      errEl.style.display = '';
+    }
+  } finally {
+    if (confirmBtn) setBtnLoading(confirmBtn, false);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 22d. Delete site (permanent — not cancel/unpublish)
 // ---------------------------------------------------------------------------
 
 let deleteSiteModalSite = null;
 
+/**
+ * U-01 (PLAN-UX-2026-09-27 §3): the "Anulează abonamentul" alternative now
+ * shows BEFORE the typed-confirmation field (not after it), and "Șterge
+ * definitiv" is disabled — with the reason visible, not just a disabled
+ * button — for as long as the site's subscription is active. The server
+ * (handleDeleteSite) already refuses this case with a 409; this only stops
+ * an owner from typing the exact name and hitting a button that was always
+ * going to be refused, without first telling them why or offering the one
+ * action that unblocks it.
+ */
 function openDeleteSiteModal(site) {
   deleteSiteModalSite = site;
   const nameLabel = site.projectName || site.slug || site.id || '';
@@ -9222,6 +9301,9 @@ function openDeleteSiteModal(site) {
   if (input) input.value = '';
   const errEl = $('delete-site-error');
   if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  const hasActiveSub = siteHasActiveSubscription(site);
+  const noticeEl = $('delete-site-subscription-notice');
+  if (noticeEl) noticeEl.style.display = hasActiveSub ? '' : 'none';
   const confirmBtn = $('btn-confirm-delete-site');
   if (confirmBtn) confirmBtn.disabled = true;
   openModal('modal-delete-site');
@@ -9525,10 +9607,19 @@ async function loadVersions(siteId) {
       const dateStr = d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
       const verNum = versionsSorted.length - idx;
       const label = 'Versiunea ' + verNum;
+      // U-01 (PLAN-UX-2026-09-27 §3): rows used to say only "Versiunea N" —
+      // no way to tell which one had what content before restoring it.
+      // `description` (business name + start of tagline at that point in
+      // time) comes from GET .../versions when the server has it; an older
+      // version pushed before that field existed simply has none.
+      const description = String((v && v.description) || '').trim();
       item.innerHTML = `
-        <span class="version-date">${escHtml(dateStr)}</span>
-        <span style="font-size:.76rem;color:var(--text-light);flex:1;padding:0 .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(label)}</span>
-        <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restabilește</button>`;
+        <div class="version-item-row">
+          <span class="version-date">${escHtml(dateStr)}</span>
+          <span class="version-label">${escHtml(label)}</span>
+          <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restabilește</button>
+        </div>
+        ${description ? `<div class="version-item-desc">${escHtml(description)}</div>` : ''}`;
       item.querySelector('.btn-rollback').addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         setBtnLoading(btn, true, 'Se restabilește…');
@@ -10344,6 +10435,24 @@ function wireStaticButtons() {
   wireModalClose('btn-close-invoices', 'modal-invoices');
   wireModalClose('btn-close-delete-site', 'modal-delete-site');
   wireModalClose('btn-close-delete-account', 'modal-delete-account');
+  // U-01: window.confirm() replacements — same modal-close contract as
+  // every other modal above.
+  wireModalClose('btn-close-logout-everywhere', 'modal-logout-everywhere');
+  wireModalClose('btn-close-cancel-subscription', 'modal-cancel-subscription');
+  const logoutEverywhereDismissBtn = $('btn-dismiss-logout-everywhere');
+  if (logoutEverywhereDismissBtn) logoutEverywhereDismissBtn.addEventListener('click', () => closeModal('modal-logout-everywhere'));
+  const logoutEverywhereConfirmBtn = $('btn-confirm-logout-everywhere');
+  if (logoutEverywhereConfirmBtn) logoutEverywhereConfirmBtn.addEventListener('click', confirmLogoutEverywhere);
+  const cancelSubscriptionDismissBtn = $('btn-dismiss-cancel-subscription');
+  if (cancelSubscriptionDismissBtn) cancelSubscriptionDismissBtn.addEventListener('click', () => closeModal('modal-cancel-subscription'));
+  const cancelSubscriptionConfirmBtn = $('btn-confirm-cancel-subscription');
+  if (cancelSubscriptionConfirmBtn) cancelSubscriptionConfirmBtn.addEventListener('click', confirmCancelSubscription);
+  const deleteSiteCancelAltBtn = $('btn-delete-site-cancel-alt');
+  if (deleteSiteCancelAltBtn) deleteSiteCancelAltBtn.addEventListener('click', () => {
+    const site = deleteSiteModalSite;
+    closeModal('modal-delete-site');
+    if (site) openCancelSubscriptionModal(site, deleteSiteCancelAltBtn);
+  });
 
   // Delete-site confirm: the button stays disabled until the typed text
   // matches the site's own name exactly — the server re-checks this too
@@ -10353,7 +10462,11 @@ function wireStaticButtons() {
   const deleteConfirmBtn = $('btn-confirm-delete-site');
   if (deleteConfirmInput && deleteConfirmBtn) {
     deleteConfirmInput.addEventListener('input', () => {
-      deleteConfirmBtn.disabled = deleteConfirmInput.value.trim() !== expectedDeleteSiteName();
+      // U-01: an exact name match is never enough on its own — the button
+      // stays disabled the whole time a subscription is still active.
+      const nameMatches = deleteConfirmInput.value.trim() === expectedDeleteSiteName();
+      const blockedByActiveSub = siteHasActiveSubscription(deleteSiteModalSite);
+      deleteConfirmBtn.disabled = !nameMatches || blockedByActiveSub;
     });
   }
   if (deleteConfirmBtn) {
@@ -10378,6 +10491,17 @@ function wireStaticButtons() {
   const successCloseBtn = $('btn-success-close');
   if (successCloseBtn) {
     successCloseBtn.addEventListener('click', returnToEditor);
+  }
+
+  // U-01 (PLAN-UX-2026-09-27 §3): the only explicit path out of the success
+  // modal used to be back into the editor — no link to the dashboard where
+  // this and every other site actually live.
+  const successViewSitesBtn = $('btn-success-view-sites');
+  if (successViewSitesBtn) {
+    successViewSitesBtn.addEventListener('click', () => {
+      closeModal('modal-success');
+      window.location.hash = '#dashboard';
+    });
   }
 
   // Preview modal device toggle
@@ -10522,9 +10646,17 @@ function wireStaticButtons() {
   const acctLogoutBtn = $('account-menu-logout');
   if (acctLogoutBtn) acctLogoutBtn.addEventListener('click', () => { closeAccountMenu(); doLogout(); });
   const acctLogoutAllBtn = $('account-menu-logout-all');
-  if (acctLogoutAllBtn) acctLogoutAllBtn.addEventListener('click', () => { closeAccountMenu(); doLogoutEverywhere(); });
+  if (acctLogoutAllBtn) acctLogoutAllBtn.addEventListener('click', () => {
+    const opener = $('btn-account-menu');
+    closeAccountMenu();
+    openLogoutEverywhereModal(opener);
+  });
   const acctLogoutAllHeaderBtn = $('account-menu-header-logout-all');
-  if (acctLogoutAllHeaderBtn) acctLogoutAllHeaderBtn.addEventListener('click', () => { closeAccountMenu(); doLogoutEverywhere(); });
+  if (acctLogoutAllHeaderBtn) acctLogoutAllHeaderBtn.addEventListener('click', () => {
+    const opener = $('btn-account-menu-header');
+    closeAccountMenu();
+    openLogoutEverywhereModal(opener);
+  });
 
   // R-27 (auth-account#3): "Descarcă datele mele" / "Șterge contul" — wired
   // identically for both the editor-topbar and the header copies of the menu.

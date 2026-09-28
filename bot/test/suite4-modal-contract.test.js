@@ -290,6 +290,17 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       return toggleBtn;
     }
 
+    // modal-logout-everywhere (U-01, PLAN-UX-2026-09-27 §3): same dropdown-
+    // item-hides-its-own-menu situation as modal-delete-account above, so
+    // the same toggle-button-as-opener pattern applies here.
+    async function openLogoutEverywhereModal() {
+      const toggleBtn = await page.locator('#btn-account-menu-header').elementHandle();
+      await page.locator('#btn-account-menu-header').click();
+      await page.locator('#account-menu-header-logout-all').waitFor({ state: 'visible' });
+      await page.locator('#account-menu-header-logout-all').click({ timeout: 8000 });
+      return toggleBtn;
+    }
+
     // -----------------------------------------------------------------
     // modal-preview: real trigger is the landing page's "Previzualizare".
     // Must run before a template is picked (the trigger only exists there).
@@ -398,6 +409,18 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await contractCheck('versions', 'modal-versions', 'btn-close-versions', () => clickAndHandle(card.locator('button', { hasText: 'Istoric' })));
     await contractCheck('domain', 'modal-domain', 'btn-close-domain', () => clickAndHandle(card.locator('button', { hasText: 'Domeniu' })));
     await contractCheck('invoices', 'modal-invoices', 'btn-close-invoices', () => clickAndHandle(card.locator('button', { hasText: 'Facturi' })));
+    // modal-cancel-subscription (U-01): real trigger is the card's own
+    // "Anulează" button (subscription still active — same site, straight
+    // from checkout above). contractCheck never clicks the modal's own
+    // "Anulează abonamentul" confirm button, so billing state is untouched
+    // and the later delete-site check below still finds an active
+    // subscription (its own point, see that check's comment).
+    await contractCheck('cancel-subscription', 'modal-cancel-subscription', 'btn-close-cancel-subscription', () => clickAndHandle(card.locator('button', { hasText: 'Anulează' })));
+    // modal-logout-everywhere (U-01): same dropdown-hides-its-trigger
+    // situation as modal-delete-account below — contractCheck never clicks
+    // "Deconectează-mă de pe toate", so the signed-in session this whole
+    // dashboard section depends on survives into the next checks.
+    await contractCheck('logout-everywhere', 'modal-logout-everywhere', 'btn-close-logout-everywhere', openLogoutEverywhereModal);
     // modal-delete-account (R-27, GDPR "Șterge contul definitiv"): same
     // never-actually-confirms-anything property as delete-site below —
     // contractCheck never fills the email-confirm input or clicks
@@ -405,7 +428,12 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     // dashboard section depends on survives into the next check.
     await contractCheck('delete-account', 'modal-delete-account', 'btn-close-delete-account', openAccountDeleteModal);
     // Delete-site last: contractCheck never fills the confirm input or
-    // clicks the confirm button, so nothing is actually deleted.
+    // clicks the confirm button, so nothing is actually deleted. The
+    // subscription is still active at this point (see cancel-subscription
+    // check above), so this instance also exercises the U-01
+    // delete-site-subscription-notice branch — its extra "Anulează
+    // abonamentul" button is just one more focusable element inside the
+    // modal, already covered by the generic focus-trap check above.
     await contractCheck('delete-site', 'modal-delete-site', 'btn-close-delete-site', () => clickAndHandle(card.locator('button', { hasText: 'Șterge' })));
 
     // -----------------------------------------------------------------

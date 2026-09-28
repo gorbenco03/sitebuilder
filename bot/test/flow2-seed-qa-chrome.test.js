@@ -650,14 +650,28 @@ check('gallery replace-photo control owns the top hit target', () => {
 });
 
 check('cabinet cancellation requires explicit Romanian confirmation', () => {
+    // U-01 (PLAN-UX-2026-09-27 §3): window.confirm() replaced by the
+    // product's own modal — the click handler itself now only OPENS that
+    // modal; the actual billing-portal call moved into a separate function
+    // (confirmCancelSubscription) reachable only from the modal's own
+    // confirm button, so the same "confirmation before portal" contract
+    // this check locks now lives structurally instead of via a bare
+    // window.confirm() string.
     const cancelHandler = appSrc.match(/cancelBtn\.addEventListener\('click',[\s\S]*?actions\.appendChild\(cancelBtn\)/);
     assert.ok(cancelHandler, 'cancel button handler exists');
-    const source = cancelHandler[0];
-    const confirmAt = source.indexOf('window.confirm(');
-    const portalAt = source.indexOf('/billing-portal');
-    assert.ok(confirmAt >= 0, 'cancel button has no explicit confirmation');
-    assert.ok(portalAt > confirmAt, 'billing portal is reached before confirmation');
-    assert.ok(/Sigur|confirm|anulezi|anularea/i.test(source), 'confirmation copy is not understandable Romanian');
+    const handlerSrc = cancelHandler[0];
+    assert.ok(/openCancelSubscriptionModal\(/.test(handlerSrc), 'cancel button opens the product\'s own confirmation modal');
+    assert.ok(!/\/billing-portal/.test(handlerSrc), 'cancel button must not reach billing-portal directly — confirmation happens first, in the modal');
+
+    const confirmFn = extractFunction(appSrc, 'confirmCancelSubscription');
+    assert.ok(confirmFn, 'confirmCancelSubscription() exists');
+    assert.ok(confirmFn.includes('/billing-portal'), 'billing portal is only reached from the modal\'s own confirm action');
+
+    const modalStart = indexHtml.indexOf('id="modal-cancel-subscription"');
+    assert.ok(modalStart >= 0, 'modal-cancel-subscription markup exists');
+    const nextCommentAt = indexHtml.indexOf('<!-- =====', modalStart + 1);
+    const modalMarkup = indexHtml.slice(modalStart, nextCommentAt === -1 ? modalStart + 2000 : nextCommentAt);
+    assert.ok(/Sigur|confirm|anulezi|anularea/i.test(modalMarkup), 'confirmation copy is not understandable Romanian');
 });
 
 check('all five Details schemas use the Romanian preview hint', () => {

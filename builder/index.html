@@ -577,6 +577,7 @@
         Trimite pe WhatsApp
       </button>
       <button id="btn-success-close" class="btn-ghost btn-full" type="button">Înapoi la editor</button>
+      <button id="btn-success-view-sites" class="modal-link-quiet" type="button">Vezi Site-urile mele</button>
     </div>
   </div>
 </div>
@@ -703,6 +704,14 @@
     <button class="modal-close" id="btn-close-delete-site" aria-label="Închide">&times;</button>
     <h2 id="modal-delete-site-title" class="modal-title">Șterge definitiv site-ul</h2>
     <p class="modal-sub">Această acțiune este ireversibilă: se șterge site-ul publicat, ciornele, domeniul propriu conectat și datele de programări. Ca să confirmi, scrie exact numele site-ului: <strong id="delete-site-name"></strong></p>
+    <!-- U-01: the "Anulează abonamentul" alternative, and the reason
+         "Șterge definitiv" is disabled, shown BEFORE the typed-confirmation
+         field — not discovered only after typing the exact name. Hidden by
+         openDeleteSiteModal() when the site has no active subscription. -->
+    <div id="delete-site-subscription-notice" class="modal-notice--warning" style="display:none">
+      <p>Acest site are un abonament activ, așa că „Șterge definitiv” e dezactivat mai jos. Anulează mai întâi abonamentul — site-ul iese din vânzare imediat — apoi te poți întoarce aici ca să-l ștergi definitiv.</p>
+      <button class="btn-ghost btn-sm" type="button" id="btn-delete-site-cancel-alt">Anulează abonamentul</button>
+    </div>
     <div class="field-group">
       <label class="field-label" for="input-delete-confirm">Numele site-ului</label>
       <input id="input-delete-confirm" class="field-input" type="text" autocomplete="off" spellcheck="false" />
@@ -724,6 +733,33 @@
     </div>
     <div id="delete-account-error" class="field-error" role="alert" style="display:none"></div>
     <button class="btn-danger btn-full" type="button" id="btn-confirm-delete-account" disabled>Șterge contul definitiv</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: LOGOUT EVERYWHERE (U-01 — own modal, not window.confirm) ===== -->
+<div id="modal-logout-everywhere" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-logout-everywhere-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-logout-everywhere" aria-label="Închide">&times;</button>
+    <h2 id="modal-logout-everywhere-title" class="modal-title">Deconectare de pe toate dispozitivele</h2>
+    <p class="modal-sub">Sigur vrei să te deconectezi de pe toate telefoanele și calculatoarele conectate la acest cont?</p>
+    <div class="modal-confirm-actions">
+      <button class="btn-primary btn-full" type="button" id="btn-confirm-logout-everywhere">Deconectează-mă de pe toate</button>
+      <button class="btn-ghost btn-full" type="button" id="btn-dismiss-logout-everywhere">Renunță</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CANCEL SUBSCRIPTION (U-01 — own modal, not window.confirm) ===== -->
+<div id="modal-cancel-subscription" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-cancel-subscription-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-cancel-subscription" aria-label="Închide">&times;</button>
+    <h2 id="modal-cancel-subscription-title" class="modal-title">Anulează abonamentul</h2>
+    <p class="modal-sub">Sigur vrei să anulezi abonamentul pentru <strong id="cancel-subscription-name"></strong>? Site-ul iese din vânzare imediat, fără nicio rambursare parțială pentru perioada rămasă — dar poți reactiva oricând mai târziu.</p>
+    <div id="cancel-subscription-error" class="field-error" role="alert" style="display:none"></div>
+    <div class="modal-confirm-actions">
+      <button class="btn-danger btn-full" type="button" id="btn-confirm-cancel-subscription">Anulează abonamentul</button>
+      <button class="btn-ghost btn-full" type="button" id="btn-dismiss-cancel-subscription">Renunță</button>
+    </div>
   </div>
 </div>
 

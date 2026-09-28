@@ -181,29 +181,35 @@ async function run() {
     await card.first().waitFor({ state: 'visible', timeout: 10000 });
     await shot(page1, 'dashboard-with-site');
 
-    // A freshly test-paid site has an active subscription — the "Șterge"
-    // button must still open the modal, but the server must REFUSE the
-    // delete (409 ACTIVE_SUBSCRIPTION) rather than silently succeed. Prove
-    // that live, through the real UI, before cancelling and deleting for real.
+    // A freshly test-paid site has an active subscription. U-01
+    // (PLAN-UX-2026-09-27 §3): "Șterge definitiv" now stays disabled the
+    // whole time that is true — with the reason, and the "Anulează
+    // abonamentul" alternative, shown ABOVE the typed-confirmation field —
+    // instead of letting an owner type the exact name and hit a button that
+    // was always going to be refused server-side. Prove that live through
+    // the real UI, then use that same in-modal alternative to cancel before
+    // deleting for real (replaces the old flow, which typed the name,
+    // clicked the always-enabled button, and asserted on the server's 409).
     await card.first().locator('button', { hasText: 'Șterge' }).click();
     await page1.locator('#modal-delete-site').waitFor({ state: 'visible' });
+    const subscriptionNotice = page1.locator('#delete-site-subscription-notice');
+    await subscriptionNotice.waitFor({ state: 'visible', timeout: 5000 });
     await page1.locator('#input-delete-confirm').fill(slug1);
     await page1.waitForTimeout(150);
     await shot(page1, 'delete-modal-active-subscription-before-refusal');
-    await page1.locator('#btn-confirm-delete-site').click();
-    const refusalError = page1.locator('#delete-site-error');
-    await refusalError.waitFor({ state: 'visible', timeout: 10000 });
-    const refusalText = await refusalError.innerText();
-    assertOracle(/abonament activ/i.test(refusalText), 'active-subscription refusal shown in the modal', refusalText);
-    await shot(page1, 'delete-modal-active-subscription-refused');
+    const disabledWhileActive = await page1.locator('#btn-confirm-delete-site').isDisabled();
+    assertOracle(disabledWhileActive, '"Șterge definitiv" stays disabled while the subscription is active');
     assertOracle(!!registry.getSite(siteId1), 'site NOT deleted while its subscription is active');
-    await page1.locator('#btn-close-delete-site').click();
-    await page1.locator('#modal-delete-site').waitFor({ state: 'hidden', timeout: 5000 });
+    await shot(page1, 'delete-modal-active-subscription-refused');
 
-    // Cancel first (the existing "Anulează" → billing-portal flow), same as
-    // a real owner would have to before the site becomes deletable.
-    page1.once('dialog', (d) => d.accept());
-    await card.first().locator('button', { hasText: 'Anulează' }).click();
+    // The modal's own "Anulează abonamentul" alternative — the whole point
+    // of showing it before the confirm field: no need to close this modal
+    // and go find the card's separate "Anulează" button. It opens the U-01
+    // cancel-subscription modal (own modal, not window.confirm()).
+    await page1.locator('#btn-delete-site-cancel-alt').click();
+    await page1.locator('#modal-cancel-subscription').waitFor({ state: 'visible' });
+    await shot(page1, 'cancel-subscription-modal-open');
+    await page1.locator('#btn-confirm-cancel-subscription').click();
     await page1.waitForURL(/#(test-billing-portal|dashboard)/, { timeout: 10000 });
     await page1.waitForTimeout(500);
     const cancelledSite = registry.getSite(siteId1);
@@ -299,9 +305,34 @@ async function run() {
     await card2.first().waitFor({ state: 'visible', timeout: 10000 });
     await shot(page2, 'mobile-dashboard-with-site');
 
+    // webpublish.publishSite() above set status:'live' — this seeded site
+    // also has an active subscription (U-01, PLAN-UX-2026-09-27 §3), same
+    // as the desktop pass's freshly-checked-out site: cancel through the
+    // delete-site modal's own "Anulează abonamentul" alternative first.
     await card2.first().locator('button', { hasText: 'Șterge' }).click();
     await page2.locator('#modal-delete-site').waitFor({ state: 'visible' });
     await shot(page2, 'mobile-delete-modal-open');
+    assertOracle(
+      await page2.locator('#delete-site-subscription-notice').isVisible(),
+      'mobile: subscription notice visible while the seeded site is still active'
+    );
+    await page2.locator('#btn-delete-site-cancel-alt').click();
+    await page2.locator('#modal-cancel-subscription').waitFor({ state: 'visible' });
+    await shot(page2, 'mobile-cancel-subscription-modal-open');
+    await page2.locator('#btn-confirm-cancel-subscription').click();
+    await page2.waitForURL(/#(test-billing-portal|dashboard)/, { timeout: 10000 });
+    await page2.waitForTimeout(500);
+    const cancelledSite2 = registry.getSite(site2.id);
+    assertOracle(cancelledSite2 && cancelledSite2.status === 'unpublished', 'mobile: cancel unpublished the site before delete', JSON.stringify(cancelledSite2));
+    await page2.evaluate(() => { window.location.hash = '#dashboard'; });
+    await page2.waitForTimeout(500);
+
+    const card2AfterCancel = page2.locator('.site-card', { hasText: slug2.replace(/-/g, '‑') });
+    await card2AfterCancel.first().waitFor({ state: 'visible', timeout: 10000 });
+
+    await card2AfterCancel.first().locator('button', { hasText: 'Șterge' }).click();
+    await page2.locator('#modal-delete-site').waitFor({ state: 'visible' });
+    await shot(page2, 'mobile-delete-modal-reopen-after-cancel');
 
     await page2.locator('#input-delete-confirm').fill('gresit');
     await page2.waitForTimeout(150);
