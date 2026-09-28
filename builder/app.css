@@ -3431,6 +3431,7 @@ body.editor-preview-cookie-isolated .toast {
   .onb-box { padding: 1.25rem; max-width: none; }
   .onb-type-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
   .onb-type-card { padding: 0.7rem 0.75rem; }
+}
 
 /* ============================================================
    PLAN-UX §5.4 (S-4) — mobile editing, first-class
