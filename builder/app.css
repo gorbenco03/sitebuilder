@@ -3185,3 +3185,60 @@ body.editor-preview-cookie-isolated .toast {
 @media (max-width: 640px) {
   .checklist-menu { left: 0.75rem !important; right: 0.75rem !important; width: auto !important; max-width: none; }
 }
+
+/* ============================================================
+   PLAN-UX-2026-09-27 §5.5/§5.7 — publish checklist (builder/index.html,
+   builder/publish-checklist.js). Advisory only: pending rows read amber
+   like the topbar pill's own warning state, never as an error.
+   ============================================================ */
+.publish-checklist {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  padding: 0.7rem 0.8rem;
+  margin: 0.9rem 0;
+}
+.publish-checklist-heading {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+.publish-checklist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.publish-checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.publish-checklist-icon {
+  flex-shrink: 0;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.publish-checklist-item.is-done .publish-checklist-icon { background: var(--success-bg); }
+.publish-checklist-item.is-done .publish-checklist-icon::after { content: '✓'; color: var(--success); font-size: 0.68rem; font-weight: 700; }
+.publish-checklist-item.is-pending .publish-checklist-icon { background: var(--warning-bg); }
+.publish-checklist-item.is-pending .publish-checklist-icon::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+.publish-checklist-item.is-done .publish-checklist-label { color: var(--text-muted); }
+.publish-checklist-label { flex: 1 1 auto; }
+.publish-checklist-fix { flex-shrink: 0; padding: 0.2rem 0.55rem; font-size: 0.76rem; }
+
+/* Same checklist, one line, on an unpublished draft's dashboard card
+   (site-card-info, builder/app.js#buildSiteCard). */
+.site-card-checklist {
+  margin-top: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.site-card-checklist-fix { padding: 0.15rem 0.5rem; font-size: 0.74rem; }

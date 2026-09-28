@@ -1224,10 +1224,15 @@ const PHOTO_FIELD_TYPES = new Set(['image', 'background', 'photos']);
 /** The demo baseline a fresh draft started from — currentTemplate.data's
  * first preset config, the same object startTemplate() seeds draft.config
  * from. Returns null when unavailable (isolated tests, template not loaded
- * yet) so callers can fall back to the old non-empty check. */
-function getDemoPresetConfig() {
-  const tpl = typeof currentTemplate !== 'undefined' ? currentTemplate : null;
-  const data = tpl && tpl.data;
+ * yet) so callers can fall back to the old non-empty check.
+ *
+ * `tplDataOverride` (optional): the same `{presets:[...]}` shape as
+ * currentTemplate.data, for a template that is NOT the one currently open in
+ * the editor — the publish checklist (builder/publish-checklist.js) reads a
+ * dashboard site card's own template this way instead of the active draft's,
+ * so it shares this one function rather than keeping a second copy. */
+function getDemoPresetConfig(tplDataOverride) {
+  const data = tplDataOverride || (typeof currentTemplate !== 'undefined' && currentTemplate && currentTemplate.data);
   const presets = data && Array.isArray(data.presets) ? data.presets : null;
   return (presets && presets[0] && presets[0].config) || null;
 }
@@ -1264,9 +1269,13 @@ function galleryHasRealPhoto(list) {
  * it", and this wave was not asked to make that call — see
  * isFieldGenuinelyMade() below for the honest "did the OWNER do this" check
  * the checklist pill now uses instead.
+ *
+ * `configOverride` (optional): checks that config instead of the active
+ * draft's — same reason as getDemoPresetConfig()'s tplDataOverride, used by
+ * the publish checklist for a dashboard card that isn't the open draft.
  */
-function isFieldComplete(field) {
-  const val = getPath(draft.config, field.key);
+function isFieldComplete(field, configOverride) {
+  const val = getPath(configOverride || draft.config, field.key);
   if (val == null || val === '') return false;
   if (Array.isArray(val) && val.length === 0) return false;
   return true;
@@ -1278,10 +1287,17 @@ function isFieldComplete(field) {
  * isFieldComplete()'s structural check, an identity field must also differ
  * from the demo preset's own value, and a photo field must be a genuine
  * owner upload. Never used to gate publishing — see isFieldComplete().
+ *
+ * `configOverride`/`tplDataOverride` (optional): see isFieldComplete() and
+ * getDemoPresetConfig() — both threaded through unchanged so this stays the
+ * ONE "is this genuinely done" function for both the topbar pill (active
+ * draft, no override) and the publish checklist (an arbitrary site's own
+ * config/template — builder/publish-checklist.js).
  */
-function isFieldGenuinelyMade(field) {
-  if (!isFieldComplete(field)) return false;
-  const val = getPath(draft.config, field.key);
+function isFieldGenuinelyMade(field, configOverride, tplDataOverride) {
+  if (!isFieldComplete(field, configOverride)) return false;
+  const config = configOverride || draft.config;
+  const val = getPath(config, field.key);
 
   if (PHOTO_FIELD_TYPES.has(field.type)) {
     if (field.type === 'photos') return galleryHasRealPhoto(val);
@@ -1289,7 +1305,7 @@ function isFieldGenuinelyMade(field) {
   }
 
   if (isIdentityField(field)) {
-    const preset = getDemoPresetConfig();
+    const preset = getDemoPresetConfig(tplDataOverride);
     if (preset) {
       const demoVal = getPath(preset, field.key);
       if (typeof val === 'string' && typeof demoVal === 'string' && val.trim() === demoVal.trim()) {
@@ -1339,16 +1355,23 @@ function isSameDemoString(val, demoVal) {
  * never matches — getPath/array access on the shorter preset array returns
  * undefined, isSameDemoString() requires a string, so it is correctly never
  * flagged as "still demo".
+ *
+ * `schemaOverride`/`configOverride`/`tplDataOverride` (optional): walk a
+ * site that is NOT the open draft — same convention as isFieldGenuinelyMade()
+ * above, used by builder/publish-checklist.js so the "how many blocks still
+ * carry template sample text" count in the publish modal and the dashboard
+ * card is this exact function, not a second copy of the walk.
  */
-function computeDemoTextPaths() {
-  const schema = currentTemplate && currentTemplate.data && currentTemplate.data.schema;
-  const preset = getDemoPresetConfig();
-  if (!schema || !preset || !draft.config) return [];
+function computeDemoTextPaths(schemaOverride, configOverride, tplDataOverride) {
+  const schema = schemaOverride || (currentTemplate && currentTemplate.data && currentTemplate.data.schema);
+  const preset = getDemoPresetConfig(tplDataOverride);
+  const config = configOverride || draft.config;
+  if (!schema || !preset || !config) return [];
   const out = [];
 
   getAllSchemaFields(schema).forEach((f) => {
     if (f.type === 'list') {
-      const list = getPath(draft.config, f.key);
+      const list = getPath(config, f.key);
       const demoList = getPath(preset, f.key);
       if (!Array.isArray(list) || !Array.isArray(demoList)) return;
 
@@ -1383,7 +1406,7 @@ function computeDemoTextPaths() {
     }
 
     if (!isIdentityField(f)) return;
-    const val = getPath(draft.config, f.key);
+    const val = getPath(config, f.key);
     const demoVal = getPath(preset, f.key);
     if (isSameDemoString(val, demoVal)) out.push(f.key);
   });
@@ -1525,7 +1548,12 @@ function applyQuickstart() {
 function updateChecklist() {
   if (!currentTemplate || !currentTemplate.data || !currentTemplate.data.schema) return;
   const required = getRequiredFields(currentTemplate.data.schema);
-  const done = required.filter(isFieldGenuinelyMade).length;
+  // (f) => isFieldGenuinelyMade(f), not the bare function reference: Array#filter
+  // also passes (index, array) to its callback, and isFieldGenuinelyMade's
+  // now-optional 2nd/3rd params (configOverride/tplDataOverride, added for
+  // builder/publish-checklist.js) would otherwise receive those instead of
+  // being left undefined.
+  const done = required.filter((f) => isFieldGenuinelyMade(f)).length;
   const total = required.length;
   const el = $('checklist-text');
   const ind = $('checklist-indicator');
@@ -7730,6 +7758,10 @@ async function openPublishModal() {
     updateSlugPreview('');
   }
 
+  // PLAN-UX-2026-09-27 §5.5 — advisory checklist, never blocks the publish
+  // flow above this line. builder/publish-checklist.js.
+  if (typeof renderPublishModalChecklist === 'function') renderPublishModalChecklist();
+
   openModal('modal-publish');
 }
 
@@ -9309,6 +9341,14 @@ function buildSiteCard(site) {
   card.appendChild(thumbWrap);
   card.appendChild(info);
   card.appendChild(actions);
+
+  // PLAN-UX-2026-09-27 §5.5 — same checklist count as the publish modal, for
+  // an unpublished draft's own card ("Ciornă" badge — badgeClass computed
+  // above, the exact status this card already shows). builder/publish-checklist.js.
+  if (typeof attachDashboardCardChecklist === 'function' && badgeClass === 'status-draft') {
+    attachDashboardCardChecklist(info, site);
+  }
+
   return card;
 }
 
