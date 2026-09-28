@@ -4680,6 +4680,7 @@ let mobileMoreMenuOpen = false;
 
 const MOBILE_MORE_MENU_ITEMS = [
   { id: 'btn-add-instagram', label: 'Adaugă Instagram' },
+  { id: 'btn-open-add-section', label: 'Adaugă o secțiune' },
   { id: 'btn-color-picker', label: 'Culoare temă' },
   { id: 'btn-download-html', label: 'Descarcă HTML' },
   { id: 'btn-download-zip', label: 'Descarcă ZIP' },
@@ -4925,22 +4926,56 @@ function closeDrawer() {
 // so undo/redo (7b above) covers section add/remove/reorder for free, with
 // no special-casing.
 
+/** One fresh `config.sections` entry for a template's canonical page-section
+ * declaration `s` (templates/<id>/schema.json). An ordinary section starts
+ * visible, exactly as before T-1A. An `addable: true` section (T-1A,
+ * PLAN-UX §5.2 — "Adaugă o secțiune") starts REMOVED: build.js's
+ * reorderSections() already hides any section whose entry has
+ * `removed: true` (and only ever reads `.id`/`.removed` off each entry, so
+ * an extra key changes nothing there), which is what actually keeps an
+ * addable section off the page — both in this preview and on the published
+ * site — until a customer adds it. `addable` itself is a builder-UI-only
+ * concept build.js has never read; `pending: true` is the one extra,
+ * harmless marker that tells buildPageSectionsPanel (below) to keep the
+ * entry OUT of the ordinary reorder/hide list — it must not appear as a
+ * ordinary row, only in the "Adaugă o secțiune" catalog (add-section.js) —
+ * until hidookAddSection() clears it. */
+function pageSectionSeedEntry(s) {
+  return (s && s.addable === true)
+    ? { id: s.id, removed: true, pending: true }
+    : { id: s.id, removed: false };
+}
+
 /** Lazily seed draft.config.sections from the template's canonical list, in
  * memory only (does not call saveDraft()) — so merely opening the drawer
  * never fabricates a history step. Also appends any canonical id the config
- * predates (template gained a section since this site was last saved). */
+ * predates (template gained a section since this site was last saved) —
+ * this is also how a template gaining a brand-new `addable` section shows
+ * up as pending on a site saved before that section existed. */
 function ensurePageSectionsInitialized(schema) {
   if (!schema || !Array.isArray(schema.pageSections) || schema.pageSections.length === 0) return null;
   if (!draft.config) return null;
   if (!Array.isArray(draft.config.sections)) {
-    draft.config.sections = schema.pageSections.map(s => ({ id: s.id, removed: false }));
+    draft.config.sections = schema.pageSections.map(pageSectionSeedEntry);
   } else {
     const known = new Set(draft.config.sections.filter(e => e && e.id).map(e => e.id));
     schema.pageSections.forEach(s => {
-      if (!known.has(s.id)) draft.config.sections.push({ id: s.id, removed: false });
+      if (!known.has(s.id)) draft.config.sections.push(pageSectionSeedEntry(s));
     });
   }
   return draft.config.sections;
+}
+
+/** The subset of `order` (draft.config.sections) that buildPageSectionsPanel
+ * actually renders as a row: every ordinary section, plus any addable
+ * section that has already been added at least once (pending cleared). A
+ * still-pending addable section is deliberately excluded — it lives only in
+ * the "Adaugă o secțiune" catalog until a customer picks it, see
+ * hidookAddSection(). Used for the up/down enable/disable + swap-target
+ * logic too, so a hidden pending entry sitting between two visible rows
+ * never gets treated as a real neighbour. */
+function visiblePageSectionEntries(schema, order) {
+  return order.filter(e => e && e.id && pageSectionDef(schema, e.id) && e.pending !== true);
 }
 
 function pageSectionDef(schema, id) {
@@ -4953,9 +4988,16 @@ function pageSectionDef(schema, id) {
 function movePageSection(schema, id, dir) {
   const order = ensurePageSectionsInitialized(schema);
   if (!order) return;
-  const idx = order.findIndex(e => e && e.id === id);
-  const swapWith = idx + dir;
-  if (idx < 0 || swapWith < 0 || swapWith >= order.length) return;
+  // Swap against the nearest VISIBLE neighbour (T-1A) — a still-pending
+  // addable entry sitting between two visible rows is invisible in the
+  // panel, so it must never be the thing a visible row's up/down arrow
+  // silently swaps places with.
+  const visible = visiblePageSectionEntries(schema, order);
+  const vIdx = visible.findIndex(e => e && e.id === id);
+  const vSwapWith = vIdx + dir;
+  if (vIdx < 0 || vSwapWith < 0 || vSwapWith >= visible.length) return;
+  const idx = order.indexOf(visible[vIdx]);
+  const swapWith = order.indexOf(visible[vSwapWith]);
   const tmp = order[idx];
   order[idx] = order[swapWith];
   order[swapWith] = tmp;
@@ -4985,6 +5027,7 @@ function buildPageSectionsPanel(body, schema) {
   if (!schema || !Array.isArray(schema.pageSections) || schema.pageSections.length === 0) return;
   const order = ensurePageSectionsInitialized(schema);
   if (!order || order.length === 0) return;
+  const visible = visiblePageSectionEntries(schema, order);
 
   const group = document.createElement('div');
   group.className = 'drawer-section';
@@ -5003,8 +5046,7 @@ function buildPageSectionsPanel(body, schema) {
   list.className = 'hb-sections-list';
   list.setAttribute('role', 'list');
 
-  order.forEach((entry, idx) => {
-    if (!entry || !entry.id) return;
+  visible.forEach((entry, idx) => {
     const def = pageSectionDef(schema, entry.id);
     if (!def) return; // id not part of this template's canonical set — nothing to show
     const removable = def.removable !== false;
@@ -5050,7 +5092,7 @@ function buildPageSectionsPanel(body, schema) {
     downBtn.className = 'hb-secrow__btn';
     downBtn.setAttribute('aria-label', 'Mută secțiunea „' + label + '” mai jos');
     downBtn.textContent = '↓';
-    downBtn.disabled = idx === order.length - 1;
+    downBtn.disabled = idx === visible.length - 1;
     downBtn.addEventListener('click', () => movePageSection(schema, entry.id, 1));
     actions.appendChild(downBtn);
 
@@ -5072,7 +5114,123 @@ function buildPageSectionsPanel(body, schema) {
   });
 
   group.appendChild(list);
+
+  // T-1A (PLAN-UX §5.2) — "Adaugă o secțiune": only shown when this
+  // template's schema actually declares at least one addable block (today:
+  // none of the five shipped templates — see templates/<id>/schema.json's
+  // `addable`/`description`/`seed` contract, owned by a parallel task).
+  // add-section.js owns everything past this click (rendering the catalog,
+  // the empty state, wiring each card's own "Adaugă" button) — this is the
+  // one place app.js has to reach into that file, because this whole panel
+  // is built here.
+  if (schema.pageSections.some(s => s && s.addable === true)) {
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.id = 'btn-add-section-panel';
+    addBtn.className = 'btn-ghost btn-full hb-add-section-btn';
+    addBtn.textContent = 'Adaugă o secțiune';
+    addBtn.addEventListener('click', () => {
+      if (typeof hidookOpenAddSectionModal === 'function') hidookOpenAddSectionModal();
+    });
+    group.appendChild(addBtn);
+  }
+
   body.appendChild(group);
+}
+
+/** Every addable section this template's schema declares that is not
+ * already shown (still `pending` — see pageSectionSeedEntry()) — the list
+ * builder/add-section.js's "Adaugă o secțiune" modal renders. */
+function getAddableSectionDefs(schema) {
+  const order = ensurePageSectionsInitialized(schema);
+  if (!order) return [];
+  return order
+    .filter(e => e && e.pending === true)
+    .map(e => pageSectionDef(schema, e.id))
+    .filter(Boolean);
+}
+
+/** Deep-merges `seed` (a plain config-shaped patch, templates/<id>/
+ * schema.json's `pageSections[].seed`) into `target` (draft.config or a
+ * nested object inside it) — but ONLY into fields that are still empty
+ * (undefined/null/'' scalars, or an absent/empty array). Never overwrites
+ * content a customer already typed — the case that matters is a section
+ * added, then hidden via the ordinary row toggle, then added again: its
+ * real content must survive, not get stomped back to the starter seed. An
+ * array in the seed is treated as one unit (replaced whole if the target is
+ * absent/empty, left untouched otherwise) rather than merged item by item —
+ * "starter content", not a partial list update. */
+function applySectionSeed(target, seed) {
+  if (!seed || typeof seed !== 'object' || !target || typeof target !== 'object') return;
+  Object.keys(seed).forEach((key) => {
+    const val = seed[key];
+    if (Array.isArray(val)) {
+      if (!Array.isArray(target[key]) || target[key].length === 0) {
+        target[key] = JSON.parse(JSON.stringify(val));
+      }
+    } else if (val && typeof val === 'object') {
+      if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) target[key] = {};
+      applySectionSeed(target[key], val);
+    } else {
+      const cur = target[key];
+      if (cur === undefined || cur === null || cur === '') target[key] = val;
+    }
+  });
+}
+
+/** The first scalar leaf path inside `seed`, in the same dot/bracket
+ * notation getPath()/setPath() use (e.g. "faq.items[0].question") — handed
+ * to fullRerender() as a focusPath so the newly added section's own content
+ * is what the preview scrolls/highlights to, not just the top of the page.
+ * Returns null for an empty/absent seed (fullRerender() with no focusPath
+ * is its own already-correct fallback — see sendFocusFieldToIframe()). */
+function firstSeedFieldPath(seed, prefix) {
+  if (seed == null) return null;
+  if (Array.isArray(seed)) {
+    return seed.length ? firstSeedFieldPath(seed[0], (prefix || '') + '[0]') : null;
+  }
+  if (typeof seed === 'object') {
+    const keys = Object.keys(seed);
+    for (let i = 0; i < keys.length; i++) {
+      const found = firstSeedFieldPath(seed[keys[i]], prefix ? prefix + '.' + keys[i] : keys[i]);
+      if (found) return found;
+    }
+    return null;
+  }
+  return prefix || null;
+}
+
+/**
+ * Add a previously-hidden `addable` section to the current draft —
+ * builder/add-section.js's one write path into draft.config, called when a
+ * customer clicks "Adaugă" on a catalog card. Applies the section's `seed`
+ * (only into still-empty fields, see applySectionSeed()), flips the entry
+ * from pending to visible, and goes through the SAME saveDraft()/
+ * fullRerender()/buildDrawer() choke point every other section mutation in
+ * this file (14b, above) uses — so undo/redo, autosave and the publish
+ * payload all cover "add a section" for free, with nothing add-section.js
+ * has to reimplement. Returns the section's schema def (id/label/
+ * description) on success, so the caller can toast/close with its label —
+ * or null when `id` is not a valid, currently-pending addable section (an
+ * already-added one, or a stale id from a schema that changed underneath),
+ * which the caller reads as "show an error, don't close the modal".
+ */
+function hidookAddSection(schema, id) {
+  if (!schema || !draft.config) return null;
+  const def = pageSectionDef(schema, id);
+  if (!def || def.addable !== true) return null;
+  const order = ensurePageSectionsInitialized(schema);
+  if (!order) return null;
+  const entry = order.find(e => e && e.id === id);
+  if (!entry || entry.pending !== true) return null;
+  if (def.seed && typeof def.seed === 'object') applySectionSeed(draft.config, def.seed);
+  entry.removed = false;
+  delete entry.pending;
+  const scrollPath = firstSeedFieldPath(def.seed);
+  saveDraft();
+  fullRerender(scrollPath || undefined);
+  buildDrawer();
+  return def;
 }
 
 /**
@@ -9275,6 +9433,19 @@ async function startWithTemplate(templateId, onboardingIdentity) {
     const presets = tplData.presets || [];
     draft.config = presets.length > 0 ? deepClone(presets[0].config) : {};
     isFreshDemoDraft = true;
+  }
+  // T-1A (PLAN-UX §5.2): seed config.sections — with any `addable` section
+  // marked pending/removed — BEFORE the very first saveDraft()/render below,
+  // not lazily whenever the Secțiuni pagină panel next gets built. Otherwise
+  // an addable section would render once, visibly, on this brand-new
+  // design's very first paint: build.js's reorderSections() only hides a
+  // section that is actually present+removed in config.sections (see
+  // pageSectionSeedEntry()'s doc comment), and without this call that
+  // wouldn't happen until something else (e.g. opening Detalii) touches the
+  // page-sections machinery. Guarded by typeof for the same isolated-
+  // extraction test compatibility as the calls right below it.
+  if (typeof ensurePageSectionsInitialized === 'function' && tplData.schema) {
+    ensurePageSectionsInitialized(tplData.schema);
   }
   // M12: fresh baseline for whichever config this design switch landed on.
   if (typeof syncDraftBaseline === 'function') syncDraftBaseline();

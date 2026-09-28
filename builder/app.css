@@ -2067,6 +2067,32 @@ body.details-drawer-open .demo-content-banner {
 .hb-secrow__btn:disabled { opacity: 0.35; cursor: default; }
 .hb-secrow__btn--wide { min-width: 64px; }
 
+/* T-1A (PLAN-UX §5.2): "Adaugă o secțiune" button under the Secțiuni pagină
+   list — same width as the field-hint above it, visually a step below the
+   row actions (secondary action, not another row). */
+.hb-add-section-btn { margin-top: 0.15rem; }
+
+/* ============================================================
+   ADD SECTION MODAL (T-1A, PLAN-UX §5.2) — the catalog list
+   builder/add-section.js renders into #add-section-modal-body.
+   ============================================================ */
+
+.add-section-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.add-section-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.add-section-card__body { flex: 1; min-width: 0; }
+.add-section-card__label { margin: 0 0 0.2rem; font-size: 0.92rem; font-weight: 600; color: var(--text); }
+.add-section-card__desc { margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; }
+.add-section-card__btn { flex-shrink: 0; }
+
 /* ============================================================
    GALLERY MODAL
    ============================================================ */
@@ -3536,6 +3562,7 @@ body.editor-preview-cookie-isolated .toast {
    each button's own existing click handler, so history/autosave/etc. are
    unchanged; only how a phone reaches them changes. */
 body.mobile-coarse-toolbar #btn-add-instagram,
+body.mobile-coarse-toolbar #btn-open-add-section,
 body.mobile-coarse-toolbar #btn-color-picker,
 body.mobile-coarse-toolbar #btn-download-html,
 body.mobile-coarse-toolbar #btn-download-zip {
