@@ -1748,11 +1748,53 @@ async function applyCustomDomainOrigin({ siteId, domain, fallbackOrigin }) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Decode a data-URL to a Buffer. Returns null if the format is unexpected. */
+/**
+ * api-security#1: the client-declared `data:<mime>;base64` prefix is just a
+ * string the client wrote — it was the only thing this pipeline ever checked
+ * (here and in bot/server.js's handlePublish), so a "hero.png" whose actual
+ * bytes were an HTML/script payload got decoded and written to disk as-is,
+ * then served publicly with Content-Type: image/png. This looks at the real
+ * leading bytes of the decoded buffer instead. Returns the sniffed MIME type
+ * (never the client's label), or null when the bytes don't match any of the
+ * few raster formats this product accepts — callers must then refuse to
+ * write/serve the payload, whatever the client called it.
+ */
+function sniffImageMime(buffer) {
+    if (!Buffer.isBuffer(buffer) || buffer.length < 12) return null;
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47 &&
+        buffer[4] === 0x0d && buffer[5] === 0x0a && buffer[6] === 0x1a && buffer[7] === 0x0a) {
+        return 'image/png';
+    }
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        return 'image/jpeg';
+    }
+    // GIF: "GIF87a" or "GIF89a"
+    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38 &&
+        (buffer[4] === 0x37 || buffer[4] === 0x39) && buffer[5] === 0x61) {
+        return 'image/gif';
+    }
+    // WEBP: "RIFF"....."WEBP"
+    if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+        buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+        return 'image/webp';
+    }
+    return null;
+}
+
+/**
+ * Decode a data-URL to a Buffer. Returns null if the format is unexpected OR
+ * the decoded bytes are not a real, recognized image (api-security#1) — the
+ * returned mimeType is always the sniffed one, never the client's label.
+ */
 function decodeDataUrl(dataUrl) {
     const m = /^data:([^;]+);base64,(.+)$/.exec(String(dataUrl || '').replace(/\s+/g, ''));
     if (!m) return null;
-    return { mimeType: m[1], buffer: Buffer.from(m[2], 'base64') };
+    const buffer = Buffer.from(m[2], 'base64');
+    const mimeType = sniffImageMime(buffer);
+    if (!mimeType) return null;
+    return { mimeType, buffer };
 }
 
 function extFromMime(mime) {
@@ -2798,6 +2840,9 @@ module.exports = {
     // Wave10 — owner payment-failure email (tests + HANDOFF-payments-notify.md)
     buildPaymentDeclinedEmailRo,
     buildSiteDownEmailRo,
+    // api-security#1 — reused by bot/server.js's handlePublish for an
+    // immediate, friendly rejection before this module's own decode step.
+    sniffImageMime,
     _dashboardUrl,
     _ownerEmailForSite,
     _sendOwnerEmail,
