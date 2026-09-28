@@ -434,10 +434,8 @@
             <div class="pf-shell pf-loc__inner">
                 <p class="pf-kicker pf-kicker--center">{{labels.locationEyebrow}}</p>
                 <h2 class="pf-display pf-display--center" id="loc-heading">{{location.title}}</h2>
-                <p class="pf-copy pf-loc__addr">{{location.address}}</p>
-                <!-- @if location.addressHref -->
-                <a href="{{location.addressHref}}" class="pf-loc__maps" target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
-                <!-- @endif -->
+                <p class="pf-copy pf-loc__addr" data-location-address>{{location.address}}</p>
+                <a href="#" class="pf-loc__maps" data-location-maps-link target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
             </div>
         </section>
         <!-- @endif -->

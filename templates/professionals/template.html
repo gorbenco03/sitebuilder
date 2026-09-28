@@ -648,10 +648,8 @@
             <div class="pr-shell pr-loc__inner">
                 <p class="pr-kicker">{{labels.locationEyebrow}}</p>
                 <h2 class="pr-display pr-display--sec" id="loc-heading">{{location.title}}</h2>
-                <p class="pr-copy pr-loc__addr">{{location.address}}</p>
-                <!-- @if location.addressHref -->
-                <a href="{{location.addressHref}}" class="pr-btn pr-btn--primary" target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
-                <!-- @endif -->
+                <p class="pr-copy pr-loc__addr" data-location-address>{{location.address}}</p>
+                <a href="#" class="pr-btn pr-btn--primary" data-location-maps-link target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
             </div>
         </section>
         <!-- @endif -->

@@ -409,16 +409,9 @@
           "key": "location.address",
           "type": "textarea",
           "label": "Adresă fizică (câte un rând pe linie)",
-          "hint": "Secțiunea rămâne ascunsă pe site-ul public până completezi adresa.",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până completezi adresa. Linkul spre Google Maps se generează automat din adresă.",
           "required": false,
           "maxLen": 200
-        },
-        {
-          "key": "location.addressHref",
-          "type": "url",
-          "label": "Link Google Maps pentru adresă",
-          "required": false,
-          "maxLen": 500
         }
       ]
     },
@@ -840,8 +833,7 @@
       "description": "Arată adresa fizică și un link direct spre Google Maps, separat de restul datelor de contact.",
       "seed": {
         "title": "Unde ne găsești",
-        "address": "Completează adresa aici",
-        "addressHref": ""
+        "address": "Strada Primăverii 22, București"
       }
     },
     {

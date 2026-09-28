@@ -2,7 +2,7 @@
 /**
  * bot/test/audit27-t-1c-addable-faq-schedule-location.test.js
  *
- * Oracle for task T-1C (PLAN-AUDIT-2026-09-27.md §4/§9), scoped to
+ * Oracle for task T-1C (PLAN-UX-2026-09-27.md §5.2), scoped to
  * templates/portfolio and templates/professionals: adds the addable blocks
  * each template lacked among "Întrebări frecvente" (FAQ), "Program"
  * (schedule) and "Unde ne găsești" (location), and fixes portfolio's
@@ -26,6 +26,18 @@
  * empty by default (no seed data pre-populated in presets.json) — so the
  * contract holds regardless of whether the builder UI has landed yet.
  *
+ * The location block's "Deschide în Google Maps" link is built CLIENT-SIDE
+ * from the rendered address text (initLocationMapsLink() in each
+ * template's script.js — `https://www.google.com/maps/search/?api=1&query=`
+ * + encodeURIComponent(address)), the same pattern the sibling T-1B task
+ * used for product-menu/local-service/desserdirina. There is no separate
+ * "addressHref" field: a customer who fills in the address gets a working
+ * Maps link with no second, undiscoverable field to hand-populate. This
+ * oracle proves that by applying each pageSection's own declared `seed` —
+ * not a hand-constructed href — and reading the link's real `href` back
+ * from a loaded browser page after the client-side script has run, exactly
+ * the same way a published site behaves.
+ *
  * RED (git show 98ae941, the commit this task started from):
  *   - portfolio schema.json: schedule.rows carries `"editable": false`;
  *     template.html renders `@each schedule.rows` twice; no faq/location
@@ -35,14 +47,15 @@
  *     already always-on/removable, not newly "addable").
  *
  * GREEN (HEAD): all of the above fixed/added, verified against the real
- * renderHtml()/build.js pipeline — no browser needed, this is pure
- * schema+render-pipeline verification (fast, deterministic).
+ * renderHtml()/build.js pipeline for the static assertions, and against a
+ * real Chromium page for the client-side Maps-link assertions.
  *
  * Run: node --experimental-sqlite --test bot/test/audit27-t-1c-addable-faq-schedule-location.test.js
  */
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
@@ -50,6 +63,20 @@ const ROOT = path.resolve(__dirname, '../..');
 const { renderHtml } = require(path.join(ROOT, 'build.js'));
 
 const PARENT_SHA = '98ae941712ada203d4b50ede5f83a06535229ad';
+
+// Per template, the pageSections ids this task made (or kept) addable.
+const ADDABLE_IDS_BY_TEMPLATE = {
+  portfolio: ['faq', 'location'],
+  professionals: ['schedule', 'location'],
+};
+
+function loadPlaywright() {
+  const candidates = ['playwright', path.join(ROOT, 'node_modules/playwright')];
+  for (const cand of candidates) {
+    try { return require(cand); } catch (_) { /* try next */ }
+  }
+  throw new Error('playwright not found — install devDependency (npm install in the repo root)');
+}
 
 function parentBlob(relPath) {
   return execFileSync('git', ['-C', ROOT, 'show', `${PARENT_SHA}:${relPath}`], {
@@ -78,6 +105,57 @@ function schemaField(schema, key) {
     }
   }
   return null;
+}
+
+/**
+ * Merges every addable pageSections entry's own `seed` into `config`
+ * (shallow — each seed's top-level key is the section id, e.g. "location").
+ * This is the ONLY way this file builds a "seeded" config for an addable
+ * block: never a hand-constructed field value, so the oracle proves the
+ * real customer flow (schema.seed → build.js render → live DOM), not an
+ * idealized one.
+ */
+function applySeeds(config, schema, ids) {
+  for (const id of ids) {
+    const entry = pageSection(schema, id);
+    assert.ok(entry, `pageSections must include "${id}"`);
+    assert.equal(entry.addable, true, `pageSections["${id}"] must be addable:true`);
+    assert.ok(entry.seed && typeof entry.seed === 'object', `pageSections["${id}"] must have a seed patch`);
+    config[id] = Object.assign({}, config[id], entry.seed);
+  }
+  return config;
+}
+
+/**
+ * Materialize a servable copy of `templateId` into a fresh tmp dir and
+ * render `config` through the REAL build.js renderHtml() — the same engine
+ * every live/published site uses.
+ */
+function buildSite(templateId, config) {
+  const tplDir = path.join(ROOT, 'templates', templateId);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `audit27-t1c-${templateId}-`));
+
+  for (const name of ['template.html', 'styles.css', 'script.js']) {
+    fs.copyFileSync(path.join(tplDir, name), path.join(dir, name));
+  }
+  for (const name of ['collage.js', 'qrcode.js']) {
+    const src = path.join(tplDir, name);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(dir, name));
+  }
+  const imagesSrc = path.join(tplDir, 'images');
+  if (fs.existsSync(imagesSrc)) {
+    const imagesOut = path.join(dir, 'images');
+    fs.mkdirSync(imagesOut, { recursive: true });
+    for (const img of fs.readdirSync(imagesSrc)) {
+      const from = path.join(imagesSrc, img);
+      if (fs.statSync(from).isFile()) fs.copyFileSync(from, path.join(imagesOut, img));
+    }
+  }
+
+  const templateHtml = fs.readFileSync(path.join(dir, 'template.html'), 'utf8');
+  const html = renderHtml(templateHtml, config);
+  fs.writeFileSync(path.join(dir, 'index.html'), html, 'utf8');
+  return dir;
 }
 
 test('RED (parent 98ae941): portfolio schedule.rows was editable:false and duplicated in template.html', () => {
@@ -119,10 +197,7 @@ test('GREEN: portfolio schedule.rows is editable and rendered exactly once', () 
   assert.ok(html.includes('href="#schedule"'), 'the appointment panel must link to the single Program section');
 });
 
-for (const [templateId, addableIds] of [
-  ['portfolio', ['faq', 'location']],
-  ['professionals', ['schedule', 'location']],
-]) {
+for (const [templateId, addableIds] of Object.entries(ADDABLE_IDS_BY_TEMPLATE)) {
   test(`GREEN: ${templateId} pageSections declares the new addable blocks with description+seed`, () => {
     const schema = headSchema(templateId);
     for (const id of addableIds) {
@@ -157,39 +232,53 @@ for (const [templateId, addableIds] of [
       assert.ok(!baseHtml.includes(`id="${id}"`), `${templateId}: "#${id}" must be hidden on the unmodified default preset`);
     }
 
+    const seededCfg = applySeeds(JSON.parse(JSON.stringify(baseCfg)), schema, addableIds);
+    const seededHtml = renderHtml(tpl, seededCfg);
     for (const id of addableIds) {
-      const entry = pageSection(schema, id);
-      const seededCfg = JSON.parse(JSON.stringify(baseCfg));
-      seededCfg[id] = Object.assign({}, seededCfg[id], entry.seed);
-      const seededHtml = renderHtml(tpl, seededCfg);
       assert.ok(seededHtml.includes(`id="${id}"`), `${templateId}: "#${id}" must render once its schema-declared seed is applied`);
-      // No duplicate ids anywhere on the seeded render.
-      const ids = Array.from(seededHtml.matchAll(/\bid="([^"]+)"/g)).map((m) => m[1]);
-      const dupes = ids.filter((x, i) => ids.indexOf(x) !== i);
-      assert.deepEqual([...new Set(dupes)], [], `${templateId}: seeding "${id}" must not create duplicate ids: ${dupes.join(', ')}`);
+    }
+    // No duplicate ids anywhere on the seeded render.
+    const ids = Array.from(seededHtml.matchAll(/\bid="([^"]+)"/g)).map((m) => m[1]);
+    const dupes = ids.filter((x, i) => ids.indexOf(x) !== i);
+    assert.deepEqual([...new Set(dupes)], [], `${templateId}: seeding must not create duplicate ids: ${dupes.join(', ')}`);
+  });
+
+  test(`GREEN: ${templateId} "Unde ne găsești" — real schema seed renders address and a live Google Maps link, no iframe`, { concurrency: false }, async () => {
+    const { chromium } = loadPlaywright();
+    const schema = headSchema(templateId);
+    const baseCfg = headPreset(templateId);
+    const seededCfg = applySeeds(JSON.parse(JSON.stringify(baseCfg)), schema, addableIds);
+    const seedAddress = pageSection(schema, 'location').seed.address;
+    assert.equal(seededCfg.location.address, seedAddress, 'fixture sanity: applySeeds must carry the real declared address');
+
+    const dir = buildSite(templateId, seededCfg);
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const page = await browser.newPage();
+      await page.goto('file://' + path.join(dir, 'index.html'), { waitUntil: 'load' });
+      // Let the client-side Maps-link builder (initLocationMapsLink) run.
+      await page.waitForTimeout(150);
+
+      const addressText = (await page.locator('[data-location-address]').innerText()).trim();
+      assert.ok(addressText.includes(seedAddress) || seedAddress.includes(addressText.replace(/\s+/g, ' ')),
+        `${templateId}: address text must reflect the real schema seed (got "${addressText}")`);
+
+      const mapsHref = await page.locator('[data-location-maps-link]').getAttribute('href');
+      const expected = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(seedAddress.replace(/\s+/g, ' ').trim());
+      assert.equal(mapsHref, expected,
+        `${templateId}: a customer who adds this block from its own seed must get a working Google Maps link, not a blank/undiscoverable field`);
+      assert.notEqual(mapsHref, '#', `${templateId}: the Maps link must have been rewritten by client-side JS, not left as the inert placeholder`);
+
+      const iframeCount = await page.locator('#location iframe').count();
+      assert.equal(iframeCount, 0, `${templateId}: "Unde ne găsești" must not embed an <iframe>`);
+
+      await page.close();
+    } finally {
+      await browser.close();
+      fs.rmSync(dir, { recursive: true, force: true });
     }
   });
 }
-
-test('GREEN: portfolio "Unde ne găsești" renders the address and a real Google Maps link, no iframe', () => {
-  const tpl = headTemplateHtml('portfolio');
-  const cfg = headPreset('portfolio');
-  cfg.location = { title: 'Unde ne găsești', address: 'Strada Exemplu 1\nBucurești', addressHref: 'https://maps.google.com/?q=Strada+Exemplu+1' };
-  const html = renderHtml(tpl, cfg);
-  assert.ok(html.includes('Strada Exemplu 1'), 'address text must render');
-  assert.ok(html.includes('href="https://maps.google.com/?q=Strada+Exemplu+1"'), 'the Maps link href must render');
-  assert.ok(!/id="location"[\s\S]*?<iframe/i.test(html), 'the location section must never embed an <iframe>');
-});
-
-test('GREEN: professionals "Unde ne găsești" renders the address and a real Google Maps link, no iframe', () => {
-  const tpl = headTemplateHtml('professionals');
-  const cfg = headPreset('professionals');
-  cfg.location = { title: 'Unde ne găsești', address: 'Strada Exemplu 1\nBucurești', addressHref: 'https://maps.google.com/?q=Strada+Exemplu+1' };
-  const html = renderHtml(tpl, cfg);
-  assert.ok(html.includes('Strada Exemplu 1'), 'address text must render');
-  assert.ok(html.includes('href="https://maps.google.com/?q=Strada+Exemplu+1"'), 'the Maps link href must render');
-  assert.ok(!/id="location"[\s\S]*?<iframe/i.test(html), 'the location section must never embed an <iframe>');
-});
 
 test('GREEN: portfolio "Întrebări frecvente" renders accessible question/answer pairs', () => {
   const tpl = headTemplateHtml('portfolio');
@@ -216,4 +305,14 @@ test('GREEN: professionals FAQ is untouched (still always-on, not duplicated as 
   assert.equal(faqEntries[0].addable, undefined, 'professionals FAQ stays always-on (not converted to addable) — it already ships seeded with content in every preset');
   const cfg = headPreset('professionals');
   assert.ok(cfg.faq && Array.isArray(cfg.faq.items) && cfg.faq.items.length > 0, 'fixture sanity: professionals default preset still ships FAQ content');
+});
+
+test('GREEN: no separate "addressHref" field remains on the location section (Maps link is derived, not hand-entered)', () => {
+  for (const templateId of Object.keys(ADDABLE_IDS_BY_TEMPLATE)) {
+    const schema = headSchema(templateId);
+    const locationField = schemaField(schema, 'location.addressHref');
+    assert.equal(locationField, null, `${templateId}: "location.addressHref" must not exist as a separate schema field`);
+    const entry = pageSection(schema, 'location');
+    assert.ok(!('addressHref' in entry.seed), `${templateId}: location pageSection seed must not carry an "addressHref" key`);
+  }
 });
