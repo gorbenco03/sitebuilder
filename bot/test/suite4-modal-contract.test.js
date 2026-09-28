@@ -295,6 +295,23 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       return handle;
     }
 
+    // PLAN-UX §5.4 (S-4): at this file's 390px touch viewport, the topbar
+    // collapses to its primary actions and Instagram/Descarcă HTML/ZIP/
+    // Culoare move behind "Mai mult" (builder/app.css, body.mobile-coarse-
+    // toolbar). Their own buttons still exist and still own their click
+    // handlers (see MOBILE_MORE_MENU_ITEMS in app.js) — reach them the way
+    // a real phone now does. app.js focuses #btn-topbar-more before
+    // proxying the click, so that is the real opener a modal refocuses on
+    // close, and it is what this helper hands back to contractCheck.
+    async function clickViaMoreMenu(menuItemLabel) {
+      const moreBtn = page.locator('#btn-topbar-more');
+      const handle = await moreBtn.elementHandle();
+      await moreBtn.click();
+      await page.locator('#topbar-more-menu').waitFor({ state: 'visible' });
+      await page.getByRole('menuitem', { name: menuItemLabel }).click({ timeout: 8000 });
+      return handle;
+    }
+
     // modal-delete-account's real trigger is a dropdown item (R-27, GDPR):
     // open the header account menu, then click "Șterge contul" inside it.
     // Unlike every other trigger in this file, the click handler itself
@@ -352,7 +369,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     }
 
     await contractCheck('gallery', 'modal-gallery', 'btn-close-gallery', () => clickAndHandle(page.locator('#btn-open-gallery')));
-    await contractCheck('instagram', 'modal-instagram', 'btn-close-instagram', () => clickAndHandle(page.locator('#btn-add-instagram')));
+    await contractCheck('instagram', 'modal-instagram', 'btn-close-instagram', () => clickViaMoreMenu('Adaugă Instagram'));
     await contractCheck('publish', 'modal-publish', 'btn-close-publish', () => clickAndHandle(page.locator('#btn-publish')));
 
     // -----------------------------------------------------------------
@@ -369,7 +386,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
     });
     await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-    await contractCheck('export-booking', 'modal-export-booking', 'btn-close-export-booking', () => clickAndHandle(page.locator('#btn-download-html')));
+    await contractCheck('export-booking', 'modal-export-booking', 'btn-close-export-booking', () => clickViaMoreMenu('Descarcă HTML'));
 
     // -----------------------------------------------------------------
     // modal-success: drive the real checkout once (see header comment).

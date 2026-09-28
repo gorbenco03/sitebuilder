@@ -3390,6 +3390,15 @@ function initPostMessageListener() {
       case 'focus':
         // Could highlight field in drawer — skip for now
         break;
+      case 'mobile-edit-open':
+        // PLAN-UX §5.4 (S-4): a coarse-pointer tap on a canvas text field at
+        // phone width — see edit-overlay.js's setupTextFields().
+        openMobileEditSheet(msg.path, msg.value, {
+          allowsBr: msg.allowsBr,
+          singleLine: msg.singleLine,
+          maxLen: msg.maxLen,
+        });
+        break;
       case 'cookie-accept':
         // F1: remember consent across full re-renders (see previewCookieAccepted).
         previewCookieAccepted = true;
@@ -4375,8 +4384,13 @@ function openColorPopover() {
     dot.classList.toggle('active', dot.style.background === curColor || dot.style.backgroundColor === curColor);
   });
 
-  // Position below button
-  const rect = btn.getBoundingClientRect();
+  // Position below the button — or, on a phone where PLAN-UX §5.4 hides
+  // #btn-color-picker behind "Mai mult" (its rect is then 0x0, since a
+  // hidden element still fires this same click handler when proxied — see
+  // MOBILE_MORE_MENU_ITEMS above), anchor to "Mai mult" instead so the
+  // popover opens under something actually visible on screen.
+  const anchor = (btn.getClientRects().length ? btn : $('btn-topbar-more')) || btn;
+  const rect = anchor.getBoundingClientRect();
   popover.style.top = (rect.bottom + 6) + 'px';
   popover.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
   popover.style.left = 'auto';
@@ -4468,6 +4482,312 @@ function setDrawerPref(value) {
 /** A catalog selection starts a fresh design context, so Details gets a fresh open state. */
 function prepareDrawerForNewDesign() {
   setDrawerPref('open');
+}
+
+/* ============================================================
+   PLAN-UX §5.4 (S-4) — mobile editing, first-class
+   ============================================================
+   Everything below, through updateMobileToolbarMode(), is scoped to a real
+   phone with a coarse (touch) pointer — the same 640px breakpoint the rest
+   of the editor chrome already uses (see shouldAutoOpenDrawerOnThisViewport()
+   below), gated additionally by `pointer: coarse` so a mouse-driven laptop
+   resized to phone width (several existing oracles do exactly this on
+   purpose, to prove desktop chrome is untouched) never sees any of it. */
+
+/** Re-checked on every call (not cached): a rotation/resize between calls
+ * must get the current answer. Mirrors builder/edit-overlay.js's own copy
+ * (a separate sandboxed document, no shared scope) — keep both in sync. */
+function isPhoneCoarsePointer() {
+  try {
+    return typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 640px)').matches &&
+      window.matchMedia('(pointer: coarse)').matches;
+  } catch (_) { return false; }
+}
+
+/* ---- 5.4.1: bottom sheet for canvas text editing ----
+ * edit-overlay.js intercepts a coarse-pointer tap on a canvas text field
+ * before the sandboxed iframe's own on-screen keyboard gets involved, and
+ * asks for this sheet instead (see its {hb:'mobile-edit-open'} message).
+ * "Gata" commits through the exact same onInlineTextEdit()/{hb:'set'} round
+ * trip an ordinary in-canvas keystroke already uses — same history,
+ * autosave and business.name cascade — then writes the new text back onto
+ * the (still-visible-underneath) canvas field so the sheet closing shows
+ * the real result immediately, matching VISION.md §4.5's "preview reflects
+ * text" requirement. "Anulează" discards; nothing is sent anywhere. */
+let mobileEditSheetState = null;
+/** Set the instant the sheet opens; guards the backdrop's own dismiss-tap
+ * below against the "ghost click" a touch tap leaves behind (see there). */
+let mobileEditSheetOpenedAt = 0;
+
+/** Best-effort human label for a schema field, for the sheet's own <label>.
+ * Falls back to a humanized last path segment for list-item paths (e.g.
+ * "services.0.label"), which getAllSchemaFields() — top-level fields only —
+ * does not carry a label for. */
+function labelForMobileEditPath(path) {
+  const tpl = currentTemplate && currentTemplate.data;
+  const schema = tpl && tpl.schema;
+  if (schema) {
+    const field = getAllSchemaFields(schema).find((f) => f && f.key === path);
+    if (field && field.label) return field.label;
+  }
+  const last = String(path || '').split('.').pop() || path || '';
+  return last.charAt(0).toUpperCase() + last.slice(1);
+}
+
+function ensureMobileEditSheetDom() {
+  if ($('mobile-edit-sheet')) return;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'mobile-edit-backdrop';
+  backdrop.className = 'mobile-edit-backdrop';
+  backdrop.hidden = true;
+
+  const sheet = document.createElement('div');
+  sheet.id = 'mobile-edit-sheet';
+  sheet.className = 'mobile-edit-sheet';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-modal', 'true');
+  sheet.setAttribute('aria-labelledby', 'mobile-edit-sheet-label');
+  sheet.hidden = true;
+  sheet.innerHTML =
+    '<div class="mobile-edit-sheet-handle" aria-hidden="true"></div>' +
+    '<label id="mobile-edit-sheet-label" class="mobile-edit-sheet-label" for="mobile-edit-sheet-input"></label>' +
+    '<textarea id="mobile-edit-sheet-input" class="mobile-edit-sheet-input"></textarea>' +
+    '<div class="mobile-edit-sheet-actions">' +
+      '<button type="button" id="mobile-edit-sheet-cancel" class="btn-ghost">Anulează</button>' +
+      '<button type="button" id="mobile-edit-sheet-done" class="btn-primary">Gata</button>' +
+    '</div>';
+
+  document.body.appendChild(backdrop);
+  document.body.appendChild(sheet);
+
+  // Ghost-click guard: the SAME physical tap that opens the sheet (on a
+  // canvas field, inside the sandboxed iframe) also produces the browser's
+  // own native touch->click compatibility event, dispatched a few ms later
+  // by hit-testing the coordinate again at that later instant — and since
+  // the backdrop (position:fixed, inset:0) has by then appeared exactly
+  // under that same point, THIS click lands on the backdrop instead of the
+  // iframe, and would otherwise fire this very handler and cancel the
+  // sheet within single-digit milliseconds of it opening, before the
+  // customer ever sees it. Any deliberate "tap outside to dismiss" happens
+  // much later than that — a human needs real time to see the sheet, decide,
+  // and reach for the backdrop — so a short grace window after open is
+  // never mistaken for one.
+  backdrop.addEventListener('click', () => {
+    if (performance.now() - mobileEditSheetOpenedAt < 400) return;
+    closeMobileEditSheet(false);
+  });
+  $('mobile-edit-sheet-cancel').addEventListener('click', () => closeMobileEditSheet(false));
+  $('mobile-edit-sheet-done').addEventListener('click', () => closeMobileEditSheet(true));
+  $('mobile-edit-sheet-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeMobileEditSheet(false); return; }
+    // Single-line fields: Enter commits, same as the in-canvas "Enter blurs"
+    // behavior (edit-overlay.js) — a multi-line field's Enter inserts a
+    // normal newline in this plain <textarea>, no special handling needed.
+    if (e.key === 'Enter' && !e.shiftKey && mobileEditSheetState && mobileEditSheetState.singleLine) {
+      e.preventDefault();
+      closeMobileEditSheet(true);
+    }
+  });
+}
+
+function openMobileEditSheet(path, value, opts) {
+  if (!path) return;
+  ensureMobileEditSheetDom();
+  mobileEditSheetOpenedAt = performance.now();
+  mobileEditSheetState = {
+    path,
+    allowsBr: !!(opts && opts.allowsBr),
+    singleLine: !!(opts && opts.singleLine),
+    maxLen: (opts && opts.maxLen) || null,
+  };
+  const input = $('mobile-edit-sheet-input');
+  input.value = value || '';
+  const backdropEl = $('mobile-edit-backdrop');
+  const sheetEl = $('mobile-edit-sheet');
+  // Open first, label second: a schema lookup failure (unexpected shape,
+  // template still hydrating) must never leave the sheet stuck hidden —
+  // the tap that asked for it already suppressed the iframe's own native
+  // focus (edit-overlay.js), so a silently-swallowed sheet here would strand
+  // the customer with no way to type at all. Worst case on a lookup failure
+  // is a blank label, never a sheet that doesn't open.
+  backdropEl.hidden = false;
+  sheetEl.hidden = false;
+  try {
+    $('mobile-edit-sheet-label').textContent = labelForMobileEditPath(path);
+  } catch (_) {
+    $('mobile-edit-sheet-label').textContent = '';
+  }
+  // rAF so the browser paints the hidden->block state first — otherwise the
+  // slide-up transition below has nothing to animate FROM.
+  requestAnimationFrame(() => {
+    sheetEl.classList.add('open');
+    backdropEl.classList.add('open');
+    input.focus();
+    input.select();
+  });
+}
+
+function closeMobileEditSheet(commit) {
+  const state = mobileEditSheetState;
+  const sheetEl = $('mobile-edit-sheet');
+  const backdropEl = $('mobile-edit-backdrop');
+  mobileEditSheetState = null;
+  if (!sheetEl || !backdropEl || !state) return;
+
+  if (commit) {
+    let value = $('mobile-edit-sheet-input').value;
+    // Same maxLen truncation edit-overlay.js's own 'input' handler applies
+    // while typing directly on the canvas (surrogate-pair guard included —
+    // see edge-errors#2 in setupTextFields()).
+    if (state.maxLen && value.length > state.maxLen) {
+      value = value.slice(0, state.maxLen);
+      const lastCode = value.charCodeAt(value.length - 1);
+      if (lastCode >= 0xd800 && lastCode <= 0xdbff) value = value.slice(0, -1);
+    }
+    // contact.address (allowsBr): stored with a literal "<br>" per line
+    // break (build.js's sanitizeAddress convention) — the textarea itself
+    // keeps plain '\n', same as edit-overlay.js's own serializeBrText().
+    const displayValue = state.allowsBr ? value.replace(/\n+$/, '') : value;
+    const wireValue = state.allowsBr ? displayValue.replace(/\n/g, '<br>') : value;
+    onInlineTextEdit(state.path, wireValue);
+    sendSetToIframe(state.path, displayValue);
+    scheduleDemoTextMarks();
+  }
+
+  sheetEl.classList.remove('open');
+  backdropEl.classList.remove('open');
+  setTimeout(() => {
+    if (sheetEl.classList.contains('open')) return; // reopened in the meantime
+    sheetEl.hidden = true;
+    backdropEl.hidden = true;
+  }, 220);
+}
+
+/* ---- 5.4.2: toolbar "Mai mult" quick-access menu ----
+ * On a phone+touch, the topbar collapses to its primary actions (Publică,
+ * Detalii, Poze, Previzualizare — see app.css's `body.mobile-coarse-toolbar`
+ * rules, PLAN-UX §5.4) and the rest of the rail (Instagram, Culoare, both
+ * downloads) is hidden there. "Mai mult" is how a phone reaches them: each
+ * menu item proxies to the SAME button/handler the rail already wires up
+ * (`target.click()` below), so history/autosave/every existing behavior is
+ * unchanged — only the path a phone takes to trigger it changes. Desktop/
+ * tablet/mouse sessions never see this: the buttons stay in the rail,
+ * exactly as before. */
+let mobileMoreMenuBuilt = false;
+let mobileMoreMenuOpen = false;
+
+const MOBILE_MORE_MENU_ITEMS = [
+  { id: 'btn-add-instagram', label: 'Adaugă Instagram' },
+  { id: 'btn-color-picker', label: 'Culoare temă' },
+  { id: 'btn-download-html', label: 'Descarcă HTML' },
+  { id: 'btn-download-zip', label: 'Descarcă ZIP' },
+];
+
+function ensureMobileMoreMenu() {
+  if (mobileMoreMenuBuilt) return;
+  const rail = document.querySelector('.editor-topbar-scroll');
+  if (!rail) return;
+  mobileMoreMenuBuilt = true;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'btn-topbar-more';
+  btn.className = 'btn-topbar btn-topbar-more';
+  btn.setAttribute('aria-haspopup', 'menu');
+  btn.setAttribute('aria-expanded', 'false');
+  btn.setAttribute('aria-controls', 'topbar-more-menu');
+  btn.setAttribute('aria-label', 'Mai mult');
+  btn.title = 'Mai mult';
+  btn.innerHTML =
+    '<svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">' +
+    '<circle cx="3" cy="7.5" r="1.3" fill="currentColor"/>' +
+    '<circle cx="7.5" cy="7.5" r="1.3" fill="currentColor"/>' +
+    '<circle cx="12" cy="7.5" r="1.3" fill="currentColor"/>' +
+    '</svg><span class="btn-topbar-label">Mai mult</span>';
+  rail.appendChild(btn);
+
+  const menu = document.createElement('div');
+  menu.id = 'topbar-more-menu';
+  menu.className = 'topbar-more-menu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', 'Mai multe acțiuni');
+  menu.hidden = true;
+  MOBILE_MORE_MENU_ITEMS.forEach((it) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'topbar-more-menu-item';
+    item.setAttribute('role', 'menuitem');
+    item.textContent = it.label;
+    item.addEventListener('click', (e) => {
+      // Stop this real tap from bubbling to document AFTER the proxied
+      // target.click() below runs — without it, the color picker's own
+      // "click outside closes the popover" listener (initColorPicker)
+      // sees this same event reach document with a target that is neither
+      // the popover nor #btn-color-picker, and closes the popover it just
+      // opened a moment earlier in the same tick.
+      e.stopPropagation();
+      closeMobileMoreMenu();
+      const target = $(it.id);
+      if (target) {
+        // A modal opened this way (e.g. Instagram) refocuses its opener on
+        // close via document.activeElement (openModal()'s default) — but
+        // the real rail button is hidden by this same toolbar collapse, so
+        // hand focus to "Mai mult" itself first, the one trigger that is
+        // still visible once the modal closes.
+        const moreBtn = $('btn-topbar-more');
+        if (moreBtn && moreBtn !== target) moreBtn.focus();
+        target.click();
+      }
+    });
+    menu.appendChild(item);
+  });
+  document.body.appendChild(menu);
+
+  btn.addEventListener('click', () => {
+    if (mobileMoreMenuOpen) closeMobileMoreMenu(); else openMobileMoreMenu();
+  });
+  document.addEventListener('click', (e) => {
+    if (!mobileMoreMenuOpen) return;
+    if (menu.contains(e.target) || btn.contains(e.target)) return;
+    closeMobileMoreMenu();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && mobileMoreMenuOpen) { closeMobileMoreMenu(); btn.focus(); }
+  });
+}
+
+function openMobileMoreMenu() {
+  const btn = $('btn-topbar-more');
+  const menu = $('topbar-more-menu');
+  if (!btn || !menu) return;
+  const rect = btn.getBoundingClientRect();
+  menu.style.top = (rect.bottom + 6) + 'px';
+  menu.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+  menu.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  mobileMoreMenuOpen = true;
+}
+
+function closeMobileMoreMenu() {
+  const btn = $('btn-topbar-more');
+  const menu = $('topbar-more-menu');
+  if (menu) menu.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+  mobileMoreMenuOpen = false;
+}
+
+/** Called on boot and on resize/orientation change (wireStaticButtons()):
+ * toggles the body class app.css's phone+coarse rules (toolbar, drawer
+ * sheet) key off, and lazily builds the "Mai mult" menu the first time a
+ * phone with a coarse pointer is actually seen — never on desktop/tablet,
+ * so a mouse-only session never pays for it. */
+function updateMobileToolbarMode() {
+  const active = isPhoneCoarsePointer();
+  document.body.classList.toggle('mobile-coarse-toolbar', active);
+  if (active) ensureMobileMoreMenu();
+  else closeMobileMoreMenu();
 }
 
 /** True when Details should auto-open (first visit or last preference was open). */
@@ -11265,6 +11585,14 @@ function wireStaticButtons() {
 
   // Image file input
   initImageFileInput();
+
+  // PLAN-UX §5.4 (S-4): phone + coarse-pointer toolbar/sheet mode. Checked
+  // once now and again on every resize/rotation — matchMedia has no live
+  // listener wired here since app.css's own breakpoints already react
+  // instantly; this only needs to catch up the JS-built "Mai mult" menu and
+  // the body class.
+  updateMobileToolbarMode();
+  window.addEventListener('resize', updateMobileToolbarMode);
 }
 
 // ---------------------------------------------------------------------------

@@ -31,7 +31,14 @@
  *     {hb:'connect-instagram'}                — Instagram teaser's CTA clicked (see
  *                                              section 5c below) — app.js opens the
  *                                              existing Instagram modal in response.
+ *     {hb:'mobile-edit-open', path, value,
+ *      allowsBr, singleLine, maxLen}          — PLAN-UX §5.4 (S-4): a coarse-pointer
+ *                                              tap at phone width on a text field asks
+ *                                              the parent to open its bottom-sheet
+ *                                              editor instead of focusing this
+ *                                              contenteditable span (see setupTextFields()).
  *
+
  *   parent → iframe:
  *     {hb:'set', path, value}               — surgical text update (no re-render)
  *     {hb:'highlight', path}                — flash outline on element
@@ -528,6 +535,23 @@
     try { window.parent.postMessage(msg, '*'); } catch (_) {}
   }
 
+  /** PLAN-UX §5.4 (S-4): is this a phone with a real touch pointer right
+   * now? Re-checked on every tap (not cached) so a rotation/resize between
+   * loads gets the right answer. Matches builder/app.css's own phone
+   * breakpoint (max-width:640px) plus pointer:coarse — the same gate R-13
+   * (app.css) uses to scope touch-only sizing, so "phone" means the same
+   * viewport here as it does for the rest of the editor chrome. Desktop and
+   * a mouse-driven laptop at this width (pointer:fine) are both excluded on
+   * purpose: this only replaces the on-screen keyboard fight a real phone
+   * keyboard causes inside the sandboxed iframe, not ordinary mouse editing. */
+  function isPhoneCoarsePointer() {
+    try {
+      return typeof window.matchMedia === 'function' &&
+        window.matchMedia('(max-width: 640px)').matches &&
+        window.matchMedia('(pointer: coarse)').matches;
+    } catch (_) { return false; }
+  }
+
   /**
    * Open inside the iframe while the click still owns a browser user gesture.
    * The parent also receives the ordinary image request and attempts its shared
@@ -879,6 +903,35 @@
       // don't — see computeSchemaLimits() in app.js), so most list-item
       // fields simply have no entry here and are left unlimited.
       var maxLen = fieldLimits[path];
+
+      /* PLAN-UX §5.4 (S-4): on a phone with a coarse pointer, block the
+       * native focus/caret this element would otherwise get on tap and ask
+       * the parent to open its bottom-sheet editor (a real top-level
+       * <textarea>, not this sandboxed-iframe field) instead. Listens on
+       * 'pointerdown' in the capture phase and calls preventDefault() there
+       * — the same event the existing code above already notes places the
+       * caret ("the caret is placed on mousedown") — so the contenteditable
+       * never focuses at all; no keyboard flash first. Only ever active on
+       * a real touch tap at phone width (isPhoneCoarsePointer()); a mouse
+       * pointer at any width, or a coarse pointer above 640px (a touch
+       * tablet — R-13's own bucket), leaves this element's ordinary
+       * contenteditable focus/caret behavior completely untouched. The
+       * commit path back (Gata) goes through the exact same
+       * onInlineTextEdit()/{hb:'set'} round trip an ordinary keystroke here
+       * already uses — see openMobileEditSheet() in app.js. */
+      el.addEventListener('pointerdown', function (e) {
+        if (!isPhoneCoarsePointer()) return;
+        e.preventDefault();
+        toParent({
+          hb: 'mobile-edit-open',
+          path: path,
+          value: currentValue(),
+          allowsBr: allowsBr,
+          singleLine: isSingleLine,
+          maxLen: maxLen || null,
+        });
+      }, true);
+
       var counterEl = null;
       function updateCounter() {
         if (!maxLen) return;
@@ -1900,7 +1953,16 @@
     switch (msg.hb) {
 
       case 'set': {
-        /* Surgical text update — set textContent without re-rendering. */
+        /* Surgical text update — set textContent without re-rendering.
+         * PLAN-UX §5.4 (S-4): also the write-back path for the mobile
+         * bottom sheet's "Gata" (openMobileEditSheet() in app.js) — the
+         * sheet's own <textarea> lives in the parent, so this is the only
+         * place the canvas element's DOM actually changes. contact.address
+         * (data-hb-multiline="br") needs real <br> nodes, not a '\n' text
+         * node (see setBrContent() above — a bare '\n' just collapses to a
+         * space under this field's white-space), and any still-demo marker
+         * must clear the same way a real keystroke's own 'input' handler
+         * already does, since this bypass never fires that handler. */
         var path = msg.path;
         var value = msg.value != null ? String(msg.value) : '';
         var els = findAllByPath(path);
@@ -1908,7 +1970,14 @@
           // Only update if this element is NOT currently focused
           // (user is actively editing — don't clobber the cursor).
           if (document.activeElement !== el) {
-            el.textContent = value;
+            if (el.getAttribute('data-hb-multiline') === 'br') {
+              setBrContent(el, value);
+            } else {
+              el.textContent = value;
+            }
+            el.classList.remove('hb-demo-text');
+            el.removeAttribute('data-hb-demo-tip');
+            if (el.getAttribute('aria-describedby') === DEMO_TIP_ID) el.removeAttribute('aria-describedby');
           }
         });
         break;

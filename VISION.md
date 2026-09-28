@@ -117,7 +117,9 @@ Done minim:
 - preview vizibil înainte de card/trial;
 - desktop/mobile toggle funcțional;
 - preview-ul reflectă text, imagini, culori, WhatsApp și legal footer;
-- dacă se introduce preview shareable public, trebuie să fie tokenizat/noindex/expirabil și să nu fie confundat cu site live final.
+- dacă se introduce preview shareable public, trebuie să fie tokenizat/noindex/expirabil și să nu fie confundat cu site live final;
+- la ≤640px cu pointer tactil, atingerea unui text editabil din canvas deschide o foaie (bottom sheet) cu textarea, nu focalizează direct câmpul din iframe (PLAN-UX §5.4);
+- la aceeași lățime/pointer, bara de unelte a editorului se restrânge la acțiunile primare (Publică, Detalii, Poze, Previzualizare) plus un meniu „Mai mult" pentru restul (Instagram, Culoare, descărcări) — desktop/tabletă/mouse rămân neschimbate (PLAN-UX §5.4).
 
 ### 4.6 Builder slab — standard minim
 
