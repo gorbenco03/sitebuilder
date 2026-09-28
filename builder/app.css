@@ -2594,6 +2594,64 @@ body.details-drawer-open .demo-content-banner {
 
 .modal-box--domain { max-width: 560px; }
 
+/* Numbered-step header (PLAN-UX-2026-09-27 §4 "pași expliciți"): 4 steps,
+   current one highlighted, earlier ones checked off. Purely presentational —
+   driven by domainStepForStatus() reading the same status as everything else. */
+.domain-steps {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.1rem;
+  flex-wrap: wrap;
+  gap: .15rem;
+}
+.domain-step { display: flex; align-items: center; gap: .4rem; }
+.domain-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  font-size: .74rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  color: var(--text-light);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.domain-step-label { font-size: .74rem; color: var(--text-light); white-space: nowrap; }
+.domain-step.is-current .domain-step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+.domain-step.is-current .domain-step-label { color: var(--text); font-weight: 600; }
+.domain-step.is-done .domain-step-num { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.domain-step.is-done .domain-step-label { color: var(--text-muted); }
+.domain-step-sep { flex: 1 1 .75rem; min-width: .5rem; height: 1px; background: var(--border); margin: 0 .3rem; }
+
+/* Each visible stage of the flow (DNS records, live status) as its own
+   labelled card, so "what do I do right now" never hides in a wall of text. */
+.domain-step-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .85rem .9rem;
+  margin-bottom: .85rem;
+}
+.domain-step-card-title {
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 .6rem;
+}
+.domain-status-short {
+  display: inline-block;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: .2rem .55rem;
+  margin: 0 0 .4rem;
+}
+
 .domain-connect-form { display: flex; flex-direction: column; gap: .75rem; }
 
 .domain-status-row {
