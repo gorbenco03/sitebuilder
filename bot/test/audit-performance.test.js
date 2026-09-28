@@ -228,11 +228,21 @@ function dirTotalBytes(dir) {
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   portfolio         133387    136055
   //   professionals      149843    152840
+  //
+  // Raised to measured + 2% for audit27-T-1C (PLAN-AUDIT-2026-09-27.md §4):
+  // the addable "Întrebări frecvente" block on portfolio, the addable
+  // "Program"/"Unde ne găsești" blocks on both templates, and the fixed
+  // (no-longer-duplicated) schedule.rows markup — real shipped markup+CSS,
+  // not drift, same convention as every entry above — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         138643    141416
+  //   professionals      154027    157108
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 102966,
     'local-service': 125711,
-    portfolio: 136055,
-    professionals: 152840,
+    portfolio: 141416,
+    professionals: 157108,
   };
 
   for (const id of TPLS) {

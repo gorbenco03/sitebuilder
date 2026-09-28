@@ -984,6 +984,21 @@ select.pr-input option:disabled {
 .pr-faq__item[open] .pr-faq__q::after { content: "–"; }
 .pr-faq__item .pr-copy { margin-top: 0.55rem; }
 
+/* Program (optional schedule block) */
+.pr-sched__list { max-width: 28rem; margin-top: 0.5rem; }
+.pr-sched__row {
+    display: flex; justify-content: space-between; gap: 1rem;
+    padding: 0.75rem 0; border-bottom: 1px solid var(--line);
+}
+.pr-sched__day { font-weight: 600; }
+.pr-sched__hours { color: var(--mute); }
+
+/* Unde ne găsești (optional location block) */
+.pr-loc__inner { max-width: 34rem; }
+/* Address is a textarea field (one line per row) — preserve those line
+   breaks visually without needing raw/unescaped HTML output. */
+.pr-loc__addr { white-space: pre-line; }
+
 /* IG + contact */
 .pr-ig-head {
     display: flex;

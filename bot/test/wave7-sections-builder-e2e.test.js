@@ -130,7 +130,10 @@ test('Secțiuni pagină: move, remove, add back, undo, then publish and verify t
     // length (worst case: every remaining neighbour above faq is hidden)
     // rather than a magic number tied to a section count that keeps growing.
     const faqUp = secUpBtn('Întrebări frecvente');
-    const maxSectionMoves = 9; // professionals: services,process,about,team,testimonials,appointment,faq,instagram,contact
+    // professionals: services,process,about,team,testimonials,schedule,appointment,
+    // faq,location,instagram,contact (audit27-T-1C added "schedule"/"location",
+    // both addable/content-gated and hidden on this empty-content baseline).
+    const maxSectionMoves = 11;
     for (let i = 0; i < maxSectionMoves && (await mainSectionIds())[0] !== 'faq'; i++) {
       await faqUp.click();
       await page.waitForTimeout(700);

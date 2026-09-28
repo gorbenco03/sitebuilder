@@ -412,6 +412,36 @@
         </section>
         <!-- @endif -->
 
+        <!-- @if faq.items -->
+        <section class="pf-faq fade-in-section" id="faq" aria-labelledby="faq-heading">
+            <div class="pf-shell pf-faq__wrap">
+                <p class="pf-kicker pf-kicker--center">{{labels.faqEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="faq-heading">{{faq.title}}</h2>
+                <div class="pf-faq__list">
+                    <!-- @each faq.items -->
+                    <details class="pf-faq__item">
+                        <summary class="pf-faq__q">{{q}}</summary>
+                        <p class="pf-copy pf-copy--sm">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if location.address -->
+        <section class="pf-loc fade-in-section" id="location" aria-labelledby="loc-heading">
+            <div class="pf-shell pf-loc__inner">
+                <p class="pf-kicker pf-kicker--center">{{labels.locationEyebrow}}</p>
+                <h2 class="pf-display pf-display--center" id="loc-heading">{{location.title}}</h2>
+                <p class="pf-copy pf-loc__addr">{{location.address}}</p>
+                <!-- @if location.addressHref -->
+                <a href="{{location.addressHref}}" class="pf-loc__maps" target="_blank" rel="noopener">{{labels.locationMapsBtn}}</a>
+                <!-- @endif -->
+            </div>
+        </section>
+        <!-- @endif -->
+
         <section class="pf-appt fade-in-section" aria-labelledby="booking-heading" id="contact">
             <div class="pf-shell pf-appt__grid">
                 <div>
@@ -440,13 +470,10 @@
                     <!-- @if contact.waHref -->
                     <a href="{{contact.waHref}}" class="pf-appt__wa" target="_blank" rel="noopener">{{labels.waBookBtn}}</a>
                     <!-- @endif -->
+                    <!-- Links to the Program section instead of repeating the list here,
+                         so each hour row has exactly one editable place on the page. -->
                     <!-- @if schedule.rows -->
-                    <div class="pf-appt__hours">
-                        <p class="pf-kicker">{{labels.scheduleEyebrow}}</p>
-                        <!-- @each schedule.rows -->
-                        <p class="pf-appt__hr"><strong>{{day}}</strong><span>{{hours}}</span></p>
-                        <!-- @end -->
-                    </div>
+                    <a class="pf-appt__hours-link" href="#schedule" data-nav-for="schedule">{{schedule.title}}</a>
                     <!-- @endif -->
                 </div>
             </div>

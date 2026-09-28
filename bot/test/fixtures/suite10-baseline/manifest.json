@@ -1,5 +1,5 @@
 {
-  "generatedAtCommit": "be1989cee69bfb0046e13155ea7b896185e53cda",
+  "generatedAtCommit": "98ae941712ada203d4b50ede5f83a06535229adc",
   "templates": {
     "product-menu": [
       {
@@ -17,17 +17,17 @@
       {
         "id": "atelier-ivoire",
         "file": "portfolio/atelier-ivoire.html",
-        "bytes": 36576
+        "bytes": 36334
       },
       {
         "id": "studio-forma",
         "file": "portfolio/studio-forma.html",
-        "bytes": 35253
+        "bytes": 35119
       },
       {
         "id": "atelier-ivoire-ro",
         "file": "portfolio/atelier-ivoire-ro.html",
-        "bytes": 36467
+        "bytes": 36225
       }
     ],
     "local-service": [
@@ -46,17 +46,17 @@
       {
         "id": "cabinet-marin",
         "file": "professionals/cabinet-marin.html",
-        "bytes": 42742
+        "bytes": 42762
       },
       {
         "id": "atelier-nord",
         "file": "professionals/atelier-nord.html",
-        "bytes": 36549
+        "bytes": 36569
       },
       {
         "id": "cabinet-marin-ro",
         "file": "professionals/cabinet-marin-ro.html",
-        "bytes": 41892
+        "bytes": 41912
       }
     ],
     "desserdirina": [

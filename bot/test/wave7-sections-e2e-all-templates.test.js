@@ -144,6 +144,16 @@ test('page-sections reorder/remove works end-to-end (real DOM) on every newly-wi
             ? { title: 'Ce spun clienții', items: [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }] }
             : [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
         }
+        // audit27-T-1C: portfolio also gained two addable, content-gated
+        // sections — "faq" (`@if faq.items`) and "location"
+        // (`@if location.address`). Force both non-empty so they actually
+        // render and are exercised by the reorder/remove assertions below.
+        if (ids.includes('faq') && templateId === 'portfolio') {
+          baseConfig.faq = { title: 'Întrebări frecvente', items: [{ q: 'Test?', a: 'Da.' }] };
+        }
+        if (ids.includes('location') && templateId === 'portfolio') {
+          baseConfig.location = { title: 'Unde ne găsești', address: 'Strada Test 1', addressHref: 'https://maps.google.com/?q=test' };
+        }
         const effectiveIds = templateId === 'desserdirina' ? ids.filter((id) => id !== 'instagram') : ids;
         // Reversed order, with one removable section marked removed.
         const reversed = [...effectiveIds].reverse();
