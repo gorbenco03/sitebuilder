@@ -1914,14 +1914,34 @@ async function handleGetSite(req, res, siteId) {
     sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config });
 }
 
+/**
+ * U-01 (PLAN-UX-2026-09-27 §3, builder Istoric versiuni): each row used to
+ * say only "Versiunea N" — no way to tell which one had what content before
+ * restoring it. Attaches a short `description` (business name + start of
+ * tagline at that point in time) per version, read from that version's own
+ * stored config — never the full config itself, only the two fields an
+ * owner needs to tell versions apart.
+ */
 async function handleGetVersions(req, res, siteId) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const site = await getRegistry().getSite(siteId);
     if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
-    const versions = await getRegistry().listVersions(siteId);
-    sendJson(res, 200, { versions });
+    const reg = getRegistry();
+    const versions = await reg.listVersions(siteId);
+    const versionsWithDescription = await Promise.all(versions.map(async (v) => {
+        let description = '';
+        try {
+            const config = await reg.getVersionConfig(siteId, v.versionId);
+            const name = config && config.business && config.business.name ? String(config.business.name).trim() : '';
+            const tagline = config && config.business && config.business.tagline ? String(config.business.tagline).trim() : '';
+            description = [name, tagline].filter(Boolean).join(' — ');
+            if (description.length > 80) description = description.slice(0, 79) + '…';
+        } catch (_) { /* a missing/corrupt version config just gets no description, never a failed list */ }
+        return { ...v, description };
+    }));
+    sendJson(res, 200, { versions: versionsWithDescription });
 }
 
 async function handleRollback(req, res, siteId) {
