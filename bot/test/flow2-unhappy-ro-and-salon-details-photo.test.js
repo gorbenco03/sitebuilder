@@ -46,14 +46,30 @@ const downloadDraftHtml = extractFunction(appSrc, 'downloadDraftHtml');
 const downloadDraftZip = extractFunction(appSrc, 'downloadDraftZip');
 const doActualPublish = extractFunction(appSrc, 'doActualPublish');
 const wireAuthForm = extractFunction(appSrc, 'wireAuthForm');
+const safeServerMessage = extractFunction(appSrc, 'safeServerMessage');
 const unpaidRomanian = 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.';
+
+// PLAN-UX-2026-09-27 §4/§5.8 (U-09): the fromServer+status gate that used to
+// be reimplemented inline at each call site now lives once, in
+// safeServerMessage(). Call sites route through it instead of repeating the
+// gate; the gate itself is checked directly below.
+check('safeServerMessage gates a server message on fromServer AND a 4xx status', () => {
+  // Showing `e.message` is allowed only behind BOTH guards: the message came
+  // from our server (`fromServer`), and the status is a 4xx — a deliberate
+  // refusal written for the owner. A 5xx carries an internal failure's text
+  // ("boom", a stack, an English driver error) and must not be shown, and
+  // neither must a raw browser fetch/network failure.
+  assert.match(safeServerMessage, /fromServer/, 'must gate a shown server message on fromServer');
+  assert.match(safeServerMessage, /status\s*[<>=]/, 'must also gate it on the status code (4xx only, never 5xx)');
+});
 
 check('auth email network failure copy', () => {
   // This check originally banned showing err.message at all. Audit finding #6
   // then asked for the opposite -- the server sends a specific reason and the
   // UI was masking it behind one generic string. Both are right, about
   // different errors, so the contract is now: show the reason the SERVER
-  // chose, fall back to Romanian for anything else.
+  // chose, fall back to Romanian for anything else -- via the shared
+  // safeServerMessage() gate, not an inline err.fromServer check.
   //
   // The distinction is not cosmetic. apiPost() only reaches its throw when the
   // server actually responded; a fetch() rejection (offline, DNS, connection
@@ -64,8 +80,8 @@ check('auth email network failure copy', () => {
     'auth email failure still keeps the Romanian fallback'
   );
   assert.ok(
-    /err\s*&&\s*err\.fromServer/.test(wireAuthForm),
-    'auth error must gate the server reason on err.fromServer'
+    /safeServerMessage\s*\(\s*err\s*,/.test(wireAuthForm),
+    'auth error must route through the shared safeServerMessage gate, not an inline err.message fallback'
   );
   assert.ok(
     !/errorDiv\.textContent\s*=\s*\(?\s*(?:err|e)\s*&&\s*(?:err|e)\.message\s*\)?\s*\|\|/.test(wireAuthForm),
@@ -90,21 +106,16 @@ check('publish network failure copy', () => {
   // must reach it verbatim -- PLAN-QA-2026-09-12.md S3-1 / defect B1: the
   // "Ai deja un site neplătit..." 409 was being swallowed by the fallback, so
   // the owner saw "Publicarea a eșuat. Încearcă din nou." and had no idea why.
-  // apiPost() marks server-authored messages `fromServer` for exactly this.
+  // safeServerMessage() marks server-authored messages `fromServer` for
+  // exactly this (checked directly, above).
   assert.ok(
     doActualPublish.includes("'Publicarea a eșuat. Încearcă din nou.'"),
     'publish failure keeps the fixed Romanian fallback for non-server errors'
   );
-  // Showing `e.message` is allowed only behind BOTH guards: the message came
-  // from our server (`fromServer`), and the status is a 4xx — a deliberate
-  // refusal written for the owner. A 5xx carries an internal failure's text
-  // ("boom", a stack, an English driver error) and must not be shown.
-  if (/(?:err|e)\.message/.test(doActualPublish)) {
-    assert.match(doActualPublish, /fromServer/,
-      'a publish failure that shows e.message must gate it on fromServer');
-    assert.match(doActualPublish, /status\s*[<>=]/,
-      'a publish failure that shows e.message must also gate it on the status code');
-  }
+  assert.ok(
+    /safeServerMessage\s*\(\s*e\s*,/.test(doActualPublish),
+    'publish failure must route through the shared safeServerMessage gate, not an inline e.message fallback'
+  );
 });
 
 check('invalid payment copy', () => {
