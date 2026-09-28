@@ -464,6 +464,8 @@
         
 
         
+
+        
         <section class="pf-svc fade-in-section" id="appointment" aria-labelledby="appt-heading"
             data-pf-appt="1"
             data-tz="Europe/Bucharest"
@@ -526,6 +528,50 @@
                         
                     </div>
                     
+                </div>
+            </div>
+
+            <!-- General "write to us" form; api attribute filled at publish. -->
+            <div class="pf-shell pf-msg">
+                <div class="pf-msg__head">
+                    <h3 class="pf-msg__title">Scrie-ne</h3>
+                    <p class="pf-copy">Lasă un mesaj și te contactăm noi.</p>
+                </div>
+                <form class="pf-msg__form" id="pf-msg-form" data-site-messages-api="" data-site-slug="" novalidate>
+                    <div class="pf-msg__grid">
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-msg-name">Nume</label>
+                            <input class="pf-input" id="pf-msg-name" name="name" type="text" autocomplete="name" required maxlength="80">
+                        </div>
+                        <div class="pf-field">
+                            <label class="pf-label" for="pf-msg-contact">Telefon sau email</label>
+                            <input class="pf-input" id="pf-msg-contact" name="contact" type="text" autocomplete="email" required maxlength="120">
+                        </div>
+                    </div>
+                    <div class="pf-field">
+                        <label class="pf-label" for="pf-msg-message">Mesajul tău</label>
+                        <textarea class="pf-input pf-input--area" id="pf-msg-message" name="message" required maxlength="600" rows="4"></textarea>
+                    </div>
+                    <div class="pf-msg__hp" aria-hidden="true">
+                        <label for="pf-msg-website">Nu completa acest câmp</label>
+                        <input id="pf-msg-website" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="pf-msg__hint" id="pf-msg-hint" hidden></p>
+                    <button type="button" class="pf-msg__btn pf-msg__submit" id="pf-msg-submit"><span>Trimite mesajul</span></button>
+                </form>
+                <div class="pf-msg__fail" id="pf-msg-fail" role="alert" hidden>
+                    <p class="pf-copy">Mesajul NU a fost trimis din site. Formularul rămâne completat — scrie-ne direct:</p>
+                    <div class="pf-msg__fail-actions">
+                        
+                        <a class="pf-msg__btn" href="https://wa.me/40724555046" target="_blank" rel="noopener">WhatsApp</a>
+                        
+                        
+                        <a class="pf-msg__btn" href="tel:+40724555046">+40 724 555 046</a>
+                        
+                    </div>
+                </div>
+                <div class="pf-msg__done" id="pf-msg-done" hidden>
+                    <p class="pf-copy">Mulțumim! Mesajul a fost trimis — revenim cât mai curând.</p>
                 </div>
             </div>
         </section>

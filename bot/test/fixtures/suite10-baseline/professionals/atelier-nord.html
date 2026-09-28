@@ -408,6 +408,10 @@
         </section>
 
         
+
+        
+
+        
         <section class="pr-sec pr-sec--book pr-reveal" id="appointment" aria-labelledby="book-heading"
             data-pr-appt="1"
             data-tz="Europe/Bucharest"
@@ -616,6 +620,51 @@
                     
                     
                 </ul>
+            </div>
+
+            <!-- General "write to us" form; api attribute filled at publish. -->
+            <div class="pr-shell pr-msg">
+                <div class="pr-msg__head">
+                    <h3 class="pr-msg__title">Scrie-ne</h3>
+                    <p class="pr-copy">Lasă un mesaj și te contactăm noi.</p>
+                </div>
+                <form class="pr-msg__form" id="pr-msg-form" data-site-messages-api="" data-site-slug="" novalidate>
+                    <div class="pr-appt__grid">
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-msg-name">Nume</label>
+                            <input class="pr-input" id="pr-msg-name" name="name" type="text" autocomplete="name" required maxlength="80">
+                        </div>
+                        <div class="pr-field">
+                            <label class="pr-label" for="pr-msg-contact">Telefon sau email</label>
+                            <input class="pr-input" id="pr-msg-contact" name="contact" type="text" autocomplete="email" required maxlength="120">
+                        </div>
+                    </div>
+                    <div class="pr-field">
+                        <label class="pr-label" for="pr-msg-message">Mesajul tău</label>
+                        <textarea class="pr-input pr-input--area" id="pr-msg-message" name="message" required maxlength="600" rows="4"></textarea>
+                    </div>
+                    <div class="pr-msg__hp" aria-hidden="true">
+                        <label for="pr-msg-website">Nu completa acest câmp</label>
+                        <input id="pr-msg-website" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="pr-appt__hint" id="pr-msg-hint" hidden></p>
+                    <button type="button" class="pr-btn pr-btn--primary pr-msg__submit" id="pr-msg-submit"><span>Trimite mesajul</span></button>
+                </form>
+                <div class="pr-msg__fail" id="pr-msg-fail" role="alert" hidden>
+                    <p class="pr-copy">Mesajul NU a fost trimis din site. Formularul rămâne completat — scrie-ne direct:</p>
+                    <div class="pr-msg__fail-actions">
+                        
+                        <a class="pr-btn pr-btn--primary" href="tel:+40721550142">Sună la +40 721 550 142</a>
+                        
+                        
+                        
+                        <a class="pr-btn pr-btn--ghost" href="mailto:salut@ateliernord.ro">salut@ateliernord.ro</a>
+                        
+                    </div>
+                </div>
+                <div class="pr-msg__done" id="pr-msg-done" hidden>
+                    <p class="pr-copy">Mulțumim! Mesajul a fost trimis — revenim cât mai curând.</p>
+                </div>
             </div>
         </section>
     </main>
