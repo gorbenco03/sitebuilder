@@ -330,3 +330,109 @@ test('R-27: "Descarcă datele mele" / "Șterge contul" — reachable, scoped to 
         }
     });
 });
+
+test('R-27 (reviewer finding): a Stripe subscription cancellation that cannot be confirmed aborts the whole deletion BEFORE any data is touched', async () => {
+    const shotDir = fs.mkdtempSync(path.join(os.tmpdir(), 'audit27-r-27-cancelfail-shots-'));
+    const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+
+    await withServer({
+        HIDOOK_TEST_PAY: '1',
+        HIDOOK_ISOLATED_DEPLOY: '1',
+        NODE_ENV: 'test',
+        DATA_DIR: freshTmpDataDir('audit27-r-27-cancelfail-'),
+        SERVER_SECRET: 'audit27-r-27-cancelfail-' + crypto.randomBytes(8).toString('hex'),
+    }, async (base) => {
+        const browser = await chromium.launch({ headless: true });
+        const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+        // bot/account-data.js#eraseAccount lazily requires this same module
+        // instance (same process, same require cache) — stubbing the export
+        // here is what a real "Stripe is down / rejects the cancel" outcome
+        // looks like from eraseAccount()'s point of view, without touching
+        // any actual network.
+        const payments = require(path.join(ROOT, 'bot/payments.js'));
+        const originalCancelSubscription = payments.cancelSubscription;
+        try {
+            const email = 'audit27-r27-cf-' + crypto.randomUUID().slice(0, 8) + '@example.com';
+            const marker = 'HIDOOK-CF-DATA-' + crypto.randomUUID().slice(0, 8);
+            const slug = 'audit27-r27-cf-' + crypto.randomUUID().slice(0, 8);
+
+            const page = await context.newPage();
+            page.setDefaultTimeout(30000);
+            await acceptCookiesAndStart(page, base, 'product-menu');
+            await editBusinessName(page, marker);
+            await signIn(page, base, email);
+            if (!/#edit$/.test(page.url())) {
+                await page.evaluate(() => { window.location.hash = '#edit'; });
+                await page.waitForURL(/#edit$/);
+            }
+            await editBusinessName(page, marker);
+            // Real publish+pay first — this is what actually gives the site
+            // a stripeSubscriptionId (the HIDOOK_TEST_PAY offline path
+            // synthesizes one — see bot/webpublish.js#_storeStripeBillingIds)
+            // for the stub below to fail on.
+            await publishAndPayThroughUi(page, slug);
+
+            // NOW stub cancelSubscription to simulate a genuine failure
+            // (Stripe outage / real error) — never "already canceled" or
+            // "resource_missing", which bot/payments.js#cancelSubscription
+            // already treats as success.
+            payments.cancelSubscription = async () => {
+                throw new Error('Stripe DELETE /subscriptions/x → 500: simulated outage, not a real Stripe call');
+            };
+
+            const editButton = page.locator('.site-card-actions button', { hasText: 'Editează' }).first();
+            await editButton.click();
+            await page.waitForURL(/#edit$/);
+            await page.locator('#preview-iframe').waitFor({ state: 'visible' });
+            await page.waitForTimeout(600);
+            if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
+                await page.locator('#btn-close-drawer').click().catch(() => {});
+                await page.waitForTimeout(300);
+            }
+
+            await page.locator('#btn-account-menu').click();
+            await page.locator('#account-menu').waitFor({ state: 'visible' });
+            await page.locator('#account-menu-delete-account').click();
+            await page.locator('#modal-delete-account').waitFor({ state: 'visible' });
+            await page.locator('#input-delete-account-confirm').fill(email);
+            const confirmBtn = page.locator('#btn-confirm-delete-account');
+            assert.equal(await confirmBtn.isDisabled(), false, 'confirm button must enable once the exact email is typed');
+
+            const [deleteResp] = await Promise.all([
+                page.waitForResponse((r) => r.url().includes('/api/me/delete-account') && r.request().method() === 'POST'),
+                confirmBtn.click(),
+            ]);
+            assert.equal(deleteResp.status(), 502, 'an unconfirmed subscription cancellation must be reported as a failure, not silently swallowed as success');
+            const errJson = await deleteResp.json().catch(() => null);
+            assert.equal(errJson && errJson.code, 'SUBSCRIPTION_CANCEL_FAILED');
+            assert.match(String(errJson && errJson.error), /Nu am putut opri abonamentul/);
+
+            // The UI must show this in the delete modal, not fail silently
+            // or pretend the account was deleted.
+            await page.locator('#modal-delete-account').waitFor({ state: 'visible' });
+            const errText = (await page.locator('#delete-account-error').innerText()).trim();
+            assert.match(errText, /Nu am putut opri abonamentul acum\. Contul nu a fost șters\./, 'the delete modal must show the exact Romanian error, not a generic one');
+            await page.screenshot({ path: path.join(shotDir, '01-delete-fails-shows-subscription-error.png') });
+
+            // Nothing was deleted: the session is still valid, the site row
+            // still exists, and the live site is still being served.
+            const me = await page.evaluate(() => fetch('/api/me', { headers: { Accept: 'application/json' } }).then((r) => r.json()));
+            assert.ok(me && me.user, 'the account/session must still exist — the abort happened before any deletion');
+
+            const sitesAfter = await page.evaluate(() => fetch('/api/sites', { headers: { Accept: 'application/json' } }).then((r) => r.json()));
+            const listAfter = (sitesAfter && sitesAfter.sites) || [];
+            assert.ok(listAfter.some((s) => s.slug === slug), 'the site row must still exist after an aborted deletion');
+
+            const liveResp = await page.request.get(base + '/live/' + slug + '/');
+            assert.equal(liveResp.status(), 200, 'the live site must keep serving after an aborted deletion (never unpublished before the subscription was confirmed canceled)');
+            const liveText = await liveResp.text();
+            assert.match(liveText, new RegExp(escapeForRegExp(marker)), 'the still-live site must still show its real business name');
+            await page.screenshot({ path: path.join(shotDir, '02-site-still-live-after-aborted-delete.png') });
+
+            console.log('PASS audit27-r-27 (cancel-subscription-failure abort): screenshots at', shotDir);
+        } finally {
+            payments.cancelSubscription = originalCancelSubscription;
+            await browser.close().catch(() => {});
+        }
+    });
+});

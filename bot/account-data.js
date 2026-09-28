@@ -7,10 +7,12 @@
  *   - buildUserDataExport(userId): a full, exportable snapshot of everything
  *     this account owns (profile, every site's config history, orders/
  *     invoices, native-calendar services/bookings, contact-form requests).
- *   - eraseAccount(userId): permanently removes it all — cancels any active
- *     Stripe subscription, unpublishes/removes live files, erases
- *     native-calendar tenant data, deletes the site rows, revokes every
- *     session and login token, and deletes the user row itself.
+ *   - eraseAccount(userId): permanently removes it all — cancels every
+ *     owned site's Stripe subscription FIRST (aborting before touching any
+ *     data if a cancellation can't be confirmed, to never orphan a live
+ *     charge), then unpublishes/removes live files, erases native-calendar
+ *     tenant data, deletes the site rows, revokes every session and login
+ *     token, and deletes the user row itself.
  *
  * Lazy `require()`s throughout mirror bot/server.js's getRegistry()/
  * getAuth() pattern: requiring this module alone must not force-open the
@@ -129,20 +131,46 @@ async function buildUserDataExport(userId) {
 }
 
 /**
+ * Thrown by eraseAccount() when a site's Stripe subscription could not be
+ * confirmed canceled — see that function's doc comment. bot/server.js
+ * catches this by `code` and turns it into the 502 the delete modal shows.
+ */
+class SubscriptionCancelFailedError extends Error {
+    constructor(siteId, cause) {
+        super('Stripe subscription cancellation could not be confirmed for site ' + siteId + ': ' + (cause && cause.message));
+        this.name = 'SubscriptionCancelFailedError';
+        this.code = 'SUBSCRIPTION_CANCEL_FAILED';
+        this.siteId = siteId;
+        this.cause = cause;
+    }
+}
+
+/**
  * Permanently erase a user's account and everything it owns. Mirrors
  * bot/server.js#handleDeleteSite's per-site cleanup (unpublish, domain
  * record, native-calendar tenant data, registry row) but — unlike a single
- * site delete — never refuses on an active subscription or future bookings:
- * it cancels the subscription itself first, then proceeds regardless, since
- * the whole account is being erased, not just unpublished.
+ * site delete — never refuses on future bookings, only on billing: an
+ * account may not be erased while it might still leave a live, orphaned
+ * Stripe subscription behind (no account left to see or cancel it from).
  *
- * Every step is independently best-effort (one already-gone resource must
- * never block the rest — same contract as handleDeleteSite), so this is safe
- * to call twice on the same userId (e.g. a retried request after a partial
- * failure).
+ * Two phases, in order:
+ *   1. Cancel EVERY owned site's Stripe subscription first, before touching
+ *      any data. payments.cancelSubscription() already treats "Stripe says
+ *      this subscription is already gone" as success; if it still rejects
+ *      for any site, this throws SubscriptionCancelFailedError immediately
+ *      — nothing has been unpublished or deleted yet, so the account and
+ *      every site are exactly as they were, and the caller can show a clear
+ *      "try again" error instead of leaving an orphaned charge.
+ *   2. Only once every subscription is confirmed gone: unpublish + remove
+ *      each site's live files, erase its native-calendar tenant data,
+ *      delete its rows, then revoke sessions/tokens and delete the user row.
+ *      Every step in this phase stays independently best-effort (one
+ *      already-gone resource must never block the rest), so phase 2 is safe
+ *      to re-run on a retried request after a phase-2 partial failure.
  *
  * @param {string} userId
  * @returns {Promise<{ok: true, sitesRemoved: number}>}
+ * @throws {SubscriptionCancelFailedError} if any site's subscription cancellation could not be confirmed
  */
 async function eraseAccount(userId) {
     const reg = _registry();
@@ -154,14 +182,21 @@ async function eraseAccount(userId) {
 
     const sites = (await reg.listSites(userId)) || [];
 
+    // ---- Phase 1: cancel every subscription FIRST. Abort before any
+    // deletion if even one cancellation cannot be confirmed. ----
     for (const site of sites) {
         if (site.paid && site.stripeSubscriptionId) {
             try {
                 await payments.cancelSubscription(site.stripeSubscriptionId);
             } catch (e) {
-                log('account_data.erase.cancel_subscription_failed', { siteId: site.id, err: e.message }, 'warn');
+                log('account_data.erase.cancel_subscription_failed', { siteId: site.id, err: e.message }, 'error');
+                throw new SubscriptionCancelFailedError(site.id, e);
             }
         }
+    }
+
+    // ---- Phase 2: every subscription confirmed gone — safe to erase. ----
+    for (const site of sites) {
         try {
             webpublish.unpublishSite(site, { reason: 'account_deleted' });
         } catch (e) {
@@ -217,4 +252,4 @@ async function eraseAccount(userId) {
     return { ok: true, sitesRemoved: sites.length };
 }
 
-module.exports = { buildUserDataExport, eraseAccount };
+module.exports = { buildUserDataExport, eraseAccount, SubscriptionCancelFailedError };

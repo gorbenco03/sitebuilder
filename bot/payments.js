@@ -160,7 +160,15 @@ async function stripeRequest(method, urlPath, body) {
     const json = await res.json();
     if (!res.ok) {
         const msg = (json.error && json.error.message) || JSON.stringify(json);
-        throw new Error(`Stripe ${method} ${urlPath} → ${res.status}: ${msg}`);
+        const err = new Error(`Stripe ${method} ${urlPath} → ${res.status}: ${msg}`);
+        // R-27 (GDPR account deletion): cancelSubscription() below needs to
+        // tell "Stripe says this subscription is already gone" apart from a
+        // real failure, without re-parsing the message string. Stripe's own
+        // machine-readable error shape (error.code/error.type) survives here.
+        err.stripeErrorCode = json.error && json.error.code;
+        err.stripeErrorType = json.error && json.error.type;
+        err.stripeStatus = res.status;
+        throw err;
     }
     return json;
 }
@@ -761,6 +769,16 @@ async function getSubscription(subscriptionId) {
  * deletion must stop billing synchronously, in the same request, without
  * waiting for the customer to complete a separate portal flow.
  *
+ * bot/account-data.js#eraseAccount treats a REJECTION from this function as
+ * "billing might still be live — abort the whole deletion before touching
+ * any data" (an orphaned paying subscription is worse than a delayed
+ * delete). So this only ever rejects for a genuine "Stripe could not
+ * confirm cancellation" outcome. When Stripe itself says the subscription
+ * is already gone — `resource_missing` (unknown/deleted id) or the
+ * "already canceled" invalid-request case — that is exactly as good as a
+ * fresh cancellation for GDPR purposes (no live billing left), so it
+ * resolves with `alreadyCanceled: true` instead of throwing.
+ *
  * HIDOOK_TEST_PAY=1 (non-production): no network call — returns a synthetic
  * canceled result so the offline test-pay path never needs a live Stripe
  * subscription id. Real path: DELETE /v1/subscriptions/:id (Stripe's
@@ -768,7 +786,7 @@ async function getSubscription(subscriptionId) {
  * end variant).
  *
  * @param {string} subscriptionId
- * @returns {Promise<{canceled: boolean, id: string, status?: string, offline?: boolean}>}
+ * @returns {Promise<{canceled: boolean, id: string, status?: string, offline?: boolean, alreadyCanceled?: boolean}>}
  */
 async function cancelSubscription(subscriptionId) {
     if (!subscriptionId) return { canceled: false, id: null };
@@ -778,8 +796,19 @@ async function cancelSubscription(subscriptionId) {
     if (!process.env.STRIPE_SECRET_KEY) {
         throw new Error('STRIPE_SECRET_KEY is not set. Cannot cancel subscription.');
     }
-    const sub = await stripeRequest('DELETE', '/subscriptions/' + encodeURIComponent(subscriptionId));
-    return { canceled: true, id: sub.id, status: sub.status };
+    try {
+        const sub = await stripeRequest('DELETE', '/subscriptions/' + encodeURIComponent(subscriptionId));
+        return { canceled: true, id: sub.id, status: sub.status };
+    } catch (e) {
+        const alreadyGone = e && (
+            e.stripeErrorCode === 'resource_missing' ||
+            /already\s*(been\s*)?cancel(l?ed)?/i.test(String(e.message || ''))
+        );
+        if (alreadyGone) {
+            return { canceled: true, id: subscriptionId, status: 'canceled', alreadyCanceled: true };
+        }
+        throw e;
+    }
 }
 
 /**

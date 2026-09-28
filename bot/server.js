@@ -1819,7 +1819,19 @@ async function handleDeleteMyAccount(req, res) {
     try {
         await require('./account-data.js').eraseAccount(userId);
     } catch (e) {
-        log('server.delete_my_account.error', { userId, err: e.message }, 'error');
+        log('server.delete_my_account.error', { userId, err: e.message, code: e.code }, 'error');
+        // Reviewer finding (R-27 rejection): a subscription-cancel failure
+        // must never fall through to the generic 500 below — eraseAccount()
+        // guarantees nothing was deleted when this specific error is thrown
+        // (see bot/account-data.js#eraseAccount phase 1), so the account is
+        // intact and the customer needs to know to retry, not that
+        // something vague failed.
+        if (e && e.code === 'SUBSCRIPTION_CANCEL_FAILED') {
+            return sendJson(res, 502, {
+                error: 'Nu am putut opri abonamentul acum. Contul nu a fost șters. Încearcă din nou peste câteva minute sau scrie-ne.',
+                code: 'SUBSCRIPTION_CANCEL_FAILED',
+            });
+        }
         return sendJson(res, 500, { error: 'Ștergerea contului a eșuat. Încearcă din nou.' });
     }
 
