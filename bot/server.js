@@ -20,6 +20,8 @@
  *   POST /api/auth/logout    → clear + revoke the current session (Wave 8 / AUDIT-07)
  *   POST /api/auth/logout-everywhere → revoke every session for the user
  *   GET  /api/me             → current user or 401
+ *   GET  /api/me/export-data → GDPR self-service: JSON download of the account's own data (R-27)
+ *   POST /api/me/delete-account → GDPR self-service: permanent account + sites erasure (R-27)
  *   GET  /api/sites          → user's sites (includes status/paid)
  *   GET  /api/sites/:id      → single site + latest config
  *   GET  /api/sites/:id/versions    → version list
@@ -1632,6 +1634,162 @@ async function handleGetMe(req, res) {
     const user = await getRegistry().getUser(userId);
     if (!user) return sendJson(res, 401, { error: 'Utilizator negăsit.' });
     sendJson(res, 200, { user });
+}
+
+// ---------------------------------------------------------------------------
+// R-27 — GDPR self-service: "Descarcă datele mele" / "Șterge contul"
+// (auth-account#3, auth-account#4). New, standalone routes — do not touch
+// requireAuth() itself (a parallel task edits it); each does its own narrow
+// Origin/Referer check below instead.
+// ---------------------------------------------------------------------------
+
+/**
+ * gap-csrf-poc#1's proposed fix, applied narrowly to just these two new
+ * routes rather than to requireAuth() (owned by a different, parallel task):
+ * if the request carries an Origin or Referer header at all, its host must
+ * match this request's own Host — a cross-site POST (form or fetch) would
+ * fail this even in the hypothetical case SameSite=Lax stopped protecting
+ * it. A same-origin fetch() from the real app always sends a matching
+ * Origin, so this never blocks a real customer.
+ * @returns {boolean} true iff the request may proceed
+ */
+function assertSameOriginForAccountRoute(req, res) {
+    const hostHeader = req.headers && req.headers.host;
+    const candidate = (req.headers && (req.headers.origin || req.headers.referer)) || '';
+    if (!candidate || !hostHeader) return true; // nothing to compare against — SameSite=Lax remains the primary defense
+    let candidateHost;
+    try { candidateHost = new URL(candidate).host; } catch (_) {
+        sendJson(res, 403, { error: 'Cerere refuzată.' });
+        return false;
+    }
+    if (candidateHost !== hostHeader) {
+        sendJson(res, 403, { error: 'Cerere refuzată (origine diferită).' });
+        return false;
+    }
+    return true;
+}
+
+/**
+ * GET /api/me/export-data — "Descarcă datele mele". A full JSON snapshot of
+ * exactly this account's own data (profile, every owned site's config
+ * history, orders/invoices, native-calendar services/bookings, contact
+ * requests) — never another user's rows (bot/account-data.js scopes every
+ * query to this exact userId or to a site already confirmed to belong to
+ * it). Rate-limited: this walks every site + its calendar tenant, so it is
+ * not free to call in a loop.
+ *
+ * A plain top-level navigation/link (the only cross-site vector a GET route
+ * is exposed to — SameSite=Lax still attaches the cookie to those) sends
+ * `Accept: text/html…`, never `application/json`; the real app's own
+ * fetch() always sets it explicitly. Requiring it here is a free second
+ * line of defense against a cross-site page silently triggering this
+ * download, on top of requireAuth().
+ */
+async function handleExportMyData(req, res) {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const accept = String((req.headers && req.headers.accept) || '');
+    if (!/application\/json/i.test(accept)) {
+        return sendJson(res, 406, { error: 'Cerere invalidă.' });
+    }
+
+    const rl = ratelimit.allowAndConsume('account_export', userId, { max: 10, windowMs: 60 * 60 * 1000 });
+    if (!rl.ok) {
+        return sendJson(res, 429, { error: 'Prea multe cereri de export. Încearcă din nou peste o oră.' });
+    }
+
+    let snapshot;
+    try {
+        snapshot = await require('./account-data.js').buildUserDataExport(userId);
+    } catch (e) {
+        log('server.export_my_data.error', { userId, err: e.message }, 'error');
+        return sendJson(res, 500, { error: 'Exportul datelor a eșuat. Încearcă din nou.' });
+    }
+
+    const json = JSON.stringify(snapshot, null, 2);
+    const buf = Buffer.from(json, 'utf8');
+    const filename = 'hidook-datele-mele-' + new Date().toISOString().slice(0, 10) + '.json';
+    const disposition =
+        'attachment; filename="' + filename + '"; filename*=UTF-8\'\'' + encodeURIComponent(filename);
+    res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': disposition,
+        'Content-Length': buf.length,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(buf);
+}
+
+/**
+ * POST /api/me/delete-account — "Șterge contul". Permanent, whole-account
+ * erasure (auth-account#3 / owner decision 2026-09-27: full GDPR — export
+ * AND deletion). Requires the signed-in account's own email typed back
+ * exactly (the client's product modal enforces this is not a bare
+ * window.confirm; this is the source-of-truth re-check, same pattern as
+ * DELETE /api/sites/:id's confirmName).
+ *
+ * Cancels any active Stripe subscription first (bot/payments.js —
+ * HIDOOK_TEST_PAY offline path in tests, real Stripe otherwise), then
+ * unpublishes/removes every owned site's live files, erases native-calendar
+ * tenant data, deletes every site/version row, revokes every session,
+ * deletes outstanding login tokens, and finally deletes the user row itself
+ * — see bot/account-data.js#eraseAccount. Clears the session cookie so the
+ * caller is signed out regardless of how the erasure itself went.
+ */
+async function handleDeleteMyAccount(req, res) {
+    if (!assertSameOriginForAccountRoute(req, res)) return;
+
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+
+    const rl = ratelimit.allowAndConsume('account_delete', userId, { max: 5, windowMs: 60 * 60 * 1000 });
+    if (!rl.ok) {
+        return sendJson(res, 429, { error: 'Prea multe încercări. Încearcă din nou peste o oră.' });
+    }
+
+    const reg = getRegistry();
+    const user = await reg.getUser(userId);
+    if (!user) return sendJson(res, 401, { error: 'Utilizator negăsit.' });
+    if (!user.email) {
+        return sendJson(res, 400, {
+            error: 'Ștergerea contului din browser cere un cont cu email. Contactează suportul pentru un cont Telegram.',
+            code: 'NO_EMAIL_ACCOUNT',
+        });
+    }
+
+    let body;
+    try {
+        body = await parseJson(req, 2 * 1024);
+    } catch (e) {
+        return sendJson(res, e.status || 400, { error: e.message || 'Cerere invalidă.' });
+    }
+    const expectedEmail = String(user.email).trim().toLowerCase();
+    const typedEmail = String((body && body.confirmEmail) || '').trim().toLowerCase();
+    if (!typedEmail || typedEmail !== expectedEmail) {
+        return sendJson(res, 422, {
+            error: 'Confirmarea nu se potrivește. Scrie exact adresa de email a contului ca să continui.',
+            code: 'CONFIRM_MISMATCH',
+        });
+    }
+
+    try {
+        await require('./account-data.js').eraseAccount(userId);
+    } catch (e) {
+        log('server.delete_my_account.error', { userId, err: e.message }, 'error');
+        return sendJson(res, 500, { error: 'Ștergerea contului a eșuat. Încearcă din nou.' });
+    }
+
+    const auth = getAuth();
+    try {
+        const raw = auth.getSessionCookieValue(req);
+        if (raw) auth.revokeSession(raw);
+    } catch (_) { /* already revoked by eraseAccount()'s revokeAllSessionsForUser */ }
+    res.setHeader('Set-Cookie', auth.buildClearSessionCookie());
+
+    log('server.delete_my_account.done', { userId });
+    return sendJson(res, 200, { ok: true });
 }
 
 /**
@@ -4098,6 +4256,14 @@ function createHandler({ onStripeEvent } = {}) {
 
             if (req.method === 'GET' && url === '/api/me') {
                 return await handleGetMe(req, res);
+            }
+
+            if (req.method === 'GET' && url === '/api/me/export-data') {
+                return await handleExportMyData(req, res);
+            }
+
+            if (req.method === 'POST' && url === '/api/me/delete-account') {
+                return await handleDeleteMyAccount(req, res);
             }
 
             if (req.method === 'GET' && url === '/api/sites') {

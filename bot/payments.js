@@ -756,6 +756,33 @@ async function getSubscription(subscriptionId) {
 }
 
 /**
+ * R-27 (GDPR account deletion) — cancel a subscription immediately, not via
+ * the Customer Portal redirect createBillingPortalSession() uses: account
+ * deletion must stop billing synchronously, in the same request, without
+ * waiting for the customer to complete a separate portal flow.
+ *
+ * HIDOOK_TEST_PAY=1 (non-production): no network call — returns a synthetic
+ * canceled result so the offline test-pay path never needs a live Stripe
+ * subscription id. Real path: DELETE /v1/subscriptions/:id (Stripe's
+ * immediate-cancel endpoint, distinct from the schedule-a-cancel-at-period-
+ * end variant).
+ *
+ * @param {string} subscriptionId
+ * @returns {Promise<{canceled: boolean, id: string, status?: string, offline?: boolean}>}
+ */
+async function cancelSubscription(subscriptionId) {
+    if (!subscriptionId) return { canceled: false, id: null };
+    if (process.env.HIDOOK_TEST_PAY === '1' && process.env.NODE_ENV !== 'production') {
+        return { canceled: true, offline: true, id: subscriptionId, status: 'canceled' };
+    }
+    if (!process.env.STRIPE_SECRET_KEY) {
+        throw new Error('STRIPE_SECRET_KEY is not set. Cannot cancel subscription.');
+    }
+    const sub = await stripeRequest('DELETE', '/subscriptions/' + encodeURIComponent(subscriptionId));
+    return { canceled: true, id: sub.id, status: sub.status };
+}
+
+/**
  * Wave7 — invoice history for a Stripe customer (owner-facing "Facturi" list;
  * an owner paying yearly previously had no way to see or download past
  * invoices). Normalizes to the fields a dashboard needs; the full Stripe
@@ -922,6 +949,7 @@ module.exports = {
     attachFirstThenRenewalSchedule,
     ensureRenewalPriceId,
     getSubscription,
+    cancelSubscription,
     listCustomerInvoices,
     SUBSCRIPTION_TRIAL_DAYS,
     SUBSCRIPTION_ENTITLED_STATUSES,
