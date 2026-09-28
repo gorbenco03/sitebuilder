@@ -378,6 +378,14 @@
       </form>
       <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-demo-banner" aria-label="Nu acum">Nu acum</button>
     </div>
+    <!-- PLAN-UX-2026-09-27 §5.1 remainder: shown once, in place of the usual
+         Details auto-open, right after the onboarding wizard completes for
+         this design — see showOnboardingDetailsHint() in app.js. -->
+    <div id="onboarding-details-hint" class="demo-content-banner onboarding-details-hint" role="status" aria-live="polite" style="display:none">
+      <span class="quickstart-form-label">Poți completa oricând restul detaliilor din Detalii.</span>
+      <button type="button" class="btn-primary btn-sm" id="btn-onboarding-details-hint-open">Deschide Detalii</button>
+      <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-onboarding-hint" aria-label="Nu acum">Nu acum</button>
+    </div>
     <div class="editor-canvas-wrap" id="editor-canvas-wrap">
       <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">
         <div class="preview-shimmer"></div>

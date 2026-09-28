@@ -4484,6 +4484,21 @@ function prepareDrawerForNewDesign() {
   setDrawerPref('open');
 }
 
+/** PLAN-UX-2026-09-27 §5.1 remainder: shown in place of auto-opening Details
+ * right after the onboarding wizard completes for that one design (see
+ * startWithTemplate()) — 'Poți completa oricând restul detaliilor din
+ * Detalii', with a button that opens the drawer. Hidden the moment Details
+ * actually opens by ANY path (openDrawer(), below), or as soon as another
+ * design selection starts (startWithTemplate() clears it unconditionally). */
+function showOnboardingDetailsHint() {
+  const el = $('onboarding-details-hint');
+  if (el) { el.style.display = ''; el.setAttribute('aria-hidden', 'false'); }
+}
+function hideOnboardingDetailsHint() {
+  const el = $('onboarding-details-hint');
+  if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden', 'true'); }
+}
+
 /* ============================================================
    PLAN-UX §5.4 (S-4) — mobile editing, first-class
    ============================================================
@@ -4844,6 +4859,7 @@ function focusDrawerField(key) {
 function openDrawer(focusKey) {
   const drawer = $('details-drawer');
   if (!drawer) return;
+  if (typeof hideOnboardingDetailsHint === 'function') hideOnboardingDetailsHint();
   // A manual open (this function) always supersedes whatever the auto-open
   // rAF from showScreen('edit') might still be waiting to decide — cancel it
   // so it can never re-evaluate later against a state this call has already
@@ -9162,12 +9178,15 @@ function loadCardPreview(templateId, wrap, shimmer) {
  * split, for the extractFunction()-based oracles that isolate it by name).
  * That second call's `onboardingIdentity` is applied at the end via the
  * EXISTING applyQuickstart() — not a second implementation of its
- * business/phone/town cascade. */
-async function startWithTemplate(templateId, onboardingIdentity) {
+ * business/phone/town cascade. `wizardJustCompleted` (PLAN-UX-2026-09-27
+ * §5.1 remainder) is that second call's own extra flag, true only when the
+ * wizard was actually submitted (not skipped) — see prepareDrawerForNewDesign()'s
+ * call site below for what it changes. */
+async function startWithTemplate(templateId, onboardingIdentity, wizardJustCompleted) {
   if (!onboardingIdentity && typeof hidookOnboardingShouldRun === 'function'
       && typeof hidookOnboardingStart === 'function' && hidookOnboardingShouldRun()) {
-    hidookOnboardingStart(templateId, (chosenTemplateId, identity) => {
-      startWithTemplate(chosenTemplateId, identity || {});
+    hidookOnboardingStart(templateId, (chosenTemplateId, identity, completed) => {
+      startWithTemplate(chosenTemplateId, identity || {}, !!completed);
     });
     return;
   }
@@ -9300,6 +9319,16 @@ async function startWithTemplate(templateId, onboardingIdentity) {
   if (nameEl) nameEl.textContent = meta.name;
 
   prepareDrawerForNewDesign();
+  // PLAN-UX-2026-09-27 §5.1 remainder: right after the wizard itself just
+  // collected these same fields, auto-opening Details on top of a canvas the
+  // owner has not even seen yet is the exact stacking the wizard exists to
+  // avoid — override the fresh 'open' pref above to suppress just this one
+  // auto-open. A hint offering Details is shown below instead
+  // (showOnboardingDetailsHint()). A skipped wizard, and every later design
+  // selection (wizardJustCompleted is only ever true on the wizard's own
+  // hand-off call above), keep the normal auto-open unchanged.
+  if (wizardJustCompleted) setDrawerPref('closed');
+  if (typeof hideOnboardingDetailsHint === 'function') hideOnboardingDetailsHint();
   window.location.hash = '#edit';
 
   // Onboarding wizard step 2 (name/phone/town) hands its values here via the
@@ -9317,6 +9346,12 @@ async function startWithTemplate(templateId, onboardingIdentity) {
     if (quickstartTownEl) quickstartTownEl.value = onboardingIdentity.town || '';
     if (typeof applyQuickstart === 'function') applyQuickstart();
   }
+
+  // Shown only for the design that was just handed off by a COMPLETED wizard
+  // — after the identity cascade above, so it never gets replaced/hidden by
+  // applyQuickstart()'s own toast. See showOnboardingDetailsHint() (drawer
+  // section) for what it hides itself on.
+  if (wizardJustCompleted && typeof showOnboardingDetailsHint === 'function') showOnboardingDetailsHint();
 }
 
 let previewModalGeneration = 0;
@@ -11230,6 +11265,14 @@ function wireStaticButtons() {
 
   const drawerOverlay = $('drawer-overlay');
   if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
+
+  // PLAN-UX-2026-09-27 §5.1 remainder: post-wizard "Detalii" hint.
+  const onboardingHintOpenBtn = $('btn-onboarding-details-hint-open');
+  if (onboardingHintOpenBtn) onboardingHintOpenBtn.addEventListener('click', () => openDrawer());
+  const onboardingHintDismissBtn = $('btn-dismiss-onboarding-hint');
+  if (onboardingHintDismissBtn) onboardingHintDismissBtn.addEventListener('click', () => {
+    if (typeof hideOnboardingDetailsHint === 'function') hideOnboardingDetailsHint();
+  });
 
   // Publish modal slug input
   const slugInput = $('input-slug');
