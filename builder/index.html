@@ -809,6 +809,11 @@
   </div>
 </div>
 
+<!-- Onboarding wizard (PLAN-UX-2026-09-27 §5.1) — empty container, built and
+     driven entirely by builder/onboarding.js. Shown once, before the first
+     design a first-time visitor starts opens on the canvas. -->
+<div id="onboarding-wizard" class="onb-overlay" style="display:none" aria-hidden="true"></div>
+
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
 
@@ -863,5 +868,6 @@ function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())
 <script src="/app/a11y-focus.js"></script>
 <script src="/app/app.js"></script>
 <script src="/app/publish-checklist.js"></script>
+<script src="/app/onboarding.js"></script>
 </body>
 </html>

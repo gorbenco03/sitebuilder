@@ -42,6 +42,7 @@ All visible customer/site copy should be Romanian unless a deliberate i18n choic
 
 - First template load works without refresh on realistic network.
 - Details drawer opens automatically for every newly selected design; a manual close survives reload for the current design but does not suppress the next design selection.
+- A first-time visitor starting a template sees a short, skippable 2-step onboarding wizard first (business type → optional name/phone/WhatsApp/town), then the editor opens on the recommended template already filled via the existing `applyQuickstart()`; it never shows again after completion or skip (`localStorage`), and does not change Details-drawer auto-open or the quickstart bar for any later design selection (`PLAN-UX-2026-09-27` §5.1).
 - Text, images, hero/section backgrounds and theme colors are actually editable and reflected in preview/live.
 - WhatsApp badge is recognizable and supports a user-defined prefilled message. Opening the control shows a horizontally and vertically centered QR in finished customer chrome; the deep-link / QR mechanism is unchanged.
 - Social preview artwork is derived automatically from the current hero/business photography; customers are never asked for an `og:image` URL.

@@ -8738,7 +8738,27 @@ function loadCardPreview(templateId, wrap, shimmer) {
   }).catch(() => shimmer.classList.add('loaded'));
 }
 
-async function startWithTemplate(templateId) {
+/** PLAN-UX-2026-09-27 §5.1: a first-time visitor gets the short onboarding
+ * wizard (builder/onboarding.js) instead of landing straight on the canvas.
+ * `onboardingIdentity` is undefined on the normal (catalog click) call —
+ * the guard below only ever fires then, and only for a visitor who has
+ * never run/skipped the wizard before (hidookOnboardingShouldRun()). The
+ * wizard decides the actual template (pre-selected from whichever card was
+ * clicked, changeable) and optional identity fields, then calls this SAME
+ * function again with both — same body as a direct click either way, so
+ * this stays the one function that starts a template (kept intact, not
+ * split, for the extractFunction()-based oracles that isolate it by name).
+ * That second call's `onboardingIdentity` is applied at the end via the
+ * EXISTING applyQuickstart() — not a second implementation of its
+ * business/phone/town cascade. */
+async function startWithTemplate(templateId, onboardingIdentity) {
+  if (!onboardingIdentity && typeof hidookOnboardingShouldRun === 'function'
+      && typeof hidookOnboardingStart === 'function' && hidookOnboardingShouldRun()) {
+    hidookOnboardingStart(templateId, (chosenTemplateId, identity) => {
+      startWithTemplate(chosenTemplateId, identity || {});
+    });
+    return;
+  }
   const registry = getTemplateList();
   const meta = registry.find(t => t.id === templateId);
 
@@ -8869,6 +8889,22 @@ async function startWithTemplate(templateId) {
 
   prepareDrawerForNewDesign();
   window.location.hash = '#edit';
+
+  // Onboarding wizard step 2 (name/phone/town) hands its values here via the
+  // quickstart bar's OWN fields + applyQuickstart() — the exact cascade a
+  // manual fill would trigger, not a parallel one. Only when at least one
+  // field was actually filled in (hidookOnboardingStart()'s onDone contract
+  // — see onboarding.js) so a skipped/empty wizard leaves the quickstart bar
+  // to show up normally afterwards, same as before this task.
+  if (onboardingIdentity && (onboardingIdentity.name || onboardingIdentity.phone || onboardingIdentity.town)) {
+    const quickstartNameEl = $('quickstart-name');
+    const quickstartPhoneEl = $('quickstart-phone');
+    const quickstartTownEl = $('quickstart-town');
+    if (quickstartNameEl) quickstartNameEl.value = onboardingIdentity.name || '';
+    if (quickstartPhoneEl) quickstartPhoneEl.value = onboardingIdentity.phone || '';
+    if (quickstartTownEl) quickstartTownEl.value = onboardingIdentity.town || '';
+    if (typeof applyQuickstart === 'function') applyQuickstart();
+  }
 }
 
 let previewModalGeneration = 0;
