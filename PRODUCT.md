@@ -38,6 +38,8 @@ Launch template scope:
 
 All visible customer/site copy should be Romanian unless a deliberate i18n choice is made later. Every generated template must carry non-editable attribution: `Build by hidook.tech powered by hidook.agency`.
 
+`portfolio` and `professionals` (audit27 S-2B, 2026-09-27) ship an optional "Recenzii" testimonials section, and `professionals` also an optional "Echipa" section — both list-editable in the builder, hidden when empty. This is a small fixed per-template library, not the generic section add/remove/reorder still tracked as backlog in `VISION.md` §4.6. Both templates also gained a general "Scrie-ne" contact form (`portfolio` had no contact form before; `professionals`' existing appointment-request form is unrelated and untouched); it POSTs to `/api/site-messages`, which does not exist yet — until that endpoint and the publish-time attribute fill land, the form always shows its honest tel:/wa.me fallback instead of delivering the message.
+
 ## Required product capabilities
 
 - First template load works without refresh on realistic network.

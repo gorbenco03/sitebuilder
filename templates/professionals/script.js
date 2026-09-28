@@ -700,15 +700,7 @@ function initWhatsAppQR() {
     });
 }
 
-/**
- * General "Scrie-ne" contact form — the appointment form above is a booking
- * request, not a general contact path. Contract: POST JSON
- * {slug, name, contact, message, website} to
- * `${data-site-messages-api}/api/site-messages`. Click path (not native
- * form submit): builder preview iframe sandbox is allow-scripts only — form
- * submit is blocked without allow-forms (same reasoning as initAppointment
- * above).
- */
+// General "Scrie-ne" contact form; POST contract in audit27-s-2b oracle.
 function initMessageForm() {
     const form = document.getElementById('pr-msg-form');
     if (!form) return;
@@ -768,8 +760,7 @@ function initMessageForm() {
             setBusy(false);
         }
 
-        // No API base at all (static export / builder preview before
-        // publish) — nothing to POST to, go straight to the honest fallback.
+        // No API base (static export / preview) — go straight to fallback.
         if (!apiBase || !/^https?:/i.test(apiBase)) {
             showFail();
             return;

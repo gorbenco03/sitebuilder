@@ -20,15 +20,7 @@ function detectLiveSlug() {
     return m ? m[1].toLowerCase() : '';
 }
 
-/**
- * General "Scrie-ne" contact form — this template has no contact path
- * besides phone/WhatsApp/Instagram links. Contract: POST JSON
- * {slug, name, contact, message, website} to
- * `${data-site-messages-api}/api/site-messages`. The click path (not native
- * form submit) matches initAppointment()'s reasoning in the professionals
- * template: the builder preview iframe is allow-scripts only, no
- * allow-forms, so a native submit event never fires there.
- */
+// General "Scrie-ne" contact form; POST contract in audit27-s-2b oracle.
 function initMessageForm() {
     var form = document.getElementById('pf-msg-form');
     if (!form) return;
@@ -88,8 +80,7 @@ function initMessageForm() {
             setBusy(false);
         }
 
-        // No API base at all (static export / builder preview before publish)
-        // — nothing to POST to, go straight to the honest fallback state.
+        // No API base (static export / preview) — go straight to fallback.
         if (!apiBase || !/^https?:/i.test(apiBase)) {
             showFail();
             return;

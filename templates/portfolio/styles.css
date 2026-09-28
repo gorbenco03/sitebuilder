@@ -717,8 +717,7 @@ ul { list-style: none; }
 .pf-input::placeholder { color: rgba(255,255,255,0.45); }
 .pf-input:focus { outline: 2px solid rgba(255,255,255,0.55); outline-offset: 1px; }
 .pf-input--area { resize: vertical; min-height: 96px; }
-/* Honeypot — real users never see or tab into this; visually hidden, not
-   display:none, so basic bots that skip display:none fields still fill it. */
+/* Honeypot: visually hidden, not display:none, to still catch basic bots. */
 .pf-msg__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .pf-msg__hint { margin: 0.35rem 0 0.85rem; font-size: 0.88rem; color: rgba(255,255,255,0.78); }
 .pf-msg__btn {

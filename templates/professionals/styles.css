@@ -1147,8 +1147,7 @@ a.pr-contact__row:hover .pr-contact__icon { background: var(--accent); }
 .pr-msg__title { font-family: var(--display); font-size: 1.25rem; font-weight: 500; margin-bottom: 0.3rem; }
 .pr-msg__form { max-width: 34rem; }
 .pr-input--area { resize: vertical; min-height: 96px; }
-/* Honeypot — real users never see or tab into this; visually hidden, not
-   display:none, so basic bots that skip display:none fields still fill it. */
+/* Honeypot: visually hidden, not display:none, to still catch basic bots. */
 .pr-msg__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .pr-msg__submit { width: min(100%, 14rem); }
 .pr-msg__fail, .pr-msg__done {
