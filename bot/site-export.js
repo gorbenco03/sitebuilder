@@ -492,13 +492,26 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
             fs.readFileSync(indexPathForSocialMeta, 'utf8'),
             realOrigin
         );
-        // S-2C: a static export has no Hidook backend behind it — force any
-        // data-site-messages-api/data-site-slug back to '' regardless of
-        // what the saved config carried (mirrors disableNativeBookingForExport
-        // above for the same reason, VISION §6). The client-side form script
-        // (S-2A/S-2B) falls back to WhatsApp/mailto when this is empty.
-        fixedIndexHtml = require('./site-messages.js').blankMessagesApiInHtml(fixedIndexHtml);
-        fs.writeFileSync(indexPathForSocialMeta, fixedIndexHtml, 'utf8');
+        // S-2C: a static export has no Hidook backend behind it, so a fresh/
+        // never-published export must never call home (VISION §6, mirrors
+        // disableNativeBookingForExport above). No production caller sets
+        // cfgCopy.siteMessages today, so this stays a no-op blank for every
+        // real ZIP/HTML export; only an explicit siteMessages.apiBase on the
+        // config (same "already published, reuse the real value" shape as
+        // seo.canonical above) fills the form instead of blanking it, giving
+        // S-2A/S-2B's contact-form contract one shared attribute-filling path
+        // with S-2C's own publish-time injectPublishedHtml.
+        const siteMessagesMod = require('./site-messages.js');
+        if (cfgCopy.siteMessages && cfgCopy.siteMessages.apiBase) {
+            fs.writeFileSync(indexPathForSocialMeta, fixedIndexHtml, 'utf8');
+            siteMessagesMod.injectPublishedHtml(indexPathForSocialMeta, {
+                apiBase: cfgCopy.siteMessages.apiBase,
+                slug: cfgCopy.siteMessages.slug || '',
+            });
+        } else {
+            fixedIndexHtml = siteMessagesMod.blankMessagesApiInHtml(fixedIndexHtml);
+            fs.writeFileSync(indexPathForSocialMeta, fixedIndexHtml, 'utf8');
+        }
     }
     // Minify the shared consent stylesheet on the way out, the same as every
     // template stylesheet above. It cannot happen inside site-legal.js: that
