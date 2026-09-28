@@ -1706,36 +1706,8 @@ async function handleGetMe(req, res) {
 
 // ---------------------------------------------------------------------------
 // R-27 — GDPR self-service: "Descarcă datele mele" / "Șterge contul"
-// (auth-account#3, auth-account#4). New, standalone routes — do not touch
-// requireAuth() itself (a parallel task edits it); each does its own narrow
-// Origin/Referer check below instead.
+// (auth-account#3, auth-account#4).
 // ---------------------------------------------------------------------------
-
-/**
- * gap-csrf-poc#1's proposed fix, applied narrowly to just these two new
- * routes rather than to requireAuth() (owned by a different, parallel task):
- * if the request carries an Origin or Referer header at all, its host must
- * match this request's own Host — a cross-site POST (form or fetch) would
- * fail this even in the hypothetical case SameSite=Lax stopped protecting
- * it. A same-origin fetch() from the real app always sends a matching
- * Origin, so this never blocks a real customer.
- * @returns {boolean} true iff the request may proceed
- */
-function assertSameOriginForAccountRoute(req, res) {
-    const hostHeader = req.headers && req.headers.host;
-    const candidate = (req.headers && (req.headers.origin || req.headers.referer)) || '';
-    if (!candidate || !hostHeader) return true; // nothing to compare against — SameSite=Lax remains the primary defense
-    let candidateHost;
-    try { candidateHost = new URL(candidate).host; } catch (_) {
-        sendJson(res, 403, { error: 'Cerere refuzată.' });
-        return false;
-    }
-    if (candidateHost !== hostHeader) {
-        sendJson(res, 403, { error: 'Cerere refuzată (origine diferită).' });
-        return false;
-    }
-    return true;
-}
 
 /**
  * GET /api/me/export-data — "Descarcă datele mele". A full JSON snapshot of
@@ -1805,10 +1777,12 @@ async function handleExportMyData(req, res) {
  * deletes outstanding login tokens, and finally deletes the user row itself
  * — see bot/account-data.js#eraseAccount. Clears the session cookie so the
  * caller is signed out regardless of how the erasure itself went.
+ *
+ * Same-origin check: this is a POST, so requireAuth() below already rejects
+ * a cross-site Origin/Referer via isSameOriginRequest() (gap-csrf-poc#1) —
+ * no separate check needed here.
  */
 async function handleDeleteMyAccount(req, res) {
-    if (!assertSameOriginForAccountRoute(req, res)) return;
-
     const userId = requireAuth(req, res);
     if (!userId) return;
 
