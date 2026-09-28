@@ -220,7 +220,7 @@ Pilotul Railway separat „Hidook Calendar” (cal.diy self-hosted) rămâne **n
 
 - stocare canonică: **UTC**;
 - timezone-ul de operare al site-ului = timezone-ul owner-ului (setat o dată în setările calendarului);
-- visitorul vede orele în timezone-ul local al browserului (display only); confirmările email includ atât ora owner cât și, unde e util, echivalentul local al visitorului;
+- widget-ul afișează ca oră principală ora owner-ului; dacă offset-ul UTC al browserului visitorului diferă de offset-ul owner-ului la data selectată, apare o notă și, lângă fiecare slot, ora locală a visitorului ca linie secundară (comparație pe offset, nu pe nume IANA — ex. Europe/Bucharest vs Europe/Chisinau nu declanșează nota); confirmările email includ atât ora owner cât și, unde e util, echivalentul local al visitorului;
 - fără ambiguitate DST: conversiile trec mereu prin UTC.
 
 **Availability / holiday / blackout**
