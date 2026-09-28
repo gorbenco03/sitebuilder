@@ -45,6 +45,7 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS_PATH = path.join(ROOT, 'builder', 'app.js');
+const COPY_RO_PATH = path.join(ROOT, 'builder', 'copy-ro.js');
 const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
 
 process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
@@ -184,7 +185,16 @@ test('theme-typography#2: a dark "Fundal pagină" warns that body text flips to 
   const contrastFn = app.match(/function contrastRatio\(l1, l2\) \{[\s\S]*?\n\}/);
   assert.ok(relLumFn && contrastFn, 'contrast helpers must exist');
 
+  // PLAN-UX-2026-09-27 §5.8 (T-3): warnIfBackgroundFlipsInk now reads its
+  // Romanian text from the RO catalog (builder/copy-ro.js) — load it into
+  // this Function scope too, same as the real page's <script> order.
+  // Stripped of its own 'use strict' — concatenated into one Function body
+  // it would make the whole thing strict, and this app.js code has
+  // unrelated, pre-existing implicit-global assignments elsewhere that rely
+  // on staying non-strict in this isolated-extraction fixture.
+  const copyRoSrc = fs.readFileSync(COPY_RO_PATH, 'utf8').replace(/^'use strict';\s*\n?/, '');
   const fnSrc =
+    copyRoSrc + '\n' +
     'let bgNeedsWhiteInkWarned = false;\n' +
     relLumFn[0] + '\n' + contrastFn[0] + '\n' +
     'const BG_INK_VOID_L = 0.003035269835488375;\nconst BG_INK_SNOW_L = 0.9405136905533645;\n' +

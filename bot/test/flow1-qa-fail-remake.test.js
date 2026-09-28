@@ -11,6 +11,12 @@ const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const appSrc = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
+// PLAN-UX-2026-09-27 §5.8 (T-3): openImagePickerForPath's error branch now
+// reads its Romanian text from the RO catalog (builder/copy-ro.js) — load
+// it into any sandbox that evals openImagePickerForPath, stripped of its
+// own 'use strict' so it doesn't make the whole concatenated script strict
+// (this app.js code has unrelated, pre-existing implicit-global reliance).
+const copyRoSrc = fs.readFileSync(path.join(ROOT, 'builder', 'copy-ro.js'), 'utf8').replace(/^'use strict';\s*\n?/, '');
 
 function extractBetween(start, end) {
   const startAt = appSrc.indexOf(start);
@@ -88,7 +94,7 @@ function check(name, fn) {
     };
 
     vm.runInNewContext(
-      `${pickerSrc}\nthis.openImagePickerForPath = openImagePickerForPath;`,
+      `${copyRoSrc}\n${pickerSrc}\nthis.openImagePickerForPath = openImagePickerForPath;`,
       sandbox
     );
 

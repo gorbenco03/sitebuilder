@@ -250,7 +250,11 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
             'dashboard/route must call loadDraft to resume in-progress site'
         );
         assert.ok(
-            /You haven't created any sites yet|Nu ai creat încă niciun site/.test(loadDash) &&
+            // PLAN-UX-2026-09-27 §5.8 (T-3): the literal empty-state copy now
+            // lives in the RO catalog (builder/copy-ro.js); loadDashboard
+            // references it as RO.DASHBOARD_EMPTY_TITLE instead of repeating
+            // the Romanian (or, pre-fix, English) string inline.
+            (/You haven't created any sites yet/.test(loadDash) || /RO\.DASHBOARD_EMPTY_TITLE/.test(loadDash)) &&
                 (/location\.hash\s*=\s*['"]#edit['"]/.test(loadDash + handleRoute) ||
                     /startWithTemplate|resumeLocalDraft|restoreDraft/.test(appSrc)),
             'empty dashboard must route draft back to #edit'

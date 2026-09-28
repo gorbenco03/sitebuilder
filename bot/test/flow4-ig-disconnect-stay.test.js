@@ -151,10 +151,10 @@ check('HEAD: disconnect cancels pending focus connect and persists disconnect', 
     /applyEmbedUrl\s*\(\s*['"]['"]\s*\)/.test(disc),
     'disconnect still clears local embedUrl'
   );
-  assert.ok(
-    /Instagram a fost deconectat\. Feed-ul nu mai este afișat pe site\./.test(disc),
-    'honest disconnect copy stays'
-  );
+  // PLAN-UX-2026-09-27 §5.8 (T-3): this literal now lives in the RO catalog
+  // (builder/copy-ro.js); disconnectInstagram references RO.IG_DISCONNECTED
+  // instead of repeating the string.
+  assert.ok(/RO\.IG_DISCONNECTED\b/.test(disc), 'honest disconnect copy stays wired to RO.IG_DISCONNECTED');
 });
 
 check('HEAD: connect focus grant is generation-guarded and cancellable', () => {
@@ -170,7 +170,7 @@ check('HEAD: connect focus grant is generation-guarded and cancellable', () => {
     'in-flight grant aborts after disconnect generation bump'
   );
   assert.ok(
-    /showToast\s*\(\s*['"]Instagram e conectat\./.test(connect),
+    /showToast\s*\(\s*RO\.IG_CONNECTED_ALT/.test(connect),
     'connect path still toasts when grant finishes without disconnect'
   );
 });
@@ -220,6 +220,14 @@ check('HEAD: grant persists only when op generation still matches', () => {
 (async () => {
   await checkAsync('behavioral: disconnect voids pending focus re-grant toast', async () => {
     const app = headRead('builder/app.js');
+    // PLAN-UX-2026-09-27 §5.8 (T-3): connectInstagram/disconnectInstagram now
+    // read their Romanian text from the RO catalog (builder/copy-ro.js) —
+    // load it into this sandbox too, same as the real page's <script> order.
+    // Stripped of its own 'use strict' — see other T-3 test fixes for why:
+    // concatenated into one script it would make connectInstagram/
+    // disconnectInstagram's own (unrelated, pre-existing) implicit-global
+    // assignments throw.
+    const copyRoSrc = headRead('builder/copy-ro.js').replace(/^'use strict';\s*\n?/, '');
     const cancelSrc = extractFunction(app, 'cancelPendingInstagramConnect');
     const discSrc = extractFunction(app, 'disconnectInstagram');
     const connectSrc = extractFunction(app, 'connectInstagram');
@@ -306,6 +314,7 @@ check('HEAD: grant persists only when op generation still matches', () => {
 
     vm.runInNewContext(
       [
+        copyRoSrc,
         'var instagramConnectFocusHandler = null;',
         'var instagramConnectGeneration = 0;',
         'var instagramEditorUrl = "";',

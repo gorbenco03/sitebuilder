@@ -53,6 +53,18 @@ const appCss = read('builder/app.css');
 const overlaySrc = read('builder/edit-overlay.js');
 const serverSrc = read('bot/server.js');
 const indexHtml = read('builder/index.html');
+const copyRoSrc = read('builder/copy-ro.js');
+
+// PLAN-UX-2026-09-27 §5.8 (T-3): app.js now sources its Romanian toasts from
+// the RO catalog (builder/copy-ro.js) instead of a literal at each call
+// site — this reads the catalog's own value where this file used to assert
+// a literal string was still in appSrc.
+function copyRoValue(key) {
+    const sandbox = {};
+    vm.runInNewContext(copyRoSrc + '\nthis.RO = RO;', sandbox);
+    if (!Object.prototype.hasOwnProperty.call(sandbox.RO, key)) throw new Error('RO.' + key + ' missing from builder/copy-ro.js');
+    return sandbox.RO[key];
+}
 const professionalsTemplate = read('templates/professionals/template.html');
 const professionalsScript = read('templates/professionals/script.js');
 const professionalsPresetsSrc = read('templates/professionals/presets.json');
@@ -316,27 +328,28 @@ check('builder chrome contains no known English QA leaks', () => {
     assert.ok(overlaySrc.includes('Înlocuiește fotografia'), 'photo overlay label is Romanian');
     assert.ok(indexHtml.includes('vezi previzualizarea.'), 'landing uses Previzualizare wording');
     assert.ok(indexHtml.includes('apoi Instafidget Free (filigran)'), 'partner note uses filigran');
-    for (const phrase of [
-        'Plata a fost anulată.',
-        'Linkul de autentificare a expirat. Încearcă din nou.',
-        'Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.',
-    ]) {
-        assert.ok(appSrc.includes(phrase), `Romanian return toast is missing: ${phrase}`);
+    for (const key of ['PAYMENT_CANCELLED', 'LOGIN_LINK_EXPIRED', 'PAYMENT_PROCESSED_SITE_SOON']) {
+        assert.ok(appSrc.includes('RO.' + key), `Romanian return toast no longer sourced from RO.${key}`);
     }
+    assert.strictEqual(copyRoValue('PAYMENT_CANCELLED'), 'Plata a fost anulată.', 'PAYMENT_CANCELLED text is unchanged');
+    assert.strictEqual(copyRoValue('LOGIN_LINK_EXPIRED'), 'Linkul de autentificare a expirat. Încearcă din nou.', 'LOGIN_LINK_EXPIRED text is unchanged');
+    assert.strictEqual(copyRoValue('PAYMENT_PROCESSED_SITE_SOON'), 'Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.', 'PAYMENT_PROCESSED_SITE_SOON text is unchanged');
 });
 
 check('design-load and required-field errors are Romanian', () => {
     assert.ok(!appSrc.includes('Could not load the design. Try again.'), 'design-load error remains English');
     assert.ok(!appSrc.includes('Complete these first:'), 'required-field error remains English');
     assert.strictEqual(
-        appSrc.split('Nu am putut încărca designul. Încearcă din nou.').length - 1,
+        appSrc.split('RO.DESIGN_LOAD_FAILED').length - 1,
         2,
-        'both design-load error writers use the same Romanian copy'
+        'both design-load error writers use the same RO.DESIGN_LOAD_FAILED copy'
     );
+    assert.strictEqual(copyRoValue('DESIGN_LOAD_FAILED'), 'Nu am putut încărca designul. Încearcă din nou.', 'DESIGN_LOAD_FAILED text is unchanged');
     assert.ok(
-        appSrc.includes("showToast('Completează mai întâi: ' + msgParts.slice(0,3).join(', ')"),
+        appSrc.includes("showToast(t('FIELDS_MISSING', { fields: msgParts.slice(0,3).join(', ') })"),
         'required-field toast is not Romanian with diacritics'
     );
+    assert.strictEqual(copyRoValue('FIELDS_MISSING'), 'Completează mai întâi: {fields}', 'FIELDS_MISSING template text is unchanged');
 });
 
 check('starting a loaded catalog design dismisses any stale toast', () => {
@@ -411,7 +424,8 @@ check('Istoric loading, empty, and restore states are Romanian', () => {
     // 'Eroare la restabilire: ' + err.message (which could leak a raw
     // English browser/server string) with safeServerMessage()'s own fixed
     // Romanian fallback — still Romanian, never raw text now.
-    assert.ok(appSrc.includes('Nu am putut restabili versiunea. Încearcă din nou.'), 'restore error is not Romanian');
+    assert.ok(appSrc.includes('RO.VERSION_RESTORE_FAILED'), 'restore error no longer sourced from RO.VERSION_RESTORE_FAILED');
+    assert.strictEqual(copyRoValue('VERSION_RESTORE_FAILED'), 'Nu am putut restabili versiunea. Încearcă din nou.', 'restore error text is unchanged and Romanian');
 });
 
 check('catalog preview opens visibly before assigning rendered first-preset HTML', () => {
@@ -433,9 +447,10 @@ check('connected Instafidget editor is never described as unavailable locally', 
         'connected Instafidget editor remains unavailable in local mode'
     );
     assert.ok(
-        appSrc.includes('Editorul este pregătit și se va deschide într-un tab nou.'),
-        'ready/new-tab status is missing'
+        appSrc.includes('RO.IG_EDITOR_READY'),
+        'ready/new-tab status no longer sourced from RO.IG_EDITOR_READY'
     );
+    assert.strictEqual(copyRoValue('IG_EDITOR_READY'), 'Editorul este pregătit și se va deschide într-un tab nou.', 'IG_EDITOR_READY text is unchanged');
     const connect = extractFunction(appSrc, 'connectInstagram');
     assert.ok(connect, 'connectInstagram exists');
     assert.ok(
@@ -518,11 +533,15 @@ check('publish address validation is Romanian', () => {
         !appSrc.includes('Enter a valid address (at least 3 characters).'),
         'publish continue address validation is still English'
     );
-    const romanianMinimumLength = 'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).';
     assert.strictEqual(
-        appSrc.split(romanianMinimumLength).length - 1,
+        appSrc.split('RO.SLUG_MIN_LENGTH').length - 1,
         2,
-        'both publish address minimum-length writers use the same Romanian copy'
+        'both publish address minimum-length writers use the same RO.SLUG_MIN_LENGTH copy'
+    );
+    assert.strictEqual(
+        copyRoValue('SLUG_MIN_LENGTH'),
+        'Adresa trebuie să aibă cel puțin 3 caractere (litere mici, cifre, cratime).',
+        'SLUG_MIN_LENGTH text is unchanged'
     );
 });
 

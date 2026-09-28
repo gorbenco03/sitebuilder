@@ -14,6 +14,10 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '../..');
 const BASE_SHA = 'a74d49299fdd73c26068bbdf2fd0b0ee312c31e7';
 const appSrc = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
+// PLAN-UX-2026-09-27 §5.8 (T-3): downloadDraftHtml now reads its Romanian
+// text from the RO catalog (builder/copy-ro.js) — load it into any sandbox
+// that evals downloadDraftHtml, same as the real page's <script> order.
+const copyRoSrc = fs.readFileSync(path.join(ROOT, 'builder/copy-ro.js'), 'utf8');
 
 function extractFunction(src, name) {
   const start = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{').exec(src);
@@ -113,7 +117,12 @@ async function check(name, fn) {
       encodeURIComponent,
       decodeURIComponent,
     };
-    vm.runInNewContext(`${downloadDraftHtml}; this.run = downloadDraftHtml;`, sandbox);
+    // Strip copy-ro.js's own 'use strict' directive before splicing it into a
+    // concatenated script — otherwise the whole combined script goes strict
+    // and downloadDraftHtml's own (unrelated, pre-existing) implicit-global
+    // assignments would throw.
+    const copyRoBody = copyRoSrc.replace(/^'use strict';\s*\n?/, '');
+    vm.runInNewContext(`${copyRoBody}\n${downloadDraftHtml}; this.run = downloadDraftHtml;`, sandbox);
     await sandbox.run();
     assert.strictEqual(calls[0].type, 'post', 'current draft must be persisted first');
     assert.strictEqual(calls[0].url, '/api/draft');
