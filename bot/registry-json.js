@@ -101,6 +101,22 @@ function getUser(userId) {
     return u ? { ...u } : null;
 }
 
+/**
+ * R-27 (GDPR account deletion) — see registry-sqlite.js#deleteUser for the
+ * full contract (idempotent, caller removes owned rows first).
+ * @param {string} userId
+ * @returns {boolean} true iff a user row was actually removed
+ */
+function deleteUser(userId) {
+    if (userId == null) return false;
+    const db = _load();
+    db.users = db.users || {};
+    if (!Object.prototype.hasOwnProperty.call(db.users, userId)) return false;
+    delete db.users[userId];
+    _save(db);
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // Login tokens (magic links)
 // ---------------------------------------------------------------------------
@@ -134,6 +150,32 @@ function consumeLoginToken(token) {
     db.tokens[hash] = entry;
     _save(db);
     return { ...entry.payload };
+}
+
+/**
+ * R-27 (GDPR account deletion) — see registry-sqlite.js#deleteLoginTokensForEmail
+ * for the full contract.
+ * @param {string} email
+ * @returns {number} tokens removed
+ */
+function deleteLoginTokensForEmail(email) {
+    const wanted = String(email || '').trim().toLowerCase();
+    if (!wanted) return 0;
+    const db = _load();
+    db.tokens = db.tokens || {};
+    let removed = 0;
+    for (const hash of Object.keys(db.tokens)) {
+        const entry = db.tokens[hash];
+        const entryEmail = entry && entry.payload && typeof entry.payload.email === 'string'
+            ? entry.payload.email.trim().toLowerCase()
+            : '';
+        if (entryEmail === wanted) {
+            delete db.tokens[hash];
+            removed++;
+        }
+    }
+    if (removed) _save(db);
+    return removed;
 }
 
 // ---------------------------------------------------------------------------
@@ -511,8 +553,10 @@ module.exports = {
     getOrCreateUserByEmail,
     getOrCreateUserByTelegram,
     getUser,
+    deleteUser,
     createLoginToken,
     consumeLoginToken,
+    deleteLoginTokensForEmail,
     createSite,
     getSite,
     listSites,

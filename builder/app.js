@@ -7042,18 +7042,32 @@ function updateUserUI(user) {
   const navDash = $('nav-dashboard');
   const acctLogoutItem = $('account-menu-logout');
   const acctLogoutAllItem = $('account-menu-logout-all');
+  // R-27 (auth-account#3/#4): GDPR self-service items in the editor-topbar
+  // menu, plus the whole header account-menu (dashboard/templates screens —
+  // see index.html #account-menu-wrap-header) that makes "Descarcă datele
+  // mele" / "Șterge contul" / "Deconectare de pe toate dispozitivele"
+  // reachable without first opening a design in the editor.
+  const acctExportItem = $('account-menu-export-data');
+  const acctDeleteItem = $('account-menu-delete-account');
+  const headerMenuWrap = $('account-menu-wrap-header');
   if (user) {
     if (badge) { badge.textContent = user.email || ('ID: ' + String(user.id).slice(0,8)); show(badge); }
     if (logoutBtn) show(logoutBtn);
     if (navDash) show(navDash);
     if (acctLogoutItem) show(acctLogoutItem);
     if (acctLogoutAllItem) show(acctLogoutAllItem);
+    if (acctExportItem) show(acctExportItem);
+    if (acctDeleteItem) show(acctDeleteItem);
+    if (headerMenuWrap) show(headerMenuWrap);
   } else {
     if (badge) hide(badge);
     if (logoutBtn) hide(logoutBtn);
     if (navDash) hide(navDash);
     if (acctLogoutItem) hide(acctLogoutItem);
     if (acctLogoutAllItem) hide(acctLogoutAllItem);
+    if (acctExportItem) hide(acctExportItem);
+    if (acctDeleteItem) hide(acctDeleteItem);
+    if (headerMenuWrap) hide(headerMenuWrap);
     // Signed out (or session expired mid-edit) — a queued/in-flight server
     // autosave would just 401 pointlessly. The local draft is untouched, so
     // fall back to reflecting local-only save status instead of leaving a
@@ -7358,16 +7372,32 @@ function initSessionExpiredBanner() {
   if (btn) btn.addEventListener('click', reauthenticateInline);
 }
 
-/** Editor-topbar account menu: "Proiectele mele" + "Deconectare" (audit medium #7). */
-function openAccountMenu() {
-  const menu = $('account-menu');
-  const btn = $('btn-account-menu');
+/**
+ * Account menu: "Proiectele mele" + "Deconectare" (audit medium #7), plus
+ * (R-27) GDPR self-service + "Deconectare de pe toate dispozitivele".
+ *
+ * Two independent instances share this same open/close logic: the original
+ * editor-topbar one (#btn-account-menu / #account-menu, shown only in
+ * #edit) and the header one added for auth-account#4
+ * (#btn-account-menu-header / #account-menu-header, shown on #dashboard/
+ * #templates — see index.html). They are never visible at the same time
+ * (the plain header and the editor topbar are mutually exclusive — see
+ * showScreen()), so accountMenuActiveBtnId tracks at most one open menu.
+ */
+let accountMenuActiveBtnId = null;
+
+function openAccountMenu(btnId, menuId) {
+  btnId = btnId || 'btn-account-menu';
+  menuId = menuId || 'account-menu';
+  const menu = $(menuId);
+  const btn = $(btnId);
   if (!menu || !btn) return;
   const rect = btn.getBoundingClientRect();
   menu.style.top = (rect.bottom + 6) + 'px';
   menu.style.left = rect.left + 'px';
   menu.style.display = '';
   accountMenuOpen = true;
+  accountMenuActiveBtnId = btnId;
   btn.setAttribute('aria-expanded', 'true');
   requestAnimationFrame(() => {
     const first = menu.querySelector('button:not([style*="display: none"])');
@@ -7376,11 +7406,16 @@ function openAccountMenu() {
 }
 
 function closeAccountMenu() {
-  const menu = $('account-menu');
-  const btn = $('btn-account-menu');
-  if (menu) menu.style.display = 'none';
+  ['account-menu', 'account-menu-header'].forEach((id) => {
+    const menu = $(id);
+    if (menu) menu.style.display = 'none';
+  });
+  ['btn-account-menu', 'btn-account-menu-header'].forEach((id) => {
+    const btn = $(id);
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  });
   accountMenuOpen = false;
-  if (btn) btn.setAttribute('aria-expanded', 'false');
+  accountMenuActiveBtnId = null;
 }
 
 function tryTelegramAuth() {
@@ -9233,6 +9268,124 @@ async function confirmDeleteSite() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 22e. R-27 — GDPR self-service: "Descarcă datele mele" / "Șterge contul"
+// (auth-account#3). Same download-as-file pattern as downloadDraftHtml()/
+// downloadDraftZip() above, and the same typed-confirmation modal pattern as
+// confirmDeleteSite() above (email instead of site name).
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /api/me/export-data → triggers a browser download of the account's
+ * own data (profile, every site's config history, orders/invoices,
+ * native-calendar services/bookings). Not a fetch the app ever renders —
+ * same blob + a[download] pattern as downloadDraftHtml()/downloadDraftZip().
+ */
+async function downloadMyData() {
+  if (!currentUser) {
+    showToast('Intră în cont ca să-ți descarci datele.', 'error', 5000);
+    return;
+  }
+  try {
+    const res = await fetch('/api/me/export-data', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) {
+      const msg = res.status === 401
+        ? 'Intră în cont ca să-ți descarci datele.'
+        : res.status === 429
+          ? 'Prea multe cereri. Încearcă din nou peste o oră.'
+          : 'Nu am putut descărca datele.';
+      showToast(msg, 'error', 5000);
+      return;
+    }
+    const blob = await res.blob();
+    let filename = 'datele-mele.json';
+    const cd = res.headers.get('Content-Disposition') || res.headers.get('content-disposition') || '';
+    const mStar = /filename\*=UTF-8''([^;]+)/i.exec(cd);
+    const mPlain = /filename="?([^";]+)"?/i.exec(cd);
+    if (mStar && mStar[1]) {
+      try { filename = decodeURIComponent(mStar[1].trim()); } catch (_) { filename = mStar[1].trim(); }
+    } else if (mPlain && mPlain[1]) {
+      filename = mPlain[1].trim();
+    }
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch (_) {}
+      try { URL.revokeObjectURL(objectUrl); } catch (_) {}
+    }, 0);
+    showToast('Datele au fost descărcate.', 'success', 2500);
+  } catch (_) {
+    showToast('Nu am putut descărca datele.', 'error', 5000);
+  }
+}
+
+function expectedDeleteAccountEmail() {
+  return String((currentUser && currentUser.email) || '').trim().toLowerCase();
+}
+
+/** Product modal (NOT window.confirm) — types the account's own email to confirm. */
+function openDeleteAccountModal() {
+  if (!currentUser) {
+    showToast('Intră în cont ca să-ți ștergi contul.', 'error', 4000);
+    return;
+  }
+  if (!currentUser.email) {
+    showToast('Ștergerea contului din browser cere un cont cu email.', 'error', 5000);
+    return;
+  }
+  const emailEl = $('delete-account-email');
+  if (emailEl) emailEl.textContent = currentUser.email;
+  const input = $('input-delete-account-confirm');
+  if (input) input.value = '';
+  const errEl = $('delete-account-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  const confirmBtn = $('btn-confirm-delete-account');
+  if (confirmBtn) confirmBtn.disabled = true;
+  openModal('modal-delete-account');
+  if (input) input.focus();
+}
+
+/**
+ * POST /api/me/delete-account. On success, the account no longer exists:
+ * clears this tab's own locally-owned draft state (same helper doLogout()
+ * uses), flips the UI to signed-out, and returns to #templates — there is
+ * no account left to route back to.
+ */
+async function confirmDeleteAccount() {
+  const confirmBtn = $('btn-confirm-delete-account');
+  const errEl = $('delete-account-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  try {
+    if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se șterge…');
+    const input = $('input-delete-account-confirm');
+    const confirmEmail = input ? input.value : '';
+    await apiPost('/api/me/delete-account', { confirmEmail });
+    clearOwnedLocalDraftState();
+    closeModal('modal-delete-account');
+    updateUserUI(null);
+    if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
+    showToast('Contul tău a fost șters definitiv.', '', 4000);
+    window.location.hash = '#templates';
+  } catch (e) {
+    if (errEl) {
+      errEl.textContent = e.fromServer ? e.message : 'Ștergerea a eșuat. Încearcă din nou.';
+      errEl.style.display = '';
+    }
+  } finally {
+    if (confirmBtn) setBtnLoading(confirmBtn, false);
+  }
+}
+
 /* Optional: a drawer field to open and focus once the editor has loaded.
  * Set by the dashboard's "Configurează calendarul" button so an owner who has
  * never turned the calendar on lands ON the switch, instead of being dropped
@@ -10140,6 +10293,7 @@ function wireStaticButtons() {
   wireModalClose('btn-close-domain',   'modal-domain');
   wireModalClose('btn-close-invoices', 'modal-invoices');
   wireModalClose('btn-close-delete-site', 'modal-delete-site');
+  wireModalClose('btn-close-delete-account', 'modal-delete-account');
 
   // Delete-site confirm: the button stays disabled until the typed text
   // matches the site's own name exactly — the server re-checks this too
@@ -10154,6 +10308,21 @@ function wireStaticButtons() {
   }
   if (deleteConfirmBtn) {
     deleteConfirmBtn.addEventListener('click', confirmDeleteSite);
+  }
+
+  // R-27: delete-ACCOUNT confirm — same disabled-until-exact-match contract
+  // as delete-site above, matched against the signed-in account's own email
+  // (server re-checks this too; see handleDeleteMyAccount's confirmEmail).
+  const deleteAccountConfirmInput = $('input-delete-account-confirm');
+  const deleteAccountConfirmBtn = $('btn-confirm-delete-account');
+  if (deleteAccountConfirmInput && deleteAccountConfirmBtn) {
+    deleteAccountConfirmInput.addEventListener('input', () => {
+      deleteAccountConfirmBtn.disabled =
+        deleteAccountConfirmInput.value.trim().toLowerCase() !== expectedDeleteAccountEmail();
+    });
+  }
+  if (deleteAccountConfirmBtn) {
+    deleteAccountConfirmBtn.addEventListener('click', confirmDeleteAccount);
   }
 
   const successCloseBtn = $('btn-success-close');
@@ -10270,18 +10439,28 @@ function wireStaticButtons() {
   const redoBtn = $('btn-redo');
   if (redoBtn) redoBtn.addEventListener('click', redo);
 
-  // Account menu (audit medium #7 — no way to reach logout/project list from the editor)
-  const acctBtn = $('btn-account-menu');
-  if (acctBtn) {
-    acctBtn.addEventListener('click', (e) => {
+  // Account menu (audit medium #7 — no way to reach logout/project list from
+  // the editor). R-27 (auth-account#4): the SAME wiring below also drives
+  // the header's copy of this menu (#btn-account-menu-header /
+  // #account-menu-header), reachable from #dashboard/#templates without
+  // first opening a design — see openAccountMenu()'s doc comment.
+  function wireAccountMenuTrigger(btnId, menuId) {
+    const btn = $(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (accountMenuOpen) closeAccountMenu(); else openAccountMenu();
+      if (accountMenuOpen && accountMenuActiveBtnId === btnId) closeAccountMenu();
+      else openAccountMenu(btnId, menuId);
     });
   }
+  wireAccountMenuTrigger('btn-account-menu', 'account-menu');
+  wireAccountMenuTrigger('btn-account-menu-header', 'account-menu-header');
   document.addEventListener('click', (e) => {
     if (!accountMenuOpen) return;
-    const menu = $('account-menu');
-    if (menu && !menu.contains(e.target) && e.target !== acctBtn) closeAccountMenu();
+    const menuId = accountMenuActiveBtnId === 'btn-account-menu-header' ? 'account-menu-header' : 'account-menu';
+    const menu = $(menuId);
+    const btn = $(accountMenuActiveBtnId);
+    if (menu && !menu.contains(e.target) && e.target !== btn) closeAccountMenu();
   });
   const acctProjectsBtn = $('account-menu-projects');
   if (acctProjectsBtn) {
@@ -10294,6 +10473,19 @@ function wireStaticButtons() {
   if (acctLogoutBtn) acctLogoutBtn.addEventListener('click', () => { closeAccountMenu(); doLogout(); });
   const acctLogoutAllBtn = $('account-menu-logout-all');
   if (acctLogoutAllBtn) acctLogoutAllBtn.addEventListener('click', () => { closeAccountMenu(); doLogoutEverywhere(); });
+  const acctLogoutAllHeaderBtn = $('account-menu-header-logout-all');
+  if (acctLogoutAllHeaderBtn) acctLogoutAllHeaderBtn.addEventListener('click', () => { closeAccountMenu(); doLogoutEverywhere(); });
+
+  // R-27 (auth-account#3): "Descarcă datele mele" / "Șterge contul" — wired
+  // identically for both the editor-topbar and the header copies of the menu.
+  const acctExportBtn = $('account-menu-export-data');
+  if (acctExportBtn) acctExportBtn.addEventListener('click', () => { closeAccountMenu(); downloadMyData(); });
+  const acctExportHeaderBtn = $('account-menu-header-export-data');
+  if (acctExportHeaderBtn) acctExportHeaderBtn.addEventListener('click', () => { closeAccountMenu(); downloadMyData(); });
+  const acctDeleteBtn = $('account-menu-delete-account');
+  if (acctDeleteBtn) acctDeleteBtn.addEventListener('click', () => { closeAccountMenu(); openDeleteAccountModal(); });
+  const acctDeleteHeaderBtn = $('account-menu-header-delete-account');
+  if (acctDeleteHeaderBtn) acctDeleteHeaderBtn.addEventListener('click', () => { closeAccountMenu(); openDeleteAccountModal(); });
 
   // Color picker
   initColorPicker();

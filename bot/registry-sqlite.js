@@ -87,6 +87,21 @@ function getUser(userId) {
     return row ? userRowToObj(row) : null;
 }
 
+/**
+ * R-27 (GDPR account deletion) — permanently remove the user row itself.
+ * Callers are responsible for removing everything that row owns FIRST
+ * (sites, sessions, tokens — see bot/account-data.js#eraseAccount): this
+ * only deletes the account/profile row. Idempotent: an unknown/already-gone
+ * id is a silent no-op, mirroring deleteSite()'s contract.
+ * @param {string} userId
+ * @returns {boolean} true iff a user row was actually removed
+ */
+function deleteUser(userId) {
+    if (userId == null) return false; // node:sqlite cannot bind undefined
+    const result = db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    return result.changes > 0;
+}
+
 // ---------------------------------------------------------------------------
 // Login tokens (magic links)
 // ---------------------------------------------------------------------------
@@ -111,6 +126,31 @@ function consumeLoginToken(token) {
     if (Date.now() > entry.exp) return null;
     db.prepare('UPDATE tokens SET used = 1 WHERE hash = ?').run(hash);
     return JSON.parse(entry.payload);
+}
+
+/**
+ * R-27 (GDPR account deletion) — remove every outstanding magic-link token
+ * for one email. Tokens are keyed by hash (not user id), so this scans the
+ * (bounded — 15-minute TTL keeps it small) table and matches on the email
+ * embedded in each token's own payload. Best-effort: a malformed payload row
+ * is skipped, never thrown.
+ * @param {string} email
+ * @returns {number} tokens removed
+ */
+function deleteLoginTokensForEmail(email) {
+    const wanted = String(email || '').trim().toLowerCase();
+    if (!wanted) return 0;
+    const rows = db.prepare('SELECT hash, payload FROM tokens').all();
+    let removed = 0;
+    for (const row of rows) {
+        let payload;
+        try { payload = JSON.parse(row.payload); } catch (_) { continue; }
+        if (payload && typeof payload.email === 'string' && payload.email.trim().toLowerCase() === wanted) {
+            db.prepare('DELETE FROM tokens WHERE hash = ?').run(row.hash);
+            removed++;
+        }
+    }
+    return removed;
 }
 
 // ---------------------------------------------------------------------------
@@ -573,8 +613,10 @@ module.exports = {
     getOrCreateUserByEmail,
     getOrCreateUserByTelegram,
     getUser,
+    deleteUser,
     createLoginToken,
     consumeLoginToken,
+    deleteLoginTokensForEmail,
     createSite,
     getSite,
     listSites,

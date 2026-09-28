@@ -38,6 +38,22 @@
   <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
   <div class="header-right">
     <span id="user-badge" style="display:none" class="user-badge" aria-label="Utilizator conectat"></span>
+    <!-- R-27 (auth-account#3/#4): GDPR self-service + "Deconectare de pe toate
+         dispozitivele" reachable from the dashboard/templates header too, not
+         only from inside an open design's editor topbar (#account-menu below). -->
+    <div class="account-menu-wrap" id="account-menu-wrap-header" style="display:none">
+      <button id="btn-account-menu-header" class="btn-icon-account" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Meniul contului">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="5.3" r="2.6" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M2.7 13.4c.85-2.7 3-4.1 5.3-4.1s4.45 1.4 5.3 4.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div id="account-menu-header" class="account-menu" role="menu" aria-label="Cont" style="display:none">
+        <button type="button" class="account-menu-item" id="account-menu-header-export-data" role="menuitem">Descarcă datele mele</button>
+        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-header-delete-account" role="menuitem">Șterge contul</button>
+        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-header-logout-all" role="menuitem" title="Încheie sesiunea pe toate telefoanele și calculatoarele conectate">Deconectare de pe toate dispozitivele</button>
+      </div>
+    </div>
     <button id="btn-logout" style="display:none" class="btn-ghost btn-sm" aria-label="Deconectare">Deconectare</button>
   </div>
 </header>
@@ -61,6 +77,8 @@
       </button>
       <div id="account-menu" class="account-menu" role="menu" aria-label="Cont" style="display:none">
         <button type="button" class="account-menu-item" id="account-menu-projects" role="menuitem">Proiectele mele</button>
+        <button type="button" class="account-menu-item" id="account-menu-export-data" role="menuitem" style="display:none">Descarcă datele mele</button>
+        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-delete-account" role="menuitem" style="display:none">Șterge contul</button>
         <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-logout" role="menuitem" style="display:none">Deconectare</button>
         <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-logout-all" role="menuitem" style="display:none" title="Încheie sesiunea pe toate telefoanele și calculatoarele conectate">Deconectare de pe toate dispozitivele</button>
       </div>
@@ -691,6 +709,21 @@
     </div>
     <div id="delete-site-error" class="field-error" role="alert" style="display:none"></div>
     <button class="btn-danger btn-full" type="button" id="btn-confirm-delete-site" disabled>Șterge definitiv</button>
+  </div>
+</div>
+
+<!-- ===== MODAL: DELETE ACCOUNT (R-27, GDPR — permanent, whole account) ===== -->
+<div id="modal-delete-account" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-delete-account-title" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-close-delete-account" aria-label="Închide">&times;</button>
+    <h2 id="modal-delete-account-title" class="modal-title">Șterge contul definitiv</h2>
+    <p class="modal-sub">Această acțiune este ireversibilă: se anulează abonamentul activ, se opresc din publicare toate site-urile tale, se șterg ciornele, programările și contul însuși. Ca să confirmi, scrie exact adresa de email a contului: <strong id="delete-account-email"></strong></p>
+    <div class="field-group">
+      <label class="field-label" for="input-delete-account-confirm">Adresa de email</label>
+      <input id="input-delete-account-confirm" class="field-input" type="email" autocomplete="off" spellcheck="false" />
+    </div>
+    <div id="delete-account-error" class="field-error" role="alert" style="display:none"></div>
+    <button class="btn-danger btn-full" type="button" id="btn-confirm-delete-account" disabled>Șterge contul definitiv</button>
   </div>
 </div>
 
