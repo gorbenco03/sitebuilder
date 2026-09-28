@@ -424,6 +424,79 @@
       ]
     },
     {
+      "id": "faq",
+      "title": "Întrebări frecvente",
+      "fields": [
+        {
+          "key": "faq.title",
+          "type": "text",
+          "label": "Titlu secțiune întrebări (ex. Întrebări frecvente)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "faq.items",
+          "type": "list",
+          "label": "Întrebare + răspuns (3–8 perechi)",
+          "required": false,
+          "min": 0,
+          "max": 8,
+          "itemShape": {
+            "q": "text",
+            "a": "text"
+          },
+          "identityItemKeys": ["q"]
+        }
+      ]
+    },
+    {
+      "id": "hours",
+      "title": "Program",
+      "fields": [
+        {
+          "key": "hours.title",
+          "type": "text",
+          "label": "Titlu secțiune program (ex. Program)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "hours.items",
+          "type": "list",
+          "label": "Zile + interval orar (ex. Luni–Vineri / 09:00–18:00)",
+          "required": false,
+          "min": 0,
+          "max": 7,
+          "itemShape": {
+            "day": "text",
+            "time": "text"
+          },
+          "identityItemKeys": ["day"]
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "title": "Unde ne găsești",
+      "fields": [
+        {
+          "key": "location.title",
+          "type": "text",
+          "label": "Titlu secțiune locație (ex. Unde ne găsești)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "location.address",
+          "type": "text",
+          "label": "Adresă completă (folosită și pentru linkul Google Maps)",
+          "required": false,
+          "maxLen": 140,
+          "identity": true
+        }
+      ]
+    },
+    {
       "id": "footer",
       "title": "Subsol",
       "fields": [
@@ -492,6 +565,53 @@
       "id": "testimonials",
       "label": "Recenzii",
       "removable": true
+    },
+    {
+      "id": "faq",
+      "label": "Întrebări frecvente",
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă o listă de întrebări și răspunsuri frecvente, utilă pentru clienți înainte să comande.",
+      "seed": {
+        "faq": {
+          "title": "Întrebări frecvente",
+          "items": [
+            { "q": "Faceți torturi personalizate pentru evenimente?", "a": "Da, facem torturi personalizate pentru nunți, botezuri și aniversări — scrie-ne pe WhatsApp cu detaliile." },
+            { "q": "Cu cât timp înainte trebuie să comand un tort?", "a": "Recomandăm cu cel puțin 3 zile înainte; pentru torturi mari de eveniment, cu 1-2 săptămâni înainte." },
+            { "q": "Aveți opțiuni fără gluten sau vegane?", "a": "Da, avem câteva sortimente fără gluten și vegane — întreabă-ne la comandă ce este disponibil în ziua respectivă." },
+            { "q": "Livrați la domiciliu?", "a": "Da, livrăm în București — costul livrării depinde de zonă și se confirmă la comandă." }
+          ]
+        }
+      }
+    },
+    {
+      "id": "hours",
+      "label": "Program",
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă orarul de funcționare, afișat pe zile ale săptămânii.",
+      "seed": {
+        "hours": {
+          "title": "Program",
+          "items": [
+            { "day": "Luni – Sâmbătă", "time": "08:00 – 20:00" },
+            { "day": "Duminică", "time": "09:00 – 14:00" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "location",
+      "label": "Unde ne găsești",
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă adresa patiseriei și un buton care deschide locația direct în Google Maps.",
+      "seed": {
+        "location": {
+          "title": "Unde ne găsești",
+          "address": "Strada Franceză 28, București"
+        }
+      }
     },
     {
       "id": "contact-form",

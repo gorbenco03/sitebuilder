@@ -646,11 +646,23 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'labels.teamEyebrow',
     'team.title',
     'team.members',
+    // T-1B (PLAN-UX §5.2 addable section library): product-menu,
+    // local-service and desserdirina gained three optional, content-gated
+    // sections — FAQ, Program (orar) and Unde ne găsești (adresă + link
+    // Google Maps) — declared with schema.pageSections' addable/description/
+    // seed CONTRACT fields, hidden until a seed is applied.
+    'faq.title',
+    'faq.items',
+    'hours.title',
+    'hours.items',
+    'location.title',
+    'location.address',
   ]);
 
   // Same reason: declaring desserdirina's menu adds the section that holds it.
   const ALLOWED_ADDED_SECTIONS = {
-    'templates/desserdirina/schema.json': ['menu', 'testimonials'],
+    // T-1B added faq/hours/location (addable, content-gated) to these three.
+    'templates/desserdirina/schema.json': ['menu', 'testimonials', 'faq', 'hours', 'location'],
     // A salon can now take bookings online — the calendar engine was always
     // template-agnostic, only the presentation was wired to professionals.
     // S-2B then added the same optional testimonials section every other
@@ -659,8 +671,8 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     // The owner can put the business name in the navbar instead of the phone
     // number, which needed a field of its own — the old workaround left a
     // tel: link pointing at a number the page no longer showed.
-    'templates/local-service/schema.json': ['header', 'testimonials'],
-    'templates/product-menu/schema.json': ['testimonials'],
+    'templates/local-service/schema.json': ['header', 'testimonials', 'faq', 'hours', 'location'],
+    'templates/product-menu/schema.json': ['testimonials', 'faq', 'hours', 'location'],
     // S-2B: professionals gained both the "Echipă" team section (matching
     // portfolio's pre-existing one) and the testimonials section every
     // other template gained.

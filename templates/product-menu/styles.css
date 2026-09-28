@@ -448,6 +448,48 @@ ul { list-style: none; }
 .pm-testi__name { font-family: var(--font-ui); font-weight: 600; font-size: 0.9rem; }
 .pm-testi__role { font-family: var(--font-ui); font-size: 0.8rem; color: var(--ink-mute); }
 
+/* FAQ — optional section, addable via schema.pageSections (§5.2). */
+.pm-faq-sec { background: var(--void); color: var(--snow); padding: clamp(3rem, 8vw, 5rem) 22px; }
+.pm-faq-sec .pm-title { color: var(--snow); }
+.pm-faq-wrap { max-width: 760px; margin: 0 auto; }
+.pm-faq { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.75rem; }
+.pm-faq__item {
+    background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: var(--r); padding: 1rem 1.25rem;
+}
+.pm-faq__q {
+    font-family: var(--font-display); font-size: 1.05rem; font-weight: 500;
+    line-height: 1.4; cursor: pointer; list-style: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+}
+.pm-faq__q::-webkit-details-marker { display: none; }
+.pm-faq__q::after {
+    content: '−'; flex: none; font-size: 1.3rem; line-height: 1; color: var(--cta);
+}
+.pm-faq__item:not([open]) .pm-faq__q::after { content: '+'; }
+.pm-faq__a { color: rgba(250, 248, 245, 0.78); line-height: 1.6; margin: 0.75rem 0 0; }
+
+/* Program (orar) — optional section, addable via schema.pageSections (§5.2). */
+.pm-hours-sec { background: var(--paper); color: var(--ink); padding: clamp(3rem, 8vw, 5rem) 22px; }
+.pm-hours-wrap { max-width: 32rem; margin: 0 auto; }
+.pm-hours { list-style: none; margin: 1.75rem 0 0; padding: 0; }
+.pm-hours__row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    padding: 0.7rem 0; border-bottom: 1px solid rgba(26, 20, 16, 0.1);
+}
+.pm-hours__day { font-family: var(--font-ui); font-weight: 600; }
+.pm-hours__time { font-family: var(--font-ui); color: var(--ink-soft); }
+
+/* Unde ne găsești — optional section, addable via schema.pageSections (§5.2).
+   No map embed: a single link to Google Maps, built client-side from the
+   address text (see initLocationMapsLink in script.js) — no iframe/external
+   script, so no map cookie/tracking is loaded on the customer's site. */
+.pm-location-sec { background: var(--void); color: var(--snow); padding: clamp(3rem, 8vw, 5.5rem) 22px; text-align: center; }
+.pm-location-sec .pm-title { color: var(--snow); }
+.pm-location-wrap { max-width: 32rem; margin: 0 auto; }
+.pm-location__address { color: rgba(250, 248, 245, 0.78); margin: 0 0 1.5rem; line-height: 1.6; }
+.pm-location__cta { margin: 0 auto; }
+
 /* Contact form — optional section, §5.2 minimal section library. */
 .pm-form-sec { background: var(--void); color: var(--snow); padding: clamp(3rem, 8vw, 5.5rem) 22px; }
 .pm-form-card { max-width: 640px; margin: 0 auto; }

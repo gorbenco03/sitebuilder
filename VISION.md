@@ -125,7 +125,7 @@ Done minim:
 
 Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Opus devin backlog structural:
 
-- fără adăugare liberă de secțiuni. Reordonarea și ascunderea există (Wave 7), iar toate cele 5 șabloane au o bibliotecă fixă de secțiuni opționale (vezi actualizarea 2026-09-28 de mai jos). Un catalog general de blocuri („Adaugă o secțiune”, cu FAQ, hartă, program) rămâne în backlog;
+- fără adăugare liberă de secțiuni. Reordonarea și ascunderea există (Wave 7), iar toate cele 5 șabloane au o bibliotecă fixă de secțiuni opționale (vezi actualizarea 2026-09-28 de mai jos). `product-menu`, `local-service` și `desserdirina` au acum și trei blocuri addable declarate în `schema.pageSections` (FAQ, Program, Unde ne găsești — vezi actualizarea T-1B de mai jos); un buton „Adaugă o secțiune” în builder, care să le expună clientului, rămâne backlog separat;
 - undo/redo există (toolbar și Ctrl/Cmd+Z) și rezistă unui reload sau unei închideri accidentale de tab în aceeași sesiune de browser, salvat per site și per cont (PLAN-UX-2026-09-27 §5.3). Nu se păstrează după închiderea sesiunii de browser;
 - fără multi-page real;
 - fără typography controls;
@@ -137,6 +137,8 @@ Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Op
 Nu se rezolvă toate într-un singur task. Se lucrează pe flow-uri verticale verificate în browser.
 
 **Actualizare 2026-09-28 (PLAN-UX §5.2):** toate cele 5 șabloane au o secțiune opțională „Recenzii” (2-6 testimoniale), iar `professionals` are și o secțiune opțională „Echipa”. Sunt predefinite per șablon, se editează ca liste în builder și se ascund automat când nu au conținut. Nu e „section add/remove/reorder” generic: punctul de mai sus rămâne în backlog. Șabloanele fără formular general au primit un formular de contact. Pe site-ul publicat, mesajele ajung prin `POST /api/site-messages`, cu limită de rată și honeypot, în „Mesaje” pe cardul site-ului din dashboard, cu email către proprietar, și sunt incluse în exportul GDPR. În exportul static, formularul trimite pe WhatsApp sau pe email. La `professionals`, formularul de programare rămâne separat.
+
+**Actualizare 2026-09-28 (T-1B, PLAN-UX §5.2 — bibliotecă de secțiuni addable):** `product-menu`, `local-service` și `desserdirina` au primit trei blocuri opționale noi, fiecare în designul propriu al șablonului: „Întrebări frecvente” (listă `<details>`/`<summary>`, deschise by default — regula §4.3), „Program” (listă zi + interval orar) și „Unde ne găsești” (adresă + buton „Deschide în Google Maps”, link construit client-side din adresă cu `encodeURIComponent`, fără iframe și fără script extern). Sunt declarate în `schema.json` cu mecanismul `pageSections` existent, plus câmpurile de contract `addable`, `description` (o propoziție în română) și `seed` (un patch de config cu conținut realist de pornire); rămân ascunse până se aplică seed-ul, la fel ca „Recenzii” mai sus. Acest task a livrat doar partea de șablon (schema + markup + stil + link-ul de hartă); butonul „Adaugă o secțiune” din builder care aplică seed-ul unui client rămâne un task separat, în paralel — fără el, blocurile există în șablon dar clientul nu le poate încă activa singur din interfață.
 
 ## 5. Legal
 

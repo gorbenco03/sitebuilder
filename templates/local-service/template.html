@@ -448,6 +448,51 @@
             </div>
         </section>
 
+        <!-- @if faq.items -->
+        <section id="faq" class="ls-block ls-block--dark fade-in-section" aria-labelledby="faq-heading">
+            <div class="ls-wrap">
+                <!-- @if faq.title -->
+                <h2 class="ls-h ls-h--light" id="faq-heading">{{faq.title}}</h2>
+                <!-- @endif -->
+                <div class="ls-faq">
+                    <!-- @each faq.items -->
+                    <details class="ls-faq__item" open>
+                        <summary class="ls-faq__q">{{q}}</summary>
+                        <p class="ls-faq__a">{{a}}</p>
+                    </details>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if hours.items -->
+        <section id="hours" class="ls-block fade-in-section" aria-labelledby="hours-heading">
+            <div class="ls-wrap">
+                <!-- @if hours.title -->
+                <h2 class="ls-h" id="hours-heading">{{hours.title}}</h2>
+                <!-- @endif -->
+                <ul class="ls-hours">
+                    <!-- @each hours.items -->
+                    <li class="ls-hours__row"><span class="ls-hours__day">{{day}}</span><span class="ls-hours__time">{{time}}</span></li>
+                    <!-- @end -->
+                </ul>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <!-- @if location.address -->
+        <section id="location" class="ls-block ls-block--dark fade-in-section" aria-labelledby="location-heading">
+            <div class="ls-wrap ls-location">
+                <!-- @if location.title -->
+                <h2 class="ls-h ls-h--light" id="location-heading">{{location.title}}</h2>
+                <!-- @endif -->
+                <p class="ls-text" data-location-address>{{location.address}}</p>
+                <a class="ls-btn ls-btn--fill" data-location-maps-link href="#" target="_blank" rel="noopener">Deschide în Google Maps</a>
+            </div>
+        </section>
+        <!-- @endif -->
+
         <section class="ls-band fade-in-section" id="contact" aria-label="{{labels.contactBandAria}}">
             <div class="ls-wrap ls-band__inner">
                 <div>

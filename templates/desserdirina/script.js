@@ -12,7 +12,20 @@ document.addEventListener('DOMContentLoaded', () => {
     initImageFallback();
     initSkipLink();
     initContactForm();
+    initLocationMapsLink();
 });
+
+// "Unde ne găsești" — builds the Google Maps search link from the rendered
+// address text, client-side. No iframe, no external script: just a plain
+// https://www.google.com/maps/search/ deep link built with encodeURIComponent.
+function initLocationMapsLink() {
+    var addressEl = document.querySelector('[data-location-address]');
+    var linkEl = document.querySelector('[data-location-maps-link]');
+    if (!addressEl || !linkEl) return;
+    var address = (addressEl.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!address) return;
+    linkEl.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+}
 
 // Contact form — POSTs to data-site-messages-api, falls back to WhatsApp/email when empty or on failure.
 function initContactForm() {
