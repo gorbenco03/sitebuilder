@@ -973,11 +973,13 @@
       "addable": true,
       "description": "Arată zilele și orele de program, separat de nota scurtă din secțiunea de contact.",
       "seed": {
-        "title": "Program",
-        "rows": [
-          { "day": "Luni–Vineri", "hours": "09:00–18:00" },
-          { "day": "Sâmbătă", "hours": "Numai cu programare" }
-        ]
+        "schedule": {
+          "title": "Program",
+          "rows": [
+            { "day": "Luni–Vineri", "hours": "09:00–18:00" },
+            { "day": "Sâmbătă", "hours": "Numai cu programare" }
+          ]
+        }
       }
     },
     {
@@ -997,8 +999,10 @@
       "addable": true,
       "description": "Arată adresa fizică și un link direct spre Google Maps, separat de restul datelor de contact.",
       "seed": {
-        "title": "Unde ne găsești",
-        "address": "Strada Primăverii 22, București"
+        "location": {
+          "title": "Unde ne găsești",
+          "address": "Strada Primăverii 22, București"
+        }
       }
     },
     {

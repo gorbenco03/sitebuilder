@@ -18,6 +18,16 @@
  * gesture. It is deliberately about reach, not behaviour — the reordering
  * itself is proven by wave7-sections-e2e-all-templates on the rendered DOM.
  *
+ * T-1A/T-1B/T-1C (PLAN-UX §5.2) added `addable: true` page sections (FAQ /
+ * Program / Unde ne găsești). By design (builder/app.js's
+ * visiblePageSectionEntries()/pageSectionSeedEntry()), an addable section
+ * starts `pending` and is deliberately EXCLUDED from this ordinary row list
+ * — it must only be reachable through the "Adaugă o secțiune" catalog until
+ * a customer adds it (see bot/test/audit27-t-1a-add-section.test.js). So the
+ * row count this file checks against the schema excludes addable entries;
+ * it separately checks that the catalog button/entries exist for them, which
+ * is the addable sections' own reachability path.
+ *
  * Run: node --experimental-sqlite --test bot/test/waveB-sections-panel-reachable.test.js
  */
 
@@ -57,9 +67,13 @@ test('the page-sections panel is reachable and populated on every template', asy
     try {
         for (const tpl of templates()) {
             const schema = JSON.parse(fs.readFileSync(path.join(TEMPLATES_DIR, tpl, 'schema.json'), 'utf8'));
-            const expected = (schema.pageSections || []).map((s) => s.id);
+            const allSections = schema.pageSections || [];
+            const addableSections = allSections.filter((s) => s && s.addable === true);
+            // Addable sections start pending/hidden by design (T-1A) — only the
+            // ordinary, already-visible sections are expected as panel rows.
+            const expected = allSections.filter((s) => !(s && s.addable === true)).map((s) => s.id);
             assert.ok(
-                expected.length > 0,
+                allSections.length > 0,
                 `${tpl}: schema has no pageSections — the panel cannot be reachable for this template`
             );
 
@@ -89,7 +103,31 @@ test('the page-sections panel is reachable and populated on every template', asy
                     })),
                 };
             });
+            // Addable sections (T-1A) are reachable only through the catalog,
+            // not as ordinary rows — check that path explicitly here.
+            let catalog = { opened: false, cardTexts: [] };
+            if (addableSections.length > 0) {
+                const addBtn = page.locator('#btn-add-section-panel');
+                if (await addBtn.isVisible().catch(() => false)) {
+                    await addBtn.click().catch(() => {});
+                    const modal = page.locator('#modal-add-section');
+                    if (await modal.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false)) {
+                        catalog.opened = true;
+                        catalog.cardTexts = await page.locator('.add-section-card').allInnerTexts().catch(() => []);
+                    }
+                }
+            }
             await page.close();
+
+            if (addableSections.length > 0) {
+                if (!catalog.opened) {
+                    failures.push(`${tpl}: ${addableSections.length} addable section(s) declared but "Adaugă o secțiune" catalog did not open — an owner cannot reach them`);
+                } else if (catalog.cardTexts.length !== addableSections.length) {
+                    failures.push(
+                        `${tpl}: catalog shows ${catalog.cardTexts.length} card(s), schema declares ${addableSections.length} addable section(s)`
+                    );
+                }
+            }
 
             if (seen.missing) {
                 failures.push(`${tpl}: no .hb-sections-list in the details drawer — an owner cannot reach the feature`);

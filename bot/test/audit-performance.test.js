@@ -236,11 +236,20 @@ function dirTotalBytes(dir) {
   //   template        minified   ceiling (minified * 1.02, rounded up)
   //   product-menu      107729    109884
   //   local-service     129449    132038
+  //
+  // Raised to measured + 2% for T-1B/T-1C (same section library) landing on
+  // portfolio and professionals too: FAQ/location on portfolio,
+  // schedule/location on professionals — real shipped feature, hidden until
+  // added, same convention as every entry above — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.02, rounded up)
+  //   portfolio         139208    141993
+  //   professionals     154625    157718
   const HEAVY_JS_CEILING_BYTES = {
     'product-menu': 109884,
     'local-service': 132038,
-    portfolio: 136055,
-    professionals: 152840,
+    portfolio: 141993,
+    professionals: 157718,
   };
 
   for (const id of TPLS) {

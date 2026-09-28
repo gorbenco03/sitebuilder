@@ -495,7 +495,13 @@ function assertNoSecretLeak(body) {
         });
 
         await check('builder/app.js wires Download HTML (fetch + blob / a[download], no publish)', () => {
-            const js = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
+            // T-3 (PLAN-UX-2026-09-27 §5.8) moved the trial/subscription upsell
+            // text out of app.js's inline literal onto RO.DOWNLOAD_HTML_TRIAL_
+            // REQUIRED (builder/copy-ro.js) — same shipped Romanian copy,
+            // referenced by key. Read both so the last assertion below still
+            // proves the real customer-visible text exists.
+            const js = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8')
+                + '\n' + fs.readFileSync(path.join(ROOT, 'builder/copy-ro.js'), 'utf8');
             assert.ok(/btn-download-html/.test(js), 'app.js references btn-download-html');
             assert.ok(/\/api\/export-html/.test(js), 'app.js fetches /api/export-html');
             assert.ok(/download/i.test(js) && (/Blob|createObjectURL|a\.download|\.download\s*=/.test(js)),

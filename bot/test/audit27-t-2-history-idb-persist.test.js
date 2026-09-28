@@ -231,6 +231,15 @@ test('T-2: same account resumes undo history after a real browser close+reopen (
     SERVER_SECRET: 'audit27-t-2-' + crypto.randomBytes(8).toString('hex'),
   }, async (base) => {
     const browser = await chromium.launch({ headless: true });
+    // Closing every context this test opens (context1/context2 below) is not
+    // enough — Playwright's own browser PROCESS stays alive until
+    // browser.close() runs, which this test never called. Under `--test`'s
+    // own process-exit wait that left a live Chromium keeping the event
+    // loop open long after every assertion had already passed: harmless
+    // alone (it just sits there), but the exact "timed out after 180000ms"
+    // this file (and its two siblings below) produced in the full suite —
+    // see this file's Run comment.
+    try {
     const emailA = 'audit27-t2-a-' + crypto.randomUUID().slice(0, 8) + '@example.com';
 
     // ---- Phase 1: account A edits a real, paid site's canvas 3 times,
@@ -311,6 +320,9 @@ test('T-2: same account resumes undo history after a real browser close+reopen (
     } finally {
       await context2.close();
     }
+    } finally {
+      await browser.close();
+    }
   });
 });
 
@@ -326,6 +338,9 @@ test('T-2: a different account never resumes another account\'s undo history, an
     SERVER_SECRET: 'audit27-t-2-xacct-' + crypto.randomBytes(8).toString('hex'),
   }, async (base) => {
     const browser = await chromium.launch({ headless: true });
+    // See the matching comment on the first test above — browser.close()
+    // must run too, not just context.close().
+    try {
     const emailA = 'audit27-t2b-a-' + crypto.randomUUID().slice(0, 8) + '@example.com';
     const emailB = 'audit27-t2b-b-' + crypto.randomUUID().slice(0, 8) + '@example.com';
     const secretMarker = 'ISTORIC-PRIVAT-T2-' + crypto.randomUUID().slice(0, 8);
@@ -442,6 +457,9 @@ test('T-2: a different account never resumes another account\'s undo history, an
     } finally {
       await context.close();
     }
+    } finally {
+      await browser.close();
+    }
   });
 });
 
@@ -457,6 +475,9 @@ test('T-2: a persisted undo entry older than the 7-day TTL is treated as gone', 
     SERVER_SECRET: 'audit27-t-2-ttl-' + crypto.randomBytes(8).toString('hex'),
   }, async (base) => {
     const browser = await chromium.launch({ headless: true });
+    // See the matching comment on the first test above — browser.close()
+    // must run too, not just context.close().
+    try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     try {
       const page = await context.newPage();
@@ -524,6 +545,9 @@ test('T-2: a persisted undo entry older than the 7-day TTL is treated as gone', 
       console.log('PASS audit27-t-2 (7-day TTL expiry): screenshots at', shotDir);
     } finally {
       await context.close();
+    }
+    } finally {
+      await browser.close();
     }
   });
 });

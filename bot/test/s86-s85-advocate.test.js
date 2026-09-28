@@ -319,8 +319,28 @@ check('HEAD: professionals Detalii labels have no Link Instagram contact and no 
   );
 });
 
+// T-3 (PLAN-UX-2026-09-27 §5.8) moved this string (and others) out of
+// app.js's inline literals onto RO.DASHBOARD_AUTH_REQUIRED_TITLE
+// (builder/copy-ro.js) — same shipped Romanian text, referenced by key
+// instead of repeated inline. Resolve RO.<KEY> references back to their
+// literal string before the regexes below look for the text itself, so
+// this still proves the same customer-visible copy rather than assuming
+// app.js always spells it out inline.
+function loadCopyRoCatalog() {
+  const src = fs.readFileSync(path.join(ROOT, 'builder/copy-ro.js'), 'utf8');
+  const sandbox = {};
+  vm.createContext(sandbox);
+  vm.runInContext(src + '\nthis.RO = RO;', sandbox);
+  return sandbox.RO;
+}
+function resolveRoRefs(src) {
+  const RO = loadCopyRoCatalog();
+  return src.replace(/RO\.([A-Z0-9_]+)/g, (m, key) =>
+    Object.prototype.hasOwnProperty.call(RO, key) ? JSON.stringify(RO[key]) : m);
+}
+
 check('HEAD: unauth dashboard empty-state source includes visible auth control', () => {
-  const src = read(APP_JS);
+  const src = resolveRoRefs(read(APP_JS));
   assert.ok(
     // copy-i18n#1 (audit27 R-16): "proiectele" -> "site-urile" — one term
     // ("site") for the product's core concept, everywhere in app.js.

@@ -108,12 +108,16 @@ function schemaField(schema, key) {
 }
 
 /**
- * Merges every addable pageSections entry's own `seed` into `config`
- * (shallow — each seed's top-level key is the section id, e.g. "location").
- * This is the ONLY way this file builds a "seeded" config for an addable
- * block: never a hand-constructed field value, so the oracle proves the
- * real customer flow (schema.seed → build.js render → live DOM), not an
- * idealized one.
+ * Merges every addable pageSections entry's own `seed` into `config`.
+ * `seed` is nested under the section's own id (e.g. `{ location: { title,
+ * address } }`) — the contract builder/app.js's real applySectionSeed()/
+ * hidookAddSection() use (deep-merge `seed` straight onto draft.config), so
+ * this unwraps by `id` the same way that real code path does, rather than
+ * assuming a flat shape of its own. See audit27-t-1a-add-section.test.js's
+ * header comment for the bug this shape once had (seed shipped flat here,
+ * which the builder UI would have written onto the wrong top-level config
+ * keys) — this oracle now proves the SAME contract T-1A's builder code
+ * reads, not a parallel, independently-invented one.
  */
 function applySeeds(config, schema, ids) {
   for (const id of ids) {
@@ -121,7 +125,9 @@ function applySeeds(config, schema, ids) {
     assert.ok(entry, `pageSections must include "${id}"`);
     assert.equal(entry.addable, true, `pageSections["${id}"] must be addable:true`);
     assert.ok(entry.seed && typeof entry.seed === 'object', `pageSections["${id}"] must have a seed patch`);
-    config[id] = Object.assign({}, config[id], entry.seed);
+    assert.ok(entry.seed[id] && typeof entry.seed[id] === 'object',
+      `pageSections["${id}"].seed must nest its patch under "${id}" (got keys: ${Object.keys(entry.seed).join(', ')})`);
+    config[id] = Object.assign({}, config[id], entry.seed[id]);
   }
   return config;
 }
@@ -208,11 +214,18 @@ for (const [templateId, addableIds] of Object.entries(ADDABLE_IDS_BY_TEMPLATE)) 
       assert.equal(typeof entry.description, 'string', `${templateId}: "${id}".description must be a string`);
       assert.ok(entry.description.trim().length > 0, `${templateId}: "${id}".description must not be empty`);
       assert.ok(entry.seed && typeof entry.seed === 'object', `${templateId}: "${id}".seed must be an object`);
-      // Every seed key must actually be a declared field under that section,
-      // so the builder can apply it directly at cfg[id] without guessing.
+      // The contract builder/app.js's applySectionSeed()/hidookAddSection()
+      // actually read: `seed` deep-merges straight onto draft.config, so it
+      // must be nested under the section's own id, not flat — a flat seed
+      // would silently write onto the wrong top-level config keys the
+      // moment a customer used the real "Adaugă o secțiune" catalog.
+      assert.ok(entry.seed[id] && typeof entry.seed[id] === 'object',
+        `${templateId}: "${id}".seed must nest its patch under "${id}" (got keys: ${Object.keys(entry.seed).join(', ')})`);
+      // Every nested seed key must actually be a declared field under that
+      // section, so the builder can apply it directly at cfg[id] without guessing.
       const sectionSchema = (schema.sections || []).find((s) => s.id === id);
       assert.ok(sectionSchema, `${templateId}: schema.sections must declare a "${id}" section for its fields`);
-      for (const seedKey of Object.keys(entry.seed)) {
+      for (const seedKey of Object.keys(entry.seed[id])) {
         const fieldKey = `${id}.${seedKey}`;
         assert.ok(
           sectionSchema.fields.some((f) => f.key === fieldKey),
@@ -248,7 +261,7 @@ for (const [templateId, addableIds] of Object.entries(ADDABLE_IDS_BY_TEMPLATE)) 
     const schema = headSchema(templateId);
     const baseCfg = headPreset(templateId);
     const seededCfg = applySeeds(JSON.parse(JSON.stringify(baseCfg)), schema, addableIds);
-    const seedAddress = pageSection(schema, 'location').seed.address;
+    const seedAddress = pageSection(schema, 'location').seed.location.address;
     assert.equal(seededCfg.location.address, seedAddress, 'fixture sanity: applySeeds must carry the real declared address');
 
     const dir = buildSite(templateId, seededCfg);
@@ -313,6 +326,6 @@ test('GREEN: no separate "addressHref" field remains on the location section (Ma
     const locationField = schemaField(schema, 'location.addressHref');
     assert.equal(locationField, null, `${templateId}: "location.addressHref" must not exist as a separate schema field`);
     const entry = pageSection(schema, 'location');
-    assert.ok(!('addressHref' in entry.seed), `${templateId}: location pageSection seed must not carry an "addressHref" key`);
+    assert.ok(!('addressHref' in entry.seed.location), `${templateId}: location pageSection seed must not carry an "addressHref" key`);
   }
 });

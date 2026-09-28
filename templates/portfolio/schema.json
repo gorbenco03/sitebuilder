@@ -818,11 +818,13 @@
       "addable": true,
       "description": "Răspunde la întrebările pe care le primești des, înainte ca o programare să ajungă la tine.",
       "seed": {
-        "title": "Întrebări frecvente",
-        "items": [
-          { "q": "Cum programez o vizită?", "a": "Scrie-ne pe WhatsApp sau completează formularul de contact și confirmăm cea mai apropiată oră liberă." },
-          { "q": "Cât durează o ședință?", "a": "Durata depinde de serviciul ales — timpul estimat apare la fiecare serviciu din listă." }
-        ]
+        "faq": {
+          "title": "Întrebări frecvente",
+          "items": [
+            { "q": "Cum programez o vizită?", "a": "Scrie-ne pe WhatsApp sau completează formularul de contact și confirmăm cea mai apropiată oră liberă." },
+            { "q": "Cât durează o ședință?", "a": "Durata depinde de serviciul ales — timpul estimat apare la fiecare serviciu din listă." }
+          ]
+        }
       }
     },
     {
@@ -832,8 +834,10 @@
       "addable": true,
       "description": "Arată adresa fizică și un link direct spre Google Maps, separat de restul datelor de contact.",
       "seed": {
-        "title": "Unde ne găsești",
-        "address": "Strada Primăverii 22, București"
+        "location": {
+          "title": "Unde ne găsești",
+          "address": "Strada Primăverii 22, București"
+        }
       }
     },
     {

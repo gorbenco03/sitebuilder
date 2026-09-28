@@ -110,7 +110,12 @@ check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} professionals thumb source i
 
 check('HEAD: builder landing/app has no customer-visible English factory chrome', () => {
   const html = headRead('builder/index.html');
-  const app = headRead('builder/app.js');
+  // T-3 (PLAN-UX-2026-09-27 §5.4) moved toast/error/status copy out of
+  // app.js into its own catalog (builder/copy-ro.js, loaded as a sibling
+  // <script> — see builder/index.html) — same shipped, customer-visible
+  // strings, different file, so this reads both rather than assuming every
+  // RO string still lives in app.js.
+  const app = headRead('builder/app.js') + '\n' + headRead('builder/copy-ro.js');
   const css = headRead('builder/app.css');
   const surface = html + '\n' + app;
 

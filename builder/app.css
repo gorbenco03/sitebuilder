@@ -493,16 +493,24 @@ body.details-drawer-open .editor-tpl-name {
    case (<=900px wide AND <=420px tall) alongside the original <=640px
    rule; either one being true still applies this whole block.
 */
-/* Tablet and small-laptop widths (641-1199px): the same backward overflow as
-   on a phone, one row instead of two. .editor-topbar-right is flex-end with
+/* Tablet width and up (641px+): the same backward overflow as on a phone,
+   one row instead of two. .editor-topbar-right is flex-end with
    overflow:visible, so once its tools need more than the row leaves them, they
    bleed LEFT over the undo/redo/device group — at 1024px the checklist pill
    sat on top of the "Desktop" and "Mobil" preview buttons, visible and
    unclickable. This was already live before the legend wave; the overlap test
    (suite12-editor-topbar-no-overlap) found it. Here the tool rail keeps one
    row but scrolls inside its own box, so it can shrink without covering
-   anything, and left/centre keep their real width. */
-@media (min-width: 641px) and (max-width: 1199px) {
+   anything, and left/centre keep their real width.
+   Originally capped at max-width:1199px on the assumption that anything
+   wider always had enough room — false the moment T-1A added a whole new
+   topbar button: audit-2026-09-27 caught the exact same bleed at 1280px
+   (not enough room yet) AND at 1536px (the >=1500px full-label rule adds
+   width right back). Rather than chase yet another magic upper bound
+   after the next added control, this has no upper bound at all: the rail
+   only ever scrolls when content doesn't fit, so it is a visual no-op at
+   any width roomy enough not to need it. */
+@media (min-width: 641px) {
   .editor-topbar-left,
   .editor-topbar-center {
     flex-shrink: 0;
