@@ -475,6 +475,36 @@
 
         
 
+        
+
+        <section id="contact-form" class="ls-block fade-in-section" aria-labelledby="contact-form-heading">
+            <div class="ls-wrap ls-form-wrap">
+                <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
+                <h2 class="ls-h" id="contact-form-heading">Trimite-ne un mesaj</h2>
+                <p class="ls-text">Completează formularul și te contactăm cât mai curând.</p>
+                <form class="ls-form" data-site-messages-api="" data-site-slug="" data-wa-number="40721234567" data-mail-to="" novalidate>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-name">Nume</label>
+                        <input class="ls-form__input" type="text" id="cf-name" name="name" autocomplete="name" required maxlength="80">
+                    </div>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-contact">Telefon sau email</label>
+                        <input class="ls-form__input" type="text" id="cf-contact" name="contact" autocomplete="tel" required maxlength="120">
+                    </div>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-message">Mesaj</label>
+                        <textarea class="ls-form__input ls-form__input--area" id="cf-message" name="message" required maxlength="1000" rows="4"></textarea>
+                    </div>
+                    <div class="ls-form__hp" aria-hidden="true">
+                        <label for="cf-website">Website</label>
+                        <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="ls-form__status" data-cf-status role="status" aria-live="polite" hidden></p>
+                    <button type="submit" class="ls-btn ls-btn--fill ls-form__submit" data-cf-submit>Trimite mesajul</button>
+                </form>
+            </div>
+        </section>
+
         <section class="ls-band fade-in-section" id="contact" aria-label="Contactează-ne">
             <div class="ls-wrap ls-band__inner">
                 <div>

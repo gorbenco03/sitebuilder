@@ -132,6 +132,14 @@ test('page-sections reorder/remove works end-to-end (real DOM) on every newly-wi
             handle: 'test', url: 'https://instagram.com/test', embedUrl: 'https://embedsocial.com/abc123',
           });
         }
+        // S-2A: local-service/product-menu/desserdirina also gained an optional
+        // "testimonials" section, content-gated (`@if testimonials`) like
+        // Instagram above — force it non-empty so its <section id="testimonials">
+        // actually renders and is exercised by this reorder/remove proof too
+        // (a template without the field, e.g. portfolio, just ignores it).
+        if (ids.includes('testimonials')) {
+          baseConfig.testimonials = [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
+        }
         const effectiveIds = templateId === 'desserdirina' ? ids.filter((id) => id !== 'instagram') : ids;
         // Reversed order, with one removable section marked removed.
         const reversed = [...effectiveIds].reverse();
@@ -191,7 +199,7 @@ test('page-sections reorder/remove works end-to-end (real DOM) on every newly-wi
 test('desserdirina: reordering is a documented no-op once Instagram is connected (structural gap, not fixed)', async () => {
   const templateId = 'desserdirina';
   const schema = schemaOf(templateId);
-  const ids = schema.pageSections.map((s) => s.id); // about, contact, gallery, instagram
+  const ids = schema.pageSections.map((s) => s.id); // about, contact, gallery, testimonials, contact-form, instagram
 
   const baseConfig = firstPresetConfig(templateId);
   // Force Instagram "connected" (S111 gate — see build.js normalizeInstagramForPublic):
@@ -200,6 +208,9 @@ test('desserdirina: reordering is a documented no-op once Instagram is connected
   baseConfig.instagram = Object.assign({}, baseConfig.instagram, {
     handle: 'test', url: 'https://instagram.com/test', embedUrl: 'https://embedsocial.com/abc123',
   });
+  // S-2A: force "testimonials" non-empty too (content-gated like Instagram)
+  // so it actually renders and appears in the documented original order below.
+  baseConfig.testimonials = [{ quote: 'Recomand cu încredere.', name: 'Test', role: 'Client' }];
 
   const reversed = [...ids].reverse();
   const config = Object.assign({}, baseConfig, {
@@ -217,7 +228,7 @@ test('desserdirina: reordering is a documented no-op once Instagram is connected
       // Original document order, NOT the requested reversal: proves the
       // gallery/instagram gap really does make reorderSections() bail on
       // this template the moment Instagram renders, exactly as documented.
-      assert.deepEqual(order, ['about', 'contact', 'gallery', 'instagram'],
+      assert.deepEqual(order, ['about', 'contact', 'gallery', 'testimonials', 'contact-form', 'instagram'],
         `desserdirina+Instagram: expected the documented no-op (original order), got ${JSON.stringify(order)} — ` +
         `if this now passes, the gallery/instagram gap was fixed and this test (and FINDINGS) should be updated`);
       await page.close();

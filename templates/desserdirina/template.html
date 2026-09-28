@@ -354,6 +354,51 @@
                 </div>
                 <!-- @end -->
             </section>
+
+            <!-- @if testimonials -->
+            <section id="testimonials" class="testimonials-section fade-in-section" aria-labelledby="testimonials-heading">
+                <!-- @if testimonialsTitle -->
+                <h2 class="section-title testimonials-heading" id="testimonials-heading">{{testimonialsTitle}}</h2>
+                <!-- @endif -->
+                <div class="testimonials-grid">
+                    <!-- @each testimonials -->
+                    <figure class="testimonial-card">
+                        <blockquote class="testimonial-quote">&bdquo;{{quote}}&rdquo;</blockquote>
+                        <figcaption class="testimonial-who">
+                            <span class="testimonial-name">{{name}}</span>
+                            <!-- @if role --><span class="testimonial-role">{{role}}</span><!-- @endif -->
+                        </figcaption>
+                    </figure>
+                    <!-- @end -->
+                </div>
+            </section>
+            <!-- @endif -->
+
+            <section id="contact-form" class="contact-form-card fade-in-section" aria-labelledby="contact-form-heading">
+                <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
+                <h2 class="section-title" id="contact-form-heading">Trimite-ne un mesaj</h2>
+                <p class="about-text">Completează formularul și te contactăm cât mai curând.</p>
+                <form class="cf-form" data-site-messages-api="{{siteMessages.apiBase}}" data-site-slug="{{siteMessages.slug}}" data-wa-number="{{contact.whatsapp}}" data-mail-to="{{contact.email}}" novalidate>
+                    <div class="cf-form__row">
+                        <label class="cf-form__label" for="cf-name">Nume</label>
+                        <input class="cf-form__input" type="text" id="cf-name" name="name" autocomplete="name" required maxlength="80">
+                    </div>
+                    <div class="cf-form__row">
+                        <label class="cf-form__label" for="cf-contact">Telefon sau email</label>
+                        <input class="cf-form__input" type="text" id="cf-contact" name="contact" autocomplete="tel" required maxlength="120">
+                    </div>
+                    <div class="cf-form__row">
+                        <label class="cf-form__label" for="cf-message">Mesaj</label>
+                        <textarea class="cf-form__input cf-form__input--area" id="cf-message" name="message" required maxlength="1000" rows="4"></textarea>
+                    </div>
+                    <div class="cf-form__hp" aria-hidden="true">
+                        <label for="cf-website">Website</label>
+                        <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="cf-form__status" data-cf-status role="status" aria-live="polite" hidden></p>
+                    <button type="submit" class="cf-form__submit" data-cf-submit>Trimite mesajul</button>
+                </form>
+            </section>
         </div>
 
         <!-- Instagram Widget Section -->

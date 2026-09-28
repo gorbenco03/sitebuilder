@@ -207,9 +207,16 @@ function dirTotalBytes(dir) {
   // the direct minifier-ran assertion; this one is the growth guard.
   // Raised to measured + 1% for the contrast script (90dfe97) plus the skip
   // link, QR focus trap and image fallback (bd33769) — 2026-09-28.
+  //
+  //   template        minified   ceiling (minified * 1.01, rounded up)
+  //   product-menu      101946    102966
+  //   local-service     124466    125711
+  //
+  // Raised to measured + 1% for the optional testimonials/contact-form
+  // sections (S-2A, PLAN-UX §5.2) — 2026-09-28.
   const HEAVY_JS_CEILING_BYTES = {
-    'product-menu': 93014,
-    'local-service': 116258,
+    'product-menu': 102966,
+    'local-service': 125711,
     portfolio: 123139,
     professionals: 138477,
   };

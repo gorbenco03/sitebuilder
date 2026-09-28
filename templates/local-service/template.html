@@ -399,6 +399,55 @@
         </section>
         <!-- @endif -->
 
+        <!-- @if testimonials -->
+        <section id="testimonials" class="ls-block ls-testi fade-in-section" aria-labelledby="testimonials-heading">
+            <div class="ls-wrap">
+                <!-- @if testimonialsTitle -->
+                <h2 class="ls-h" id="testimonials-heading">{{testimonialsTitle}}</h2>
+                <!-- @endif -->
+                <div class="ls-testi__grid">
+                    <!-- @each testimonials -->
+                    <figure class="ls-testi__card">
+                        <blockquote class="ls-testi__quote">&bdquo;{{quote}}&rdquo;</blockquote>
+                        <figcaption class="ls-testi__who">
+                            <span class="ls-testi__name">{{name}}</span>
+                            <!-- @if role --><span class="ls-testi__role">{{role}}</span><!-- @endif -->
+                        </figcaption>
+                    </figure>
+                    <!-- @end -->
+                </div>
+            </div>
+        </section>
+        <!-- @endif -->
+
+        <section id="contact-form" class="ls-block fade-in-section" aria-labelledby="contact-form-heading">
+            <div class="ls-wrap ls-form-wrap">
+                <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
+                <h2 class="ls-h" id="contact-form-heading">Trimite-ne un mesaj</h2>
+                <p class="ls-text">Completează formularul și te contactăm cât mai curând.</p>
+                <form class="ls-form" data-site-messages-api="{{siteMessages.apiBase}}" data-site-slug="{{siteMessages.slug}}" data-wa-number="{{contact.whatsapp}}" data-mail-to="{{contact.email}}" novalidate>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-name">Nume</label>
+                        <input class="ls-form__input" type="text" id="cf-name" name="name" autocomplete="name" required maxlength="80">
+                    </div>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-contact">Telefon sau email</label>
+                        <input class="ls-form__input" type="text" id="cf-contact" name="contact" autocomplete="tel" required maxlength="120">
+                    </div>
+                    <div class="ls-form__row">
+                        <label class="ls-form__label" for="cf-message">Mesaj</label>
+                        <textarea class="ls-form__input ls-form__input--area" id="cf-message" name="message" required maxlength="1000" rows="4"></textarea>
+                    </div>
+                    <div class="ls-form__hp" aria-hidden="true">
+                        <label for="cf-website">Website</label>
+                        <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="ls-form__status" data-cf-status role="status" aria-live="polite" hidden></p>
+                    <button type="submit" class="ls-btn ls-btn--fill ls-form__submit" data-cf-submit>Trimite mesajul</button>
+                </form>
+            </div>
+        </section>
+
         <section class="ls-band fade-in-section" id="contact" aria-label="{{labels.contactBandAria}}">
             <div class="ls-wrap ls-band__inner">
                 <div>
