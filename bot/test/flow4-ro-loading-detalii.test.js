@@ -627,18 +627,44 @@ check('HEAD: schema keys/ids stable aside from documented post-parent evolution'
     'appointment.nativeIntro',
     'faq.nativeItems',
     'header.left',
+    // S-2A (PLAN-UX §5.2): product-menu/local-service/desserdirina gained an
+    // optional testimonials section (flat-array shape) and a general
+    // contact-form section whose fallback needs an email — the form's
+    // data-site-messages-api already covers the live-site path, but a
+    // static export or an owner without WhatsApp still needs a mailto:.
+    'contact.email',
+    'testimonialsTitle',
+    'testimonials',
+    // S-2B (PLAN-UX §5.2): portfolio/professionals gained the same
+    // testimonials feature, but with an `{ title, items }` shape (see
+    // audit27-s-2b's own oracle) — different keys from S-2A's flat array —
+    // plus professionals gained an "Echipă" team section, matching
+    // portfolio's pre-existing one.
+    'labels.testimonialsEyebrow',
+    'testimonials.title',
+    'testimonials.items',
+    'labels.teamEyebrow',
+    'team.title',
+    'team.members',
   ]);
 
   // Same reason: declaring desserdirina's menu adds the section that holds it.
   const ALLOWED_ADDED_SECTIONS = {
-    'templates/desserdirina/schema.json': ['menu'],
+    'templates/desserdirina/schema.json': ['menu', 'testimonials'],
     // A salon can now take bookings online — the calendar engine was always
     // template-agnostic, only the presentation was wired to professionals.
-    'templates/portfolio/schema.json': ['appointment'],
+    // S-2B then added the same optional testimonials section every other
+    // template gained.
+    'templates/portfolio/schema.json': ['appointment', 'testimonials'],
     // The owner can put the business name in the navbar instead of the phone
     // number, which needed a field of its own — the old workaround left a
     // tel: link pointing at a number the page no longer showed.
-    'templates/local-service/schema.json': ['header'],
+    'templates/local-service/schema.json': ['header', 'testimonials'],
+    'templates/product-menu/schema.json': ['testimonials'],
+    // S-2B: professionals gained both the "Echipă" team section (matching
+    // portfolio's pre-existing one) and the testimonials section every
+    // other template gained.
+    'templates/professionals/schema.json': ['team', 'testimonials'],
   };
 
   function fieldMap(schema) {

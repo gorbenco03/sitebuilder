@@ -158,8 +158,20 @@ check('A11Y-01 behavioral: Tab cycles 15x inside a 3-control modal without escap
 // ─── A11Y-02: Escape must close #modal-instagram too ──────────────────────
 
 check('A11Y-02: the Escape handler closes whatever modal is open, by shape not by name', () => {
-  const idx = appSrc.indexOf("e.key === 'Escape'");
-  assert.ok(idx !== -1, 'global Escape handler exists');
+  // S-4 (mobile editing) added its own, earlier 'Escape' handlers for the
+  // mobile edit sheet/more-menu — plain string indexOf() now finds one of
+  // those first, not the global document-level handler this check actually
+  // means to inspect. Scan every "e.key === 'Escape'" occurrence and take
+  // the one that is actually paired with the .modal-overlay scan, instead of
+  // assuming it is the first (or only) one in the file.
+  let idx = -1;
+  for (let from = 0; ; ) {
+    const next = appSrc.indexOf("e.key === 'Escape'", from);
+    if (next === -1) break;
+    if (appSrc.slice(next, next + 600).includes('modal-overlay')) { idx = next; break; }
+    from = next + 1;
+  }
+  assert.ok(idx !== -1, 'global Escape handler (the one scanning .modal-overlay) exists');
   const windowSrc = appSrc.slice(idx, idx + 600);
   // This originally demanded that 'modal-instagram' be present in a hardcoded
   // id array. The array WAS the defect: it silently omitted whichever modal
