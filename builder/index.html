@@ -502,6 +502,12 @@
           <span><strong id="publish-price">—</strong> după trial acoperă primul an (reînnoire <strong id="publish-renewal">—</strong>/an)</span>
         </li>
       </ul>
+      <!-- PLAN-UX-2026-09-27 §5.5 — advisory only, never blocks publishing.
+           Populated by builder/publish-checklist.js#renderPublishModalChecklist(). -->
+      <div id="publish-checklist" class="publish-checklist" role="group" aria-label="Verifică înainte de publicare" hidden>
+        <p class="publish-checklist-heading">Înainte să publici (opțional)</p>
+        <ul class="publish-checklist-list" id="publish-checklist-list"></ul>
+      </div>
       <div class="slug-chooser" role="group" aria-labelledby="slug-label">
         <label id="slug-label" class="field-label" for="input-slug">Adresa site-ului tău</label>
         <div class="slug-input-row">
@@ -780,5 +786,6 @@ function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())
 <script src="/app/generated/engine.js"></script>
 <script src="/app/a11y-focus.js"></script>
 <script src="/app/app.js"></script>
+<script src="/app/publish-checklist.js"></script>
 </body>
 </html>
