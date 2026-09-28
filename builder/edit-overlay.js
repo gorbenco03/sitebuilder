@@ -266,6 +266,22 @@
       '  opacity: 1;',
       '  pointer-events: auto;',
       '}',
+      /* PLAN-UX-2026-09-27 U-02: hover alone excludes anyone tabbing
+       * through the canvas (the button is focusable but stayed invisible
+       * until this rule) and anyone on a touch screen (no hover state at
+       * all). :focus-within covers the keyboard path; (hover: none) covers
+       * touch without depending on a synthetic hover Chromium sometimes
+       * emulates on tap. */
+      '.hb-img-wrap:focus-within > .hb-img-btn {',
+      '  opacity: 1;',
+      '  pointer-events: auto;',
+      '}',
+      '@media (hover: none) {',
+      '  .hb-img-btn {',
+      '    opacity: 1;',
+      '    pointer-events: auto;',
+      '  }',
+      '}',
 
       /* PLAN-FEEDBACK-2026-09-13 Suite D: a per-item photo leaf with no
          value yet (team.members[].photo before an owner uploads one) — a
@@ -396,6 +412,16 @@
       '  background-size: 100% 100%;',
       '  box-shadow: inset 0 -2px 0 0 rgba(217,119,6,0.55);',
       '  border-radius: 2px;',
+      '}',
+      /* PLAN-UX-2026-09-27 U-02: an amber focus ring on a still-demo field,
+       * distinct from the ordinary blue focus ring above — the outline
+       * colour keeps saying "this is still the template's" even once the
+       * caret is inside it. Needs the extra attribute selectors to outrank
+       * the generic [data-hb-edit][data-hb-kind="text"]:focus rule above,
+       * which would otherwise win on specificity and paint blue instead. */
+      '[data-hb-edit][data-hb-kind="text"].hb-demo-text:focus {',
+      '  outline: 2px solid rgba(180,83,9,0.95);',
+      '  outline-offset: 2px;',
       '}',
       /* A CSS-only ::after badge, not an appended DOM node: setupImages()
          already alternates DOM writes with forced-synchronous-layout reads
@@ -952,6 +978,31 @@
       el.addEventListener('keydown', function (e) {
         if (!isSelectAllShortcut(e)) return;
         e.preventDefault();
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      });
+
+      /* PLAN-UX-2026-09-27 U-02: a field still carrying the amber
+       * "still demo" marker (.hb-demo-text) gets its whole content
+       * selected on the very FIRST click, so typing immediately replaces
+       * the placeholder instead of splicing into the middle of it — the
+       * owner should not have to already know Ctrl/Cmd+A (the shortcut
+       * fixed above, preview-fidelity#2) just to clear sample text. Only
+       * the first click per field does this: a later click (to move the
+       * caret inside text the owner is now actually editing) behaves like
+       * an ordinary contenteditable click. Same Range-based selection as
+       * the Ctrl/Cmd+A handler above, not document.execCommand — the
+       * sandboxed srcdoc iframe (no allow-same-origin) does not carry a
+       * plain execCommand('selectAll') reliably, while a Range scoped to
+       * this element does. */
+      var demoFirstClickDone = false;
+      el.addEventListener('click', function () {
+        if (demoFirstClickDone) return;
+        demoFirstClickDone = true;
+        if (!el.classList.contains('hb-demo-text')) return;
         var range = document.createRange();
         range.selectNodeContents(el);
         var sel = window.getSelection();
