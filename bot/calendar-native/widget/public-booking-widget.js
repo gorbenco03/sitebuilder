@@ -71,7 +71,7 @@
       ', ' + parts[2] + ' ' + MONTH_RO[parts[1] - 1] + ' ' + parts[0];
   }
 
-  function formatDayLabel(ymd, tz) {
+  function formatDayLabel(ymd) {
     try {
       var noon = ymd + 'T12:00:00';
       // Parse as local civil via UTC noon anchor for weekday
@@ -80,11 +80,50 @@
       var wd = dt.getUTCDay();
       var names = ['duminică', 'luni', 'marți', 'miercuri', 'joi', 'vineri', 'sâmbătă'];
       return names[wd].charAt(0).toUpperCase() + names[wd].slice(1) +
-        ', ' + parts[2] + ' ' + MONTH_RO[parts[1] - 1] +
-        (tz ? ' · ' + tz : '');
+        ', ' + parts[2] + ' ' + MONTH_RO[parts[1] - 1];
     } catch (_) {
       return ymd;
     }
+  }
+
+  /** Best-effort visitor timezone (IANA name), null when unavailable. */
+  function detectVisitorTimezone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /** Minutes east of UTC for `tz` at instant `ms` (DST-correct for that instant). */
+  function tzOffsetMinutesAt(tz, ms) {
+    try {
+      var parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hourCycle: 'h23',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).formatToParts(new Date(ms));
+      var get = function (t) {
+        return Number((parts.find(function (p) { return p.type === t; }) || {}).value);
+      };
+      var asUtcMs = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') === 24 ? 0 : get('hour'), get('minute'), get('second'));
+      return Math.round((asUtcMs - ms) / 60000);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /**
+   * Short Romanian phrase for the business's own timezone, used in the
+   * "ora cabinetului" note. Falls back to the IANA city segment for a
+   * tenant configured outside Romania/Moldova.
+   */
+  function businessTzPhrase(tz) {
+    if (tz === 'Europe/Bucharest') return 'ora României';
+    if (tz === 'Europe/Chisinau') return 'ora R. Moldova';
+    var city = (String(tz).split('/').pop() || tz).replace(/_/g, ' ');
+    return 'ora ' + city;
   }
 
   function formatSlotLocal(iso, tz) {
@@ -218,6 +257,11 @@
     var state = {
       services: [],
       timezone: 'Europe/Bucharest',
+      // Visitor's own IANA timezone (browser-detected, once) — used only to
+      // decide whether to show the "different timezone" note and the
+      // per-slot local time; the business timezone (above) stays the source
+      // of truth for every slot/date computation (U-05, calendar-native lens).
+      visitorTimezone: detectVisitorTimezone(),
       serviceId: null,
       dateLocal: null,
       slotsByDate: {},
@@ -572,6 +616,23 @@
       return row;
     }
 
+    /**
+     * True when the visitor's browser timezone has a different UTC offset
+     * than the business's, at noon on `ymd` (DST-correct per day, so two
+     * zones that share a rulebook — e.g. Europe/Bucharest and
+     * Europe/Chisinau — never trigger a needless note just because their
+     * IANA names differ).
+     */
+    function visitorTimeDiffers(ymd) {
+      if (!state.visitorTimezone || state.visitorTimezone === state.timezone) return false;
+      var atMs = Date.parse(ymd + 'T12:00:00Z');
+      if (isNaN(atMs)) atMs = Date.now();
+      var biz = tzOffsetMinutesAt(state.timezone, atMs);
+      var visitor = tzOffsetMinutesAt(state.visitorTimezone, atMs);
+      if (biz == null || visitor == null) return false;
+      return biz !== visitor;
+    }
+
     function renderSlotPane() {
       slotPane.innerHTML = '';
       if (!state.serviceId) {
@@ -588,7 +649,15 @@
 
       slotPane.appendChild(el('p', 'hnb__label', 'Ziua'));
       slotPane.appendChild(renderCalendar());
-      slotPane.appendChild(el('p', 'hnb__day-label', formatDayLabel(state.dateLocal, state.timezone)));
+      slotPane.appendChild(el('p', 'hnb__day-label', formatDayLabel(state.dateLocal)));
+
+      var tzDiffers = visitorTimeDiffers(state.dateLocal);
+      if (tzDiffers) {
+        var tzNote = el('p', 'hnb__tz-note',
+          'Orele sunt afișate în ' + businessTzPhrase(state.timezone) + ' (' + state.timezone + '). ' +
+          'Fusul tău orar pare diferit — lângă fiecare interval vezi și ora ta locală.');
+        slotPane.appendChild(tzNote);
+      }
 
       slotPane.appendChild(el('p', 'hnb__label', 'Ora'));
       var grid = el('div', 'hnb__slots');
@@ -599,11 +668,17 @@
         grid.appendChild(el('p', 'hnb__empty', 'Nu sunt intervale libere în această zi.'));
       } else {
         list.forEach(function (slot) {
-          var btn = el('button', 'hnb__slot' + (slot.startUtc === state.selectedStart ? ' is-selected' : ''),
-            formatSlotLocal(slot.startUtc, state.timezone));
+          var bizTime = formatSlotLocal(slot.startUtc, state.timezone);
+          var btn = el('button', 'hnb__slot' + (slot.startUtc === state.selectedStart ? ' is-selected' : ''), '');
           btn.type = 'button';
           btn.setAttribute('data-start', slot.startUtc);
           btn.setAttribute('data-end', slot.endUtc);
+          btn.appendChild(el('span', 'hnb__slot-time', bizTime));
+          if (tzDiffers) {
+            var visitorTime = formatSlotLocal(slot.startUtc, state.visitorTimezone);
+            btn.appendChild(el('span', 'hnb__slot-local', visitorTime + ' ora ta'));
+            btn.setAttribute('aria-label', bizTime + ', ora ta ' + visitorTime);
+          }
           btn.addEventListener('click', function () {
             state.selectedStart = slot.startUtc;
             state.selectedEnd = slot.endUtc;
