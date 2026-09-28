@@ -269,6 +269,27 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       return handle;
     }
 
+    // modal-delete-account's real trigger is a dropdown item (R-27, GDPR):
+    // open the header account menu, then click "Șterge contul" inside it.
+    // Unlike every other trigger in this file, the click handler itself
+    // closes (hides) the menu that contains the just-clicked item before
+    // the modal opens — so that item cannot be the element focus returns
+    // to (a hidden element is never a valid focus target). The product's
+    // own openDeleteAccountModal() (builder/app.js) accounts for this by
+    // treating the still-visible dropdown TOGGLE button as the opener it
+    // hands to openModal(), instead of document.activeElement (which would
+    // already be document.body by the time it ran). This helper returns
+    // that same toggle button's handle, matching what the product itself
+    // now designates as "the element that opened it" — contractCheck's
+    // refocus check below verifies the real mechanic, not a stand-in.
+    async function openAccountDeleteModal() {
+      const toggleBtn = await page.locator('#btn-account-menu-header').elementHandle();
+      await page.locator('#btn-account-menu-header').click();
+      await page.locator('#account-menu-header-delete-account').waitFor({ state: 'visible' });
+      await page.locator('#account-menu-header-delete-account').click({ timeout: 8000 });
+      return toggleBtn;
+    }
+
     // -----------------------------------------------------------------
     // modal-preview: real trigger is the landing page's "Previzualizare".
     // Must run before a template is picked (the trigger only exists there).
@@ -377,6 +398,12 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     await contractCheck('versions', 'modal-versions', 'btn-close-versions', () => clickAndHandle(card.locator('button', { hasText: 'Istoric' })));
     await contractCheck('domain', 'modal-domain', 'btn-close-domain', () => clickAndHandle(card.locator('button', { hasText: 'Domeniu' })));
     await contractCheck('invoices', 'modal-invoices', 'btn-close-invoices', () => clickAndHandle(card.locator('button', { hasText: 'Facturi' })));
+    // modal-delete-account (R-27, GDPR "Șterge contul definitiv"): same
+    // never-actually-confirms-anything property as delete-site below —
+    // contractCheck never fills the email-confirm input or clicks
+    // "Șterge contul definitiv", so the signed-in user/session this whole
+    // dashboard section depends on survives into the next check.
+    await contractCheck('delete-account', 'modal-delete-account', 'btn-close-delete-account', openAccountDeleteModal);
     // Delete-site last: contractCheck never fills the confirm input or
     // clicks the confirm button, so nothing is actually deleted.
     await contractCheck('delete-site', 'modal-delete-site', 'btn-close-delete-site', () => clickAndHandle(card.locator('button', { hasText: 'Șterge' })));

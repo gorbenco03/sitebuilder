@@ -319,12 +319,20 @@ function trapModalTab(e, container) {
   }
 }
 
-function openModal(id) {
+function openModal(id, opener) {
   const el = $(id);
   if (!el) return;
   el.style.display = '';
   const state = modalFocusState[id] || (modalFocusState[id] = {});
-  state.opener = document.activeElement;
+  // Most triggers are a plain, still-visible button: document.activeElement
+  // at call time IS that button, so the default (no `opener` arg) keeps
+  // working exactly as before. A caller passes `opener` explicitly when its
+  // own trigger will not still be around to refocus — e.g. a dropdown menu
+  // item whose containing menu the caller already closed (and hid) before
+  // calling openModal(), which would otherwise leave document.activeElement
+  // on document.body (focus falls off a hidden element) and make the modal
+  // un-refocusable on close. See openDeleteAccountModal().
+  state.opener = opener || document.activeElement;
   if (!state.handler) {
     state.handler = (e) => trapModalTab(e, el);
     el.addEventListener('keydown', state.handler);
@@ -9333,8 +9341,18 @@ function expectedDeleteAccountEmail() {
   return String((currentUser && currentUser.email) || '').trim().toLowerCase();
 }
 
-/** Product modal (NOT window.confirm) — types the account's own email to confirm. */
-function openDeleteAccountModal() {
+/**
+ * Product modal (NOT window.confirm) — types the account's own email to confirm.
+ *
+ * `opener`: the element focus should return to once this modal closes. Its
+ * real trigger is a menu item inside the account dropdown, and both call
+ * sites close that dropdown (hiding the item) before calling this function —
+ * so document.activeElement is already gone (off to document.body) by the
+ * time openModal() would otherwise read it. Callers pass the dropdown's own
+ * toggle button instead, since that stays visible after the menu closes and
+ * is the same element the user would use to reopen this flow.
+ */
+function openDeleteAccountModal(opener) {
   if (!currentUser) {
     showToast('Intră în cont ca să-ți ștergi contul.', 'error', 4000);
     return;
@@ -9351,7 +9369,7 @@ function openDeleteAccountModal() {
   if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
   const confirmBtn = $('btn-confirm-delete-account');
   if (confirmBtn) confirmBtn.disabled = true;
-  openModal('modal-delete-account');
+  openModal('modal-delete-account', opener);
   if (input) input.focus();
 }
 
@@ -10483,9 +10501,17 @@ function wireStaticButtons() {
   const acctExportHeaderBtn = $('account-menu-header-export-data');
   if (acctExportHeaderBtn) acctExportHeaderBtn.addEventListener('click', () => { closeAccountMenu(); downloadMyData(); });
   const acctDeleteBtn = $('account-menu-delete-account');
-  if (acctDeleteBtn) acctDeleteBtn.addEventListener('click', () => { closeAccountMenu(); openDeleteAccountModal(); });
+  if (acctDeleteBtn) acctDeleteBtn.addEventListener('click', () => {
+    const opener = $('btn-account-menu');
+    closeAccountMenu();
+    openDeleteAccountModal(opener);
+  });
   const acctDeleteHeaderBtn = $('account-menu-header-delete-account');
-  if (acctDeleteHeaderBtn) acctDeleteHeaderBtn.addEventListener('click', () => { closeAccountMenu(); openDeleteAccountModal(); });
+  if (acctDeleteHeaderBtn) acctDeleteHeaderBtn.addEventListener('click', () => {
+    const opener = $('btn-account-menu-header');
+    closeAccountMenu();
+    openDeleteAccountModal(opener);
+  });
 
   // Color picker
   initColorPicker();
