@@ -327,13 +327,15 @@ check('HEAD: unauth dashboard empty-state source includes visible auth control',
     /Autentifică-te ca să vezi site-urile|Sign in to see your projects/.test(src),
     'unauth message remains (RO preferred)'
   );
-  // Every unauth empty-state assignment includes an auth control
+  // Every unauth empty-state assignment includes an auth control. U-08
+  // (PLAN-UX-2026-09-27 §6) moved these off inline string literals onto a
+  // shared stateBlockHTML({...}) helper — match both forms.
   const re =
-    /(?:list\.innerHTML\s*=\s*)(['`])([\s\S]*?)\1/g;
+    /list\.innerHTML\s*=\s*(?:(['`])([\s\S]*?)\1|stateBlockHTML\(\{([\s\S]*?)\}\))/g;
   let m;
   let unauthBlocks = 0;
   while ((m = re.exec(src))) {
-    const body = m[2];
+    const body = m[2] !== undefined ? m[2] : m[3];
     if (!/Autentifică-te ca să vezi site-urile|Sign in to see your projects/.test(body)) continue;
     unauthBlocks++;
     assert.ok(

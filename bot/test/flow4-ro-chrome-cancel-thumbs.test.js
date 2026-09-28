@@ -154,9 +154,12 @@ check('HEAD: #test-billing-portal= opens cabinet dashboard (Ciornă path), not c
     /showScreen\s*\(\s*['"]dashboard['"]\s*\)/.test(handle),
     'billing-portal return shows dashboard'
   );
-  // Must not fall through to templates-only for this hash
+  // Must not fall through to templates-only for this hash. Window widened
+  // for U-08 (PLAN-UX-2026-09-27 §6): the unauth branch now builds its
+  // empty-state through the shared stateBlockHTML({...}) helper instead of
+  // a one-line string literal, which is longer text but the same behavior.
   const portalBlock = (handle.match(
-    /test-billing-portal[\s\S]{0,900}?return;/
+    /test-billing-portal[\s\S]{0,1400}?return;/
   ) || [''])[0];
   assert.ok(portalBlock.length > 40, 'early return after billing-portal');
   assert.ok(
