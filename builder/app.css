@@ -3268,3 +3268,173 @@ body.editor-preview-cookie-isolated .toast {
   color: var(--text-muted);
 }
 .site-card-checklist-fix { padding: 0.15rem 0.5rem; font-size: 0.74rem; }
+
+/* ============================================================
+   PLAN-UX §5.4 (S-4) — mobile editing, first-class
+   ============================================================
+   Everything below is scoped to `(max-width: 640px) and (pointer: coarse)`
+   — a real phone/touch device, the same breakpoint R-13 above uses for its
+   own touch-only sizing. A mouse-driven browser resized to this width
+   (several existing oracles do exactly this, on purpose, to prove desktop
+   chrome is unaffected) never matches `pointer: coarse` and keeps the
+   existing rail/drawer exactly as before. `body.mobile-coarse-toolbar` is
+   the same condition, kept in sync by app.js's updateMobileToolbarMode()
+   for the plain classSelectors below that don't need a media query of
+   their own (the "Mai mult" button, built once and then only ever
+   shown/hidden — never reconstructed — by this class). */
+
+/* ---- 5.4.1: bottom sheet for canvas text editing ---- */
+.mobile-edit-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 15, .32);
+  z-index: 600;
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.mobile-edit-backdrop.open { opacity: 1; }
+
+.mobile-edit-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 610;
+  background: var(--surface);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 0.6rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  display: none;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 80vh;
+  transform: translateY(100%);
+  transition: transform .2s ease;
+}
+/* [hidden] is toggled by app.js; the explicit display:none above matches
+   the UA default so nothing here fights it, and this is what turns layout
+   back on once app.js removes the attribute to open the sheet. */
+.mobile-edit-sheet:not([hidden]) { display: flex; }
+.mobile-edit-sheet.open { transform: translateY(0); }
+
+.mobile-edit-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0.2rem auto 0;
+}
+.mobile-edit-sheet-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+.mobile-edit-sheet-input {
+  width: 100%;
+  min-height: 6.5rem;
+  max-height: 45vh;
+  resize: none;
+  font: inherit;
+  font-size: 1rem; /* >=16px keeps iOS Safari from zooming on focus */
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+}
+.mobile-edit-sheet-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.mobile-edit-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.mobile-edit-sheet-actions .btn-ghost,
+.mobile-edit-sheet-actions .btn-primary {
+  min-height: 44px;
+  min-width: 44px;
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
+}
+
+/* ---- 5.4.2: toolbar "Mai mult" quick-access menu ---- */
+#btn-topbar-more { display: none; }
+body.mobile-coarse-toolbar #btn-topbar-more {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.topbar-more-menu {
+  position: fixed;
+  z-index: 320;
+  min-width: 12rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 0.35rem;
+  display: none;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+/* Same [hidden]/display pairing as .mobile-edit-sheet above. */
+.topbar-more-menu:not([hidden]) { display: flex; }
+.topbar-more-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.86rem;
+  color: var(--text);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.topbar-more-menu-item:hover,
+.topbar-more-menu-item:focus-visible {
+  background: var(--bg);
+}
+
+/* R-13's edge-fade hinted "there is more to scroll" — on a phone, "Mai
+   mult" now gives a scroll-free way to reach everything the rail holds, so
+   the fade (and the horizontal scroll it was compensating for as the
+   primary way in) matters less. Touch input only, exactly as it already
+   was added for. */
+@media (max-width: 640px), (max-width: 900px) and (max-height: 420px) {
+  body.mobile-coarse-toolbar .editor-topbar-scroll {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* ---- 5.4.3: Details drawer as a full-height bottom sheet ----
+   Desktop/tablet and any fine-pointer session keep the existing
+   min(400px,94vw) right-side panel (gap-drawer-backdrop-audit#1/#2 above) —
+   `top: var(--topbar-h)` is untouched here on purpose, so the topbar (and
+   #btn-publish) stay reachable while the drawer is open, exactly as R-06
+   already guarantees; this only widens the panel to the full viewport and
+   gives it a sheet's visual identity (rounded top corners, slide up from
+   the bottom) instead of a right-hand drawer, on a phone. */
+@media (max-width: 640px) and (pointer: coarse) {
+  .details-drawer {
+    width: 100%;
+    border-left: none;
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    animation: slideInUpSheet .2s ease;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+@keyframes slideInUpSheet {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
