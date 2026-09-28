@@ -1191,6 +1191,71 @@ details.menu-group[open] > summary.menu-cat::after { transform: rotate(-135deg) 
 }
 
 /* ============================================================
+   TESTIMONIALS — optional section, §5.2 minimal section library.
+   ============================================================ */
+.testimonials-section {
+    grid-column: 1 / -1;
+    margin-bottom: var(--space-section);
+    text-align: center;
+}
+.testimonials-heading {
+    text-align: center;
+    font-size: clamp(2rem, 4.5vw, 2.6rem);
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.testimonials-heading::after { left: 50%; transform: translateX(-50%); width: 60px; }
+.testimonials-grid {
+    display: grid; grid-template-columns: 1fr; gap: 1.25rem;
+    max-width: 1000px; margin: 2.5rem auto 0; text-align: left;
+}
+@media (min-width: 720px) { .testimonials-grid { grid-template-columns: repeat(2, 1fr); } }
+.testimonial-card {
+    background: var(--color-white); border-radius: 20px; padding: 1.75rem;
+    box-shadow: var(--shadow-sm); border: 1px solid rgba(232, 88, 140, 0.1);
+}
+.testimonial-quote {
+    font-family: var(--font-serif); font-style: italic; font-size: 1.15rem;
+    color: var(--color-text); line-height: 1.5; margin-bottom: 1rem;
+}
+.testimonial-who { display: flex; flex-direction: column; gap: 2px; }
+.testimonial-name { font-weight: 600; font-size: 0.92rem; color: var(--color-primary-dark); }
+.testimonial-role { font-size: 0.8rem; color: var(--color-text-light); }
+
+/* ============================================================
+   CONTACT FORM — optional section, §5.2 minimal section library.
+   ============================================================ */
+.contact-form-card {
+    background: var(--color-white); padding: 3rem; max-width: 760px;
+    margin-inline: auto; width: 100%; border-radius: 28px;
+    box-shadow: var(--shadow-md); box-sizing: border-box;
+}
+.cf-form { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+.cf-form__row { display: flex; flex-direction: column; gap: 0.4rem; }
+.cf-form__label { font-size: 0.82rem; font-weight: 600; color: var(--color-text-light); }
+.cf-form__input {
+    min-height: 44px; padding: 10px 14px; border-radius: 14px;
+    border: 1px solid rgba(45,45,45,0.16); background: var(--color-cream);
+    color: var(--color-text); font: inherit; font-size: 0.95rem;
+}
+.cf-form__input:focus-visible { outline: 3px solid var(--color-primary-dark); outline-offset: 1px; }
+.cf-form__input--area { resize: vertical; min-height: 96px; }
+.cf-form__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; left: -9999px; }
+.cf-form__status { font-size: 0.88rem; }
+.cf-form__status--success { color: #1e7e34; }
+.cf-form__status--error { color: #b3261e; }
+.cf-form__status--info { color: var(--color-text-light); }
+.cf-form__submit {
+    align-self: flex-start; min-height: 44px; padding: 0.85rem 2rem;
+    border: 0; border-radius: 40px; cursor: pointer;
+    background: linear-gradient(135deg, var(--dd-cta-grad-1, var(--color-primary)) 0%, var(--dd-cta-grad-2, var(--color-primary-dark)) 100%);
+    color: var(--color-white); font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+}
+.cf-form__submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ============================================================
    INSTAGRAM SECTION
    ============================================================ */
 .instagram-section {

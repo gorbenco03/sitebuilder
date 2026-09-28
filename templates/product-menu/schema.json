@@ -377,6 +377,14 @@
           "identity": true
         },
         {
+          "key": "contact.email",
+          "type": "email",
+          "label": "Email de contact (folosit ca rezervă pentru formularul de contact)",
+          "required": false,
+          "maxLen": 80,
+          "identity": true
+        },
+        {
           "key": "contact.phoneDisplay",
           "type": "text",
           "label": "Număr afișat pe site (ex. +40 721 234 567)",
@@ -432,6 +440,33 @@
       ]
     },
     {
+      "id": "testimonials",
+      "title": "Recenzii clienți",
+      "fields": [
+        {
+          "key": "testimonialsTitle",
+          "type": "text",
+          "label": "Titlu secțiune recenzii (ex. Ce spun clienții noștri)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "testimonials",
+          "type": "list",
+          "label": "Recenzii clienți (2–6 citate cu nume și rol opțional)",
+          "required": false,
+          "min": 0,
+          "max": 6,
+          "itemShape": {
+            "quote": "text",
+            "name": "text",
+            "role": "text"
+          },
+          "identityItemKeys": ["quote", "name"]
+        }
+      ]
+    },
+    {
       "id": "footer",
       "title": "Subsol",
       "fields": [
@@ -475,6 +510,16 @@
     {
       "id": "gallery",
       "label": "Galerie",
+      "removable": true
+    },
+    {
+      "id": "testimonials",
+      "label": "Recenzii",
+      "removable": true
+    },
+    {
+      "id": "contact-form",
+      "label": "Formular de contact",
       "removable": true
     },
     {

@@ -14,7 +14,83 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileNav();
     initImageFallback();
     initSkipLink();
+    initContactForm();
 });
+
+// Contact form — POSTs to data-site-messages-api, falls back to WhatsApp/email when empty or on failure.
+function initContactForm() {
+    var form = document.querySelector('[data-site-messages-api]');
+    if (!form) return;
+    var status = form.querySelector('[data-cf-status]');
+    var submitBtn = form.querySelector('[data-cf-submit]');
+
+    function setStatus(msg, kind) {
+        if (!status) return;
+        status.textContent = msg;
+        status.className = 'pm-form__status' + (kind ? ' pm-form__status--' + kind : '');
+        status.hidden = !msg;
+    }
+
+    function tryWhatsApp(name, contact, message) {
+        var num = (form.getAttribute('data-wa-number') || '').trim();
+        if (!num) return false;
+        var text = 'Mesaj nou de la ' + name + ' (' + contact + '): ' + message;
+        window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(text), '_blank', 'noopener');
+        return true;
+    }
+
+    function tryMail(name, contact, message) {
+        var email = (form.getAttribute('data-mail-to') || '').trim();
+        if (!email) return false;
+        var subject = 'Mesaj nou de pe site — ' + name;
+        var body = 'De la: ' + name + '\nContact: ' + contact + '\n\n' + message;
+        window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        return true;
+    }
+
+    function fallback(name, contact, message) {
+        if (tryWhatsApp(name, contact, message)) {
+            setStatus('Nu am putut trimite direct — te redirecționăm către WhatsApp.', 'info');
+            return;
+        }
+        if (tryMail(name, contact, message)) {
+            setStatus('Nu am putut trimite direct — îți deschidem clientul de email.', 'info');
+            return;
+        }
+        setStatus('Nu am putut trimite mesajul acum. Sună-ne sau scrie-ne direct.', 'error');
+    }
+
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var name = ((form.elements.name || {}).value || '').trim();
+        var contact = ((form.elements.contact || {}).value || '').trim();
+        var message = ((form.elements.message || {}).value || '').trim();
+        var website = ((form.elements.website || {}).value || '').trim();
+        if (!name || !contact || !message) {
+            setStatus('Completează numele, un contact și mesajul.', 'error');
+            return;
+        }
+        var apiBase = (form.getAttribute('data-site-messages-api') || '').trim();
+        var slug = form.getAttribute('data-site-slug') || '';
+
+        if (!apiBase) { fallback(name, contact, message); return; }
+
+        if (submitBtn) submitBtn.disabled = true;
+        fetch(apiBase + '/api/site-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: slug, name: name, contact: contact, message: message, website: website })
+        }).then(function (res) {
+            if (!res.ok) throw new Error('site-messages request failed');
+            setStatus('Mulțumim! Mesajul tău a fost trimis — revenim cât mai curând.', 'success');
+            form.reset();
+        }).catch(function () {
+            fallback(name, contact, message);
+        }).finally(function () {
+            if (submitBtn) submitBtn.disabled = false;
+        });
+    });
+}
 
 // ── WhatsApp QR modal ─────────────────────────────────────
 // On DESKTOP: intercept all wa.me links and show a QR instead.

@@ -121,14 +121,14 @@ Done minim:
 
 Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Opus devin backlog structural:
 
-- fără section add/remove/reorder;
+- fără section add — reorder/remove există (Wave 7); adăugarea liberă a unui bloc nou rămâne absentă. S-2A (PLAN-UX §5.2) a adăugat o bibliotecă minimă fixă — Recenzii (testimoniale opționale) + formular de contact — pentru product-menu, local-service și Desserdirina; portfolio și professionals nu au încă aceste două secțiuni, iar un catalog general de blocuri („Adaugă o secțiune” cu FAQ/hartă/program) rămâne backlog;
 - fără undo/redo;
 - fără multi-page real;
 - fără typography controls;
 - edit mapping fragil prin regex;
 - imagini base64 în config;
 - SEO insuficient expus;
-- form builder limitat.
+- form builder limitat — cele trei șabloane de mai sus au acum un formular fix (nume, telefon/email, mesaj) către `/api/site-messages`, nu un constructor de formulare.
 
 Nu se rezolvă toate într-un singur task. Se lucrează pe flow-uri verticale verificate în browser.
 

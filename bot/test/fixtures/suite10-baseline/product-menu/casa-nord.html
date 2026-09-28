@@ -406,6 +406,36 @@
         </section>
 
         
+
+        <section id="contact-form" class="pm-form-sec fade-in-section" aria-labelledby="contact-form-heading">
+            <!-- Posts to data-site-messages-api (filled at publish time); falls back to WhatsApp/email when empty. -->
+            <div class="pm-form-card">
+                <h2 class="pm-title pm-title--sm" id="contact-form-heading">Trimite-ne un mesaj</h2>
+                <p class="pm-prose">Completează formularul și te contactăm cât mai curând.</p>
+                <form class="pm-form" data-site-messages-api="" data-site-slug="" data-wa-number="40721234567" data-mail-to="" novalidate>
+                    <div class="pm-form__row">
+                        <label class="pm-form__label" for="cf-name">Nume</label>
+                        <input class="pm-form__input" type="text" id="cf-name" name="name" autocomplete="name" required maxlength="80">
+                    </div>
+                    <div class="pm-form__row">
+                        <label class="pm-form__label" for="cf-contact">Telefon sau email</label>
+                        <input class="pm-form__input" type="text" id="cf-contact" name="contact" autocomplete="tel" required maxlength="120">
+                    </div>
+                    <div class="pm-form__row">
+                        <label class="pm-form__label" for="cf-message">Mesaj</label>
+                        <textarea class="pm-form__input pm-form__input--area" id="cf-message" name="message" required maxlength="1000" rows="4"></textarea>
+                    </div>
+                    <div class="pm-form__hp" aria-hidden="true">
+                        <label for="cf-website">Website</label>
+                        <input type="text" id="cf-website" name="website" tabindex="-1" autocomplete="off">
+                    </div>
+                    <p class="pm-form__status" data-cf-status role="status" aria-live="polite" hidden></p>
+                    <button type="submit" class="pm-hero__cta pm-hero__cta--fill pm-form__submit" data-cf-submit>Trimite mesajul</button>
+                </form>
+            </div>
+        </section>
+
+        
     </main>
 
     <footer class="pm-foot">
