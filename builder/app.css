@@ -3363,7 +3363,20 @@ body.editor-preview-cookie-isolated .toast {
   padding-right: 1.1rem;
 }
 
-/* ---- 5.4.2: toolbar "Mai mult" quick-access menu ---- */
+/* ---- 5.4.2: toolbar collapses to primary actions + "Mai mult" ----
+   Publică (pinned outside the rail), Detalii, Poze and the desktop/mobil
+   toggle (also outside the rail) are the primary actions and stay directly
+   tappable. Everything else in the rail (Instagram, Culoare, both
+   downloads) moves behind "Mai mult" instead of sitting in the rail too —
+   see the MOBILE_MORE_MENU_ITEMS proxy list in app.js, which still fires
+   each button's own existing click handler, so history/autosave/etc. are
+   unchanged; only how a phone reaches them changes. */
+body.mobile-coarse-toolbar #btn-add-instagram,
+body.mobile-coarse-toolbar #btn-color-picker,
+body.mobile-coarse-toolbar #btn-download-html,
+body.mobile-coarse-toolbar #btn-download-zip {
+  display: none;
+}
 #btn-topbar-more { display: none; }
 body.mobile-coarse-toolbar #btn-topbar-more {
   display: inline-flex;
@@ -3402,18 +3415,6 @@ body.mobile-coarse-toolbar #btn-topbar-more {
 .topbar-more-menu-item:hover,
 .topbar-more-menu-item:focus-visible {
   background: var(--bg);
-}
-
-/* R-13's edge-fade hinted "there is more to scroll" — on a phone, "Mai
-   mult" now gives a scroll-free way to reach everything the rail holds, so
-   the fade (and the horizontal scroll it was compensating for as the
-   primary way in) matters less. Touch input only, exactly as it already
-   was added for. */
-@media (max-width: 640px), (max-width: 900px) and (max-height: 420px) {
-  body.mobile-coarse-toolbar .editor-topbar-scroll {
-    -webkit-mask-image: none;
-    mask-image: none;
-  }
 }
 
 /* ---- 5.4.3: Details drawer as a full-height bottom sheet ----

@@ -4307,8 +4307,13 @@ function openColorPopover() {
     dot.classList.toggle('active', dot.style.background === curColor || dot.style.backgroundColor === curColor);
   });
 
-  // Position below button
-  const rect = btn.getBoundingClientRect();
+  // Position below the button — or, on a phone where PLAN-UX §5.4 hides
+  // #btn-color-picker behind "Mai mult" (its rect is then 0x0, since a
+  // hidden element still fires this same click handler when proxied — see
+  // MOBILE_MORE_MENU_ITEMS above), anchor to "Mai mult" instead so the
+  // popover opens under something actually visible on screen.
+  const anchor = (btn.getClientRects().length ? btn : $('btn-topbar-more')) || btn;
+  const rect = anchor.getBoundingClientRect();
   popover.style.top = (rect.bottom + 6) + 'px';
   popover.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
   popover.style.left = 'auto';
@@ -4584,20 +4589,21 @@ function closeMobileEditSheet(commit) {
 }
 
 /* ---- 5.4.2: toolbar "Mai mult" quick-access menu ----
- * The topbar's tool rail (Instagram/Culoare/Poze/Detalii/Descarcă HTML/
- * Descarcă ZIP) already scrolls horizontally rather than overlapping (Wave
- * 11) — but on a phone, reaching Instagram or a download still costs a
- * swipe a mouse user never needs. "Mai mult" adds a one-tap menu that
- * proxies straight to the SAME buttons/handlers already wired in the rail —
- * nothing here is duplicated or hidden; every existing id, keyboard path
- * and test that clicks a rail button directly keeps working exactly as
- * before, coarse pointer or not. This is a second, faster way in for a
- * phone's thumb, not a replacement for the rail. */
+ * On a phone+touch, the topbar collapses to its primary actions (Publică,
+ * Detalii, Poze, Previzualizare — see app.css's `body.mobile-coarse-toolbar`
+ * rules, PLAN-UX §5.4) and the rest of the rail (Instagram, Culoare, both
+ * downloads) is hidden there. "Mai mult" is how a phone reaches them: each
+ * menu item proxies to the SAME button/handler the rail already wires up
+ * (`target.click()` below), so history/autosave/every existing behavior is
+ * unchanged — only the path a phone takes to trigger it changes. Desktop/
+ * tablet/mouse sessions never see this: the buttons stay in the rail,
+ * exactly as before. */
 let mobileMoreMenuBuilt = false;
 let mobileMoreMenuOpen = false;
 
 const MOBILE_MORE_MENU_ITEMS = [
   { id: 'btn-add-instagram', label: 'Adaugă Instagram' },
+  { id: 'btn-color-picker', label: 'Culoare temă' },
   { id: 'btn-download-html', label: 'Descarcă HTML' },
   { id: 'btn-download-zip', label: 'Descarcă ZIP' },
 ];
@@ -4637,10 +4643,26 @@ function ensureMobileMoreMenu() {
     item.className = 'topbar-more-menu-item';
     item.setAttribute('role', 'menuitem');
     item.textContent = it.label;
-    item.addEventListener('click', () => {
+    item.addEventListener('click', (e) => {
+      // Stop this real tap from bubbling to document AFTER the proxied
+      // target.click() below runs — without it, the color picker's own
+      // "click outside closes the popover" listener (initColorPicker)
+      // sees this same event reach document with a target that is neither
+      // the popover nor #btn-color-picker, and closes the popover it just
+      // opened a moment earlier in the same tick.
+      e.stopPropagation();
       closeMobileMoreMenu();
       const target = $(it.id);
-      if (target) target.click();
+      if (target) {
+        // A modal opened this way (e.g. Instagram) refocuses its opener on
+        // close via document.activeElement (openModal()'s default) — but
+        // the real rail button is hidden by this same toolbar collapse, so
+        // hand focus to "Mai mult" itself first, the one trigger that is
+        // still visible once the modal closes.
+        const moreBtn = $('btn-topbar-more');
+        if (moreBtn && moreBtn !== target) moreBtn.focus();
+        target.click();
+      }
     });
     menu.appendChild(item);
   });

@@ -13,9 +13,10 @@
  *      ~360px-wide cross-origin iframe (see HANDOFF-mobile.md's "still
  *      needs a bigger change" section). RED: no #mobile-edit-sheet exists
  *      at all pre-fix; the tap just focuses the canvas field directly.
- *   2. The topbar's tool rail (Instagram/Culoare/Poze/Detalii/downloads)
- *      only had one way in on a phone: scroll the rail. RED: no
- *      #btn-topbar-more exists pre-fix.
+ *   2. The topbar's tool rail (Instagram/Culoare/Poze/Detalii/downloads) put
+ *      every tool in front of a phone thumb at once, seven+ buttons deep.
+ *      RED: no #btn-topbar-more exists pre-fix, and Instagram/Culoare/both
+ *      downloads render directly in the rail alongside everything else.
  *   3. The Details drawer stayed a `min(400px,94vw)` right-hand panel on
  *      a phone — narrower than a true full-width sheet, and without a
  *      sheet's rounded-top visual identity. RED: pre-fix width is capped
@@ -30,10 +31,13 @@
  *      an ordinary canvas keystroke uses — history, autosave, and (for
  *      business.name) the identity cascade — and both the still-open
  *      editor preview AND the published site show the new text.
- *   2. "Mai mult" is a one-tap menu proxying to the rail's own existing
- *      buttons (nothing hidden or duplicated — every existing id/test
- *      keeps working; see suite4-modal-contract.test.js, unchanged, and
- *      wave11-mobile-editor-touch.test.js, unchanged, both still green).
+ *   2. The rail collapses to Publică/Detalii/Poze/Previzualizare; Instagram,
+ *      Culoare and both downloads move behind a "Mai mult" menu that
+ *      proxies to those same buttons' own existing click handlers (nothing
+ *      duplicated — history/autosave/etc. unchanged, only the path a phone
+ *      takes to reach them). wave11-mobile-editor-touch.test.js's own
+ *      color-popover test was updated to go through "Mai mult" too, since
+ *      #btn-color-picker is one of the buttons this now hides on phones.
  *   3. The drawer becomes a full-width, rounded-top sheet, while staying
  *      below the topbar (`top: var(--topbar-h)`, unchanged from R-06) so
  *      #btn-publish stays reachable while it is open.
@@ -222,6 +226,17 @@ test('phone + touch: toolbar shows the primary actions plus a working "Mai mult"
       assert.ok(box.width >= 44 && box.height >= 44, '#' + id + ' must be >=44x44px, got ' + JSON.stringify(box));
     }
 
+    // The actual collapse: these must NOT be independently visible/tappable
+    // in the rail any more — reaching them now goes through "Mai mult"
+    // only. This is the criterion the previous round shipped as a no-op
+    // (menu added, nothing removed, rail still 8 buttons deep) — assert it
+    // for real this time.
+    const secondaries = ['btn-add-instagram', 'btn-color-picker', 'btn-download-html', 'btn-download-zip'];
+    for (const id of secondaries) {
+      const visible = await page.locator('#' + id).isVisible().catch(() => false);
+      assert.equal(visible, false, '#' + id + ' must be hidden from the rail on a coarse-pointer phone — it belongs behind "Mai mult" now');
+    }
+
     const moreBtn = page.locator('#btn-topbar-more');
     await moreBtn.waitFor({ state: 'visible', timeout: 4000 });
     const moreBox = await moreBtn.boundingBox();
@@ -233,17 +248,31 @@ test('phone + touch: toolbar shows the primary actions plus a working "Mai mult"
     await menu.waitFor({ state: 'visible', timeout: 4000 });
     const items = page.locator('.topbar-more-menu-item');
     const itemCount = await items.count();
-    assert.ok(itemCount >= 3, '"Mai mult" must list Instagram + both downloads, got ' + itemCount + ' items');
+    assert.ok(itemCount >= 4, '"Mai mult" must list Instagram, Culoare temă and both downloads, got ' + itemCount + ' items');
     for (let i = 0; i < itemCount; i++) {
       const box = await items.nth(i).boundingBox();
       assert.ok(box && box.height >= 44, 'Mai mult item ' + i + ' must be >=44px tall, got ' + JSON.stringify(box));
     }
 
-    // Tapping an item proxies to the real, unmoved topbar button — the
-    // Instagram modal opens exactly as the always-visible rail button does.
+    // Tapping an item proxies to the real, still-existing topbar button's
+    // own click handler — the Instagram modal opens exactly as it did
+    // before this button was moved out of the always-visible rail.
     await page.getByRole('menuitem', { name: 'Adaugă Instagram' }).tap();
     await page.locator('#modal-instagram').waitFor({ state: 'visible', timeout: 4000 });
     assert.equal(await menu.isVisible(), false, 'the Mai mult menu must close once an item is chosen');
+
+    // Culoare temă proxies too, and its popover must land fully on-screen
+    // even though #btn-color-picker itself is hidden (0x0 rect) — the
+    // popover positioning must fall back to a visible anchor.
+    await page.locator('#btn-close-instagram').click();
+    await page.locator('#modal-instagram').waitFor({ state: 'hidden', timeout: 4000 });
+    await moreBtn.tap();
+    await menu.waitFor({ state: 'visible', timeout: 4000 });
+    await page.getByRole('menuitem', { name: 'Culoare temă' }).tap();
+    const popover = page.locator('#color-popover');
+    await popover.waitFor({ state: 'visible', timeout: 4000 });
+    const popBox = await popover.boundingBox();
+    assert.ok(popBox && popBox.x >= 0 && popBox.x + popBox.width <= 390, 'color popover must stay on-screen when opened via Mai mult, got ' + JSON.stringify(popBox));
 
     await page.close();
     await context.close();

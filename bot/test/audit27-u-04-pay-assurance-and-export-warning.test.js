@@ -46,6 +46,16 @@ for (const cand of PW_CANDIDATES) {
 }
 if (!chromium) throw new Error('playwright not found; install or link node_modules/playwright');
 
+// PLAN-UX §5.4 (S-4): at this file's 390px touch viewport, #btn-download-html
+// moves behind "Mai mult" (builder/app.css, body.mobile-coarse-toolbar) — the
+// button still exists and still owns its click handler (MOBILE_MORE_MENU_ITEMS
+// in app.js), so reach it the way a real phone now does.
+async function clickDownloadHtmlViaMoreMenu(page) {
+  await page.locator('#btn-topbar-more').click();
+  await page.locator('#topbar-more-menu').waitFor({ state: 'visible' });
+  await page.getByRole('menuitem', { name: 'Descarcă HTML' }).click();
+}
+
 async function bootServer(tag) {
   process.env.HIDOOK_TEST_PAY = '1';
   process.env.HIDOOK_ISOLATED_DEPLOY = '1';
@@ -160,7 +170,7 @@ test('audit27-U-04: export with native booking on warns in a product modal befor
   // goes straight into downloadDraftHtml(), which shows the "Intră în cont"
   // toast because there is no session yet. This proves the modal is really
   // gated on nativeBooking, not shown unconditionally.
-  await page.locator('#btn-download-html').click();
+  await clickDownloadHtmlViaMoreMenu(page);
   await page.locator('#toast').waitFor({ state: 'visible', timeout: 5000 });
   const offToast = (await page.locator('#toast').textContent()) || '';
   assert.match(offToast, /cont/i, 'expected the sign-in toast when nativeBooking is off');
@@ -178,7 +188,7 @@ test('audit27-U-04: export with native booking on warns in a product modal befor
   // FIRST, and the sign-in toast must NOT appear yet (that is the old,
   // unwarned behaviour this oracle fails on). ---
   await page.evaluate(() => { const t = document.getElementById('toast'); if (t) t.style.display = 'none'; });
-  await page.locator('#btn-download-html').click();
+  await clickDownloadHtmlViaMoreMenu(page);
   await page.locator('#modal-export-booking').waitFor({ state: 'visible', timeout: 5000 });
   const modalText = (await page.locator('#modal-export-booking').textContent()) || '';
   assert.match(modalText, /calendarul (nativ )?live e dezactivat automat|calendar.*dezactivat/i,
@@ -199,7 +209,7 @@ test('audit27-U-04: export with native booking on warns in a product modal befor
   // --- "Continuă descărcarea" must actually call through to the real
   // download path (proven here by the same sign-in toast finally firing,
   // now that the warning was answered). ---
-  await page.locator('#btn-download-html').click();
+  await clickDownloadHtmlViaMoreMenu(page);
   await page.locator('#modal-export-booking').waitFor({ state: 'visible', timeout: 5000 });
   await page.locator('#btn-export-booking-continue').click();
   await page.locator('#modal-export-booking').waitFor({ state: 'hidden', timeout: 5000 });

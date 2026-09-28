@@ -227,7 +227,13 @@ test('mobile editor: color popover stays fully on-screen at 390px', { timeout: 6
     // Suite 12: Details no longer auto-opens at phone width — nothing to
     // close here (see the doc comment in the test above).
 
-    await page.locator('#btn-color-picker').tap();
+    // PLAN-UX §5.4 (S-4): the topbar collapses to its primary actions on a
+    // coarse-pointer phone, so #btn-color-picker itself is hidden — reach
+    // it the way a real phone now does, through "Mai mult" (see
+    // audit27-s-4-mobile-editing.test.js for the toolbar-collapse oracle).
+    await page.locator('#btn-topbar-more').tap();
+    await page.locator('#topbar-more-menu').waitFor({ state: 'visible' });
+    await page.getByRole('menuitem', { name: 'Culoare temă' }).tap();
     await page.locator('#color-popover').waitFor({ state: 'visible' });
     const box = await page.locator('#color-popover').boundingBox();
     assert.ok(box.x >= 0, 'color popover left edge on-screen, got x=' + box.x);
