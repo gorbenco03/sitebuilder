@@ -745,6 +745,34 @@ function escHtml(str) {
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+/* U-08: small inline SVG icon set for empty/loading/error chrome states —
+ * stroke icons, currentColor, 1.5px stroke, 24px viewBox. Replaces the
+ * system emoji (clipboard/chart) PLAN-UX-2026-09-27.md §6 flags as
+ * off-style. No external icon font/CDN — see AGENTS.md "self-contained". */
+const STATE_ICONS = {
+  tray: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 13l2.2-7.2A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.3L20 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13h4.2a2 2 0 0 1 1.9 1.4l.1.4a2 2 0 0 0 1.9 1.4h.6a2 2 0 0 0 1.9-1.4l.1-.4A2 2 0 0 1 16.8 13H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="15.8" r="1" fill="currentColor"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  spinner: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5" opacity=".25"/><path d="M20.5 12a8.5 8.5 0 0 0-8.5-8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+};
+
+/** One consistent block for an empty or error placeholder: icon badge, a
+ * one-line title, a one-line explanation and one primary action. `actionHtml`
+ * is already-escaped markup (a <button>/<a>); pass '' for no action. */
+function stateBlockHTML({ icon = 'tray', isError = false, title, desc, actionHtml = '', style = '' }) {
+  return '<div class="empty-state"' + (style ? ' style="' + escHtml(style) + '"' : '') + '>'
+    + '<div class="empty-state-icon' + (isError ? ' is-error' : '') + '">' + (STATE_ICONS[icon] || STATE_ICONS.tray) + '</div>'
+    + '<p class="empty-state-title">' + escHtml(title) + '</p>'
+    + (desc ? '<p>' + escHtml(desc) + '</p>' : '')
+    + actionHtml
+    + '</div>';
+}
+
+/** One consistent inline loading placeholder: spinning icon + one-line text. */
+function loadingStateHTML(text) {
+  return '<div class="loading-state"><span class="loading-state-icon">' + STATE_ICONS.spinner + '</span><span>' + escHtml(text) + '</span></div>';
+}
+
 function toSlug(str) {
   return (str || '')
     .toLowerCase()
@@ -8365,7 +8393,14 @@ function renderTemplatesGrid() {
 
   const registry = getTemplateList();
   if (!registry || registry.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">&#128200;</div><p>Designurile nu sunt disponibile momentan.</p><button type="button" class="btn-ghost" id="btn-retry-templates">Reîncearcă</button></div>';
+    grid.innerHTML = stateBlockHTML({
+      icon: 'alert',
+      isError: true,
+      title: 'Designurile nu sunt disponibile momentan',
+      desc: 'Verifică-ți conexiunea și încearcă din nou.',
+      actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-templates">Reîncearcă</button>',
+      style: 'grid-column:1/-1',
+    });
     $('btn-retry-templates').addEventListener('click', reloadTemplateRegistry);
     return;
   }
@@ -8774,7 +8809,7 @@ async function openPreviewModal(templateId) {
 async function loadDashboard() {
   const list = $('sites-list');
   if (!list) return;
-  list.innerHTML = '<p style="color:var(--text-muted);padding:1rem 0;font-size:.9rem">Se încarcă site-urile…</p>';
+  list.innerHTML = loadingStateHTML('Se încarcă site-urile…');
 
   try {
     const data = await apiGet('/api/sites');
@@ -8787,7 +8822,12 @@ async function loadDashboard() {
         window.location.hash = '#edit';
         return;
       }
-      list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128203;</div><p>Nu ai creat încă niciun site.</p><a href="#templates" class="btn-primary">Creează primul site</a></div>`;
+      list.innerHTML = stateBlockHTML({
+        icon: 'tray',
+        title: 'Nu ai creat încă niciun site',
+        desc: 'Alege un design și pornești în câteva minute.',
+        actionHtml: '<a href="#templates" class="btn-primary">Creează primul site</a>',
+      });
       return;
     }
 
@@ -8795,10 +8835,23 @@ async function loadDashboard() {
     sites.forEach(site => { list.appendChild(buildSiteCard(site)); });
   } catch (e) {
     if (e.status === 401) {
-      list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+      list.innerHTML = stateBlockHTML({
+        icon: 'lock',
+        title: 'Autentifică-te ca să vezi site-urile',
+        desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+        actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
+      });
       wireDashboardAuthButton();
     } else {
-      list.innerHTML = '<div class="empty-state"><p>Eroare la încărcare: ' + escHtml(e.message) + '</p></div>';
+      list.innerHTML = stateBlockHTML({
+        icon: 'alert',
+        isError: true,
+        title: 'Nu am putut încărca site-urile',
+        desc: e.message || 'Încearcă din nou.',
+        actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-dashboard">Reîncearcă</button>',
+      });
+      const retryBtn = $('btn-retry-dashboard');
+      if (retryBtn) retryBtn.addEventListener('click', loadDashboard);
     }
   }
 }
@@ -9500,7 +9553,7 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
 
 async function loadVersions(siteId) {
   const list = $('versions-list');
-  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
+  if (list) list.innerHTML = loadingStateHTML('Se încarcă…');
   openModal('modal-versions');
 
   try {
@@ -9871,7 +9924,7 @@ async function openDomainModal(site) {
   domainModalProjectName = site.projectName;
   domainModalCurrentOrigin = site.url || null;
   const body = $('domain-modal-body');
-  if (body) body.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
+  if (body) body.innerHTML = loadingStateHTML('Se încarcă…');
   openModal('modal-domain');
   await refreshDomainModal();
 }
@@ -9969,7 +10022,7 @@ function renderInvoicesList(invoices) {
 
 async function openInvoicesModal(siteId) {
   const list = $('invoices-list');
-  if (list) list.innerHTML = '<p style="color:var(--text-muted);font-size:.85rem;padding:.5rem 0">Se încarcă…</p>';
+  if (list) list.innerHTML = loadingStateHTML('Se încarcă…');
   openModal('modal-invoices');
   try {
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/invoices');
@@ -10088,7 +10141,12 @@ async function handleRoute(hash) {
     } else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+        list.innerHTML = stateBlockHTML({
+          icon: 'lock',
+          title: 'Autentifică-te ca să vezi site-urile',
+          desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+          actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
+        });
         wireDashboardAuthButton();
       }
     }
@@ -10141,7 +10199,12 @@ async function handleRoute(hash) {
     else {
       const list = $('sites-list');
       if (list) {
-        list.innerHTML = '<div class="empty-state"><p>Autentifică-te ca să vezi site-urile.</p><button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button></div>';
+        list.innerHTML = stateBlockHTML({
+          icon: 'lock',
+          title: 'Autentifică-te ca să vezi site-urile',
+          desc: 'Sesiunea ta a expirat sau nu ești încă autentificat.',
+          actionHtml: '<button type="button" class="btn-primary" id="btn-dashboard-auth">Autentificare</button>',
+        });
         wireDashboardAuthButton();
       }
     }
