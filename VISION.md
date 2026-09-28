@@ -94,6 +94,8 @@ Done înseamnă:
 - închiderea se ține la reload pentru designul curent, dar nu suprimă deschiderea la următoarea selecție de design;
 - `<details>` relevante din șabloane care ascund conținut important sunt deschise by default unde are sens.
 
+**Wizard de onboarding (implementat — PLAN-UX-2026-09-27 §5.1):** un vizitator la prima alegere de design vede întâi un wizard scurt, skippabil (`Sari peste`), de 2 pași — tipul afacerii (mapat la unul din cele 5 șabloane, cu ajustare liberă) și nume/telefon-WhatsApp/localitate opționale — după care editorul se deschide direct pe șablonul recomandat, deja completat prin `applyQuickstart()`; regula Details automat de mai sus rămâne neschimbată pentru orice selecție ulterioară de design, iar bara de quickstart rămâne disponibilă normal când wizard-ul e sărit sau nu completează nimic. Nu se mai arată după prima finalizare/skip (`localStorage`).
+
 ### 4.4 WhatsApp
 
 Done înseamnă:

@@ -3268,3 +3268,136 @@ body.editor-preview-cookie-isolated .toast {
   color: var(--text-muted);
 }
 .site-card-checklist-fix { padding: 0.15rem 0.5rem; font-size: 0.74rem; }
+
+/* ============================================================
+   ONBOARDING WIZARD — PLAN-UX-2026-09-27 §5.1
+   builder/onboarding.js builds the content; this is layout/paint only.
+   ============================================================ */
+
+.onb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,18,15,.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1150; /* above .modal-overlay (1100) — the wizard runs before the
+                     editor's own modals can be open, but stays on top of
+                     the landing/catalog chrome behind it either way */
+  padding: 1rem;
+  animation: fadeIn .15s ease;
+}
+
+.onb-box {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp .2s ease;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.onb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.onb-progress {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.onb-skip {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 0.35rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.onb-skip:hover { color: var(--text); }
+
+.onb-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.onb-sub { font-size: 0.86rem; color: var(--text-muted); line-height: 1.5; margin: -0.5rem 0 0; }
+
+.onb-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+.onb-type-card {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  text-align: left;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.9rem;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--text);
+  font-family: var(--font-ui);
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+.onb-type-card:hover { border-color: var(--text-light); }
+.onb-type-card:focus-visible {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(30,58,50,.14);
+}
+.onb-type-card.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.onb-type-icon {
+  width: 26px; height: 26px;
+  display: inline-flex;
+  color: var(--accent);
+}
+.onb-type-icon svg { width: 100%; height: 100%; }
+.onb-type-label { font-size: 0.86rem; font-weight: 600; line-height: 1.3; }
+
+/* Last card alone on its own row (5 options, 2 columns) reads oddly if it
+   stretches to fill both — keep it the same width as the others. */
+.onb-type-grid .onb-type-card:last-child:nth-child(odd) { grid-column: 1 / 2; }
+
+.onb-form { display: flex; flex-direction: column; gap: 0.85rem; }
+.onb-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+.onb-actions .btn-primary { flex: 1 1 auto; }
+
+@media (max-width: 480px) {
+  .onb-box { padding: 1.25rem; max-width: none; }
+  .onb-type-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .onb-type-card { padding: 0.7rem 0.75rem; }
+}
