@@ -316,7 +316,7 @@
         {
           "key": "contact.waMessage",
           "type": "textarea",
-          "label": "Mesaj precompletat WhatsApp (text liber; diacritice OK)",
+          "label": "Mesaj precompletat WhatsApp (text simplu; diacritice OK)",
           "required": false,
           "maxLen": 300
         },

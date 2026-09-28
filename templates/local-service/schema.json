@@ -513,7 +513,7 @@
         {
           "key": "contact.whatsapp",
           "type": "phone",
-          "label": "Număr WhatsApp fără + (ex. 40721234567)",
+          "label": "Număr WhatsApp internațional fără + (ex. 40721234567)",
           "required": false,
           "identity": true
         },
