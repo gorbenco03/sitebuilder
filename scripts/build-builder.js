@@ -486,6 +486,24 @@ function clearThumbsForId(id) {
     }
 }
 
+// Remove files left in a generated template-assets/<id>/{images,fonts} dir by
+// an earlier build that this run no longer produces (e.g. a source file was
+// deleted or, for fonts, dropped from url('fonts/…') references — R-24,
+// AUDIT-2026-09-27 performance#3). Without this, build-builder.js's copy
+// loops only ever ADD files, so a stale file survives every rebuild forever
+// and ships to customers even after its source is gone. Scoped to a single
+// dir under builder/generated/ (gitignored, production-build output only) —
+// never touches template sources or anything outside builder/generated/.
+function pruneStaleFiles(dirPath, keepNames) {
+    if (!fs.existsSync(dirPath)) return;
+    for (const name of fs.readdirSync(dirPath)) {
+        if (keepNames.has(name)) continue;
+        const abs = path.join(dirPath, name);
+        if (!fs.statSync(abs).isFile()) continue;
+        try { fs.unlinkSync(abs); } catch (_) { /* ignore */ }
+    }
+}
+
 const lightEntries = [];
 
 // Shared MIT QR encoder for sandboxed builder previews. Published/exported
@@ -528,6 +546,7 @@ for (const entry of registry.templates) {
     if (fs.existsSync(imgDir) && fs.statSync(imgDir).isDirectory()) {
         fs.mkdirSync(assetOut, { recursive: true });
         const imageMap = {};
+        const copiedImageNames = new Set();
         for (const name of fs.readdirSync(imgDir)) {
             const abs = path.join(imgDir, name);
             if (!fs.statSync(abs).isFile()) continue;
@@ -535,8 +554,10 @@ for (const entry of registry.templates) {
             if (!IMAGE_EXTS.has(ext)) continue;
             const dest = path.join(assetOut, name);
             fs.copyFileSync(abs, dest);
+            copiedImageNames.add(name);
             imageMap['images/' + name] = '/app/generated/template-assets/' + id + '/images/' + name;
         }
+        pruneStaleFiles(assetOut, copiedImageNames);
         if (Object.keys(imageMap).length) files.imageMap = imageMap;
     }
 
@@ -559,6 +580,7 @@ for (const entry of registry.templates) {
     if (fs.existsSync(fontDir) && fs.statSync(fontDir).isDirectory()) {
         const fontAssetOut = path.join(ASSETS_DIR, id, 'fonts');
         fs.mkdirSync(fontAssetOut, { recursive: true });
+        const copiedFontNames = new Set();
         for (const name of fs.readdirSync(fontDir)) {
             const abs = path.join(fontDir, name);
             if (!fs.statSync(abs).isFile()) continue;
@@ -568,9 +590,11 @@ for (const entry of registry.templates) {
             // weight in every export/ZIP) — see performance#3, AUDIT-2026-09-27.
             if (!files.stylesCss.includes('fonts/' + name)) continue;
             fs.copyFileSync(abs, path.join(fontAssetOut, name));
+            copiedFontNames.add(name);
             const absoluteUrl = '/app/generated/template-assets/' + id + '/fonts/' + name;
             files.stylesCss = files.stylesCss.split('fonts/' + name).join(absoluteUrl);
         }
+        pruneStaleFiles(fontAssetOut, copiedFontNames);
     }
 
     const heavy = { id, schema, presets, files };
