@@ -2576,13 +2576,7 @@ async function runServerAutosave() {
       }
       return;
     }
-    let msg;
-    if (e && e.fromServer && e.message) {
-      msg = 'Nu s-a putut salva în cont: ' + e.message;
-    } else {
-      msg = 'Nu s-a putut salva în cont — verifică conexiunea la internet.';
-    }
-    setSaveState('error', msg);
+    setSaveState('error', safeServerMessage(e, 'Nu s-a putut salva în cont.'));
   }
 }
 
@@ -6440,7 +6434,7 @@ async function prepareInstagramEditor() {
         : 'Nu am putut pregăti editorul Instafidget. Încearcă din nou.';
     }
   } catch (e) {
-    if (status) status.textContent = e.message || 'Nu am putut pregăti editorul Instafidget.';
+    if (status) status.textContent = safeServerMessage(e, 'Nu am putut pregăti editorul Instafidget.');
   }
 }
 
@@ -6462,7 +6456,7 @@ async function disconnectInstagram() {
     await apiPost('/api/sites/' + encodeURIComponent(siteId) + '/social-feed/disconnect', {});
   } catch (e) {
     setIgStatus(
-      (e && e.message) || 'Instagram a fost deconectat local, dar serverul nu a confirmat. Reîncearcă publicarea.',
+      safeServerMessage(e, 'Instagram a fost deconectat local, dar serverul nu a confirmat. Reîncearcă publicarea.'),
       true
     );
   }
@@ -6567,7 +6561,7 @@ function wireIgAuthForm() {
                 await ensureDraftSiteForInstagram();
                 setIgStatus('Poți conecta Instagram. Bifează acordul, apoi apasă Conectează Instagram.');
               } catch (err) {
-                setIgStatus(err.message || 'Nu am putut salva ciorna.', true);
+                setIgStatus(safeServerMessage(err, 'Nu am putut salva ciorna.'), true);
               }
             } else {
               window.location.href = href;
@@ -6580,7 +6574,7 @@ function wireIgAuthForm() {
       }
     } catch (err) {
       if (errorDiv) {
-        errorDiv.textContent = err.message || 'Nu am putut trimite linkul. Încearcă din nou.';
+        errorDiv.textContent = safeServerMessage(err, 'Nu am putut trimite linkul. Încearcă din nou.');
         show(errorDiv);
       }
     } finally {
@@ -6616,7 +6610,7 @@ function openInstagramModal() {
       await ensureDraftSiteForInstagram();
       setIgStatus('');
     } catch (e) {
-      setIgStatus(e.message || 'Nu am putut pregăti Instagram. Încearcă din nou.', true);
+      setIgStatus(safeServerMessage(e, 'Nu am putut pregăti Instagram. Încearcă din nou.'), true);
     }
   })();
 }
@@ -6693,13 +6687,13 @@ async function connectInstagram() {
         }
       } catch (e) {
         if (connectGen !== instagramConnectGeneration) return;
-        setIgStatus(e.message || 'Nu am putut reîncărca feed-ul Instagram.', true);
+        setIgStatus(safeServerMessage(e, 'Nu am putut reîncărca feed-ul Instagram.'), true);
       }
     };
     instagramConnectFocusHandler = onFocus;
     window.addEventListener('focus', onFocus);
   } catch (e) {
-    setIgStatus(e.message || 'Nu am putut conecta Instagram.', true);
+    setIgStatus(safeServerMessage(e, 'Nu am putut conecta Instagram.'), true);
   } finally {
     setBtnLoading(btn, false);
   }
@@ -6713,7 +6707,13 @@ async function apiGet(url) {
   const r = await fetch(url, { credentials: 'include' });
   if (!r.ok) {
     const json = await r.json().catch(() => ({}));
-    throw Object.assign(new Error(json.error || 'Eroare server'), { status: r.status });
+    // Same fromServer contract as apiPost/apiDelete below — safeServerMessage
+    // needs it to tell a deliberate 4xx refusal from a 5xx it must never show.
+    throw Object.assign(new Error(json.error || 'Eroare server'), {
+      status: r.status,
+      code: json.code,
+      fromServer: true,
+    });
   }
   return r.json();
 }
@@ -6739,6 +6739,35 @@ function maybeWarnBeforeExport(kind) {
   }
   pendingExportKind = kind;
   openModal('modal-export-booking');
+}
+
+/**
+ * The one rule this file uses to turn a failed apiGet/apiPost/apiDelete call
+ * into text safe to show a customer — extracted from the publish flow's own
+ * catch (PLAN-UX-2026-09-27 §4/§5.8), now the single copy every call site
+ * shares instead of reimplementing it:
+ *   - a 4xx the server sent on purpose (fromServer, status 400-499, has a
+ *     message) is a deliberate refusal written in Romanian for a person to
+ *     read — shown as-is;
+ *   - a 5xx was never written for a customer (an internal failure, a stack,
+ *     a driver error) and is never shown, whether or not it has a message;
+ *   - a raw network/timeout failure (fetch's own TypeError, or an
+ *     AbortError) never reached the server at all — the fallback gets a
+ *     concrete next step instead of a bare "something failed";
+ *   - anything else reaching here is one of this file's own local Romanian
+ *     messages (never the browser's raw text), shown as-is.
+ * Never returns a raw e.message the browser or a 5xx body produced.
+ */
+function safeServerMessage(e, fallbackRo) {
+  fallbackRo = fallbackRo || 'Ceva nu a mers. Încearcă din nou.';
+  if (e && e.fromServer && typeof e.status === 'number') {
+    if (e.status >= 400 && e.status < 500 && e.message) return e.message;
+    return fallbackRo;
+  }
+  if (e && (e.name === 'TypeError' || e.name === 'AbortError')) {
+    return fallbackRo + ' Verifică conexiunea și încearcă din nou.';
+  }
+  return (e && e.message) || fallbackRo;
 }
 
 /**
@@ -7956,17 +7985,9 @@ async function doActualPublish(chosenSlug) {
     }
     // PLAN-QA-2026-09-12.md S3-1 / defect B1: a refusal the SERVER chose to
     // send (e.g. "Ai deja un site neplătit...", 409) is safe to show
-    // verbatim -- apiPost() already marks it fromServer for exactly this.
-    // Falling back to the generic message here silently swallowed it.
-    // Show the server's own words only for a 4xx — those are deliberate
-    // refusals written for the owner ("Ai deja un site neplătit...", the 409
-    // this exists for). A 5xx is an internal failure whose message was never
-    // meant for a customer ("boom", a stack, an English driver error), so it
-    // keeps the fixed Romanian fallback.
-    const deliberateRefusal = e && e.fromServer && e.message &&
-      typeof e.status === 'number' && e.status >= 400 && e.status < 500;
-    const msg = deliberateRefusal ? e.message : 'Publicarea a eșuat. Încearcă din nou.';
-    showToast(msg, 'error', 5000);
+    // verbatim — safeServerMessage() shows it only for a 4xx it marked
+    // fromServer; a 5xx keeps the fixed Romanian fallback below.
+    showToast(safeServerMessage(e, 'Publicarea a eșuat. Încearcă din nou.'), 'error', 5000);
   } finally {
     setBtnLoading(continueBtn, false);
   }
@@ -8176,15 +8197,11 @@ function wireAuthForm(onAuthSuccess) {
           };
         }
       } catch (err) {
-        // audit medium #6: the server sends a specific reason (rate limit, invalid
-        // email, service unavailable) — show it instead of masking it with a
-        // generic string (apiPost() already gives us err.message from json.error).
-        // Audit finding #6 asked for the server's specific reason instead of
-        // one generic string. But only the server's -- a transport failure
-        // still gets the Romanian fallback, never the browser's own English
-        // exception text.
-        const serverReason = err && err.fromServer && err.message ? err.message : '';
-        if (errorDiv) { errorDiv.textContent = serverReason || 'Nu am putut trimite linkul. Încearcă din nou.'; show(errorDiv); }
+        // audit medium #6: the server sends a specific reason (rate limit,
+        // invalid email, service unavailable) — safeServerMessage() shows it
+        // for a 4xx it marked fromServer, never a transport failure's raw
+        // browser text.
+        if (errorDiv) { errorDiv.textContent = safeServerMessage(err, 'Nu am putut trimite linkul. Încearcă din nou.'); show(errorDiv); }
       } finally {
         setBtnLoading(submitBtn, false);
       }
@@ -8999,7 +9016,7 @@ async function loadDashboard() {
         icon: 'alert',
         isError: true,
         title: 'Nu am putut încărca site-urile',
-        desc: e.message || 'Încearcă din nou.',
+        desc: safeServerMessage(e, 'Încearcă din nou.'),
         actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-dashboard">Reîncearcă</button>',
       });
       const retryBtn = $('btn-retry-dashboard');
@@ -9192,7 +9209,7 @@ function buildSiteCard(site) {
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast('Eroare: ' + e.message, 'error');
+        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
       } finally {
         setBtnLoading(keepBtn, false);
       }
@@ -9217,7 +9234,7 @@ function buildSiteCard(site) {
         const data = await apiPost('/api/sites/' + encodeURIComponent(site.id) + '/checkout', {});
         if (data.paymentUrl) window.location.href = data.paymentUrl;
       } catch (e) {
-        showToast('Eroare: ' + e.message, 'error');
+        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
       } finally {
         setBtnLoading(reactivateBtn, false);
       }
@@ -9258,7 +9275,7 @@ function buildSiteCard(site) {
           showToast('Portalul de facturare nu este disponibil acum.', 'error');
         }
       } catch (e) {
-        showToast('Eroare: ' + e.message, 'error');
+        showToast(safeServerMessage(e, 'Nu am putut finaliza acțiunea. Încearcă din nou.'), 'error');
       } finally {
         setBtnLoading(updateCardBtn, false);
       }
@@ -9457,7 +9474,7 @@ async function confirmCancelSubscription() {
     }
   } catch (e) {
     if (errEl) {
-      errEl.textContent = e.fromServer ? e.message : 'Eroare: ' + e.message;
+      errEl.textContent = safeServerMessage(e, 'Nu am putut deschide anularea acum.');
       errEl.style.display = '';
     }
   } finally {
@@ -9571,7 +9588,7 @@ async function confirmDeleteSite() {
     loadDashboard();
   } catch (e) {
     if (errEl) {
-      errEl.textContent = e.fromServer ? e.message : 'Ștergerea a eșuat. Încearcă din nou.';
+      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.');
       errEl.style.display = '';
     }
   } finally {
@@ -9699,7 +9716,7 @@ async function confirmDeleteAccount() {
     window.location.hash = '#templates';
   } catch (e) {
     if (errEl) {
-      errEl.textContent = e.fromServer ? e.message : 'Ștergerea a eșuat. Încearcă din nou.';
+      errEl.textContent = safeServerMessage(e, 'Ștergerea a eșuat. Încearcă din nou.');
       errEl.style.display = '';
     }
   } finally {
@@ -9817,14 +9834,14 @@ async function loadVersions(siteId) {
           showToast('Versiunea a fost restabilită.', 'success');
           closeModal('modal-versions');
         } catch (err) {
-          showToast('Eroare la restabilire: ' + err.message, 'error');
+          showToast(safeServerMessage(err, 'Nu am putut restabili versiunea. Încearcă din nou.'), 'error');
           setBtnLoading(btn, false);
         }
       });
       list.appendChild(item);
     });
   } catch (e) {
-    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca versiunile. Încearcă din nou.')) + '</p>';
   }
 }
 
@@ -10059,7 +10076,7 @@ function wireDomainConnectForm() {
       cacheDomainInstructions(domainModalSiteId, instructions);
       await refreshDomainModal();
     } catch (err) {
-      if (errEl) { errEl.textContent = err.message || 'Nu am putut conecta domeniul.'; show(errEl); }
+      if (errEl) { errEl.textContent = safeServerMessage(err, 'Nu am putut conecta domeniul.'); show(errEl); }
     } finally {
       setBtnLoading(btn, false);
     }
@@ -10149,10 +10166,11 @@ function renderDomainModal(record, lastPoll) {
         const result = await apiPost('/api/sites/' + encodeURIComponent(domainModalSiteId) + route, {});
         await refreshDomainModal(result);
       } catch (err) {
+        const msg = safeServerMessage(err, 'Eroare la verificare.');
         if (err && err.code === 'RATE_LIMITED') {
-          showToast(err.message, 'error', 6000);
+          showToast(msg, 'error', 6000);
         } else {
-          showToast(err.message || 'Eroare la verificare.', 'error');
+          showToast(msg, 'error');
           await refreshDomainModal();
         }
       } finally {
@@ -10175,7 +10193,7 @@ function renderDomainModal(record, lastPoll) {
         showToast('Domeniul a fost deconectat.', 'success');
         await refreshDomainModal();
       } catch (err) {
-        showToast(err.message || 'Nu am putut deconecta domeniul.', 'error');
+        showToast(safeServerMessage(err, 'Nu am putut deconecta domeniul.'), 'error');
       } finally {
         setBtnLoading(disconnectBtn, false);
       }
@@ -10209,7 +10227,7 @@ async function refreshDomainModal(lastPoll) {
     const data = await apiGet('/api/sites/' + encodeURIComponent(domainModalSiteId) + '/domain');
     renderDomainModal(data.record, lastPoll);
   } catch (e) {
-    body.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
+    body.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca domeniul. Încearcă din nou.')) + '</p>';
   }
 }
 
@@ -10322,7 +10340,7 @@ async function openInvoicesModal(siteId) {
     const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/invoices');
     renderInvoicesList(data.invoices || []);
   } catch (e) {
-    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(e.message) + '</p>';
+    if (list) list.innerHTML = '<p style="color:var(--error);font-size:.85rem">' + escHtml(safeServerMessage(e, 'Nu am putut încărca facturile. Încearcă din nou.')) + '</p>';
   }
 }
 
