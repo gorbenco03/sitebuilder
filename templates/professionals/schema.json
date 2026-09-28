@@ -148,6 +148,20 @@
           "maxLen": 40
         },
         {
+          "key": "labels.teamEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra echipei (ex. Echipa noastră)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
+          "key": "labels.testimonialsEyebrow",
+          "type": "text",
+          "label": "Etichetă mică deasupra recenziilor (ex. Recenzii)",
+          "required": true,
+          "maxLen": 40
+        },
+        {
           "key": "labels.faqEyebrow",
           "type": "text",
           "label": "Etichetă mică deasupra întrebărilor",
@@ -429,6 +443,62 @@
             "label": "text"
           },
           "identityItemKeys": ["label"]
+        }
+      ]
+    },
+    {
+      "id": "team",
+      "title": "Echipă (opțional)",
+      "fields": [
+        {
+          "key": "team.title",
+          "type": "text",
+          "label": "Titlu secțiune echipă (ex. Echipa noastră)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "team.members",
+          "type": "list",
+          "label": "Membri echipă",
+          "required": false,
+          "min": 0,
+          "max": 8,
+          "itemShape": {
+            "name": "text",
+            "role": "text",
+            "bio": "text",
+            "photo": "image"
+          },
+          "identityItemKeys": ["name", "role", "bio"]
+        }
+      ]
+    },
+    {
+      "id": "testimonials",
+      "title": "Recenzii (opțional)",
+      "fields": [
+        {
+          "key": "testimonials.title",
+          "type": "text",
+          "label": "Titlu secțiune recenzii (ex. Ce spun clienții)",
+          "required": false,
+          "maxLen": 60
+        },
+        {
+          "key": "testimonials.items",
+          "type": "list",
+          "label": "Recenzii clienți (2-6 recomandate)",
+          "hint": "Secțiunea rămâne ascunsă pe site-ul public până adaugi cel puțin o recenzie.",
+          "required": false,
+          "min": 0,
+          "max": 6,
+          "itemShape": {
+            "quote": "text",
+            "name": "text",
+            "role": "text"
+          },
+          "identityItemKeys": ["quote", "name"]
         }
       ]
     },
@@ -816,6 +886,16 @@
       "id": "about",
       "label": "Despre / credențiale",
       "removable": false
+    },
+    {
+      "id": "team",
+      "label": "Echipă",
+      "removable": true
+    },
+    {
+      "id": "testimonials",
+      "label": "Recenzii",
+      "removable": true
     },
     {
       "id": "appointment",

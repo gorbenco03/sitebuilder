@@ -737,6 +737,59 @@ button, input, select, textarea { font: inherit; color: inherit; }
     background: var(--accent);
 }
 
+.pr-team__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+@media (min-width: 640px) { .pr-team__grid { grid-template-columns: repeat(3, 1fr); } }
+.pr-person {
+    padding: 1.5rem 1.35rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    /* Fixed, not var(--ink): this card's background is always --snow. */
+    background: var(--snow);
+    color: #14120F;
+}
+.pr-person__pic {
+    border-radius: var(--r);
+    overflow: hidden;
+    margin-bottom: 0.85rem;
+    aspect-ratio: 1;
+}
+.pr-person__pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pr-person__name { font-family: var(--display); font-size: 1.1rem; font-weight: 500; }
+.pr-person__role { font-size: 0.85rem; color: var(--mute); margin-top: 0.2rem; }
+
+.pr-reviews__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-top: 0.5rem;
+}
+@media (min-width: 640px) { .pr-reviews__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .pr-reviews__grid { grid-template-columns: repeat(3, 1fr); } }
+.pr-review {
+    padding: 1.5rem 1.35rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    /* Fixed, not var(--ink): this card's background is always --snow. */
+    background: var(--snow);
+    color: #14120F;
+}
+.pr-review__quote {
+    font-family: var(--display);
+    font-size: 1.05rem;
+    line-height: 1.55;
+    font-style: italic;
+}
+.pr-review__quote::before { content: "\201C"; }
+.pr-review__quote::after { content: "\201D"; }
+.pr-review__who { margin-top: 0.9rem; display: flex; flex-direction: column; gap: 0.1rem; }
+.pr-review__name { font-weight: 600; font-size: 0.92rem; }
+.pr-review__role { font-size: 0.82rem; color: var(--mute); }
+
 /* Appointment form */
 .pr-warn {
     margin: 1rem 0 1.5rem;
@@ -1088,6 +1141,26 @@ a.pr-contact__row:hover .pr-contact__icon { background: var(--accent); }
     word-break: break-word;
 }
 .pr-contact__row--static { color: var(--soft); }
+
+.pr-msg { margin-top: 2.75rem; padding-top: 2.25rem; border-top: 1px solid var(--line); }
+.pr-msg__head { max-width: 34rem; margin-bottom: 1.1rem; }
+.pr-msg__title { font-family: var(--display); font-size: 1.25rem; font-weight: 500; margin-bottom: 0.3rem; }
+.pr-msg__form { max-width: 34rem; }
+.pr-input--area { resize: vertical; min-height: 96px; }
+/* Honeypot: visually hidden, not display:none, to still catch basic bots. */
+.pr-msg__hp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.pr-msg__submit { width: min(100%, 14rem); }
+.pr-msg__fail, .pr-msg__done {
+    margin-top: 1.25rem;
+    max-width: 34rem;
+    padding: 1.1rem 1.15rem;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--snow);
+}
+.pr-msg__fail[hidden], .pr-msg__done[hidden] { display: none !important; }
+.pr-msg__fail-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.75rem; }
+.pr-msg__fail-actions .pr-btn { text-decoration: none !important; }
 
 /* Footer */
 .pr-foot {

@@ -12,7 +12,100 @@ document.addEventListener('DOMContentLoaded', () => {
     initMobileNav();
     initImageFallback();
     initSkipLink();
+    initMessageForm();
 });
+
+function detectLiveSlug() {
+    var m = String(location.pathname || '').match(/\/live\/([a-z0-9-]{3,40})(?:\/|$)/i);
+    return m ? m[1].toLowerCase() : '';
+}
+
+// General "Scrie-ne" contact form; POST contract in audit27-s-2b oracle.
+function initMessageForm() {
+    var form = document.getElementById('pf-msg-form');
+    if (!form) return;
+
+    var submitBtn = document.getElementById('pf-msg-submit');
+    var hint = document.getElementById('pf-msg-hint');
+    var fail = document.getElementById('pf-msg-fail');
+    var done = document.getElementById('pf-msg-done');
+
+    function setBusy(busy) {
+        if (!submitBtn) return;
+        submitBtn.disabled = busy;
+        var span = submitBtn.querySelector('span');
+        var text = busy ? 'Se trimite…' : 'Trimite mesajul';
+        if (span) span.textContent = text; else submitBtn.textContent = text;
+    }
+
+    function send(e) {
+        if (e) e.preventDefault();
+        if (submitBtn && submitBtn.disabled) return;
+        if (fail) fail.hidden = true;
+
+        var name = (form.querySelector('#pf-msg-name') || {}).value || '';
+        var contact = (form.querySelector('#pf-msg-contact') || {}).value || '';
+        var message = (form.querySelector('#pf-msg-message') || {}).value || '';
+        var website = (form.querySelector('#pf-msg-website') || {}).value || '';
+
+        if (!name.trim() || !contact.trim() || !message.trim()) {
+            if (hint) {
+                hint.hidden = false;
+                hint.textContent = 'Completează numele, un contact și mesajul.';
+            }
+            return;
+        }
+
+        var apiBase = form.getAttribute('data-site-messages-api') || '';
+        var slug = form.getAttribute('data-site-slug') || detectLiveSlug();
+        var payload = {
+            slug: slug,
+            name: name.trim(),
+            contact: contact.trim(),
+            message: message.trim(),
+            website: website,
+        };
+
+        function showDone() {
+            form.hidden = true;
+            if (done) done.hidden = false;
+        }
+
+        function showFail() {
+            if (hint) {
+                hint.hidden = false;
+                hint.textContent = 'Mesajul NU a fost trimis — încearcă din nou sau folosește un contact direct mai jos.';
+            }
+            if (fail) fail.hidden = false;
+            setBusy(false);
+        }
+
+        // No API base (static export / preview) — go straight to fallback.
+        if (!apiBase || !/^https?:/i.test(apiBase)) {
+            showFail();
+            return;
+        }
+
+        setBusy(true);
+        fetch(apiBase + '/api/site-messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(payload),
+        })
+            .then(function (res) {
+                return res.json().catch(function () { return {}; }).then(function (body) {
+                    if (res.ok && body && body.ok) return showDone();
+                    throw new Error((body && body.error) || 'Cererea nu a putut fi înregistrată.');
+                });
+            })
+            .catch(function () {
+                showFail();
+            });
+    }
+
+    if (submitBtn) submitBtn.addEventListener('click', send);
+    form.addEventListener('submit', send);
+}
 
 function sanitizeIconHrefs() {
     var OK = ['http:', 'https:', 'tel:', 'mailto:'];

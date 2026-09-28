@@ -134,6 +134,19 @@ Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Op
 
 Nu se rezolvă toate într-un singur task. Se lucrează pe flow-uri verticale verificate în browser.
 
+**Actualizare 2026-09-27 (audit27 S-2B):** șabloanele `portfolio` și
+`professionals` au acum o secțiune opțională „Recenzii" (2-6 testimoniale) și,
+doar la `professionals`, o secțiune opțională „Echipa" — predefinite per
+șablon, editabile din listă în builder, ascunse automat când nu au conținut.
+Nu e „section add/remove/reorder" generic (punctul de mai sus rămâne backlog
+neatins); e o bibliotecă mică, fixă, per șablon de secțiuni opționale. Ambele
+șabloane au primit și un formular general „Scrie-ne" (portfolio nu avea deloc
+un formular de contact; la professionals formularul de programare rămâne
+separat, neschimbat). Formularul e vizibil și onest cu fallback tel:/wa.me,
+dar livrarea efectivă a mesajului depinde de endpoint-ul `/api/site-messages`
+și de completarea atributului la publish (task separat S-2C) — până atunci
+formularul afișează mereu fallback-ul, niciodată eroare falsă de succes.
+
 ## 5. Legal
 
 Privacy / Cookies / Terms lipsesc ca produs complet.
