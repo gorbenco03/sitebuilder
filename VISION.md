@@ -123,8 +123,8 @@ Done minim:
 
 Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Opus devin backlog structural:
 
-- fără section add — reorder/remove există (Wave 7); adăugarea liberă a unui bloc nou rămâne absentă. S-2A (PLAN-UX §5.2) a adăugat o bibliotecă minimă fixă — Recenzii (testimoniale opționale) + formular de contact — pentru product-menu, local-service și Desserdirina; portfolio și professionals nu au încă aceste două secțiuni, iar un catalog general de blocuri („Adaugă o secțiune” cu FAQ/hartă/program) rămâne backlog;
-- fără undo/redo;
+- fără adăugare liberă de secțiuni. Reordonarea și ascunderea există (Wave 7), iar toate cele 5 șabloane au o bibliotecă fixă de secțiuni opționale (vezi actualizarea 2026-09-28 de mai jos). Un catalog general de blocuri („Adaugă o secțiune”, cu FAQ, hartă, program) rămâne în backlog;
+- undo/redo există (toolbar și Ctrl/Cmd+Z) și rezistă unui reload sau unei închideri accidentale de tab în aceeași sesiune de browser, salvat per site și per cont (PLAN-UX-2026-09-27 §5.3). Nu se păstrează după închiderea sesiunii de browser;
 - fără multi-page real;
 - fără typography controls;
 - edit mapping fragil prin regex;

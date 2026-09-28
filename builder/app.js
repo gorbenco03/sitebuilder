@@ -1875,6 +1875,32 @@ function updateHistoryButtons() {
 }
 
 /**
+ * PLAN-UX-2026-09-27 §5.3: persist the CURRENT in-memory historyState to
+ * sessionStorage (builder/history-store.js, loaded before this file — see
+ * index.html) so a reload or an accidental tab close+reopen within the same
+ * browser session doesn't wipe Ctrl+Z/Undo back to a fresh baseline. Scoped
+ * to the same 'site:<id>'/'local:<draftId>' key drafts already use
+ * (currentScopeKey()) and stamped to the signed-in account
+ * (currentAccountKey()) with the exact same ownership contract as
+ * hb.draft.scopes.v1 — never leaks across accounts (see
+ * historyStoreSave()'s doc comment). Guarded with `typeof` like every other
+ * optional cross-file helper in this file (mergeDraftConfigs, TAB_ID…) so
+ * isolated-extraction test sandboxes that never load history-store.js keep
+ * working unchanged. Best-effort — a failed persist never affects the
+ * in-memory stack, which stays the source of truth for this tab's own live
+ * session either way.
+ */
+function persistHistorySnapshot() {
+  if (typeof historyStoreSave !== 'function') return;
+  if (typeof currentScopeKey !== 'function' || typeof currentAccountKey !== 'function') return;
+  try {
+    const scopeKey = currentScopeKey();
+    if (!scopeKey) return;
+    historyStoreSave(scopeKey, currentAccountKey(), historyState.stack, historyState.index);
+  } catch (_) { /* best-effort — in-memory history is unaffected either way */ }
+}
+
+/**
  * Record the CURRENT draft.config as a history entry — called from the single
  * saveDraft() choke point so no mutation site has to remember to call it.
  *
@@ -1919,6 +1945,7 @@ function pushHistory(coalesceKey) {
   historyState.coalesceAt = now;
   historyTrim();
   updateHistoryButtons();
+  persistHistorySnapshot();
 }
 
 /** Start a brand-new undo/redo session — called whenever a fresh draft.config
@@ -1941,7 +1968,51 @@ function resetHistory() {
   historyState.coalesceKey = null;
   historyState.coalesceAt = 0;
   pendingHistoryCoalesceKey = null;
-  if (draft.config) pushHistory(null);
+
+  // PLAN-UX-2026-09-27 §5.3: before falling back to a fresh one-entry
+  // baseline, try to resume a persisted stack for this exact scope+account
+  // (builder/history-store.js) — this is what makes Ctrl+Z survive a reload/
+  // tab-close+reopen within the same browser session. Only resumed when the
+  // persisted stack's CURRENT entry still matches what was actually just
+  // loaded into draft.config — a stale/foreign persisted stack (storage
+  // churn, a different local draft that once shared this scope key) must
+  // never let Undo silently jump the canvas to unrelated content. Guarded
+  // with `typeof` like persistHistorySnapshot() above.
+  let restoredFromStorage = false;
+  if (draft.config && typeof historyStoreLoad === 'function' &&
+      typeof currentScopeKey === 'function' && typeof currentAccountKey === 'function') {
+    try {
+      const scopeKey = currentScopeKey();
+      const persisted = scopeKey ? historyStoreLoad(scopeKey, currentAccountKey()) : null;
+      if (persisted && Array.isArray(persisted.entries) && persisted.entries.length) {
+        // Reviewer fix (post-rejection, S-3): the persisted top entry has
+        // already had any large embedded image stripped by
+        // historyStoreSave()->historyStoreStripImages() (history-store.js) —
+        // draft.config, freshly reloaded from the site's own saved state, has
+        // not. Comparing the raw serialized JSON of the two therefore failed
+        // on every reload whose current state included a real uploaded photo
+        // (an ordinary compressed JPEG/PNG easily exceeds the strip
+        // threshold), silently discarding the persisted stack. Run
+        // currentJson through the SAME stripping function before comparing so
+        // both sides drop large images the same way — symmetric normalization,
+        // not a looser match (a genuinely different config still fails this
+        // comparison and correctly falls back to a fresh baseline below).
+        const currentJson = JSON.stringify(draft.config);
+        const normalizedCurrentJson = typeof historyStoreStripImages === 'function'
+          ? historyStoreStripImages(currentJson)
+          : currentJson;
+        const at = Math.max(0, Math.min(persisted.index, persisted.entries.length - 1));
+        const cur = persisted.entries[at];
+        if (cur && cur.json === normalizedCurrentJson) {
+          historyState.stack = persisted.entries.map((e) => ({ json: e.json, size: e.size }));
+          historyState.index = at;
+          historyTrim(); // re-clamp against this tab's in-memory caps (smaller than the persisted ones)
+          restoredFromStorage = true;
+        }
+      }
+    } catch (_) { /* fall through to a fresh baseline below */ }
+  }
+  if (!restoredFromStorage && draft.config) pushHistory(null);
   updateHistoryButtons();
   hideTabConflictBanner();
   // Wave 9: a freshly loaded draft (new design, resumed local draft, paid
@@ -1994,12 +2065,18 @@ function undo() {
   if (historyState.index <= 0) return;
   historyState.index--;
   applyHistoryEntry();
+  // applyHistoryEntry()'s own saveDraft()->pushHistory() call is a no-op
+  // here (the restored json is already the top-of-stack entry it compares
+  // against — see pushHistory()'s doc comment), so it never re-persists the
+  // MOVED pointer on its own — do it explicitly here (§5.3).
+  persistHistorySnapshot();
 }
 
 function redo() {
   if (historyState.index < 0 || historyState.index >= historyState.stack.length - 1) return;
   historyState.index++;
   applyHistoryEntry();
+  persistHistorySnapshot();
 }
 
 // ---------------------------------------------------------------------------
@@ -7330,6 +7407,21 @@ function clearOwnedLocalDraftState() {
     const replaced = lsGet(REPLACED_DRAFT_KEY);
     if (replaced && replaced.ownerUserId === accountKey) localStorage.removeItem(REPLACED_DRAFT_KEY);
   } catch (_) { /* ignore */ }
+  // PLAN-UX-2026-09-27 §5.3: the persisted undo/redo stack (builder/
+  // history-store.js) carries the same account leak risk as the draft
+  // scopes above — clear it the same way, same guard convention. Also wipe
+  // THIS tab's in-memory historyState.stack right here (not just draft.config
+  // below) — otherwise a same-tab reuse before the next resetHistory() call
+  // could still Ctrl+Z/Undo straight into the signed-out account's snapshots
+  // even though draft.config itself was already nulled out.
+  if (typeof historyStoreClearOwned === 'function') { try { historyStoreClearOwned(accountKey); } catch (_) { /* ignore */ } }
+  if (typeof historyState === 'object' && historyState) {
+    historyState.stack = [];
+    historyState.index = -1;
+    historyState.coalesceKey = null;
+    historyState.coalesceAt = 0;
+    if (typeof updateHistoryButtons === 'function') updateHistoryButtons();
+  }
   // This tab's in-memory editor state must not linger for whoever signs in
   // here next either, without a full page reload in between.
   draft.templateId = null;
