@@ -122,7 +122,7 @@ Done minim:
 Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Opus devin backlog structural:
 
 - fără section add/remove/reorder;
-- fără undo/redo;
+- undo/redo există (toolbar + Ctrl/Cmd+Z) și supraviețuiește unui reload sau unei închideri accidentale de tab în aceeași sesiune de browser (persistat per site/schiță, per cont — PLAN-UX-2026-09-27 §5.3); nu supraviețuiește dincolo de sesiunea de browser;
 - fără multi-page real;
 - fără typography controls;
 - edit mapping fragil prin regex;
