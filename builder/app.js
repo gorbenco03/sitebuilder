@@ -9813,6 +9813,51 @@ function domainStatusBadge(status) {
   return { cls: 'status-draft', label: 'Neconectat' };
 }
 
+/** Same three plain-language DNS states as PRODUCT.md's own description of
+ *  this flow ("not visible yet / visible but wrong / verified"), one line
+ *  short enough to read at a glance next to the longer domainMessageForStatus
+ *  explanation. Purely presentational — derived from the same `status` the
+ *  badge and message already use, never a separate source of truth. */
+function domainShortStatusLabel(status) {
+  switch (status) {
+    case 'awaiting_dns': return 'DNS: nu se vede încă';
+    case 'dns_partial': return 'DNS: se vede, dar greșit';
+    case 'dns_verified':
+    case 'provisioning': return 'DNS: verificat — se activează certificatul';
+    case 'active': return 'DNS: verificat și activ';
+    case 'error': return 'A apărut o eroare';
+    default: return '';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Numbered-step UI (PLAN-UX-2026-09-27 §4 "Modal Domeniu propriu cu pași
+// expliciți"): a 4-step stepper laid purely on top of the existing DNS/TLS
+// state machine — it reads the same `status` the badge/message already read,
+// so it can never drift out of sync with what actually happened.
+// ---------------------------------------------------------------------------
+const DOMAIN_STEP_LABELS = ['Domeniul', 'Înregistrări DNS', 'Verificare', 'Gata'];
+
+function domainStepForStatus(status) {
+  if (status === 'active') return 4;
+  if (status === 'dns_verified' || status === 'provisioning') return 3;
+  if (status === 'awaiting_dns' || status === 'dns_partial' || status === 'error') return 2;
+  return 1; // no record yet, or disconnected
+}
+
+function domainStepsHtml(current) {
+  const items = DOMAIN_STEP_LABELS.map((label, i) => {
+    const n = i + 1;
+    const cls = n < current ? 'is-done' : (n === current ? 'is-current' : 'is-upcoming');
+    return `
+      <div class="domain-step ${cls}">
+        <span class="domain-step-num" aria-hidden="true">${n < current ? '✓' : n}</span>
+        <span class="domain-step-label">${escHtml(label)}</span>
+      </div>`;
+  }).join('<span class="domain-step-sep" aria-hidden="true"></span>');
+  return `<div class="domain-steps" role="list" aria-label="Pașii conectării domeniului">${items}</div>`;
+}
+
 /** Client-side rebuild of bot/domains.js#_dnsInstructionsFor from the raw
  *  record fields alone — see the module-doc comment above for why this
  *  can't just re-call the server. */
@@ -9934,7 +9979,7 @@ function renderDomainModal(record, lastPoll) {
   if (!body) return;
 
   if (!record || record.status === 'disconnected') {
-    body.innerHTML = domainConnectFormHtml(!!record);
+    body.innerHTML = domainStepsHtml(1) + domainConnectFormHtml(!!record);
     wireDomainConnectForm();
     return;
   }
@@ -9944,15 +9989,17 @@ function renderDomainModal(record, lastPoll) {
   const message = (lastPoll && lastPoll.message) || domainMessageForStatus(status);
   const messageCls = status === 'error' ? 'domain-message--error' : (status === 'active' ? 'domain-message--active' : '');
 
-  let html = `
+  let html = domainStepsHtml(domainStepForStatus(status));
+  html += `
     <div class="domain-status-row">
       <span class="status-badge ${badge.cls}">${escHtml(badge.label)}</span>
       <span class="domain-current-host">${escHtml(record.domain)}</span>
-    </div>
-    <p class="domain-message ${messageCls}">${escHtml(message)}</p>`;
+    </div>`;
 
   if (status === 'active') {
     const liveHref = 'https://' + record.targetHost;
+    html += `<h3 class="domain-step-card-title">Pasul 4 · Gata — domeniul e conectat</h3>`;
+    html += `<p class="domain-message ${messageCls}">${escHtml(message)}</p>`;
     html += `<p class="modal-sub"><a href="${escHtmlForAttr(liveHref)}" target="_blank" rel="noopener noreferrer">${escHtml(liveHref)}</a></p>`;
     if (record.isApex) {
       html += `<div class="domain-apex-note">Domeniul principal "${escHtml(record.domain)}" e nevoie să aibă o redirecționare (forwarding) către "${escHtml(liveHref)}" configurată la furnizorul tău de domeniu — CNAME nu funcționează pe domeniul principal.</div>`;
@@ -9965,23 +10012,32 @@ function renderDomainModal(record, lastPoll) {
   } else {
     // awaiting_dns / dns_partial / dns_verified / provisioning / error — show
     // the DNS records (cached instructions if we have them, else rebuilt from
-    // the raw record) so the owner can always see/copy what to paste.
+    // the raw record) so the owner can always see/copy what to paste, laid
+    // out as two explicit, numbered cards (DNS records, then live status) so
+    // "what do I do right now" never depends on scrolling past a wall of text.
     const cached = readCachedDomainInstructions(domainModalSiteId, record.domain);
     const built = cached || buildDnsRecordsFromRecord(record);
     if (status !== 'provisioning' && status !== 'dns_verified') {
+      html += `<div class="domain-step-card">
+        <h3 class="domain-step-card-title">Pasul 2 · Adaugă aceste înregistrări DNS</h3>`;
       html += domainRecordsTableHtml(built.records);
       if (built.note) html += `<div class="domain-apex-note">${escHtml(built.note)}</div>`;
+      html += `</div>`;
     }
     const verifyLabel = (status === 'dns_verified' || status === 'provisioning') ? 'Verifică certificatul' : 'Verifică';
+    const shortStatus = domainShortStatusLabel(status);
     html += `
-      <div class="domain-actions">
-        <button type="button" class="btn-primary btn-sm" id="btn-domain-verify">${escHtml(verifyLabel)}</button>
-        <button type="button" class="btn-ghost btn-sm" id="btn-domain-disconnect">Deconectează</button>
-        <button type="button" class="domain-switch-link" id="btn-domain-switch" style="margin:0">Folosește alt domeniu</button>
+      <div class="domain-step-card domain-step-card--status">
+        <h3 class="domain-step-card-title">Pasul 3 · Verifică starea conexiunii</h3>
+        ${shortStatus ? `<p class="domain-status-short">${escHtml(shortStatus)}</p>` : ''}
+        <p class="domain-message ${messageCls}">${escHtml(message)}</p>
+        <div class="domain-actions">
+          <button type="button" class="btn-primary btn-sm" id="btn-domain-verify">${escHtml(verifyLabel)}</button>
+          <button type="button" class="btn-ghost btn-sm" id="btn-domain-disconnect">Deconectează</button>
+          <button type="button" class="domain-switch-link" id="btn-domain-switch" style="margin:0">Folosește alt domeniu</button>
+        </div>
+        ${record.lastCheck && record.lastCheck.checkedAt ? `<p class="domain-last-check">Ultima verificare: ${escHtml(formatHostingUntilDate(record.lastCheck.checkedAt) || record.lastCheck.checkedAt)}</p>` : ''}
       </div>`;
-    if (record.lastCheck && record.lastCheck.checkedAt) {
-      html += `<p class="domain-last-check">Ultima verificare: ${escHtml(formatHostingUntilDate(record.lastCheck.checkedAt) || record.lastCheck.checkedAt)}</p>`;
-    }
   }
 
   body.innerHTML = html;
@@ -10036,7 +10092,18 @@ function renderDomainModal(record, lastPoll) {
   const switchBtn = $('btn-domain-switch');
   if (switchBtn) {
     switchBtn.addEventListener('click', () => {
-      body.innerHTML = domainConnectFormHtml(true);
+      // Explicit confirm before wiping the current domain's progress — the
+      // eventual submit has the same immediate real-world effect as
+      // "Deconectează" (detaches the live Cloudflare hostname on an
+      // active/provisioning domain), but until now had no confirm() at all.
+      const attached = status === 'active' || status === 'provisioning' || status === 'dns_verified';
+      const question = attached
+        ? 'Sigur vrei să folosești alt domeniu? Domeniul „' + record.domain + '" va fi deconectat imediat, iar ' +
+          'site-ul tău rămâne disponibil pe subdomeniul Hidook cât timp conectezi și verifici noul domeniu.'
+        : 'Sigur vrei să introduci alt domeniu? Progresul pentru „' + record.domain + '" (înregistrările DNS ' +
+          'deja pregătite) se pierde. Site-ul tău rămâne disponibil pe subdomeniul Hidook.';
+      if (!window.confirm(question)) return;
+      body.innerHTML = domainStepsHtml(1) + domainConnectFormHtml(true);
       wireDomainConnectForm();
     });
   }
