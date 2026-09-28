@@ -489,7 +489,24 @@ function readRawBody(req, limit = MAX_BODY_BYTES) {
     });
 }
 
+/**
+ * gap-csrf-poc#1: a text/plain <form> can smuggle a JSON body cross-site
+ * (the request never triggers a CORS preflight, so SameSite=Lax was the
+ * only thing stopping it — see isSameOriginRequest below for the other
+ * half of that fix). Requiring the real Content-Type here closes that
+ * specific vector regardless of Origin/Referer: a browser <form> can set
+ * Content-Type to application/x-www-form-urlencoded, multipart/form-data
+ * or text/plain, but never application/json.
+ */
+function hasJsonContentType(req) {
+    const raw = (req && req.headers && req.headers['content-type']) || '';
+    return /^application\/json\b/i.test(String(raw).trim());
+}
+
 async function parseJson(req, limit = MAX_BODY_BYTES) {
+    if (!hasJsonContentType(req)) {
+        throw Object.assign(new Error('Cererea trebuie să aibă antetul Content-Type: application/json.'), { status: 400 });
+    }
     let raw;
     try {
         raw = await readRawBody(req, limit);
@@ -1096,7 +1113,58 @@ ${rows}
 // Auth helper
 // ---------------------------------------------------------------------------
 
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
+
+/**
+ * gap-csrf-poc#1: the only thing stopping a cross-site POST/PUT/DELETE from
+ * carrying the session cookie was SameSite=Lax on the cookie itself — nothing
+ * in the app checked Origin/Referer. A live PoC (5 attack vectors against
+ * billing-portal/domain/delete) found nothing exploitable *today* (Lax
+ * already blocks it in every supported browser), but that was 100%
+ * incidental, not a defense this app actually wrote. This closes the gap:
+ * for a state-changing request whose Origin (or Referer, when Origin is
+ * absent) doesn't match this server's own host, reject before requireAuth()
+ * does anything else — independent of, and in addition to, SameSite.
+ *
+ * Deliberately does NOT touch: GET/HEAD (safe methods, no route mutates
+ * state on them); the Stripe webhook (never calls requireAuth, verifies a
+ * signature instead); or the public calendar-native booking API (also never
+ * calls requireAuth — CORS there is intentionally open, see
+ * applyPublicCalendarCors's own doc comment).
+ */
+function expectedRequestHost(req) {
+    const envUrl = String(process.env.PUBLIC_URL || '').replace(/\/$/, '');
+    if (envUrl) {
+        try { return new URL(envUrl).host; } catch (_) { /* fall through to Host header */ }
+    }
+    const rawHost = (req && req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
+    return String(Array.isArray(rawHost) ? rawHost[0] : rawHost).split(',')[0].trim();
+}
+
+/** host (hostname:port) of an Origin/Referer header value, or null if unparseable. */
+function headerRequestHost(headerValue) {
+    if (!headerValue) return null;
+    const first = String(Array.isArray(headerValue) ? headerValue[0] : headerValue).split(',')[0].trim();
+    if (!first) return null;
+    try { return new URL(first).host; } catch (_) { return null; }
+}
+
+function isSameOriginRequest(req) {
+    if (!STATE_CHANGING_METHODS.has(req && req.method)) return true;
+    const expected = expectedRequestHost(req);
+    if (!expected) return true; // can't determine our own host — nothing to compare against
+    const originHost = headerRequestHost(req.headers && req.headers.origin);
+    if (originHost !== null) return originHost === expected;
+    const refererHost = headerRequestHost(req.headers && req.headers.referer);
+    if (refererHost !== null) return refererHost === expected;
+    return true; // neither header present (older browser, same-site nav, non-browser client)
+}
+
 function requireAuth(req, res) {
+    if (!isSameOriginRequest(req)) {
+        sendJson(res, 403, { error: 'Cerere refuzată: origine necunoscută (Origin/Referer nu corespunde acestui site).' });
+        return null;
+    }
     let userId;
     try {
         userId = getAuth().getSessionUserId(req);
@@ -1945,7 +2013,7 @@ async function handleDeleteSite(req, res, siteId) {
 
     if (hasActiveCommercialEntitlement(site)) {
         return sendJson(res, 409, {
-            error: 'Site-ul are un abonament activ. Anulează-l din Facturare (butonul „Anulează”) înainte de ștergere — altfel clienți care au plătit ar rămâne fără site.',
+            error: 'Site-ul are un abonament activ. Apasă mai întâi „Anulează” pe acest site înainte de a-l șterge — altfel clienți care au plătit ar rămâne fără site.',
             code: 'ACTIVE_SUBSCRIPTION',
         });
     }
@@ -3877,14 +3945,22 @@ async function handlePublish(req, res) {
     if (imgList.length > MAX_IMAGES) {
         return sendJson(res, 422, { error: `Sunt permise maximum ${MAX_IMAGES} imagini.` });
     }
+    // api-security#1: the old check here only regexed the client-declared
+    // `data:<mime>;` label — a "hero.png" whose actual bytes were a script
+    // sailed straight through it. Decode the base64 payload and verify the
+    // real leading bytes (bot/webpublish.js's sniffImageMime, the same check
+    // this module's own decodeDataUrl now applies) before ever accepting it.
+    const wpForSniff = require('./webpublish.js');
     for (const img of imgList) {
         if (!img || !img.dataUrl) continue;
         if (img.dataUrl.length > MAX_DATA_URL * 1.4) {
             return sendJson(res, 422, { error: `Imaginea „${img.name}” depășește 2,5 MB.` });
         }
-        const mimeMatch = /^data:([^;]+);/.exec(img.dataUrl);
-        if (!mimeMatch || !ALLOWED_MIME.test(mimeMatch[1])) {
-            return sendJson(res, 422, { error: `Tipul imaginii „${img.name}” nu este acceptat (jpeg/png/webp).` });
+        const b64Match = /^data:[^;]+;base64,(.+)$/.exec(String(img.dataUrl).replace(/\s+/g, ''));
+        const decodedBuf = b64Match ? Buffer.from(b64Match[1], 'base64') : null;
+        const realMime = decodedBuf ? wpForSniff.sniffImageMime(decodedBuf) : null;
+        if (!realMime || !ALLOWED_MIME.test(realMime)) {
+            return sendJson(res, 422, { error: `Imaginea „${img.name}” nu pare a fi un fișier valid jpeg/png/webp.` });
         }
     }
 

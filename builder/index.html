@@ -26,14 +26,14 @@
 
 <!-- ===== HEADER ===== -->
 <header class="app-header" id="app-header">
-  <a href="#templates" class="logo" aria-label="Hidook Site Builder — Acasă">
+  <a href="#templates" class="logo" aria-label="Hidook Site Builder — Acasă" onclick="window.scrollTo({top:0,behavior:'smooth'})">
     <span class="logo-mark" aria-hidden="true">H</span>
     <span class="logo-word">Hidook<span class="logo-word-full"> Site Builder</span></span>
   </a>
   <nav class="header-nav" id="header-nav" aria-label="Navigare principală">
-    <a href="#templates" data-route="templates">Designuri</a>
+    <a href="#templates" data-route="templates" onclick="window.scrollTo({top:0,behavior:'smooth'})">Designuri</a>
     <a href="#cum-e" data-route="how">Cum funcționează</a>
-    <a href="#dashboard" data-route="dashboard" id="nav-dashboard" style="display:none">Proiectele mele</a>
+    <a href="#dashboard" data-route="dashboard" id="nav-dashboard" style="display:none">Site-urile mele</a>
   </nav>
   <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
   <div class="header-right">
@@ -396,10 +396,10 @@
   </section>
 
   <!-- ========== SCREEN: DASHBOARD ========== -->
-  <section id="screen-dashboard" class="screen" role="main" aria-label="Proiectele mele" style="display:none">
+  <section id="screen-dashboard" class="screen" role="main" aria-label="Site-urile mele" style="display:none">
     <div class="dashboard-container">
       <div class="dashboard-header">
-        <h2>Proiectele mele</h2>
+        <h2>Site-urile mele</h2>
         <a href="#templates" class="btn-primary btn-sm">
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
             <path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -755,6 +755,10 @@ body.editor-preview-cookie-isolated > .hb-cookie-banner{display:none!important}
    front door and had been carrying the defect it ships a fix for. */
 .hb-cookie-banner button{appearance:none;border:0;border-radius:8px;min-height:44px;min-width:44px;padding:.55rem 1.15rem;font:inherit;font-weight:600;letter-spacing:.01em;cursor:pointer;background:#f5f5f5;color:#111}
 .hb-cookie-actions .hb-cookie-link{display:inline-flex;align-items:center;min-height:44px}
+/* landing#2: reserve room below the footer legal links so the fixed banner
+   never sits over them while it is visible (scrolled to true bottom). */
+body:has(#hb-cookie-banner:not([hidden])) .landing-footer{padding-bottom:8rem;box-sizing:border-box}
+@media (max-width:520px){body:has(#hb-cookie-banner:not([hidden])) .landing-footer{padding-bottom:11rem}}
 </style>
 <script>
 (function(){var K='hb-cookie-consent';function readCookie(){try{var p=document.cookie.split(';');for(var i=0;i<p.length;i++){var s=p[i].trim();if(s.indexOf(K+'=')===0)return decodeURIComponent(s.slice(K.length+1))}}catch(e){}return''}function ok(){try{if(localStorage.getItem(K))return true}catch(e){}var c=readCookie();if(c){try{localStorage.setItem(K,c)}catch(e){}return true}return false}function persist(){try{localStorage.setItem(K,'accepted')}catch(e){}try{document.cookie=K+'=accepted; Path=/; Max-Age=31536000; SameSite=Lax'}catch(e){}}

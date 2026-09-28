@@ -68,7 +68,7 @@ const BUILDER_EN_LEAKS = [
 const BUILDER_RO_MUST = [
   '>Designuri</a>',
   '>Cum funcționează</a>',
-  '>Proiectele mele</a>',
+  '>Site-urile mele</a>',
   'Deconectare',
   'Alege un design',
   'Site nou',

@@ -564,6 +564,9 @@ for (const entry of registry.templates) {
             if (!fs.statSync(abs).isFile()) continue;
             const ext = path.extname(name).toLowerCase();
             if (!FONT_EXTS.has(ext)) continue;
+            // Skip a font file no @font-face rule actually references (dead
+            // weight in every export/ZIP) — see performance#3, AUDIT-2026-09-27.
+            if (!files.stylesCss.includes('fonts/' + name)) continue;
             fs.copyFileSync(abs, path.join(fontAssetOut, name));
             const absoluteUrl = '/app/generated/template-assets/' + id + '/fonts/' + name;
             files.stylesCss = files.stylesCss.split('fonts/' + name).join(absoluteUrl);
