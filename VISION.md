@@ -126,7 +126,7 @@ Done minim:
 Constructorul nu trebuie să fie o formă subțire. Defectele identificate de Opus devin backlog structural:
 
 - fără adăugare liberă de secțiuni. Reordonarea și ascunderea există (Wave 7), iar toate cele 5 șabloane au o bibliotecă fixă de secțiuni opționale (vezi actualizarea 2026-09-28 de mai jos). Un catalog general de blocuri („Adaugă o secțiune”, cu FAQ, hartă, program) rămâne în backlog;
-- undo/redo există (toolbar și Ctrl/Cmd+Z) și rezistă unui reload sau unei închideri accidentale de tab în aceeași sesiune de browser, salvat per site și per cont (PLAN-UX-2026-09-27 §5.3). Nu se păstrează după închiderea sesiunii de browser;
+- undo/redo există (toolbar și Ctrl/Cmd+Z) și rezistă unui reload, unei închideri accidentale de tab și unei închideri complete a browser-ului — stocat în IndexedDB (fallback localStorage dacă IndexedDB nu e disponibil), salvat per site și per cont, cu expirare la 7 zile și șters la deconectare/deconectare-de-pe-toate-dispozitivele/ștergere cont/ștergere site (T-2, PLAN-UX-2026-09-27 §5.3);
 - fără multi-page real;
 - fără typography controls;
 - edit mapping fragil prin regex;

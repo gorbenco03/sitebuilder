@@ -12,13 +12,25 @@
  * plain reload — a reload or an accidental tab close+reopen silently threw
  * away every undo step with no warning to the owner mid-edit.
  *
- * Fix: pushHistory()/undo()/redo() now also persist historyState into
- * sessionStorage (builder/history-store.js), keyed by the same per-draft
+ * Fix: pushHistory()/undo()/redo() now also persist historyState into a
+ * durable store (builder/history-store.js), keyed by the same per-draft
  * scope key drafts already use and stamped with the same ownerUserId
  * ownership contract as hb.draft.scopes.v1 (gap-cross-account-draft-leak-
  * depth / R-02). resetHistory() resumes that persisted stack instead of a
  * fresh baseline when the scope+account match and the top entry still
  * matches what was actually just loaded into draft.config.
+ *
+ * T-2 (PLAN-UX-2026-09-27 §5.3 remainder) revision: the backing store moved
+ * from sessionStorage (session-scoped only) to IndexedDB with a localStorage
+ * fallback, gained a 7-day TTL, and the whole API became Promise-based
+ * (resetHistory() itself is now `async`). Every assertion below that used to
+ * read `sessionStorage.getItem('hb.history.v1')` directly now reads the
+ * IndexedDB store instead (readHistoryDbDump()) — the BEHAVIOR this file
+ * proves (resume-after-reload, cross-account isolation, photo-inclusive
+ * resume) is unchanged; only the storage mechanics it inspects are. The
+ * NEW T-2-specific behavior (surviving a FULLY closed browser, cross-account
+ * isolation via a brand-new persistent context, and the 7-day TTL) has its
+ * own oracle: audit27-t-2-history-idb-persist.test.js.
  *
  * Two things this oracle proves, both against the REAL browser/server, no
  * reimplementation:
@@ -139,6 +151,30 @@ async function readField(page, fieldPath) {
   }, fieldPath);
 }
 
+/** T-2: history-store.js now persists to IndexedDB (localStorage only as a
+ * fallback when IndexedDB is unavailable, which it always is in a real
+ * Chromium page). Reads every record in the 'scopes' object store of the
+ * 'hb_history_db' database and returns it JSON-stringified, so existing
+ * regex-based assertions (written against the old sessionStorage dump) keep
+ * working unchanged against the new backend. */
+async function readHistoryDbDump(page) {
+  return page.evaluate(() => new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('hb_history_db', 1);
+      req.onsuccess = () => {
+        const db = req.result;
+        try {
+          const tx = db.transaction('scopes', 'readonly');
+          const getAllReq = tx.objectStore('scopes').getAll();
+          getAllReq.onsuccess = () => resolve(JSON.stringify(getAllReq.result || []));
+          getAllReq.onerror = () => resolve('[]');
+        } catch (_) { resolve('[]'); }
+      };
+      req.onerror = () => resolve('[]');
+    } catch (_) { resolve('[]'); }
+  }));
+}
+
 /** Real "Deconectare" via the editor topbar account menu — never a raw API call. */
 async function signOutFromEditor(page) {
   await page.locator('#btn-account-menu').click();
@@ -232,7 +268,13 @@ function extractFunction(source, name) {
   return source.slice(start.index, index);
 }
 
-function makeFakeSessionStorage() {
+/** T-2: history-store.js now falls back to localStorage (not sessionStorage)
+ * when IndexedDB is unavailable — which it is in this bare vm sandbox
+ * (no `indexedDB` global is provided below), so this fake backs that
+ * fallback path. Named generically since the same shape now needs to be
+ * handed in as both `localStorage` and (harmlessly, nothing in the
+ * extracted functions still touches it) `sessionStorage`. */
+function makeFakeWebStorage() {
   const store = {};
   return {
     getItem(k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
@@ -303,7 +345,7 @@ function buildHistorySandbox() {
     '};',
   ].join('\n');
 
-  const sandbox = { sessionStorage: makeFakeSessionStorage(), console };
+  const sandbox = { sessionStorage: makeFakeWebStorage(), localStorage: makeFakeWebStorage(), console };
   vm.createContext(sandbox);
   vm.runInContext(scaffold, sandbox);
   return sandbox.__api;
@@ -432,7 +474,7 @@ test('logout clears this tab\'s persisted history, and a different account in an
       const accountAId = await pageA.evaluate(() => (typeof currentUser !== 'undefined' && currentUser && currentUser.id) || null);
       assert.ok(accountAId, 'account A must actually be signed in for this repro to mean anything');
 
-      const historyDumpAfterA = await pageA.evaluate(() => sessionStorage.getItem('hb.history.v1') || '');
+      const historyDumpAfterA = await readHistoryDbDump(pageA);
       assert.match(
         historyDumpAfterA,
         new RegExp(escapeForRegExp(secretMarker)),
@@ -451,11 +493,11 @@ test('logout clears this tab\'s persisted history, and a different account in an
       // ---- Storage-level check, in A's OWN tab, right after the real
       // logout, no reload in between: doLogout() -> clearOwnedLocalDraftState()
       // -> historyStoreClearOwned() must have already scrubbed A's record. ----
-      const historyDumpAfterLogout = await pageA.evaluate(() => sessionStorage.getItem('hb.history.v1') || '');
+      const historyDumpAfterLogout = await readHistoryDbDump(pageA);
       assert.doesNotMatch(
         historyDumpAfterLogout,
         new RegExp(escapeForRegExp(secretMarker)),
-        'logout must clear account A\'s persisted undo history from this tab\'s sessionStorage'
+        'logout must clear account A\'s persisted undo history from IndexedDB'
       );
       // ...and the toolbar itself must reflect it — nothing left to undo,
       // in this same tab, immediately after logout.
@@ -482,7 +524,7 @@ test('logout clears this tab\'s persisted history, and a different account in an
       const undoBtnB = pageB.locator('#btn-undo');
       assert.equal(await undoBtnB.isDisabled(), true, 'account B must start with nothing to undo — no inherited history from A');
 
-      const historyDumpForB = await pageB.evaluate(() => sessionStorage.getItem('hb.history.v1') || '');
+      const historyDumpForB = await readHistoryDbDump(pageB);
       assert.doesNotMatch(
         historyDumpForB,
         new RegExp(escapeForRegExp(secretMarker)),
@@ -493,18 +535,46 @@ test('logout clears this tab\'s persisted history, and a different account in an
       // themselves (same pattern as audit27-r-02's "gate only" test): even if
       // a record for A's old scope key somehow survived, historyStoreLoad()
       // must refuse to hand it to a DIFFERENT signed-in account. ----
-      const gateResult = await pageB.evaluate((accId) => {
+      const gateResult = await pageB.evaluate(async (accId) => {
         const scopeKey = 'local:seeded-for-gate-check';
-        const seeded = { ownerUserId: 'seeded-foreign-account-id', index: 0, entries: [{ json: '{"x":1}', size: 8 }], updatedAt: Date.now() };
-        const all = JSON.parse(sessionStorage.getItem('hb.history.v1') || '{}');
-        all[scopeKey] = seeded;
-        sessionStorage.setItem('hb.history.v1', JSON.stringify(all));
-        const loadedForRealAccount = historyStoreLoad(scopeKey, accId);
-        const loadedForForeignOwner = historyStoreLoad(scopeKey, 'seeded-foreign-account-id');
+        const seeded = {
+          scopeKey,
+          ownerUserId: 'seeded-foreign-account-id',
+          index: 0,
+          entries: [{ json: '{"x":1}', size: 8 }],
+          updatedAt: Date.now(),
+        };
+        function idbPut(rec) {
+          return new Promise((resolve) => {
+            const req = indexedDB.open('hb_history_db', 1);
+            req.onsuccess = () => {
+              const db = req.result;
+              const tx = db.transaction('scopes', 'readwrite');
+              tx.objectStore('scopes').put(rec);
+              tx.oncomplete = resolve;
+              tx.onerror = resolve;
+            };
+            req.onerror = resolve;
+          });
+        }
+        function idbDelete(key) {
+          return new Promise((resolve) => {
+            const req = indexedDB.open('hb_history_db', 1);
+            req.onsuccess = () => {
+              const db = req.result;
+              const tx = db.transaction('scopes', 'readwrite');
+              tx.objectStore('scopes').delete(key);
+              tx.oncomplete = resolve;
+              tx.onerror = resolve;
+            };
+            req.onerror = resolve;
+          });
+        }
+        await idbPut(seeded);
+        const loadedForRealAccount = await historyStoreLoad(scopeKey, accId);
+        const loadedForForeignOwner = await historyStoreLoad(scopeKey, 'seeded-foreign-account-id');
         // Clean up the seeded probe record so it doesn't leak into other assertions.
-        const all2 = JSON.parse(sessionStorage.getItem('hb.history.v1') || '{}');
-        delete all2[scopeKey];
-        sessionStorage.setItem('hb.history.v1', JSON.stringify(all2));
+        await idbDelete(scopeKey);
         return { loadedForRealAccount, loadedForForeignOwner: !!loadedForForeignOwner };
       }, accountAId);
       assert.equal(gateResult.loadedForRealAccount, null, 'historyStoreLoad() must refuse a record stamped to a DIFFERENT account than the one asking');
@@ -568,13 +638,27 @@ test('a session that includes a real photo upload still resumes its history afte
       // in-memory top entry still carries the real image — proves this
       // oracle is actually exercising the reported failure mode, not a
       // no-op.
-      const persistedTopStripped = await page.evaluate(() => {
-        const all = JSON.parse(sessionStorage.getItem('hb.history.v1') || '{}');
+      const persistedTopStripped = await page.evaluate(() => new Promise((resolve) => {
         const scopeKey = typeof currentScopeKey === 'function' ? currentScopeKey() : null;
-        const rec = scopeKey ? all[scopeKey] : null;
-        const top = rec && rec.entries && rec.entries[rec.index];
-        return !!(top && top.json.indexOf('__HB_HISTORY_IMAGE_OMITTED__') >= 0);
-      });
+        if (!scopeKey) { resolve(false); return; }
+        try {
+          const req = indexedDB.open('hb_history_db', 1);
+          req.onsuccess = () => {
+            const db = req.result;
+            try {
+              const tx = db.transaction('scopes', 'readonly');
+              const getReq = tx.objectStore('scopes').get(scopeKey);
+              getReq.onsuccess = () => {
+                const rec = getReq.result;
+                const top = rec && rec.entries && rec.entries[rec.index];
+                resolve(!!(top && top.json.indexOf('__HB_HISTORY_IMAGE_OMITTED__') >= 0));
+              };
+              getReq.onerror = () => resolve(false);
+            } catch (_) { resolve(false); }
+          };
+          req.onerror = () => resolve(false);
+        } catch (_) { resolve(false); }
+      }));
       assert.equal(persistedTopStripped, true, 'sanity check: the persisted top entry must have its large image stripped before the reload (history-store.js contract)');
 
       await page.screenshot({ path: path.join(shotDir, '01-photo-and-text-edits-before-reload.png') });
@@ -630,7 +714,7 @@ test('a session that includes a real photo upload still resumes its history afte
   });
 });
 
-test('unit: resetHistory() resumes a persisted stack whose top entry had a large image stripped (symmetric normalization)', () => {
+test('unit: resetHistory() resumes a persisted stack whose top entry had a large image stripped (symmetric normalization)', async () => {
   const api = buildHistorySandbox();
   const scopeKey = 'local:unit-test-photo-scope';
   const accountId = 'acct-unit-test';
@@ -644,26 +728,29 @@ test('unit: resetHistory() resumes a persisted stack whose top entry had a large
   // Simulate what a real editing session would have already persisted: a
   // 2-entry stack, written through the REAL historyStoreSave() — which
   // strips the large image exactly like it would before any real reload.
+  // T-2: this vm sandbox has no `indexedDB` global, so history-store.js's
+  // own fallback logic exercises the localStorage path here — same code,
+  // same contract, just the backend a bare sandbox actually reaches.
   const stack = [
     { json: JSON.stringify(configEarlier), size: JSON.stringify(configEarlier).length },
     { json: JSON.stringify(configWithImage), size: JSON.stringify(configWithImage).length },
   ];
-  const saved = api.historyStoreSave(scopeKey, accountId, stack, 1);
-  assert.equal(saved, true, 'test setup: historyStoreSave() must succeed against the fake sessionStorage');
+  const saved = await api.historyStoreSave(scopeKey, accountId, stack, 1);
+  assert.equal(saved, true, 'test setup: historyStoreSave() must succeed against the fake localStorage fallback');
 
   // The freshly "reloaded" draft.config, exactly as a real reload would hand
   // it to resetHistory() — the REAL, unstripped image, never touched by
   // history-store.js at all (it comes from the site's own saved config).
   api.setDraftConfig(configWithImage);
 
-  api.resetHistory();
+  await api.resetHistory();
 
   const hs = api.getHistoryState();
   assert.equal(hs.stack.length, 2, 'the persisted 2-entry stack must be RESUMED, not collapsed to a fresh 1-entry baseline, even though its top entry had the image stripped');
   assert.equal(hs.index, 1, 'the pointer must resume at the same index the session was persisted at');
 });
 
-test('unit: resetHistory() still falls back to a fresh baseline when the persisted top entry genuinely does not match the loaded draft', () => {
+test('unit: resetHistory() still falls back to a fresh baseline when the persisted top entry genuinely does not match the loaded draft', async () => {
   const api = buildHistorySandbox();
   const scopeKey = 'local:unit-test-stale-scope';
   const accountId = 'acct-unit-test';
@@ -678,10 +765,10 @@ test('unit: resetHistory() still falls back to a fresh baseline when the persist
   const liveConfig = { business: { name: 'Nume Cu Totul Altul' }, logo: bigImage };
 
   const stack = [{ json: JSON.stringify(persistedConfig), size: JSON.stringify(persistedConfig).length }];
-  api.historyStoreSave(scopeKey, accountId, stack, 0);
+  await api.historyStoreSave(scopeKey, accountId, stack, 0);
   api.setDraftConfig(liveConfig);
 
-  api.resetHistory();
+  await api.resetHistory();
 
   const hs = api.getHistoryState();
   assert.equal(hs.stack.length, 1, 'a genuinely mismatched persisted stack must fall back to a fresh baseline, not resume');

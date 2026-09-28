@@ -1875,10 +1875,11 @@ function updateHistoryButtons() {
 }
 
 /**
- * PLAN-UX-2026-09-27 §5.3: persist the CURRENT in-memory historyState to
- * sessionStorage (builder/history-store.js, loaded before this file — see
- * index.html) so a reload or an accidental tab close+reopen within the same
- * browser session doesn't wipe Ctrl+Z/Undo back to a fresh baseline. Scoped
+ * PLAN-UX-2026-09-27 §5.3 (T-2): persist the CURRENT in-memory historyState
+ * to IndexedDB, falling back to localStorage when IndexedDB is unavailable
+ * (builder/history-store.js, loaded before this file — see index.html), so
+ * a reload, an accidental tab close+reopen, or a FULLY closed and reopened
+ * browser doesn't wipe Ctrl+Z/Undo back to a fresh baseline. Scoped
  * to the same 'site:<id>'/'local:<draftId>' key drafts already use
  * (currentScopeKey()) and stamped to the signed-in account
  * (currentAccountKey()) with the exact same ownership contract as
@@ -1886,9 +1887,10 @@ function updateHistoryButtons() {
  * historyStoreSave()'s doc comment). Guarded with `typeof` like every other
  * optional cross-file helper in this file (mergeDraftConfigs, TAB_ID…) so
  * isolated-extraction test sandboxes that never load history-store.js keep
- * working unchanged. Best-effort — a failed persist never affects the
- * in-memory stack, which stays the source of truth for this tab's own live
- * session either way.
+ * working unchanged. Fire-and-forget — historyStoreSave() returns a Promise
+ * that never rejects, and a failed/slow persist never affects the in-memory
+ * stack, which stays the source of truth for this tab's own live session
+ * either way.
  */
 function persistHistorySnapshot() {
   if (typeof historyStoreSave !== 'function') return;
@@ -1896,7 +1898,8 @@ function persistHistorySnapshot() {
   try {
     const scopeKey = currentScopeKey();
     if (!scopeKey) return;
-    historyStoreSave(scopeKey, currentAccountKey(), historyState.stack, historyState.index);
+    const result = historyStoreSave(scopeKey, currentAccountKey(), historyState.stack, historyState.index);
+    if (result && typeof result.catch === 'function') result.catch(() => { /* best-effort */ });
   } catch (_) { /* best-effort — in-memory history is unaffected either way */ }
 }
 
@@ -1950,8 +1953,12 @@ function pushHistory(coalesceKey) {
 
 /** Start a brand-new undo/redo session — called whenever a fresh draft.config
  * is loaded (new design chosen, dashboard "Editează", resumed local draft,
- * paid-site bind). The freshly loaded state becomes the undoable baseline. */
-function resetHistory() {
+ * paid-site bind). The freshly loaded state becomes the undoable baseline.
+ * Async since T-2 (historyStoreLoad() is now IndexedDB-backed) — every call
+ * site is already inside an async function that awaits real network calls
+ * right after this one, so awaiting the (usually sub-millisecond) storage
+ * read here adds no perceptible delay. */
+async function resetHistory() {
   // Normalize BEFORE snapshotting the baseline: saveDraft() always runs
   // deriveWaHref() first, which can ADD a contact.waHref field the very
   // first time it runs on a freshly chosen preset. If the baseline snapshot
@@ -1969,21 +1976,23 @@ function resetHistory() {
   historyState.coalesceAt = 0;
   pendingHistoryCoalesceKey = null;
 
-  // PLAN-UX-2026-09-27 §5.3: before falling back to a fresh one-entry
+  // PLAN-UX-2026-09-27 §5.3 (T-2): before falling back to a fresh one-entry
   // baseline, try to resume a persisted stack for this exact scope+account
-  // (builder/history-store.js) — this is what makes Ctrl+Z survive a reload/
-  // tab-close+reopen within the same browser session. Only resumed when the
-  // persisted stack's CURRENT entry still matches what was actually just
-  // loaded into draft.config — a stale/foreign persisted stack (storage
-  // churn, a different local draft that once shared this scope key) must
-  // never let Undo silently jump the canvas to unrelated content. Guarded
-  // with `typeof` like persistHistorySnapshot() above.
+  // (builder/history-store.js, now IndexedDB-backed) — this is what makes
+  // Ctrl+Z survive a reload, a tab-close+reopen, or a FULLY closed and
+  // reopened browser. Only resumed when the persisted stack's CURRENT entry
+  // still matches what was actually just loaded into draft.config — a
+  // stale/foreign persisted stack (storage churn, a different local draft
+  // that once shared this scope key, or an entry past the 7-day TTL — see
+  // historyStoreLoad()) must never let Undo silently jump the canvas to
+  // unrelated content. Guarded with `typeof` like persistHistorySnapshot()
+  // above.
   let restoredFromStorage = false;
   if (draft.config && typeof historyStoreLoad === 'function' &&
       typeof currentScopeKey === 'function' && typeof currentAccountKey === 'function') {
     try {
       const scopeKey = currentScopeKey();
-      const persisted = scopeKey ? historyStoreLoad(scopeKey, currentAccountKey()) : null;
+      const persisted = scopeKey ? await historyStoreLoad(scopeKey, currentAccountKey()) : null;
       if (persisted && Array.isArray(persisted.entries) && persisted.entries.length) {
         // Reviewer fix (post-rejection, S-3): the persisted top entry has
         // already had any large embedded image stripped by
@@ -7704,7 +7713,7 @@ function updateUserUI(user) {
  * account) are left untouched — they are not this account's data to clear,
  * and remain the existing "adopt on next sign-in" recovery path.
  */
-function clearOwnedLocalDraftState() {
+async function clearOwnedLocalDraftState() {
   const accountKey = typeof currentAccountKey === 'function' ? currentAccountKey() : null;
   if (!accountKey) return; // this tab never bound anything to a signed-in account
   try {
@@ -7727,14 +7736,19 @@ function clearOwnedLocalDraftState() {
     const replaced = lsGet(REPLACED_DRAFT_KEY);
     if (replaced && replaced.ownerUserId === accountKey) localStorage.removeItem(REPLACED_DRAFT_KEY);
   } catch (_) { /* ignore */ }
-  // PLAN-UX-2026-09-27 §5.3: the persisted undo/redo stack (builder/
-  // history-store.js) carries the same account leak risk as the draft
-  // scopes above — clear it the same way, same guard convention. Also wipe
+  // PLAN-UX-2026-09-27 §5.3 (T-2): the persisted undo/redo stack (builder/
+  // history-store.js, IndexedDB-backed) carries the same account leak risk
+  // as the draft scopes above — clear it the same way, same guard
+  // convention. Awaited (this function is now async) so a caller that
+  // itself awaits clearOwnedLocalDraftState() — doLogout()/
+  // confirmLogoutEverywhere()/confirmDeleteAccount() — is guaranteed the
+  // IndexedDB/localStorage record is actually gone before it moves on
+  // (e.g. redirects to #templates), not just fired-and-forgotten. Also wipe
   // THIS tab's in-memory historyState.stack right here (not just draft.config
   // below) — otherwise a same-tab reuse before the next resetHistory() call
   // could still Ctrl+Z/Undo straight into the signed-out account's snapshots
   // even though draft.config itself was already nulled out.
-  if (typeof historyStoreClearOwned === 'function') { try { historyStoreClearOwned(accountKey); } catch (_) { /* ignore */ } }
+  if (typeof historyStoreClearOwned === 'function') { try { await historyStoreClearOwned(accountKey); } catch (_) { /* ignore */ } }
   if (typeof historyState === 'object' && historyState) {
     historyState.stack = [];
     historyState.index = -1;
@@ -7773,7 +7787,7 @@ function clearOwnedLocalDraftState() {
  * never be able to resume, autosave, or publish this account's business data.
  */
 async function doLogout() {
-  clearOwnedLocalDraftState();
+  await clearOwnedLocalDraftState();
   try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   updateUserUI(null);
   if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
@@ -7801,7 +7815,7 @@ function openLogoutEverywhereModal(opener) {
 async function confirmLogoutEverywhere() {
   const confirmBtn = $('btn-confirm-logout-everywhere');
   if (confirmBtn) setBtnLoading(confirmBtn, true, 'Se deconectează…');
-  clearOwnedLocalDraftState();
+  await clearOwnedLocalDraftState();
   try { await fetch('/api/auth/logout-everywhere', { method: 'POST', credentials: 'include' }); } catch (_) {}
   closeModal('modal-logout-everywhere');
   updateUserUI(null);
@@ -8861,7 +8875,7 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
     // nothing local to resume yet (see notePublishedSnapshot()/defect #1).
     publishedConfigSnapshot = deepClone(config);
     if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
-    if (typeof resetHistory === 'function') resetHistory();
+    if (typeof resetHistory === 'function') await resetHistory();
 
     let tplData = null;
     try {
@@ -8915,7 +8929,7 @@ async function resumeLocalDraft() {
   isFreshDemoDraft = !!saved.isFreshDemoDraft;
   demoBannerDismissed = !!saved.demoBannerDismissed;
   publishedConfigSnapshot = saved.publishedConfig || null;
-  if (typeof resetHistory === 'function') resetHistory();
+  if (typeof resetHistory === 'function') await resetHistory();
   // Restore paid-site bind from draft (fresh #edit without loadSiteForEdit)
   if (saved.siteId) {
     currentSiteId = saved.siteId;
@@ -9279,7 +9293,7 @@ async function startWithTemplate(templateId, onboardingIdentity) {
   // M12: fresh baseline for whichever config this design switch landed on.
   if (typeof syncDraftBaseline === 'function') syncDraftBaseline();
   demoBannerDismissed = false;
-  if (typeof resetHistory === 'function') resetHistory();
+  if (typeof resetHistory === 'function') await resetHistory();
   // Persist cleared bind so localStorage cannot re-attach a foreign paid siteId.
   saveDraft();
   // Wave 9: this saveDraft() call is bookkeeping (clearing the paid-site
@@ -9997,7 +10011,7 @@ function expectedDeleteSiteName() {
  * Only clears local state that actually belongs to THIS site — an unrelated
  * in-progress draft (a different template/site) is left untouched.
  */
-function retireLocalDraftForDeletedSite(siteId) {
+async function retireLocalDraftForDeletedSite(siteId) {
   if (!siteId) return;
   // MULTI-03: the deleted site's own scope slot, targeted directly by id —
   // the CURRENT tab's loadDraft() may resolve to a completely different
@@ -10019,6 +10033,13 @@ function retireLocalDraftForDeletedSite(siteId) {
       localStorage.removeItem(REPLACED_DRAFT_KEY);
     }
   } catch (_) { /* ignore */ }
+  // T-2 (PLAN-UX-2026-09-27 §5.3 remainder): a deleted site's persisted
+  // undo/redo stack (builder/history-store.js, keyed by the same
+  // 'site:<id>' scope) must not linger either — nothing left to Ctrl+Z back
+  // into once the site itself is gone.
+  if (typeof historyStoreClearScope === 'function') {
+    try { await historyStoreClearScope('site:' + siteId); } catch (_) { /* ignore */ }
+  }
   if (currentSiteId === siteId) {
     currentSiteId = null;
     currentSitePaid = false;
@@ -10028,6 +10049,13 @@ function retireLocalDraftForDeletedSite(siteId) {
     draft.templateId = null;
     draft.config = null;
     if (typeof publishedConfigSnapshot !== 'undefined') publishedConfigSnapshot = null;
+    if (typeof historyState === 'object' && historyState) {
+      historyState.stack = [];
+      historyState.index = -1;
+      historyState.coalesceKey = null;
+      historyState.coalesceAt = 0;
+      if (typeof updateHistoryButtons === 'function') updateHistoryButtons();
+    }
   }
 }
 
@@ -10042,7 +10070,7 @@ async function confirmDeleteSite() {
     const input = $('input-delete-confirm');
     const confirmName = input ? input.value : '';
     await apiDelete('/api/sites/' + encodeURIComponent(site.id), { confirmName });
-    retireLocalDraftForDeletedSite(site.id);
+    await retireLocalDraftForDeletedSite(site.id);
     closeModal('modal-delete-site');
     deleteSiteModalSite = null;
     showToast('Site-ul „' + (site.projectName || site.slug || '') + '” a fost șters definitiv.');
@@ -10169,7 +10197,7 @@ async function confirmDeleteAccount() {
     const input = $('input-delete-account-confirm');
     const confirmEmail = input ? input.value : '';
     await apiPost('/api/me/delete-account', { confirmEmail });
-    clearOwnedLocalDraftState();
+    await clearOwnedLocalDraftState();
     closeModal('modal-delete-account');
     updateUserUI(null);
     if (typeof broadcastAuthSignedOut === 'function') broadcastAuthSignedOut();
@@ -10216,7 +10244,7 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
     // A saved/published site is the owner's own content, never demo filler.
     isFreshDemoDraft = false;
     demoBannerDismissed = false;
-    if (typeof resetHistory === 'function') resetHistory();
+    if (typeof resetHistory === 'function') await resetHistory();
     saveDraft();
 
     let tplData = null;
