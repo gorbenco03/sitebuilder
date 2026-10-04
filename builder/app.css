@@ -478,6 +478,9 @@ input, textarea, select {
    at a time, lowest priority first, only when the bar has no room for them. */
 .btn-topbar-label { display: inline; }
 .btn-topbar.tb-icon .btn-topbar-label { display: none; }
+/* Last squeeze before a control moves into "Mai mult". */
+.editor-topbar.tb-tight .editor-topbar-right { gap: 0.25rem; }
+.editor-topbar.tb-tight .btn-topbar { padding-left: 0.45rem; padding-right: 0.45rem; }
 /* Moved into the "Mai mult" menu by layoutEditorTopbar(). */
 .btn-topbar.tb-overflow { display: none !important; }
 /* Short legend: swatch only, full sentence stays in its title. */
@@ -1889,7 +1892,7 @@ body.details-drawer-open .demo-content-banner {
 }
 
 /* V-3: live readability indicator (builder chrome only) */
-.color-contrast { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.6rem 0.7rem; border-radius: var(--radius-md, 8px); border: 1px solid var(--border); font-size: 0.8rem; }
+.color-contrast { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.6rem 0.7rem; border-radius: var(--radius-md); border: 1px solid var(--border); font-size: var(--fs-xs); }
 .color-contrast[hidden] { display: none; }
 .color-contrast.is-ok { background: var(--success-bg); border-color: var(--success); }
 .color-contrast.is-bad { background: var(--warning-bg); border-color: var(--warning); }

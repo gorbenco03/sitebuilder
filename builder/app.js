@@ -4970,7 +4970,7 @@ function layoutEditorTopbar() {
   if (!bar || !rail || bar.getClientRects().length === 0) return;
   const controls = TOPBAR_COLLAPSE_ORDER.map((id) => $(id)).filter(Boolean);
   const reset = () => {
-    bar.classList.remove('tb-legend-min');
+    bar.classList.remove('tb-legend-min', 'tb-tight');
     rail.classList.remove('tb-scrolls');
     controls.forEach((el) => el.classList.remove('tb-icon', 'tb-overflow'));
   };
@@ -4988,6 +4988,8 @@ function layoutEditorTopbar() {
   const steps = [() => bar.classList.add('tb-legend-min')];
   const pending = controls.filter((el) => !el.classList.contains('tb-overflow'));
   pending.filter((el) => el.id !== 'btn-open-drawer').forEach((el) => steps.push(() => el.classList.add('tb-icon')));
+  // Tighter padding before any control leaves: Detalii must stay in the bar on a 768px tablet.
+  steps.push(() => bar.classList.add('tb-tight'));
   pending.forEach((el) => steps.push(() => el.classList.add('tb-overflow')));
   for (let i = 0; i < steps.length && overflows(); i++) {
     steps[i]();
