@@ -756,6 +756,7 @@ function escHtml(str) {
 const STATE_ICONS = {
   tray: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 13l2.2-7.2A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.3L20 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13h4.2a2 2 0 0 1 1.9 1.4l.1.4a2 2 0 0 0 1.9 1.4h.6a2 2 0 0 0 1.9-1.4l.1-.4A2 2 0 0 1 16.8 13H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   alert: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5"/><path d="M12 8v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="15.8" r="1" fill="currentColor"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5"/><path d="M8.3 12.4l2.5 2.5 4.9-5.3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   lock: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9" rx="1.8" stroke="currentColor" stroke-width="1.5"/><path d="M8 10.5V7.8a4 4 0 0 1 8 0v2.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
   spinner: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5" opacity=".25"/><path d="M20.5 12a8.5 8.5 0 0 0-8.5-8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
 };
@@ -4401,6 +4402,7 @@ function openColorPopover() {
   popover.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
   popover.style.left = 'auto';
 
+  updateColorContrastIndicator();
   show(popover);
   colorPopoverOpen = true;
   btn.setAttribute('aria-expanded', 'true');
@@ -4423,6 +4425,7 @@ function applyThemeColor(hex) {
   // A dragged color-picker gesture fires many times a second — coalesce into one undo step.
   pendingHistoryCoalesceKey = 'color:primary';
   saveDraft();
+  updateColorContrastIndicator();
   // Re-render needed for color changes
   fullRerender();
 }
@@ -4443,6 +4446,7 @@ function applyThemeBackground(hex) {
   pendingHistoryCoalesceKey = 'color:bg';
   warnIfBackgroundFlipsInk(hex);
   saveDraft();
+  updateColorContrastIndicator();
   fullRerender();
 }
 
@@ -4464,6 +4468,108 @@ function warnIfBackgroundFlipsInk(hex) {
   } else if (!needsWhiteInk) {
     bgNeedsWhiteInkWarned = false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// V-3 (audit 2026-09-27): live readability indicator in the color popover.
+// Same luminance math + near-black/near-white anchors as each template's own
+// pre-paint script (relLuminance/contrastRatio above); never blocks a choice.
+// ---------------------------------------------------------------------------
+
+const CONTRAST_AA = 4.5;
+// Template body-ink defaults (the pre-paint script swaps them to black/white
+// when they fail against the chosen page background).
+const TEMPLATE_DEFAULT_INK = { 'product-menu': '#1a1410', 'local-service': '#0f1720', 'portfolio': '#2a3340' };
+
+function fmtRatio(r) {
+  return (Math.round(r * 10) / 10).toFixed(1).replace('.', ',') + ':1';
+}
+
+/** Measured contrast of what the published site will actually show for this
+ * accent + page background, mirroring the template pre-paint scripts. */
+function measureThemeContrast(accentHex, bgHex, inkHex) {
+  const la = relLuminance(accentHex);
+  const lb = relLuminance(bgHex);
+  if (la == null || lb == null) return null;
+  // Body text: template ink, auto-swapped to black/white when it fails on the page background.
+  const li = relLuminance(inkHex);
+  let text = contrastRatio(li, lb);
+  if (text < CONTRAST_AA) text = Math.max(contrastRatio(0, lb), contrastRatio(1, lb));
+  // Button text: best of near-black/near-white on the accent; the template then nudges the fill to >=4.55.
+  const rSnow = contrastRatio(la, BG_INK_SNOW_L), rVoid = contrastRatio(la, BG_INK_VOID_L);
+  let button = Math.max(rSnow, rVoid);
+  if (button < 4.55) {
+    const useSnow = rSnow > rVoid;
+    const rgb = [1, 3, 5].map((i) => parseInt(accentHex.slice(i, i + 2), 16));
+    const target = useSnow ? 0 : 255;
+    for (let t = 0.02; t <= 0.7 && button < 4.55; t += 0.02) {
+      const hex = '#' + rgb.map((c) => Math.max(0, Math.min(255, Math.round(c + (target - c) * t))).toString(16).padStart(2, '0')).join('');
+      const r2 = contrastRatio(relLuminance(hex), useSnow ? BG_INK_SNOW_L : BG_INK_VOID_L);
+      if (r2 > button) button = r2;
+    }
+  }
+  // Accent used as colored text / outlines on the page background: no auto-correction exists for this one.
+  const accent = contrastRatio(la, lb);
+  return { text, button, accent };
+}
+
+/** Nearest lightness of the accent (same hue/saturation) that reaches AA on bgHex, or null. */
+function readableAccentVariant(accentHex, bgHex) {
+  const lb = relLuminance(bgHex);
+  if (lb == null || !/^#[0-9a-fA-F]{6}$/.test(accentHex)) return null;
+  const hsl = hexToHsl(accentHex);
+  for (let d = 1; d <= 100; d++) {
+    for (const l of [hsl.l - d, hsl.l + d]) {
+      if (l < 0 || l > 100) continue;
+      const hex = hslToHex(hsl.h, hsl.s, l);
+      if (contrastRatio(relLuminance(hex), lb) >= 4.55) return hex.toUpperCase();
+    }
+  }
+  return null;
+}
+
+function updateColorContrastIndicator() {
+  const inner = document.querySelector('#color-popover .color-popover-inner');
+  if (!inner || !draft.config) return;
+  let box = $('color-contrast');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'color-contrast';
+    box.className = 'color-contrast';
+    box.setAttribute('role', 'status');
+    box.setAttribute('aria-live', 'polite');
+    box.addEventListener('click', (e) => {
+      const b = e.target.closest('#btn-color-readable');
+      if (!b) return;
+      const fix = b.dataset.hex;
+      if (!/^#[0-9a-fA-F]{6}$/.test(fix)) return;
+      const sw = $('color-custom-swatch'), ti = $('color-custom-text');
+      if (sw) sw.value = fix.toLowerCase();
+      if (ti) ti.value = fix;
+      $('color-presets') && $('color-presets').querySelectorAll('.color-preset-dot').forEach((d) => d.classList.remove('active'));
+      applyThemeColor(fix);
+    });
+    inner.appendChild(box);
+  }
+  const accent = (getPath(draft.config, 'theme.primary') || '').trim();
+  const bg = (getPath(draft.config, 'theme.cream') || '').trim();
+  const ink = TEMPLATE_DEFAULT_INK[draft.templateId] || '#1a1410';
+  const m = measureThemeContrast(accent, /^#[0-9a-fA-F]{6}$/.test(bg) ? bg : '#F3EFE8', ink);
+  if (!m) { box.hidden = true; return; }
+  box.hidden = false;
+  const bad = m.accent < CONTRAST_AA || m.text < CONTRAST_AA || m.button < CONTRAST_AA;
+  const rows = [
+    ['Text pe fundal', m.text],
+    ['Text pe butoane', m.button],
+    ['Accent pe fundal', m.accent],
+  ].map(([label, r]) => '<li class="' + (r < CONTRAST_AA ? 'is-bad' : 'is-ok') + '"><span>' + label + '</span><b>' + fmtRatio(r) + '</b></li>').join('');
+  const fix = bad ? readableAccentVariant(accent, bg) : null;
+  box.className = 'color-contrast ' + (bad ? 'is-bad' : 'is-ok');
+  box.innerHTML = '<div class="color-contrast-head"><span class="color-contrast-icon">' + (bad ? STATE_ICONS.alert : STATE_ICONS.check) + '</span>'
+    + '<span class="color-contrast-label">' + (bad ? 'Text greu de citit' : 'Text ușor de citit') + '</span></div>'
+    + '<ul class="color-contrast-rows">' + rows + '</ul>'
+    + (bad ? '<p class="color-contrast-hint">Poți păstra alegerea. Culoarea accent pe fundal sub 4,5:1 este greu de citit.</p>' : '')
+    + (fix ? '<button type="button" id="btn-color-readable" class="btn-ghost btn-sm color-contrast-fix" data-hex="' + fix + '">Folosește o variantă lizibilă</button>' : '');
 }
 
 // ---------------------------------------------------------------------------

@@ -1832,6 +1832,22 @@ body.details-drawer-open .demo-content-banner {
   margin: 0.15rem 0;
 }
 
+/* V-3: live readability indicator (builder chrome only) */
+.color-contrast { display: flex; flex-direction: column; gap: 0.45rem; padding: 0.6rem 0.7rem; border-radius: var(--radius-md, 8px); border: 1px solid var(--border); font-size: 0.8rem; }
+.color-contrast[hidden] { display: none; }
+.color-contrast.is-ok { background: var(--success-bg); border-color: var(--success); }
+.color-contrast.is-bad { background: var(--warning-bg); border-color: var(--warning); }
+.color-contrast-head { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; color: var(--text); }
+.color-contrast-icon { display: inline-flex; width: 18px; height: 18px; flex: none; }
+.color-contrast-icon svg { width: 18px; height: 18px; }
+.color-contrast.is-ok .color-contrast-icon { color: var(--success); }
+.color-contrast.is-bad .color-contrast-icon { color: var(--warning); }
+.color-contrast-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.15rem; color: var(--text); }
+.color-contrast-rows li { display: flex; justify-content: space-between; gap: 0.5rem; }
+.color-contrast-rows li.is-bad b { color: var(--warning); }
+.color-contrast-hint { margin: 0; color: var(--text-muted); }
+.color-contrast-fix { align-self: flex-start; min-height: 36px; }
+
 /* ============================================================
    DETAILS DRAWER
    ============================================================ */
