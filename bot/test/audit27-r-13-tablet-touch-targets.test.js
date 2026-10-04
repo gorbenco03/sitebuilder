@@ -110,7 +110,19 @@ test('every topbar control reaches 44x44px on a real touch tablet at 768x1024', 
     const undersized = [];
     for (const selector of TOPBAR_TOUCH_TARGETS) {
       const box = await page.locator(selector).boundingBox();
-      assert.ok(box, `${selector} must be visible on the tablet topbar`);
+      if (!box) {
+        // V-1: a tool the bar has no room for lives in "Mai mult" instead
+        // of a clipped rail. It must still be reachable, at the same floor.
+        const id = selector.slice(1);
+        const item = await page.evaluate((target) => {
+          const more = document.getElementById('btn-topbar-more');
+          const entry = document.querySelector('#topbar-more-menu [data-target="' + target + '"]');
+          return { moreBox: more ? more.getBoundingClientRect().toJSON() : null, hasEntry: !!entry };
+        }, id);
+        assert.ok(item.hasEntry && item.moreBox && item.moreBox.width > 0, `${selector} must be visible on the tablet topbar or listed under "Mai mult"`);
+        if (item.moreBox.width < 44 || item.moreBox.height < 44) undersized.push(`#btn-topbar-more ${Math.round(item.moreBox.width)}x${Math.round(item.moreBox.height)}`);
+        continue;
+      }
       if (box.width < 44 || box.height < 44) {
         undersized.push(`${selector} ${Math.round(box.width)}x${Math.round(box.height)}`);
       }

@@ -4697,15 +4697,26 @@ function closeMobileEditSheet(commit) {
  * tablet/mouse sessions never see this: the buttons stay in the rail,
  * exactly as before. */
 let mobileMoreMenuBuilt = false;
+const topbarMoreItemEls = {};
 let mobileMoreMenuOpen = false;
 
+// Toolbar order. Everything here can end up in the menu: always on a phone
+// (the first five, see MOBILE_FORCED_OVERFLOW_IDS) and, at any width, when
+// layoutEditorTopbar() finds the bar too narrow for it.
 const MOBILE_MORE_MENU_ITEMS = [
   { id: 'btn-add-instagram', label: 'Adaugă Instagram' },
   { id: 'btn-open-add-section', label: 'Adaugă o secțiune' },
   { id: 'btn-color-picker', label: 'Culoare temă' },
+  { id: 'btn-open-gallery', label: 'Poze' },
+  { id: 'btn-open-drawer', label: 'Detalii' },
   { id: 'btn-download-html', label: 'Descarcă HTML' },
   { id: 'btn-download-zip', label: 'Descarcă ZIP' },
 ];
+const MOBILE_FORCED_OVERFLOW_IDS = ['btn-add-instagram', 'btn-open-add-section', 'btn-color-picker', 'btn-download-html', 'btn-download-zip'];
+// Lowest priority first: the order controls give up their label, then their
+// place in the bar. Publică, the undo/redo group and the device toggle are
+// never in this list.
+const TOPBAR_COLLAPSE_ORDER = ['btn-download-zip', 'btn-download-html', 'btn-add-instagram', 'btn-open-add-section', 'btn-color-picker', 'btn-open-gallery', 'btn-open-drawer'];
 
 function ensureMobileMoreMenu() {
   if (mobileMoreMenuBuilt) return;
@@ -4742,6 +4753,7 @@ function ensureMobileMoreMenu() {
     item.className = 'topbar-more-menu-item';
     item.setAttribute('role', 'menuitem');
     item.textContent = it.label;
+    item.dataset.target = it.id;
     item.addEventListener('click', (e) => {
       // Stop this real tap from bubbling to document AFTER the proxied
       // target.click() below runs — without it, the color picker's own
@@ -4763,7 +4775,7 @@ function ensureMobileMoreMenu() {
         target.click();
       }
     });
-    menu.appendChild(item);
+    topbarMoreItemEls[it.id] = item;
   });
   document.body.appendChild(menu);
 
@@ -4808,8 +4820,94 @@ function closeMobileMoreMenu() {
 function updateMobileToolbarMode() {
   const active = isPhoneCoarsePointer();
   document.body.classList.toggle('mobile-coarse-toolbar', active);
-  if (active) ensureMobileMoreMenu();
-  else closeMobileMoreMenu();
+  ensureMobileMoreMenu();
+  layoutEditorTopbar();
+}
+
+/* ---- Editor topbar: collapse by the space it really gets ----
+ * Fixed media-query breakpoints cannot know about browser zoom, split-screen
+ * windows or a long template name, so the bar is measured instead. Starting
+ * from everything shown with its label, layoutEditorTopbar() takes one step at
+ * a time until the tool rail stops overflowing: first the demo legend text,
+ * then, lowest priority first, each control loses its label, and only then,
+ * again lowest priority first, controls move into "Mai mult". Publică, undo/redo and the device toggle never move.
+ * Stateless: every pass resets and re-measures, so the result depends only on
+ * the current width. The phone layout (own scrolling rail, labels required by
+ * suite12-mobile-topbar-discoverable) is left alone. */
+let topbarLayoutQueued = false;
+let topbarLayoutObserver = null;
+
+function topbarIsPhoneLayout() {
+  try {
+    return window.matchMedia('(max-width: 640px), (max-width: 900px) and (max-height: 420px)').matches;
+  } catch (_) { return false; }
+}
+
+function syncTopbarOverflowUi(bar) {
+  const menu = $('topbar-more-menu');
+  // Only the controls actually moved out of the bar are in the menu at all.
+  const inMenu = MOBILE_MORE_MENU_ITEMS.filter((it) => { const el = $(it.id); return !!el && el.classList.contains('tb-overflow'); });
+  const any = inMenu.length > 0;
+  if (menu) menu.replaceChildren(...inMenu.map((it) => topbarMoreItemEls[it.id]).filter(Boolean));
+  bar.classList.toggle('tb-has-overflow', any);
+  const more = $('btn-topbar-more');
+  if (more) {
+    more.classList.toggle('tb-icon', TOPBAR_COLLAPSE_ORDER.some((id) => { const el = $(id); return el && el.classList.contains('tb-icon'); }));
+  }
+  if (!any && mobileMoreMenuOpen) closeMobileMoreMenu();
+}
+
+function layoutEditorTopbar() {
+  topbarLayoutQueued = false;
+  const bar = $('editor-topbar');
+  const rail = document.querySelector('.editor-topbar-scroll');
+  if (!bar || !rail || bar.getClientRects().length === 0) return;
+  const controls = TOPBAR_COLLAPSE_ORDER.map((id) => $(id)).filter(Boolean);
+  const reset = () => {
+    bar.classList.remove('tb-legend-min');
+    rail.classList.remove('tb-scrolls');
+    controls.forEach((el) => el.classList.remove('tb-icon', 'tb-overflow'));
+  };
+  const overflows = () => rail.scrollWidth > rail.clientWidth + 1 || bar.scrollWidth > bar.clientWidth + 1;
+  reset();
+  const coarsePhone = document.body.classList.contains('mobile-coarse-toolbar');
+  if (coarsePhone) MOBILE_FORCED_OVERFLOW_IDS.forEach((id) => { const el = $(id); if (el) el.classList.add('tb-overflow'); });
+  syncTopbarOverflowUi(bar);
+  if (topbarIsPhoneLayout()) {
+    if (overflows()) rail.classList.add('tb-scrolls');
+    return;
+  }
+  // Labels go first (lowest priority first), then places in the bar. Detalii
+  // keeps its label: its icon alone looks like the "Mai mult" one.
+  const steps = [() => bar.classList.add('tb-legend-min')];
+  const pending = controls.filter((el) => !el.classList.contains('tb-overflow'));
+  pending.filter((el) => el.id !== 'btn-open-drawer').forEach((el) => steps.push(() => el.classList.add('tb-icon')));
+  pending.forEach((el) => steps.push(() => el.classList.add('tb-overflow')));
+  for (let i = 0; i < steps.length && overflows(); i++) {
+    steps[i]();
+    syncTopbarOverflowUi(bar);
+  }
+  if (overflows()) rail.classList.add('tb-scrolls');
+}
+
+function scheduleEditorTopbarLayout() {
+  if (topbarLayoutQueued) return;
+  topbarLayoutQueued = true;
+  requestAnimationFrame(layoutEditorTopbar);
+}
+
+function initEditorTopbarLayout() {
+  if (topbarLayoutObserver || typeof ResizeObserver !== 'function') {
+    window.addEventListener('resize', scheduleEditorTopbarLayout);
+    return;
+  }
+  const bar = $('editor-topbar');
+  if (!bar) return;
+  topbarLayoutObserver = new ResizeObserver(scheduleEditorTopbarLayout);
+  topbarLayoutObserver.observe(bar);
+  bar.querySelectorAll('.editor-topbar-left, .editor-topbar-center, #btn-publish, .editor-topbar-scroll > *').forEach((el) => topbarLayoutObserver.observe(el));
+  window.addEventListener('resize', scheduleEditorTopbarLayout);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleEditorTopbarLayout).catch(() => {});
 }
 
 /** True when Details should auto-open (first visit or last preference was open). */
@@ -4924,7 +5022,9 @@ function closeDrawer() {
   // a11y#2 (ARIA APG Dialog pattern): focus returns to the control that
   // opens Details, the same opener-restore openModal()/closeModal() already
   // do for every other modal — Escape used to leave focus nowhere.
-  const openerBtn = $('btn-open-drawer');
+  let openerBtn = $('btn-open-drawer');
+  // Details can sit in the "Mai mult" menu: hand focus to that trigger then.
+  if (openerBtn && openerBtn.getClientRects().length === 0) openerBtn = $('btn-topbar-more') || openerBtn;
   if (openerBtn && typeof openerBtn.focus === 'function') openerBtn.focus();
 }
 
@@ -11833,6 +11933,7 @@ function wireStaticButtons() {
   // the body class.
   updateMobileToolbarMode();
   window.addEventListener('resize', updateMobileToolbarMode);
+  initEditorTopbarLayout();
 }
 
 // ---------------------------------------------------------------------------

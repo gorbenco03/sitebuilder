@@ -375,6 +375,12 @@ input, textarea, select {
   display: contents;
 }
 
+.editor-topbar-scroll.tb-scrolls {
+  /* Edge fade only while the rail really overflows (set by app.js). */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
+}
+
 .editor-tpl-name {
   font-size: 0.85rem;
   font-weight: 600;
@@ -409,51 +415,21 @@ input, textarea, select {
 .btn-topbar:hover { background: var(--surface); color: var(--text); border-color: #D1D5DB; }
 .btn-topbar[aria-expanded="true"] { background: var(--accent-light); color: var(--accent); border-color: var(--accent-muted); }
 
-.btn-topbar-label {
-  display: none;
-}
-/* Keep download + Details labels readable without packing the full toolbar. */
-@media (min-width: 720px) {
-  #btn-download-html .btn-topbar-label,
-  #btn-download-zip .btn-topbar-label,
-  #btn-open-drawer .btn-topbar-label {
-    display: inline;
-  }
-}
-/* Full labels only on wide chrome where nothing clips. */
-@media (min-width: 1500px) {
-  .btn-topbar-label { display: inline; }
-}
+/* Labels are on by default; app.js (layoutEditorTopbar) drops them one control
+   at a time, lowest priority first, only when the bar has no room for them. */
+.btn-topbar-label { display: inline; }
+.btn-topbar.tb-icon .btn-topbar-label { display: none; }
+/* Moved into the "Mai mult" menu by layoutEditorTopbar(). */
+.btn-topbar.tb-overflow { display: none !important; }
+/* Short legend: swatch only, full sentence stays in its title. */
+.editor-topbar.tb-legend-min .demo-legend-text,
+.editor-topbar.tb-legend-min .demo-legend-more { display: none !important; }
+/* The "Mai mult" trigger exists only while something is in its menu. */
+#btn-topbar-more { display: none; }
+.editor-topbar.tb-has-overflow #btn-topbar-more { display: inline-flex; }
 
-/* Details drawer overlays the right edge — reserve space so topbar labels never clip under it. */
-body.details-drawer-open .editor-topbar {
-  padding-right: calc(var(--drawer-inset) + 0.5rem);
-}
-body.details-drawer-open .editor-topbar-left {
-  max-width: 18%;
-}
-body.details-drawer-open .editor-tpl-name {
-  max-width: 7rem;
-}
-/* When drawer is open at typical laptop widths, prefer compact icon labels over clipped text. */
-@media (max-width: 1499px) {
-  body.details-drawer-open .btn-topbar-label {
-    display: none !important;
-  }
-  body.details-drawer-open #btn-download-html .btn-topbar-label,
-  body.details-drawer-open #btn-download-zip .btn-topbar-label {
-    display: inline !important;
-    font-size: 0;
-  }
-  body.details-drawer-open #btn-download-html .btn-topbar-label::after {
-    content: 'HTML';
-    font-size: 0.78rem;
-  }
-  body.details-drawer-open #btn-download-zip .btn-topbar-label::after {
-    content: 'ZIP';
-    font-size: 0.78rem;
-  }
-}
+/* The Details drawer starts below the bar (top: var(--topbar-h)), so the bar
+   keeps its full width while it is open. */
 
 /* ============================================================
    WAVE 11 — phone-width editor topbar (390px investigation)
@@ -529,9 +505,6 @@ body.details-drawer-open .editor-tpl-name {
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
-    /* Edge fade: hints there is more to scroll without an extra element. */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
-    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
   }
   .editor-topbar-scroll::-webkit-scrollbar { display: none; }
   .editor-topbar-scroll > * {
@@ -624,9 +597,6 @@ body.details-drawer-open .editor-tpl-name {
     /* Small end-padding so the last scrolled item isn't flush against
        the pinned Publish button. */
     padding-right: 0.2rem;
-    /* Edge fade: hints there is more to scroll without an extra element. */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
-    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
   }
   .editor-topbar-scroll::-webkit-scrollbar { display: none; }
   .editor-topbar-scroll > * {
@@ -3576,7 +3546,6 @@ body.mobile-coarse-toolbar #btn-download-html,
 body.mobile-coarse-toolbar #btn-download-zip {
   display: none;
 }
-#btn-topbar-more { display: none; }
 body.mobile-coarse-toolbar #btn-topbar-more {
   display: inline-flex;
   min-width: 44px;
