@@ -2471,6 +2471,14 @@ let pendingLiveEdits = {};
 /** editor-text-images#1: debounce timer for the business.name identity
  * cascade's OWN re-render — see onInlineTextEdit()'s business.name branch. */
 let businessNameCascadeRerenderTimer = null;
+/** Path of the canvas field that currently holds keyboard focus inside the
+ * preview iframe (from its {hb:'focus'} / {hb:'blur'} messages), or null.
+ * The sandboxed iframe cannot be inspected directly, so this mirror is how
+ * the parent knows it must not replace the document under the owner's caret. */
+let previewFocusedPath = null;
+/** True while the business.name cascade re-render is waiting for the owner
+ * to leave the field they re-entered (see runBusinessNameCascadeRerender()). */
+let businessNameCascadeDeferred = false;
 
 /** Count of in-flight async operations that must finish before the canvas
  * is fully "safe" (currently: image resize between file-pick and the
@@ -3210,6 +3218,10 @@ function fullRerender(focusPath) {
   renderInFlight = true;
   pendingRender = false;
   iframeReady = false;
+  // The new document starts with nothing focused, and it already carries the
+  // cascaded business.name values a deferred cascade re-render was waiting for.
+  previewFocusedPath = null;
+  businessNameCascadeDeferred = false;
 
   if (previewSpinTimer) clearTimeout(previewSpinTimer);
   previewSpinTimer = setTimeout(() => showPreviewSpinner(true), 200);
@@ -3396,6 +3408,16 @@ function initPostMessageListener() {
         break;
       case 'focus':
         // Could highlight field in drawer — skip for now
+        previewFocusedPath = msg.path || '';
+        break;
+      case 'blur':
+        if (previewFocusedPath === (msg.path || '')) previewFocusedPath = null;
+        // The business.name cascade re-render was held back because the
+        // owner had re-entered a field (runBusinessNameCascadeRerender()).
+        // Re-arm it past the blur's own {hb:'text'} commit window.
+        if (businessNameCascadeDeferred && !previewFocusedPath && !businessNameCascadeRerenderTimer) {
+          businessNameCascadeRerenderTimer = setTimeout(runBusinessNameCascadeRerender, 450);
+        }
         break;
       case 'mobile-edit-open':
         // PLAN-UX §5.4 (S-4): a coarse-pointer tap on a canvas text field at
@@ -3580,6 +3602,30 @@ function isListItemPathStillValid(path) {
   return true;
 }
 
+/** Fires the business.name identity cascade's full re-render (see
+ * onInlineTextEdit()). A full re-render replaces the whole iframe document,
+ * and any click that lands on the canvas around that moment loses its focus
+ * (the new document restores it only once it settles, ~100ms later). Two
+ * cases therefore hold the re-render back instead of racing the owner:
+ *   - the owner is already inside a canvas field (previewFocusedPath) — wait
+ *     for its {hb:'blur'}, which re-arms this;
+ *   - the name was just emptied — the owner is about to retype it (click,
+ *     select-all, delete, blur, click again), and the commit of a non-empty
+ *     name re-arms the cascade itself. Until then the draft is already up
+ *     to date; only the other occurrences on the canvas lag, and any other
+ *     full render (undo, list edit, language switch) catches them up.
+ * Oracle: bot/test/suite1-empty-field-stays-clickable.test.js. */
+function runBusinessNameCascadeRerender() {
+  businessNameCascadeRerenderTimer = null;
+  if (previewFocusedPath || !getPath(draft.config, 'business.name')) {
+    businessNameCascadeDeferred = true;
+    return;
+  }
+  businessNameCascadeDeferred = false;
+  flushPendingLiveEdits();
+  scheduleRerender(true);
+}
+
 function onInlineTextEdit(path, value) {
   if (!path) return;
   if (!isListItemPathStillValid(path)) return; // stale blur-commit — see doc comment above isListItemPathStillValid()
@@ -3629,28 +3675,8 @@ function onInlineTextEdit(path, value) {
     // instead of racing it. Re-render so about + social chips pick up
     // cascaded identity — just not synchronously. scheduleRerender(true) below.
     if (businessNameCascadeRerenderTimer) clearTimeout(businessNameCascadeRerenderTimer);
-    businessNameCascadeRerenderTimer = setTimeout(() => {
-      businessNameCascadeRerenderTimer = null;
-      flushPendingLiveEdits();
-      // This full re-render tears down the whole iframe document (new
-      // srcdoc) and rebuilds it — whatever had focus in the old document is
-      // gone regardless, by construction (see fullRerender()'s own doc
-      // comment). When the owner just emptied the field (suite1's
-      // "click → select-all → delete → blur" repro), the emptied element
-      // collapses to a 0×0 box the instant this timer replaces the DOM out
-      // from under it, and a click that landed on it a moment ago has
-      // nothing left to hold focus — so it silently drops out entirely.
-      // Only THIS case (field now empty) asks fullRerender() to land the
-      // owner back on business.name, the same "focus the field this render
-      // is about" pattern onListAdd() uses via its own focusPath. A
-      // non-empty edit does not opt in: forcing focus back onto a field the
-      // owner has since moved away from (e.g. straight to Undo) raced that
-      // move under load — see wave5-builder-undo-redo's toolbar-undo case,
-      // which this exact unconditional focus-restore made intermittently
-      // fail — for no benefit, since nothing was actually broken there.
-      const stillEmpty = !getPath(draft.config, 'business.name');
-      scheduleRerender(true, stillEmpty ? 'business.name' : undefined);
-    }, 450);
+    businessNameCascadeDeferred = false;
+    businessNameCascadeRerenderTimer = setTimeout(runBusinessNameCascadeRerender, 450);
     // Keep drawer fields for cascaded identity in sync when open
     [
       'business.title',

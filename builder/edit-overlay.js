@@ -27,6 +27,7 @@
  *     {hb:'list-add', listPath}              — add new list item
  *     {hb:'list-remove', path}               — remove list item at path
  *     {hb:'focus', path}                     — a field received focus
+ *     {hb:'blur', path}                      — that field lost focus (sent after its final {hb:'text'})
  *     {hb:'undo'} / {hb:'redo'}              — Ctrl+Z / Ctrl+Shift+Z pressed on the canvas
  *     {hb:'connect-instagram'}                — Instagram teaser's CTA clicked (see
  *                                              section 5c below) — app.js opens the
@@ -1173,6 +1174,7 @@
           path: path,
           value: allowsBr ? value.replace(/\n+$/, '').replace(/\n/g, '<br>') : value,
         });
+        toParent({ hb: 'blur', path: path });
       });
 
       /* On focus: notify parent */
