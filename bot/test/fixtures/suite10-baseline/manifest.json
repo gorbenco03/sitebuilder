@@ -1,74 +1,74 @@
 {
-  "generatedAtCommit": "98ae941712ada203d4b50ede5f83a06535229adc",
+  "generatedAtCommit": "e16f8a807e1b72557cdaa953de0d34a5ce2d634d",
   "templates": {
     "product-menu": [
       {
         "id": "casa-nord",
         "file": "product-menu/casa-nord.html",
-        "bytes": 27913
+        "bytes": 27812
       },
       {
         "id": "traista-verde",
         "file": "product-menu/traista-verde.html",
-        "bytes": 27892
+        "bytes": 27791
       }
     ],
     "portfolio": [
       {
         "id": "atelier-ivoire",
         "file": "portfolio/atelier-ivoire.html",
-        "bytes": 36334
+        "bytes": 36233
       },
       {
         "id": "studio-forma",
         "file": "portfolio/studio-forma.html",
-        "bytes": 35119
+        "bytes": 35018
       },
       {
         "id": "atelier-ivoire-ro",
         "file": "portfolio/atelier-ivoire-ro.html",
-        "bytes": 36225
+        "bytes": 36124
       }
     ],
     "local-service": [
       {
         "id": "renovari-bucuresti",
         "file": "local-service/renovari-bucuresti.html",
-        "bytes": 36391
+        "bytes": 36290
       },
       {
         "id": "acoperisuri-dacia",
         "file": "local-service/acoperisuri-dacia.html",
-        "bytes": 36350
+        "bytes": 36249
       }
     ],
     "professionals": [
       {
         "id": "cabinet-marin",
         "file": "professionals/cabinet-marin.html",
-        "bytes": 42762
+        "bytes": 42661
       },
       {
         "id": "atelier-nord",
         "file": "professionals/atelier-nord.html",
-        "bytes": 36569
+        "bytes": 36468
       },
       {
         "id": "cabinet-marin-ro",
         "file": "professionals/cabinet-marin-ro.html",
-        "bytes": 41912
+        "bytes": 41811
       }
     ],
     "desserdirina": [
       {
         "id": "desserdirina-ro",
         "file": "desserdirina/desserdirina-ro.html",
-        "bytes": 33403
+        "bytes": 33302
       },
       {
         "id": "desserdirina-en",
         "file": "desserdirina/desserdirina-en.html",
-        "bytes": 33403
+        "bytes": 33302
       }
     ]
   }

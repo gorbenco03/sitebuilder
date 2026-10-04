@@ -704,7 +704,7 @@ body:has(#hb-cookie-banner:not([hidden])) .pr-scroll {
 .hb-legal-links a:hover { opacity: 1; }
 `;
 
-const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking essentials */
+const COOKIE_BANNER_JS = `/* Hidook cookie notice: non-modal region, Esc hides without saving (oracle: audit27-v2-cookie-banner-parity). */
 (function () {
   var KEY = 'hb-cookie-consent';
   var docBound = false;
@@ -749,11 +749,14 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
   function hideBanner() {
     var el = document.getElementById('hb-cookie-banner');
     if (!el) return;
+    var active = document.activeElement;
+    var wasInside = active && el.contains(active);
     el.hidden = true;
     try { el.setAttribute('hidden', ''); } catch (e) { /* ignore */ }
     try { el.style.setProperty('display', 'none', 'important'); } catch (e) { /* ignore */ }
     try { el.setAttribute('data-hb-consent-dismissed', 'true'); } catch (e) { /* ignore */ }
     setOpenClass(false);
+    if (wasInside && active.blur) active.blur();
   }
   function accept(e) {
     // Avoid preventDefault: on pointerdown it can suppress the subsequent click
@@ -793,6 +796,13 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     // was dropped by a mid-load document replacement in catalog srcdoc previews.
     btn.onclick = accept;
   }
+  function bindEscape(el) {
+    if (el.getAttribute('data-hb-esc') === '1') return;
+    el.setAttribute('data-hb-esc', '1');
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); hideBanner(); }
+    });
+  }
   function markReady(el) {
     if (!el) return;
     try { el.setAttribute('data-hb-consent-ready', 'true'); } catch (e) { /* ignore */ }
@@ -810,6 +820,7 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
     try { el.removeAttribute('hidden'); } catch (e) { /* ignore */ }
     try { el.style.removeProperty('display'); } catch (e) { /* ignore */ }
     setOpenClass(true);
+    bindEscape(el);
     bindButton(document.getElementById('hb-cookie-accept'));
     markReady(el);
   }
@@ -826,8 +837,8 @@ const COOKIE_BANNER_JS = `/* Hidook cookie consent — dismissible, non-blocking
 `;
 
 /** Markup snippet injected into templates (before </body>). */
-const COOKIE_BANNER_HTML = `    <div id="hb-cookie-banner" class="hb-cookie-banner" role="dialog" aria-label="Consimțământ cookie-uri" hidden>
-      <p>Folosim stocare locală esențială ca să reținem preferințele tale (inclusiv acest banner). <a class="hb-cookie-link" href="cookies.html">Politica de cookie-uri</a></p>
+const COOKIE_BANNER_HTML = `    <div id="hb-cookie-banner" class="hb-cookie-banner" role="region" aria-label="Informare cookie-uri" hidden>
+      <p>Folosim stocare esențială în browser, fără urmărire sau reclame.</p>
       <div class="hb-cookie-actions">
         <button type="button" onclick="try{window.__hbCookieAccept&&window.__hbCookieAccept(event)}catch(e){}" id="hb-cookie-accept">Acceptă</button>
         <a class="hb-cookie-link" href="cookies.html">Află mai mult</a>

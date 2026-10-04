@@ -1,4 +1,4 @@
-/* Hidook cookie consent — dismissible, non-blocking essentials */
+/* Hidook cookie notice: non-modal region, Esc hides without saving (oracle: audit27-v2-cookie-banner-parity). */
 (function () {
   var KEY = 'hb-cookie-consent';
   var docBound = false;
@@ -43,11 +43,14 @@
   function hideBanner() {
     var el = document.getElementById('hb-cookie-banner');
     if (!el) return;
+    var active = document.activeElement;
+    var wasInside = active && el.contains(active);
     el.hidden = true;
     try { el.setAttribute('hidden', ''); } catch (e) { /* ignore */ }
     try { el.style.setProperty('display', 'none', 'important'); } catch (e) { /* ignore */ }
     try { el.setAttribute('data-hb-consent-dismissed', 'true'); } catch (e) { /* ignore */ }
     setOpenClass(false);
+    if (wasInside && active.blur) active.blur();
   }
   function accept(e) {
     // Avoid preventDefault: on pointerdown it can suppress the subsequent click
@@ -87,6 +90,13 @@
     // was dropped by a mid-load document replacement in catalog srcdoc previews.
     btn.onclick = accept;
   }
+  function bindEscape(el) {
+    if (el.getAttribute('data-hb-esc') === '1') return;
+    el.setAttribute('data-hb-esc', '1');
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.stopPropagation(); hideBanner(); }
+    });
+  }
   function markReady(el) {
     if (!el) return;
     try { el.setAttribute('data-hb-consent-ready', 'true'); } catch (e) { /* ignore */ }
@@ -104,6 +114,7 @@
     try { el.removeAttribute('hidden'); } catch (e) { /* ignore */ }
     try { el.style.removeProperty('display'); } catch (e) { /* ignore */ }
     setOpenClass(true);
+    bindEscape(el);
     bindButton(document.getElementById('hb-cookie-accept'));
     markReady(el);
   }
