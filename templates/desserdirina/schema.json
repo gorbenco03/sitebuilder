@@ -564,7 +564,24 @@
     {
       "id": "testimonials",
       "label": "Recenzii",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă câteva păreri ale clienților tăi. Textul de pornire e doar un exemplu — înlocuiește-l cu recenziile tale reale.",
+      "seed": {
+        "testimonialsTitle": "Ce spun clienții noștri",
+        "testimonials": [
+          {
+            "quote": "Servicii excelente și o echipă atentă la fiecare detaliu. Recomand cu încredere!",
+            "name": "Nume Prenume",
+            "role": "Client"
+          },
+          {
+            "quote": "Totul a decurs exact cum ne-am înțeles, la timp și fără surprize.",
+            "name": "Nume Prenume",
+            "role": "Client"
+          }
+        ]
+      }
     },
     {
       "id": "faq",
@@ -576,10 +593,22 @@
         "faq": {
           "title": "Întrebări frecvente",
           "items": [
-            { "q": "Faceți torturi personalizate pentru evenimente?", "a": "Da, facem torturi personalizate pentru nunți, botezuri și aniversări — scrie-ne pe WhatsApp cu detaliile." },
-            { "q": "Cu cât timp înainte trebuie să comand un tort?", "a": "Recomandăm cu cel puțin 3 zile înainte; pentru torturi mari de eveniment, cu 1-2 săptămâni înainte." },
-            { "q": "Aveți opțiuni fără gluten sau vegane?", "a": "Da, avem câteva sortimente fără gluten și vegane — întreabă-ne la comandă ce este disponibil în ziua respectivă." },
-            { "q": "Livrați la domiciliu?", "a": "Da, livrăm în București — costul livrării depinde de zonă și se confirmă la comandă." }
+            {
+              "q": "Faceți torturi personalizate pentru evenimente?",
+              "a": "Da, facem torturi personalizate pentru nunți, botezuri și aniversări — scrie-ne pe WhatsApp cu detaliile."
+            },
+            {
+              "q": "Cu cât timp înainte trebuie să comand un tort?",
+              "a": "Recomandăm cu cel puțin 3 zile înainte; pentru torturi mari de eveniment, cu 1-2 săptămâni înainte."
+            },
+            {
+              "q": "Aveți opțiuni fără gluten sau vegane?",
+              "a": "Da, avem câteva sortimente fără gluten și vegane — întreabă-ne la comandă ce este disponibil în ziua respectivă."
+            },
+            {
+              "q": "Livrați la domiciliu?",
+              "a": "Da, livrăm în București — costul livrării depinde de zonă și se confirmă la comandă."
+            }
           ]
         }
       }
@@ -594,8 +623,14 @@
         "hours": {
           "title": "Program",
           "items": [
-            { "day": "Luni – Sâmbătă", "time": "08:00 – 20:00" },
-            { "day": "Duminică", "time": "09:00 – 14:00" }
+            {
+              "day": "Luni – Sâmbătă",
+              "time": "08:00 – 20:00"
+            },
+            {
+              "day": "Duminică",
+              "time": "09:00 – 14:00"
+            }
           ]
         }
       }
@@ -611,6 +646,9 @@
           "title": "Unde ne găsești",
           "address": "Strada Franceză 28, București"
         }
+      },
+      "seedFrom": {
+        "location.address": "contact.address"
       }
     },
     {

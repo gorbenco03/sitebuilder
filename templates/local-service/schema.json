@@ -776,7 +776,24 @@
     {
       "id": "testimonials",
       "label": "Recenzii",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă câteva păreri ale clienților tăi. Textul de pornire e doar un exemplu — înlocuiește-l cu recenziile tale reale.",
+      "seed": {
+        "testimonialsTitle": "Ce spun clienții noștri",
+        "testimonials": [
+          {
+            "quote": "Servicii excelente și o echipă atentă la fiecare detaliu. Recomand cu încredere!",
+            "name": "Nume Prenume",
+            "role": "Client"
+          },
+          {
+            "quote": "Totul a decurs exact cum ne-am înțeles, la timp și fără surprize.",
+            "name": "Nume Prenume",
+            "role": "Client"
+          }
+        ]
+      }
     },
     {
       "id": "contact-form",
@@ -793,10 +810,22 @@
         "faq": {
           "title": "Întrebări frecvente",
           "items": [
-            { "q": "Oferiți evaluare gratuită?", "a": "Da, venim la fața locului pentru o evaluare gratuită și îți dăm o ofertă în aceeași zi." },
-            { "q": "Cât durează o lucrare medie?", "a": "Depinde de amploarea lucrării — îți dăm un termen estimativ clar încă de la evaluare, înainte să începem." },
-            { "q": "Lucrați cu garanție?", "a": "Da, toate lucrările noastre au garanție scrisă, specificată în ofertă." },
-            { "q": "Acoperiți și zonele din afara orașului?", "a": "Da, lucrăm în București și în împrejurimi — spune-ne locația la evaluare." }
+            {
+              "q": "Oferiți evaluare gratuită?",
+              "a": "Da, venim la fața locului pentru o evaluare gratuită și îți dăm o ofertă în aceeași zi."
+            },
+            {
+              "q": "Cât durează o lucrare medie?",
+              "a": "Depinde de amploarea lucrării — îți dăm un termen estimativ clar încă de la evaluare, înainte să începem."
+            },
+            {
+              "q": "Lucrați cu garanție?",
+              "a": "Da, toate lucrările noastre au garanție scrisă, specificată în ofertă."
+            },
+            {
+              "q": "Acoperiți și zonele din afara orașului?",
+              "a": "Da, lucrăm în București și în împrejurimi — spune-ne locația la evaluare."
+            }
           ]
         }
       }
@@ -811,8 +840,14 @@
         "hours": {
           "title": "Program",
           "items": [
-            { "day": "Luni – Vineri", "time": "08:00 – 18:00" },
-            { "day": "Sâmbătă", "time": "09:00 – 14:00" }
+            {
+              "day": "Luni – Vineri",
+              "time": "08:00 – 18:00"
+            },
+            {
+              "day": "Sâmbătă",
+              "time": "09:00 – 14:00"
+            }
           ]
         }
       }
@@ -828,6 +863,9 @@
           "title": "Unde ne găsești",
           "address": "Șoseaua Pantelimon 245, București"
         }
+      },
+      "seedFrom": {
+        "location.address": "contact.address"
       }
     },
     {

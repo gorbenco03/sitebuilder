@@ -959,12 +959,50 @@
     {
       "id": "team",
       "label": "Echipă",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Prezintă persoanele din echipă, cu rol și o scurtă descriere. Textul de pornire e doar un exemplu — înlocuiește-l cu datele echipei tale.",
+      "seed": {
+        "team": {
+          "title": "Echipa noastră",
+          "members": [
+            {
+              "name": "Nume Prenume",
+              "role": "Funcție",
+              "bio": "Scrie aici două-trei propoziții despre experiența și rolul acestei persoane."
+            },
+            {
+              "name": "Nume Prenume",
+              "role": "Funcție",
+              "bio": "Scrie aici două-trei propoziții despre experiența și rolul acestei persoane."
+            }
+          ]
+        }
+      }
     },
     {
       "id": "testimonials",
       "label": "Recenzii",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă câteva păreri ale clienților tăi. Textul de pornire e doar un exemplu — înlocuiește-l cu recenziile tale reale.",
+      "seed": {
+        "testimonials": {
+          "title": "Ce spun clienții noștri",
+          "items": [
+            {
+              "quote": "Servicii excelente și o echipă atentă la fiecare detaliu. Recomand cu încredere!",
+              "name": "Nume Prenume",
+              "role": "Client"
+            },
+            {
+              "quote": "Totul a decurs exact cum ne-am înțeles, la timp și fără surprize.",
+              "name": "Nume Prenume",
+              "role": "Client"
+            }
+          ]
+        }
+      }
     },
     {
       "id": "schedule",
@@ -976,8 +1014,14 @@
         "schedule": {
           "title": "Program",
           "rows": [
-            { "day": "Luni–Vineri", "hours": "09:00–18:00" },
-            { "day": "Sâmbătă", "hours": "Numai cu programare" }
+            {
+              "day": "Luni–Vineri",
+              "hours": "09:00–18:00"
+            },
+            {
+              "day": "Sâmbătă",
+              "hours": "Numai cu programare"
+            }
           ]
         }
       }
@@ -1003,6 +1047,9 @@
           "title": "Unde ne găsești",
           "address": "Strada Primăverii 22, București"
         }
+      },
+      "seedFrom": {
+        "location.address": "contact.address"
       }
     },
     {

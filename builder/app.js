@@ -1582,6 +1582,11 @@ function computeDemoTextPaths(schemaOverride, configOverride, tplDataOverride) {
     if (isSameDemoString(val, demoVal)) out.push(f.key);
   });
 
+  // Starter text of sections added from "Adaugă o secțiune" (add-section.js).
+  if (typeof seededSectionDemoPaths === 'function') {
+    seededSectionDemoPaths(schema, config, preset).forEach((p) => { if (out.indexOf(p) === -1) out.push(p); });
+  }
+
   return out;
 }
 

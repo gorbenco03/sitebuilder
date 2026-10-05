@@ -79,6 +79,7 @@ function renderAddSectionModal(schema) {
  * doing nothing, and the button is re-enabled so the customer isn't stuck. */
 function onAddSectionCardClick(schema, id, btn) {
   if (btn) btn.disabled = true;
+  presetSeedFromOwnData(schema, id);
   const def = (typeof hidookAddSection === 'function') ? hidookAddSection(schema, id) : null;
   if (!def) {
     if (btn) btn.disabled = false;
@@ -87,6 +88,59 @@ function onAddSectionCardClick(schema, id, btn) {
   }
   closeModal('modal-add-section');
   showToast('Secțiunea „' + (def.label || def.id) + '” a fost adăugată.', 'success');
+}
+
+/** `seedFrom` ({ "<target path>": "<source path>" }, schema.pageSections[])
+ * starts a seeded field from the owner's own data instead of the fixed
+ * sample — today "Unde ne găsești" takes contact.address, so an added
+ * section never shows another city. Runs only for a still-pending section
+ * and only into a field that is empty; hidookAddSection() fills the rest. */
+function presetSeedFromOwnData(schema, id) {
+  if (typeof getAddableSectionDefs !== 'function' || typeof getPath !== 'function' || typeof setPath !== 'function') return;
+  if (!draft || !draft.config) return;
+  const def = getAddableSectionDefs(schema).find((d) => d && d.id === id);
+  if (!def || !def.seedFrom || typeof def.seedFrom !== 'object') return;
+  Object.keys(def.seedFrom).forEach((target) => {
+    const own = getPath(draft.config, def.seedFrom[target]);
+    const cur = getPath(draft.config, target);
+    if (typeof own === 'string' && own.trim() !== '' && (cur === undefined || cur === null || cur === '')) {
+      setPath(draft.config, target, own.trim());
+    }
+  });
+}
+
+/** Walks the leaves of a schema seed in data-hb-edit path form
+ * ("faq.items.0.q"), calling fn(path, value) for each string leaf. */
+function walkSeedLeaves(node, prefix, fn) {
+  if (typeof node === 'string') { if (prefix) fn(prefix, node); return; }
+  if (Array.isArray(node)) { node.forEach((v, i) => walkSeedLeaves(v, prefix ? prefix + '.' + i : String(i), fn)); return; }
+  if (node && typeof node === 'object') {
+    Object.keys(node).forEach((k) => walkSeedLeaves(node[k], prefix ? prefix + '.' + k : k, fn));
+  }
+}
+
+/** data-hb-edit paths of content a customer added through "Adaugă o
+ * secțiune" that is STILL the starter sample (seed value, or the demo value
+ * of its seedFrom source) — computeDemoTextPaths() appends these, so the
+ * canvas tint and the publish checklist count them like template sample
+ * text. Only sections that are currently on the page count; headings are
+ * generic structure and never flagged. */
+function seededSectionDemoPaths(schema, config, preset) {
+  const out = [];
+  if (!schema || !Array.isArray(schema.pageSections) || !config || !Array.isArray(config.sections)) return out;
+  schema.pageSections.forEach((def) => {
+    if (!def || def.addable !== true || !def.seed || typeof def.seed !== 'object') return;
+    const entry = config.sections.find((e) => e && e.id === def.id);
+    if (!entry || entry.removed === true || entry.pending === true) return;
+    const from = (def.seedFrom && typeof def.seedFrom === 'object') ? def.seedFrom : {};
+    walkSeedLeaves(def.seed, '', (path, seedVal) => {
+      if (/title$/i.test(path.split('.').pop())) return;
+      const cur = getPath(config, path);
+      const demoFrom = (from[path] && preset) ? getPath(preset, from[path]) : undefined;
+      if (isSameDemoString(cur, seedVal) || isSameDemoString(cur, demoFrom)) out.push(path);
+    });
+  });
+  return out;
 }
 
 /** Entry point — the trigger buttons below both call this directly
