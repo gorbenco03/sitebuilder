@@ -8242,7 +8242,7 @@ function formatHostingUntilDate(iso) {
  */
 function reactivationPaidUntilIso(site) {
   const now = Date.now();
-  const cur = site && site.paidUntil ? Date.parse(site.paidUntil) : NaN;
+  const cur = site && site.paid === true && site.paidUntil ? Date.parse(site.paidUntil) : NaN;
   const d = new Date(Number.isFinite(cur) && cur > now ? cur : now);
   d.setUTCMonth(d.getUTCMonth() + 12);
   return d.toISOString();

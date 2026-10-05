@@ -552,7 +552,8 @@ function _hasEntitledSubscriptionStatus(site) {
  * @returns {string} ISO date
  */
 function computeRenewalPaidUntil(site) {
-    const baseIso = site && site.paidUntil && Date.parse(site.paidUntil) > Date.now()
+    // Stack only on time actually paid for: a site canceled in its trial was never charged.
+    const baseIso = site && site.paid === true && site.paidUntil && Date.parse(site.paidUntil) > Date.now()
         ? site.paidUntil
         : new Date().toISOString();
     return registry.addMonthsIso(baseIso, 12);

@@ -131,7 +131,8 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       // ---- before the click: price + resulting date, no trial offer ----
       const ccard = page.locator('.site-card', { hasText: needle }).first();
       const noteText = (await ccard.locator('[data-reactivate-note]').innerText()).replace(/\s+/g, ' ').trim();
-      const expectedIso = registry.addMonthsIso(Date.parse(prevPaidUntil) > Date.now() ? prevPaidUntil : new Date().toISOString(), 12);
+      // Stacks only on time actually paid for; a trial-canceled site was never charged.
+      const expectedIso = registry.addMonthsIso(canceled.paid === true && Date.parse(prevPaidUntil) > Date.now() ? prevPaidUntil : new Date().toISOString(), 12);
       const expectedDate = await page.evaluate((iso) => new Date(iso).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }), expectedIso);
       assert.equal(noteText, 'Plătești 29€ acum. Site-ul revine online imediat și e plătit până la ' + expectedDate + '.', label + ': pre-payment note');
       const slugRe = new RegExp(needle, 'g');
@@ -147,7 +148,7 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       assert.equal(co.kind, 'renewal', label + ': reactivation checkout kind');
       assert.equal(co.amountCents, 2900, label + ': reactivation checkout charges the 29 renewal price');
       assert.equal(co.reactivation, true);
-      assert.equal(co.newPaidUntil, expectedIso, label + ': checkout previews the same paidUntil the card showed');
+      assert.equal(String(co.newPaidUntil).slice(0, 10), expectedIso.slice(0, 10), label + ': checkout previews the same paidUntil the card showed');
 
       // test-pay returns to #test-checkout=..., completes, and lands on the dashboard
       const toast = page.locator('#toast');
@@ -165,7 +166,7 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       assert.equal(after.status, 'live', label + ': status live');
       assert.equal(after.paid, true, label + ': paid');
       assert.ok(!after.canceledAt, label + ': canceledAt cleared');
-      assert.equal(after.paidUntil, expectedIso, label + ': paidUntil = max(previous paidUntil, now) + 1 year');
+      assert.equal(String(after.paidUntil).slice(0, 10), expectedIso.slice(0, 10), label + ': paidUntil = (paid ? max(previous paidUntil, now) : now) + 1 year');
 
       await page.waitForURL(/#dashboard$/, { timeout: 10000 });
       const activeCard = page.locator('.site-card', { hasText: needle }).first();

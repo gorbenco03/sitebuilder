@@ -35,7 +35,7 @@ Decizia owner ulterioară specului Opus suprascrie lista inițială „one-time 
 - Dacă userul nu anulează, se taxează automat în ziua 14.
 - Preț start: **99** în bucket-ul clientului: EUR pentru UE, GBP pentru UK, USD pentru restul lumii.
 - Renewal: **29/an** în aceeași monedă, necondiționat.
-- **Reactivare (owner decision 2026-10-05):** un site anulat se reactivează din „Site-urile mele” plătind **29** (prețul de reînnoire, cu simbolul monedei), **fără trial nou** și fără 99 — nici dacă fusese anulat în trial, înainte de prima taxare. După plată site-ul se republică imediat din ultima versiune, iar `paidUntil` = max(`paidUntil` curent, acum) + 1 an. Înainte de plată cardul spune prețul și data („Plătești 29€ acum. Site-ul revine online imediat și e plătit până la <dată>.”); după plată mesajul e de reactivare, nu „Trial început”.
+- **Reactivare (owner decision 2026-10-05):** un site anulat se reactivează din „Site-urile mele” plătind **29** (prețul de reînnoire, cu simbolul monedei), **fără trial nou** și fără 99 — nici dacă fusese anulat în trial, înainte de prima taxare. După plată site-ul se republică imediat din ultima versiune, iar `paidUntil` = max(`paidUntil` curent, acum) + 1 an pentru un site deja taxat, respectiv acum + 1 an pentru unul anulat în trial (netaxat niciodată). Înainte de plată cardul spune prețul și data („Plătești 29€ acum. Site-ul revine online imediat și e plătit până la <dată>.”); după plată mesajul e de reactivare, nu „Trial început”.
 - Nu promite hosting permanent dintr-o plată unică.
 - Owner creează Stripe live Product/Prices, policy de refund/cancellation și Customer Portal în producție.
 - Studio implementează test/staging/env templates/runbook până în punctul unde rămân doar secretele și producția.
