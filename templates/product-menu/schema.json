@@ -588,7 +588,24 @@
     {
       "id": "testimonials",
       "label": "Recenzii",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă câteva păreri ale clienților tăi. Textul de pornire e doar un exemplu — înlocuiește-l cu recenziile tale reale.",
+      "seed": {
+        "testimonialsTitle": "Ce spun clienții noștri",
+        "testimonials": [
+          {
+            "quote": "Servicii excelente și o echipă atentă la fiecare detaliu. Recomand cu încredere!",
+            "name": "Nume Prenume",
+            "role": "Client"
+          },
+          {
+            "quote": "Totul a decurs exact cum ne-am înțeles, la timp și fără surprize.",
+            "name": "Nume Prenume",
+            "role": "Client"
+          }
+        ]
+      }
     },
     {
       "id": "faq",
@@ -600,10 +617,22 @@
         "faq": {
           "title": "Întrebări frecvente",
           "items": [
-            { "q": "Este nevoie de rezervare?", "a": "Recomandăm o rezervare pentru weekend, dar primim și clienți fără programare, în limita locurilor libere." },
-            { "q": "Aveți meniu vegetarian?", "a": "Da, avem opțiuni vegetariene la fiecare categorie din meniu. Întreabă-ne și pentru variante vegane." },
-            { "q": "Acceptați plata cu cardul?", "a": "Da, acceptăm card și plăți contactless, pe lângă numerar." },
-            { "q": "Aveți loc de parcare?", "a": "Există locuri de parcare pe stradă în apropiere; în weekend recomandăm să veniți cu puțin timp mai devreme." }
+            {
+              "q": "Este nevoie de rezervare?",
+              "a": "Recomandăm o rezervare pentru weekend, dar primim și clienți fără programare, în limita locurilor libere."
+            },
+            {
+              "q": "Aveți meniu vegetarian?",
+              "a": "Da, avem opțiuni vegetariene la fiecare categorie din meniu. Întreabă-ne și pentru variante vegane."
+            },
+            {
+              "q": "Acceptați plata cu cardul?",
+              "a": "Da, acceptăm card și plăți contactless, pe lângă numerar."
+            },
+            {
+              "q": "Aveți loc de parcare?",
+              "a": "Există locuri de parcare pe stradă în apropiere; în weekend recomandăm să veniți cu puțin timp mai devreme."
+            }
           ]
         }
       }
@@ -618,8 +647,14 @@
         "hours": {
           "title": "Program",
           "items": [
-            { "day": "Luni – Vineri", "time": "12:00 – 22:00" },
-            { "day": "Sâmbătă – Duminică", "time": "12:00 – 23:00" }
+            {
+              "day": "Luni – Vineri",
+              "time": "12:00 – 22:00"
+            },
+            {
+              "day": "Sâmbătă – Duminică",
+              "time": "12:00 – 23:00"
+            }
           ]
         }
       }
@@ -635,6 +670,9 @@
           "title": "Unde ne găsești",
           "address": "Strada Primăverii 22, București"
         }
+      },
+      "seedFrom": {
+        "location.address": "contact.address"
       }
     },
     {

@@ -799,7 +799,26 @@
     {
       "id": "testimonials",
       "label": "Recenzii",
-      "removable": true
+      "removable": true,
+      "addable": true,
+      "description": "Adaugă câteva păreri ale clienților tăi. Textul de pornire e doar un exemplu — înlocuiește-l cu recenziile tale reale.",
+      "seed": {
+        "testimonials": {
+          "title": "Ce spun clienții noștri",
+          "items": [
+            {
+              "quote": "Servicii excelente și o echipă atentă la fiecare detaliu. Recomand cu încredere!",
+              "name": "Nume Prenume",
+              "role": "Client"
+            },
+            {
+              "quote": "Totul a decurs exact cum ne-am înțeles, la timp și fără surprize.",
+              "name": "Nume Prenume",
+              "role": "Client"
+            }
+          ]
+        }
+      }
     },
     {
       "id": "instagram",
@@ -821,8 +840,14 @@
         "faq": {
           "title": "Întrebări frecvente",
           "items": [
-            { "q": "Cum programez o vizită?", "a": "Scrie-ne pe WhatsApp sau completează formularul de contact și confirmăm cea mai apropiată oră liberă." },
-            { "q": "Cât durează o ședință?", "a": "Durata depinde de serviciul ales — timpul estimat apare la fiecare serviciu din listă." }
+            {
+              "q": "Cum programez o vizită?",
+              "a": "Scrie-ne pe WhatsApp sau completează formularul de contact și confirmăm cea mai apropiată oră liberă."
+            },
+            {
+              "q": "Cât durează o ședință?",
+              "a": "Durata depinde de serviciul ales — timpul estimat apare la fiecare serviciu din listă."
+            }
           ]
         }
       }
@@ -838,6 +863,9 @@
           "title": "Unde ne găsești",
           "address": "Strada Primăverii 22, București"
         }
+      },
+      "seedFrom": {
+        "location.address": "contact.address"
       }
     },
     {
