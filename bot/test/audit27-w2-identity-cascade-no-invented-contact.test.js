@@ -20,6 +20,13 @@
  *     phone inline, accepts an international one (wa.me normalized), and the
  *     hero location label says the new town.
  *
+ *  C. Wizard with phone + town but NO business name (restaurant design), then
+ *     publish: /live carries no Instagram/Facebook link and no e-mail, because
+ *     the template's sample contact values never ship.
+ *  D. Untouched drafts of the restaurant and the professionals designs
+ *     published as-is (no name, no wizard): same assertions, including the
+ *     professionals sample e-mail and its structured data.
+ *
  * Screenshots go to os.tmpdir(), named after the action just performed.
  *
  * Run: node --experimental-sqlite --test bot/test/audit27-w2-identity-cascade-no-invented-contact.test.js
@@ -268,3 +275,83 @@ test('B. untouched draft: checklist names the sample social links and address; q
     await page.close().catch(() => {});
   }
 });
+
+async function publishAndFetchLive(page, slug, email) {
+  await page.locator('#btn-publish').click();
+  await page.locator('#modal-publish').waitFor({ state: 'visible' });
+  await page.locator('#input-slug').fill(slug);
+  await page.locator('#btn-publish-continue').click();
+  await page.locator('#form-auth-email').waitFor({ state: 'visible' });
+  await page.locator('#input-email').fill(email);
+  await page.locator('#btn-send-magic').click();
+  await page.locator('#dev-link').waitFor({ state: 'visible' });
+  await page.locator('#dev-link').click();
+  await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
+  await page.locator('#btn-pay-publish').click();
+  await page.locator('#modal-success-title').waitFor({ state: 'visible', timeout: 25000 });
+  for (let i = 0; i < 30; i++) {
+    const resp = await page.request.get(base + '/live/' + slug + '/').catch(() => null);
+    if (resp && resp.status() === 200) return resp.text();
+    await page.waitForTimeout(500);
+  }
+  throw new Error('/live/' + slug + '/ not reachable');
+}
+
+function assertNoSampleContact(html, label) {
+  assert.ok(!/href="https?:\/\/(www\.)?instagram\.com/i.test(html), label + ': no Instagram link');
+  assert.ok(!/href="https?:\/\/(www\.)?facebook\.com/i.test(html), label + ': no Facebook link');
+  assert.ok(!/mailto:/i.test(html), label + ': no mailto link');
+  assert.ok(!/instagram\.com\/(casa\.nord|atelier|renovari|desserdirina)/i.test(html), label + ': no sample Instagram handle anywhere');
+  assert.ok(!/facebook\.com\/(casanord|atelier|renovari|desserdirina)/i.test(html), label + ': no sample Facebook page anywhere');
+  assert.ok(!/contact@cabinetjuridicionescu/i.test(html), label + ': no sample e-mail anywhere');
+}
+
+test('C. wizard with phone and town but no business name: the published site carries no sample social links or e-mail', async () => {
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.setDefaultTimeout(25000);
+  try {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    });
+    await openCatalog(page);
+    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.locator('#onboarding-wizard .onb-type-card[data-type="restaurant"]').click();
+    await page.locator('#onb-identity-form').waitFor({ state: 'visible' });
+    await page.locator('#onb-phone').fill('0721 234 567');
+    await page.locator('#onb-town').fill('Cluj');
+    await page.locator('#onb-continue-btn').click();
+    await waitEditor(page);
+    await shot(page, 'wizard-phone-town-no-name-editor');
+
+    const cfg = await page.evaluate(() => JSON.parse(JSON.stringify(draft.config)));
+    assert.ok(cfg.contact.waHref.includes('wa.me/40721234567'), 'waHref: ' + cfg.contact.waHref);
+    assert.ok(!cfg.contact.instagram.url && !cfg.contact.facebook.url, 'sample social links cleared in the draft');
+    assert.ok(!(cfg.instagram && cfg.instagram.handle), 'sample handle cleared in the draft');
+
+    const html = await publishAndFetchLive(page, 'w2c-' + crypto.randomBytes(8).toString('hex'), 'audit27-w2-c@example.com');
+    await shot(page, 'published-wizard-phone-town-no-name');
+    assertNoSampleContact(html, 'wizard without name');
+    assert.ok(html.includes('wa.me/40721234567'), 'live site must link wa.me/40721234567');
+  } finally {
+    await page.close().catch(() => {});
+  }
+});
+
+for (const tplId of ['product-menu', 'professionals']) {
+  test('D. untouched ' + tplId + ' draft published as-is: no sample social links or e-mail reach /live', async () => {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.setDefaultTimeout(25000);
+    try {
+      await openCatalog(page);
+      await page.locator('.template-card[data-template-id="' + tplId + '"] .btn-start-tpl').click();
+      await waitEditor(page);
+      const draftSocial = await page.evaluate(() => (draft.config.contact.instagram || {}).url || (draft.config.contact.email) || '');
+      await shot(page, 'untouched-' + tplId + '-draft-before-publish');
+      const html = await publishAndFetchLive(page, 'w2d-' + crypto.randomBytes(8).toString('hex'), 'audit27-w2-d-' + tplId + '@example.com');
+      await shot(page, 'published-untouched-' + tplId);
+      assertNoSampleContact(html, 'untouched ' + tplId + ' (draft carried "' + draftSocial + '")');
+    } finally {
+      await page.close().catch(() => {});
+    }
+  });
+}

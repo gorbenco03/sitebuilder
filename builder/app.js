@@ -638,6 +638,73 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
 }
 
 /**
+ * Blank every contact value that still equals the template's own demo preset
+ * (social links, Instagram handle, e-mail, and the same two inside seo.jsonLd).
+ * Runs on the live draft when the wizard/quick-start stamps an identity and on
+ * the publish payload, so a site never ships a profile or an address the owner
+ * did not type, whether or not the business name was ever edited. Values the
+ * owner changed are left alone. No-op while the preset is not reachable.
+ */
+const DEMO_CONTACT_PATHS = [
+  'contact.facebook.url',
+  'contact.instagram.url',
+  'contact.instagram.label',
+  'instagram.handle',
+  'instagram.url',
+  'instagram.embedUrl',
+  'contact.email',
+];
+
+function blankDemoContactIdentity(config, tplDataOverride) {
+  if (!config || typeof getDemoPresetConfig !== 'function') return false;
+  const preset = getDemoPresetConfig(tplDataOverride);
+  if (!preset) return false;
+  let changed = false;
+  const demoVals = [];
+  DEMO_CONTACT_PATHS.forEach((path) => {
+    const demoVal = getPath(preset, path);
+    if (typeof demoVal !== 'string' || !demoVal.trim()) return;
+    demoVals.push(demoVal.trim());
+    const cur = getPath(config, path);
+    if (typeof cur === 'string' && cur.trim() === demoVal.trim()) {
+      setPath(config, path, '');
+      changed = true;
+    }
+  });
+  const demoLd = [];
+  try {
+    const pld = JSON.parse(getPath(preset, 'seo.jsonLd') || 'null');
+    if (pld && typeof pld === 'object') {
+      if (typeof pld.email === 'string' && pld.email.trim()) demoLd.push(pld.email.trim());
+      (Array.isArray(pld.sameAs) ? pld.sameAs : [pld.sameAs]).forEach((u) => {
+        if (typeof u === 'string' && u.trim()) demoLd.push(u.trim());
+      });
+    }
+  } catch (_) { /* preset without structured data */ }
+  const isDemoLd = (v) => typeof v === 'string' && (demoVals.indexOf(v.trim()) !== -1 || demoLd.indexOf(v.trim()) !== -1);
+  const curLd = getPath(config, 'seo.jsonLd');
+  if (typeof curLd === 'string' && curLd) {
+    try {
+      const ld = JSON.parse(curLd);
+      if (ld && typeof ld === 'object' && !Array.isArray(ld)) {
+        let ldChanged = false;
+        if (isDemoLd(ld.email)) { delete ld.email; ldChanged = true; }
+        if (ld.sameAs != null) {
+          const list = Array.isArray(ld.sameAs) ? ld.sameAs : [ld.sameAs];
+          const kept = list.filter((u) => !isDemoLd(u));
+          if (kept.length !== list.length) {
+            if (kept.length) ld.sameAs = kept; else delete ld.sameAs;
+            ldChanged = true;
+          }
+        }
+        if (ldChanged) { setPath(config, 'seo.jsonLd', JSON.stringify(ld)); changed = true; }
+      }
+    } catch (_) { /* leave unparseable structured data untouched */ }
+  }
+  return changed;
+}
+
+/**
  * Wave 11 quick-start — the demo town (every shipped preset places it as the
  * last word of business.title: "Name | Description | Town", or, for
  * local-service's single-"|" title, the last word of the description tail).
@@ -1664,6 +1731,10 @@ function applyQuickstart() {
     deriveWaHref(draft.config);
     if (prevPhoneE164) cascadePhoneIdentity(draft.config, prevPhoneE164, norm.e164);
   }
+
+  // Name, phone or town was stamped: the template's sample social links and
+  // e-mail stop being shown as this business's own.
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(draft.config);
 
   // A deliberate, discrete action — its own undo step, never coalesced with
   // an unrelated in-flight text edit.
@@ -7425,6 +7496,7 @@ async function ensureDraftSiteForInstagram() {
   setIgStatus(RO.IG_DRAFT_SAVING);
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(cleanConfig);
   const baseSlug = toSlug(
     (draft.config.business && draft.config.business.name) ||
     'site-' + String(Date.now()).slice(-6)
@@ -8967,6 +9039,7 @@ async function execPublish(slug) {
   const wasAlreadyPaid = !!currentSitePaid;
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(cleanConfig);
   const payload = {
     templateId: draft.templateId,
     config: cleanConfig,
