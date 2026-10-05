@@ -2397,6 +2397,120 @@ function writeDraftScope(scopeKey, payload) {
 }
 
 // ---------------------------------------------------------------------------
+// 7c-quater. Tab liveness + server-vs-local reconcile (H-03, Verify 2026-10-04)
+// ---------------------------------------------------------------------------
+//
+// A local site:<id> scope outlives its tab, and an account can edit the same
+// site elsewhere or restore a version. Opening the site must therefore (a)
+// treat another tab as "open now" only while its heartbeat is fresh, and (b)
+// let the server's latest config replace a local copy that is not newer.
+
+const TAB_ALIVE_PREFIX = 'hb.tab.alive.v1.';
+const TAB_ALIVE_BEAT_MS = 4000;
+const TAB_ALIVE_TTL_MS = 90000;
+const SCOPE_SYNCED_KEY = 'hb.draft.synced.v1';
+
+function beatTabAlive() {
+  try {
+    const now = Date.now();
+    localStorage.setItem(TAB_ALIVE_PREFIX + TAB_ID, String(now));
+    // Sweep beats left behind by tabs that died without a pagehide.
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf(TAB_ALIVE_PREFIX) === 0) {
+        const at = Number(localStorage.getItem(k));
+        if (!at || now - at > TAB_ALIVE_TTL_MS * 4) localStorage.removeItem(k);
+      }
+    }
+  } catch (_) { /* storage unavailable — liveness simply reads as unknown */ }
+}
+
+function dropTabAlive() {
+  try { localStorage.removeItem(TAB_ALIVE_PREFIX + TAB_ID); } catch (_) { /* ignore */ }
+}
+
+/** True for THIS tab, and for another tab only while its heartbeat is fresh. */
+function isTabAlive(tabId) {
+  if (!tabId) return false;
+  if (tabId === TAB_ID) return true;
+  try {
+    const at = Number(localStorage.getItem(TAB_ALIVE_PREFIX + tabId));
+    return !!at && (Date.now() - at) < TAB_ALIVE_TTL_MS;
+  } catch (_) { return false; }
+}
+
+function startTabHeartbeat() {
+  beatTabAlive();
+  setInterval(beatTabAlive, TAB_ALIVE_BEAT_MS);
+  window.addEventListener('pagehide', dropTabAlive);
+  window.addEventListener('pageshow', beatTabAlive);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') beatTabAlive();
+  });
+}
+
+/** Remember that the server accepted this tab's local scope as of `at` (ms).
+ * Own key, so it never fires the draft-conflict watcher in other tabs. */
+function noteScopeServerSynced(at) {
+  try {
+    const key = currentScopeKeyInternal(false);
+    if (!key) return;
+    const map = lsGet(SCOPE_SYNCED_KEY) || {};
+    map[key] = at;
+    lsSet(SCOPE_SYNCED_KEY, map);
+  } catch (_) { /* ignore */ }
+}
+
+/** Epoch ms of the server's newest saved version of the site, or null. */
+async function fetchServerLatestAt(siteId) {
+  try {
+    const data = await apiGet('/api/sites/' + encodeURIComponent(siteId) + '/versions');
+    const list = (data && data.versions) || [];
+    let latest = 0;
+    list.forEach((v) => {
+      const t = new Date(v && v.publishedAt).getTime();
+      if (t > latest) latest = t;
+    });
+    return latest || null;
+  } catch (_) { return null; }
+}
+
+/**
+ * Decide, BEFORE the first saveDraft of a site load, what happens to the local
+ * site:<id> scope. Returns the local record only when it must win: it holds
+ * edits the server never accepted (and that are newer than the server's latest
+ * version), or another tab is open on it right now. Otherwise the scope is
+ * removed so the server's config replaces it — a restore or an edit made
+ * elsewhere is never overwritten by an older local copy.
+ */
+function resolveLocalScopeForServerLoad(siteId, serverConfig, serverLatestAt) {
+  const key = 'site:' + siteId;
+  const rec = readDraftScope(key);
+  if (!rec || !rec.config) return null;
+  const owner = currentAccountKey();
+  const foreign = !!(rec.ownerUserId && owner && String(rec.ownerUserId) !== owner);
+  if (!foreign) {
+    if (rec.tabId && rec.tabId !== TAB_ID && isTabAlive(rec.tabId)) return rec;
+    if (JSON.stringify(rec.config) !== JSON.stringify(serverConfig)) {
+      const synced = (lsGet(SCOPE_SYNCED_KEY) || {})[key];
+      const unsynced = !synced || (rec.updatedAt || 0) > synced;
+      const newerThanServer = serverLatestAt == null || (rec.updatedAt || 0) > serverLatestAt;
+      if (unsynced && newerThanServer) return rec;
+    }
+  }
+  removeDraftScope(key);
+  try {
+    const mirror = lsGet(DRAFT_KEY);
+    if (mirror && mirror.siteId === siteId) localStorage.removeItem(DRAFT_KEY);
+  } catch (_) { /* ignore */ }
+  try {
+    const map = lsGet(SCOPE_SYNCED_KEY) || {};
+    if (key in map) { delete map[key]; lsSet(SCOPE_SYNCED_KEY, map); }
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // 7c-ter. Per-account draft ownership (gap-cross-account-draft-leak-depth#1)
 // ---------------------------------------------------------------------------
 //
@@ -2632,6 +2746,7 @@ async function runServerAutosave() {
   } catch (_) { /* fail open — storage errors here must not block a legitimate autosave */ }
   if (serverSaveInFlight) { serverSaveQueuedAgain = true; return; }
   serverSaveInFlight = true;
+  const syncStartedAt = Date.now();
   const snapshotTemplateId = draft.templateId;
   const snapshotConfig = deepClone(draft.config);
   try {
@@ -2641,10 +2756,14 @@ async function runServerAutosave() {
       config: snapshotConfig,
     });
     serverSaveInFlight = false;
+    // Stamp the scope this save was written under, then (after a first save
+    // binds a siteId) the scope the next write will land in.
+    if (typeof noteScopeServerSynced === 'function') noteScopeServerSynced(syncStartedAt);
     if (saved && saved.site && saved.site.id) {
       currentSiteId = saved.site.id;
       currentSitePaid = !!saved.site.paid;
       if (saved.site.slug) currentSiteSlug = saved.site.slug;
+      if (typeof noteScopeServerSynced === 'function') noteScopeServerSynced(syncStartedAt);
     }
     if (serverSaveQueuedAgain || Object.keys(pendingLiveEdits).length > 0 || pendingOpCount > 0) {
       serverSaveQueuedAgain = false;
@@ -6933,7 +7052,8 @@ function saveDraft() {
         const baseline = lastSyncedDraftConfig || existing.config;
         const { merged, theirChangedPaths } = mergeDraftConfigs(baseline, draft.config, existing.config);
         draft.config = merged;
-        if (theirChangedPaths.length && typeof showTabConflictBanner === 'function') {
+        if (theirChangedPaths.length && typeof showTabConflictBanner === 'function' &&
+            (typeof isTabAlive !== 'function' || isTabAlive(existing.tabId))) {
           const sections = Array.from(new Set(theirChangedPaths.map((p) => String(p).split('.')[0])));
           showTabConflictBanner(sections);
         }
@@ -9226,14 +9346,30 @@ async function ensureDraftBoundToPaidSite(preferredSiteId) {
       if (preferredSiteId && currentSiteId === preferredSiteId) saveDraft();
       return true;
     }
-    const saved = loadDraft();
+    let saved = loadDraft();
+    const savedSiteId = (saved && saved.siteId) || null;
+    // H-03: a local copy of a saved site is resumed only if the server has
+    // nothing newer (restore / edit on another device); otherwise its scope
+    // is dropped and the server's latest config is loaded below.
+    if (saved && saved.templateId && saved.config && savedSiteId &&
+        typeof resolveLocalScopeForServerLoad === 'function' && typeof fetchServerLatestAt === 'function') {
+      try {
+        const [srv, srvLatestAt] = await Promise.all([
+          apiGet('/api/sites/' + encodeURIComponent(savedSiteId)),
+          fetchServerLatestAt(savedSiteId),
+        ]);
+        if (srv && srv.config) {
+          if (!resolveLocalScopeForServerLoad(savedSiteId, srv.config, srvLatestAt)) saved = loadDraft();
+        }
+      } catch (_) { /* offline: resume the local copy as before */ }
+    }
     if (saved && saved.templateId && saved.config) {
       return resumeLocalDraft();
     }
 
     let site = null;
     let config = null;
-    const wantId = preferredSiteId || currentSiteId || (saved && saved.siteId) || null;
+    const wantId = preferredSiteId || currentSiteId || savedSiteId || null;
 
     if (wantId) {
       try {
@@ -10665,16 +10801,26 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
   pendingFocusFieldKey = focusFieldKey || null;
   try {
     setLoading(true, 'Se încarcă site-ul…');
-    const data = await apiGet('/api/sites/' + encodeURIComponent(siteId));
+    const [data, serverLatestAt] = await Promise.all([
+      apiGet('/api/sites/' + encodeURIComponent(siteId)),
+      typeof fetchServerLatestAt === 'function' ? fetchServerLatestAt(siteId) : Promise.resolve(null),
+    ]);
     const site = data.site;
     const config = data.config;
     if (!site || !config) throw new Error('Date incomplete de la server.');
+
+    // H-03: the server's latest config replaces the local site:<id> scope
+    // BEFORE the first saveDraft below, unless that scope is provably newer.
+    const keepLocal = typeof resolveLocalScopeForServerLoad === 'function'
+      ? resolveLocalScopeForServerLoad(site.id, config, serverLatestAt)
+      : null;
+    if (typeof hideTabConflictBanner === 'function') hideTabConflictBanner();
 
     currentSiteId = site.id;
     currentSitePaid = !!site.paid;
     currentSiteSlug = site.slug || '';
     draft.templateId = site.templateId;
-    draft.config = deepClone(config);
+    draft.config = deepClone(keepLocal ? keepLocal.config : config);
     // Freshly loaded straight from the site's own last-published version —
     // nothing local to resume yet (see notePublishedSnapshot()/defect #1).
     publishedConfigSnapshot = site.paid ? deepClone(config) : null;
@@ -11948,6 +12094,7 @@ function wireStaticButtons() {
 
   // Multi-tab draft conflict warning (audit medium #8)
   initTabConflictWatcher();
+  startTabHeartbeat();
   const tabConflictReloadBtn = $('btn-tab-conflict-reload');
   if (tabConflictReloadBtn) tabConflictReloadBtn.addEventListener('click', () => window.location.reload());
   const tabConflictDismissBtn = $('btn-tab-conflict-dismiss');
