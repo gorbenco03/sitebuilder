@@ -8,7 +8,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { minifyCss } = require('./css-minify.js');
-const { build } = require('../build.js');
+const { build, sanitizeTheme } = require('../build.js');
 const { createZip } = require('./zip.js');
 const { writeLegalSiteFiles } = require('./site-legal.js');
 const { isNativeBookingEnabled, disableNativeBookingForExport } = require('./calendar-native/cutover.js');
@@ -438,6 +438,25 @@ function baseFromCanonical(canonical) {
 }
 
 /**
+ * theme.* is rendered into <style>/<script>; only hex colours may reach it.
+ * Invalid values become the template's own default theme (first preset).
+ */
+function templateDefaultTheme(templateId) {
+    try {
+        const presets = JSON.parse(fs.readFileSync(path.join(TEMPLATES_DIR, String(templateId || ''), 'presets.json'), 'utf8')).presets;
+        const t = presets && presets[0] && presets[0].config && presets[0].config.theme;
+        if (t && typeof t === 'object') return t;
+    } catch (_) { /* unknown template: render-time default applies */ }
+    return null;
+}
+
+/** Shallow copy of `config` whose theme is sanitized; the input is not mutated. */
+function withSafeTheme(config, templateId) {
+    if (!config || typeof config !== 'object' || config.theme === undefined || config.theme === null) return config;
+    return Object.assign({}, config, { theme: sanitizeTheme(config.theme, templateDefaultTheme(templateId)) });
+}
+
+/**
  * Build a complete static site directory (HTML/CSS/JS/images/legal/badge).
  * @returns {{ siteDir: string, cleanup: function }}
  */
@@ -457,7 +476,7 @@ function buildStaticSiteTree({ templateId, config, images, siteDir }) {
     const wasNativeBookingOnForExport = isNativeBookingEnabled(
         config && config.appointment && config.appointment.nativeBooking
     );
-    const cfgCopy = disableNativeBookingForExport(config);
+    const cfgCopy = disableNativeBookingForExport(withSafeTheme(config, tpl));
     materializeImages(cfgCopy, path.join(dir, 'images'), images || []);
 
     // F5/F6: this config was already published through Hidook → its
@@ -625,4 +644,6 @@ module.exports = {
     // that a template's asset directories (fonts/, not just images/) reach
     // the copied site.
     copyTemplateTree,
+    templateDefaultTheme,
+    withSafeTheme,
 };

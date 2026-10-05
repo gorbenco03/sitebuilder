@@ -1649,6 +1649,10 @@ async function handleAuthTelegram(req, res) {
  * already true either way.
  */
 async function handleAuthLogout(req, res) {
+    // SEC-R1: a cross-site form POST must not be able to force a logout.
+    if (!isSameOriginRequest(req)) {
+        return sendJson(res, 403, { error: 'Cerere refuzată: origine necunoscută (Origin/Referer nu corespunde acestui site).' });
+    }
     let auth;
     try { auth = getAuth(); } catch { auth = null; }
 
@@ -3516,6 +3520,15 @@ function exportHtmlFilename(site, config) {
  * PLAN-QA-2026-09-12.md S3-1 / defect B1 follow-up), so trying out several
  * designs in a row never leaves more than one unpaid row behind.
  */
+/**
+ * SEC-R2: theme.* reaches <style>/<script> raw-text sinks at render time, so a
+ * non-hex value is replaced with the template default before it is stored.
+ */
+function sanitizeConfigThemeInPlace(config, templateId) {
+    if (!config || typeof config !== 'object' || config.theme === undefined || config.theme === null) return;
+    config.theme = require('./site-export.js').withSafeTheme(config, templateId).theme;
+}
+
 async function handleSaveDraft(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -3531,6 +3544,7 @@ async function handleSaveDraft(req, res) {
     const templates = loadTemplates();
     const tpl = templates.find(t => t.id === templateId);
     if (!tpl) return sendJson(res, 422, { error: 'Design necunoscut: ' + templateId });
+    sanitizeConfigThemeInPlace(config, templateId);
 
     const reg = getRegistry();
     let site = null;
@@ -4034,6 +4048,7 @@ async function handlePublish(req, res) {
     const templates = loadTemplates();
     const tpl = templates.find(t => t.id === templateId);
     if (!tpl) return sendJson(res, 422, { error: 'Șablon necunoscut: ' + templateId });
+    sanitizeConfigThemeInPlace(config, templateId);
 
     // Validate images
     const MAX_IMAGES   = 12;

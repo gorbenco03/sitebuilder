@@ -2231,6 +2231,9 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         }
 
         // 4. Write config.json and build
+        if (cfgCopy.theme !== undefined && cfgCopy.theme !== null) {
+            cfgCopy.theme = siteExport.withSafeTheme(cfgCopy, site.templateId).theme;
+        }
         fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(cfgCopy, null, 2));
         build(siteDir);
     } else {
