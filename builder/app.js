@@ -446,10 +446,13 @@ function isNativeBookingOn(value) {
 }
 
 /**
- * When a stranger changes business.name, keep live identity fields in sync if they
- * still mirror the previous name or its slug tokens (casa-nord / casa.nord / casanord,
- * cabinet-marin, …): title, about, facebook label/url, instagram handle/urls/labels,
- * and contact.email. No second SEO panel — only leftover factory identity.
+ * When a stranger changes business.name, keep the text identity fields in sync
+ * (title, about, facebook label, tagline, meta description, structured data).
+ * Contact identity (Instagram/Facebook links, handle, e-mail) is NEVER derived
+ * from the name: an invented instagram.com/<name> or contact@<name>.ro would
+ * ship to a real business as a link it never typed. Those fields are blanked
+ * while they are still the template's own demo values; every template hides an
+ * empty social link/e-mail, and the publish checklist names whatever is left.
  */
 function cascadeBusinessNameIdentity(config, oldName, newName) {
   if (!config || oldName == null || newName == null) return;
@@ -512,6 +515,26 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     return out;
   }
 
+  function encodesOldIdentity(val) {
+    const low = String(val || '').toLowerCase();
+    if (!low) return false;
+    if (low.indexOf(oldN.toLowerCase()) !== -1) return true;
+    return slugTokens(oldN).some((t) => low.indexOf(t.toLowerCase()) !== -1);
+  }
+
+  // Still the template's own demo value (preset reachable in the browser), or,
+  // where no preset is reachable, still encoding the previous name.
+  function isDemoContactValue(path, cur) {
+    if (typeof getDemoPresetConfig === 'function') {
+      const preset = getDemoPresetConfig();
+      if (preset) {
+        const demoVal = getPath(preset, path);
+        return typeof demoVal === 'string' && demoVal.trim() !== '' && demoVal.trim() === String(cur).trim();
+      }
+    }
+    return encodesOldIdentity(cur);
+  }
+
   function cascadeStringPath(path) {
     const cur = getPath(config, path);
     if (typeof cur !== 'string' || !cur) return;
@@ -538,7 +561,17 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
       if (Array.isArray(node)) return node.map(walk);
       if (node && typeof node === 'object') {
         const out = {};
-        Object.keys(node).forEach((k) => { out[k] = walk(node[k]); });
+        Object.keys(node).forEach((k) => {
+          const v = node[k];
+          // Structured data must not keep (or invent) an e-mail / social profile.
+          if (k === 'email' && typeof v === 'string' && v) return;
+          if (k === 'sameAs') {
+            const kept = (Array.isArray(v) ? v : [v]).filter((u) => typeof u === 'string' && u && !/(instagram|facebook)\.com/i.test(u));
+            if (kept.length) out[k] = kept.map(walk);
+            return;
+          }
+          out[k] = walk(v);
+        });
         return out;
       }
       return node;
@@ -579,7 +612,14 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     }
   }
 
-  // Social / contact identity that still encodes the old name or slug
+  // Text identity that still encodes the old name or slug.
+  [
+    'business.metaDescription',
+    'business.tagline',
+    'team.title',
+  ].forEach(cascadeStringPath);
+
+  // Contact identity: blank the template's demo value, never rewrite it.
   [
     'contact.facebook.url',
     'contact.instagram.url',
@@ -588,13 +628,80 @@ function cascadeBusinessNameIdentity(config, oldName, newName) {
     'instagram.url',
     'instagram.embedUrl',
     'contact.email',
-    'business.metaDescription',
-    'business.tagline',
-    'team.title',
-  ].forEach(cascadeStringPath);
+  ].forEach((path) => {
+    const cur = getPath(config, path);
+    if (typeof cur === 'string' && cur && isDemoContactValue(path, cur)) setPath(config, path, '');
+  });
 
   // seo.jsonLd is serialized JSON — cascade it structurally, not as plain text.
   cascadeJsonLdPath('seo.jsonLd');
+}
+
+/**
+ * Blank every contact value that still equals the template's own demo preset
+ * (social links, Instagram handle, e-mail, and the same two inside seo.jsonLd).
+ * Runs on the live draft when the wizard/quick-start stamps an identity and on
+ * the publish payload, so a site never ships a profile or an address the owner
+ * did not type, whether or not the business name was ever edited. Values the
+ * owner changed are left alone. No-op while the preset is not reachable.
+ */
+const DEMO_CONTACT_PATHS = [
+  'contact.facebook.url',
+  'contact.instagram.url',
+  'contact.instagram.label',
+  'instagram.handle',
+  'instagram.url',
+  'instagram.embedUrl',
+  'contact.email',
+];
+
+function blankDemoContactIdentity(config, tplDataOverride) {
+  if (!config || typeof getDemoPresetConfig !== 'function') return false;
+  const preset = getDemoPresetConfig(tplDataOverride);
+  if (!preset) return false;
+  let changed = false;
+  const demoVals = [];
+  DEMO_CONTACT_PATHS.forEach((path) => {
+    const demoVal = getPath(preset, path);
+    if (typeof demoVal !== 'string' || !demoVal.trim()) return;
+    demoVals.push(demoVal.trim());
+    const cur = getPath(config, path);
+    if (typeof cur === 'string' && cur.trim() === demoVal.trim()) {
+      setPath(config, path, '');
+      changed = true;
+    }
+  });
+  const demoLd = [];
+  try {
+    const pld = JSON.parse(getPath(preset, 'seo.jsonLd') || 'null');
+    if (pld && typeof pld === 'object') {
+      if (typeof pld.email === 'string' && pld.email.trim()) demoLd.push(pld.email.trim());
+      (Array.isArray(pld.sameAs) ? pld.sameAs : [pld.sameAs]).forEach((u) => {
+        if (typeof u === 'string' && u.trim()) demoLd.push(u.trim());
+      });
+    }
+  } catch (_) { /* preset without structured data */ }
+  const isDemoLd = (v) => typeof v === 'string' && (demoVals.indexOf(v.trim()) !== -1 || demoLd.indexOf(v.trim()) !== -1);
+  const curLd = getPath(config, 'seo.jsonLd');
+  if (typeof curLd === 'string' && curLd) {
+    try {
+      const ld = JSON.parse(curLd);
+      if (ld && typeof ld === 'object' && !Array.isArray(ld)) {
+        let ldChanged = false;
+        if (isDemoLd(ld.email)) { delete ld.email; ldChanged = true; }
+        if (ld.sameAs != null) {
+          const list = Array.isArray(ld.sameAs) ? ld.sameAs : [ld.sameAs];
+          const kept = list.filter((u) => !isDemoLd(u));
+          if (kept.length !== list.length) {
+            if (kept.length) ld.sameAs = kept; else delete ld.sameAs;
+            ldChanged = true;
+          }
+        }
+        if (ldChanged) { setPath(config, 'seo.jsonLd', JSON.stringify(ld)); changed = true; }
+      }
+    } catch (_) { /* leave unparseable structured data untouched */ }
+  }
+  return changed;
 }
 
 /**
@@ -632,11 +739,21 @@ function cascadeTownIdentity(config, oldTown, newTown) {
   }
 
   ['business.title', 'business.metaDescription', 'business.about', 'business.zone',
-   'contact.address', 'footer.address'].forEach((path) => {
+   'business.tagline', 'labels.heroEyebrow', 'contact.intro',
+   'contact.address', 'footer.address', 'location.address'].forEach((path) => {
     const cur = getPath(config, path);
     const next = rewrite(cur);
     if (next !== cur) setPath(config, path, next);
   });
+
+  // The Google Maps link carries the town in ASCII, "+"-joined (…?q=Str.+X+12+Bucuresti).
+  const hrefCur = getPath(config, 'contact.addressHref');
+  if (typeof hrefCur === 'string' && hrefCur) {
+    const q = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    const oldQ = q(oldTown).split(/\s+/).join('+');
+    const newQ = encodeURIComponent(q(newTown)).replace(/%20/g, '+');
+    if (oldQ && hrefCur.indexOf(oldQ) !== -1) setPath(config, 'contact.addressHref', hrefCur.split(oldQ).join(newQ));
+  }
 
   const jsonLd = getPath(config, 'seo.jsonLd');
   if (typeof jsonLd === 'string' && jsonLd) {
@@ -659,21 +776,46 @@ function cascadeTownIdentity(config, oldTown, newTown) {
 }
 
 /**
- * Wave 11 quick-start phone: this product's every shipped demo phone is a
- * +40 (Romania) mobile number, so a bare local-style entry ("07XX XXX XXX")
- * is normalized to +40 the same way — matching what the owner would already
- * see if they never touched the field. An entry that already carries a
- * country code (leading "+" or "00") is respected as-is.
+ * Quick-start / wizard phone. Accepts a Romanian number as written on a
+ * business card ("0721 234 567", "+40 721 234 567", "0040721234567") and any
+ * other "+" / "00" international number, and returns {ok, e164, waDigits,
+ * display, error}. waDigits is what wa.me needs (country code, no "+", no
+ * leading zero — same normalization the Detalii WhatsApp field applies via
+ * normalizeWhatsAppDigits(), R-07). An obviously invalid entry (letters, too
+ * short/long, impossible Romanian number) comes back ok:false with a Romanian
+ * `error` for the inline message; an empty entry is ok:true (nothing to apply).
  */
+const PHONE_INVALID_MESSAGE = 'Numărul nu pare valid. Scrie-l ca 0721 234 567 sau cu prefix internațional, de exemplu +44 20 7946 0958.';
+
 function normalizePhoneForConfig(raw) {
   const display = String(raw || '').trim();
-  let e164 = display.replace(/[^\d+]/g, '');
-  if (e164.indexOf('00') === 0) e164 = '+' + e164.slice(2);
-  if (e164 && e164[0] !== '+') {
-    e164 = '+40' + (e164[0] === '0' ? e164.slice(1) : e164);
+  const fail = { ok: false, e164: '', waDigits: '', display, error: PHONE_INVALID_MESSAGE };
+  if (!display) return { ok: true, e164: '', waDigits: '', display: '', error: '' };
+  if (!/^\+?[\d\s().\-\/]+$/.test(display)) return fail;
+
+  const digits = display.replace(/\D/g, '');
+  let intl = '';
+  if (display[0] === '+') {
+    intl = digits;
+  } else if (digits.indexOf('0') === 0) {
+    // "00…" international prefix, or a local 0 + 9 digits (normalizeWhatsAppDigits).
+    intl = digits.indexOf('00') === 0 ? normalizeWhatsAppDigits(digits) : (digits.length === 10 ? normalizeWhatsAppDigits(digits) : '');
+  } else if (digits.length === 11 && digits.indexOf('40') === 0) {
+    intl = digits;
+  } else if (digits.length === 9 && /^[237]/.test(digits)) {
+    intl = '40' + digits;
   }
-  const waDigits = e164.replace(/\D/g, '');
-  return { e164, waDigits, display };
+  if (!intl || intl[0] === '0') return fail;
+
+  if (intl.indexOf('40') === 0) {
+    let national = intl.slice(2);
+    if (national.length === 10 && national[0] === '0') national = national.slice(1); // "+40 (0)721…"
+    if (!/^[2-9]\d{8}$/.test(national)) return fail;
+    intl = '40' + national;
+  } else if (intl.length < 8 || intl.length > 15) {
+    return fail;
+  }
+  return { ok: true, e164: '+' + intl, waDigits: intl, display, error: '' };
 }
 
 /**
@@ -1511,6 +1653,32 @@ function closeQuickstart() {
   saveDraft();
 }
 
+/** Inline Romanian message under the quick-start phone field ('' clears it). */
+function setQuickstartPhoneError(message) {
+  const phoneEl = $('quickstart-phone');
+  const form = $('quickstart-form');
+  if (!phoneEl || !form) return;
+  let err = $('quickstart-phone-error');
+  if (!message) {
+    if (err) err.remove();
+    phoneEl.removeAttribute('aria-invalid');
+    phoneEl.removeAttribute('aria-describedby');
+    return;
+  }
+  if (!err) {
+    err = document.createElement('p');
+    err.id = 'quickstart-phone-error';
+    err.className = 'field-error';
+    err.setAttribute('role', 'alert');
+    err.style.cssText = 'flex:1 1 100%;margin:0;text-align:center';
+    form.appendChild(err);
+    phoneEl.addEventListener('input', () => setQuickstartPhoneError(''), { once: true });
+  }
+  err.textContent = message;
+  phoneEl.setAttribute('aria-invalid', 'true');
+  phoneEl.setAttribute('aria-describedby', err.id);
+}
+
 /** Apply whichever of the three fields the owner actually filled in. Empty
  * fields are left alone — this is a quick stamp, not a form that must be
  * fully completed to submit. */
@@ -1525,6 +1693,15 @@ function applyQuickstart() {
 
   if (!name && !phone && !town) {
     closeQuickstart();
+    return;
+  }
+
+  // An obviously invalid phone stops the whole stamp with an inline message —
+  // never a half-applied identity and never a wa.me link that cannot work.
+  const phoneNorm = phone ? normalizePhoneForConfig(phone) : null;
+  setQuickstartPhoneError(phoneNorm && !phoneNorm.ok ? phoneNorm.error : '');
+  if (phoneNorm && !phoneNorm.ok) {
+    if (phoneEl) phoneEl.focus();
     return;
   }
 
@@ -1547,13 +1724,17 @@ function applyQuickstart() {
 
   if (phone) {
     const prevPhoneE164 = getPath(draft.config, 'contact.phone');
-    const norm = normalizePhoneForConfig(phone);
+    const norm = phoneNorm;
     setPath(draft.config, 'contact.whatsapp', norm.waDigits);
     setPath(draft.config, 'contact.phone', norm.e164);
     setPath(draft.config, 'contact.phoneDisplay', norm.display);
     deriveWaHref(draft.config);
     if (prevPhoneE164) cascadePhoneIdentity(draft.config, prevPhoneE164, norm.e164);
   }
+
+  // Name, phone or town was stamped: the template's sample social links and
+  // e-mail stop being shown as this business's own.
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(draft.config);
 
   // A deliberate, discrete action — its own undo step, never coalesced with
   // an unrelated in-flight text edit.
@@ -5457,6 +5638,24 @@ function firstSeedFieldPath(seed, prefix) {
 }
 
 /**
+ * A section seed's sample address ends in the demo town ("…, București"). When
+ * the owner already gave their own town (quick-start / wizard rewrote the
+ * title's town), the seeded address and its Google Maps link must say that
+ * town too — otherwise "Unde ne găsești" sends visitors to the wrong city.
+ */
+function retargetSeededTown(config) {
+  const address = getPath(config, 'location.address');
+  if (typeof address !== 'string' || address.indexOf(',') === -1) return;
+  const preset = getDemoPresetConfig();
+  const demoTown = preset ? deriveDemoTown(preset) : '';
+  const ownTown = deriveDemoTown(config);
+  if (!demoTown || !ownTown || demoTown === ownTown) return;
+  const parts = address.split(',');
+  const seedTown = parts.pop().trim();
+  if (seedTown && seedTown !== ownTown) setPath(config, 'location.address', parts.join(',') + ', ' + ownTown);
+}
+
+/**
  * Add a previously-hidden `addable` section to the current draft —
  * builder/add-section.js's one write path into draft.config, called when a
  * customer clicks "Adaugă" on a catalog card. Applies the section's `seed`
@@ -5480,6 +5679,7 @@ function hidookAddSection(schema, id) {
   const entry = order.find(e => e && e.id === id);
   if (!entry || entry.pending !== true) return null;
   if (def.seed && typeof def.seed === 'object') applySectionSeed(draft.config, def.seed);
+  retargetSeededTown(draft.config);
   entry.removed = false;
   delete entry.pending;
   const scrollPath = firstSeedFieldPath(def.seed);
@@ -7296,6 +7496,7 @@ async function ensureDraftSiteForInstagram() {
   setIgStatus(RO.IG_DRAFT_SAVING);
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(cleanConfig);
   const baseSlug = toSlug(
     (draft.config.business && draft.config.business.name) ||
     'site-' + String(Date.now()).slice(-6)
@@ -8864,6 +9065,7 @@ async function execPublish(slug) {
   const wasAlreadyPaid = !!currentSitePaid;
   deriveWaHref(draft.config);
   const { cleanConfig, images } = extractImages(draft.config);
+  if (typeof blankDemoContactIdentity === 'function') blankDemoContactIdentity(cleanConfig);
   const payload = {
     templateId: draft.templateId,
     config: cleanConfig,

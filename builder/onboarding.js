@@ -130,7 +130,8 @@ function onbStep2Html() {
     + '<div class="field-group"><label class="field-label" for="onb-name">Numele afacerii</label>'
     + '<input type="text" id="onb-name" class="field-input" maxlength="60" placeholder="ex. Popas Verde" /></div>'
     + '<div class="field-group"><label class="field-label" for="onb-phone">Telefon / WhatsApp</label>'
-    + '<input type="tel" id="onb-phone" class="field-input" maxlength="24" placeholder="07xx xxx xxx" /></div>'
+    + '<input type="tel" id="onb-phone" class="field-input" maxlength="24" placeholder="07xx xxx xxx" aria-describedby="onb-phone-error" />'
+    + '<p id="onb-phone-error" class="field-error" role="alert" hidden></p></div>'
     + '<div class="field-group"><label class="field-label" for="onb-town">Localitate</label>'
     + '<input type="text" id="onb-town" class="field-input" maxlength="40" placeholder="ex. Cluj-Napoca" /></div>'
     + '<div class="onb-actions">'
@@ -176,6 +177,20 @@ function onbCaptureIdentityFields() {
   if (townEl) onbState.town = townEl.value.trim();
 }
 
+/** Inline Romanian message under the wizard's phone field ('' clears it). */
+function onbShowPhoneError(message) {
+  const err = $('onb-phone-error');
+  const phoneEl = $('onb-phone');
+  if (err) {
+    err.textContent = message || '';
+    err.hidden = !message;
+  }
+  if (phoneEl) {
+    if (message) phoneEl.setAttribute('aria-invalid', 'true');
+    else phoneEl.removeAttribute('aria-invalid');
+  }
+}
+
 function onbRenderStep() {
   const overlay = $('onboarding-wizard');
   if (!overlay || !onbState) return;
@@ -197,6 +212,14 @@ function onbRenderStep() {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         onbCaptureIdentityFields();
+        // Same validation/normalization applyQuickstart() applies — an
+        // obviously invalid phone stays on this step with an inline message.
+        const phoneCheck = onbState.phone ? normalizePhoneForConfig(onbState.phone) : null;
+        onbShowPhoneError(phoneCheck && !phoneCheck.ok ? phoneCheck.error : '');
+        if (phoneCheck && !phoneCheck.ok) {
+          if (phoneEl) phoneEl.focus();
+          return;
+        }
         const templateId = (onbState.selectedType && onbState.selectedType.templateId) || onbState.clickedTemplateId;
         const identity = (onbState.name || onbState.phone || onbState.town)
           ? { name: onbState.name, phone: onbState.phone, town: onbState.town }
@@ -212,6 +235,7 @@ function onbRenderStep() {
         onbRenderStep();
       });
     }
+    if (phoneEl) phoneEl.addEventListener('input', () => onbShowPhoneError(''));
     if (nameEl) nameEl.focus();
   } else {
     overlay.querySelectorAll('.onb-type-card').forEach((btn) => {
