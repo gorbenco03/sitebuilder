@@ -3268,6 +3268,9 @@ async function handleTestPayComplete(req, res) {
     }
 
     const kind = order.kind || 'publish';
+    // A paid renewal on a canceled site is a reactivation — the client shows a
+    // reactivation message instead of the first-publish/trial one.
+    const reactivation = kind === 'renewal' && !!sitePre && sitePre.status === 'unpublished';
     const event = {
         id: 'evt_testpay_' + crypto.randomBytes(8).toString('hex'),
         type: 'checkout.session.completed',
@@ -3301,6 +3304,8 @@ async function handleTestPayComplete(req, res) {
     // Fresh paid site may still be deploying; return current registry row
     return sendJson(res, 200, {
         ok: true,
+        kind,
+        reactivation,
         site: {
             id: site.id,
             slug: site.slug,
@@ -3348,8 +3353,12 @@ async function handleSiteCheckout(req, res, siteId) {
     const currency  = p.currency;
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
 
-    // Paid site → yearly renewal (29); unpaid → first publish (100)
-    const isRenewal  = !!site.paid;
+    // Paid site → yearly renewal (29); unpaid → first publish (100).
+    // A canceled ('unpublished') site is a reactivation: always the yearly
+    // renewal price, never a new trial — even one canceled before its first
+    // charge (unpublishSite then reset paid=false).
+    const isReactivation = site.status === 'unpublished';
+    const isRenewal  = !!site.paid || isReactivation;
     const amountCents = isRenewal ? p.renewalCents : p.amountCents;
     const kind        = isRenewal ? 'renewal' : 'publish';
     const productName = isRenewal ? 'Hidook Site Builder hosting renewal (12 months)' : 'Hidook Site Builder site activation';
@@ -3375,7 +3384,7 @@ async function handleSiteCheckout(req, res, siteId) {
             amountCents,
             currency,
             productName,
-            successUrl:  publicUrl + '/app/#paid',
+            successUrl:  publicUrl + (isReactivation ? '/app/#reactivated' : '/app/#paid'),
             cancelUrl:   publicUrl + '/app/#cancelled',
             metadata: { platform: 'web', orderId: order.id, userId, siteId: site.id, kind },
             clientReferenceId: (isRenewal ? 'renew-' : 'web-') + site.id,
@@ -3392,7 +3401,11 @@ async function handleSiteCheckout(req, res, siteId) {
         paymentUrl: checkout.url,
         kind,
         amountCents,
+        currency,
+        reactivation: isReactivation,
         paidUntil: site.paidUntil || null,
+        // What the customer will be paid up to once this checkout completes.
+        newPaidUntil: isRenewal ? wp.computeRenewalPaidUntil(site) : null,
     });
 }
 

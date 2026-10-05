@@ -177,6 +177,10 @@ var RO = Object.freeze({
   SUBSCRIPTION_CANCELLED: 'Abonamentul a fost anulat. Site-ul e ciornă.',
   PAYMENT_PROCESSED_SITE_SOON: 'Plata a fost procesată. Site-ul tău va fi publicat în câteva momente.',
   PAYMENT_CANCELLED: 'Plata a fost anulată.',
+  // Reactivation of a canceled site: yearly price, no new trial.
+  REACTIVATE_NOTE: 'Plătești {price} acum. Site-ul revine online imediat și e plătit până la {date}.',
+  REACTIVATED_DONE: 'Site-ul e din nou online. Hostingul e plătit până la {date}.',
+  REACTIVATED_SOON: 'Plata a fost procesată. Site-ul revine online în câteva momente.',
   LOGIN_LINK_EXPIRED: 'Linkul de autentificare a expirat. Încearcă din nou.',
 
   // Boot

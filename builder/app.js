@@ -7893,6 +7893,32 @@ function formatHostingUntilDate(iso) {
 
 
 /**
+ * Reactivating a canceled site costs the yearly price and adds one year on top
+ * of any paid time left: max(paidUntil, now) + 12 months (same rule as
+ * webpublish.computeRenewalPaidUntil, which applies it after payment).
+ */
+function reactivationPaidUntilIso(site) {
+  const now = Date.now();
+  const cur = site && site.paidUntil ? Date.parse(site.paidUntil) : NaN;
+  const d = new Date(Number.isFinite(cur) && cur > now ? cur : now);
+  d.setUTCMonth(d.getUTCMonth() + 12);
+  return d.toISOString();
+}
+
+/** The price + resulting date, stated on the canceled card before any click. */
+function buildReactivationNote(site) {
+  const note = document.createElement('div');
+  note.className = 'site-hosting-until site-reactivate-note';
+  note.setAttribute('data-reactivate-note', site.id || '');
+  note.textContent = t('REACTIVATE_NOTE', {
+    price: formatRenewalLabel(appConfig),
+    date: formatHostingUntilDate(reactivationPaidUntilIso(site)),
+  });
+  return note;
+}
+
+
+/**
  * PLAN-FEEDBACK-2026-09-14 defect #2 — ONE source of truth for "this site's
  * public address" on the client: `site.publicUrl || site.url`. The server
  * attaches `publicUrl` (an active verified custom domain, else the same
@@ -9181,7 +9207,11 @@ async function completeTestCheckout(sessionId) {
     setLoading(false);
     hideToast();
     clearPreviewOverlays();
-    if (site && isLiveSiteUrl(site.url)) {
+    if (data && data.reactivation) {
+      // A canceled site paid the yearly price: back online, no trial involved.
+      sitePaymentUrl = null;
+      showToast(t('REACTIVATED_DONE', { date: formatHostingUntilDate(site && site.paidUntil) }), 'success', 7000);
+    } else if (site && isLiveSiteUrl(site.url)) {
       sitePaymentUrl = null;
       // U-01 (PLAN-UX-2026-09-27 §3): modal-success already says "Site-ul
       // tău e live" — a toast repeating the same event on top of it was a
@@ -10090,8 +10120,10 @@ function buildSiteCard(site) {
   editBtn.addEventListener('click', () => loadSiteForEdit(site.id));
   actions.appendChild(editBtn);
 
-  // Unpaid → add card / start trial; paid+expired → renew; paid+active → Cancel (portal)
-  if (!site.paid || hostingExpired) {
+  // Unpaid → add card / start trial; paid+expired → renew; paid+active → Cancel (portal).
+  // A canceled site (even one canceled in its trial, paid=false) is reactivated
+  // below at the yearly price — it never gets a second trial.
+  if ((!site.paid || hostingExpired) && site.status !== 'unpublished') {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
     let payLabel, payAriaLabel;
@@ -10117,13 +10149,12 @@ function buildSiteCard(site) {
     });
     actions.appendChild(keepBtn);
   } else if (site.status === 'unpublished') {
-    // owner-dashboard#4: an owner-canceled site (paid=true, hosting still
-    // valid) fell through every other branch with no way back. Reuses the
-    // "Adaugă un card" branch's own checkout route.
+    // Canceled: yearly price, no new trial; the note states price and date first.
+    info.appendChild(buildReactivationNote(site));
     const reactivateBtn = document.createElement('button');
     reactivateBtn.className = 'btn-primary btn-sm';
-    reactivateBtn.textContent = 'Reactivează site-ul';
-    reactivateBtn.setAttribute('aria-label', 'Reactivează site-ul ' + (site.projectName || site.slug || ''));
+    reactivateBtn.textContent = 'Reactivează site-ul — ' + formatRenewalLabel(appConfig);
+    reactivateBtn.setAttribute('aria-label', 'Reactivează site-ul ' + (site.projectName || site.slug || '') + ' pentru ' + formatRenewalLabel(appConfig));
     reactivateBtn.addEventListener('click', async () => {
       try {
         setBtnLoading(reactivateBtn, true, 'Se procesează…');
@@ -11567,6 +11598,9 @@ async function handleRoute(hash) {
     }
   } else if (route === 'paid') {
     showToast(RO.PAYMENT_PROCESSED_SITE_SOON, 'success', 6000);
+    window.location.hash = '#dashboard';
+  } else if (route === 'reactivated') {
+    showToast(RO.REACTIVATED_SOON, 'success', 6000);
     window.location.hash = '#dashboard';
   } else if (route === 'cancelled') {
     showToast(RO.PAYMENT_CANCELLED, '', 4000);
