@@ -543,6 +543,22 @@ function _hasEntitledSubscriptionStatus(site) {
 }
 
 /**
+ * Yearly renewal / reactivation entitlement: max(current paidUntil, now) + 12
+ * months, so a customer who pays early keeps the time already paid for.
+ * The one place this is computed — the checkout response previews it and
+ * handleStripePaid applies it.
+ *
+ * @param {object} site
+ * @returns {string} ISO date
+ */
+function computeRenewalPaidUntil(site) {
+    const baseIso = site && site.paidUntil && Date.parse(site.paidUntil) > Date.now()
+        ? site.paidUntil
+        : new Date().toISOString();
+    return registry.addMonthsIso(baseIso, 12);
+}
+
+/**
  * Wave7 — must be called before opening a Checkout Session for an already-
  * paid site (renewal / reactivation). Refuses when the site's own record
  * says Stripe still considers its subscription current: opening a second
@@ -2536,39 +2552,50 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
         notifyAdmin(`💰 Payment confirmed! Site: ${site.slug || site.projectName} (${site.platform || 'web'}) kind=${kind}`);
     }
 
-    // ── Renewal: extend hosting year; do not re-run first-publish fee path ──
+    // ── Renewal / reactivation: extend hosting year; no new trial, no 99 fee ──
     if (kind === 'renewal') {
-        const baseIso = site.paidUntil && Date.parse(site.paidUntil) > Date.now()
-            ? site.paidUntil
-            : new Date().toISOString();
-        const paidUntil = registry.addMonthsIso(baseIso, 12);
+        const paidUntil = computeRenewalPaidUntil(site);
+        // A canceled ('unpublished') or expired site that pays the yearly price
+        // comes back online right now, from its latest saved version.
+        const wasOffline = site.status === 'expired' || site.status === 'unpublished';
+        const wasCanceled = site.status === 'unpublished';
+        const paidPatch = { paid: true, paidUntil };
+        if (wasCanceled) {
+            Object.assign(paidPatch, {
+                canceledAt: null,
+                stripeSubscriptionStatus: 'active',
+                subscriptionStatus: 'active',
+                paymentFailedAt: null,
+                paymentFailedCount: null,
+            });
+        }
         try {
-            registry.updateSite(siteId, { paid: true, paidUntil });
+            registry.updateSite(siteId, paidPatch);
         } catch (_) {}
-        log('webpublish.stripe_paid.renewed', { siteId, orderId, paidUntil });
-        // If expired, republish last version so the site is live again
-        const fresh = registry.getSite(siteId);
-        if (fresh && fresh.status === 'expired') {
+        log('webpublish.stripe_paid.renewed', { siteId, orderId, paidUntil, reactivation: wasCanceled });
+        if (wasOffline) {
+            const fresh = registry.getSite(siteId);
             const versions = registry.listVersions(siteId);
-            if (versions.length > 0) {
-                const last = versions[versions.length - 1];
-                const lastConfig = registry.getVersionConfig(siteId, last.versionId);
-                if (lastConfig) {
-                    try {
-                        const result = await module.exports.publishSite({
-                            site: { ...fresh, paid: true },
-                            config: lastConfig,
-                            images: [],
-                            siteDirAlreadyBuilt: false,
-                        });
-                        registry.updateSite(siteId, { status: 'live', url: result.url, paid: true, paidUntil });
-                        _notifyOwnerChannel({ ...fresh, paid: true }, result.url, messenger, notifyAdmin);
-                        log('webpublish.stripe_paid.renewal_reactivated', { siteId, orderId, url: result.url });
-                    } catch (e) {
-                        log('webpublish.stripe_paid.renewal_reactivate_failed', { siteId, orderId, err: e.message }, 'error');
-                        registry.updateSite(siteId, { status: 'needs-retry', paid: true, paidUntil });
-                    }
+            const last = versions.length > 0 ? versions[versions.length - 1] : null;
+            const lastConfig = last ? registry.getVersionConfig(siteId, last.versionId) : null;
+            if (fresh && lastConfig) {
+                try {
+                    const result = await module.exports.publishSite({
+                        site: { ...fresh, paid: true },
+                        config: lastConfig,
+                        images: [],
+                        siteDirAlreadyBuilt: false,
+                    });
+                    registry.updateSite(siteId, { status: 'live', url: result.url, paid: true, paidUntil });
+                    _notifyOwnerChannel({ ...fresh, paid: true }, result.url, messenger, notifyAdmin);
+                    log('webpublish.stripe_paid.renewal_reactivated', { siteId, orderId, url: result.url });
+                } catch (e) {
+                    log('webpublish.stripe_paid.renewal_reactivate_failed', { siteId, orderId, err: e.message }, 'error');
+                    registry.updateSite(siteId, { status: 'needs-retry', paid: true, paidUntil });
                 }
+            } else if (wasCanceled) {
+                log('webpublish.stripe_paid.renewal_no_version', { siteId, orderId }, 'error');
+                registry.updateSite(siteId, { status: 'needs-retry', paid: true, paidUntil });
             }
         }
         return;
@@ -2848,6 +2875,7 @@ module.exports = {
     // Wave 7 — self-serve custom domain connect (called from bot/domains.js)
     applyCustomDomainOrigin,
     canStartRenewalCheckout,
+    computeRenewalPaidUntil,
     reconcileSiteFromStripe,
     getDunningState,
     getInvoiceHistory,

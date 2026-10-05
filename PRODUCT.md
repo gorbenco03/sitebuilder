@@ -18,6 +18,7 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 - First charge happens automatically on day 14 if the customer does not cancel.
 - Price: **99** in the customer currency bucket — EUR (EU), GBP (UK), USD (rest of world).
 - Renewal: **29/year** in the same currency.
+- Reactivating a canceled site (owner decision 2026-10-05): pay **29** (the renewal price), **no new trial**, not 99 — also for a site canceled during its trial. After payment the site is republished from its latest version immediately and `paidUntil = max(current paidUntil, now) + 1 year`. The dashboard card states the price and resulting date before the click; the post-payment message is a reactivation message, never "Trial început".
 - No promise of permanent hosting from one payment.
 - Owner creates production Stripe Product/Prices, Customer Portal, refund/cancellation policy. Local/staging uses test-mode/env-driven IDs only.
 
