@@ -434,6 +434,10 @@ input, textarea, select {
   display: contents;
 }
 
+.editor-topbar-scroll.tb-scrolls.tb-at-end {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
 .editor-topbar-scroll.tb-scrolls {
   /* Edge fade only while the rail really overflows (set by app.js). */
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent 100%);
@@ -486,6 +490,10 @@ input, textarea, select {
 /* Short legend: swatch only, full sentence stays in its title. */
 .editor-topbar.tb-legend-min .demo-legend-text,
 .editor-topbar.tb-legend-min .demo-legend-more { display: none !important; }
+/* Last squeezes (layoutEditorTopbar): the "Înapoi" label, the demo swatch, the name. */
+.editor-topbar.tb-lean .editor-topbar-back-label,
+.editor-topbar.tb-lean .demo-legend { display: none !important; }
+.editor-topbar.tb-nameless .editor-tpl-name { display: none; }
 /* The "Mai mult" trigger exists only while something is in its menu. */
 #btn-topbar-more { display: none; }
 .editor-topbar.tb-has-overflow #btn-topbar-more { display: inline-flex; }
@@ -600,7 +608,7 @@ input, textarea, select {
      .editor-topbar-right (the flexible, scrollable side) absorbs all
      of the squeeze instead, exactly as designed above. */
   .editor-topbar-left {
-    flex-shrink: 0;
+    flex-shrink: 1;
   }
   .editor-tpl-name {
     max-width: 84px;
@@ -627,38 +635,57 @@ input, textarea, select {
     align-content: flex-start;
     row-gap: 0.25rem;
   }
-  .editor-topbar-right {
-    overflow: visible;
-    flex: 1 0 100%;
-    order: 3;
-    justify-content: flex-start;
-    /* Room for the pinned Publish button on the row above. */
-    padding-right: 3.25rem;
+  /* Row 1 is one flow: back, name, account, undo/redo, device toggle, Publică
+     (audit27-w-3 oracle). The right wrapper dissolves so Publică and the tool
+     rail are items of the bar itself: Publică takes real space on row 1
+     instead of floating over its neighbours, the rail takes the whole row 2. */
+  .editor-topbar {
+    padding: 0 0.5rem;
+    gap: 0.25rem;
   }
-  /* Publish is the one control that must never require a scroll or a second
-     glance, so it stays on the top row even though its markup lives beside the
-     rail. Absolute against the sticky topbar rather than restructured, because
-     the markup order is what keyboard and screen-reader users traverse and it
-     is correct as it stands. */
+  .editor-topbar-right {
+    display: contents;
+  }
+  .editor-topbar-left {
+    gap: 0.25rem;
+    max-width: none;
+  }
+  .editor-topbar-left > .btn-icon-back,
+  .editor-topbar-left > .account-menu-wrap {
+    flex-shrink: 0;
+  }
+  .editor-tpl-name {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .history-controls {
+    margin-right: 0;
+  }
   #btn-publish {
-    position: absolute;
-    top: 4px;
-    right: 0.75rem;
+    order: 2;
+    margin-left: auto;
+    flex-shrink: 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    justify-content: center;
+  }
+  @media (min-width: 520px) {
+    #btn-publish { padding-left: 0.85rem; padding-right: 0.85rem; }
   }
   .editor-topbar-scroll {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    flex: 1 1 auto;
+    order: 3;
+    flex: 1 0 100%;
     min-width: 0;
     justify-content: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    /* Small end-padding so the last scrolled item isn't flush against
-       the pinned Publish button. */
-    padding-right: 0.2rem;
   }
   .editor-topbar-scroll::-webkit-scrollbar { display: none; }
   .editor-topbar-scroll > * {
@@ -706,12 +733,6 @@ input, textarea, select {
   .btn-topbar { min-width: 44px !important; min-height: 44px !important; }
   .drawer-close { width: 44px !important; height: 44px !important; }
 
-  /* builder-mobile#3: .mode-mobile's fixed width:390px preview iframe loses
-     to its own max-width:calc(100vw - 24px) on a phone this narrow (390 CSS
-     px evaluates to 366px), so tapping "Mobil" shrinks the canvas narrower
-     than the default "Desktop" mode it's meant to preview smaller than.
-     Hide the toggle here and stay on the wider default instead. */
-  .preview-device-toggle { display: none; }
 
   /* Color popover: it is positioned by app.js from the button's
      bounding rect (an inline `right` style we cannot edit here — see
@@ -743,9 +764,11 @@ input, textarea, select {
   white-space: nowrap;
 }
 .btn-publish-top span { display: none; }
-@media (min-width: 420px) {
+@media (min-width: 520px) {
   .btn-publish-top span { display: inline; }
 }
+/* layoutEditorTopbar() drops the label when the bar has no room for it. */
+.editor-topbar.tb-pub-icon .btn-publish-top span { display: none; }
 
 /* ---------- Undo / redo (audit finding #45) ---------- */
 .history-controls {
@@ -1157,6 +1180,20 @@ body.details-drawer-open .demo-content-banner {
 .btn-primary:active { transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.5; pointer-events: none; }
 .btn-primary.loading { pointer-events: none; opacity: 0.8; }
+/* A long label wraps inside the button instead of running past it. */
+.btn-primary.btn-full,
+.site-card-actions .btn-primary {
+  white-space: normal;
+  text-align: center;
+  text-wrap: balance;
+}
+.btn-primary .btn-label-wrap {
+  display: block;
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+  text-wrap: balance;
+}
 
 /* Delete-site: a permanent, hard-to-misclick destructive action — visually
    distinct (red) from btn-primary/btn-ghost, same shape/sizing otherwise. */
@@ -2715,6 +2752,14 @@ body.details-drawer-open .demo-content-banner {
 }
 .device-btn:hover { color: var(--text-muted); }
 .device-btn.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); }
+/* Row 1 of the phone topbar has no room for the toggle below 360px, and a
+   template name cannot be read in the sliver left below 480px. */
+@media (max-width: 359px) {
+  .preview-device-toggle { display: none; }
+}
+@media (max-width: 480px) {
+  .editor-tpl-name { display: none; }
+}
 
 /* Versions list */
 .versions-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: var(--space-3); max-height: 360px; overflow-y: auto; }

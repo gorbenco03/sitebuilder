@@ -4962,10 +4962,11 @@ function updateMobileToolbarMode() {
  * from everything shown with its label, layoutEditorTopbar() takes one step at
  * a time until the tool rail stops overflowing: first the demo legend text,
  * then, lowest priority first, each control loses its label, and only then,
- * again lowest priority first, controls move into "Mai mult". Publică, undo/redo and the device toggle never move.
+ * again lowest priority first, controls move into "Mai mult"; only then does
+ * Publică lose its label. Publică, undo/redo and the device toggle never move.
  * Stateless: every pass resets and re-measures, so the result depends only on
- * the current width. The phone layout (own scrolling rail, labels required by
- * suite12-mobile-topbar-discoverable) is left alone. */
+ * the current width. A phone layout with a mouse keeps its own scrolling rail
+ * (audit27-s-4: no "Mai mult" there); a touch phone runs the same steps. */
 let topbarLayoutQueued = false;
 let topbarLayoutObserver = null;
 
@@ -4996,17 +4997,18 @@ function layoutEditorTopbar() {
   if (!bar || !rail || bar.getClientRects().length === 0) return;
   const controls = TOPBAR_COLLAPSE_ORDER.map((id) => $(id)).filter(Boolean);
   const reset = () => {
-    bar.classList.remove('tb-legend-min', 'tb-tight');
+    bar.classList.remove('tb-legend-min', 'tb-tight', 'tb-pub-icon', 'tb-lean', 'tb-nameless');
     rail.classList.remove('tb-scrolls');
     controls.forEach((el) => el.classList.remove('tb-icon', 'tb-overflow'));
   };
-  const overflows = () => rail.scrollWidth > rail.clientWidth + 1 || bar.scrollWidth > bar.clientWidth + 1;
+  const overflows = () => rail.scrollWidth > rail.clientWidth || bar.scrollWidth > bar.clientWidth;
   reset();
   const coarsePhone = document.body.classList.contains('mobile-coarse-toolbar');
   if (coarsePhone) MOBILE_FORCED_OVERFLOW_IDS.forEach((id) => { const el = $(id); if (el) el.classList.add('tb-overflow'); });
   syncTopbarOverflowUi(bar);
-  if (topbarIsPhoneLayout()) {
+  if (topbarIsPhoneLayout() && !coarsePhone) {
     if (overflows()) rail.classList.add('tb-scrolls');
+    syncRailScrollEnd(rail);
     return;
   }
   // Labels go first (lowest priority first), then places in the bar. Detalii
@@ -5017,11 +5019,26 @@ function layoutEditorTopbar() {
   // Tighter padding before any control leaves: Detalii must stay in the bar on a 768px tablet.
   steps.push(() => bar.classList.add('tb-tight'));
   pending.forEach((el) => steps.push(() => el.classList.add('tb-overflow')));
+  // Last resort, after every control that can leave has left: Publică loses its
+  // label, then the "Înapoi" label and the demo swatch, then the name.
+  steps.push(() => bar.classList.add('tb-pub-icon'));
+  steps.push(() => bar.classList.add('tb-lean'));
+  steps.push(() => bar.classList.add('tb-nameless'));
   for (let i = 0; i < steps.length && overflows(); i++) {
     steps[i]();
     syncTopbarOverflowUi(bar);
   }
   if (overflows()) rail.classList.add('tb-scrolls');
+  syncRailScrollEnd(rail);
+}
+
+/** The fade over the rail's end only while there is something left to scroll to. */
+function syncRailScrollEnd(rail) {
+  rail.classList.toggle('tb-at-end', rail.scrollLeft + rail.clientWidth >= rail.scrollWidth - 1);
+  if (!rail.dataset.tbScrollWired) {
+    rail.dataset.tbScrollWired = '1';
+    rail.addEventListener('scroll', () => syncRailScrollEnd(rail), { passive: true });
+  }
 }
 
 function scheduleEditorTopbarLayout() {
