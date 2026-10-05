@@ -98,6 +98,8 @@ Done înseamnă:
 
 **Excepție (PLAN-UX-2026-09-27 §5.1, restul):** doar pentru designul cu care wizard-ul a fost chiar finalizat (nu sărit), Details nu se mai deschide automat — wizard-ul tocmai a colectat aceleași date — ci apare un indiciu necopleșitor în editor cu un buton care îl deschide la cerere; orice selecție ulterioară de design (și wizard-ul sărit) auto-deschide Details exact ca înainte.
 
+**Date de contact niciodată inventate (VERIFICARE-2026-10-04 H-01):** numele afacerii nu mai generează linkuri Instagram/Facebook sau e-mail derivate din el; câmpurile sociale/e-mail rămase la valoarea demo a șablonului sunt golite (șabloanele ascund linkul gol) când proprietarul schimbă numele, iar checklist-ul de publicare le numește („Linkuri sociale de exemplu”, „E-mail de exemplu”, „Adresă de exemplu”) cât timp mai sunt demo. Telefonul din wizard/quickstart este validat (07xx xxx xxx, +40… sau orice număr internațional cu + / 00; mesaj inline în română la valori evident greșite) și normalizat pentru wa.me; localitatea introdusă actualizează titlul, eticheta din hero, partea de oraș din adrese, linkul Google Maps al adresei și adresa din „Unde ne găsești”.
+
 ### 4.4 WhatsApp
 
 Done înseamnă:

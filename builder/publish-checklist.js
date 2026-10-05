@@ -36,6 +36,38 @@ const PUBLISH_CHECKLIST_KEYS = {
   legal: 'footer.address',
 };
 
+// Contact identity the template ships as sample data. The owner must type
+// their own, or leave it empty (every template hides an empty social link or
+// e-mail) — the checklist names whichever of these is still the sample.
+const PUBLISH_CHECKLIST_SOCIAL_PATHS = [
+  'contact.instagram.url', 'contact.instagram.label',
+  'contact.facebook.url', 'contact.facebook.label',
+  'instagram.handle', 'instagram.url', 'instagram.embedUrl',
+];
+const PUBLISH_CHECKLIST_EMAIL_PATH = 'contact.email';
+const PUBLISH_CHECKLIST_ADDRESS_PATHS = ['footer.address', 'contact.address'];
+
+/** True iff `path` is a non-empty string identical to the demo preset's own. */
+function pcStillDemoValue(config, preset, path) {
+  const val = getPath(config, path);
+  const demoVal = getPath(preset, path);
+  return typeof val === 'string' && typeof demoVal === 'string' &&
+    demoVal.trim() !== '' && val.trim() === demoVal.trim();
+}
+
+/** Same, for an address: a quick-start town swap leaves "demo street, new
+ * town", which is still sample data — compare with the town swapped back. */
+function pcStillDemoAddress(config, preset, path) {
+  if (pcStillDemoValue(config, preset, path)) return true;
+  const val = getPath(config, path);
+  const demoVal = getPath(preset, path);
+  if (typeof val !== 'string' || typeof demoVal !== 'string' || !val.trim()) return false;
+  const ownTown = deriveDemoTown(config);
+  const demoTown = deriveDemoTown(preset);
+  if (!ownTown || !demoTown || ownTown === demoTown) return false;
+  return val.split(ownTown).join(demoTown).trim() === demoVal.trim();
+}
+
 function pcField(schema, key) {
   return getAllSchemaFields(schema).find((f) => f.key === key) || null;
 }
@@ -94,13 +126,49 @@ function computePublishChecklist(schema, config, tplData) {
     key: demoPaths[0] || null, // a data-hb-edit PATH, not a schema field key — see resolvePublishChecklistItem()
   });
 
+  const preset = getDemoPresetConfig(tplData);
+  if (preset) {
+    const demoSocial = PUBLISH_CHECKLIST_SOCIAL_PATHS.filter((p) => pcStillDemoValue(config, preset, p) && pcField(schema, p));
+    const hasDemoSocial = PUBLISH_CHECKLIST_SOCIAL_PATHS.some((p) => {
+      const d = getPath(preset, p);
+      return typeof d === 'string' && d.trim() !== '' && pcField(schema, p);
+    });
+    if (hasDemoSocial) {
+      items.push({
+        id: 'social',
+        label: demoSocial.length === 0
+          ? 'Linkuri sociale — doar ale tale'
+          : 'Linkuri sociale de exemplu',
+        done: demoSocial.length === 0,
+        key: demoSocial[0] || null,
+      });
+    }
+
+    const emailDemo = pcField(schema, PUBLISH_CHECKLIST_EMAIL_PATH) &&
+      typeof getPath(preset, PUBLISH_CHECKLIST_EMAIL_PATH) === 'string' &&
+      getPath(preset, PUBLISH_CHECKLIST_EMAIL_PATH).trim() !== '';
+    if (emailDemo) {
+      const stillDemo = pcStillDemoValue(config, preset, PUBLISH_CHECKLIST_EMAIL_PATH);
+      items.push({
+        id: 'email',
+        label: stillDemo ? 'E-mail de exemplu' : 'E-mail de contact',
+        done: !stillDemo,
+        key: stillDemo ? PUBLISH_CHECKLIST_EMAIL_PATH : null,
+      });
+    }
+  }
+
   const legalField = pcField(schema, PUBLISH_CHECKLIST_KEYS.legal);
   if (legalField) {
+    const demoAddrPath = preset
+      ? PUBLISH_CHECKLIST_ADDRESS_PATHS.find((p) => pcField(schema, p) && pcStillDemoAddress(config, preset, p))
+      : null;
+    const done = isFieldGenuinelyMade(legalField, config, tplData) && !demoAddrPath;
     items.push({
       id: 'legal',
-      label: 'Adresă / date de contact în subsol',
-      done: isFieldGenuinelyMade(legalField, config, tplData),
-      key: legalField.key,
+      label: done ? 'Adresă / date de contact în subsol' : 'Adresă de exemplu în subsol sau contact',
+      done,
+      key: demoAddrPath || legalField.key,
     });
   }
 
