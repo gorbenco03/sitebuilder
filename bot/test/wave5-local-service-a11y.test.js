@@ -104,6 +104,12 @@ async function main() {
     const closeDrawer = page.locator('#btn-close-drawer');
     if (await closeDrawer.isVisible().catch(() => false)) await closeDrawer.click();
 
+    // Sample social links are no longer published (W-2), so enter real ones like an owner would.
+    await page.evaluate(() => {
+      draft.config.contact = draft.config.contact || {};
+      draft.config.contact.instagram = Object.assign({}, draft.config.contact.instagram, { url: 'https://www.instagram.com/firma-reala-test' });
+      draft.config.contact.facebook = Object.assign({}, draft.config.contact.facebook, { url: 'https://www.facebook.com/firma-reala-test' });
+    });
     await page.locator('#btn-publish').click();
     await page.locator('#modal-publish').waitFor({ state: 'visible' });
     const slug = 'wave5-ls-a11y-' + Date.now().toString(36);
