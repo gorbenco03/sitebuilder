@@ -11142,7 +11142,11 @@ async function loadVersions(siteId) {
       const item = document.createElement('div');
       item.className = 'version-item';
       const d = new Date(v.publishedAt);
-      const dateStr = d.toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+      // W-7: Romanian date via the shared formatter + 24h time, so rows
+      // published the same day still differ.
+      let timeStr = '';
+      try { timeStr = d.toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }); } catch (_) { /* date only */ }
+      const dateStr = [formatHostingUntilDate(v.publishedAt), timeStr].filter(Boolean).join(', ') || String(v.publishedAt || '');
       const verNum = versionsSorted.length - idx;
       const label = 'Versiunea ' + verNum;
       // U-01 (PLAN-UX-2026-09-27 §3): rows used to say only "Versiunea N" —
@@ -11155,6 +11159,7 @@ async function loadVersions(siteId) {
         <div class="version-item-row">
           <span class="version-date">${escHtml(dateStr)}</span>
           <span class="version-label">${escHtml(label)}</span>
+          ${v.live ? '<span class="version-live-badge">Live</span>' : ''}
           <button class="btn-ghost btn-sm btn-rollback" data-siteid="${escHtml(siteId)}" data-verid="${escHtml(v.versionId)}">Restabilește</button>
         </div>
         ${description ? `<div class="version-item-desc">${escHtml(description)}</div>` : ''}`;

@@ -1937,7 +1937,16 @@ async function handleGetVersions(req, res, siteId) {
     if (!site) return sendJson(res, 404, { error: 'Site negăsit.' });
     if (site.userId !== userId) return sendJson(res, 403, { error: 'Acces refuzat.' });
     const reg = getRegistry();
-    const versions = await reg.listVersions(siteId);
+    // W-7 (VERIFICARE-2026-10-04 mediums, journey-desktop#5 et al.): draft
+    // autosaves are stored as versions too, so one publish used to show 4-10
+    // near-identical rows. The history lists only real publishes and restores
+    // (versions.published, R-03); autosave rows stay stored, just not listed.
+    // Oldest-first order is kept; the newest published row is the live one.
+    const all = await reg.listVersionsDetailed(siteId);
+    const versions = all.filter((v) => v.published);
+    const liveVersionId = site.status === 'live' && versions.length
+        ? versions[versions.length - 1].versionId
+        : null;
     const versionsWithDescription = await Promise.all(versions.map(async (v) => {
         let description = '';
         try {
@@ -1947,7 +1956,7 @@ async function handleGetVersions(req, res, siteId) {
             description = [name, tagline].filter(Boolean).join(' — ');
             if (description.length > 80) description = description.slice(0, 79) + '…';
         } catch (_) { /* a missing/corrupt version config just gets no description, never a failed list */ }
-        return { ...v, description };
+        return { versionId: v.versionId, publishedAt: v.publishedAt, description, live: v.versionId === liveVersionId };
     }));
     sendJson(res, 200, { versions: versionsWithDescription });
 }

@@ -311,8 +311,14 @@ test('R-03: draft autosave churn does not evict a real publish from the MAX_VERS
             assert.equal(auto.status, 200, await auto.clone().text());
         }
 
+        // W-7: GET .../versions now lists only real publishes (autosave rows
+        // stay stored but are not listed), so the FIFO cap is checked on the
+        // registry itself — the server and this file share one module instance.
+        const registry = require('../registry.js');
+        assert.equal(registry.listVersions(siteId).length, 10, 'FIFO cap still holds at MAX_VERSIONS');
+
         const versionsAfterChurn = await (await c('/api/sites/' + siteId + '/versions')).json();
-        assert.equal(versionsAfterChurn.versions.length, 10, 'FIFO cap still holds at MAX_VERSIONS');
+        assert.ok(versionsAfterChurn.versions.length >= 1, 'the real publish is still listed');
 
         const survivingIds = new Set(versionsAfterChurn.versions.map((v) => v.versionId));
         const anyPublishSurvived = [...publishedVersionIds].some((id) => survivingIds.has(id));

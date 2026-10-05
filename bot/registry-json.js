@@ -370,6 +370,13 @@ function listVersions(siteId) {
         .map(({ versionId, publishedAt }) => ({ versionId, publishedAt }));
 }
 
+/** Same rows as listVersions() plus `published` (real Publică/restore vs draft autosave). */
+function listVersionsDetailed(siteId) {
+    const db = _load();
+    return ((db.versions || {})[siteId] || [])
+        .map(({ versionId, publishedAt, published }) => ({ versionId, publishedAt, published: !!published }));
+}
+
 function getVersionConfig(siteId, versionId) {
     const db = _load();
     const list = ((db.versions || {})[siteId] || []);
@@ -662,6 +669,7 @@ module.exports = {
     deleteSite,
     saveVersion,
     listVersions,
+    listVersionsDetailed,
     getVersionConfig,
     createOrder,
     findPendingOrder,

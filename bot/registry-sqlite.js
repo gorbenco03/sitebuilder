@@ -434,6 +434,13 @@ function listVersions(siteId) {
         .map((r) => ({ versionId: r.version_id, publishedAt: r.published_at }));
 }
 
+/** Same rows as listVersions() plus `published` (real Publică/restore vs draft autosave). */
+function listVersionsDetailed(siteId) {
+    return db.prepare('SELECT version_id, published_at, published FROM versions WHERE site_id = ? ORDER BY seq ASC')
+        .all(siteId)
+        .map((r) => ({ versionId: r.version_id, publishedAt: r.published_at, published: !!r.published }));
+}
+
 function getVersionConfig(siteId, versionId) {
     if (siteId == null || versionId == null) return null; // node:sqlite cannot bind undefined
     const row = db.prepare('SELECT config FROM versions WHERE site_id = ? AND version_id = ?').get(siteId, versionId);
@@ -721,6 +728,7 @@ module.exports = {
     deleteSite,
     saveVersion,
     listVersions,
+    listVersionsDetailed,
     getVersionConfig,
     createOrder,
     findPendingOrder,
