@@ -274,9 +274,51 @@ function deriveSocialImage(config) {
     return found;
 }
 
+/**
+ * theme.* values land in a <style> custom property and in inline <script>
+ * string literals, where HTML-escaping does not neutralise injection. Only a
+ * strict #rgb / #rrggbb hex is ever rendered; anything else becomes the
+ * template default. Pinned by bot/test/audit27-w-5-theme-css-injection.test.js.
+ */
+const THEME_HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const DEFAULT_RENDER_THEME = Object.freeze({
+    primary: '#E8588C',
+    primaryLight: '#f07aa5',
+    primaryDark: '#d14477',
+    cream: '#faf8f8',
+});
+
+function sanitizeThemeColor(value, fallback) {
+    if (typeof value === 'string') {
+        const v = value.trim();
+        if (THEME_HEX_RE.test(v)) return v;
+    }
+    return fallback;
+}
+
+/** Returns a new theme object with every colour validated; unknown keys that are not hex are dropped. */
+function sanitizeTheme(theme, fallbackTheme) {
+    const fb = (fallbackTheme && typeof fallbackTheme === 'object') ? fallbackTheme : {};
+    const isObj = !!theme && typeof theme === 'object' && !Array.isArray(theme);
+    const src = isObj ? theme : {};
+    const out = {};
+    for (const key of Object.keys(DEFAULT_RENDER_THEME)) {
+        if (isObj && !(key in src)) continue;
+        const safeFallback = sanitizeThemeColor(fb[key], DEFAULT_RENDER_THEME[key]);
+        out[key] = sanitizeThemeColor(src[key], safeFallback);
+    }
+    for (const key of Object.keys(src)) {
+        if (key in DEFAULT_RENDER_THEME) continue;
+        const v = sanitizeThemeColor(src[key], null);
+        if (v !== null) out[key] = v;
+    }
+    return out;
+}
+
 /** Backfill customer configs saved before newer visible labels were introduced. */
-function normalizeConfigForRender(config) {
+function normalizeConfigForRender(config, defaultTheme) {
     const cfg = Object.assign({}, config);
+    if (cfg.theme !== undefined && cfg.theme !== null) cfg.theme = sanitizeTheme(cfg.theme, defaultTheme);
     const labels = cfg.labels && typeof cfg.labels === 'object'
         ? Object.assign({}, cfg.labels)
         : {};
@@ -1048,7 +1090,7 @@ function reorderSections(html, sectionsMeta) {
  */
 function renderHtml(templateHtml, config, opts) {
     // Normalize a shallow clone so old local/server drafts render with current defaults.
-    const cfg = normalizeConfigForRender(config);
+    const cfg = normalizeConfigForRender(config, opts && opts.defaultTheme);
     if (cfg.contact) {
         cfg.contact = Object.assign({}, cfg.contact);
         cfg.contact.addressNoHref =
@@ -1278,6 +1320,8 @@ module.exports = {
     build,
     escapeHtml,
     renderHtml,
+    sanitizeTheme,
+    sanitizeThemeColor,
     isConnectedSocialFeedEmbed,
     normalizeInstagramForPublic,
     reorderSections,
