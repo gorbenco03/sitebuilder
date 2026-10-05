@@ -2734,6 +2734,7 @@ body.details-drawer-open .demo-content-banner {
 .version-item-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .version-date { color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .version-label { font-size: var(--fs-xs); color: var(--text-light); flex: 1; padding: 0 var(--space-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-live-badge { flex: none; padding: 0 var(--space-2); border-radius: var(--radius-sm); background: var(--success-bg); color: var(--success-strong); font-weight: 600; }
 .version-item-desc { font-size: var(--fs-2xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ============================================================
