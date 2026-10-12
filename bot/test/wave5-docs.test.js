@@ -258,7 +258,7 @@ test('WAVE5-WEIGHT: AGENTS.md documents the QA-evidence forward policy and the g
 });
 
 test('WAVE5-WEIGHT: HANDOFF-docs.md exists and names the untracked-sqlite handoff', () => {
-    assert.ok(exists('HANDOFF-docs.md'), 'HANDOFF-docs.md must exist');
-    const text = read('HANDOFF-docs.md');
+    assert.ok(exists('00-Governance/arhiva/HANDOFF-docs.md'), 'HANDOFF-docs.md must exist');
+    const text = read('00-Governance/arhiva/HANDOFF-docs.md');
     assert.ok(/registry\.sqlite/.test(text), 'HANDOFF-docs.md must describe the bot/registry.sqlite tracking issue');
 });

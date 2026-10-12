@@ -1,3 +1,0 @@
-drawerVisible=true
-drawerTitle=Detalii site
-url=http://127.0.0.1:54710/app/#edit

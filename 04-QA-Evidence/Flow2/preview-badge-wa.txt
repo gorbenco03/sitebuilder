@@ -1,2 +1,0 @@
-badge="Build by hidook.tech powered by hidook.agency"
-waCount=1

@@ -1,5 +1,0 @@
-product-menu: builder=none, generated accept=hidden
-local-service: builder=none, generated accept=hidden
-portfolio: builder=none, generated accept=hidden
-professionals: builder=none, generated accept=hidden
-desserdirina: builder=none, generated accept=hidden
