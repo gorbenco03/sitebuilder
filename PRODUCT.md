@@ -29,7 +29,9 @@ Simple website builder sold worldwide. Public name: **Hidook Site Builder**.
 
 ## Design and templates
 
-Launch template scope:
+New sites are built in the **block editor** (owner decision 2026-10-28; `builder/blocks/`, served at `/app/blocks/`, `templateId: "blocks"`). The catalog offers 13 designs — "De la zero" plus 12 business types, each with its own pages, copy, photos and theme. Customers edit text in place, add/move/duplicate/delete blocks, manage several pages with a shared header and footer, change theme, preview desktop/phone, and publish through the same magic link → address → Stripe trial → live path. Every page is its own HTML file on the published site, with the legal pages, cookie banner and hidook attribution; contact forms deliver to "Mesaje". Not yet in the block editor: Instafidget connection (the published Instagram block shows only the title and a follow button), the onboarding wizard and the publish checklist. See `VISION.md` §3.
+
+Form-editor template scope (kept only for sites already created with it — all test sites):
 
 1. Product/menu businesses
 2. Local service / lead-gen
