@@ -81,6 +81,7 @@ function rewriteDataUrl(obj, dataUrl, localPath) {
 
 function materializeImages(cfg, imagesDir, explicitImages) {
     const written = new Set();
+    const imageBuffers = [];
     function writeOne(name, dataUrl) {
         const decoded = decodeDataUrl(dataUrl);
         if (!decoded) return null;
@@ -96,6 +97,7 @@ function materializeImages(cfg, imagesDir, explicitImages) {
         fs.mkdirSync(imagesDir, { recursive: true });
         fs.writeFileSync(path.join(imagesDir, fname), decoded.buffer);
         written.add(fname);
+        imageBuffers.push(decoded.buffer);
         const localPath = 'images/' + fname;
         rewriteDataUrl(cfg, dataUrl, localPath);
         return localPath;
@@ -132,6 +134,7 @@ function materializeImages(cfg, imagesDir, explicitImages) {
         }
     }
     walkLeftovers(cfg, '');
+    return imageBuffers;
 }
 
 /** Rewrite a stylesheet on disk with its minified form. No-op if absent. */
@@ -634,7 +637,169 @@ function exportSiteHtml(opts) {
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// Block-editor sites (templateId 'blocks'): no template dir, no build.js.
+// ---------------------------------------------------------------------------
+
+const LEGAL_PAGE_FILES = ['privacy.html', 'terms.html', 'cookies.html'];
+
+/** True when the leading bytes are a PNG, JPEG, WebP or GIF. */
+function looksLikeRasterImage(buf) {
+    if (!Buffer.isBuffer(buf) || buf.length < 12) return false;
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return true;
+    if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return true;
+    if (buf.toString('latin1', 0, 4) === 'RIFF' && buf.toString('latin1', 8, 12) === 'WEBP') return true;
+    return buf.toString('latin1', 0, 3) === 'GIF';
+}
+
+/** Remove data:image values whose bytes are not an image, before they reach disk. */
+function dropFakeImages(node) {
+    if (!node || typeof node !== 'object') return;
+    for (const key of Object.keys(node)) {
+        const v = node[key];
+        if (typeof v === 'string' && v.startsWith('data:image/')) {
+            const m = /^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i.exec(v);
+            if (!m || !looksLikeRasterImage(Buffer.from(m[1].replace(/\s+/g, ''), 'base64'))) node[key] = '';
+        } else if (v && typeof v === 'object') {
+            dropFakeImages(v);
+        }
+    }
+}
+
+/** Page files of a built blocks site: home first, then the rest, legal pages last. */
+function listBlocksPageFiles(siteDir) {
+    const all = fs.readdirSync(siteDir).filter((f) => /\.html$/i.test(f) && fs.statSync(path.join(siteDir, f)).isFile());
+    const body = all.filter((f) => f !== 'index.html' && !LEGAL_PAGE_FILES.includes(f)).sort();
+    const legal = LEGAL_PAGE_FILES.filter((f) => all.includes(f));
+    return (all.includes('index.html') ? ['index.html'] : []).concat(body, legal);
+}
+
+/**
+ * Write a complete static site for a block-editor config into `siteDir`
+ * (must be empty or new): one HTML file per page, copied template photos
+ * under assets/, uploaded photos under images/, legal pages, cookie banner,
+ * robots.txt, sitemap.xml and config.json.
+ * Throws an Error with code BLOCKS_INVALID (Romanian message) on a bad config.
+ *
+ * @param {string} siteDir
+ * @param {object} config
+ * @param {{ canonicalOrigin?: string }} [opts] absolute origin without trailing slash
+ * @returns {{ config: object, pages: string[], imageBuffers: Buffer[] }}
+ */
+function buildBlocksSiteTree(siteDir, config, opts = {}) {
+    const SB = require('../builder/blocks/blocks.js');
+    const legal = require('./site-legal.js');
+    const cfg = SB.normalizeSite(config);
+    dropFakeImages(cfg);
+    fs.mkdirSync(siteDir, { recursive: true });
+    const imageBuffers = materializeImages(cfg, path.join(siteDir, 'images'), []);
+
+    for (const rel of SB.templateAssets(cfg)) {
+        const m = /^([a-z0-9-]+)\/images\/([A-Za-z0-9_.-]+)$/.exec(rel);
+        if (!m) continue;
+        const from = path.join(TEMPLATES_DIR, m[1], 'images', m[2]);
+        if (!fs.existsSync(from) || !fs.statSync(from).isFile()) continue;
+        const to = path.join(siteDir, 'assets', m[1], 'images', m[2]);
+        fs.mkdirSync(path.dirname(to), { recursive: true });
+        fs.copyFileSync(from, to);
+    }
+
+    const origin = String(opts.canonicalOrigin || '').replace(/\/+$/, '');
+    const head = '<link rel="stylesheet" href="cookie-banner.css">';
+    const bodyExtra = legal.COOKIE_BANNER_HTML.replace(/\s*<link rel="stylesheet" href="cookie-banner\.css">/, '');
+    for (const page of cfg.pages) {
+        const file = SB.pageFile(cfg, page);
+        const canonical = origin ? (file === 'index.html' ? origin + '/' : origin + '/' + file) : undefined;
+        fs.writeFileSync(
+            path.join(siteDir, file),
+            SB.renderPage(cfg, page.id, { published: true, assetBase: 'assets/', head, body: bodyExtra, canonical }),
+            'utf8'
+        );
+    }
+
+    // Legal pages link styles.css: give them the theme's base look.
+    fs.writeFileSync(path.join(siteDir, 'styles.css'), SB.themeCss(cfg.theme).split('\n').slice(0, 5).join('\n') + '\n', 'utf8');
+    legal.writeLegalSiteFiles(siteDir, { business: { name: SB.siteBrand(cfg) } });
+    minifyCssFileInPlace(path.join(siteDir, 'cookie-banner.css'));
+
+    const pages = listBlocksPageFiles(siteDir);
+    const seo = buildSeoFiles(origin, pages);
+    fs.writeFileSync(path.join(siteDir, 'robots.txt'), seo.robotsTxt, 'utf8');
+    fs.writeFileSync(path.join(siteDir, 'sitemap.xml'), seo.sitemapXml, 'utf8');
+
+    const saved = Object.assign({}, cfg);
+    if (origin) saved.seo = Object.assign({}, cfg.seo, { canonical: origin + '/' });
+    fs.writeFileSync(path.join(siteDir, 'config.json'), JSON.stringify(saved, null, 2), 'utf8');
+    return { config: saved, pages, imageBuffers };
+}
+
+function blocksExportOrigin(config) {
+    return baseFromCanonical(config && config.seo && config.seo.canonical);
+}
+
+function withTempBlocksTree(config, fn) {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hb-blocks-'));
+    try {
+        const built = buildBlocksSiteTree(dir, config, { canonicalOrigin: blocksExportOrigin(config) });
+        return fn(dir, built);
+    } finally {
+        try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+    }
+}
+
+/** @returns {{ zip: Buffer, filename: string, files: string[] }} */
+function exportBlocksZip({ config, slug }) {
+    return withTempBlocksTree(config, (dir) => {
+        const list = [];
+        walkFiles(dir, '', list);
+        const entries = list.map((f) => ({ name: f.name, data: fs.readFileSync(f.full) }));
+        entries.push({
+            name: 'README-EXPORT.txt',
+            data: Buffer.from(
+                '# Site static exportat din Hidook Site Builder\n\n' +
+                'Deschide `index.html` pe orice host static (nginx, Netlify, Cloudflare Pages, S3…).\n' +
+                'Nu este necesar runtime Hidook. Fotografiile sunt în `images/` și `assets/`.\n' +
+                'Mențiune: Build by hidook.tech powered by hidook.agency\n', 'utf8'),
+        });
+        const base = String(slug || 'site').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'site';
+        return { zip: createZip(entries), filename: base + '.zip', files: entries.map((e) => e.name) };
+    });
+}
+
+/** Home page as one self-contained file (photos inlined). Multi-page sites must use the ZIP. */
+function exportBlocksHtml({ config }) {
+    return withTempBlocksTree(config, (dir, built) => {
+        const inlineAssets = (html) => {
+            let out = html;
+            const walk = (d, rel) => {
+                for (const name of fs.readdirSync(d)) {
+                    const full = path.join(d, name);
+                    const r = rel + '/' + name;
+                    if (fs.statSync(full).isDirectory()) { walk(full, r); continue; }
+                    const url = 'data:' + mimeTypeForImage(name) + ';base64,' + fs.readFileSync(full).toString('base64');
+                    out = out.split(r).join(url);
+                }
+            };
+            if (fs.existsSync(path.join(dir, 'assets'))) walk(path.join(dir, 'assets'), 'assets');
+            return out;
+        };
+        const documents = {};
+        for (const name of ['index.html'].concat(LEGAL_PAGE_FILES)) {
+            const file = path.join(dir, name);
+            if (!fs.existsSync(file)) continue;
+            documents[name] = rewriteStandalonePageLinks(inlineTreeAssets(inlineAssets(fs.readFileSync(file, 'utf8')), dir));
+        }
+        return { html: appendStandaloneDocuments(documents['index.html'] || '', documents), pages: built.pages };
+    });
+}
+
 module.exports = {
+    buildBlocksSiteTree,
+    exportBlocksZip,
+    exportBlocksHtml,
+    listBlocksPageFiles,
     buildStaticSiteTree,
     exportSiteHtml,
     exportSiteZip,

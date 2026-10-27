@@ -1376,6 +1376,17 @@ function makeLocalSeedImagesEager(html) {
     );
 }
 
+/** Remove everything inside `dir`, but only when `dir` itself lies inside `root`. */
+function emptyDirInside(root, dir) {
+    const r = path.resolve(root);
+    const d = path.resolve(dir);
+    if (d === r || !d.startsWith(r + path.sep)) {
+        throw new Error('refusing to empty a directory outside the sites directory');
+    }
+    fs.mkdirSync(d, { recursive: true });
+    for (const entry of fs.readdirSync(d)) fs.rmSync(path.join(d, entry), { recursive: true, force: true });
+}
+
 function prepareIsolatedLiveHtml(siteDir) {
     if (!_isIsolatedDeploy()) return;
     const indexPath = path.join(siteDir, 'index.html');
@@ -1748,6 +1759,11 @@ async function applyCustomDomainOrigin({ siteId, domain, fallbackOrigin }) {
         // og:image/twitter:image also embeds oldOrigin — one substring pass
         // across each file fixes all of them together.
         if (rewriteOriginInFile(indexPath, oldOrigin, newOrigin))   anyFixed = true;
+        if (site.templateId === 'blocks') {
+            for (const f of siteExport.listBlocksPageFiles(siteDir)) {
+                if (f !== 'index.html' && rewriteOriginInFile(path.join(siteDir, f), oldOrigin, newOrigin)) anyFixed = true;
+            }
+        }
         if (rewriteOriginInFile(robotsPath, oldOrigin, newOrigin))  anyFixed = true;
         if (rewriteOriginInFile(sitemapPath, oldOrigin, newOrigin)) anyFixed = true;
     }
@@ -2146,7 +2162,29 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     const originArrivesAfterDeploy = !_isIsolatedDeploy();
     const seoBuildOrigin = predictedOrigin || (originArrivesAfterDeploy ? PENDING_SEO_ORIGIN : '');
 
-    if (!siteDirAlreadyBuilt) {
+    const isBlocks = site.templateId === 'blocks';
+
+    if (!siteDirAlreadyBuilt && isBlocks) {
+        // Block-editor site: one file per page, no template dir, no build().
+        // Start from an empty directory so pages deleted since the last publish go away.
+        emptyDirInside(SITES_DIR, siteDir);
+        const built = siteExport.buildBlocksSiteTree(siteDir, config, {
+            canonicalOrigin: seoBuildOrigin,
+        });
+        if (typeof ai.moderateImages === 'function' && built.imageBuffers.length > 0) {
+            let verdict;
+            try {
+                verdict = await ai.moderateImages(built.imageBuffers, 'ro');
+            } catch (e) {
+                log('webpublish.moderation_error', { err: e.message, siteId: site.id }, 'error');
+            }
+            if (verdict && verdict.blocked) {
+                const err = new Error(verdict.reason || 'Your images did not pass moderation.');
+                err.code = 'MODERATION';
+                throw err;
+            }
+        }
+    } else if (!siteDirAlreadyBuilt) {
         fs.mkdirSync(imagesDir, { recursive: true });
 
         // 1. Copy template files (excluding schema/presets/md)
@@ -2280,10 +2318,11 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // if the directory predates this fix), using the same predicted-origin/
     // placeholder rule as F5 above; corrected post-deploy alongside it.
     try {
-        const seoPages = ['index.html'];
+        let seoPages = ['index.html'];
         for (const p of ['privacy.html', 'terms.html', 'cookies.html']) {
             if (fs.existsSync(path.join(siteDir, p))) seoPages.push(p);
         }
+        if (isBlocks) seoPages = siteExport.listBlocksPageFiles(siteDir);
         if (seoBuildOrigin) {
             const { robotsTxt, sitemapXml } = siteExport.buildSeoFiles(seoBuildOrigin, seoPages);
             fs.writeFileSync(path.join(siteDir, 'robots.txt'), robotsTxt, 'utf8');
@@ -2361,7 +2400,12 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         try {
             const fixedImage    = absolutizeSocialImageMeta(indexPath, url);
             const finalOrigin   = String(url || '').replace(/\/$/, '');
-            const fixedCanonical = rewriteOriginInFile(indexPath, seoBuildOrigin, finalOrigin);
+            let fixedCanonical = rewriteOriginInFile(indexPath, seoBuildOrigin, finalOrigin);
+            if (isBlocks) {
+                for (const f of siteExport.listBlocksPageFiles(siteDir)) {
+                    if (f !== 'index.html' && rewriteOriginInFile(path.join(siteDir, f), seoBuildOrigin, finalOrigin)) fixedCanonical = true;
+                }
+            }
             const fixedRobots   = rewriteOriginInFile(path.join(siteDir, 'robots.txt'), seoBuildOrigin, finalOrigin);
             const fixedSitemap  = rewriteOriginInFile(path.join(siteDir, 'sitemap.xml'), seoBuildOrigin, finalOrigin);
             const anyFixed = fixedImage || fixedCanonical || fixedRobots || fixedSitemap;

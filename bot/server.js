@@ -3551,6 +3551,26 @@ function sanitizeConfigThemeInPlace(config, templateId) {
     config.theme = require('./site-export.js').withSafeTheme(config, templateId).theme;
 }
 
+/**
+ * Block-editor sites (templateId 'blocks') have no entry in templates/registry.json:
+ * their config is validated and normalized by builder/blocks/blocks.js instead.
+ * Returns {tpl, config, brand} or {status, error}.
+ */
+const BLOCKS_TEMPLATE_ID = 'blocks';
+function prepareSiteConfig(templateId, config) {
+    if (templateId === BLOCKS_TEMPLATE_ID) {
+        const SB = require('../builder/blocks/blocks.js');
+        try {
+            const clean = SB.normalizeSite(config);
+            return { tpl: { id: BLOCKS_TEMPLATE_ID, version: 1 }, config: clean, brand: SB.siteBrand(clean) || 'site' };
+        } catch (e) {
+            if (e && e.code === 'BLOCKS_INVALID') return { status: 422, error: e.message };
+            throw e;
+        }
+    }
+    return null;
+}
+
 async function handleSaveDraft(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
@@ -3559,14 +3579,23 @@ async function handleSaveDraft(req, res) {
     try { body = await parseJson(req, PUBLISH_BODY_MAX); }
     catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
 
-    const { siteId, templateId, config } = body || {};
+    const { siteId, templateId } = body || {};
+    let config = body && body.config;
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
         return sendJson(res, 422, { error: 'Ciorna nu conține o configurație validă.' });
     }
-    const templates = loadTemplates();
-    const tpl = templates.find(t => t.id === templateId);
-    if (!tpl) return sendJson(res, 422, { error: 'Design necunoscut: ' + templateId });
-    sanitizeConfigThemeInPlace(config, templateId);
+    let tpl;
+    let slugBrand = (config.business && config.business.name) || 'site';
+    const blocks = prepareSiteConfig(templateId, config);
+    if (blocks) {
+        if (blocks.error) return sendJson(res, blocks.status, { error: blocks.error });
+        tpl = blocks.tpl; config = blocks.config; slugBrand = blocks.brand;
+    } else {
+        const templates = loadTemplates();
+        tpl = templates.find(t => t.id === templateId);
+        if (!tpl) return sendJson(res, 422, { error: 'Design necunoscut: ' + templateId });
+        sanitizeConfigThemeInPlace(config, templateId);
+    }
 
     const reg = getRegistry();
     let site = null;
@@ -3598,7 +3627,7 @@ async function handleSaveDraft(req, res) {
             site = await reg.updateSite(site.id, { templateId, templateVersion: tpl.version });
         }
         if (!site) {
-            let slug = slugify((config.business && config.business.name) || 'site');
+            let slug = slugify(slugBrand);
             if (!SLUG_RE.test(slug)) slug = 'site-' + crypto.randomBytes(4).toString('hex');
             if (isReservedSlug(slug) || !isSlugAvailable(slug)) {
                 slug = (slug.slice(0, 30).replace(/-+$/, '') || 'site') + '-' + crypto.randomBytes(3).toString('hex');
@@ -3676,7 +3705,7 @@ async function resolveExportDraft(req, res, query) {
 
     const templateId = site.templateId || 'product-menu';
     const templatePath = path.join(TEMPLATES_DIR, templateId, 'template.html');
-    if (!fs.existsSync(templatePath)) {
+    if (templateId !== BLOCKS_TEMPLATE_ID && !fs.existsSync(templatePath)) {
         sendJson(res, 400, { error: 'Nicio ciornă de descărcat.' });
         return null;
     }
@@ -3708,13 +3737,21 @@ async function handleExportHtml(req, res, query) {
 
     let html;
     try {
-        const { exportSiteHtml } = require('./site-export.js');
-        html = exportSiteHtml({
-            templateId,
-            config,
-            images: [],
-            slug: site.slug || (config.business && config.business.name) || 'site',
-        }).html;
+        if (templateId === BLOCKS_TEMPLATE_ID) {
+            const pages = Array.isArray(config.pages) ? config.pages.length : 0;
+            if (pages > 1) {
+                return sendJson(res, 409, { error: 'Site-ul are mai multe pagini: descarcă arhiva ZIP.' });
+            }
+            html = require('./site-export.js').exportBlocksHtml({ config }).html;
+        } else {
+            const { exportSiteHtml } = require('./site-export.js');
+            html = exportSiteHtml({
+                templateId,
+                config,
+                images: [],
+                slug: site.slug || (config.business && config.business.name) || 'site',
+            }).html;
+        }
     } catch (e) {
         log('server.export_html.render_error', { siteId: site.id, err: e.message }, 'error');
         return sendJson(res, 500, { error: 'Fișierul HTML nu a putut fi generat.' });
@@ -3751,13 +3788,15 @@ async function handleExportZip(req, res, query) {
 
     let result;
     try {
-        const { exportSiteZip } = require('./site-export.js');
-        result = exportSiteZip({
-            templateId,
-            config,
-            images: [],
-            slug: site.slug || (config.business && config.business.name) || 'site',
-        });
+        const siteExport = require('./site-export.js');
+        result = templateId === BLOCKS_TEMPLATE_ID
+            ? siteExport.exportBlocksZip({ config, slug: site.slug || 'site' })
+            : siteExport.exportSiteZip({
+                templateId,
+                config,
+                images: [],
+                slug: site.slug || (config.business && config.business.name) || 'site',
+            });
     } catch (e) {
         log('server.export_zip.error', { siteId: site.id, err: e && e.message }, 'error');
         return sendJson(res, 500, { error: 'Exportul ZIP nu a putut fi generat.' });
@@ -4064,13 +4103,22 @@ async function handlePublish(req, res) {
     try { body = await parseJson(req, PUBLISH_BODY_MAX); }
     catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
 
-    const { siteId, templateId, config, images, slug: slugHint } = body || {};
+    const { siteId, templateId, images, slug: slugHint } = body || {};
+    let config = body && body.config;
 
     // Validate templateId
-    const templates = loadTemplates();
-    const tpl = templates.find(t => t.id === templateId);
-    if (!tpl) return sendJson(res, 422, { error: 'Șablon necunoscut: ' + templateId });
-    sanitizeConfigThemeInPlace(config, templateId);
+    let tpl;
+    let slugBrand = (config && config.business && config.business.name) || 'site';
+    const blocks = prepareSiteConfig(templateId, config);
+    if (blocks) {
+        if (blocks.error) return sendJson(res, blocks.status, { error: blocks.error });
+        tpl = blocks.tpl; config = blocks.config; slugBrand = blocks.brand;
+    } else {
+        const templates = loadTemplates();
+        tpl = templates.find(t => t.id === templateId);
+        if (!tpl) return sendJson(res, 422, { error: 'Șablon necunoscut: ' + templateId });
+        sanitizeConfigThemeInPlace(config, templateId);
+    }
 
     // Validate images
     const MAX_IMAGES   = 12;
@@ -4160,8 +4208,7 @@ async function handlePublish(req, res) {
                 return sendJson(res, 409, { error: 'Această adresă este deja folosită. Încearcă alta.' });
             }
         } else {
-            const bizName = (config && config.business && config.business.name) || 'site';
-            slug = slugify(bizName);
+            slug = slugify(slugBrand);
         }
 
         site = await reg.createSite({
