@@ -167,3 +167,18 @@ button { font: inherit; cursor: pointer; }
 .pv__stage { flex: 1; display: flex; justify-content: center; padding: 16px; min-height: 0; }
 .pv__stage iframe { width: 100%; max-width: 1440px; height: 100%; border: 0; background: #fff; border-radius: 10px; transition: max-width .25s ease; }
 .pv.is-mobile .pv__stage iframe { max-width: 390px; }
+
+/* account + publish */
+.top__back { color: var(--ui-mute); text-decoration: none; font-size: 14px; white-space: nowrap; }
+.top__back:hover { color: inherit; }
+.lib__box--pub { width: min(520px, 100%); height: auto; }
+.pub__body { padding: 8px 24px 24px; display: flex; flex-direction: column; gap: 12px; }
+.pub__body form, .pub__body > div { display: flex; flex-direction: column; gap: 12px; }
+.pub__body p { line-height: 1.5; }
+.pub__fld { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; }
+.pub__fld input { font: inherit; font-weight: 400; padding: 10px 12px; border: 1px solid var(--ui-line); border-radius: 8px; }
+.pub__slug { display: flex; align-items: center; }
+.pub__slug input { flex: 1; }
+.pub__body button.primary { align-self: flex-start; background: var(--ui-accent); border: 1px solid var(--ui-accent); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 16px; min-height: 40px; }
+.pub__body button.primary:disabled { opacity: .6; }
+.pub__error { color: #b91c1c; font-size: 14px; }

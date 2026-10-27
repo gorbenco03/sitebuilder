@@ -3,13 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Editor pe blocuri · prototip</title>
+<title>Editează site-ul · Hidook Site Builder</title>
+<link rel="icon" href="/app/favicon.svg">
 <link rel="stylesheet" href="editor.css">
 </head>
 <body>
 <header class="top">
-  <span class="top__name" id="site-name">Casa Nord</span>
-  <button type="button" id="open-packs" class="top__pack">Șablon: <b id="pack-name">Restaurant</b> ▾</button>
+  <a href="/app/#dashboard" class="top__back" title="Site-urile mele">← Site-urile mele</a>
+  <span class="top__name" id="site-name"></span>
+  <button type="button" id="open-packs" class="top__pack">Șablon: <b id="pack-name"></b> ▾</button>
   <div class="top__group">
     <button type="button" id="undo" title="Anulează (Cmd+Z)">Anulează</button>
     <button type="button" id="redo" title="Refă (Cmd+Shift+Z)">Refă</button>
@@ -19,8 +21,9 @@
     <button type="button" id="dev-mobile" aria-pressed="false">Telefon</button>
   </div>
   <span class="top__spacer"></span>
-  <span id="saved" class="top__saved">Salvat</span>
-  <button type="button" id="preview" class="primary">Previzualizare</button>
+  <span id="saved" class="top__saved" role="status"></span>
+  <button type="button" id="preview">Previzualizare</button>
+  <button type="button" id="publish" class="primary">Publică</button>
 </header>
 
 <div class="main">
@@ -116,6 +119,38 @@
     <button type="button" id="pv-tab">Deschide în tab nou</button>
   </div>
   <div class="pv__stage"><iframe id="pv-frame" title="Previzualizarea site-ului"></iframe></div>
+</div>
+
+<div id="pub" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="pub-title">
+    <div class="lib__head">
+      <h2 id="pub-title">Publică site-ul</h2>
+      <button type="button" id="pub-close" aria-label="Închide">×</button>
+    </div>
+    <div class="pub__body">
+      <form id="pub-auth" hidden>
+        <p>Intră în cont cu emailul tău. Îți trimitem un link, fără parolă. Site-ul rămâne salvat în cont.</p>
+        <label class="pub__fld">Email<input type="email" id="pub-email" autocomplete="email" required></label>
+        <button type="submit" class="primary">Trimite linkul</button>
+      </form>
+      <div id="pub-sent" hidden>
+        <p>Am trimis linkul la <b id="pub-sent-to"></b>. Deschide-l din email; pagina aceasta continuă singură după ce intri în cont.</p>
+        <p><a id="pub-devlink" href="#" target="_blank" rel="noopener" hidden>Deschide linkul de autentificare (mod de test)</a></p>
+      </div>
+      <div id="pub-slug" hidden>
+        <label class="pub__fld">Adresa site-ului<span class="pub__slug"><input id="pub-slug-input" autocomplete="off" spellcheck="false" maxlength="40"></span></label>
+        <p id="pub-slug-note" class="hint"></p>
+        <p class="hint" id="pub-trial">Primele 14 zile sunt gratuite. Adaugi un card, site-ul e live imediat, iar plata se face în ziua 14 dacă nu anulezi.</p>
+        <button type="button" id="pub-go" class="primary">Publică site-ul</button>
+      </div>
+      <div id="pub-done" hidden>
+        <p>Gata, site-ul e actualizat.</p>
+        <p><a id="pub-done-link" href="#" target="_blank" rel="noopener"></a></p>
+        <p><a href="/app/#dashboard">Mergi la site-urile mele</a></p>
+      </div>
+      <p id="pub-error" class="pub__error" role="alert" hidden></p>
+    </div>
+  </div>
 </div>
 
 <input type="file" id="file" accept="image/*" hidden>
