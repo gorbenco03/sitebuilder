@@ -1,16 +1,17 @@
 'use strict';
 /**
- * prototype/blocks/packs-more.js — more starter packs, plus "De la zero".
+ * builder/blocks/packs-more.js — more starter packs, plus "De la zero".
  *
- * Loaded after packs.js; adds to window.SB_PACKS. A pack only lists content
+ * Loaded after packs.js; adds to window.SB_PACKS (in Node: call the export with the packs). A pack only lists content
  * for the blocks its pages use: any other block a customer adds later falls
  * back to the neutral placeholder content of the blank pack, never to
  * another business's text.
  */
 
-(function () {
-const T = '../../templates/';
-const P = window.SB_PACKS;
+(function (root) {
+const T = '@tpl/';
+
+function addMore(P) {
 const im = (dir, n) => `${T}${dir}/images/${n}.jpg`;
 const many = (dir, names) => names.map((n) => im(dir, n));
 
@@ -333,5 +334,9 @@ P.contabilitate = {
   ],
 };
 
-window.SB_PLACEHOLDER = PH;
-})();
+return P;
+}
+
+if (typeof module !== 'undefined' && module.exports) module.exports = addMore;
+else addMore(root.SB_PACKS);
+})(typeof window !== 'undefined' ? window : globalThis);

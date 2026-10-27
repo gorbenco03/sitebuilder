@@ -1,6 +1,9 @@
 'use strict';
 /**
- * prototype/blocks/blocks.js — block library for the block-editor prototype.
+ * builder/blocks/blocks.js — block library and renderer for the block editor.
+ *
+ * Runs in the browser (window.SB) and in Node (require), so the editor canvas
+ * and the published site render from the same code.
  *
  * A page is { theme, blocks: [{ id, type, variant, bg, data }] }.
  * Each block type declares its variants, default data, the fields the
@@ -11,8 +14,35 @@
  * The editor reads those attributes; the published page ignores them.
  */
 
-(function () {
-const IMG = '../../templates/product-menu/images/';
+(function (root) {
+const IS_NODE = typeof module !== 'undefined' && module.exports;
+const IMG = '@tpl/product-menu/images/';
+
+/** Starter packs: window.SB_PACKS in the browser, packs*.js in Node. */
+let nodePacks = null;
+function packs() {
+  if (!IS_NODE) return root.SB_PACKS || {};
+  if (!nodePacks) {
+    nodePacks = require('./packs.js');
+    require('./packs-more.js')(nodePacks);
+  }
+  return nodePacks;
+}
+
+/**
+ * Pack photos are stored as "@tpl/<template>/images/<file>" and resolved
+ * against the asset base of wherever the page is rendered.
+ */
+let assetBase = '';
+function asset(src) {
+  const v = String(src == null ? '' : src);
+  return v.startsWith('@tpl/') ? assetBase + v.slice(5) : v;
+}
+
+function safeHref(href) {
+  const v = String(href == null ? '' : href).trim();
+  return /^(https?:|mailto:|tel:|#)/i.test(v) || /^[\w.-]+\.html(#[\w-]*)?$/.test(v) ? v : '#';
+}
 
 function esc(s) {
   return String(s == null ? '' : s)
@@ -23,27 +53,38 @@ function esc(s) {
 function rich(value) {
   const src = String(value == null ? '' : value);
   if (!/[<&]/.test(src)) return esc(src);
-  const tpl = document.createElement('template');
-  tpl.innerHTML = src;
-  const walk = (node) => {
-    let out = '';
-    node.childNodes.forEach((n) => {
-      if (n.nodeType === 3) { out += esc(n.textContent); return; }
-      if (n.nodeType !== 1) return;
-      const tag = n.tagName.toLowerCase();
-      const inner = walk(n);
-      if (tag === 'b' || tag === 'strong') out += `<strong>${inner}</strong>`;
-      else if (tag === 'i' || tag === 'em') out += `<em>${inner}</em>`;
-      else if (tag === 'br') out += '<br>';
-      else if (tag === 'a') {
-        const href = n.getAttribute('href') || '#';
-        const safe = /^(https?:|mailto:|tel:|#)/i.test(href) ? href : '#';
-        out += `<a href="${esc(safe)}">${inner}</a>`;
-      } else out += inner;
-    });
-    return out;
-  };
-  return walk(tpl.content);
+  const text = (x) => x.replace(/&(?!(?:amp|lt|gt|quot|nbsp|#\d+|#x[0-9a-f]+);)/gi, '&amp;').replace(/"/g, '&quot;').replace(/>/g, '&gt;');
+  const open = [];
+  let out = '';
+  let last = 0;
+  const re = /<(\/?)([a-z0-9]+)([^>]*)>/gi;
+  let m;
+  while ((m = re.exec(src))) {
+    out += text(src.slice(last, m.index).replace(/</g, '&lt;'));
+    last = re.lastIndex;
+    const close = m[1] === '/';
+    let tag = m[2].toLowerCase();
+    if (tag === 'b') tag = 'strong';
+    if (tag === 'i') tag = 'em';
+    if (tag === 'br') { if (!close) out += '<br>'; continue; }
+    if (tag !== 'strong' && tag !== 'em' && tag !== 'a') continue;
+    if (close) {
+      const at = open.lastIndexOf(tag);
+      if (at === -1) continue;
+      while (open.length > at) out += `</${open.pop()}>`;
+    } else if (tag === 'a') {
+      const h = m[3].match(/href\s*=\s*("([^"]*)"|'([^']*)')/i);
+      const href = h ? (h[2] != null ? h[2] : h[3]).replace(/&amp;/g, '&') : '#';
+      out += `<a href="${esc(safeHref(href))}">`;
+      open.push('a');
+    } else {
+      out += `<${tag}>`;
+      open.push(tag);
+    }
+  }
+  out += text(src.slice(last).replace(/</g, '&lt;'));
+  while (open.length) out += `</${open.pop()}>`;
+  return out;
 }
 
 /** Editable inline text (may hold bold, italic and links). */
@@ -53,7 +94,7 @@ function t(tag, path, value, cls) {
 
 /** Replaceable image. */
 function img(path, src, alt, cls) {
-  return `<img${cls ? ` class="${cls}"` : ''} data-img="${path}" src="${esc(src)}" alt="${esc(alt || '')}">`;
+  return `<img${cls ? ` class="${cls}"` : ''} data-img="${path}" src="${esc(asset(src))}" alt="${esc(alt || '')}">`;
 }
 
 function btn(path, label, cls) {
@@ -71,7 +112,7 @@ const BLOCKS = {
     ],
     render(d, v, ctx) {
       const pages = (ctx && ctx.pages) || [];
-      const links = pages.map((p) => `<a href="#${esc(p.slug)}" data-page="${esc(p.id)}"${ctx.current === p.id ? ' class="is-cur"' : ''}>${esc(p.name)}</a>`).join('');
+      const links = pages.map((p) => `<a href="${esc(ctx.pageHref ? ctx.pageHref(p) : '#' + p.slug)}" data-page="${esc(p.id)}"${ctx.current === p.id ? ' class="is-cur"' : ''}>${esc(p.name)}</a>`).join('');
       const brand = `<span class="b-nav__brand" data-f="brand">${esc(d.brand)}</span>`;
       if (v === 'centered') {
         return `<nav class="b-nav b-nav--centered"><div class="b-wrap"><div class="b-nav__links">${links}</div>${brand}<div class="b-nav__end">${btn('cta', d.cta)}</div></div></nav>`;
@@ -352,8 +393,10 @@ const BLOCKS = {
       { key: 'lMsg', label: 'Eticheta „mesaj”', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' },
       { key: 'address', label: 'Adresă', type: 'text' }, { key: 'phone', label: 'Telefon', type: 'text' }, { key: 'email', label: 'Email', type: 'text' },
     ],
-    render(d, v) {
-      const form = `<form class="b-form" onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
+    render(d, v, ctx) {
+      const to = String(d.email || '').trim();
+      const send = ctx.published && /^[^\s@"<>]+@[^\s@"<>]+$/.test(to) ? ` data-mailto="${esc(to)}"` : '';
+      const form = `<form class="b-form"${send} onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
       const head = `${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}`;
       if (v === 'info') {
         return `<section class="b-sec"><div class="b-wrap b-cols b-cols--top"><div>${head}<div class="b-info">${t('p', 'address', d.address)}${t('p', 'phone', d.phone, 'b-strong')}${t('p', 'email', d.email)}</div></div>${form}</div></section>`;
@@ -367,10 +410,14 @@ const BLOCKS = {
     variants: { grid: 'Șase poze', strip: 'Bandă' },
     defaults: () => ({ title: 'Din bucătărie, pe Instagram', handle: '@casanord', cta: 'Urmărește-ne' }),
     fields: [{ key: 'title', label: 'Titlu', type: 'text' }, { key: 'handle', label: 'Cont', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' }],
-    render(d, v) {
+    render(d, v, ctx) {
+      const handle = String(d.handle || '').replace(/^@/, '').trim();
+      const follow = handle && ctx.published ? `<a href="https://instagram.com/${esc(encodeURIComponent(handle))}" class="b-btn b-btn--ghost" target="_blank" rel="noopener" data-f="cta">${esc(d.cta)}</a>` : btn('cta', d.cta, 'b-btn--ghost');
+      const head = `<div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${follow}</div>`;
+      if (ctx.published) return `<section class="b-sec"><div class="b-wrap">${head}</div></section>`;
       const list = d.images || Array.from({ length: 6 }, (_, i) => `${IMG}cn-ig${i + 1}.jpg`);
-      const pics = list.map((src) => `<img src="${esc(src)}" alt="">`).join('');
-      return `<section class="b-sec"><div class="b-wrap"><div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${btn('cta', d.cta, 'b-btn--ghost')}</div><div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">Pozele vin automat din contul tău, după ce îl conectezi.</p></div></section>`;
+      const pics = list.map((src) => `<img src="${esc(asset(src))}" alt="">`).join('');
+      return `<section class="b-sec"><div class="b-wrap">${head}<div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">Poze de exemplu: pe site-ul publicat apar titlul și butonul spre contul tău.</p></div></section>`;
     },
   },
 
@@ -387,8 +434,9 @@ const BLOCKS = {
     variants: { simple: 'Simplu' },
     defaults: () => ({ brand: 'Casa Nord', text: 'Strada Nordului 12, București · 07xx xxx xxx' }),
     fields: [{ key: 'brand', label: 'Nume', type: 'text' }, { key: 'text', label: 'Text', type: 'text' }],
-    render(d) {
-      return `<footer class="b-foot"><div class="b-wrap b-foot__row">${t('span', 'brand', d.brand, 'b-nav__brand')}${t('span', 'text', d.text, 'b-muted')}</div><p class="b-attr">Build by hidook.tech powered by hidook.agency</p></footer>`;
+    render(d, v, ctx) {
+      const legal = ctx.published ? '<nav class="b-legal" aria-label="Pagini legale"><a href="privacy.html">Confidențialitate</a><a href="terms.html">Termeni</a><a href="cookies.html">Cookie-uri</a></nav>' : '';
+      return `<footer class="b-foot"><div class="b-wrap b-foot__row">${t('span', 'brand', d.brand, 'b-nav__brand')}${t('span', 'text', d.text, 'b-muted')}</div>${legal}<p class="b-attr hb-built-by">Build by <a href="https://hidook.tech" target="_blank" rel="noopener noreferrer">hidook.tech</a> powered by <a href="https://hidook.agency" target="_blank" rel="noopener noreferrer">hidook.agency</a></p></footer>`;
     },
   },
 };
@@ -425,8 +473,8 @@ function clone(x) { return JSON.parse(JSON.stringify(x)); }
 
 function makeBlock(type, variant, packId) {
   const def = BLOCKS[type];
-  const pack = (window.SB_PACKS || {})[packId];
-  const blank = (window.SB_PACKS || {}).gol;
+  const pack = packs()[packId];
+  const blank = packs().gol;
   const data = pack && pack.content[type] ? clone(pack.content[type])
     : pack && pack.ownDefaults ? def.defaults()
     : pack && blank && blank.content[type] ? clone(blank.content[type])
@@ -445,8 +493,8 @@ function makePage(name, blocks, packId) {
 }
 
 function defaultSite(packId) {
-  const id = (window.SB_PACKS || {})[packId] ? packId : 'restaurant';
-  const pack = window.SB_PACKS[id];
+  const id = packs()[packId] ? packId : 'restaurant';
+  const pack = packs()[id];
   const pages = pack.pages.map((p) => makePage(p.name, p.blocks, id));
   return { v: 2, pack: id, theme: clone(pack.theme), header: makeBlock('nav', 'bar', id), footer: makeBlock('footer', 'simple', id), pages, current: pages[0].id };
 }
@@ -605,15 +653,16 @@ function elementCss(b) {
 function applyLinks(html, b) {
   return html.replace(/<a href="#"([^>]*?)data-f="([^"]+)"/g, (m, attrs, path) => {
     const href = b.el && b.el[path] && b.el[path].href;
-    return href ? `<a href="${esc(href)}"${attrs}data-f="${path}"` : m;
+    return href ? `<a href="${esc(safeHref(href))}"${attrs}data-f="${path}"` : m;
   });
 }
 
 function renderBlock(b, ctx) {
   const def = BLOCKS[b.type];
+  if (!def) return '';
   const css = elementCss(b);
-  const attrs = `data-id="${b.id}" data-bg="${b.bg}" data-pad="${b.pad || 'normal'}" data-align="${b.align || 'auto'}"${b.hideMobile ? ' data-hidem' : ''}`;
-  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data, b.variant, ctx || {}), b)}</div>`;
+  const attrs = `data-id="${esc(b.id)}" data-bg="${esc(b.bg || 'auto')}" data-pad="${esc(b.pad || 'normal')}" data-align="${esc(b.align || 'auto')}"${b.hideMobile ? ' data-hidem' : ''}`;
+  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data || {}, b.variant, ctx || {}), b)}</div>`;
 }
 
 /** All blocks of one page in order: shared header, the page's own blocks, shared footer. */
@@ -622,20 +671,164 @@ function pageBlocks(site, pageId) {
   return [site.header, ...page.blocks, site.footer];
 }
 
-function siteCtx(site, pageId) {
-  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId };
+function siteCtx(site, pageId, opts) {
+  const o = opts || {};
+  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref };
+}
+
+/** File name of a page on the published site: the first page is index.html. */
+function pageFile(site, page) {
+  return page.id === site.pages[0].id ? 'index.html' : `${page.slug}.html`;
 }
 
 const IMAGES = ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6',
   'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3', 'tv-ig1', 'tv-ig2', 'tv-ig3', 'tv-ig4', 'tv-ig5', 'tv-ig6'].map((n) => IMG + n + '.jpg');
 
-/** Standalone page (preview / export). */
-function renderPage(site, pageId, baseHref) {
-  const ctx = siteCtx(site, pageId);
-  const body = pageBlocks(site, pageId).map((b) => renderBlock(b, ctx)).join('');
-  const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
-  return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${baseHref ? `<base href="${esc(baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(page.name)} · ${esc(site.header.data.brand)}</title><style>${themeCss(site.theme)}</style></head><body>${body}</body></html>`;
+const MAILTO_JS = "document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('form[data-mailto] .b-btn');if(!b)return;e.preventDefault();var f=b.closest('form'),i=f.querySelectorAll('.b-input'),t=[];i.forEach(function(x){if(x.value.trim())t.push(x.value.trim())});location.href='mailto:'+f.getAttribute('data-mailto')+'?subject='+encodeURIComponent('Mesaj de pe site')+'&body='+encodeURIComponent(t.join('\\n\\n'))})";
+
+/**
+ * Standalone page.
+ * opts: string base href (editor preview), or { published, assetBase, head, body, canonical }
+ * for the files of a published site.
+ */
+function renderPage(site, pageId, opts) {
+  const o = typeof opts === 'string' ? { baseHref: opts } : (opts || {});
+  const prevBase = assetBase;
+  if (o.assetBase != null) assetBase = o.assetBase;
+  try {
+    const ctx = siteCtx(site, pageId, o.published ? { published: true, pageHref: (p) => pageFile(site, site.pages.find((x) => x.id === p.id)) } : null);
+    const body = pageBlocks(site, pageId).map((b) => renderBlock(b, ctx)).join('');
+    const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
+    const brand = (site.header && site.header.data && site.header.data.brand) || '';
+    const title = page.id === site.pages[0].id ? brand || page.name : `${page.name} · ${brand}`;
+    const desc = site.seo && site.seo.description ? `<meta name="description" content="${esc(site.seo.description)}">` : '';
+    const canon = o.canonical ? `<link rel="canonical" href="${esc(o.canonical)}"><meta property="og:url" content="${esc(o.canonical)}">` : '';
+    const mail = o.published && /data-mailto=/.test(body) ? `<script>${MAILTO_JS}</script>` : '';
+    return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${o.baseHref ? `<base href="${esc(o.baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${desc}${canon}<meta property="og:title" content="${esc(title)}"><style>${themeCss(site.theme)}</style>${o.head || ''}</head><body>${body}${o.body || ''}${mail}</body></html>`;
+  } finally {
+    assetBase = prevBase;
+  }
 }
 
-window.SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId };
-})();
+/* ---------- validation: everything a browser sends is cleaned before it is stored or published ---------- */
+
+const ID_RE = /^[A-Za-z0-9_-]{1,40}$/;
+const PATH_RE = /^[A-Za-z0-9_.-]{1,60}$/;
+const LIMITS = { pages: 20, blocks: 60, text: 4000, json: 12 * 1024 * 1024 };
+
+function cleanValue(v, depth) {
+  if (depth > 6) return undefined;
+  if (typeof v === 'string') return v.startsWith('data:image/') ? v : v.slice(0, LIMITS.text);
+  if (typeof v === 'number' || typeof v === 'boolean') return v;
+  if (Array.isArray(v)) return v.slice(0, 60).map((x) => cleanValue(x, depth + 1)).filter((x) => x !== undefined);
+  if (v && typeof v === 'object') {
+    const out = {};
+    Object.keys(v).slice(0, 60).forEach((k) => {
+      if (!PATH_RE.test(k)) return;
+      const c = cleanValue(v[k], depth + 1);
+      if (c !== undefined) out[k] = c;
+    });
+    return out;
+  }
+  return undefined;
+}
+
+function cleanEl(el) {
+  const out = {};
+  Object.keys(el && typeof el === 'object' ? el : {}).slice(0, 80).forEach((path) => {
+    const s = el[path];
+    if (!PATH_RE.test(path) || !s || typeof s !== 'object') return;
+    const r = {};
+    if (s.hidden) r.hidden = true;
+    if (['left', 'center', 'right'].includes(s.align)) r.align = s.align;
+    if (SIZE_STEPS.includes(Number(s.size))) r.size = Number(s.size);
+    if (s.bold === true || s.bold === false) r.bold = s.bold;
+    if (s.italic) r.italic = true;
+    if (s.color === 'accent' || s.color === 'muted') r.color = s.color;
+    if (typeof s.href === 'string' && s.href) r.href = safeHref(s.href.slice(0, 500));
+    out[path] = r;
+  });
+  return out;
+}
+
+function cleanBlock(b, wantType) {
+  if (!b || typeof b !== 'object') return null;
+  const def = BLOCKS[b.type];
+  if (!def || (wantType && b.type !== wantType) || (!wantType && def.shared)) return null;
+  return {
+    id: ID_RE.test(b.id) ? b.id : newId(),
+    type: b.type,
+    variant: def.variants[b.variant] ? b.variant : Object.keys(def.variants)[0],
+    bg: ['auto', 'light', 'dark', 'accent'].includes(b.bg) ? b.bg : 'auto',
+    pad: ['compact', 'normal', 'airy'].includes(b.pad) ? b.pad : undefined,
+    align: ['auto', 'center'].includes(b.align) ? b.align : undefined,
+    hideMobile: b.hideMobile ? true : undefined,
+    el: cleanEl(b.el),
+    data: cleanValue(b.data || {}, 0) || {},
+  };
+}
+
+/**
+ * Returns a clean copy of a block site, or throws an Error with a Romanian
+ * message the API can hand back as-is.
+ */
+function normalizeSite(input) {
+  const fail = (m) => { const e = new Error(m); e.code = 'BLOCKS_INVALID'; throw e; };
+  if (!input || typeof input !== 'object' || input.v !== 2) fail('Site-ul nu are formatul editorului pe blocuri.');
+  if (!Array.isArray(input.pages) || !input.pages.length) fail('Site-ul trebuie să aibă cel puțin o pagină.');
+  if (input.pages.length > LIMITS.pages) fail(`Un site poate avea cel mult ${LIMITS.pages} de pagini.`);
+  const theme = input.theme || {};
+  const header = cleanBlock(input.header, 'nav') || makeBlock('nav', 'bar', input.pack);
+  const footer = cleanBlock(input.footer, 'footer') || makeBlock('footer', 'simple', input.pack);
+  const slugs = new Set();
+  const pages = input.pages.map((p, i) => {
+    const name = String((p && p.name) || `Pagina ${i + 1}`).slice(0, 60);
+    let slug = slugify((p && p.slug) || name).slice(0, 40);
+    if (slug === 'index' || ['privacy', 'terms', 'cookies'].includes(slug)) slug += '-1';
+    while (slugs.has(slug)) slug += '-2';
+    slugs.add(slug);
+    const blocks = (Array.isArray(p && p.blocks) ? p.blocks : []).slice(0, LIMITS.blocks).map((b) => cleanBlock(b)).filter(Boolean);
+    return { id: p && ID_RE.test(p.id) ? p.id : newId(), name, slug, blocks };
+  });
+  const out = {
+    v: 2,
+    pack: packs()[input.pack] ? input.pack : 'gol',
+    theme: {
+      palette: THEMES.palettes[theme.palette] ? theme.palette : 'alb',
+      fonts: THEMES.fonts[theme.fonts] ? theme.fonts : 'modern',
+      radius: Math.max(0, Math.min(24, Math.round(Number(theme.radius) || 0))),
+    },
+    header, footer, pages,
+    current: pages.some((p) => p.id === input.current) ? input.current : pages[0].id,
+  };
+  if (input.seo && typeof input.seo === 'object') {
+    out.seo = { description: String(input.seo.description || '').slice(0, 300) };
+  }
+  if (JSON.stringify(out).length > LIMITS.json) fail('Site-ul e prea mare. Folosește poze mai mici.');
+  return out;
+}
+
+/** Name of the business, for slugs, page titles and the legal pages. */
+function siteBrand(site) {
+  const h = site && site.header && site.header.data && site.header.data.brand;
+  const f = site && site.footer && site.footer.data && site.footer.data.brand;
+  return String(h || f || '').replace(/<[^>]*>/g, '').trim();
+}
+
+/** Every "@tpl/…" photo the site uses, so publishing can copy exactly those files. */
+function templateAssets(site) {
+  const found = new Set();
+  const walk = (v) => {
+    if (typeof v === 'string') { if (v.startsWith('@tpl/') && /^@tpl\/[a-z0-9-]+\/images\/[A-Za-z0-9_.-]+$/.test(v)) found.add(v.slice(5)); return; }
+    if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(site);
+  return [...found];
+}
+
+function setAssetBase(base) { assetBase = String(base || ''); }
+
+const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs };
+if (IS_NODE) module.exports = SB;
+else root.SB = SB;
+})(typeof window !== 'undefined' ? window : globalThis);

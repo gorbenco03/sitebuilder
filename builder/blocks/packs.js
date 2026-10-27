@@ -1,6 +1,6 @@
 'use strict';
 /**
- * prototype/blocks/packs.js — starter packs: one per business type.
+ * builder/blocks/packs.js — starter packs: one per business type.
  *
  * A pack is a theme, starter content for every block type it uses, a
  * shared header/footer and a set of pages. Blocks added later from the
@@ -8,8 +8,8 @@
  * site never gets restaurant text.
  */
 
-(function () {
-const T = '../../templates/';
+(function (root) {
+const T = '@tpl/';
 
 function imgs(dir, names) { return names.map((n) => `${T}${dir}/images/${n}.jpg`); }
 
@@ -225,5 +225,6 @@ const PACKS = {
   },
 };
 
-window.SB_PACKS = PACKS;
-})();
+if (typeof module !== 'undefined' && module.exports) module.exports = PACKS;
+else root.SB_PACKS = PACKS;
+})(typeof window !== 'undefined' ? window : globalThis);
