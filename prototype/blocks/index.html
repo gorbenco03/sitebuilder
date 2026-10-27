@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor pe blocuri · prototip</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header class="top">
+  <span class="top__name">Casa Nord <small>prototip editor pe blocuri</small></span>
+  <div class="top__group">
+    <button type="button" id="undo" title="Anulează (Cmd+Z)">Anulează</button>
+    <button type="button" id="redo" title="Refă (Cmd+Shift+Z)">Refă</button>
+  </div>
+  <div class="top__group seg" role="group" aria-label="Previzualizare">
+    <button type="button" id="dev-desktop" aria-pressed="true">Calculator</button>
+    <button type="button" id="dev-mobile" aria-pressed="false">Telefon</button>
+  </div>
+  <span class="top__spacer"></span>
+  <span id="saved" class="top__saved">Salvat</span>
+  <button type="button" id="reset">Resetează</button>
+  <button type="button" id="preview" class="primary">Previzualizare</button>
+</header>
+
+<div class="main">
+  <aside class="side">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-page" aria-selected="true">Pagină</button>
+      <button type="button" role="tab" id="tab-theme" aria-selected="false">Temă</button>
+    </div>
+    <div id="panel-page" class="panel">
+      <p class="hint">Trage ca să schimbi ordinea. Dă click pe un bloc ca să-l editezi.</p>
+      <ol id="block-list" class="blist"></ol>
+      <button type="button" id="add-block" class="add">+ Adaugă un bloc</button>
+    </div>
+    <div id="panel-theme" class="panel" hidden>
+      <h3>Culori</h3>
+      <div id="palettes" class="swatches"></div>
+      <h3>Fonturi</h3>
+      <div id="fonts" class="choices"></div>
+      <h3>Colțuri</h3>
+      <label class="range"><input type="range" id="radius" min="0" max="24" step="2"><span id="radius-val"></span></label>
+    </div>
+  </aside>
+
+  <section class="stage">
+    <div id="frame-wrap" class="frame-wrap">
+      <iframe id="canvas" title="Pagina în lucru"></iframe>
+    </div>
+  </section>
+
+  <aside id="inspector" class="insp" hidden>
+    <div class="insp__head">
+      <h2 id="insp-title"></h2>
+      <button type="button" id="insp-close" aria-label="Închide">×</button>
+    </div>
+    <div id="insp-body"></div>
+  </aside>
+</div>
+
+<div id="library" class="lib" hidden>
+  <div class="lib__box" role="dialog" aria-modal="true" aria-labelledby="lib-title">
+    <div class="lib__head">
+      <h2 id="lib-title">Adaugă un bloc</h2>
+      <button type="button" id="lib-close" aria-label="Închide">×</button>
+    </div>
+    <div class="lib__body">
+      <nav id="lib-cats" class="lib__cats"></nav>
+      <div id="lib-grid" class="lib__grid"></div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*" hidden>
+<script src="blocks.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>
