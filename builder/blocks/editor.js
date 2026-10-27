@@ -1049,7 +1049,7 @@ $('packs').addEventListener('click', (e) => { if (e.target === $('packs')) $('pa
 $('packs-grid').addEventListener('click', (e) => {
   const c = e.target.closest('[data-pack]');
   if (!c) return;
-  if (!confirm(`Pornești de la șablonul „${PACKS[c.dataset.pack].label}”? Site-ul de acum se înlocuiește (poți reveni cu Anulează).`)) return;
+  if (!confirm(`Pornești de la designul „${PACKS[c.dataset.pack].label}”? Site-ul de acum se înlocuiește (poți reveni cu Anulează).`)) return;
   site = defaultSite(c.dataset.pack);
   selId = null;
   $('packs').hidden = true;

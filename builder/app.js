@@ -9777,8 +9777,20 @@ function renderTemplatesGrid() {
 
   // New sites are block sites (builder/blocks/); a starter pack is the "design".
   const packs = window.SB_PACKS || {};
+  if (!window.SB || !Object.keys(packs).length) {
+    grid.innerHTML = stateBlockHTML({
+      icon: 'alert',
+      isError: true,
+      title: 'Designurile nu sunt disponibile momentan',
+      desc: 'Verifică-ți conexiunea și încearcă din nou.',
+      actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-templates">Reîncearcă</button>',
+      style: 'grid-column:1/-1',
+    });
+    $('btn-retry-templates').addEventListener('click', reloadDesignPacks);
+    return;
+  }
   const order = ['gol'].concat(Object.keys(packs).filter((id) => id !== 'gol'));
-  if (window.SB) window.SB.setAssetBase('/app/generated/template-assets/');
+  window.SB.setAssetBase('/app/generated/template-assets/');
 
   order.forEach((id) => {
     const pack = packs[id];
@@ -9787,6 +9799,7 @@ function renderTemplatesGrid() {
     card.className = 'template-card';
     card.setAttribute('role', 'listitem');
     card.dataset.templateId = id;
+    card.dataset.vertical = PACK_FILTER[id] || 'all';
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'template-card-preview';
@@ -9823,7 +9836,7 @@ function renderTemplatesGrid() {
       <div class="template-card-title">${escHtml(pack.label)}</div>
       <div class="template-card-desc">${escHtml(pack.desc || '')}</div>
       <div class="template-card-actions">
-        <button class="btn-primary btn-start-tpl" data-id="${escHtml(id)}" aria-label="Începe cu șablonul ${escHtml(pack.label)}">Începe</button>
+        <button class="btn-primary btn-start-tpl" data-id="${escHtml(id)}" aria-label="Începe cu designul ${escHtml(pack.label)}">Începe</button>
       </div>`;
     const start = (e) => { if (e) e.stopPropagation(); startBlocksSite(id); };
     body.querySelector('.btn-start-tpl').addEventListener('click', start);
@@ -9834,8 +9847,32 @@ function renderTemplatesGrid() {
     grid.appendChild(card);
   });
 
+  applyCatalogFilter(activeCatalogFilter);
   const registry = getTemplateList();
   if (registry && registry.length) populateHeroStage(registry);
+}
+
+/** Catalog chip each starter pack sits under; "De la zero" shows under every chip. */
+const PACK_FILTER = {
+  restaurant: 'product-menu', cafenea: 'product-menu', catering: 'product-menu',
+  salon: 'portfolio', mireasa: 'portfolio', cosmetica: 'portfolio',
+  meserii: 'local-service', renovari: 'local-service',
+  profesionisti: 'professionals', consultanta: 'professionals', contabilitate: 'professionals',
+  cofetarie: 'desserdirina',
+};
+
+/** Retry for the empty state: load the pack scripts again, then redraw. */
+function reloadDesignPacks() {
+  const files = ['/app/blocks/packs.js', '/app/blocks/packs-more.js', '/app/blocks/blocks.js'];
+  const next = (i) => {
+    if (i >= files.length) { renderTemplatesGrid(); return; }
+    const el = document.createElement('script');
+    el.src = files[i] + '?r=' + Date.now();
+    el.onload = () => next(i + 1);
+    el.onerror = () => renderTemplatesGrid();
+    document.head.appendChild(el);
+  };
+  next(0);
 }
 
 /** Open the block editor on a fresh copy of a starter pack. */
@@ -9856,6 +9893,7 @@ function applyCatalogFilter(filter) {
     const vert = card.dataset.vertical || card.dataset.templateId || '';
     const id = card.dataset.templateId || '';
     const show = activeCatalogFilter === 'all'
+      || vert === 'all'
       || vert === activeCatalogFilter
       || id === activeCatalogFilter;
     card.hidden = !show;
