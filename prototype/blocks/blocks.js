@@ -241,6 +241,119 @@ const BLOCKS = {
     },
   },
 
+  text: {
+    label: 'Text', category: 'Conținut',
+    variants: { left: 'Aliniat stânga', center: 'Centrat', split: 'Titlu lângă text' },
+    defaults: () => ({ eyebrow: 'Din bucătărie', title: 'Gătim cu ce aduce sezonul', text: 'Lucrăm cu cinci producători din jurul Bucureștiului. Când se termină roșiile, se termină și preparatul. De aceea meniul se schimbă în fiecare lună.' }),
+    fields: [
+      { key: 'eyebrow', label: 'Text mic deasupra', type: 'text' },
+      { key: 'title', label: 'Titlu', type: 'text' },
+      { key: 'text', label: 'Text', type: 'textarea' },
+    ],
+    render(d, v) {
+      if (v === 'split') {
+        return `<section class="b-sec"><div class="b-wrap b-cols b-cols--top"><div>${t('p', 'eyebrow', d.eyebrow, 'b-eyebrow')}${t('h2', 'title', d.title, 'b-h2')}</div>${t('p', 'text', d.text, 'b-body')}</div></section>`;
+      }
+      return `<section class="b-sec${v === 'center' ? ' b-center' : ''}"><div class="b-wrap b-narrow">${t('p', 'eyebrow', d.eyebrow, 'b-eyebrow')}${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}</div></section>`;
+    },
+  },
+
+  columns: {
+    label: 'Coloane', category: 'Conținut',
+    variants: { images: 'Cu poze', numbers: 'Cu numere', plain: 'Doar text' },
+    defaults: () => ({
+      title: 'De ce vin oaspeții la noi',
+      intro: 'Trei lucruri pe care nu le schimbăm, oricât s-ar schimba meniul.',
+      cols: [
+        { image: IMG + 'cn-r3.jpg', title: 'Producători locali', text: 'Legume, brânzeturi și carne din jurul orașului.', cta: 'Află mai mult' },
+        { image: IMG + 'cn-d2.jpg', title: 'Meniu de sezon', text: 'Se schimbă o dată pe lună, după ce e la piață.', cta: 'Vezi meniul' },
+        { image: IMG + 'cn-ig4.jpg', title: 'Vinuri românești', text: 'Peste 40 de etichete, la pahar și la sticlă.', cta: 'Lista de vinuri' },
+      ],
+    }),
+    fields: [
+      { key: 'title', label: 'Titlu', type: 'text' },
+      { key: 'intro', label: 'Introducere', type: 'text' },
+      { key: 'cols', label: 'Coloane (2–4)', type: 'list', max: 4, min: 2, item: [
+        { key: 'image', label: 'Poză', type: 'image' }, { key: 'title', label: 'Titlu', type: 'text' },
+        { key: 'text', label: 'Text', type: 'textarea' }, { key: 'cta', label: 'Link', type: 'text' },
+      ], newItem: { image: IMG + 'cn-ig5.jpg', title: 'Coloană nouă', text: 'Scrie aici un text scurt.', cta: 'Află mai mult' } },
+    ],
+    render(d, v) {
+      const n = Math.min(Math.max(d.cols.length, 2), 4);
+      const cols = d.cols.map((c, i) => {
+        const top = v === 'images' ? img(`cols.${i}.image`, c.image, c.title, 'b-col__img')
+          : v === 'numbers' ? `<span class="b-col__num">${String(i + 1).padStart(2, '0')}</span>` : '';
+        return `<div class="b-col" data-list="cols" data-i="${i}">${top}${t('h3', `cols.${i}.title`, c.title, 'b-h3')}${t('p', `cols.${i}.text`, c.text, 'b-muted')}<a href="#" class="b-link" data-f="cols.${i}.cta">${esc(c.cta)}</a></div>`;
+      }).join('');
+      return `<section class="b-sec"><div class="b-wrap"><div class="b-head b-head--stack">${t('h2', 'title', d.title, 'b-h2')}${t('p', 'intro', d.intro, 'b-body')}</div><div class="b-cols-n" style="--n:${n}">${cols}</div></div></section>`;
+    },
+  },
+
+  team: {
+    label: 'Echipa', category: 'Încredere',
+    variants: { grid: 'Poze mari', round: 'Poze rotunde' },
+    defaults: () => ({
+      title: 'Oamenii din spatele farfuriei',
+      people: [
+        { image: IMG + 'cn-r1.jpg', name: 'Andrei Ionescu', role: 'Bucătar-șef' },
+        { image: IMG + 'cn-r2.jpg', name: 'Maria Pop', role: 'Somelier' },
+        { image: IMG + 'cn-r3.jpg', name: 'Radu Stan', role: 'Pastry chef' },
+      ],
+    }),
+    fields: [
+      { key: 'title', label: 'Titlu', type: 'text' },
+      { key: 'people', label: 'Persoane', type: 'list', item: [{ key: 'image', label: 'Poză', type: 'image' }, { key: 'name', label: 'Nume', type: 'text' }, { key: 'role', label: 'Rol', type: 'text' }], newItem: { image: IMG + 'cn-ig2.jpg', name: 'Nume Prenume', role: 'Rol' } },
+    ],
+    render(d, v) {
+      const ppl = d.people.map((p, i) => `<figure class="b-person b-person--${v}" data-list="people" data-i="${i}">${img(`people.${i}.image`, p.image, p.name)}${t('figcaption', `people.${i}.name`, p.name, 'b-h3')}${t('p', `people.${i}.role`, p.role, 'b-muted')}</figure>`).join('');
+      return `<section class="b-sec"><div class="b-wrap">${t('h2', 'title', d.title, 'b-h2')}<div class="b-grid b-grid--4">${ppl}</div></div></section>`;
+    },
+  },
+
+  form: {
+    label: 'Formular de contact', category: 'Contact',
+    variants: { simple: 'Simplu', info: 'Cu date de contact' },
+    defaults: () => ({
+      title: 'Scrie-ne', text: 'Îți răspundem în aceeași zi.',
+      lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Mesaj', cta: 'Trimite',
+      address: 'Strada Nordului 12, București', phone: '07xx xxx xxx', email: 'salut@casanord.ro',
+    }),
+    fields: [
+      { key: 'title', label: 'Titlu', type: 'text' }, { key: 'text', label: 'Text', type: 'text' },
+      { key: 'lName', label: 'Eticheta „nume”', type: 'text' }, { key: 'lPhone', label: 'Eticheta „telefon”', type: 'text' },
+      { key: 'lMsg', label: 'Eticheta „mesaj”', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' },
+      { key: 'address', label: 'Adresă', type: 'text' }, { key: 'phone', label: 'Telefon', type: 'text' }, { key: 'email', label: 'Email', type: 'text' },
+    ],
+    render(d, v) {
+      const form = `<form class="b-form" onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
+      const head = `${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}`;
+      if (v === 'info') {
+        return `<section class="b-sec"><div class="b-wrap b-cols b-cols--top"><div>${head}<div class="b-info">${t('p', 'address', d.address)}${t('p', 'phone', d.phone, 'b-strong')}${t('p', 'email', d.email)}</div></div>${form}</div></section>`;
+      }
+      return `<section class="b-sec"><div class="b-wrap b-narrow">${head}${form}</div></section>`;
+    },
+  },
+
+  instagram: {
+    label: 'Instagram', category: 'Conținut',
+    variants: { grid: 'Șase poze', strip: 'Bandă' },
+    defaults: () => ({ title: 'Din bucătărie, pe Instagram', handle: '@casanord', cta: 'Urmărește-ne' }),
+    fields: [{ key: 'title', label: 'Titlu', type: 'text' }, { key: 'handle', label: 'Cont', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' }],
+    render(d, v) {
+      const n = v === 'strip' ? 6 : 6;
+      const pics = Array.from({ length: n }, (_, i) => `<img src="${IMG}cn-ig${i + 1}.jpg" alt="">`).join('');
+      return `<section class="b-sec"><div class="b-wrap"><div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${btn('cta', d.cta, 'b-btn--ghost')}</div><div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">Pozele vin automat din contul tău, după ce îl conectezi.</p></div></section>`;
+    },
+  },
+
+  spacer: {
+    label: 'Separator', category: 'Conținut',
+    variants: { line: 'Linie', space: 'Doar spațiu' },
+    defaults: () => ({}),
+    fields: [],
+    render(d, v) { return `<div class="b-spacer b-spacer--${v}"><div class="b-wrap"><hr></div></div>`; },
+  },
+
   footer: {
     label: 'Subsol', category: 'Subsol', locked: true,
     variants: { simple: 'Simplu' },
@@ -369,18 +482,90 @@ a{color:inherit}
 .b-faq__item p{margin-top:8px}
 .b-foot{padding:40px 0 24px;border-top:1px solid color-mix(in srgb,var(--sfg) 14%,transparent)}
 .b-foot__row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline}
-.b-attr{text-align:center;font-size:12px;opacity:.55;margin-top:28px}`;
+.b-attr{text-align:center;font-size:12px;opacity:.55;margin-top:28px}
+.b-center{text-align:center}
+.b-center .b-body{margin-left:auto;margin-right:auto}
+.b-cols--top{align-items:start}
+.b-head--stack{flex-direction:column;align-items:flex-start}
+.b-h3{font-family:var(--fd);font-weight:400;font-size:22px;line-height:1.2}
+.b-cols-n{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:32px}
+@media(max-width:800px){.b-cols-n{grid-template-columns:1fr}}
+.b-col{display:flex;flex-direction:column;gap:10px}
+.b-col__img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r)}
+.b-col__num{font-family:var(--fd);font-size:44px;color:var(--accent);line-height:1}
+.b-link{color:var(--accent);font-weight:700;text-decoration:none;font-size:15px}
+.b-person{display:flex;flex-direction:column;gap:6px}
+.b-person img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r)}
+.b-person--round{align-items:center;text-align:center}
+.b-person--round img{width:160px;aspect-ratio:1;border-radius:50%}
+.b-form{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.b-form__lbl{font-size:14px;font-weight:600;margin-top:6px}
+.b-input{font:inherit;color:inherit;background:color-mix(in srgb,var(--sfg) 6%,transparent);border:1px solid color-mix(in srgb,var(--sfg) 25%,transparent);border-radius:var(--r);padding:13px 14px}
+.b-form .b-btn{align-self:flex-start;margin-top:14px}
+.b-info{display:flex;flex-direction:column;gap:6px;margin-top:20px;font-size:17px}
+.b-ig{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.b-ig--strip{grid-template-columns:repeat(6,minmax(0,1fr))}
+.b-ig img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:calc(var(--r) / 2)}
+@media(max-width:720px){.b-ig--strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.b-note{font-size:13px;opacity:.55;margin-top:12px}
+.b-spacer--line{padding:28px 0}
+.b-spacer--space{padding:40px 0}
+.b-spacer hr{border:0;border-top:1px solid color-mix(in srgb,var(--sfg) 20%,transparent)}
+.b-spacer--space hr{visibility:hidden}
+.blk[data-pad="compact"] .b-sec,.blk[data-pad="compact"] .b-hero:not(.b-hero--full){padding-top:44px;padding-bottom:44px}
+.blk[data-pad="airy"] .b-sec,.blk[data-pad="airy"] .b-hero:not(.b-hero--full){padding-top:136px;padding-bottom:136px}
+.blk[data-align="center"] .b-wrap{text-align:center}
+.blk[data-align="center"] .b-actions,.blk[data-align="center"] .b-head{justify-content:center}
+.blk[data-align="center"] .b-lede,.blk[data-align="center"] .b-body{margin-left:auto;margin-right:auto}
+@media(max-width:720px){.blk[data-hidem]{display:none}}`;
+}
+
+/**
+ * Per-element overrides set from the canvas text toolbar:
+ * b.el[path] = { align, size (px), bold, italic, color: 'accent'|'muted', hidden, href }.
+ * Rendered as one scoped <style> per block so the export needs no script.
+ */
+const SIZE_STEPS = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64, 72, 88];
+
+function elementCss(b) {
+  const out = [];
+  Object.entries(b.el || {}).forEach(([path, s]) => {
+    const sel = `.blk[data-id="${b.id}"] [data-f="${path}"]`;
+    const r = [];
+    if (s.hidden) r.push('display:none');
+    if (s.align) r.push(`text-align:${s.align}`);
+    if (s.size) r.push(`font-size:clamp(${Math.round(s.size * 0.62)}px, ${(s.size / 14.4).toFixed(2)}vw, ${s.size}px)`);
+    if (s.bold === true) r.push('font-weight:700');
+    if (s.bold === false) r.push('font-weight:400');
+    if (s.italic) r.push('font-style:italic');
+    if (s.color === 'accent') r.push('color:var(--accent);opacity:1');
+    if (s.color === 'muted') r.push('opacity:.6');
+    if (r.length) out.push(`${sel}{${r.join(';')}}`);
+  });
+  return out.join('');
+}
+
+function applyLinks(html, b) {
+  return html.replace(/<a href="#"([^>]*?)data-f="([^"]+)"/g, (m, attrs, path) => {
+    const href = b.el && b.el[path] && b.el[path].href;
+    return href ? `<a href="${esc(href)}"${attrs}data-f="${path}"` : m;
+  });
 }
 
 function renderBlock(b) {
   const def = BLOCKS[b.type];
-  return `<div class="blk" data-id="${b.id}" data-bg="${b.bg}">${def.render(b.data, b.variant)}</div>`;
+  const css = elementCss(b);
+  const attrs = `data-id="${b.id}" data-bg="${b.bg}" data-pad="${b.pad || 'normal'}" data-align="${b.align || 'auto'}"${b.hideMobile ? ' data-hidem' : ''}`;
+  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data, b.variant), b)}</div>`;
 }
+
+const IMAGES = ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6',
+  'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3', 'tv-ig1', 'tv-ig2', 'tv-ig3', 'tv-ig4', 'tv-ig5', 'tv-ig6'].map((n) => IMG + n + '.jpg');
 
 /** Standalone page (preview / export): no editor attributes needed at runtime. */
 function renderPage(page, baseHref) {
   return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${baseHref ? `<base href="${esc(baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Previzualizare</title><style>${themeCss(page.theme)}</style></head><body>${page.blocks.map(renderBlock).join('')}</body></html>`;
 }
 
-window.SB = { BLOCKS, THEMES, makeBlock, defaultPage, themeCss, renderBlock, renderPage, esc };
+window.SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, defaultPage, themeCss, renderBlock, elementCss, renderPage, esc };
 })();

@@ -9,7 +9,7 @@
  * State persists to localStorage; undo/redo keeps JSON snapshots.
  */
 
-const { BLOCKS, THEMES, makeBlock, defaultPage, themeCss, renderBlock, renderPage, esc } = window.SB;
+const { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, defaultPage, themeCss, renderBlock, elementCss, renderPage, esc } = window.SB;
 const STORE = 'sb-proto-page-v1';
 const $ = (id) => document.getElementById(id);
 
@@ -98,6 +98,18 @@ const EDITOR_CSS = `
 .blk:hover>.ed-add,.blk.is-sel>.ed-add{opacity:1}
 .ed-add button{font:600 13px -apple-system,Helvetica,Arial,sans-serif;background:#2438d6;color:#fff;border:0;border-radius:999px;height:34px;padding:0 14px;box-shadow:0 4px 14px rgba(36,56,214,.45);cursor:pointer}
 .b-attr{user-select:none}
+.ed-label,.ed-tools,.ed-add,.ed-tt{zoom:var(--ed-z,1)}
+.ed-drag{cursor:grab}
+body.is-editing .ed-tools{display:none}
+.ed-drop{position:absolute;left:0;right:0;height:4px;background:#2438d6;z-index:60;pointer-events:none;box-shadow:0 0 0 3px rgba(36,56,214,.25)}
+.blk.is-dragging{opacity:.35}
+.ed-tt{position:absolute;z-index:70;display:flex;flex-wrap:wrap;align-items:center;gap:2px;background:#15171c;color:#fff;border-radius:10px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.35);font:600 12px -apple-system,Helvetica,Arial,sans-serif;max-width:560px}
+.ed-tt button{background:transparent;color:#fff;border:0;border-radius:6px;min-width:30px;height:30px;padding:0 7px;cursor:pointer;font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.ed-tt button:hover,.ed-tt button[aria-pressed="true"]{background:#2e323b}
+.ed-tt .sep{width:1px;height:20px;background:#3a3f4a;margin:0 3px}
+.ed-tt .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.ed-tt input{font:500 13px -apple-system,Helvetica,Arial,sans-serif;width:220px;height:30px;border-radius:6px;border:0;padding:0 8px}
+@media(max-width:720px){html .blk[data-hidem]{display:block!important;opacity:.4}}
 `;
 
 const frame = $('canvas');
@@ -109,6 +121,7 @@ function initFrame() {
     doc = frame.contentDocument;
     bindFrame();
     renderAll();
+    fitFrame();
   }, { once: true });
 }
 
@@ -128,6 +141,7 @@ function decorate(el, b) {
     tools.className = 'ed-tools';
     const variants = Object.keys(def.variants);
     tools.innerHTML =
+      (def.locked ? '' : `<button type="button" class="ed-drag" draggable="true" title="Trage ca să muți blocul">⠿ Trage</button>`) +
       (variants.length > 1 ? `<button type="button" data-act="variant" title="Schimbă aspectul">Aspect ↻</button>` : '') +
       (def.locked ? '' : `<button type="button" data-act="up" title="Mută sus">↑</button><button type="button" data-act="down" title="Mută jos">↓</button><button type="button" data-act="dup" title="Duplică">Duplică</button><button type="button" data-act="del" class="ed-del" title="Șterge">Șterge</button>`);
     el.appendChild(tools);
@@ -165,8 +179,22 @@ function scrollToBlock(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+let editing = null; // { el, id, path }
+let dragBlockId = null;
+let dropLine = null;
+
+function isTyping(target) {
+  const a = target && (target.ownerDocument || document).activeElement;
+  return !!(a && (a.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(a.tagName)));
+}
+
 function bindFrame() {
+  doc.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.ed-tt') && !e.target.closest('input')) e.preventDefault();
+  });
+
   doc.addEventListener('click', (e) => {
+    if (e.target.closest('.ed-tt')) return textToolAction(e);
     const a = e.target.closest('a');
     if (a) e.preventDefault();
     const blk = e.target.closest('.blk');
@@ -177,7 +205,7 @@ function bindFrame() {
     if (act) { e.preventDefault(); return blockAction(id, act.dataset.act); }
 
     const im = e.target.closest('[data-img]');
-    if (im) { select(id); pendingImage = { id, path: im.dataset.img }; $('file').click(); return; }
+    if (im) { select(id); openPicker({ id, path: im.dataset.img }); return; }
 
     const f = e.target.closest('[data-f]');
     if (selId !== id) select(id, { keepCanvas: !!f });
@@ -185,6 +213,7 @@ function bindFrame() {
   });
 
   doc.addEventListener('input', (e) => {
+    if (e.target.closest('.ed-tt')) return;
     const f = e.target.closest('[data-f]');
     const blk = e.target.closest('.blk');
     if (!f || !blk) return;
@@ -193,9 +222,15 @@ function bindFrame() {
     $('saved').textContent = 'Se salvează…';
     clearTimeout(textTimer);
     textTimer = setTimeout(() => { commit(); syncInspectorValues(); }, 500);
+    placeTextTools();
   });
 
   doc.addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('.ed-tt input')) {
+      if (e.key === 'Enter') { e.preventDefault(); applyLink(e.target.value); }
+      if (e.key === 'Escape') endEdit();
+      return;
+    }
     const f = e.target.closest && e.target.closest('[data-f]');
     if (f && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); f.blur(); }
     if (f && e.key === 'Escape') f.blur();
@@ -204,15 +239,64 @@ function bindFrame() {
 
   doc.addEventListener('focusout', (e) => {
     const f = e.target.closest && e.target.closest('[data-f]');
-    if (f) { f.removeAttribute('contenteditable'); clearTimeout(textTimer); commit(); syncInspectorValues(); }
+    if (!f) return;
+    const to = e.relatedTarget;
+    if (to && to.closest && to.closest('.ed-tt')) return;
+    endEdit();
   });
 
   doc.addEventListener('toggle', (e) => { if (e.target.matches('details')) e.target.open = true; }, true);
+
+  /* drag blocks on the canvas */
+  doc.addEventListener('dragstart', (e) => {
+    const h = e.target.closest && e.target.closest('.ed-drag');
+    if (!h) return;
+    const blk = h.closest('.blk');
+    dragBlockId = blk.dataset.id;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragBlockId);
+    try { e.dataTransfer.setDragImage(blk, 40, 20); } catch (_) { /* optional */ }
+    setTimeout(() => blk.classList.add('is-dragging'), 0);
+  });
+  doc.addEventListener('dragover', (e) => {
+    if (!dragBlockId) return;
+    const blk = e.target.closest && e.target.closest('.blk');
+    if (!blk) return;
+    e.preventDefault();
+    const r = blk.getBoundingClientRect();
+    let after = e.clientY > r.top + r.height / 2;
+    const target = findBlock(blk.dataset.id);
+    if (BLOCKS[target.type].locked) after = false;
+    if (!dropLine) { dropLine = doc.createElement('div'); dropLine.className = 'ed-drop'; doc.body.appendChild(dropLine); }
+    dropLine.style.top = (doc.defaultView.scrollY + (after ? r.bottom : r.top) - 2) + 'px';
+    dropLine.dataset.target = blk.dataset.id;
+    dropLine.dataset.after = after ? '1' : '';
+  });
+  doc.addEventListener('drop', (e) => {
+    if (!dragBlockId || !dropLine) return;
+    e.preventDefault();
+    const from = indexOf(dragBlockId);
+    let to = indexOf(dropLine.dataset.target) + (dropLine.dataset.after ? 1 : 0);
+    if (to > from) to -= 1;
+    to = Math.min(to, footerIndex() - 1);
+    clearDrag();
+    if (to !== from && to >= 0) move(from, to);
+  });
+  doc.addEventListener('dragend', clearDrag);
+}
+
+function clearDrag() {
+  dragBlockId = null;
+  if (dropLine) { dropLine.remove(); dropLine = null; }
+  if (doc) doc.querySelectorAll('.is-dragging').forEach((x) => x.classList.remove('is-dragging'));
 }
 
 function startEdit(el, id) {
   if (el.getAttribute('contenteditable') === 'true') return;
+  if (editing && editing.el !== el) endEdit();
   el.setAttribute('contenteditable', 'true');
+  editing = { el, id, path: el.dataset.f };
+  doc.body.classList.add('is-editing');
   el.focus();
   const sel = doc.getSelection();
   const range = doc.createRange();
@@ -220,6 +304,136 @@ function startEdit(el, id) {
   range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
+  showTextTools();
+}
+
+function endEdit() {
+  if (!editing) return;
+  const { el } = editing;
+  el.removeAttribute('contenteditable');
+  editing = null;
+  doc.body.classList.remove('is-editing');
+  const tt = doc.querySelector('.ed-tt');
+  if (tt) tt.remove();
+  clearTimeout(textTimer);
+  commit();
+  syncInspectorValues();
+}
+
+/* ---------- text toolbar ---------- */
+
+const ICON = {
+  left: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h8M2 12h10"/></svg>',
+  center: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M4 8h8M3 12h10"/></svg>',
+  right: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M6 8h8M4 12h10"/></svg>',
+};
+
+function elStyle(create) {
+  const b = findBlock(editing.id);
+  b.el = b.el || {};
+  if (create && !b.el[editing.path]) b.el[editing.path] = {};
+  return b.el[editing.path] || {};
+}
+
+function showTextTools() {
+  const old = doc.querySelector('.ed-tt');
+  if (old) old.remove();
+  if (!editing) return;
+  const s = elStyle(false);
+  const isLink = editing.el.tagName === 'A';
+  const tt = doc.createElement('div');
+  tt.className = 'ed-tt';
+  tt.innerHTML =
+    `<button type="button" data-tt="align" data-v="left" aria-pressed="${s.align === 'left'}" title="Aliniere stânga">${ICON.left}</button>` +
+    `<button type="button" data-tt="align" data-v="center" aria-pressed="${s.align === 'center'}" title="Centrat">${ICON.center}</button>` +
+    `<button type="button" data-tt="align" data-v="right" aria-pressed="${s.align === 'right'}" title="Aliniere dreapta">${ICON.right}</button>` +
+    `<span class="sep"></span>` +
+    `<button type="button" data-tt="size" data-v="-1" title="Text mai mic">A−</button>` +
+    `<button type="button" data-tt="size" data-v="1" title="Text mai mare">A+</button>` +
+    `<span class="sep"></span>` +
+    `<button type="button" data-tt="bold" aria-pressed="${s.bold === true}" title="Îngroșat"><b>B</b></button>` +
+    `<button type="button" data-tt="italic" aria-pressed="${!!s.italic}" title="Cursiv"><i>I</i></button>` +
+    `<span class="sep"></span>` +
+    `<button type="button" data-tt="color" data-v="accent" aria-pressed="${s.color === 'accent'}" title="Culoarea de accent"><span class="dot" style="background:var(--accent)"></span>Accent</button>` +
+    `<button type="button" data-tt="color" data-v="muted" aria-pressed="${s.color === 'muted'}" title="Mai estompat"><span class="dot" style="background:#888"></span>Estompat</button>` +
+    `<span class="sep"></span>` +
+    (isLink ? `<button type="button" data-tt="link" title="Unde duce butonul">Link</button>` : '') +
+    `<button type="button" data-tt="hide" title="Ascunde elementul (îl readuci din panoul din dreapta)">Ascunde</button>` +
+    `<button type="button" data-tt="reset" title="Revino la stilul designului">↺</button>`;
+  doc.body.appendChild(tt);
+  placeTextTools();
+}
+
+function placeTextTools() {
+  const tt = doc && doc.querySelector('.ed-tt');
+  if (!tt || !editing) return;
+  const z = parseFloat(doc.documentElement.style.getPropertyValue('--ed-z')) || 1;
+  const r = editing.el.getBoundingClientRect();
+  const tr = tt.getBoundingClientRect();
+  const sy = doc.defaultView.scrollY;
+  const w = doc.documentElement.clientWidth;
+  let top = r.top + sy - tr.height - 10 * z;
+  if (r.top - tr.height - 10 * z < 0) top = r.bottom + sy + 10 * z;
+  const left = Math.max(8, Math.min(r.left, w - tr.width - 8));
+  tt.style.top = (top / z) + 'px';
+  tt.style.left = (left / z) + 'px';
+}
+
+function refreshBlockCss(b) {
+  const el = doc.querySelector(`.blk[data-id="${b.id}"]`);
+  if (!el) return;
+  let st = el.querySelector(':scope > style');
+  if (!st) { st = doc.createElement('style'); el.prepend(st); }
+  st.textContent = elementCss(b);
+}
+
+function textToolAction(e) {
+  const btnEl = e.target.closest('button');
+  if (!btnEl || !editing) return;
+  const b = findBlock(editing.id);
+  const kind = btnEl.dataset.tt;
+  if (kind === 'link') {
+    const s = elStyle(false);
+    btnEl.outerHTML = `<input type="url" placeholder="https://… sau #meniu" value="${esc(s.href || '')}">`;
+    const inp = doc.querySelector('.ed-tt input');
+    inp.focus();
+    inp.addEventListener('blur', () => applyLink(inp.value), { once: true });
+    placeTextTools();
+    return;
+  }
+  const s = elStyle(true);
+  if (kind === 'align') s.align = s.align === btnEl.dataset.v ? undefined : btnEl.dataset.v;
+  if (kind === 'bold') s.bold = s.bold === true ? false : true;
+  if (kind === 'italic') s.italic = !s.italic;
+  if (kind === 'color') s.color = s.color === btnEl.dataset.v ? undefined : btnEl.dataset.v;
+  if (kind === 'size') {
+    const cur = parseFloat(doc.defaultView.getComputedStyle(editing.el).fontSize);
+    const dir = Number(btnEl.dataset.v);
+    const next = dir > 0 ? SIZE_STEPS.find((x) => x > cur + 0.5) : [...SIZE_STEPS].reverse().find((x) => x < cur - 0.5);
+    if (next) s.size = next;
+  }
+  if (kind === 'reset') { const href = s.href; b.el[editing.path] = href ? { href } : {}; }
+  if (kind === 'hide') {
+    s.hidden = true;
+    refreshBlockCss(b);
+    endEdit();
+    renderInspector();
+    return;
+  }
+  refreshBlockCss(b);
+  commit();
+  showTextTools();
+  editing.el.focus();
+}
+
+function applyLink(value) {
+  if (!editing) return;
+  const s = elStyle(true);
+  s.href = value.trim() || undefined;
+  editing.el.setAttribute('href', s.href || '#');
+  commit();
+  showTextTools();
+  editing.el.focus();
 }
 
 /* ---------- block actions ---------- */
@@ -343,6 +557,13 @@ function renderInspector() {
     html += `<div class="grp"><h3>Aspect</h3><div class="pills">${variants.map(([k, l]) => `<button type="button" data-variant="${k}" aria-pressed="${k === b.variant}">${esc(l)}</button>`).join('')}</div></div>`;
   }
   html += `<div class="grp"><h3>Fundal</h3><div class="pills">${[['auto', 'Ca tema'], ['light', 'Deschis'], ['dark', 'Închis'], ['accent', 'Accent']].map(([k, l]) => `<button type="button" data-bg="${k}" aria-pressed="${k === b.bg}">${l}</button>`).join('')}</div></div>`;
+  html += `<div class="grp"><h3>Spațiere</h3><div class="pills">${[['compact', 'Compact'], ['normal', 'Normal'], ['airy', 'Aerisit']].map(([k, l]) => `<button type="button" data-pad="${k}" aria-pressed="${k === (b.pad || 'normal')}">${l}</button>`).join('')}</div></div>`;
+  html += `<div class="grp"><h3>Aliniere</h3><div class="pills">${[['auto', 'Ca designul'], ['center', 'Totul centrat']].map(([k, l]) => `<button type="button" data-align="${k}" aria-pressed="${k === (b.align || 'auto')}">${l}</button>`).join('')}</div></div>`;
+  html += `<div class="grp"><label class="check"><input type="checkbox" data-hidem ${b.hideMobile ? 'checked' : ''}> Ascunde pe telefon</label></div>`;
+  const visFields = def.fields.filter((f) => f.type === 'text' || f.type === 'textarea');
+  if (visFields.length) {
+    html += `<div class="grp"><h3>Elemente afișate</h3><div class="checks">${visFields.map((f) => `<label class="check"><input type="checkbox" data-vis="${f.key}" ${(b.el && b.el[f.key] && b.el[f.key].hidden) ? '' : 'checked'}> ${esc(f.label)}</label>`).join('')}</div></div>`;
+  }
   html += `<div class="grp"><h3>Conținut</h3><div style="display:flex;flex-direction:column;gap:12px">${def.fields.map((f) => fieldHtml(b, f, f.key)).join('')}</div></div>`;
   if (!def.locked) {
     html += `<div class="grp"><h3>Bloc</h3><div class="row-actions"><button type="button" data-act="up">Mută sus</button><button type="button" data-act="down">Mută jos</button><button type="button" data-act="dup">Duplică</button><button type="button" data-act="del" class="danger">Șterge</button></div></div>`;
@@ -359,7 +580,7 @@ function fieldHtml(b, f, path) {
   if (f.type === 'image') return `<div class="fld">${esc(f.label)}<div class="imgfld"><img src="${esc(v)}" alt=""><button type="button" data-imgpath="${path}">Schimbă poza</button></div></div>`;
   if (f.type === 'list') {
     const items = v.map((it, i) => `<div class="list-item"><div class="list-item__head"><span>${i + 1}</span><span><button type="button" data-listmove="${path}" data-i="${i}" data-dir="-1" title="Mută sus">↑</button><button type="button" data-listmove="${path}" data-i="${i}" data-dir="1" title="Mută jos">↓</button><button type="button" data-listdel="${path}" data-i="${i}" title="Șterge">×</button></span></div>${f.item.map((sf) => fieldHtml(b, sf, `${path}.${i}.${sf.key}`)).join('')}</div>`).join('');
-    return `<div class="fld">${esc(f.label)}<div style="display:flex;flex-direction:column;gap:8px">${items}<button type="button" class="list-add" data-listadd="${path}">+ Adaugă</button></div></div>`;
+    return `<div class="fld">${esc(f.label)}<div style="display:flex;flex-direction:column;gap:8px">${items}${f.max && v.length >= f.max ? '' : `<button type="button" class="list-add" data-listadd="${path}">+ Adaugă</button>`}</div></div>`;
   }
   return '';
 }
@@ -398,16 +619,19 @@ $('insp-body').addEventListener('click', (e) => {
   if (!t) return;
   if (t.dataset.variant) { b.variant = t.dataset.variant; commit(); renderList(); renderInspector(); rerenderBlock(b.id); return; }
   if (t.dataset.bg) { b.bg = t.dataset.bg; commit(); renderInspector(); rerenderBlock(b.id); return; }
+  if (t.dataset.pad) { b.pad = t.dataset.pad; commit(); renderInspector(); rerenderBlock(b.id); return; }
+  if (t.dataset.align) { b.align = t.dataset.align; commit(); renderInspector(); rerenderBlock(b.id); return; }
   if (t.dataset.act) { blockAction(b.id, t.dataset.act); return; }
-  if (t.dataset.imgpath) { pendingImage = { id: b.id, path: t.dataset.imgpath }; $('file').click(); return; }
+  if (t.dataset.imgpath) { openPicker({ id: b.id, path: t.dataset.imgpath }); return; }
   if (t.dataset.listadd) {
     const f = fieldDef(b, t.dataset.listadd);
+    if (f.max && getPath(b.data, t.dataset.listadd).length >= f.max) return;
     getPath(b.data, t.dataset.listadd).push(JSON.parse(JSON.stringify(f.newItem)));
     commit(); renderInspector(); rerenderBlock(b.id); return;
   }
   if (t.dataset.listdel) {
     const list = getPath(b.data, t.dataset.listdel);
-    if (list.length <= 1) return;
+    if (list.length <= (fieldDef(b, t.dataset.listdel).min || 1)) return;
     list.splice(Number(t.dataset.i), 1);
     commit(); renderInspector(); rerenderBlock(b.id); return;
   }
@@ -421,6 +645,19 @@ $('insp-body').addEventListener('click', (e) => {
   }
 });
 
+$('insp-body').addEventListener('change', (e) => {
+  const b = findBlock(selId);
+  if (!b) return;
+  if (e.target.matches('[data-hidem]')) { b.hideMobile = e.target.checked; commit(); rerenderBlock(b.id); return; }
+  if (e.target.matches('[data-vis]')) {
+    const k = e.target.dataset.vis;
+    b.el = b.el || {};
+    b.el[k] = b.el[k] || {};
+    b.el[k].hidden = !e.target.checked;
+    commit(); rerenderBlock(b.id);
+  }
+});
+
 $('insp-close').addEventListener('click', deselect);
 
 /* ---------- images ---------- */
@@ -429,8 +666,6 @@ $('file').addEventListener('change', () => {
   const file = $('file').files[0];
   $('file').value = '';
   if (!file || !pendingImage) return;
-  const target = pendingImage;
-  pendingImage = null;
   const reader = new FileReader();
   reader.onload = () => {
     const im = new Image();
@@ -441,15 +676,40 @@ $('file').addEventListener('change', () => {
       c.width = Math.round(im.width * k);
       c.height = Math.round(im.height * k);
       c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-      const b = findBlock(target.id);
-      if (!b) return;
-      setPath(b.data, target.path, c.toDataURL('image/jpeg', 0.82));
-      commit(); renderInspector(); rerenderBlock(b.id);
+      setImage(c.toDataURL('image/jpeg', 0.82));
     };
     im.src = reader.result;
   };
   reader.readAsDataURL(file);
 });
+
+/* ---------- image picker ---------- */
+
+function openPicker(target) {
+  pendingImage = target;
+  const b = findBlock(target.id);
+  const cur = b && getPath(b.data, target.path);
+  $('picker-grid').innerHTML = IMAGES.map((src) => `<button type="button" class="pick${src === cur ? ' is-cur' : ''}" data-src="${esc(src)}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('');
+  $('picker').hidden = false;
+}
+
+function setImage(src) {
+  const target = pendingImage;
+  pendingImage = null;
+  $('picker').hidden = true;
+  const b = target && findBlock(target.id);
+  if (!b) return;
+  setPath(b.data, target.path, src);
+  commit(); renderInspector(); rerenderBlock(b.id);
+}
+
+$('picker-grid').addEventListener('click', (e) => {
+  const p = e.target.closest('[data-src]');
+  if (p) setImage(p.dataset.src);
+});
+$('picker-upload').addEventListener('click', () => $('file').click());
+$('picker-close').addEventListener('click', () => { $('picker').hidden = true; pendingImage = null; });
+$('picker').addEventListener('click', (e) => { if (e.target === $('picker')) { $('picker').hidden = true; pendingImage = null; } });
 
 /* ---------- library ---------- */
 
@@ -543,7 +803,20 @@ function setDevice(mobile) {
   $('frame-wrap').classList.toggle('is-mobile', mobile);
   $('dev-desktop').setAttribute('aria-pressed', String(!mobile));
   $('dev-mobile').setAttribute('aria-pressed', String(mobile));
+  fitFrame();
 }
+
+/** Render the page at a real device width and scale it down to fit, like Wix. */
+function fitFrame() {
+  const wrap = $('frame-wrap');
+  const W = wrap.classList.contains('is-mobile') ? 390 : 1280;
+  const s = Math.min(1, wrap.clientWidth / W);
+  frame.style.width = W + 'px';
+  frame.style.height = (wrap.clientHeight / s) + 'px';
+  frame.style.transform = `scale(${s})`;
+  if (doc) { doc.documentElement.style.setProperty('--ed-z', String(1 / s)); placeTextTools(); }
+}
+new ResizeObserver(fitFrame).observe($('frame-wrap'));
 $('preview').addEventListener('click', () => {
   const url = URL.createObjectURL(new Blob([renderPage(page, location.href)], { type: 'text/html' }));
   window.open(url, '_blank');
@@ -557,6 +830,18 @@ $('reset').addEventListener('click', () => {
 
 function shortcuts(e) {
   const mod = e.metaKey || e.ctrlKey;
+  const typing = isTyping(e.target);
+  if (selId && !typing && (e.key === 'Delete' || e.key === 'Backspace')) {
+    const b = findBlock(selId);
+    if (b && !BLOCKS[b.type].locked) { e.preventDefault(); blockAction(selId, 'del'); }
+    return;
+  }
+  if (selId && !typing && mod && e.key.toLowerCase() === 'd') {
+    const b = findBlock(selId);
+    if (b && !BLOCKS[b.type].locked) { e.preventDefault(); blockAction(selId, 'dup'); }
+    return;
+  }
+  if (e.key === 'Escape' && !$('picker').hidden) { $('picker').hidden = true; pendingImage = null; return; }
   if (mod && e.key.toLowerCase() === 'z') {
     const active = (e.target.ownerDocument || document).activeElement;
     if (active && (active.isContentEditable || /INPUT|TEXTAREA/.test(active.tagName))) return;

@@ -72,6 +72,19 @@
   </div>
 </div>
 
+<div id="picker" class="lib" hidden>
+  <div class="lib__box lib__box--sm" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <div class="lib__head">
+      <h2 id="picker-title">Alege o poză</h2>
+      <div class="lib__head-actions">
+        <button type="button" id="picker-upload" class="upload">Încarcă de pe calculator</button>
+        <button type="button" id="picker-close" aria-label="Închide">×</button>
+      </div>
+    </div>
+    <div id="picker-grid" class="picker-grid"></div>
+  </div>
+</div>
+
 <input type="file" id="file" accept="image/*" hidden>
 <script src="blocks.js"></script>
 <script src="editor.js"></script>
