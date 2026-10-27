@@ -25,6 +25,7 @@ window.SB.setAssetBase('/app/generated/template-assets/');
 const asset = window.SB.asset;
 
 let siteId = null;       // account site id, once saved to the server
+let resume = null;       // 'auth' | 'checkout': where the product should send the customer back here
 let signedIn = false;
 let serverTimer = null;
 let serverBusy = false;
@@ -63,14 +64,18 @@ function load() {
   }
   const local = readLocal();
   const wanted = params.get('site');
-  if (local && (!wanted || local.siteId === wanted)) { siteId = local.siteId || null; return local.site; }
+  if (local && (!wanted || local.siteId === wanted)) { siteId = local.siteId || null; resume = local.resume || null; return local.site; }
   if (!wanted) { location.replace('/app/#templates'); }
   return defaultSite('gol');
 }
 
+function writeLocal() {
+  localStorage.setItem(STORE, JSON.stringify({ siteId, site, resume, at: Date.now() }));
+}
+
 function save() {
   try {
-    localStorage.setItem(STORE, JSON.stringify({ siteId, site, at: Date.now() }));
+    writeLocal();
     setSaved(signedIn ? 'Se salvează…' : 'Salvat în browser');
   } catch (_) {
     setSaved('Nu s-a putut salva (poze prea mari)');
@@ -101,7 +106,7 @@ function rememberSiteId(id) {
   if (!id || id === siteId) return;
   siteId = id;
   window.history.replaceState(null, '', `${location.pathname}?site=${encodeURIComponent(id)}`);
-  try { localStorage.setItem(STORE, JSON.stringify({ siteId, site, at: Date.now() })); } catch (_) { /* quota */ }
+  try { writeLocal(); } catch (_) { /* quota */ }
 }
 
 function scheduleServerSave() {
@@ -140,7 +145,7 @@ async function bootAccount() {
         undoStack.splice(0, undoStack.length, JSON.stringify(site));
         hIndex = 0;
         selId = null;
-        try { localStorage.setItem(STORE, JSON.stringify({ siteId, site, at: Date.now() })); } catch (_) { /* quota */ }
+        try { writeLocal(); } catch (_) { /* quota */ }
         renderAll();
       }
     } catch (e) {
@@ -153,6 +158,10 @@ async function bootAccount() {
   }
   setSaved(signedIn ? (siteId ? 'Salvat în cont' : 'Se salvează…') : 'Salvat în browser');
   if (signedIn && !siteId) saveToServer();
+  // Back from the sign-in link: carry on with publishing.
+  const was = resume;
+  if (was) { resume = null; try { writeLocal(); } catch (_) { /* quota */ } }
+  if (was === 'auth' && signedIn) openPublish();
 }
 
 function commit() {
@@ -1227,12 +1236,13 @@ async function showSlugStep() {
     try {
       const rec = (await api('GET', `/api/sites/${encodeURIComponent(siteId)}`)).site || {};
       paid = !!rec.paid;
-      current = paid ? rec.slug || '' : '';
+      ownSlug = rec.slug || '';
+      current = paid ? ownSlug : '';
     } catch (_) { /* new site */ }
   }
   $('pub-trial').hidden = paid;
   const input = $('pub-slug-input');
-  input.value = current || slugify(window.SB.siteBrand(site) || 'site-ul-meu').slice(0, 40);
+  input.value = current || ownSlug || slugify(window.SB.siteBrand(site) || 'site-ul-meu').slice(0, 40);
   input.disabled = !!current;
   $('pub-slug-note').textContent = current ? 'Site-ul își păstrează adresa.' : '';
   if (!current) checkSlug();
@@ -1240,10 +1250,12 @@ async function showSlugStep() {
 }
 
 let slugTimer = null;
+let ownSlug = '';        // the address this site already holds (unpaid draft or live)
 async function checkSlug() {
   const slug = $('pub-slug-input').value.trim().toLowerCase();
   const note = $('pub-slug-note');
   if (!/^[a-z0-9-]{3,40}$/.test(slug)) { note.textContent = 'Între 3 și 40 de caractere: litere mici, cifre și cratimă.'; return false; }
+  if (slug === ownSlug) { note.textContent = 'Adresa e liberă.'; return true; }
   try {
     const r = await api('GET', `/api/slug-check?slug=${encodeURIComponent(slug)}`);
     note.textContent = r.available ? 'Adresa e liberă.' : (r.error || 'Adresa e deja folosită. Alege alta.');
@@ -1264,6 +1276,8 @@ $('pub-auth').addEventListener('submit', async (e) => {
   if (!email) { pubError('Scrie adresa ta de email.'); return; }
   try {
     const r = await api('POST', '/api/auth/email', { email });
+    resume = 'auth';
+    try { writeLocal(); } catch (_) { /* quota */ }
     pubStep('sent');
     $('pub-sent-to').textContent = email;
     const dev = $('pub-devlink');
@@ -1276,6 +1290,8 @@ $('pub-auth').addEventListener('submit', async (e) => {
           clearInterval(authPoll);
           authPoll = null;
           signedIn = true;
+          resume = null;
+          try { writeLocal(); } catch (_) { /* quota */ }
           showSlugStep();
         }
       } catch (_) { /* still signed out */ }
@@ -1295,7 +1311,12 @@ $('pub-go').addEventListener('click', async () => {
   try {
     const data = await api('POST', '/api/publish', { templateId: TEMPLATE_ID, config: site, images: [], slug, siteId: siteId || undefined });
     if (data.site) rememberSiteId(data.site.id);
-    if (data.paymentUrl) { location.href = data.paymentUrl; return; }
+    if (data.paymentUrl) {
+      resume = 'checkout';
+      try { writeLocal(); } catch (_) { /* quota */ }
+      location.href = data.paymentUrl;
+      return;
+    }
     const url = data.site && (data.site.publicUrl || data.site.url);
     pubStep('done');
     const link = $('pub-done-link');

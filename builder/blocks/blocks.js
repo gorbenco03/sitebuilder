@@ -588,6 +588,9 @@ a{color:inherit}
 .b-foot{padding:40px 0 24px;border-top:1px solid color-mix(in srgb,var(--sfg) 14%,transparent)}
 .b-foot__row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline}
 .b-attr{text-align:center;font-size:12px;opacity:.55;margin-top:28px}
+.b-attr a{color:inherit}
+.b-legal{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:13px;margin-top:24px;opacity:.75}
+.b-legal a{color:inherit}
 .b-center{text-align:center}
 .b-center .b-body{margin-left:auto;margin-right:auto}
 .b-cols--top{align-items:start}

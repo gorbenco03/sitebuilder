@@ -9875,6 +9875,21 @@ function reloadDesignPacks() {
   next(0);
 }
 
+/**
+ * A block-editor draft that left for the sign-in link or for checkout:
+ * returns the editor URL to go back to (and clears the flag), or null.
+ */
+function blocksResumeUrl(reason) {
+  try {
+    const d = JSON.parse(localStorage.getItem('hb.blocks.draft.v1') || 'null');
+    if (!d || d.resume !== reason) return null;
+    if (reason === 'checkout') { d.resume = null; localStorage.setItem('hb.blocks.draft.v1', JSON.stringify(d)); }
+    return '/app/blocks/' + (d.siteId ? '?site=' + encodeURIComponent(d.siteId) : '');
+  } catch (_) {
+    return null;
+  }
+}
+
 /** Open the block editor on a fresh copy of a starter pack. */
 function startBlocksSite(packId) {
   window.location.href = '/app/blocks/?pack=' + encodeURIComponent(packId);
@@ -12004,8 +12019,10 @@ async function handleRoute(hash) {
     updateChecklist();
     scheduleRerender(true);
   } else if (route === 'dashboard') {
-    showScreen('dashboard');
     const user = await fetchCurrentUser().catch(() => null);
+    const blocksBack = user && blocksResumeUrl('auth');
+    if (blocksBack) { window.location.href = blocksBack; return; }
+    showScreen('dashboard');
     updateUserUI(user);
     if (user) loadDashboard();
     else {
@@ -12021,6 +12038,7 @@ async function handleRoute(hash) {
       }
     }
   } else if (route === 'paid') {
+    blocksResumeUrl('checkout');
     showToast(RO.PAYMENT_PROCESSED_SITE_SOON, 'success', 6000);
     window.location.hash = '#dashboard';
   } else if (route === 'reactivated') {
@@ -12028,6 +12046,8 @@ async function handleRoute(hash) {
     window.location.hash = '#dashboard';
   } else if (route === 'cancelled') {
     showToast(RO.PAYMENT_CANCELLED, '', 4000);
+    const blocksBack = blocksResumeUrl('checkout');
+    if (blocksBack) { window.location.href = blocksBack; return; }
     window.location.hash = '#edit';
   } else if (route === 'login-expired') {
     showToast(RO.LOGIN_LINK_EXPIRED, 'error', 5000);
