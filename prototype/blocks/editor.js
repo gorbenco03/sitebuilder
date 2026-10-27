@@ -827,7 +827,8 @@ function openPicker(target) {
   pendingImage = target;
   const b = findBlock(target.id);
   const cur = b && getPath(b.data, target.path);
-  $('picker-grid').innerHTML = PACKS[site.pack].images.map((src) => `<button type="button" class="pick${src === cur ? ' is-cur' : ''}" data-src="${esc(src)}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('');
+  const all = [...new Set([...PACKS[site.pack].images, ...Object.values(PACKS).flatMap((x) => x.images)])];
+  $('picker-grid').innerHTML = all.map((src) => `<button type="button" class="pick${src === cur ? ' is-cur' : ''}" data-src="${esc(src)}"><img src="${esc(src)}" alt="" loading="lazy"></button>`).join('');
   $('picker').hidden = false;
 }
 
@@ -931,10 +932,11 @@ $('add-block').addEventListener('click', () => openLibrary(null));
 /* ---------- starter packs ---------- */
 
 function openPacks() {
-  $('packs-grid').innerHTML = Object.entries(PACKS).map(([id, p]) => {
+  const order = Object.entries(PACKS).sort((a, b) => (b[1].blank ? 1 : 0) - (a[1].blank ? 1 : 0));
+  $('packs-grid').innerHTML = order.map(([id, p]) => {
     const tmp = defaultSite(id);
     const html = renderPage(tmp, tmp.pages[0].id, location.href).replace(/"/g, '&quot;');
-    return `<button type="button" class="lib__card${id === site.pack ? ' is-cur' : ''}" data-pack="${id}"><div class="lib__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${html}"></iframe></div><div class="lib__meta"><b>${esc(p.label)}</b><span>${esc(p.desc)} · ${p.pages.length} pagini</span></div></button>`;
+    return `<button type="button" class="lib__card${id === site.pack ? ' is-cur' : ''}" data-pack="${id}"><div class="lib__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${html}"></iframe></div><div class="lib__meta"><b>${esc(p.label)}</b><span>${esc(p.desc)}${p.blank ? '' : ` · ${p.pages.length} pagini`}</span></div></button>`;
   }).join('');
   $('packs').hidden = false;
 }

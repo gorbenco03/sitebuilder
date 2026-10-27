@@ -20,6 +20,7 @@ const PACKS = {
     images: imgs('product-menu', ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6', 'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3']),
     header: { brand: 'Casa Nord', cta: 'Rezervă o masă' },
     footer: { brand: 'Casa Nord', text: 'Strada Nordului 12, București · 07xx xxx xxx' },
+    ownDefaults: true,
     content: {},
     pages: [
       { name: 'Acasă', blocks: [['hero', 'split'], ['about', 'side'], ['columns', 'images'], ['gallery', 'grid'], ['reviews', 'cards'], ['cta', 'band']] },

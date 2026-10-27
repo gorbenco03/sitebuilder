@@ -403,6 +403,12 @@ const THEMES = {
     pudra: { label: 'Pudră', bg: '#f8eee9', fg: '#2b1d18', paper: '#ffffff', ink: '#2b1d18', accent: '#a4553d', on: '#ffffff' },
     santier: { label: 'Șantier', bg: '#ffffff', fg: '#111111', paper: '#f4f4f1', ink: '#111111', accent: '#ffd23f', on: '#111111' },
     birou: { label: 'Birou', bg: '#ffffff', fg: '#14213d', paper: '#f4f6fa', ink: '#14213d', accent: '#2a5bd7', on: '#ffffff' },
+    ivoriu: { label: 'Ivoriu', bg: '#ffffff', fg: '#1c1a19', paper: '#f6f2ee', ink: '#1c1a19', accent: '#8c6d5a', on: '#ffffff' },
+    beton: { label: 'Beton', bg: '#f2f2ef', fg: '#1d1f22', paper: '#ffffff', ink: '#1d1f22', accent: '#e2622e', on: '#ffffff' },
+    vin: { label: 'Vin', bg: '#2a1418', fg: '#f5ece6', paper: '#f5ece6', ink: '#2a1418', accent: '#d9a46c', on: '#2a1418' },
+    menta: { label: 'Mentă', bg: '#f3f8f6', fg: '#15302a', paper: '#ffffff', ink: '#15302a', accent: '#2f8f75', on: '#ffffff' },
+    salvie: { label: 'Salvie', bg: '#f5f4ef', fg: '#22302a', paper: '#ffffff', ink: '#22302a', accent: '#3d6b4f', on: '#ffffff' },
+    cerneala: { label: 'Cerneală', bg: '#0f1724', fg: '#e8edf5', paper: '#f4f6fa', ink: '#0f1724', accent: '#5b8def', on: '#ffffff' },
     zmeura: { label: 'Zmeură', bg: '#fbe4e8', fg: '#3b2420', paper: '#ffffff', ink: '#3b2420', accent: '#c2314f', on: '#ffffff' },
   },
   fonts: {
@@ -420,7 +426,11 @@ function clone(x) { return JSON.parse(JSON.stringify(x)); }
 function makeBlock(type, variant, packId) {
   const def = BLOCKS[type];
   const pack = (window.SB_PACKS || {})[packId];
-  const data = pack && pack.content[type] ? clone(pack.content[type]) : def.defaults();
+  const blank = (window.SB_PACKS || {}).gol;
+  const data = pack && pack.content[type] ? clone(pack.content[type])
+    : pack && pack.ownDefaults ? def.defaults()
+    : pack && blank && blank.content[type] ? clone(blank.content[type])
+    : def.defaults();
   if (pack && type === 'nav') Object.assign(data, pack.header);
   if (pack && type === 'footer') Object.assign(data, pack.footer);
   return { id: newId(), type, variant: variant || Object.keys(def.variants)[0], bg: 'auto', data };
