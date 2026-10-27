@@ -19,9 +19,36 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/** Editable inline text. */
+/** Keep only inline formatting a customer can add: bold, italic, links, line breaks. */
+function rich(value) {
+  const src = String(value == null ? '' : value);
+  if (!/[<&]/.test(src)) return esc(src);
+  const tpl = document.createElement('template');
+  tpl.innerHTML = src;
+  const walk = (node) => {
+    let out = '';
+    node.childNodes.forEach((n) => {
+      if (n.nodeType === 3) { out += esc(n.textContent); return; }
+      if (n.nodeType !== 1) return;
+      const tag = n.tagName.toLowerCase();
+      const inner = walk(n);
+      if (tag === 'b' || tag === 'strong') out += `<strong>${inner}</strong>`;
+      else if (tag === 'i' || tag === 'em') out += `<em>${inner}</em>`;
+      else if (tag === 'br') out += '<br>';
+      else if (tag === 'a') {
+        const href = n.getAttribute('href') || '#';
+        const safe = /^(https?:|mailto:|tel:|#)/i.test(href) ? href : '#';
+        out += `<a href="${esc(safe)}">${inner}</a>`;
+      } else out += inner;
+    });
+    return out;
+  };
+  return walk(tpl.content);
+}
+
+/** Editable inline text (may hold bold, italic and links). */
 function t(tag, path, value, cls) {
-  return `<${tag}${cls ? ` class="${cls}"` : ''} data-f="${path}">${esc(value)}</${tag}>`;
+  return `<${tag}${cls ? ` class="${cls}"` : ''} data-f="${path}" data-rich>${rich(value)}</${tag}>`;
 }
 
 /** Replaceable image. */
@@ -35,20 +62,21 @@ function btn(path, label, cls) {
 
 const BLOCKS = {
   nav: {
-    label: 'Meniu de navigare', category: 'Antet',
+    label: 'Antet', category: 'Antet', shared: true,
     variants: { bar: 'Bară simplă', centered: 'Logo centrat' },
-    defaults: () => ({ brand: 'Casa Nord', links: [{ label: 'Meniu' }, { label: 'Galerie' }, { label: 'Contact' }], cta: 'Rezervă o masă' }),
+    defaults: () => ({ brand: 'Casa Nord', cta: 'Rezervă o masă' }),
     fields: [
       { key: 'brand', label: 'Numele afacerii', type: 'text' },
-      { key: 'links', label: 'Linkuri', type: 'list', item: [{ key: 'label', label: 'Text', type: 'text' }], newItem: { label: 'Link nou' } },
       { key: 'cta', label: 'Buton', type: 'text' },
     ],
-    render(d, v) {
-      const links = d.links.map((l, i) => `<a href="#" data-f="links.${i}.label" data-list="links" data-i="${i}">${esc(l.label)}</a>`).join('');
+    render(d, v, ctx) {
+      const pages = (ctx && ctx.pages) || [];
+      const links = pages.map((p) => `<a href="#${esc(p.slug)}" data-page="${esc(p.id)}"${ctx.current === p.id ? ' class="is-cur"' : ''}>${esc(p.name)}</a>`).join('');
+      const brand = `<span class="b-nav__brand" data-f="brand">${esc(d.brand)}</span>`;
       if (v === 'centered') {
-        return `<nav class="b-nav b-nav--centered"><div class="b-wrap"><div class="b-nav__links">${links}</div>${t('span', 'brand', d.brand, 'b-nav__brand')}<div class="b-nav__end">${btn('cta', d.cta)}</div></div></nav>`;
+        return `<nav class="b-nav b-nav--centered"><div class="b-wrap"><div class="b-nav__links">${links}</div>${brand}<div class="b-nav__end">${btn('cta', d.cta)}</div></div></nav>`;
       }
-      return `<nav class="b-nav"><div class="b-wrap">${t('span', 'brand', d.brand, 'b-nav__brand')}<div class="b-nav__links">${links}</div>${btn('cta', d.cta)}</div></nav>`;
+      return `<nav class="b-nav"><div class="b-wrap">${brand}<div class="b-nav__links">${links}</div>${btn('cta', d.cta)}</div></nav>`;
     },
   },
 
@@ -104,7 +132,7 @@ const BLOCKS = {
   },
 
   menu: {
-    label: 'Meniu cu prețuri', category: 'Restaurant',
+    label: 'Listă cu prețuri', category: 'Prețuri',
     variants: { list: 'Listă pe două coloane', cards: 'Carduri cu poze' },
     defaults: () => ({
       title: 'Meniu',
@@ -340,8 +368,8 @@ const BLOCKS = {
     defaults: () => ({ title: 'Din bucătărie, pe Instagram', handle: '@casanord', cta: 'Urmărește-ne' }),
     fields: [{ key: 'title', label: 'Titlu', type: 'text' }, { key: 'handle', label: 'Cont', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' }],
     render(d, v) {
-      const n = v === 'strip' ? 6 : 6;
-      const pics = Array.from({ length: n }, (_, i) => `<img src="${IMG}cn-ig${i + 1}.jpg" alt="">`).join('');
+      const list = d.images || Array.from({ length: 6 }, (_, i) => `${IMG}cn-ig${i + 1}.jpg`);
+      const pics = list.map((src) => `<img src="${esc(src)}" alt="">`).join('');
       return `<section class="b-sec"><div class="b-wrap"><div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${btn('cta', d.cta, 'b-btn--ghost')}</div><div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">Pozele vin automat din contul tău, după ce îl conectezi.</p></div></section>`;
     },
   },
@@ -355,7 +383,7 @@ const BLOCKS = {
   },
 
   footer: {
-    label: 'Subsol', category: 'Subsol', locked: true,
+    label: 'Subsol', category: 'Subsol', locked: true, shared: true,
     variants: { simple: 'Simplu' },
     defaults: () => ({ brand: 'Casa Nord', text: 'Strada Nordului 12, București · 07xx xxx xxx' }),
     fields: [{ key: 'brand', label: 'Nume', type: 'text' }, { key: 'text', label: 'Text', type: 'text' }],
@@ -371,37 +399,53 @@ const THEMES = {
     seara: { label: 'Seară', bg: '#0f0d0b', fg: '#f6f1ea', paper: '#f3eee8', ink: '#1a1410', accent: '#c4a574' },
     hartie: { label: 'Hârtie', bg: '#f3eee8', fg: '#1a1410', paper: '#ffffff', ink: '#1a1410', accent: '#8a5a2b' },
     verde: { label: 'Verde', bg: '#16241c', fg: '#f2ebdd', paper: '#f2ebdd', ink: '#16241c', accent: '#e0a33a' },
-    alb: { label: 'Alb', bg: '#ffffff', fg: '#141414', paper: '#f4f4f2', ink: '#141414', accent: '#c2410c' },
+    alb: { label: 'Alb', bg: '#ffffff', fg: '#141414', paper: '#f4f4f2', ink: '#141414', accent: '#c2410c', on: '#ffffff' },
+    pudra: { label: 'Pudră', bg: '#f8eee9', fg: '#2b1d18', paper: '#ffffff', ink: '#2b1d18', accent: '#a4553d', on: '#ffffff' },
+    santier: { label: 'Șantier', bg: '#ffffff', fg: '#111111', paper: '#f4f4f1', ink: '#111111', accent: '#ffd23f', on: '#111111' },
+    birou: { label: 'Birou', bg: '#ffffff', fg: '#14213d', paper: '#f4f6fa', ink: '#14213d', accent: '#2a5bd7', on: '#ffffff' },
+    zmeura: { label: 'Zmeură', bg: '#fbe4e8', fg: '#3b2420', paper: '#ffffff', ink: '#3b2420', accent: '#c2314f', on: '#ffffff' },
   },
   fonts: {
     clasic: { label: 'Clasic', display: "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif", text: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
     modern: { label: 'Modern', display: "'Avenir Next', 'Futura', 'Helvetica Neue', Arial, sans-serif", text: "'Avenir Next', 'Helvetica Neue', Arial, sans-serif" },
+    solid: { label: 'Solid', display: "'Arial Black', 'Helvetica Neue', Arial, sans-serif", text: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
     editorial: { label: 'Editorial', display: "Didot, 'Bodoni 72', 'Times New Roman', serif", text: "Georgia, 'Times New Roman', serif" },
   },
 };
 
 function newId() { return 'b' + Math.random().toString(36).slice(2, 9); }
 
-function makeBlock(type, variant) {
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+function makeBlock(type, variant, packId) {
   const def = BLOCKS[type];
-  return { id: newId(), type, variant: variant || Object.keys(def.variants)[0], bg: 'auto', data: def.defaults() };
+  const pack = (window.SB_PACKS || {})[packId];
+  const data = pack && pack.content[type] ? clone(pack.content[type]) : def.defaults();
+  if (pack && type === 'nav') Object.assign(data, pack.header);
+  if (pack && type === 'footer') Object.assign(data, pack.footer);
+  return { id: newId(), type, variant: variant || Object.keys(def.variants)[0], bg: 'auto', data };
 }
 
-function defaultPage() {
-  return {
-    theme: { palette: 'seara', fonts: 'clasic', radius: 10 },
-    blocks: [
-      makeBlock('nav'), makeBlock('hero', 'split'), makeBlock('about', 'side'), makeBlock('menu', 'list'),
-      makeBlock('gallery', 'grid'), makeBlock('reviews', 'cards'), makeBlock('hours', 'columns'), makeBlock('cta', 'band'), makeBlock('footer'),
-    ],
-  };
+function slugify(name) {
+  return String(name).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'pagina';
+}
+
+function makePage(name, blocks, packId) {
+  return { id: newId(), name, slug: slugify(name), blocks: (blocks || []).map(([type, v]) => makeBlock(type, v, packId)) };
+}
+
+function defaultSite(packId) {
+  const id = (window.SB_PACKS || {})[packId] ? packId : 'restaurant';
+  const pack = window.SB_PACKS[id];
+  const pages = pack.pages.map((p) => makePage(p.name, p.blocks, id));
+  return { v: 2, pack: id, theme: clone(pack.theme), header: makeBlock('nav', 'bar', id), footer: makeBlock('footer', 'simple', id), pages, current: pages[0].id };
 }
 
 /** Theme + block CSS, shared by the editor canvas and the exported page. */
 function themeCss(theme) {
   const p = THEMES.palettes[theme.palette] || THEMES.palettes.seara;
   const f = THEMES.fonts[theme.fonts] || THEMES.fonts.clasic;
-  return `:root{--bg:${p.bg};--fg:${p.fg};--paper:${p.paper};--ink:${p.ink};--accent:${p.accent};--fd:${f.display};--ft:${f.text};--r:${theme.radius}px}
+  return `:root{--bg:${p.bg};--fg:${p.fg};--paper:${p.paper};--ink:${p.ink};--accent:${p.accent};--on:${p.on || p.ink};--fd:${f.display};--ft:${f.text};--r:${theme.radius}px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--ft);line-height:1.55}
 img{display:block;max-width:100%}
@@ -426,7 +470,7 @@ a{color:inherit}
 .b-quote{font-family:var(--fd);font-size:clamp(26px,3vw,40px);line-height:1.25;margin:16px 0}
 .b-quote--marks::before{content:'„'}.b-quote--marks::after{content:'”'}
 .b-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
-.b-btn{display:inline-flex;align-items:center;min-height:48px;padding:0 24px;border-radius:var(--r);background:var(--accent);color:var(--ink);text-decoration:none;font-weight:700;font-size:15px;letter-spacing:.02em}
+.b-btn{display:inline-flex;align-items:center;min-height:48px;padding:0 24px;border-radius:var(--r);background:var(--accent);color:var(--on);text-decoration:none;font-weight:700;font-size:15px;letter-spacing:.02em}
 .blk[data-bg="accent"] .b-btn{background:var(--ink);color:var(--paper)}
 .b-btn--ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px currentColor}
 .b-media{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r)}
@@ -435,6 +479,9 @@ a{color:inherit}
 .b-nav__brand{font-family:var(--fd);font-size:24px}
 .b-nav__links{display:flex;gap:26px;font-size:15px}
 .b-nav__links a{text-decoration:none;opacity:.8}
+.b-nav__links a.is-cur{opacity:1;box-shadow:inset 0 -2px 0 var(--accent)}
+[data-rich] a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+[data-rich] strong{font-weight:700}
 .b-nav--centered .b-wrap{display:grid;grid-template-columns:1fr auto 1fr}
 .b-nav--centered .b-nav__end{justify-self:end}
 @media(max-width:720px){.b-nav__links{display:none}.b-nav--centered .b-wrap{grid-template-columns:auto 1fr}}
@@ -552,20 +599,33 @@ function applyLinks(html, b) {
   });
 }
 
-function renderBlock(b) {
+function renderBlock(b, ctx) {
   const def = BLOCKS[b.type];
   const css = elementCss(b);
   const attrs = `data-id="${b.id}" data-bg="${b.bg}" data-pad="${b.pad || 'normal'}" data-align="${b.align || 'auto'}"${b.hideMobile ? ' data-hidem' : ''}`;
-  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data, b.variant), b)}</div>`;
+  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data, b.variant, ctx || {}), b)}</div>`;
+}
+
+/** All blocks of one page in order: shared header, the page's own blocks, shared footer. */
+function pageBlocks(site, pageId) {
+  const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
+  return [site.header, ...page.blocks, site.footer];
+}
+
+function siteCtx(site, pageId) {
+  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId };
 }
 
 const IMAGES = ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6',
   'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3', 'tv-ig1', 'tv-ig2', 'tv-ig3', 'tv-ig4', 'tv-ig5', 'tv-ig6'].map((n) => IMG + n + '.jpg');
 
-/** Standalone page (preview / export): no editor attributes needed at runtime. */
-function renderPage(page, baseHref) {
-  return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${baseHref ? `<base href="${esc(baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>Previzualizare</title><style>${themeCss(page.theme)}</style></head><body>${page.blocks.map(renderBlock).join('')}</body></html>`;
+/** Standalone page (preview / export). */
+function renderPage(site, pageId, baseHref) {
+  const ctx = siteCtx(site, pageId);
+  const body = pageBlocks(site, pageId).map((b) => renderBlock(b, ctx)).join('');
+  const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
+  return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${baseHref ? `<base href="${esc(baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(page.name)} · ${esc(site.header.data.brand)}</title><style>${themeCss(site.theme)}</style></head><body>${body}</body></html>`;
 }
 
-window.SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, defaultPage, themeCss, renderBlock, elementCss, renderPage, esc };
+window.SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId };
 })();
