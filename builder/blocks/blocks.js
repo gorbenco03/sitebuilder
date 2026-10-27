@@ -394,9 +394,16 @@ const BLOCKS = {
       { key: 'address', label: 'Adresă', type: 'text' }, { key: 'phone', label: 'Telefon', type: 'text' }, { key: 'email', label: 'Email', type: 'text' },
     ],
     render(d, v, ctx) {
+      // Published: posts to /api/site-messages (filled in at publish), falls back to email.
       const to = String(d.email || '').trim();
-      const send = ctx.published && /^[^\s@"<>]+@[^\s@"<>]+$/.test(to) ? ` data-mailto="${esc(to)}"` : '';
-      const form = `<form class="b-form"${send} onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
+      const form = ctx.published
+        ? `<form class="b-form" data-site-messages-api="" data-site-slug="" data-mail-to="${/^[^\s@"<>]+@[^\s@"<>]+$/.test(to) ? esc(to) : ''}" novalidate>`
+          + `<label class="b-form__lbl">${rich(d.lName)}<input class="b-input" name="name" autocomplete="name" required></label>`
+          + `<label class="b-form__lbl">${rich(d.lPhone)}<input class="b-input" name="contact" autocomplete="tel" required></label>`
+          + `<label class="b-form__lbl">${rich(d.lMsg)}<textarea class="b-input" name="message" rows="4" required></textarea></label>`
+          + '<input class="b-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">'
+          + `<button type="submit" class="b-btn">${esc(d.cta)}</button><p class="b-form__status" data-cf-status role="status" hidden></p></form>`
+        : `<form class="b-form" onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
       const head = `${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}`;
       if (v === 'info') {
         return `<section class="b-sec"><div class="b-wrap b-cols b-cols--top"><div>${head}<div class="b-info">${t('p', 'address', d.address)}${t('p', 'phone', d.phone, 'b-strong')}${t('p', 'email', d.email)}</div></div>${form}</div></section>`;
@@ -610,6 +617,10 @@ a{color:inherit}
 .b-form__lbl{font-size:14px;font-weight:600;margin-top:6px}
 .b-input{font:inherit;color:inherit;background:color-mix(in srgb,var(--sfg) 6%,transparent);border:1px solid color-mix(in srgb,var(--sfg) 25%,transparent);border-radius:var(--r);padding:13px 14px}
 .b-form .b-btn{align-self:flex-start;margin-top:14px}
+label.b-form__lbl{display:flex;flex-direction:column;gap:6px}
+button.b-btn{border:0;font:inherit;font-weight:700;cursor:pointer}
+.b-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.b-form__status{font-size:15px;margin-top:8px}
 .b-info{display:flex;flex-direction:column;gap:6px;margin-top:20px;font-size:17px}
 .b-ig{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .b-ig--strip{grid-template-columns:repeat(6,minmax(0,1fr))}
@@ -687,7 +698,7 @@ function pageFile(site, page) {
 const IMAGES = ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6',
   'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3', 'tv-ig1', 'tv-ig2', 'tv-ig3', 'tv-ig4', 'tv-ig5', 'tv-ig6'].map((n) => IMG + n + '.jpg');
 
-const MAILTO_JS = "document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('form[data-mailto] .b-btn');if(!b)return;e.preventDefault();var f=b.closest('form'),i=f.querySelectorAll('.b-input'),t=[];i.forEach(function(x){if(x.value.trim())t.push(x.value.trim())});location.href='mailto:'+f.getAttribute('data-mailto')+'?subject='+encodeURIComponent('Mesaj de pe site')+'&body='+encodeURIComponent(t.join('\\n\\n'))})";
+const FORM_JS = "document.addEventListener('submit',function(e){var f=e.target;if(!f.matches||!f.matches('form[data-site-messages-api]'))return;e.preventDefault();var g=function(n){return((f.elements[n]||{}).value||'').trim()},name=g('name'),contact=g('contact'),message=g('message'),st=f.querySelector('[data-cf-status]'),b=f.querySelector('button[type=submit]');var say=function(m){st.textContent=m;st.hidden=!m};if(!name||!contact||!message){say('Completează numele, un contact și mesajul.');return}var mail=function(){var to=f.getAttribute('data-mail-to');if(!to){say('Nu am putut trimite mesajul acum. Sună-ne sau scrie-ne direct.');return}say('Nu am putut trimite direct — îți deschidem clientul de email.');location.href='mailto:'+to+'?subject='+encodeURIComponent('Mesaj nou de pe site — '+name)+'&body='+encodeURIComponent('De la: '+name+'\\nContact: '+contact+'\\n\\n'+message)};var api=f.getAttribute('data-site-messages-api')||'';if(!api){mail();return}b.disabled=true;fetch(api+'/api/site-messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:f.getAttribute('data-site-slug')||'',name:name,contact:contact,message:message,website:g('website')})}).then(function(r){if(!r.ok)throw 0;say('Mulțumim! Mesajul tău a fost trimis — revenim cât mai curând.');f.reset()}).catch(mail).finally(function(){b.disabled=false})})";
 
 /**
  * Standalone page.
@@ -706,7 +717,7 @@ function renderPage(site, pageId, opts) {
     const title = page.id === site.pages[0].id ? brand || page.name : `${page.name} · ${brand}`;
     const desc = site.seo && site.seo.description ? `<meta name="description" content="${esc(site.seo.description)}">` : '';
     const canon = o.canonical ? `<link rel="canonical" href="${esc(o.canonical)}"><meta property="og:url" content="${esc(o.canonical)}">` : '';
-    const mail = o.published && /data-mailto=/.test(body) ? `<script>${MAILTO_JS}</script>` : '';
+    const mail = o.published && /data-site-messages-api=/.test(body) ? `<script>${FORM_JS}</script>` : '';
     return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${o.baseHref ? `<base href="${esc(o.baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${desc}${canon}<meta property="og:title" content="${esc(title)}"><style>${themeCss(site.theme)}</style>${o.head || ''}</head><body>${body}${o.body || ''}${mail}</body></html>`;
   } finally {
     assetBase = prevBase;

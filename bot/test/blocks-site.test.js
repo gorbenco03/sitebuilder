@@ -183,6 +183,17 @@ test('publish + test-pay + isolated deploy: all pages, legal pages, attribution,
     assert.ok(allHtml.some((h) => h.includes(asset)), 'a page references ' + asset);
     assert.strictEqual((await fetch(`${base}/live/${slug}/${asset}`)).status, 200, 'copied template photo');
 
+    // Contact form: publish fills in this site's address, and a visitor's message is accepted.
+    const formPage = allHtml.find((h) => /<form[^>]*data-site-messages-api/.test(h));
+    assert.ok(formPage, 'a page has the contact form');
+    assert.ok(formPage.includes(`data-site-slug="${slug}"`), 'form carries the site address');
+    const msg = await fetch(`${base}/api/site-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name: 'Ana', contact: '0712345678', message: 'Aveți loc sâmbătă?', website: '' }),
+    });
+    assert.ok(msg.ok, 'site message accepted, got ' + msg.status);
+
     const uploaded = /src="(images\/[^"]+\.png)"|url\(['"]?(images\/[^'")]+\.png)/.exec(html);
     assert.ok(uploaded, 'uploaded photo rewritten to images/…');
     const rel = uploaded[1] || uploaded[2];

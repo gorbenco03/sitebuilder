@@ -2345,10 +2345,15 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     // form yet. Best-effort — never blocks publish.
     try {
         const siteMessages = require('./site-messages.js');
-        siteMessages.injectPublishedHtml(indexPath, {
-            apiBase: siteMessages.resolveMessagesApiBase(),
-            slug: slugForUrl,
-        });
+        const formPages = site.templateId === 'blocks'
+            ? siteExport.listBlocksPageFiles(siteDir).map((f) => path.join(siteDir, f))
+            : [indexPath];
+        for (const page of formPages) {
+            siteMessages.injectPublishedHtml(page, {
+                apiBase: siteMessages.resolveMessagesApiBase(),
+                slug: slugForUrl,
+            });
+        }
     } catch (e) {
         log('webpublish.site_messages.inject_failed', { siteId: site.id, err: e.message }, 'warn');
     }
