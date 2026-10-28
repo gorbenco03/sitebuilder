@@ -68,14 +68,17 @@ const PACKS = {
         { image: `${T}portfolio/images/iv-team-d.jpg`, name: 'Diana', role: 'Hairstylistă' },
         { image: `${T}portfolio/images/iv-team-l.jpg`, name: 'Laura', role: 'Manichiuristă' },
       ] },
-      form: { title: 'Cere o programare', text: 'Te sunăm noi să confirmăm ora.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Ce serviciu dorești?', cta: 'Trimite', address: 'Strada Lăpușneanu 8, Iași', phone: '07xx xxx xxx', email: 'salut@atelierivoire.ro' },
+      booking: { title: 'Programează-te online', text: 'Alegi serviciul, ziua și ora. Primești confirmarea pe email.', services: [
+        { name: 'Tuns și coafat', min: '60' }, { name: 'Vopsit rădăcină', min: '90' }, { name: 'Balayage', min: '180' }, { name: 'Manichiură semipermanentă', min: '75' },
+      ], week: [{ on: true, from: '09:00', to: '20:00' }, { on: true, from: '09:00', to: '20:00' }, { on: true, from: '09:00', to: '20:00' }, { on: true, from: '09:00', to: '20:00' }, { on: true, from: '09:00', to: '20:00' }, { on: true, from: '09:00', to: '15:00' }, { on: false, from: '09:00', to: '17:00' }], phone: '07xx xxx xxx' },
+      form: { title: 'Ai o întrebare?', text: 'Scrie-ne și îți răspundem în aceeași zi.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Mesajul tău', cta: 'Trimite', address: 'Strada Lăpușneanu 8, Iași', phone: '07xx xxx xxx', email: 'salut@atelierivoire.ro' },
       instagram: { title: 'Pe Instagram', handle: '@atelierivoire', cta: 'Urmărește-ne', images: ['iv-ig1', 'iv-ig2', 'iv-ig3', 'iv-ig4', 'iv-ig5', 'iv-ig6'].map((n) => `${T}portfolio/images/${n}.jpg`) },
     },
     pages: [
       { name: 'Acasă', blocks: [['hero', 'split'], ['columns', 'images'], ['gallery', 'mosaic'], ['reviews', 'cards'], ['cta', 'boxed']] },
       { name: 'Prețuri', blocks: [['text', 'center'], ['menu', 'list'], ['cta', 'band']] },
       { name: 'Echipa', blocks: [['about', 'side'], ['team', 'round']] },
-      { name: 'Contact', blocks: [['hours', 'photo'], ['form', 'simple'], ['faq', 'list']] },
+      { name: 'Contact', blocks: [['booking', 'split'], ['hours', 'photo'], ['form', 'simple'], ['faq', 'list']] },
     ],
   },
 
@@ -166,13 +169,16 @@ const PACKS = {
         { image: `${T}portfolio/images/sf-team-m.jpg`, name: 'Mara Ionescu', role: 'Avocat colaborator' },
         { image: `${T}portfolio/images/sf-team-o.jpg`, name: 'Oana Pop', role: 'Asistent juridic' },
       ] },
+      booking: { title: 'Programează o consultație', text: 'Alegi tipul consultației, ziua și ora. Îți confirmăm pe email.', services: [
+        { name: 'Primul apel (gratuit)', min: '30' }, { name: 'Consultație la cabinet', min: '60' }, { name: 'Consultație online', min: '60' },
+      ], week: [{ on: true, from: '09:00', to: '18:00' }, { on: true, from: '09:00', to: '18:00' }, { on: true, from: '09:00', to: '18:00' }, { on: true, from: '09:00', to: '18:00' }, { on: true, from: '09:00', to: '18:00' }, { on: false, from: '09:00', to: '17:00' }, { on: false, from: '09:00', to: '17:00' }], phone: '07xx xxx xxx' },
       form: { title: 'Programează o consultație', text: 'Îți confirmăm ora pe email.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Pe scurt, despre ce e vorba?', cta: 'Trimite', address: 'Calea Victoriei 40, București', phone: '07xx xxx xxx', email: 'contact@cabinetmarin.ro' },
     },
     pages: [
       { name: 'Acasă', blocks: [['hero', 'split'], ['columns', 'numbers'], ['reviews', 'single'], ['cta', 'band']] },
       { name: 'Servicii', blocks: [['text', 'split'], ['menu', 'list'], ['faq', 'list']] },
       { name: 'Despre', blocks: [['about', 'statement'], ['team', 'grid']] },
-      { name: 'Contact', blocks: [['form', 'info'], ['hours', 'columns']] },
+      { name: 'Contact', blocks: [['booking', 'split'], ['form', 'info'], ['hours', 'columns']] },
     ],
   },
 

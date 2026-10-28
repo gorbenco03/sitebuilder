@@ -1698,20 +1698,27 @@ function buildSiteCard(site) {
       .catch(() => { /* unread badge is a bonus — never block the card on it */ });
   }
 
-  // Native Hidook booking dashboard (CAL-01). Only a site published with
-  // appointment.nativeBooking on has a calendar; block sites never do.
-  if (site.templateId !== 'blocks' && site.paid && (site.status === 'live' || site.status === 'active')) {
+  // Native Hidook booking dashboard (CAL-01): a block site with a
+  // "Programări online" block, or an older site published with
+  // appointment.nativeBooking on.
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    const isBlocks = site.templateId === 'blocks';
     apiGet('/api/sites/' + encodeURIComponent(site.id))
       .then((data) => {
         const cfg = data && data.config;
-        if (!isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking)) return;
+        const hasCalendar = isBlocks
+          ? !!(cfg && Array.isArray(cfg.pages) && cfg.pages.some((p) => (p.blocks || []).some((b) => b && b.type === 'booking')))
+          : isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking);
+        if (!hasCalendar) return;
         const bookBtn = document.createElement('a');
         bookBtn.className = 'btn-ghost btn-sm';
         bookBtn.textContent = 'Programări';
         bookBtn.target = '_blank';
         bookBtn.rel = 'noopener noreferrer';
         bookBtn.setAttribute('aria-label', 'Deschide programările pentru ' + (site.projectName || site.slug || 'acest site'));
-        const qs = new URLSearchParams({ customerId: site.userId, siteId: site.id, brand: site.projectName || site.slug || '' });
+        const brand = (isBlocks && cfg.header && cfg.header.data && cfg.header.data.brand) || site.projectName || site.slug || '';
+        const qs = new URLSearchParams({ customerId: site.userId, siteId: site.id, brand: String(brand).replace(/<[^>]*>/g, '') });
+        if (isBlocks) qs.set('blocks', '1');
         bookBtn.href = '/calendar-native/owner/?' + qs.toString();
         bookBtn.addEventListener('click', e => e.stopPropagation());
         actions.insertBefore(bookBtn, actions.lastElementChild);

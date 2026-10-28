@@ -402,6 +402,7 @@
   padding: 18px;
   border: 1px solid var(--hnb-line);
 }
+.hnb__result:focus { outline: none; }
 .hnb__result--ok {
   background: var(--hnb-accent-soft);
   border-color: #b7d9c8;

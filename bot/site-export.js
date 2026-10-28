@@ -686,7 +686,8 @@ function listBlocksPageFiles(siteDir) {
  *
  * @param {string} siteDir
  * @param {object} config
- * @param {{ canonicalOrigin?: string }} [opts] absolute origin without trailing slash
+ * @param {{ canonicalOrigin?: string, booking?: object }} [opts] absolute origin without trailing slash;
+ *   booking mounts the live calendar (see bot/webpublish.js prepareBlocksBooking)
  * @returns {{ config: object, pages: string[], imageBuffers: Buffer[] }}
  */
 function buildBlocksSiteTree(siteDir, config, opts = {}) {
@@ -715,7 +716,7 @@ function buildBlocksSiteTree(siteDir, config, opts = {}) {
         const canonical = origin ? (file === 'index.html' ? origin + '/' : origin + '/' + file) : undefined;
         fs.writeFileSync(
             path.join(siteDir, file),
-            SB.renderPage(cfg, page.id, { published: true, assetBase: 'assets/', head, body: bodyExtra, canonical }),
+            SB.renderPage(cfg, page.id, { published: true, assetBase: 'assets/', head, body: bodyExtra, canonical, booking: opts.booking || null }),
             'utf8'
         );
     }

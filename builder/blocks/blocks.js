@@ -103,6 +103,56 @@ function btn(path, label, cls) {
   return `<a href="#" class="b-btn${cls ? ' ' + cls : ''}" data-f="${path}">${esc(label)}</a>`;
 }
 
+/* ---------- online booking: services and the weekly schedule the calendar books against ---------- */
+
+const WEEKDAYS = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
+const DURATIONS = [15, 20, 30, 40, 45, 50, 60, 75, 90, 105, 120, 150, 180, 240];
+const HM_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+function durLabel(min) {
+  const m = Number(min) || 0;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (!h) return `${r} min`;
+  return `${h === 1 ? '1 oră' : `${h} ore`}${r ? ` ${r} min` : ''}`;
+}
+
+function weekDays(on, from, to) {
+  return WEEKDAYS.map((_, i) => ({ on: on(i), from, to }));
+}
+
+/** The schedule as seven { on, from, to } days, Monday first; anything malformed counts as closed. */
+function bookingWeek(d) {
+  const w = Array.isArray(d && d.week) ? d.week : [];
+  return WEEKDAYS.map((_, i) => {
+    const x = w[i] && typeof w[i] === 'object' ? w[i] : {};
+    const from = HM_RE.test(x.from) ? x.from : '09:00';
+    const to = HM_RE.test(x.to) ? x.to : '17:00';
+    return { on: x.on === true && to > from, from, to };
+  });
+}
+
+/** Services with a name, each with a duration from DURATIONS (minutes). */
+function bookingServices(d) {
+  return (Array.isArray(d && d.services) ? d.services : [])
+    .map((s) => ({ name: String((s && s.name) || '').replace(/<[^>]*>/g, '').trim().slice(0, 120), min: DURATIONS.includes(Number(s && s.min)) ? Number(s.min) : 30 }))
+    .filter((s) => s.name);
+}
+
+/** "Luni – Vineri 09:00 – 17:00 · Sâmbătă 10:00 – 14:00": consecutive days with the same hours collapse. */
+function weekSummary(week) {
+  const out = [];
+  let i = 0;
+  while (i < 7) {
+    if (!week[i].on) { i += 1; continue; }
+    let j = i;
+    while (j + 1 < 7 && week[j + 1].on && week[j + 1].from === week[i].from && week[j + 1].to === week[i].to) j += 1;
+    out.push(`${WEEKDAYS[i]}${j > i ? ` – ${WEEKDAYS[j]}` : ''} ${week[i].from} – ${week[i].to}`);
+    i = j + 1;
+  }
+  return out;
+}
+
 const BLOCKS = {
   nav: {
     label: 'Antet', category: 'Antet', shared: true,
@@ -414,6 +464,72 @@ const BLOCKS = {
     },
   },
 
+  booking: {
+    label: 'Programări online', category: 'Contact',
+    variants: { split: 'Text lângă calendar', center: 'Centrat' },
+    defaults: () => ({
+      title: 'Programează-te online',
+      text: 'Alegi serviciul, ziua și ora care îți convin. Primești confirmarea pe email.',
+      services: [{ name: 'Consultație', min: '30' }],
+      week: weekDays((i) => i < 5, '09:00', '17:00'),
+      phone: '07xx xxx xxx',
+    }),
+    fields: [
+      { key: 'title', label: 'Titlu', type: 'text' },
+      { key: 'text', label: 'Text', type: 'textarea' },
+      { key: 'services', label: 'Servicii', type: 'list', min: 1, max: 20, item: [
+        { key: 'name', label: 'Serviciu', type: 'text' },
+        { key: 'min', label: 'Durată', type: 'select', options: DURATIONS.map((m) => [String(m), durLabel(m)]) },
+      ], newItem: { name: 'Serviciu nou', min: '30' } },
+      { key: 'week', label: 'Zile și ore', type: 'week' },
+      { key: 'phone', label: 'Telefon pentru cine nu rezervă online', type: 'text' },
+    ],
+    render(d, v, ctx) {
+      const services = bookingServices(d);
+      const week = bookingWeek(d);
+      const phone = String(d.phone || '').replace(/<[^>]*>/g, '').trim();
+      const tel = phone.replace(/\D/g, '').length >= 6 ? phone.replace(/[^\d+]/g, '') : '';
+      const call = !phone ? ''
+        : !ctx.published ? `<p class="b-muted b-book__call">Preferi la telefon? Sună la ${t('span', 'phone', d.phone)}</p>`
+          : tel ? `<p class="b-muted b-book__call">Preferi la telefon? Sună la <a href="tel:${esc(tel)}">${esc(phone)}</a></p>` : '';
+      const head = `<div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}${call}</div>`;
+      const wrap = (inner) => `<section class="b-sec b-book"><div class="b-wrap ${v === 'center' ? 'b-narrow b-book--center' : 'b-cols b-cols--top'}">${head}${inner}</div></section>`;
+      const list = `<ul class="b-book__svcs">${services.map((s) => `<li><span>${esc(s.name)}</span><span class="b-muted">${durLabel(s.min)}</span></li>`).join('')}</ul>`;
+      const hours = weekSummary(week);
+      if (ctx.published && ctx.booking) {
+        const k = ctx.booking;
+        const api = esc(k.apiBase || '');
+        return wrap(`<div class="b-book__live"><link rel="stylesheet" href="${api}/calendar-native/widget/public-booking-widget.css">`
+          + `<div data-hidook-cal-native data-customer-id="${esc(k.customerId)}" data-site-id="${esc(k.siteId)}" data-api-base="${api}" data-brand="${esc(k.brand || '')}"`
+          + `${tel ? ` data-contact-phone="${esc(phone)}" data-contact-phone-tel="${esc(tel)}"` : ''} data-day-count="14"><p class="b-muted">Se încarcă programările…</p></div>`
+          + `<noscript><p class="b-body">Programarea online are nevoie de JavaScript.${tel ? ` Sună la <a href="tel:${esc(tel)}">${esc(phone)}</a>.` : ''}</p></noscript>`
+          + `<script src="${api}/calendar-native/widget/public-booking-widget.js" defer></script></div>`);
+      }
+      if (ctx.published) {
+        // A downloaded copy has no booking server behind it: list the services and say how to book.
+        const how = tel ? `<p class="b-body">Pentru programare sună la <a href="tel:${esc(tel)}">${esc(phone)}</a>.</p>` : '';
+        return wrap(`<div class="b-book__card">${list}${hours.length ? `<p class="b-muted">${hours.map(esc).join('<br>')}</p>` : ''}${how}</div>`);
+      }
+      const raw = Array.isArray(d.services) ? d.services : [];
+      const svcs = raw.map((s, i) => `<li data-list="services" data-i="${i}"${i === 0 ? ' class="is-on"' : ''}>${t('span', `services.${i}.name`, s && s.name)}<span class="b-muted">${durLabel(DURATIONS.includes(Number(s && s.min)) ? Number(s.min) : 30)}</span></li>`).join('');
+      const open = week.findIndex((x) => x.on);
+      const slots = open < 0 ? [] : (() => {
+        const out = [];
+        const [h0, m0] = week[open].from.split(':').map(Number);
+        const end = week[open].to.split(':').map(Number);
+        for (let m = h0 * 60 + m0; m + 30 <= end[0] * 60 + end[1] && out.length < 6; m += 30) out.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+        return out;
+      })();
+      const days = WEEKDAYS.map((n, i) => `<span class="${week[i].on ? (i === open ? 'is-on' : '') : 'is-off'}">${n.slice(0, 2)}</span>`).join('');
+      const note = hours.length
+        ? 'Pe site, aici apare calendarul cu orele libere. Programările le primești pe email și le vezi în Site-urile mele → Programări.'
+        : 'Alege în panoul din dreapta zilele în care primești programări.';
+      return wrap(`<div class="b-book__card"><p class="b-book__step">1. Alege serviciul</p><ul class="b-book__svcs b-book__svcs--pick">${svcs}</ul>`
+        + `<p class="b-book__step">2. Alege ziua și ora</p><div class="b-book__days">${days}</div><div class="b-book__slots">${slots.map((s) => `<span>${s}</span>`).join('')}</div>`
+        + `${hours.length ? `<p class="b-muted">${hours.map(esc).join('<br>')}</p>` : ''}<p class="b-note">${note}</p></div>`);
+    },
+  },
+
   instagram: {
     label: 'Instagram', category: 'Conținut',
     variants: { grid: 'Șase poze', strip: 'Bandă' },
@@ -636,6 +752,24 @@ button.b-btn{border:0;font:inherit;font-weight:700;cursor:pointer}
 @media(max-width:720px){.b-ig--strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .b-note{font-size:13px;opacity:.55;margin-top:12px}
 .b-ig-embed{display:block;width:100%;min-height:520px;border:0;border-radius:var(--r)}
+.b-book--center{text-align:center}
+.b-book--center .b-body{margin-left:auto;margin-right:auto}
+.b-book--center .b-book__card,.b-book--center .b-book__live{margin-top:28px;text-align:left}
+.b-book__call{margin-top:6px}
+.b-book__card{background:var(--paper);color:var(--ink);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 0 color-mix(in srgb,var(--ink) 10%,transparent)}
+.b-book__step{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.b-book__svcs{list-style:none;display:flex;flex-direction:column;gap:8px}
+.b-book__svcs li{display:flex;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);border-radius:calc(var(--r) / 2 + 4px)}
+.b-book__svcs--pick li.is-on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.b-book__days,.b-book__slots{display:flex;flex-wrap:wrap;gap:8px}
+.b-book__days span,.b-book__slots span{min-width:44px;padding:9px 10px;text-align:center;border-radius:calc(var(--r) / 2 + 4px);border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);font-size:14px}
+.b-book__days .is-on{background:var(--accent);border-color:var(--accent);color:var(--on)}
+.b-book__days .is-off{opacity:.35;text-decoration:line-through}
+.b-book .hnb{--hnb-accent:var(--accent);--hnb-accent-2:color-mix(in srgb,var(--accent) 55%,#000);--hnb-accent-soft:color-mix(in srgb,var(--accent) 14%,#fff);--hnb-ink:var(--ink);--hnb-sans:var(--ft);--hnb-serif:var(--fd)}
+.blk .b-book .hnb__steps li.is-current,.blk .b-book .hnb__cal-day.is-selected,.blk .b-book .hnb__resource.is-selected,.blk .b-book .hnb__slot.is-selected,.blk .b-book .hnb__cta{color:var(--on)}
+.blk .b-book .hnb__cta:hover{background:var(--accent);filter:brightness(.92)}
+.b-book .hnb__eyebrow,.b-book .hnb__title,.b-book .hnb__sub{display:none}
+@media(min-width:900px){.b-book .b-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.7fr)}}
 .b-spacer--line{padding:28px 0}
 .b-spacer--space{padding:40px 0}
 .b-spacer hr{border:0;border-top:1px solid color-mix(in srgb,var(--sfg) 20%,transparent)}
@@ -698,7 +832,7 @@ function pageBlocks(site, pageId) {
 
 function siteCtx(site, pageId, opts) {
   const o = opts || {};
-  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref, igEmbed: feedUrl(site) };
+  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref, igEmbed: feedUrl(site), booking: o.booking || null };
 }
 
 /** File name of a page on the published site: the first page is index.html. */
@@ -713,8 +847,9 @@ const FORM_JS = "document.addEventListener('submit',function(e){var f=e.target;i
 
 /**
  * Standalone page.
- * opts: string base href (editor preview), or { published, assetBase, head, body, canonical }
- * for the files of a published site.
+ * opts: string base href (editor preview), or { published, assetBase, head, body, canonical, booking }
+ * for the files of a published site. booking ({ customerId, siteId, apiBase, brand }) turns
+ * the booking block into the live calendar; without it the block lists services and a phone.
  */
 function renderPage(site, pageId, opts) {
   const o = typeof opts === 'string' ? { baseHref: opts } : (opts || {});
@@ -722,7 +857,7 @@ function renderPage(site, pageId, opts) {
   if (o.assetBase != null) assetBase = o.assetBase;
   try {
     if (o.published) site = withoutDemoEmails(site);
-    const ctx = siteCtx(site, pageId, o.published ? { published: true, pageHref: (p) => pageFile(site, site.pages.find((x) => x.id === p.id)) } : null);
+    const ctx = siteCtx(site, pageId, o.published ? { published: true, pageHref: (p) => pageFile(site, site.pages.find((x) => x.id === p.id)), booking: o.booking } : null);
     const body = pageBlocks(site, pageId).map((b) => renderBlock(b, ctx)).join('');
     const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
     const brand = (site.header && site.header.data && site.header.data.brand) || '';
@@ -949,6 +1084,14 @@ function demoLeftovers(site) {
   site.pages.forEach((p) => p.blocks.forEach((b) => scan(b, p.name)));
   const ig = site.pages.some((p) => p.blocks.some((b) => b.type === 'instagram'));
   if (ig && !feedUrl(site)) out.push({ key: 'instagram', label: 'Blocul Instagram nu e conectat, deci nu apare pe site.' });
+  const pack = packs()[site.pack];
+  const starter = (pack && pack.content.booking) || BLOCKS.booking.defaults();
+  const plan = (d) => JSON.stringify([bookingServices(d), bookingWeek(d)]);
+  site.pages.forEach((p) => p.blocks.forEach((b) => {
+    if (b.type === 'booking' && plan(b.data) === plan(starter)) {
+      note('booking', 'Serviciile și orele din „Programări online” sunt cele de exemplu. Clienții se vor putea programa doar în orele de acolo.', p.name);
+    }
+  }));
   return out;
 }
 
@@ -987,7 +1130,12 @@ function applyIdentity(site, who) {
 
 function setAssetBase(base) { assetBase = String(base || ''); }
 
-const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs, feedUrl, demoLeftovers, applyIdentity };
+/** Every booking block of the site, in page order. */
+function bookingBlocks(site) {
+  return (site.pages || []).flatMap((p) => (p.blocks || []).filter((b) => b && b.type === 'booking'));
+}
+
+const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs, feedUrl, demoLeftovers, applyIdentity, bookingBlocks, bookingWeek, bookingServices };
 if (IS_NODE) module.exports = SB;
 else root.SB = SB;
 })(typeof window !== 'undefined' ? window : globalThis);

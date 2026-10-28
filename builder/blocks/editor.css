@@ -82,6 +82,14 @@ button { font: inherit; cursor: pointer; }
 .fld { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: #333842; }
 .fld input, .fld textarea { font: inherit; font-weight: 400; font-size: 14px; padding: 8px 10px; border: 1px solid var(--ui-line); border-radius: 8px; }
 .fld textarea { resize: vertical; min-height: 70px; }
+.fld select { font: inherit; font-weight: 400; font-size: 14px; padding: 7px 8px; border: 1px solid var(--ui-line); border-radius: 8px; background: #fff; }
+.weekfld { display: flex; flex-direction: column; gap: 6px; }
+.weekfld__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; }
+.weekfld__row .check { font-weight: 500; min-width: 96px; }
+.weekfld__time { display: flex; align-items: center; gap: 4px; }
+.weekfld__time select { padding: 5px 4px; font-size: 13px; }
+.weekfld__row.is-off .weekfld__time { opacity: .35; }
+.weekfld__bad { color: #b42318; font-weight: 500; font-size: 12px; }
 .imgfld { display: flex; align-items: center; gap: 10px; }
 .imgfld img { width: 64px; height: 48px; object-fit: cover; border-radius: 6px; }
 .imgfld button, .row-actions button, .list-add { border: 1px solid var(--ui-line); background: #fff; border-radius: 8px; padding: 7px 10px; font-size: 13px; }

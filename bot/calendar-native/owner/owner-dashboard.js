@@ -61,6 +61,9 @@
       customerId: root.getAttribute('data-customer-id') || '',
       siteId: root.getAttribute('data-site-id') || '',
       brand: root.getAttribute('data-brand') || 'Calendar',
+      // Set for block-editor sites: services and the weekly schedule live in
+      // the site's booking block, so this page only reads them.
+      editorUrl: root.getAttribute('data-editor-url') || '',
     };
   }
 
@@ -304,6 +307,11 @@
       '  <div data-hod-modal-host></div>' +
       '  <p class="hod-foot">Build by hidook.tech powered by hidook.agency</p>' +
       '</div>';
+
+    if (cfg.editorUrl) {
+      var svcTab = $('[data-hod-tab="services"]', root);
+      if (svcTab) svcTab.remove();
+    }
 
     var brandEl = $('[data-hod-brand]', root);
     if (brandEl) brandEl.textContent = cfg.brand || 'Calendar';
@@ -671,6 +679,20 @@
         '<p class="hod-hint">Fus orar: ' +
         esc((state.settings && state.settings.timezone) || state.timezone) +
         ' (modifică din tab-ul Setări). Zilele libere și orele speciale pe o dată anume înlocuiesc programul săptămânal.</p>';
+      var selRes = state.resources.filter(function (r) { return r.id === state.selectedAvailResourceId; })[0];
+      if (cfg.editorUrl && (!selRes || selRes.isDefault || state.resources.length <= 1)) {
+        html += '<ul class="hod-week">';
+        WEEKDAYS.forEach(function (d) {
+          var ws = byDay[d.n] || [];
+          html += '<li><div class="hod-week__day">' + esc(d.label) + '</div><div class="hod-week__body"><p class="hod-hint" style="margin:0">' +
+            (ws.length ? ws.map(function (w) { return esc(minutesToTime(w.startMinute) + ' – ' + minutesToTime(w.endMinute)); }).join(', ') : 'Închis') +
+            '</p></div></li>';
+        });
+        html += '</ul>';
+        html += '<p class="hod-hint">Zilele și orele le schimbi în editorul site-ului, în blocul „Programări online”. Se aplică după ce publici modificările.</p>';
+        html += '<a class="hod-btn hod-btn--ghost" href="' + esc(cfg.editorUrl) + '">Schimbă programul în editor</a>';
+        html += '</div>';
+      } else {
       html += '<ul class="hod-week">';
       WEEKDAYS.forEach(function (d) {
         var windows = byDay[d.n] || [];
@@ -695,6 +717,7 @@
       html +=
         '<button type="button" class="hod-btn" data-hod-save-weekly>Salvează programul</button>';
       html += '</div>';
+      }
 
       html += '<div class="hod-card">';
       html += '<h2>Zile libere și ore speciale</h2>';

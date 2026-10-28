@@ -1387,6 +1387,37 @@ function emptyDirInside(root, dir) {
     for (const entry of fs.readdirSync(d)) fs.rmSync(path.join(d, entry), { recursive: true, force: true });
 }
 
+/**
+ * Block site with a "Programări online" block: make the native calendar match
+ * the block (services + weekly hours) and return what the renderer needs to
+ * mount the live widget. Null when the site has no booking block. Throws when
+ * the calendar cannot be prepared, so a site never goes live with a booking
+ * section that cannot book.
+ */
+function prepareBlocksBooking(site, config) {
+    const SB = require('../builder/blocks/blocks.js');
+    const cfg = SB.normalizeSite(config);
+    const block = SB.bookingBlocks(cfg)[0];
+    if (!block) return null;
+    const cutover = require('./calendar-native/cutover');
+    try {
+        const db = require('./calendar-native/public-api.js').getDb({});
+        const synced = cutover.syncTenantFromBookingBlock(db, site.userId, site.id, {
+            services: SB.bookingServices(block.data),
+            week: SB.bookingWeek(block.data),
+        });
+        log('calendar.blocks.synced', { siteId: site.id, services: synced.services, weeklyWindows: synced.weeklyWindows });
+    } catch (e) {
+        log('calendar.blocks.sync_failed', { siteId: site.id, err: e.message }, 'error');
+        const err = new Error('Nu am putut porni programările online. Încearcă din nou peste un minut.');
+        err.code = 'BOOKING_SYNC';
+        throw err;
+    }
+    const apiBase = cutover.resolveNativeApiBase({});
+    if (!apiBase) log('calendar.native_api_base.unconfigured', { siteId: site.id }, 'error');
+    return { customerId: site.userId, siteId: site.id, apiBase, brand: SB.siteBrand(cfg) };
+}
+
 function prepareIsolatedLiveHtml(siteDir) {
     if (!_isIsolatedDeploy()) return;
     const indexPath = path.join(siteDir, 'index.html');
@@ -2170,6 +2201,7 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
         emptyDirInside(SITES_DIR, siteDir);
         const built = siteExport.buildBlocksSiteTree(siteDir, config, {
             canonicalOrigin: seoBuildOrigin,
+            booking: prepareBlocksBooking(site, config),
         });
         if (typeof ai.moderateImages === 'function' && built.imageBuffers.length > 0) {
             let verdict;
