@@ -62,7 +62,7 @@ test('a site that has been paid for shows its invoice in the dashboard "Facturi"
         // =====================================================================
         await page.goto(base + '/app/', { waitUntil: 'networkidle' });
         await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'local-service');
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);

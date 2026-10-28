@@ -114,7 +114,7 @@ async function openTemplateEditor(page, templateId) {
   if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
     await page.locator('#hb-cookie-accept').click().catch(() => {});
   }
-  await page.locator(`.template-card[data-template-id="${templateId}"] .btn-start-tpl`).click();
+  await page.evaluate((id) => startWithTemplate(id), templateId);
   await page.waitForURL(/#edit$/, { timeout: 30000 }).catch(() => {});
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(900);

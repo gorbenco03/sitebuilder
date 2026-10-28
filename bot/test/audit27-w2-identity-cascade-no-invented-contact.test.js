@@ -131,7 +131,7 @@ test('A. wizard (Salon Aurora / 0721 234 567 / Cluj) publishes a site with no in
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
     });
     await openCatalog(page);
-    await page.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'portfolio');
     await page.locator('#onboarding-wizard .onb-type-card[data-type="salon"]').click();
     await page.locator('#onb-identity-form').waitFor({ state: 'visible' });
 
@@ -228,7 +228,7 @@ test('B. untouched draft: checklist names the sample social links and address; q
   page.setDefaultTimeout(25000);
   try {
     await openCatalog(page);
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await waitEditor(page);
 
     const before = await checklistRows(page);
@@ -314,7 +314,7 @@ test('C. wizard with phone and town but no business name: the published site car
       Object.defineProperty(navigator, 'webdriver', { get: () => false });
     });
     await openCatalog(page);
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.locator('#onboarding-wizard .onb-type-card[data-type="restaurant"]').click();
     await page.locator('#onb-identity-form').waitFor({ state: 'visible' });
     await page.locator('#onb-phone').fill('0721 234 567');
@@ -343,7 +343,7 @@ for (const tplId of ['product-menu', 'professionals']) {
     page.setDefaultTimeout(25000);
     try {
       await openCatalog(page);
-      await page.locator('.template-card[data-template-id="' + tplId + '"] .btn-start-tpl').click();
+      await page.evaluate((id) => startWithTemplate(id), tplId);
       await waitEditor(page);
       const draftSocial = await page.evaluate(() => (draft.config.contact.instagram || {}).url || (draft.config.contact.email) || '');
       await shot(page, 'untouched-' + tplId + '-draft-before-publish');

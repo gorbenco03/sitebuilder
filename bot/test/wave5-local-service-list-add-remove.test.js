@@ -68,7 +68,7 @@ async function main() {
   try {
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page.locator('#hb-cookie-accept').click();
-    await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'local-service');
     await page.waitForURL(/#edit$/);
 
     const frame = page.frameLocator('#preview-iframe');

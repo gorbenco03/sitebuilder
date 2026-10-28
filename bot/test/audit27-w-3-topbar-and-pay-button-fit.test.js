@@ -67,7 +67,7 @@ function shot(page, name) {
 async function startEditor(page) {
   await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
   await page.locator('#hb-cookie-accept').click({ timeout: 3000 }).catch(() => {});
-  await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'professionals');
   await page.waitForURL(/#edit$/, { timeout: 30000 });
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(900);

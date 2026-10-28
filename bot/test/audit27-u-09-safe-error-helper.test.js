@@ -107,7 +107,7 @@ async function newSignedInEditorPage(browser, emailLocal) {
   if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
     await page.locator('#hb-cookie-accept').click().catch(() => {});
   }
-  await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'product-menu');
   await page.waitForURL(/#edit$/, { timeout: 30000 }).catch(() => {});
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(400);

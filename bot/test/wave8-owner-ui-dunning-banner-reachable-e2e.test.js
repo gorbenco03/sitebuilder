@@ -77,7 +77,7 @@ test('a warning (past_due) and a critical (unpaid) dunning state each show up on
     try {
         await page.goto(base + '/app/', { waitUntil: 'networkidle' });
         await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'local-service');
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);

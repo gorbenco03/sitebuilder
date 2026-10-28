@@ -134,7 +134,7 @@ async function main() {
       if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
         await page.locator('#hb-cookie-accept').click().catch(() => {});
       }
-      await page.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+      await page.evaluate((id) => startWithTemplate(id), 'portfolio');
       await page.waitForURL(/#edit$/, { timeout: 25000 });
       await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
       await page.waitForTimeout(600);

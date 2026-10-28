@@ -134,7 +134,7 @@ async function measureLiveCls() {
   try {
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page.locator('#hb-cookie-accept').click();
-    await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'local-service');
     await page.waitForURL(/#edit$/);
     await page.frameLocator('#preview-iframe').locator('body').waitFor({ state: 'visible' });
     const closeDrawer = page.locator('#btn-close-drawer');

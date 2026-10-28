@@ -71,7 +71,7 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     // =====================================================================
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(1200);

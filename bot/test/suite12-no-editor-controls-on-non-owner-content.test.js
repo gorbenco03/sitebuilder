@@ -80,7 +80,7 @@ async function openEditor(page, templateId) {
   await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
   await page.goto(base + '/app/#templates', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(400);
-  await page.locator('.template-card[data-template-id="' + templateId + '"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), templateId);
   await page.waitForURL(/#edit$/);
   await page.locator('#preview-iframe').waitFor({ state: 'visible' });
   await page.waitForTimeout(1200);

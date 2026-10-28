@@ -141,7 +141,7 @@ test('desserdirina preview in the real builder: every @font-face loads, sandbox 
         if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
             await page.locator('#hb-cookie-accept').click().catch(() => {});
         }
-        await page.locator('.template-card[data-template-id="desserdirina"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
         await page.waitForURL(/#edit$/, { timeout: 30000 });
 
         const iframeLocator = page.locator('#preview-iframe');

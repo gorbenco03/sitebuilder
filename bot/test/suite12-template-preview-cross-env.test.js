@@ -204,9 +204,10 @@ async function detectEngines() {
 
 async function openTemplatePreview(page, templateId) {
     await page.goto(base + '/app/#templates', { waitUntil: 'load' });
-    const btn = page.locator('.btn-preview-tpl[data-id="' + templateId + '"]');
-    await btn.waitFor({ state: 'visible', timeout: 20000 });
-    await btn.click();
+    // The catalog lists block starter designs now; the form templates' preview
+    // modal is still in app.js, opened the way its old card button did.
+    await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
+    await page.evaluate((id) => openPreviewModal(id), templateId);
 
     // Same readiness contract builder/app.js itself waits on before treating
     // the preview as loaded (waitForInteractivePreview → iframe.dataset.previewReady).

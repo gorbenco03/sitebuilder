@@ -100,7 +100,7 @@ test('editing two DIFFERENT fields in two tabs on the same draft must not silent
     pageA.setDefaultTimeout(20000);
     await pageA.goto(base + '/app/', { waitUntil: 'networkidle' });
     await acceptCookiesIfShown(pageA);
-    await pageA.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await pageA.evaluate((id) => startWithTemplate(id), 'product-menu');
     await pageA.waitForURL(/#edit$/, { timeout: 25000 });
     await pageA.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
     await pageA.waitForTimeout(600);

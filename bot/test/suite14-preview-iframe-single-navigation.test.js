@@ -88,9 +88,9 @@ test('landing preview inserts each iframe without an inherited srcdoc, and every
             const page = await context.newPage();
             try {
                 await page.goto(base + '/app/#templates', { waitUntil: 'load' });
-                const btn = page.locator('.btn-preview-tpl[data-id="' + templateId + '"]');
-                await btn.waitFor({ state: 'visible', timeout: 20000 });
-                await btn.click();
+                // Form-template preview modal, opened the way its old catalog button did.
+                await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
+                await page.evaluate((id) => openPreviewModal(id), templateId);
                 let ready = true;
                 try {
                     await page.waitForFunction(() => {

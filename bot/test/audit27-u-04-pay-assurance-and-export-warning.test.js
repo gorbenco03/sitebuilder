@@ -92,7 +92,7 @@ test('audit27-U-04: pay CTA shows a real nothing-charged-today reassurance line'
   await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
   await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
 
-  await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'professionals');
   await page.waitForURL(/#edit$/, { timeout: 25000 });
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
   await page.waitForTimeout(600);
@@ -156,7 +156,7 @@ test('audit27-U-04: export with native booking on warns in a product modal befor
   await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
   await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
 
-  await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'professionals');
   await page.waitForURL(/#edit$/, { timeout: 25000 });
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
   await page.waitForTimeout(600);

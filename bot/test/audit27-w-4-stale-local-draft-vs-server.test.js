@@ -130,7 +130,7 @@ test('W-4: Editează loads the server config, never an older local copy, and sho
       // ---- Setup: publish a site named "W4 Original" as account X. ----
       await A.goto(base + '/app/', { waitUntil: 'networkidle' });
       await A.locator('#hb-cookie-accept').click().catch(() => {});
-      await A.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+      await A.evaluate((id) => startWithTemplate(id), 'product-menu');
       await A.waitForURL(/#edit$/);
       await A.locator('#preview-iframe').waitFor({ state: 'visible' });
       await A.waitForTimeout(1000);

@@ -52,7 +52,7 @@ test('new list items get real Romanian text and stay editable', async () => {
     for (const c of cases) {
       await page.goto(base + '/app/', { waitUntil: 'networkidle' });
       await page.locator('#hb-cookie-accept').click().catch(() => {});
-      await page.locator(`.template-card[data-template-id="${c.id}"] .btn-start-tpl`).click();
+      await page.evaluate((id) => startWithTemplate(id), c.id);
       await page.waitForURL(/#edit$/);
       await page.locator('#preview-iframe').waitFor({ state: 'visible' });
       await page.waitForTimeout(1800);

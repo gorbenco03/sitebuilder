@@ -138,7 +138,7 @@ test('Domeniu modal shows numbered steps that track real DNS/TLS status, and swi
         // =====================================================================
         await page.goto(base + '/app/', { waitUntil: 'networkidle' });
         await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'local-service');
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);

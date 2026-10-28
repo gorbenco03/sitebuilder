@@ -224,7 +224,7 @@ async function runEditorFlow() {
   try {
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.locator('.template-card[data-template-id="desserdirina"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
     await page.waitForURL(/#edit$/);
     await frame().locator('body').waitFor({ state: 'attached', timeout: 20000 });
     await page.locator('#btn-close-drawer').click().catch(() => {});

@@ -164,7 +164,7 @@ async function main() {
             await page.waitForTimeout(500);
           }
 
-          await page.locator('.template-card[data-template-id="' + system + '"] .btn-start-tpl').click();
+          await page.evaluate((id) => startWithTemplate(id), system);
           await page.waitForURL(/#edit$/, { timeout: 25000 });
           await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
           await page.waitForTimeout(900);

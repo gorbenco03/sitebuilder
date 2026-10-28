@@ -81,7 +81,7 @@ async function gotoTemplates(page, base) {
   if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
     await page.locator('#hb-cookie-accept').click().catch(() => {});
   }
-  await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => typeof startWithTemplate === 'function');
 }
 
 let browser;
@@ -146,7 +146,7 @@ test('behavior: fresh visitor sees the wizard, picking a different business type
 
     // Click the RESTAURANT card ("product-menu") — the wizard must appear
     // instead of navigating straight to #edit.
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.locator('#onboarding-wizard .onb-box').waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(300); // let the overlay's own fadeIn/slideUp settle before the proof screenshot
     await shot(page, '01-wizard-step1-appeared');
@@ -200,7 +200,7 @@ test('behavior: fresh visitor sees the wizard, picking a different business type
 
     // Second visit (same browser storage): straight to the editor, no wizard.
     await gotoTemplates(page, base);
-    await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'local-service');
     await page.waitForURL(/#edit$/, { timeout: 15000 });
     await shot(page, '04-second-visit-no-wizard');
     const wizardShownAgain = await page.locator('#onboarding-wizard .onb-box').isVisible().catch(() => false);
@@ -216,7 +216,7 @@ test('behavior: Escape skips the wizard outright — clicked template opens with
   const page = await newPageAsRealVisitor(browser);
   try {
     await gotoTemplates(page, base);
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.locator('#onboarding-wizard .onb-box').waitFor({ state: 'visible', timeout: 10000 });
     await page.waitForTimeout(300);
     await shot(page, '05-skip-wizard-open');

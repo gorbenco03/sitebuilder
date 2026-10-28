@@ -109,7 +109,7 @@ test('mobile editor: topbar buttons neither overlap nor fall under 44x44 at 390p
     await cookieBtn.tap();
     await cookieBtn.waitFor({ state: 'hidden' });
 
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     // Suite 12: Details no longer auto-opens at phone width (<=640px) — see
     // shouldAutoOpenDrawerOnThisViewport()'s doc comment in builder/app.js.
@@ -186,7 +186,7 @@ const LANDSCAPE_VIEWPORT = { width: 844, height: 390 };
 test('mobile editor landscape: topbar buttons do not overlap at 844x390', { timeout: 60000 }, async () => {
   await withEditor(async (page) => {
     await page.locator('#hb-cookie-accept').tap();
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     await page.locator('#details-drawer').waitFor({ state: 'visible' });
     await page.locator('#btn-close-drawer').tap();
@@ -222,7 +222,7 @@ test('mobile editor landscape: topbar buttons do not overlap at 844x390', { time
 test('mobile editor: color popover stays fully on-screen at 390px', { timeout: 60000 }, async () => {
   await withEditor(async (page) => {
     await page.locator('#hb-cookie-accept').tap();
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     // Suite 12: Details no longer auto-opens at phone width — nothing to
     // close here (see the doc comment in the test above).
@@ -249,7 +249,7 @@ test('mobile editor: color popover stays fully on-screen at 390px', { timeout: 6
 test('mobile editor: details drawer close button meets the touch-target floor', { timeout: 60000 }, async () => {
   await withEditor(async (page) => {
     await page.locator('#hb-cookie-accept').tap();
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     // Suite 12: Details no longer auto-opens at phone width — open it
     // explicitly (see the doc comment in the first test above).
@@ -265,7 +265,7 @@ test('mobile editor: details drawer close button meets the touch-target floor', 
 test('mobile editor: inline text edit stays above a simulated keyboard', { timeout: 60000 }, async () => {
   await withEditor(async (page) => {
     await page.locator('#hb-cookie-accept').tap();
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').tap();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     // Suite 12: Details no longer auto-opens at phone width — nothing to
     // close here (see the doc comment in the first test above).

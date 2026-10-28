@@ -352,11 +352,14 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       'preview',
       'modal-preview',
       'btn-close-preview',
-      () => clickAndHandle(page.locator('.template-card[data-template-id="professionals"] .btn-preview-tpl'))
+      // The catalog lists block designs now; the form templates' preview modal
+      // has no catalog button left, so it opens the way that button did.
+      async () => { await page.evaluate(() => openPreviewModal('professionals')); return null; },
+      { skipRefocusCheck: true }
     );
 
     // Now actually enter the editor for the rest of the flow.
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/, { timeout: 25000 });
     await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
     await page.waitForTimeout(600);

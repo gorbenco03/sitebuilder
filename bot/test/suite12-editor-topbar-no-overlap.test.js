@@ -64,7 +64,7 @@ test('no editor topbar control is covered by another at laptop and desktop width
                 const page = await context.newPage();
                 try {
                     await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-                    await page.locator('.template-card[data-template-id="' + templateId + '"] .btn-start-tpl').click();
+                    await page.evaluate((id) => startWithTemplate(id), templateId);
                     await page.waitForURL(/#edit$/, { timeout: 30000 });
                     await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
                     const drawer = page.locator('#details-drawer');

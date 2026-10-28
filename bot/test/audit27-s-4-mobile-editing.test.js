@@ -98,7 +98,7 @@ async function openEditorAtPhoneWidth(page) {
   await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
   await page.goto(base + '/app/#templates', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(300);
-  await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'professionals');
   await page.waitForURL(/#edit$/, { timeout: 30000 });
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(900);

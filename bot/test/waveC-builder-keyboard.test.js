@@ -125,7 +125,7 @@ test('the editor is operable and containable from the keyboard', async () => {
         for (const n of noRing) failures.push(`tab stop with no visible focus indicator: ${n} — WCAG 2.4.7`);
 
         // --- The drawer contains focus while it is open ---
-        await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'professionals');
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(2200);

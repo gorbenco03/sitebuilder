@@ -90,7 +90,7 @@ async function openProductMenuDrawer(page, entryUrl) {
   if (await cookieBtn.isVisible().catch(() => false)) {
     await cookieBtn.click().catch(() => {});
   }
-  await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+  await page.evaluate((id) => startWithTemplate(id), 'product-menu');
   await page.waitForURL(/#edit$/, { timeout: 30000 }).catch(() => {});
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.locator('#details-drawer').waitFor({ state: 'visible', timeout: 30000 });

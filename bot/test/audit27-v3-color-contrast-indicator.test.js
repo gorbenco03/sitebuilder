@@ -46,7 +46,7 @@ test('V-3: light accent on light background reads "greu de citit"; the fix butto
     page.setDefaultTimeout(30000);
     await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
     await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.waitForURL(/#edit$/);
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(1000);

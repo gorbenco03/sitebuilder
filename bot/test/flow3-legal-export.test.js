@@ -754,8 +754,8 @@ function unzipStore(zipBuf, destDir) {
                 try {
                     const page = await context.newPage();
                     await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
-                    await page.waitForSelector('.btn-preview-tpl[data-id="portfolio"]', { timeout: 20000 });
-                    await page.click('.btn-preview-tpl[data-id="portfolio"]');
+                    await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
+                    await page.evaluate((x) => openPreviewModal(x), 'portfolio');
                     await page.waitForSelector('#modal-preview', { state: 'visible' });
                     const frame = page.frameLocator('#preview-modal-iframe');
                     const accept = frame.locator('#hb-cookie-accept');
@@ -795,10 +795,10 @@ function unzipStore(zipBuf, destDir) {
                 const context = await browser.newContext({ acceptDownloads: true });
                 const page = await context.newPage();
                 await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
-                await page.waitForSelector('.btn-preview-tpl[data-id="product-menu"]', { timeout: 20000 });
+                await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
 
                 for (const id of TPLS) {
-                    await page.click('.btn-preview-tpl[data-id="' + id + '"]');
+                    await page.evaluate((x) => openPreviewModal(x), id);
                     await page.waitForSelector('#modal-preview', { state: 'visible' });
                     await page.waitForSelector('#preview-modal-iframe[aria-busy="true"]', { timeout: 5000 });
                     await page.waitForSelector('#preview-modal-iframe[aria-busy="false"]', { timeout: 20000 });
@@ -840,7 +840,7 @@ function unzipStore(zipBuf, destDir) {
                 }
 
                 for (const id of TPLS) {
-                    await page.click('.btn-start-tpl[data-id="' + id + '"]');
+                    await page.evaluate((x) => startWithTemplate(x), id);
                     await page.waitForURL(/#edit$/, { timeout: 20000 });
                     await page.waitForSelector('#preview-iframe[aria-busy="true"]', { timeout: 5000 });
                     await page.waitForSelector('#preview-iframe[aria-busy="false"]', { timeout: 20000 });
@@ -874,10 +874,10 @@ function unzipStore(zipBuf, destDir) {
                     );
 
                     await page.goto(`http://127.0.0.1:${port}/app/#templates`);
-                    await page.waitForSelector('.btn-start-tpl[data-id="' + id + '"]');
+                    await page.waitForFunction(() => typeof startWithTemplate === 'function');
                 }
 
-                await page.click('.btn-start-tpl[data-id="product-menu"]');
+                await page.evaluate((x) => startWithTemplate(x), 'product-menu');
                 await page.waitForURL(/#edit$/, { timeout: 20000 });
                 await page.waitForSelector('#btn-publish');
                 const drawer = page.locator('#details-drawer');

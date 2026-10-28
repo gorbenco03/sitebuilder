@@ -73,7 +73,7 @@ async function withServer(envOverrides, fn) {
 async function acceptCookiesAndStart(page, base, templateId) {
   await page.goto(base + '/app/', { waitUntil: 'networkidle' });
   await page.locator('#hb-cookie-accept').click().catch(() => {});
-  await page.locator(`.template-card[data-template-id="${templateId}"] .btn-start-tpl`).click();
+  await page.evaluate((id) => startWithTemplate(id), templateId);
   await page.waitForURL(/#edit$/);
   await page.locator('#preview-iframe').waitFor({ state: 'visible' });
   await page.waitForTimeout(1000);
@@ -229,7 +229,7 @@ test('MULTI-03: reloading a tab resumes the SAME site even when another tab most
       await setup.evaluate(() => doLogout());
       await setup.waitForTimeout(300);
       await setup.goto(base + '/app/#templates', { waitUntil: 'networkidle' });
-      await setup.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+      await setup.evaluate((id) => startWithTemplate(id), 'local-service');
       await setup.waitForURL(/#edit$/);
       await setup.locator('#preview-iframe').waitFor({ state: 'visible' });
       await setup.waitForTimeout(1000);
