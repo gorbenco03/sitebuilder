@@ -112,7 +112,8 @@ test('T-3: every RO.KEY / t(\'KEY\', ...) reference in builder/app.js exists in 
   // Fails on the pre-T-3 state directly too: before this task app.js never
   // referenced RO at all, so `used` would be empty and this assertion
   // catches the regression, not just a typo in an already-migrated key.
-  assert.ok(used.size > 60, 'builder/app.js must reference a substantial number of RO catalog keys');
+  // 57 keys once the form editor left app.js (2026-10-28); was >60 before.
+  assert.ok(used.size > 40, 'builder/app.js must reference a substantial number of RO catalog keys');
 
   const missing = [...used].filter((key) => !Object.prototype.hasOwnProperty.call(RO, key));
   assert.deepStrictEqual(

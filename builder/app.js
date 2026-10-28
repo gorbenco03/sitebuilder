@@ -1373,6 +1373,21 @@ async function loadDashboard() {
   }
 }
 
+/**
+ * Mirrors bot/calendar-native/cutover.js#isNativeBookingEnabled (the builder
+ * cannot require() server modules): appointment.nativeBooking is a text field.
+ */
+function isNativeBookingOn(value) {
+  if (value === true || value === 1) return true;
+  if (value == null) return false;
+  if (typeof value === 'string') {
+    const s = value.trim().toLowerCase();
+    if (!s || /^(false|0|no|nu|off|n)$/i.test(s)) return false;
+    return /^(true|1|yes|da|on|y)$/i.test(s) || s === 'enabled';
+  }
+  return Boolean(value);
+}
+
 function buildSiteCard(site) {
   const card = document.createElement('div');
   card.className = 'site-card';
@@ -1667,6 +1682,27 @@ function buildSiteCard(site) {
     apiGet('/api/sites/' + encodeURIComponent(site.id) + '/messages')
       .then((data) => { if (data && data.unread) messagesBtn.textContent = `Mesaje (${data.unread})`; })
       .catch(() => { /* unread badge is a bonus — never block the card on it */ });
+  }
+
+  // Native Hidook booking dashboard (CAL-01). Only a site published with
+  // appointment.nativeBooking on has a calendar; block sites never do.
+  if (site.templateId !== 'blocks' && site.paid && (site.status === 'live' || site.status === 'active')) {
+    apiGet('/api/sites/' + encodeURIComponent(site.id))
+      .then((data) => {
+        const cfg = data && data.config;
+        if (!isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking)) return;
+        const bookBtn = document.createElement('a');
+        bookBtn.className = 'btn-ghost btn-sm';
+        bookBtn.textContent = 'Programări';
+        bookBtn.target = '_blank';
+        bookBtn.rel = 'noopener noreferrer';
+        bookBtn.setAttribute('aria-label', 'Deschide programările pentru ' + (site.projectName || site.slug || 'acest site'));
+        const qs = new URLSearchParams({ customerId: site.userId, siteId: site.id, brand: site.projectName || site.slug || '' });
+        bookBtn.href = '/calendar-native/owner/?' + qs.toString();
+        bookBtn.addEventListener('click', e => e.stopPropagation());
+        actions.insertBefore(bookBtn, actions.lastElementChild);
+      })
+      .catch(() => { /* dashboard link is a bonus — never block the sites list on it */ });
   }
 
   // Static ZIP for self-hosting (VISION §6). The server applies the same

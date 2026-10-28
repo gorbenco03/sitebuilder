@@ -95,18 +95,7 @@ test('the empty services panel explains where services come from', async () => {
     }
 });
 
-test('the dashboard offers the first step, not only the finished state', () => {
-    // buildSiteCard used to return early when native booking was off, so the
-    // projects list showed nothing at all for a site whose calendar had never
-    // been enabled.
-    const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-    assert.match(app, /Configurează calendarul/,
-        'the dashboard must offer a way to START setting the calendar up, not only a link for sites ' +
-        'where it is already on');
-    // And it must land on the switch rather than dumping the owner in the editor.
-    assert.match(app, /loadSiteForEdit\(site\.id,\s*'appointment\.nativeBooking'\)/,
-        'the setup button must deep-link to the booking switch — an owner who has never seen the ' +
-        'setting will not find it by being dropped into the editor');
-    assert.match(app, /async function loadSiteForEdit\(siteId, focusFieldKey\)/,
-        'loadSiteForEdit must accept the field to focus');
-});
+// The dashboard's "Configurează calendarul" step deep-linked into the form
+// editor's booking switch. That editor was removed on 2026-10-28 and the block
+// editor has no booking block yet, so there is no switch to link to; the
+// gap is recorded in PRODUCT.md (native booking).
