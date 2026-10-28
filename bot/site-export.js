@@ -661,6 +661,8 @@ function dropFakeImages(node) {
         if (typeof v === 'string' && v.startsWith('data:image/')) {
             const m = /^data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)$/i.exec(v);
             if (!m || !looksLikeRasterImage(Buffer.from(m[1].replace(/\s+/g, ''), 'base64'))) node[key] = '';
+        } else if (typeof v === 'string' && /data:image\//i.test(v)) {
+            node[key] = v.replace(/data:image\/[^\s"'<>)]*/gi, '');
         } else if (v && typeof v === 'object') {
             dropFakeImages(v);
         }

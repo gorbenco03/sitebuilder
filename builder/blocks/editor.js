@@ -27,9 +27,11 @@ const asset = window.SB.asset;
 let siteId = null;       // account site id, once saved to the server
 let resume = null;       // 'auth' | 'checkout': where the product should send the customer back here
 let askIdentity = false; // fresh design: ask for name / phone / town once
+let pending = false;     // local edits the account copy has not received yet
+let serverReady = false; // false until we know which copy is the site (never autosave a placeholder)
+let saving = null;       // in-flight POST /api/draft
 let signedIn = false;
 let serverTimer = null;
-let serverBusy = false;
 let serverAgain = false;
 let site = load();
 let selId = null;
@@ -66,16 +68,17 @@ function load() {
   }
   const local = readLocal();
   const wanted = params.get('site');
-  if (local && (!wanted || local.siteId === wanted)) { siteId = local.siteId || null; resume = local.resume || null; return local.site; }
+  if (local && (!wanted || local.siteId === wanted)) { siteId = local.siteId || null; resume = local.resume || null; pending = !!local.pending; return local.site; }
   if (!wanted) { location.replace('/app/#templates'); }
   return defaultSite('gol');
 }
 
 function writeLocal() {
-  localStorage.setItem(STORE, JSON.stringify({ siteId, site, resume, at: Date.now() }));
+  localStorage.setItem(STORE, JSON.stringify({ siteId, site, resume, pending, at: Date.now() }));
 }
 
 function save() {
+  pending = true;
   try {
     writeLocal();
     setSaved(signedIn ? 'Se salvează…' : 'Salvat în browser');
@@ -112,25 +115,33 @@ function rememberSiteId(id) {
 }
 
 function scheduleServerSave() {
-  if (!signedIn) return;
+  if (!signedIn || !serverReady) return;
   clearTimeout(serverTimer);
   serverTimer = setTimeout(saveToServer, 1200);
 }
 
-async function saveToServer() {
-  if (serverBusy) { serverAgain = true; return; }
-  serverBusy = true;
-  try {
-    const data = await api('POST', '/api/draft', { siteId: siteId || undefined, templateId: TEMPLATE_ID, config: site });
-    if (data.site) rememberSiteId(data.site.id);
-    setSaved('Salvat în cont');
-  } catch (e) {
-    if (e.status === 401) { signedIn = false; setSaved('Salvat în browser'); }
-    else setSaved(e.message || 'Nu s-a putut salva în cont');
-  } finally {
-    serverBusy = false;
-    if (serverAgain) { serverAgain = false; saveToServer(); }
-  }
+/** Sends the site to the account; resolves when this and any queued save are done. */
+function saveToServer() {
+  if (!serverReady) return Promise.resolve();
+  if (saving) { serverAgain = true; return saving; }
+  saving = (async () => {
+    do {
+      serverAgain = false;
+      const sent = JSON.stringify(site);
+      try {
+        const data = await api('POST', '/api/draft', { siteId: siteId || undefined, templateId: TEMPLATE_ID, config: site });
+        if (data.site) rememberSiteId(data.site.id);
+        if (JSON.stringify(site) === sent) { pending = false; try { writeLocal(); } catch (_) { /* quota */ } }
+        setSaved('Salvat în cont');
+      } catch (e) {
+        if (e.status === 401) { signedIn = false; setSaved('Salvat în browser'); }
+        else setSaved(e.message || 'Nu s-a putut salva în cont');
+        break;
+      }
+    } while (serverAgain);
+    saving = null;
+  })();
+  return saving;
 }
 
 /** After the first paint: who is signed in, and the account copy of ?site=. */
@@ -138,28 +149,35 @@ async function bootAccount() {
   try { signedIn = !!(await api('GET', '/api/me')).user; } catch (_) { signedIn = false; }
   const wanted = params.get('site');
   if (wanted && signedIn) {
+    const haveLocal = siteId === wanted;
     try {
       const data = await api('GET', `/api/sites/${encodeURIComponent(wanted)}`);
-      if (data.config && data.config.v === 2) {
+      if (!data.config || data.config.v !== 2) throw Object.assign(new Error('not a block site'), { status: 409 });
+      // Edits this browser made that never reached the account win over the account copy.
+      if (!(haveLocal && pending)) {
         site = data.config;
         if (!site.current || !site.pages.some((p) => p.id === site.current)) site.current = site.pages[0].id;
-        siteId = data.site.id;
         undoStack.splice(0, undoStack.length, JSON.stringify(site));
         hIndex = 0;
         selId = null;
-        try { writeLocal(); } catch (_) { /* quota */ }
-        renderAll();
       }
+      siteId = data.site.id;
+      try { writeLocal(); } catch (_) { /* quota */ }
+      renderAll();
     } catch (e) {
-      setSaved(e.status === 404 || e.status === 403 ? 'Site-ul nu a fost găsit în contul tău' : 'Nu s-a putut încărca site-ul din cont');
-      return;
+      if (!haveLocal) {
+        // Nothing trustworthy to save: stay read-only rather than overwrite the account draft.
+        setSaved(e.status === 404 || e.status === 403 ? 'Site-ul nu a fost găsit în contul tău' : 'Nu s-a putut încărca site-ul din cont. Reîncarcă pagina.');
+        return;
+      }
     }
   } else if (wanted && !signedIn && siteId !== wanted) {
     location.replace('/app/#dashboard');
     return;
   }
-  setSaved(signedIn ? (siteId ? 'Salvat în cont' : 'Se salvează…') : 'Salvat în browser');
-  if (signedIn && !siteId) saveToServer();
+  serverReady = true;
+  setSaved(signedIn ? (siteId && !pending ? 'Salvat în cont' : 'Se salvează…') : 'Salvat în browser');
+  if (signedIn && (!siteId || pending)) saveToServer();
   // Back from the sign-in link: carry on with publishing.
   const was = resume;
   if (was) { resume = null; try { writeLocal(); } catch (_) { /* quota */ } }
@@ -1067,7 +1085,10 @@ $('packs-grid').addEventListener('click', (e) => {
   const c = e.target.closest('[data-pack]');
   if (!c) return;
   if (!confirm(`Pornești de la designul „${PACKS[c.dataset.pack].label}”? Site-ul de acum se înlocuiește (poți reveni cu Anulează).`)) return;
+  const keep = { instagram: site.instagram, seo: site.seo };
   site = defaultSite(c.dataset.pack);
+  if (keep.instagram) site.instagram = keep.instagram;
+  if (keep.seo) site.seo = keep.seo;
   selId = null;
   $('packs').hidden = true;
   commit(); renderAll();
@@ -1299,6 +1320,7 @@ async function startSignIn(email, onSignedIn) {
         clearInterval(authPoll);
         authPoll = null;
         signedIn = true;
+        serverReady = true;
         resume = null;
         try { writeLocal(); } catch (_) { /* quota */ }
         onSignedIn();
@@ -1470,7 +1492,12 @@ $('ig-go').addEventListener('click', async () => {
     igEditorUrl = session.editorUrl || '';
     if (igEditorUrl && !session.isolated) {
       const tab = window.open(igEditorUrl, '_blank');
-      if (tab) tab.opener = null;
+      if (!tab) {
+        igPanel('on');
+        igStatus('Browserul a blocat tabul nou. Apasă „Deschide editorul Instafidget”.');
+        return;
+      }
+      tab.opener = null;
       igStatus('Alege postările în editorul Instafidget, apoi revino aici: feed-ul apare singur pe site.');
       if (igFocus) window.removeEventListener('focus', igFocus);
       igFocus = async () => {
@@ -1500,6 +1527,7 @@ $('ig-editor').addEventListener('click', async () => {
     if (!session.editorUrl) { igStatus('Instafidget nu a returnat un link de editor.', true); return; }
     const tab = window.open(session.editorUrl, '_blank');
     if (tab) tab.opener = null;
+    else igStatus('Browserul a blocat tabul nou. Permite ferestrele pentru acest site și încearcă din nou.', true);
   } catch (err) {
     igStatus(err.message, true);
   }

@@ -36,7 +36,9 @@ function packs() {
 let assetBase = '';
 function asset(src) {
   const v = String(src == null ? '' : src);
-  return v.startsWith('@tpl/') ? assetBase + v.slice(5) : v;
+  if (v.startsWith('@tpl/')) return assetBase + v.slice(5);
+  // Only uploads and the site's own files: no third-party images on a customer's site.
+  return /^data:image\/(png|jpe?g|webp|gif|svg\+xml)[;,]/i.test(v) || /^images\/[\w.-]+$/.test(v) ? v : '';
 }
 
 function safeHref(href) {
@@ -425,7 +427,7 @@ const BLOCKS = {
       const follow = handle && ctx.published ? `<a href="https://instagram.com/${esc(encodeURIComponent(handle))}" class="b-btn b-btn--ghost" target="_blank" rel="noopener" data-f="cta">${esc(d.cta)}</a>` : btn('cta', d.cta, 'b-btn--ghost');
       const head = `<div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${follow}</div>`;
       if (ctx.published) return `<section class="b-sec"><div class="b-wrap">${head}<iframe class="b-ig-embed" src="${esc(embed)}" title="Instagram" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></section>`;
-      const list = d.images || Array.from({ length: 6 }, (_, i) => `${IMG}cn-ig${i + 1}.jpg`);
+      const list = Array.isArray(d.images) ? d.images : Array.from({ length: 6 }, (_, i) => `${IMG}cn-ig${i + 1}.jpg`);
       const pics = list.map((src) => `<img src="${esc(asset(src))}" alt="">`).join('');
       const note = embed
         ? 'Instagram e conectat: pe site apar postările tale, prin Instafidget.'
@@ -775,20 +777,31 @@ function cleanEl(el) {
   return out;
 }
 
-function cleanBlock(b, wantType) {
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+const goodId = (v) => typeof v === 'string' && ID_RE.test(v);
+
+function cleanBlock(b, wantType, ids) {
   if (!b || typeof b !== 'object') return null;
-  const def = BLOCKS[b.type];
+  const def = own(BLOCKS, b.type) ? BLOCKS[b.type] : null;
   if (!def || (wantType && b.type !== wantType) || (!wantType && def.shared)) return null;
+  const data = cleanValue(b.data || {}, 0) || {};
+  // Lists the renderer walks must be lists, whatever the browser sent.
+  const base = def.defaults();
+  Object.keys(base).forEach((k) => { if (Array.isArray(base[k]) && !Array.isArray(data[k])) data[k] = base[k]; });
+  let id = goodId(b.id) && !ids.has(b.id) ? b.id : newId();
+  while (ids.has(id)) id = newId();
+  ids.add(id);
   return {
-    id: ID_RE.test(b.id) ? b.id : newId(),
+    id,
     type: b.type,
-    variant: def.variants[b.variant] ? b.variant : Object.keys(def.variants)[0],
+    variant: own(def.variants, b.variant) ? b.variant : Object.keys(def.variants)[0],
     bg: ['auto', 'light', 'dark', 'accent'].includes(b.bg) ? b.bg : 'auto',
     pad: ['compact', 'normal', 'airy'].includes(b.pad) ? b.pad : undefined,
     align: ['auto', 'center'].includes(b.align) ? b.align : undefined,
-    hideMobile: b.hideMobile ? true : undefined,
+    // Shared header/footer always show (the footer carries the hidook attribution).
+    hideMobile: b.hideMobile && !def.shared ? true : undefined,
     el: cleanEl(b.el),
-    data: cleanValue(b.data || {}, 0) || {},
+    data,
   };
 }
 
@@ -802,8 +815,13 @@ function normalizeSite(input) {
   if (!Array.isArray(input.pages) || !input.pages.length) fail('Site-ul trebuie să aibă cel puțin o pagină.');
   if (input.pages.length > LIMITS.pages) fail(`Un site poate avea cel mult ${LIMITS.pages} de pagini.`);
   const theme = input.theme || {};
-  const header = cleanBlock(input.header, 'nav') || makeBlock('nav', 'bar', input.pack);
-  const footer = cleanBlock(input.footer, 'footer') || makeBlock('footer', 'simple', input.pack);
+  const pack = own(packs(), input.pack) ? input.pack : 'gol';
+  const ids = new Set();
+  const header = cleanBlock(input.header, 'nav', ids) || makeBlock('nav', 'bar', pack);
+  const footer = cleanBlock(input.footer, 'footer', ids) || makeBlock('footer', 'simple', pack);
+  ids.add(header.id);
+  ids.add(footer.id);
+  const pageIds = new Set();
   const slugs = new Set();
   const pages = input.pages.map((p, i) => {
     const name = String((p && p.name) || `Pagina ${i + 1}`).slice(0, 60);
@@ -811,15 +829,18 @@ function normalizeSite(input) {
     if (slug === 'index' || ['privacy', 'terms', 'cookies'].includes(slug)) slug += '-1';
     while (slugs.has(slug)) slug += '-2';
     slugs.add(slug);
-    const blocks = (Array.isArray(p && p.blocks) ? p.blocks : []).slice(0, LIMITS.blocks).map((b) => cleanBlock(b)).filter(Boolean);
-    return { id: p && ID_RE.test(p.id) ? p.id : newId(), name, slug, blocks };
+    const blocks = (Array.isArray(p && p.blocks) ? p.blocks : []).slice(0, LIMITS.blocks).map((b) => cleanBlock(b, null, ids)).filter(Boolean);
+    let id = p && goodId(p.id) && !pageIds.has(p.id) ? p.id : newId();
+    while (pageIds.has(id)) id = newId();
+    pageIds.add(id);
+    return { id, name, slug, blocks };
   });
   const out = {
     v: 2,
-    pack: packs()[input.pack] ? input.pack : 'gol',
+    pack,
     theme: {
-      palette: THEMES.palettes[theme.palette] ? theme.palette : 'alb',
-      fonts: THEMES.fonts[theme.fonts] ? theme.fonts : 'modern',
+      palette: own(THEMES.palettes, theme.palette) ? theme.palette : 'alb',
+      fonts: own(THEMES.fonts, theme.fonts) ? theme.fonts : 'modern',
       radius: Math.max(0, Math.min(24, Math.round(Number(theme.radius) || 0))),
     },
     header, footer, pages,

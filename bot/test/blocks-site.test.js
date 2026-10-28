@@ -313,3 +313,25 @@ test('starter contact data: demo e-mails never published, identity swap, pre-pub
     assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'https://www.instagram.com/x/embed' } }), '', 'instagram.com refuses framing');
     assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'javascript:alert(1)' } }), '');
 });
+
+test('review fixes: hostile or odd configs are cleaned before anything renders', () => {
+    const site = SB.defaultSite('salon');
+    site.footer.hideMobile = true;
+    site.pages[1].id = site.pages[0].id;
+    site.pages[0].blocks.push({ type: 'menu', data: {} }, { type: 'gallery', data: { items: 'x' } }, { type: 'constructor' });
+    site.pages[0].blocks[0].data.image = 'https://tracker.example/pixel.gif';
+    site.pack = 'constructor';
+    site.theme.palette = 'constructor';
+    const n = SB.normalizeSite(site);
+    assert.strictEqual(n.footer.hideMobile, undefined, 'the attribution footer cannot be hidden on phones');
+    const files = n.pages.map((p) => SB.pageFile(n, p));
+    assert.strictEqual(new Set(files).size, files.length, 'every page gets its own file');
+    assert.strictEqual(n.pack, 'gol');
+    assert.strictEqual(n.theme.palette, 'alb');
+    assert.ok(n.pages[0].blocks.every((b) => b.type !== 'constructor'));
+    for (const p of n.pages) {
+        const html = SB.renderPage(n, p.id, { published: true, assetBase: 'assets/' });
+        assert.ok(!html.includes('tracker.example'), 'no third-party images');
+        assert.ok(/<div class="blk"[^>]*>(?:<style>[^<]*<\/style>)?<footer/.test(html) && !/data-hidem[^>]*>(?:<style>[^<]*<\/style>)?<footer/.test(html), 'footer never wrapped in data-hidem');
+    }
+});
