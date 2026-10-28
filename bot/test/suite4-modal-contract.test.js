@@ -107,7 +107,7 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '../..');
 // This suite may run from a git worktree that has no node_modules of its
 // own (only the primary checkout installed deps) — same fallback chain as
-// bot/test/delete-site-oracle.mjs.
+// the former delete-site-oracle.mjs (removed with the form editor).
 const PW_CANDIDATES = [
   path.join(ROOT, 'node_modules', 'playwright'),
   '/Users/Work/Desktop/sitebuilder/node_modules/playwright',

@@ -64,6 +64,8 @@ Reguli:
 
 ## 4. Builder — cerințe obligatorii din specul Opus
 
+> **Istoric (2026-10-28):** secțiunile 4.1–4.6 descriu editorul pe formulare, scos din builder pe 2026-10-28. Nu mai sunt cerințe curente; editorul pe blocuri e descris în §3.
+
 ### 4.1 Prima încărcare a șabloanelor
 
 Defect verificat de Opus: `builder/generated/templates-data.js` era ~32 MB și bloca prima încărcare. Refresh-ul părea să repare doar din cache.
@@ -87,8 +89,6 @@ Done înseamnă:
 - hero background și secțiunile simple au controale reale de culoare/imagine, nu input de CSS brut;
 - preview-ul și live site-ul arată aceeași schimbare;
 - QA verifică pixelii, nu doar config-ul.
-
-> **Istoric (2026-10-28):** secțiunile 4.3–4.6 descriu editorul pe formulare, scos din builder pe 2026-10-28. Nu mai sunt cerințe curente; editorul pe blocuri e descris în §3.
 
 ### 4.3 Details automat
 
@@ -173,7 +173,7 @@ Owner trebuie să furnizeze înainte de producție:
 
 Nu se livrează la clienți plătitori cu text legal inventat.
 
-**Autoservire GDPR (owner decision 2026-09-27, implementată — R-27):** clientul autentificat găsește, din meniul de cont — reachable atât din `#dashboard`/`#templates` (header-ul simplu) cât și din editorul unui design deschis — două acțiuni: **„Descarcă datele mele”** (`GET /api/me/export-data`, JSON cu profilul, toate site-urile proprii + istoricul de versiuni, comenzi/facturi, servicii și programări din calendarul nativ, niciodată datele altui client) și **„Șterge contul”** (`POST /api/me/delete-account`, confirmare explicită prin scrierea exactă a adresei de email într-un modal propriu, nu `window.confirm`). Ștergerea anulează orice abonament Stripe activ, oprește din publicare și șterge fișierele publicate ale tuturor site-urilor proprii, șterge datele calendarului nativ, ciornele/versiunile, sesiunile și link-urile de autentificare, apoi contul însuși — ireversibil. Ambele rute cer sesiune validă, sunt limitate ca rată și verifică originea cererii. Rămâne condiționat de textul legal final de mai sus (nume companie/CUI/subprocessors/jurisdicție) doar pentru paginile Privacy/Terms — nu blochează autoservirea GDPR în sine.
+**Autoservire GDPR (owner decision 2026-09-27, implementată — R-27):** clientul autentificat găsește, din meniul de cont — din header-ul lui `#dashboard`/`#templates` — două acțiuni: **„Descarcă datele mele”** (`GET /api/me/export-data`, JSON cu profilul, toate site-urile proprii + istoricul de versiuni, comenzi/facturi, servicii și programări din calendarul nativ, niciodată datele altui client) și **„Șterge contul”** (`POST /api/me/delete-account`, confirmare explicită prin scrierea exactă a adresei de email într-un modal propriu, nu `window.confirm`). Ștergerea anulează orice abonament Stripe activ, oprește din publicare și șterge fișierele publicate ale tuturor site-urilor proprii, șterge datele calendarului nativ, ciornele/versiunile, sesiunile și link-urile de autentificare, apoi contul însuși — ireversibil. Ambele rute cer sesiune validă, sunt limitate ca rată și verifică originea cererii. Rămâne condiționat de textul legal final de mai sus (nume companie/CUI/subprocessors/jurisdicție) doar pentru paginile Privacy/Terms — nu blochează autoservirea GDPR în sine.
 
 ## 6. Export / self-deploy
 

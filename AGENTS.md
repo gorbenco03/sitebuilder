@@ -20,7 +20,7 @@ Zero-dep static renderer (`build.js`) + Node bot/server (`bot/`) + vanilla build
 ## Standing product rules
 
 - `VISION.md` is the source of truth.
-- Browser builder is the commercial product. Telegram only creates/opens the same draft.
+- Browser builder is the commercial product. Telegram (frozen since 2026-09-06) still creates form-template drafts, which the builder can no longer edit since the form editor was removed (2026-10-28); the dashboard shows them as not editable and offers no payment for them.
 - Current model: Stripe 14-day trial, card required, site live immediately, auto-charge day 14, price 99 EUR/GBP/USD bucket, renewal 29/year.
 - New sites use the **block editor** (`builder/blocks/`, `templateId: "blocks"`, owner decision 2026-10-28) with 13 starter designs (`builder/blocks/packs*.js`: "De la zero" + 12 business types). The old form editor was removed from the builder (owner decision 2026-10-28). Its **five** design systems (`templates/registry.json` — product-menu, local-service, portfolio, professionals, Desserdirina) stay server-side only: `build.js` still renders and publishes sites already made with them, and their images feed the block packs; do not add `blocks` to that registry, and do not write "four" anywhere that counts those templates (audit docs medium #17).
 - Product language: Romanian for visible customer/site surfaces.

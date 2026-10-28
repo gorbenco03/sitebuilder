@@ -12,7 +12,9 @@
 
 // Local drafts of the retired form editor. Nothing writes them any more;
 // sign-out still clears them so an old draft never outlives its owner's session.
-const LEGACY_DRAFT_KEYS = ['hb.draft.v1', 'hb.draft.replaced.v1', 'hb.draft.scopes.v1'];
+const LEGACY_DRAFT_KEYS = ['hb.draft.v1', 'hb.draft.replaced.v1', 'hb.draft.scopes.v1', 'hb.draft.synced.v1', 'hb.history.v2'];
+// The form editor's undo history (IndexedDB), cleared with the drafts.
+const LEGACY_HISTORY_DB = 'hb_history_db';
 // The block editor's local draft (builder/blocks/editor.js STORE).
 const BLOCKS_DRAFT_KEY = 'hb.blocks.draft.v1';
 
@@ -249,15 +251,15 @@ const STATE_ICONS = {
   spinner: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.5" opacity=".25"/><path d="M20.5 12a8.5 8.5 0 0 0-8.5-8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
 };
 
-/** One consistent block for an empty or error placeholder: icon badge, a
- * one-line title, a one-line explanation and one primary action. `actionHtml`
- * is already-escaped markup (a <button>/<a>); pass '' for no action. */
 function escHtmlForAttr(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
+/** One consistent block for an empty or error placeholder: icon badge, a
+ * one-line title, a one-line explanation and one primary action. `actionHtml`
+ * is already-escaped markup (a <button>/<a>); pass '' for no action. */
 function stateBlockHTML({ icon = 'tray', isError = false, title, desc, actionHtml = '', style = '' }) {
   return '<div class="empty-state"' + (style ? ' style="' + escHtml(style) + '"' : '') + '>'
     + '<div class="empty-state-icon' + (isError ? ' is-error' : '') + '">' + (STATE_ICONS[icon] || STATE_ICONS.tray) + '</div>'
@@ -732,6 +734,7 @@ async function clearOwnedLocalDraftState() {
   LEGACY_DRAFT_KEYS.forEach((key) => {
     try { localStorage.removeItem(key); } catch (_) { /* ignore */ }
   });
+  try { if (window.indexedDB) indexedDB.deleteDatabase(LEGACY_HISTORY_DB); } catch (_) { /* ignore */ }
   try {
     const blocksDraft = lsGet(BLOCKS_DRAFT_KEY);
     if (blocksDraft && blocksDraft.siteId) localStorage.removeItem(BLOCKS_DRAFT_KEY);
@@ -1124,7 +1127,8 @@ function showSuccessScreen(site) {
   setLoading(false);
   hideToast();
   closeModal('modal-publish');
-  successSiteId = site.id || null;
+  // Only a block site has an editor to go back to.
+  successSiteId = site.templateId === 'blocks' ? site.id : null;
 
   const url = site.publicUrl || site.url;
   const href = absoluteSiteUrl(url) || url;
@@ -1541,10 +1545,22 @@ function buildSiteCard(site) {
     actions.appendChild(editBtn);
   }
 
+  // An unpaid draft made with the retired form editor (or by the Telegram
+  // intake) can no longer be edited, so it must not be paid for as it is.
+  const legacyDraft = site.templateId !== 'blocks' && !site.paid && site.status !== 'unpublished';
+  if (legacyDraft) {
+    const note = document.createElement('div');
+    note.className = 'site-hosting-until site-legacy-note';
+    note.textContent = 'Făcut cu editorul vechi — nu mai poate fi editat. Pornește un site nou din Designuri.';
+    info.appendChild(note);
+  }
+
   // Unpaid → add card / start trial; paid+expired → renew; paid+active → Cancel (portal).
   // A canceled site (even one canceled in its trial, paid=false) is reactivated
   // below at the yearly price — it never gets a second trial.
-  if ((!site.paid || hostingExpired) && site.status !== 'unpublished') {
+  if (legacyDraft) {
+    // No pay action; Șterge below stays.
+  } else if ((!site.paid || hostingExpired) && site.status !== 'unpublished') {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
     let payLabel, payAriaLabel;

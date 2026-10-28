@@ -46,7 +46,7 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '../..');
 const { signInPage, publishAndPayInUi, publishLive } = require('./lib/dash-seed.js');
 // May run from a worktree with no node_modules of its own — same fallback
-// chain as bot/test/suite4-modal-contract.test.js / delete-site-oracle.mjs.
+// chain as bot/test/suite4-modal-contract.test.js / the former delete-site-oracle.mjs.
 const PW_CANDIDATES = [
   path.join(ROOT, 'node_modules', 'playwright'),
   '/Users/Work/Desktop/sitebuilder/node_modules/playwright',
@@ -184,10 +184,8 @@ test('U-01: dashboard danger actions — own modals, danger styling, newest-firs
     assert.equal(nativeDialogFired, false, 'a native window.confirm()/dialog fired — both call sites must use the product\'s own modal instead');
 
     // ---- Item 7: Istoric versiuni rows carry a short description ----
-    // The description is read from config.business (old templates); block-editor
-    // configs have no such field, so the history of a blocks site has empty
-    // descriptions today (reported as a product gap). Checked here on an
-    // old-template site, which still has the same history modal.
+    // Checked on an old-template site (business name + tagline); block sites
+    // get "<brand> — N pagini", covered in blocks-site.test.js.
     const versionsData = await page.evaluate(async (id) => {
       const res = await fetch('/api/sites/' + encodeURIComponent(id) + '/versions', { credentials: 'include' });
       return res.json();

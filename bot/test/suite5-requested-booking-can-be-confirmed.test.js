@@ -83,7 +83,7 @@ test.before(async () => {
         server.once('error', reject);
     });
     // Production sets PUBLIC_URL only after the server is actually listening
-    // — see bot/test/delete-site-oracle.mjs. Mirrored here on purpose.
+    // — see the former delete-site-oracle.mjs (removed with the form editor). Mirrored here on purpose.
     base = 'http://127.0.0.1:' + server.address().port;
     process.env.PUBLIC_URL = base;
 });

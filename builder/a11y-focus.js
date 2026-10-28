@@ -72,7 +72,7 @@
   }, true);
 
   /* Skip link: send focus to whichever screen is currently the main region.
-   * Three screens share role="main" and only one is ever displayed. */
+   * Two screens share role="main" and only one is ever displayed. */
   function mainRegion() {
     var mains = document.querySelectorAll('[role="main"]');
     for (var i = 0; i < mains.length; i++) if (visible(mains[i])) return mains[i];

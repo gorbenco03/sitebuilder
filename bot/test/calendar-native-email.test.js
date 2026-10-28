@@ -10,7 +10,7 @@
  *  5. Visitor manage token unique, unguessable, single-booking scoped
  *  6. Engine state transitions enqueue the pipeline end-to-end
  *  7. No secrets in logs/exports/audit JSON
- *  8. Legacy local-request form path + site-legal + fullpass blobs untouched
+ *  8. Legacy local-request form path + site-legal untouched
  *
  * Run: node --experimental-sqlite bot/test/calendar-native-email.test.js
  */
@@ -335,12 +335,10 @@ assert.ok(created.manageToken.length >= 24, 'unguessable manage token length');
         'legacy local-request form path must remain'
     );
 
-    // site-legal.js and fullpass must be byte-stable vs git HEAD parent intent:
-    // we only assert they still exist and were not modified in this worktree vs index if clean.
+    // site-legal.js must still exist (the form-editor fullpass oracle that was
+    // also pinned here went with that editor, 2026-10-28).
     const legal = path.join(ROOT, 'bot/site-legal.js');
-    const fullpass = path.join(ROOT, 'bot/test/fullpass-63230d2.mjs');
     assert.ok(fs.existsSync(legal));
-    assert.ok(fs.existsSync(fullpass));
 
     // Provider factory never requires secrets for default
     const tDefault = email.createTransport();
