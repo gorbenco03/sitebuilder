@@ -176,7 +176,7 @@ test('suite4 builder touch targets: every button/a/input/select is >=44px tall a
 
     // ---- editor canvas (professionals — has a "services" list with
     // .hb-add-btn, and a "Secțiuni pagină" panel in its drawer) ----
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/, { timeout: 25000 });
     await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
     await page.waitForTimeout(1000);

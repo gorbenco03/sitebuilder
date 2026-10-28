@@ -63,7 +63,7 @@ test('an interrupted local draft is offered back on return, and can be declined,
     page1.setDefaultTimeout(30000);
     await page1.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page1.locator('#hb-cookie-accept').click().catch(() => {});
-    await page1.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+    await page1.evaluate((id) => startWithTemplate(id), 'portfolio');
     await page1.waitForURL(/#edit$/);
     await page1.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page1.waitForTimeout(1200);
@@ -129,7 +129,7 @@ test('an interrupted local draft is offered back on return, and can be declined,
     const page3 = await context.newPage();
     page3.setDefaultTimeout(30000);
     await page3.goto(base + '/app/#templates', { waitUntil: 'networkidle' });
-    await page3.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page3.evaluate((id) => startWithTemplate(id), 'local-service');
     await page3.waitForURL(/#edit$/);
     await page3.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page3.waitForTimeout(1200);

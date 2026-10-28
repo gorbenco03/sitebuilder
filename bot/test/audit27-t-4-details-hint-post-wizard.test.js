@@ -68,7 +68,7 @@ async function gotoTemplates(page, base) {
   if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
     await page.locator('#hb-cookie-accept').click().catch(() => {});
   }
-  await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => typeof startWithTemplate === 'function');
 }
 
 let browser;
@@ -106,7 +106,7 @@ test('behavior: wizard COMPLETED — editor opens with Details closed and the hi
   try {
     await gotoTemplates(page, base);
 
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.locator('#onboarding-wizard .onb-box').waitFor({ state: 'visible', timeout: 10000 });
     await page.locator('#onboarding-wizard .onb-type-card[data-type="restaurant"]').click();
     await page.locator('#onboarding-wizard #onb-identity-form').waitFor({ state: 'visible', timeout: 5000 });
@@ -156,7 +156,7 @@ test('behavior: wizard COMPLETED — editor opens with Details closed and the hi
     // A LATER design selection (wizard already seen — straight to editor,
     // no wizard) must auto-open Details exactly as before this task.
     await gotoTemplates(page, base);
-    await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'local-service');
     await page.waitForURL(/#edit$/, { timeout: 15000 });
     await page.locator('#details-drawer').waitFor({ state: 'visible', timeout: 8000 });
     await page.waitForTimeout(200);
@@ -179,7 +179,7 @@ test('behavior: wizard SKIPPED — Details auto-opens exactly as before (no hint
   const page = await newPageAsRealVisitor(browser);
   try {
     await gotoTemplates(page, base);
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.locator('#onboarding-wizard .onb-box').waitFor({ state: 'visible', timeout: 10000 });
     await shot(page, '04-skip-wizard-open');
 

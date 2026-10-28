@@ -260,34 +260,20 @@ check('HEAD: light registry exposes photographic thumbnail for all five ids', ()
   }
 });
 
-check('HEAD: catalog probe professionals + desserdirina have template-card-preview-thumb img src', () => {
-  const light = headRead('builder/generated/templates-data.js');
-  const entries = parseLightRegistry(light);
+// The catalog is the block starter packs since the block editor replaced the
+// five form templates: every card must paint a real rendered preview, never
+// stay shimmer-only.
+check('HEAD: every catalog card renders a live preview of its starter pack', () => {
   const app = headRead('builder/app.js');
-  assert.ok(
-    /if\s*\(\s*tpl\.thumbnail\s*\)\s*\{[\s\S]{0,160}loadCardPreview/.test(app),
-    'eager tpl.thumbnail → loadCardPreview'
-  );
-  const cards = probeCatalogCardHtml(app, entries);
-  for (const id of ['professionals', 'desserdirina']) {
-    const html = cards[id];
-    assert.ok(html, id + ' card html');
-    assert.ok(
-      /template-card-preview-thumb/.test(html),
-      id + ' has template-card-preview-thumb class'
-    );
-    assert.ok(/<img\b/i.test(html), id + ' has <img>');
-    assert.ok(
-      new RegExp('src=\"/app/generated/thumbs/' + id + '\\.', 'i').test(html),
-      id + ' img src points at generated thumb'
-    );
-    // Not shimmer-only
-    assert.ok(
-      !/^<div class="template-card-preview"><div class="template-card-preview-shimmer"><\/div><\/div>$/.test(
-        html.replace(/\s+/g, ' ').trim()
-      ),
-      id + ' must not be shimmer-only'
-    );
+  const fn = app.slice(app.indexOf('function renderTemplatesGrid'), app.indexOf('let activeCatalogFilter'));
+  assert.ok(/template-card-preview-frame/.test(fn), 'card preview iframe');
+  assert.ok(/SB\.renderPage\(/.test(fn), 'preview is the pack rendered by the block renderer');
+  assert.ok(/shimmer\.classList\.add\('loaded'\)/.test(fn), 'shimmer clears on load or error');
+  const SB = require(path.join(ROOT, 'builder/blocks/blocks.js'));
+  for (const id of Object.keys(SB.packs())) {
+    const site = SB.defaultSite(id);
+    const html = SB.renderPage(site, site.pages[0].id, '/app/');
+    assert.ok(/class="blk"/.test(html), id + ' renders blocks');
   }
 });
 

@@ -126,7 +126,8 @@ test('landing#3: clicking the logo or "Designuri" from a scrolled position retur
     const beforeLogo = await page.evaluate(() => window.scrollY);
     assert.ok(beforeLogo > 200, 'must actually be scrolled down before the logo click (was ' + beforeLogo + ')');
     await page.locator('a.logo').click();
-    await page.waitForTimeout(600);
+    // Smooth scroll: wait for it to land (the catalog grew to 13 designs).
+    await page.waitForFunction(() => window.scrollY < 50, null, { timeout: 3000 }).catch(() => {});
     await page.screenshot({ path: path.join(SHOT_DIR, '03-after-logo-click.png') }).catch(() => {});
     const afterLogo = await page.evaluate(() => window.scrollY);
     assert.ok(afterLogo < 50, 'logo click must scroll back to the hero (scrollY was ' + afterLogo + ')');
@@ -137,7 +138,7 @@ test('landing#3: clicking the logo or "Designuri" from a scrolled position retur
     const beforeNav = await page.evaluate(() => window.scrollY);
     assert.ok(beforeNav > 200, 'must actually be scrolled down before the nav click (was ' + beforeNav + ')');
     await page.locator('.header-nav a[data-route="templates"]').click();
-    await page.waitForTimeout(600);
+    await page.waitForFunction(() => window.scrollY < 50, null, { timeout: 3000 }).catch(() => {});
     await page.screenshot({ path: path.join(SHOT_DIR, '04-after-designuri-click.png') }).catch(() => {});
     const afterNav = await page.evaluate(() => window.scrollY);
     assert.ok(afterNav < 50, '"Designuri" click must scroll back to the hero (scrollY was ' + afterNav + ')');

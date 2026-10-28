@@ -95,7 +95,7 @@ test('a genuine first publish still announces the trial', async () => {
     page.setDefaultTimeout(20000);
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await acceptCookiesIfShown(page);
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.waitForURL(/#edit$/, { timeout: 25000 });
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(600);
@@ -218,7 +218,7 @@ test('a reserved slug ("www") shows the server\'s own message, not the generic "
     page.setDefaultTimeout(20000);
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await acceptCookiesIfShown(page);
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.waitForURL(/#edit$/, { timeout: 25000 });
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(600);
@@ -259,7 +259,7 @@ test('typing a slug with spaces/diacritics/uppercase explains the normalization'
     page.setDefaultTimeout(20000);
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await acceptCookiesIfShown(page);
-    await page.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'product-menu');
     await page.waitForURL(/#edit$/, { timeout: 25000 });
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(600);
@@ -329,7 +329,7 @@ test('the auth modal opened from the dashboard does not claim the user is publis
     pageB.setDefaultTimeout(20000);
     await pageB.goto(base + '/app/', { waitUntil: 'networkidle' });
     await acceptCookiesIfShown(pageB);
-    await pageB.locator('.template-card[data-template-id="product-menu"] .btn-start-tpl').click();
+    await pageB.evaluate((id) => startWithTemplate(id), 'product-menu');
     await pageB.waitForURL(/#edit$/, { timeout: 25000 });
     await pageB.locator('#preview-iframe').waitFor({ state: 'visible' });
     await pageB.waitForTimeout(600);

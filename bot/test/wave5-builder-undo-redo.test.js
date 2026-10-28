@@ -64,7 +64,7 @@ test('undo/redo covers text edit, colour change and list add — toolbar buttons
   try {
     await page.goto(base + '/app/', { waitUntil: 'networkidle' });
     await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.locator('.template-card[data-template-id="local-service"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'local-service');
     await page.waitForURL(/#edit$/);
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(1200);

@@ -111,7 +111,7 @@ async function screenshot(page, actionJustPerformed) {
 async function acceptCookiesAndStart(page, templateId) {
   await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
   await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-  await page.locator(`.template-card[data-template-id="${templateId}"] .btn-start-tpl`).click();
+  await page.evaluate((id) => startWithTemplate(id), templateId);
   await page.waitForURL(/#edit$/, { timeout: 30000 });
   await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForTimeout(900);

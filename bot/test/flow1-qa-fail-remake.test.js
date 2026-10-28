@@ -130,17 +130,16 @@ function check(name, fn) {
     const renderSrc = extractBetween('function renderTemplatesGrid', 'let activeCatalogFilter');
     assert.ok(renderSrc.includes('Reîncearcă'), 'empty state must show Reîncearcă');
     assert.ok(renderSrc.includes('btn-retry-templates'), 'empty state must expose a retry control');
+    // The catalog is the block starter packs (builder/blocks/packs*.js); the
+    // retry reloads those scripts and redraws the grid.
     assert.ok(
-      renderSrc.includes("addEventListener('click', reloadTemplateRegistry)"),
-      'retry control must call the registry reload hook'
+      renderSrc.includes("addEventListener('click', reloadDesignPacks)"),
+      'retry control must call the pack reload hook'
     );
 
-    const reloadSrc = extractBetween('async function reloadTemplateRegistry', 'function renderTemplatesGrid');
-    assert.ok(
-      /fetch\(['"]\/app\/generated\/templates-data\.js['"]/.test(reloadSrc),
-      'reload hook must re-fetch the light registry'
-    );
-    assert.ok(reloadSrc.includes('renderTemplatesGrid()'), 'successful reload must re-render the grid');
+    const reloadSrc = extractBetween('function reloadDesignPacks', 'function startBlocksSite');
+    assert.ok(reloadSrc.includes('/app/blocks/packs.js'), 'reload hook must re-load the starter packs');
+    assert.ok(reloadSrc.includes('renderTemplatesGrid()'), 'reload must re-render the grid');
   });
 
   if (process.exitCode) {

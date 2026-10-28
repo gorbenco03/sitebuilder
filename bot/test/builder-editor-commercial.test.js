@@ -94,7 +94,8 @@ check('catalog badge markup never uses raw vertical/id as visible badge text', (
   // Must still keep ids on data-id for start handlers
   assert.ok(
     /btn-start-tpl[^>]*data-id="\$\{escHtml\(tpl\.id\)\}"/.test(js) ||
-      /data-id="\$\{escHtml\(tpl\.id\)\}"/.test(js),
+      /data-id="\$\{escHtml\(tpl\.id\)\}"/.test(js) ||
+      /btn-start-tpl[^>]*data-id="\$\{escHtml\(id\)\}"/.test(js),
     'Începe button must keep data-id=template id'
   );
   // Human badge helper or name-based badge required

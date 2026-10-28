@@ -133,6 +133,27 @@ before the server can serve `/app/` with a working catalog. Without it,
 `/app/` still returns 200 (SPA shell), but the template catalog is silently
 empty — a documented first-boot trap, not a crash.
 
+### 5a. Block editor (new sites)
+
+New sites use the block editor in `builder/blocks/` (`/app/blocks/`), not the
+form templates above. `builder/blocks/blocks.js` is the block library and
+renderer, UMD so the editor canvas (browser, `window.SB`) and publishing
+(Node, `require`) render from the same code; `packs.js` + `packs-more.js` are
+the 13 starter designs. A site is
+`{ v:2, pack, theme, header, footer, pages:[{id,name,slug,blocks}] }`, saved
+through `POST /api/draft` and `POST /api/publish` with `templateId: "blocks"`
+(not in `templates/registry.json`); the server cleans it with
+`SB.normalizeSite()` before storing or publishing. Pack photos are stored as
+`@tpl/<template>/images/<file>` and resolve to
+`/app/generated/template-assets/…` in the editor and to `assets/…` on the
+published site. `bot/site-export.js` `buildBlocksSiteTree()` writes one HTML
+file per page (first page = `index.html`), copies the used photos, writes the
+legal pages, cookie banner, robots/sitemap and `config.json`; publish
+(`bot/webpublish.js`) and the ZIP export both use it. The start screen
+(`renderTemplatesGrid` in `builder/app.js`) lists the packs; a dashboard card
+whose `templateId` is `blocks` opens `/app/blocks/?site=<id>`. Tests:
+`bot/test/blocks-site.test.js`.
+
 ## 6. Data layer — the registry
 
 `bot/registry.js` is a **thin backend switcher**, not the implementation:

@@ -47,7 +47,7 @@ test('clicking an editable label inside a link edits it instead of following the
         await page.goto(base + '/app/', { waitUntil: 'load' });
         await page.waitForSelector('#templates-grid .template-card', { timeout: 25000 });
         await page.click('#hb-cookie-accept').catch(() => {});
-        await page.click('.template-card[data-template-id="professionals"] .btn-start-tpl');
+        await page.evaluate((id) => startWithTemplate(id), 'professionals');
         await page.waitForSelector('#preview-iframe', { timeout: 25000 });
         await page.waitForTimeout(2500);
         await page.locator('#btn-close-drawer').click().catch(() => {});

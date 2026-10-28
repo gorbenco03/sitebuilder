@@ -142,7 +142,7 @@ async function main() {
         const cookieBtn = page.locator('#hb-cookie-accept');
         if (await cookieBtn.count()) await cookieBtn.click({ timeout: 3000 }).catch(() => {});
 
-        await page.locator('.template-card[data-template-id="desserdirina"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
         await page.waitForURL(/#edit$/);
         await page.locator('#details-drawer').waitFor({ state: 'visible' });
         await page.locator('#btn-close-drawer').click();
@@ -204,7 +204,7 @@ async function main() {
         const cookieBtn = page.locator('#hb-cookie-accept');
         if (await cookieBtn.count()) await cookieBtn.click({ timeout: 3000 }).catch(() => {});
 
-        await page.locator('.template-card[data-template-id="desserdirina"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
         await page.waitForURL(/#edit$/);
         await page.locator('#details-drawer').waitFor({ state: 'visible' });
         await page.locator('#btn-close-drawer').click();
@@ -271,7 +271,7 @@ async function main() {
         const cookieBtn = page.locator('#hb-cookie-accept');
         if (await cookieBtn.count()) await cookieBtn.click({ timeout: 3000 }).catch(() => {});
 
-        await page.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'portfolio');
         await page.waitForURL(/#edit$/);
         await page.locator('#details-drawer').waitFor({ state: 'visible' });
         await page.locator('#btn-close-drawer').click();
@@ -342,7 +342,7 @@ async function main() {
         const cookieBtn = page.locator('#hb-cookie-accept');
         if (await cookieBtn.count()) await cookieBtn.click({ timeout: 3000 }).catch(() => {});
 
-        await page.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'portfolio');
         await page.waitForURL(/#edit$/);
         await page.locator('#details-drawer').waitFor({ state: 'visible' });
         await page.waitForTimeout(300);

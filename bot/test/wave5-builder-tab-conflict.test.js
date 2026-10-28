@@ -61,7 +61,7 @@ test('a second tab editing the same draft warns the first tab in Romanian instea
     tab1.setDefaultTimeout(30000);
     await tab1.goto(base + '/app/', { waitUntil: 'networkidle' });
     await tab1.locator('#hb-cookie-accept').click().catch(() => {});
-    await tab1.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await tab1.evaluate((id) => startWithTemplate(id), 'professionals');
     await tab1.waitForURL(/#edit$/);
     await tab1.locator('#preview-iframe').waitFor({ state: 'visible' });
     await tab1.waitForTimeout(1200);

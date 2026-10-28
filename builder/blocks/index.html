@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editează site-ul · Hidook Site Builder</title>
+<link rel="icon" href="/app/favicon.svg">
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<header class="top">
+  <a href="/app/#dashboard" class="top__back" title="Site-urile mele">← Site-urile mele</a>
+  <span class="top__name" id="site-name"></span>
+  <button type="button" id="open-packs" class="top__pack">Design: <b id="pack-name"></b> ▾</button>
+  <div class="top__group">
+    <button type="button" id="undo" title="Anulează (Cmd+Z)">Anulează</button>
+    <button type="button" id="redo" title="Refă (Cmd+Shift+Z)">Refă</button>
+  </div>
+  <div class="top__group seg" role="group" aria-label="Vedere">
+    <button type="button" id="dev-desktop" aria-pressed="true">Calculator</button>
+    <button type="button" id="dev-mobile" aria-pressed="false">Telefon</button>
+  </div>
+  <span class="top__spacer"></span>
+  <span id="saved" class="top__saved" role="status"></span>
+  <button type="button" id="preview">Previzualizare</button>
+  <button type="button" id="publish" class="primary">Publică</button>
+</header>
+
+<div class="main">
+  <aside class="side">
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tab-page" aria-selected="true">Pagini</button>
+      <button type="button" role="tab" id="tab-add" aria-selected="false">Adaugă</button>
+      <button type="button" role="tab" id="tab-theme" aria-selected="false">Temă</button>
+    </div>
+    <div id="panel-page" class="panel">
+      <h3>Paginile site-ului</h3>
+      <ul id="page-list" class="plist"></ul>
+      <button type="button" id="add-page" class="add add--sm">+ Pagină nouă</button>
+      <h3>Blocuri pe pagina <span id="cur-page-name"></span></h3>
+      <ol id="block-list" class="blist"></ol>
+      <button type="button" id="add-block" class="add">+ Adaugă un bloc</button>
+    </div>
+    <div id="panel-add" class="panel" hidden>
+      <p class="hint">Trage un bloc pe pagină, acolo unde îl vrei. Sau dă click ca să-l pui la sfârșit.</p>
+      <div id="add-list"></div>
+    </div>
+    <div id="panel-theme" class="panel" hidden>
+      <h3>Culori</h3>
+      <div id="palettes" class="swatches"></div>
+      <h3>Fonturi</h3>
+      <div id="fonts" class="choices"></div>
+      <h3>Colțuri</h3>
+      <label class="range"><input type="range" id="radius" min="0" max="24" step="2"><span id="radius-val"></span></label>
+    </div>
+  </aside>
+
+  <section class="stage">
+    <div id="frame-wrap" class="frame-wrap">
+      <iframe id="canvas" title="Pagina în lucru"></iframe>
+    </div>
+  </section>
+
+  <aside id="inspector" class="insp" hidden>
+    <div class="insp__head">
+      <h2 id="insp-title"></h2>
+      <button type="button" id="insp-close" aria-label="Închide">×</button>
+    </div>
+    <div id="insp-body"></div>
+  </aside>
+</div>
+
+<div id="library" class="lib" hidden>
+  <div class="lib__box" role="dialog" aria-modal="true" aria-labelledby="lib-title">
+    <div class="lib__head">
+      <h2 id="lib-title">Adaugă un bloc</h2>
+      <button type="button" id="lib-close" aria-label="Închide">×</button>
+    </div>
+    <div class="lib__body">
+      <nav id="lib-cats" class="lib__cats"></nav>
+      <div id="lib-grid" class="lib__grid"></div>
+    </div>
+  </div>
+</div>
+
+<div id="picker" class="lib" hidden>
+  <div class="lib__box lib__box--sm" role="dialog" aria-modal="true" aria-labelledby="picker-title">
+    <div class="lib__head">
+      <h2 id="picker-title">Alege o poză</h2>
+      <div class="lib__head-actions">
+        <button type="button" id="picker-upload" class="upload">Încarcă de pe calculator</button>
+        <button type="button" id="picker-close" aria-label="Închide">×</button>
+      </div>
+    </div>
+    <div id="picker-grid" class="picker-grid"></div>
+  </div>
+</div>
+
+<div id="packs" class="lib" hidden>
+  <div class="lib__box" role="dialog" aria-modal="true" aria-labelledby="packs-title">
+    <div class="lib__head">
+      <h2 id="packs-title">Alege un design sau pornește de la zero</h2>
+      <button type="button" id="packs-close" aria-label="Închide">×</button>
+    </div>
+    <p class="hint packs-hint">Primești un site complet, cu pagini, texte și poze pentru domeniul tău. Site-ul de acum se înlocuiește.</p>
+    <div id="packs-grid" class="lib__grid"></div>
+  </div>
+</div>
+
+<div id="pv" class="pv" hidden>
+  <div class="pv__bar">
+    <button type="button" id="pv-back" class="pv__back">← Înapoi la editare</button>
+    <nav id="pv-pages" class="pv__pages" aria-label="Pagini"></nav>
+    <span class="top__spacer"></span>
+    <div class="top__group seg" role="group" aria-label="Vedere">
+      <button type="button" id="pv-desktop" aria-pressed="true">Calculator</button>
+      <button type="button" id="pv-mobile" aria-pressed="false">Telefon</button>
+    </div>
+    <button type="button" id="pv-tab">Deschide în tab nou</button>
+  </div>
+  <div class="pv__stage"><iframe id="pv-frame" title="Previzualizarea site-ului"></iframe></div>
+</div>
+
+<div id="pub" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="pub-title">
+    <div class="lib__head">
+      <h2 id="pub-title">Publică site-ul</h2>
+      <button type="button" id="pub-close" aria-label="Închide">×</button>
+    </div>
+    <div class="pub__body">
+      <form id="pub-auth" hidden>
+        <p>Intră în cont cu emailul tău. Îți trimitem un link, fără parolă. Site-ul rămâne salvat în cont.</p>
+        <label class="pub__fld">Email<input type="email" id="pub-email" autocomplete="email" required></label>
+        <button type="submit" class="primary">Trimite linkul</button>
+      </form>
+      <div id="pub-sent" hidden>
+        <p>Am trimis linkul la <b id="pub-sent-to"></b>. Deschide-l din email; pagina aceasta continuă singură după ce intri în cont.</p>
+        <p><a id="pub-devlink" href="#" target="_blank" rel="noopener" hidden>Deschide linkul de autentificare (mod de test)</a></p>
+      </div>
+      <div id="pub-slug" hidden>
+        <label class="pub__fld">Adresa site-ului<span class="pub__slug"><input id="pub-slug-input" autocomplete="off" spellcheck="false" maxlength="40"></span></label>
+        <p id="pub-slug-note" class="hint"></p>
+        <p class="hint" id="pub-trial">Primele 14 zile sunt gratuite. Adaugi un card, site-ul e live imediat, iar plata se face în ziua 14 dacă nu anulezi.</p>
+        <div id="pub-check" class="pub__check" hidden>
+          <b>Înainte să publici</b>
+          <ul id="pub-check-list"></ul>
+          <p class="hint">Poți publica și așa, apoi le schimbi oricând și republici.</p>
+        </div>
+        <button type="button" id="pub-go" class="primary">Publică site-ul</button>
+      </div>
+      <div id="pub-done" hidden>
+        <p>Gata, site-ul e actualizat.</p>
+        <p><a id="pub-done-link" href="#" target="_blank" rel="noopener"></a></p>
+        <p><a href="/app/#dashboard">Mergi la site-urile mele</a></p>
+      </div>
+      <p id="pub-error" class="pub__error" role="alert" hidden></p>
+    </div>
+  </div>
+</div>
+
+<div id="ig" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="ig-title">
+    <div class="lib__head">
+      <h2 id="ig-title">Instagram pe site</h2>
+      <button type="button" id="ig-close" aria-label="Închide">×</button>
+    </div>
+    <div class="pub__body">
+      <p class="hint">Feed-ul Instagram e oferit de Instafidget, un produs partener: inclus gratuit 12 luni, apoi Instafidget Free (cu filigran). Hidook Site Builder nu vorbește direct cu Meta.</p>
+      <form id="ig-auth" hidden>
+        <p>Intră în cont cu emailul tău ca să conectezi Instagram. E același cont cu care publici, fără parolă.</p>
+        <label class="pub__fld">Email<input type="email" id="ig-email" autocomplete="email" required></label>
+        <button type="submit" class="primary">Trimite linkul</button>
+      </form>
+      <div id="ig-sent" hidden>
+        <p>Am trimis linkul. Deschide-l din email; pagina aceasta continuă singură după ce intri în cont.</p>
+        <p><a id="ig-devlink" href="#" target="_blank" rel="noopener" hidden>Deschide linkul de autentificare (mod de test)</a></p>
+      </div>
+      <div id="ig-connect" hidden>
+        <label class="pub__terms"><input type="checkbox" id="ig-terms"> <span>Sunt de acord cu <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a> și <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Politica de confidențialitate</a> Instafidget. Se creează un cont pe același email.</span></label>
+        <button type="button" id="ig-go" class="primary" disabled>Conectează Instagram</button>
+      </div>
+      <div id="ig-on" hidden>
+        <p><b>Instagram e conectat.</b> Pe site apar postările tale, după publicare.</p>
+        <button type="button" id="ig-editor" class="primary">Deschide editorul Instafidget</button>
+        <button type="button" id="ig-off" class="link-danger">Deconectează Instagram</button>
+      </div>
+      <p id="ig-status" class="ig__status" role="status" hidden></p>
+    </div>
+  </div>
+</div>
+
+<div id="who" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="who-title">
+    <div class="lib__head">
+      <h2 id="who-title">Să-l facem al tău</h2>
+    </div>
+    <form id="who-form" class="pub__body">
+      <p class="hint">Punem numele, telefonul și orașul tău peste tot unde designul are date de exemplu. Toate sunt opționale.</p>
+      <label class="pub__fld">Numele afacerii<input id="who-name" autocomplete="organization" maxlength="80"></label>
+      <label class="pub__fld">Telefon<input id="who-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="07xx xxx xxx"></label>
+      <label class="pub__fld">Orașul<input id="who-town" autocomplete="address-level2" maxlength="60"></label>
+      <p id="who-error" class="pub__error" role="alert" hidden></p>
+      <div class="pub__row"><button type="submit" class="primary">Gata</button><button type="button" id="who-skip" class="link">Sari peste</button></div>
+    </form>
+  </div>
+</div>
+
+<input type="file" id="file" accept="image/*" hidden>
+<script src="packs.js"></script>
+<script src="packs-more.js"></script>
+<script src="blocks.js"></script>
+<script src="editor.js"></script>
+</body>
+</html>

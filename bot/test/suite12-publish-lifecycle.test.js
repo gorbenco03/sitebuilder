@@ -492,7 +492,7 @@ test('defect #1: the recovery banner never calls a paid/live site "site netermin
     async function acceptCookiesAndStart(page, templateId) {
         await page.goto(base + '/app/', { waitUntil: 'networkidle' });
         await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.locator(`.template-card[data-template-id="${templateId}"] .btn-start-tpl`).click();
+        await page.evaluate((id) => startWithTemplate(id), templateId);
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);
@@ -726,7 +726,7 @@ test('defect #3: deleting a site retires its local draft — no ghost unpaid sit
 
         await page.goto(base + '/app/', { waitUntil: 'networkidle' });
         await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.locator('.template-card[data-template-id="portfolio"] .btn-start-tpl').click();
+        await page.evaluate((id) => startWithTemplate(id), 'portfolio');
         await page.waitForURL(/#edit$/);
         await page.locator('#preview-iframe').waitFor({ state: 'visible' });
         await page.waitForTimeout(1000);

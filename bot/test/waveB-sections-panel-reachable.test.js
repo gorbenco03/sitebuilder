@@ -81,7 +81,7 @@ test('the page-sections panel is reachable and populated on every template', asy
             page.setDefaultTimeout(25000);
             await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
             await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-            await page.locator(`.template-card[data-template-id="${tpl}"] .btn-start-tpl`).click();
+            await page.evaluate((id) => startWithTemplate(id), tpl);
             await page.waitForURL(/#edit$/);
             await page.locator('#preview-iframe').waitFor({ state: 'visible' });
             await page.waitForTimeout(1200);

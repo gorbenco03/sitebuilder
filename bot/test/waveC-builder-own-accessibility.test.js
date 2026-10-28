@@ -159,7 +159,7 @@ function auditFn(AA_TARGET) {
 
 async function openEditor(page) {
     await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-    await page.locator('.template-card[data-template-id="professionals"] .btn-start-tpl').click();
+    await page.evaluate((id) => startWithTemplate(id), 'professionals');
     await page.waitForURL(/#edit$/);
     await page.locator('#preview-iframe').waitFor({ state: 'visible' });
     await page.waitForTimeout(2200);
@@ -173,8 +173,7 @@ const SCREENS = [
     // it. The gallery and the design-preview modal are the two that could.
     ['design preview modal', async (page) => {
         await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-        await page.locator('.template-card[data-template-id="professionals"] .btn-preview-tpl')
-            .click({ timeout: 8000 }).catch(() => {});
+        await page.evaluate(() => openPreviewModal('professionals')).catch(() => {});
         await page.waitForTimeout(1800);
     }],
     ['photo gallery modal', async (page) => {

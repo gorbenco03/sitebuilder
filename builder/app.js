@@ -9775,8 +9775,9 @@ function renderTemplatesGrid() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  const registry = getTemplateList();
-  if (!registry || registry.length === 0) {
+  // New sites are block sites (builder/blocks/); a starter pack is the "design".
+  const packs = window.SB_PACKS || {};
+  if (!window.SB || !Object.keys(packs).length) {
     grid.innerHTML = stateBlockHTML({
       icon: 'alert',
       isError: true,
@@ -9785,59 +9786,61 @@ function renderTemplatesGrid() {
       actionHtml: '<button type="button" class="btn-ghost" id="btn-retry-templates">Reîncearcă</button>',
       style: 'grid-column:1/-1',
     });
-    $('btn-retry-templates').addEventListener('click', reloadTemplateRegistry);
+    $('btn-retry-templates').addEventListener('click', reloadDesignPacks);
     return;
   }
+  const order = ['gol'].concat(Object.keys(packs).filter((id) => id !== 'gol'));
+  window.SB.setAssetBase('/app/generated/template-assets/');
 
-  registry.forEach(tpl => {
+  order.forEach((id) => {
+    const pack = packs[id];
+    if (!pack) return;
     const card = document.createElement('div');
     card.className = 'template-card';
     card.setAttribute('role', 'listitem');
-    card.dataset.templateId = tpl.id;
-    card.dataset.vertical = tpl.vertical || tpl.id;
+    card.dataset.templateId = id;
+    card.dataset.vertical = PACK_FILTER[id] || 'all';
 
     const previewWrap = document.createElement('div');
     previewWrap.className = 'template-card-preview';
-
     const shimmer = document.createElement('div');
     shimmer.className = 'template-card-preview-shimmer';
     previewWrap.appendChild(shimmer);
+    let previewLoaded = false;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries[0].isIntersecting || previewLoaded) return;
+      previewLoaded = true;
+      observer.disconnect();
+      try {
+        const site = window.SB.defaultSite(id);
+        const iframe = document.createElement('iframe');
+        iframe.className = 'template-card-preview-frame';
+        iframe.title = 'Previzualizare ' + pack.label;
+        iframe.setAttribute('sandbox', '');
+        iframe.setAttribute('aria-hidden', 'true');
+        iframe.tabIndex = -1;
+        iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
+        iframe.srcdoc = window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/');
+        previewWrap.appendChild(iframe);
+      } catch (_) {
+        shimmer.classList.add('loaded');
+      }
+    }, { rootMargin: '400px' });
+    observer.observe(previewWrap);
 
-    // Light-registry photo thumbs must paint on every card immediately.
-    // IntersectionObserver + small rootMargin left row-2 (professionals /
-    // desserdirina) as beige shimmer-only with no <img> until the stranger scrolls.
-    if (tpl.thumbnail) {
-      loadCardPreview(tpl.id, previewWrap, shimmer);
-    } else {
-      let previewLoaded = false;
-      const observer = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !previewLoaded) {
-          previewLoaded = true;
-          observer.disconnect();
-          loadCardPreview(tpl.id, previewWrap, shimmer);
-        }
-      }, { rootMargin: '400px' });
-      observer.observe(previewWrap);
-    }
-
+    const pages = pack.blank ? 'O pagină, o completezi tu' : pack.pages.length + ' pagini gata scrise';
     const body = document.createElement('div');
     body.className = 'template-card-body';
-    const badge = designBadgeLabel(tpl);
     body.innerHTML = `
-      <span class="template-card-badge">${escHtml(badge)}</span>
-      <div class="template-card-title">${escHtml(tpl.name)}</div>
-      <div class="template-card-desc">${escHtml(tpl.description || '')}</div>
+      <span class="template-card-badge">${escHtml(pages)}</span>
+      <div class="template-card-title">${escHtml(pack.label)}</div>
+      <div class="template-card-desc">${escHtml(pack.desc || '')}</div>
       <div class="template-card-actions">
-        <button class="btn-primary btn-start-tpl" data-id="${escHtml(tpl.id)}" aria-label="Începe cu designul ${escHtml(tpl.name)}">Începe</button>
-        <button class="btn-ghost btn-preview-tpl" data-id="${escHtml(tpl.id)}" aria-label="Previzualizează ${escHtml(tpl.name)}">
-          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><ellipse cx="8" cy="8" rx="7" ry="5" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.5"/></svg>
-          Previzualizare
-        </button>
+        <button class="btn-primary btn-start-tpl" data-id="${escHtml(id)}" aria-label="Începe cu designul ${escHtml(pack.label)}">Începe</button>
       </div>`;
-
-    body.querySelector('.btn-start-tpl').addEventListener('click', (e) => { e.stopPropagation(); startWithTemplate(tpl.id); });
-    body.querySelector('.btn-preview-tpl').addEventListener('click', (e) => { e.stopPropagation(); openPreviewModal(tpl.id); });
-    card.addEventListener('click', () => startWithTemplate(tpl.id));
+    const start = (e) => { if (e) e.stopPropagation(); startBlocksSite(id); };
+    body.querySelector('.btn-start-tpl').addEventListener('click', start);
+    card.addEventListener('click', start);
 
     card.appendChild(previewWrap);
     card.appendChild(body);
@@ -9845,7 +9848,51 @@ function renderTemplatesGrid() {
   });
 
   applyCatalogFilter(activeCatalogFilter);
-  populateHeroStage(registry);
+  const registry = getTemplateList();
+  if (registry && registry.length) populateHeroStage(registry);
+}
+
+/** Catalog chip each starter pack sits under; "De la zero" shows under every chip. */
+const PACK_FILTER = {
+  restaurant: 'product-menu', cafenea: 'product-menu', catering: 'product-menu',
+  salon: 'portfolio', mireasa: 'portfolio', cosmetica: 'portfolio',
+  meserii: 'local-service', renovari: 'local-service',
+  profesionisti: 'professionals', consultanta: 'professionals', contabilitate: 'professionals',
+  cofetarie: 'desserdirina',
+};
+
+/** Retry for the empty state: load the pack scripts again, then redraw. */
+function reloadDesignPacks() {
+  const files = ['/app/blocks/packs.js', '/app/blocks/packs-more.js', '/app/blocks/blocks.js'];
+  const next = (i) => {
+    if (i >= files.length) { renderTemplatesGrid(); return; }
+    const el = document.createElement('script');
+    el.src = files[i] + '?r=' + Date.now();
+    el.onload = () => next(i + 1);
+    el.onerror = () => renderTemplatesGrid();
+    document.head.appendChild(el);
+  };
+  next(0);
+}
+
+/**
+ * A block-editor draft that left for the sign-in link or for checkout:
+ * returns the editor URL to go back to (and clears the flag), or null.
+ */
+function blocksResumeUrl(reason) {
+  try {
+    const d = JSON.parse(localStorage.getItem('hb.blocks.draft.v1') || 'null');
+    if (!d || d.resume !== reason) return null;
+    if (reason === 'checkout') { d.resume = null; localStorage.setItem('hb.blocks.draft.v1', JSON.stringify(d)); }
+    return '/app/blocks/' + (d.siteId ? '?site=' + encodeURIComponent(d.siteId) : '');
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Open the block editor on a fresh copy of a starter pack. */
+function startBlocksSite(packId) {
+  window.location.href = '/app/blocks/?pack=' + encodeURIComponent(packId);
 }
 
 let activeCatalogFilter = 'all';
@@ -9861,6 +9908,7 @@ function applyCatalogFilter(filter) {
     const vert = card.dataset.vertical || card.dataset.templateId || '';
     const id = card.dataset.templateId || '';
     const show = activeCatalogFilter === 'all'
+      || vert === 'all'
       || vert === activeCatalogFilter
       || id === activeCatalogFilter;
     card.hidden = !show;
@@ -10333,6 +10381,18 @@ function buildSiteCard(site) {
     img.decoding = 'async';
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
     thumbWrap.appendChild(img);
+  } else if (site.templateId === 'blocks' && window.SB) {
+    apiGet('/api/sites/' + encodeURIComponent(site.id)).then((data) => {
+      const cfg = data && data.config;
+      if (!cfg || cfg.v !== 2) return;
+      window.SB.setAssetBase('/app/generated/template-assets/');
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', '');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.title = 'Previzualizare ' + (site.projectName || site.slug || 'site');
+      iframe.srcdoc = window.SB.renderPage(cfg, cfg.pages[0].id, location.origin + '/app/');
+      thumbWrap.appendChild(iframe);
+    }).catch(() => {});
   } else if (site.templateId) {
     ensureTemplateLoaded(site.templateId).then((tplData) => {
       if (!tplData || typeof window.HidookEngine === 'undefined') return;
@@ -11063,6 +11123,10 @@ async function loadSiteForEdit(siteId, focusFieldKey) {
     const site = data.site;
     const config = data.config;
     if (!site || !config) throw new Error('Date incomplete de la server.');
+    if (site.templateId === 'blocks') {
+      window.location.href = '/app/blocks/?site=' + encodeURIComponent(site.id);
+      return;
+    }
 
     // H-03: the server's latest config replaces the local site:<id> scope
     // BEFORE the first saveDraft below, unless that scope is provably newer.
@@ -11955,8 +12019,10 @@ async function handleRoute(hash) {
     updateChecklist();
     scheduleRerender(true);
   } else if (route === 'dashboard') {
-    showScreen('dashboard');
     const user = await fetchCurrentUser().catch(() => null);
+    const blocksBack = user && blocksResumeUrl('auth');
+    if (blocksBack) { window.location.href = blocksBack; return; }
+    showScreen('dashboard');
     updateUserUI(user);
     if (user) loadDashboard();
     else {
@@ -11972,6 +12038,7 @@ async function handleRoute(hash) {
       }
     }
   } else if (route === 'paid') {
+    blocksResumeUrl('checkout');
     showToast(RO.PAYMENT_PROCESSED_SITE_SOON, 'success', 6000);
     window.location.hash = '#dashboard';
   } else if (route === 'reactivated') {
@@ -11979,6 +12046,8 @@ async function handleRoute(hash) {
     window.location.hash = '#dashboard';
   } else if (route === 'cancelled') {
     showToast(RO.PAYMENT_CANCELLED, '', 4000);
+    const blocksBack = blocksResumeUrl('checkout');
+    if (blocksBack) { window.location.href = blocksBack; return; }
     window.location.hash = '#edit';
   } else if (route === 'login-expired') {
     showToast(RO.LOGIN_LINK_EXPIRED, 'error', 5000);
