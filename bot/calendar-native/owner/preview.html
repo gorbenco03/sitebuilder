@@ -55,6 +55,10 @@
           var qBrand = (params.get('brand') || '').trim();
           if (qBrand) root.setAttribute('data-brand', qBrand);
           else root.removeAttribute('data-brand');
+          // Block-editor site: services and weekly hours are edited in the editor.
+          if (params.get('blocks') === '1') {
+            root.setAttribute('data-editor-url', '/app/blocks/?site=' + encodeURIComponent(qSiteId));
+          }
           root.hidden = false;
         }
         if (boot) boot.remove();

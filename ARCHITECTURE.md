@@ -284,6 +284,18 @@ the product offers. A site published before the removal that still carries
 template no longer reads that key, so republishing it just drops the link
 and keeps the local form; the value itself is left as an inert, unused key.
 
+**Block-editor sites** turn it on differently: a `booking` block in the site
+(`builder/blocks/blocks.js`, data `{ services: [{name, min}], week: [7 × {on, from, to}], phone }`)
+is the opt-in and the source of truth for services and weekly hours. At
+publish `bot/webpublish.js#blocksBookingPlan` hands
+`{ customerId, siteId, apiBase, brand, blockId }` to `SB.renderPage`, which
+mounts the widget in the first booking block only; after image moderation
+`syncBlocksBooking` calls `cutover.syncTenantFromBookingBlock` in one
+transaction (services keyed `bk_<name-slug>`, others deactivated; default
+resource's weekly hours replaced; settings written once). `buildBlocksSiteTree` without that object — the ZIP export —
+renders a static list instead. The owner dashboard opened with `?blocks=1`
+hides the Servicii tab and shows the default weekly hours read-only.
+
 Storage is a **second, separate SQLite database**: `bot/calendar-native/db.js`
 opens `DATA_DIR/calendar-native.sqlite` (same `node:sqlite` + WAL pattern as
 the registry, tables defined in `bot/calendar-native/schema.js`:
@@ -298,7 +310,7 @@ the registry, tables defined in `bot/calendar-native/schema.js`:
 | `owner-api.js` | Authenticated owner dashboard API: list/search bookings, weekly + blackout availability editor, cancel/confirm/reschedule |
 | `manage-api.js` | Visitor manage-link API: cancel or reschedule via a single-booking, unguessable token (never a login) |
 | `email/` | Provider boundary + `outbox.js` (queued/sent/failed/suppressed/dead_letter with retry backoff) + `policy.js` + `templates-ro.js` (Romanian, honest-on-state) + `secrets.js` (scrub before persisting/logging). Local/test transport only — no production sender wired in this repo. |
-| `cutover.js` | `preparePublishCutover` — seeds services/weekly availability and injects tenant ids into a site's config at publish time, only when the opt-in flag is set |
+| `cutover.js` | `preparePublishCutover` — seeds services/weekly availability and injects tenant ids into a site's config at publish time, only when the opt-in flag is set; `syncTenantFromBookingBlock` — the same for block-editor sites, from the booking block, on every publish |
 | `retention.js` | PII retention job (VISION §8: active + 24 months after cancellation, then delete/anonymize) |
 | `widget/`, `owner/`, `manage/` | Static public booking widget, owner dashboard UI, and visitor manage-link UI (HTML/CSS/JS, no build step) |
 

@@ -296,6 +296,93 @@ function seedTenantFromProfessionalConfig(db, customerId, siteId, config) {
 }
 
 /**
+ * Block-editor sites: the "Programări online" block is the one place the owner
+ * sets services and weekly hours, so every publish makes the calendar match it.
+ * Services get stable ids from their names; a service removed from the block is
+ * deactivated, never deleted, so existing bookings keep their history. Only the
+ * default resource's hours are replaced; staff added in the calendar dashboard
+ * keep their own. Settings are written once, then belong to the dashboard.
+ *
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} customerId
+ * @param {string} siteId
+ * @param {{ services: {name:string,min:number}[], week: {on:boolean,from:string,to:string}[] }} plan
+ *   from builder/blocks/blocks.js bookingServices() / bookingWeek()
+ * @returns {{ services: number, weeklyWindows: number }}
+ */
+function syncTenantFromBookingBlock(db, customerId, siteId, plan) {
+    if (!TENANT_RE.test(customerId) || !TENANT_RE.test(siteId)) {
+        const err = new Error('invalid tenant for booking block');
+        err.code = 'CUTOVER_TENANT';
+        throw err;
+    }
+    const services = (plan && Array.isArray(plan.services) ? plan.services : []).slice(0, 20);
+    const week = plan && Array.isArray(plan.week) ? plan.week : [];
+    // All or nothing: a half-applied sync would leave visitors booking against a mix.
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const out = applyBookingBlock(db, customerId, siteId, services, week);
+        db.exec('COMMIT;');
+        return out;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+function applyBookingBlock(db, customerId, siteId, services, week) {
+    const fresh = !engine.getSettings(db, customerId, siteId);
+    // Half-hour starts read best; only a service shorter than that needs a finer grid.
+    const shortService = services.some((s) => s.min < 30);
+    engine.ensureSettings(db, customerId, siteId, fresh ? {
+        timezone: 'Europe/Bucharest',
+        default_buffer_minutes: 0,
+        slot_interval_minutes: shortService ? 15 : 30,
+        min_cancel_hours: 24,
+    } : {});
+
+    const keep = new Set();
+    services.forEach((s, idx) => {
+        const base = 'bk_' + (String(s.name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'serviciu');
+        let id = base;
+        for (let n = 2; keep.has(id); n++) id = base + '-' + n;
+        keep.add(id);
+        const existing = engine.getService(db, customerId, siteId, id);
+        engine.upsertService(db, customerId, siteId, {
+            id,
+            name: String(s.name).slice(0, 120),
+            duration_minutes: Math.min(480, Math.max(15, parseInt(s.min, 10) || 30)),
+            buffer_minutes: existing && existing.buffer_minutes != null ? existing.buffer_minutes : 0,
+            sort_order: idx,
+            active: true,
+        });
+    });
+    engine.listServices(db, customerId, siteId, { activeOnly: false }).forEach((row) => {
+        if (keep.has(row.id) || !row.active) return;
+        engine.upsertService(db, customerId, siteId, {
+            id: row.id,
+            name: row.name,
+            duration_minutes: row.duration_minutes,
+            buffer_minutes: row.buffer_minutes,
+            sort_order: row.sort_order,
+            active: 0,
+        });
+    });
+
+    const windows = [];
+    week.slice(0, 7).forEach((d, i) => {
+        if (!d || !d.on) return;
+        const start_minute = parseHmToMinute(d.from);
+        const end_minute = parseHmToMinute(d.to);
+        if (start_minute == null || end_minute == null || end_minute <= start_minute) return;
+        windows.push({ weekday: i + 1, start_minute, end_minute });
+    });
+    engine.setWeeklyAvailability(db, customerId, siteId, windows);
+    return { services: keep.size, weeklyWindows: windows.length };
+}
+
+/**
  * Force native booking off in a config about to be rendered into an OFFLINE
  * export (ZIP / standalone HTML). Publish already wrote
  * appointment.nativeApiBase to the bot's own origin (applyCutoverToConfig,
@@ -356,6 +443,7 @@ module.exports = {
     applyCutoverToConfig,
     disableNativeBookingForExport,
     seedTenantFromProfessionalConfig,
+    syncTenantFromBookingBlock,
     preparePublishCutover,
     parseHmToMinute,
 };

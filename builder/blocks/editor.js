@@ -845,6 +845,8 @@ function renderInspector() {
     const on = !!window.SB.feedUrl(site);
     html += `<div class="grp"><h3>Conectare</h3><p class="note">${on ? 'Instagram e conectat prin Instafidget. Pe site apar postările tale.' : 'Neconectat: blocul nu apare pe site până nu conectezi contul. Instafidget e inclus gratuit 12 luni.'}</p><button type="button" class="wide" data-ig="open">${on ? 'Gestionează Instagram' : 'Conectează Instagram'}</button></div>`;
   }
+  if (b.type === 'booking' && window.SB.bookingBlocks(site)[0].id !== b.id) html += `<p class="note">Site-ul are deja un bloc Programări online. Calendarul apare doar în primul; acesta arată pe site doar lista de servicii și telefonul.</p>`;
+  if (b.type === 'booking') html += `<p class="note">Clienții aleg un serviciu și o oră liberă din zilele de mai jos. Calendarul pornește pe site când publici. Fiecare programare îți vine pe email și o vezi în Site-urile mele → Programări, unde poți pune și zile libere.</p>`;
   if (b.type === 'form') html += `<p class="note">Mesajele ajung în „Mesaje”, pe cardul site-ului din Site-urile mele. Dacă scrii adresa de e-mail de mai jos, vizitatorul o poate folosi când trimiterea nu merge.</p>`;
   if (variants.length > 1) html += `<div class="grp"><h3>Aspect</h3><div class="pills">${variants.map(([k, l]) => `<button type="button" data-variant="${k}" aria-pressed="${k === b.variant}">${esc(l)}</button>`).join('')}</div></div>`;
   html += `<div class="grp"><h3>Fundal</h3><div class="pills">${[['auto', 'Ca tema'], ['light', 'Deschis'], ['dark', 'Închis'], ['accent', 'Accent']].map(([k, l]) => `<button type="button" data-bg="${k}" aria-pressed="${k === b.bg}">${l}</button>`).join('')}</div></div>`;
@@ -869,12 +871,50 @@ function fieldHtml(b, f, path) {
     if (f.type === 'text') return `<label class="fld">${esc(f.label)}<input data-path="${path}" value="${esc(v)}"></label>`;
     return `<label class="fld">${esc(f.label)}<textarea data-path="${path}">${esc(v)}</textarea></label>`;
   }
+  if (f.type === 'select') {
+    const opts = f.options.some(([k]) => k === String(v)) ? f.options : [[String(v), String(v)], ...f.options];
+    return `<label class="fld">${esc(f.label)}<select data-path="${path}">${opts.map(([k, l]) => `<option value="${esc(k)}"${k === String(v) ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
+  }
+  if (f.type === 'week') return weekFieldHtml(b, f, path);
   if (f.type === 'image') return `<div class="fld">${esc(f.label)}<div class="imgfld"><img src="${esc(asset(v))}" alt=""><button type="button" data-imgpath="${path}">Schimbă poza</button></div></div>`;
   if (f.type === 'list') {
     const items = v.map((it, i) => `<div class="list-item"><div class="list-item__head"><span>${i + 1}</span><span><button type="button" data-listmove="${path}" data-i="${i}" data-dir="-1" title="Mută sus">↑</button><button type="button" data-listmove="${path}" data-i="${i}" data-dir="1" title="Mută jos">↓</button><button type="button" data-listdel="${path}" data-i="${i}" title="Șterge">×</button></span></div>${f.item.map((sf) => fieldHtml(b, sf, `${path}.${i}.${sf.key}`)).join('')}</div>`).join('');
     return `<div class="fld">${esc(f.label)}<div style="display:flex;flex-direction:column;gap:8px">${items}${f.max && v.length >= f.max ? '' : `<button type="button" class="list-add" data-listadd="${path}">+ Adaugă</button>`}</div></div>`;
   }
   return '';
+}
+
+const DAY_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
+const HALF_HOURS = Array.from({ length: 36 }, (_, i) => `${String(6 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`);
+
+/** Seven { on, from, to } days on the block itself, so the selects always have a day to write to. */
+function blockWeek(b, path) {
+  let w = getPath(b.data, path);
+  if (!Array.isArray(w)) { w = []; setPath(b.data, path, w); }
+  for (let i = 0; i < 7; i++) {
+    const x = w[i] && typeof w[i] === 'object' ? w[i] : (w[i] = {});
+    if (typeof x.on !== 'boolean') x.on = false;
+    if (!/^\d\d:\d\d$/.test(x.from || '')) x.from = '09:00';
+    if (!/^\d\d:\d\d$/.test(x.to || '')) x.to = '17:00';
+  }
+  w.length = 7;
+  return w;
+}
+
+function weekFieldHtml(b, f, path) {
+  const w = blockWeek(b, path);
+  const opts = (cur) => (HALF_HOURS.includes(cur) ? HALF_HOURS : [...HALF_HOURS, cur].sort()).map((h) => `<option${h === cur ? ' selected' : ''}>${h}</option>`).join('');
+  const rows = w.map((d, i) => {
+    const bad = d.on && d.to <= d.from;
+    return `<div class="weekfld__row${d.on ? '' : ' is-off'}"><label class="check"><input type="checkbox" data-weekon="${path}" data-i="${i}"${d.on ? ' checked' : ''}> ${DAY_NAMES[i]}</label>`
+      + `<span class="weekfld__time"><select data-path="${path}.${i}.from" aria-label="${DAY_NAMES[i]}, de la"${d.on ? '' : ' disabled'}>${opts(d.from)}</select><span aria-hidden="true">–</span>`
+      + `<select data-path="${path}.${i}.to" aria-label="${DAY_NAMES[i]}, până la"${d.on ? '' : ' disabled'}>${opts(d.to)}</select></span></div>`
+      + (bad ? '<small class="weekfld__bad">Ora de final trebuie să fie după cea de început. Ziua nu primește programări așa.</small>' : '');
+  }).join('');
+  const none = !w.some((d) => d.on);
+  return `<div class="fld">${esc(f.label)}<div class="weekfld">${rows}</div>`
+    + (none ? '<small class="weekfld__bad">Bifează cel puțin o zi, altfel nu se poate programa nimeni.</small>' : `<button type="button" class="list-add" data-weekcopy="${path}">Aceleași ore în toate zilele bifate</button>`)
+    + '</div>';
 }
 
 function fieldDef(b, path) {
@@ -912,6 +952,18 @@ $('insp-body').addEventListener('change', (e) => {
   const b = findBlock(selId);
   if (!b) return;
   if (e.target.matches('[data-hidem]')) { b.hideMobile = e.target.checked; commit(); rerenderBlock(b.id); return; }
+  if (e.target.matches('[data-weekon]')) {
+    blockWeek(b, e.target.dataset.weekon)[Number(e.target.dataset.i)].on = e.target.checked;
+    commit(); renderInspector(); rerenderBlock(b.id); return;
+  }
+  if (e.target.matches('select[data-path]')) {
+    // A choice from a list is final: save now, and redraw the panel when it can show a warning.
+    clearTimeout(textTimer);
+    commit();
+    if (/\.(from|to)$/.test(e.target.dataset.path)) renderInspector();
+    rerenderBlock(b.id);
+    return;
+  }
   if (e.target.matches('[data-vis]')) {
     const k = e.target.dataset.vis;
     b.el = b.el || {};
@@ -932,6 +984,12 @@ $('insp-body').addEventListener('click', (e) => {
   if (t.dataset.pad) { b.pad = t.dataset.pad; commit(); renderInspector(); rerenderBlock(b.id); return; }
   if (t.dataset.align) { b.align = t.dataset.align; commit(); renderInspector(); rerenderBlock(b.id); return; }
   if (t.dataset.act) { blockAction(b.id, t.dataset.act); return; }
+  if (t.dataset.weekcopy) {
+    const w = blockWeek(b, t.dataset.weekcopy);
+    const first = w.find((d) => d.on);
+    if (first) w.forEach((d) => { if (d.on) { d.from = first.from; d.to = first.to; } });
+    commit(); renderInspector(); rerenderBlock(b.id); return;
+  }
   if (t.dataset.imgpath) { openPicker({ id: b.id, path: t.dataset.imgpath }); return; }
   if (t.dataset.listadd) {
     const f = fieldDef(b, t.dataset.listadd);

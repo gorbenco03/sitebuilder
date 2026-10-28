@@ -1387,6 +1387,47 @@ function emptyDirInside(root, dir) {
     for (const entry of fs.readdirSync(d)) fs.rmSync(path.join(d, entry), { recursive: true, force: true });
 }
 
+/**
+ * Block site with a "Programări online" block: what the renderer needs to
+ * mount the live widget (the first booking block of the site), or null when
+ * there is none. Throws when the widget could not reach the booking server
+ * from where the site is hosted, so a site never goes live with a booking
+ * section that cannot book.
+ */
+function blocksBookingPlan(site, config) {
+    const SB = require('../builder/blocks/blocks.js');
+    const cfg = SB.normalizeSite(config);
+    const block = SB.bookingBlocks(cfg)[0];
+    if (!block) return null;
+    const cutover = require('./calendar-native/cutover');
+    const apiBase = cutover.resolveNativeApiBase({});
+    if (!apiBase && !_isIsolatedDeploy()) {
+        log('calendar.native_api_base.unconfigured', { siteId: site.id }, 'error');
+        const err = new Error('Programările online nu sunt disponibile acum. Scoate blocul „Programări online” sau încearcă mai târziu.');
+        err.code = 'BOOKING_SYNC';
+        throw err;
+    }
+    return {
+        services: SB.bookingServices(block.data),
+        week: SB.bookingWeek(block.data),
+        ctx: { customerId: site.userId, siteId: site.id, apiBase, brand: SB.siteBrand(cfg), blockId: block.id },
+    };
+}
+
+/** Make the native calendar match the booking block (services + weekly hours). */
+function syncBlocksBooking(site, plan) {
+    try {
+        const db = require('./calendar-native/public-api.js').getDb({});
+        const synced = require('./calendar-native/cutover').syncTenantFromBookingBlock(db, site.userId, site.id, plan);
+        log('calendar.blocks.synced', { siteId: site.id, services: synced.services, weeklyWindows: synced.weeklyWindows });
+    } catch (e) {
+        log('calendar.blocks.sync_failed', { siteId: site.id, err: e.message }, 'error');
+        const err = new Error('Nu am putut porni programările online. Încearcă din nou peste un minut.');
+        err.code = 'BOOKING_SYNC';
+        throw err;
+    }
+}
+
 function prepareIsolatedLiveHtml(siteDir) {
     if (!_isIsolatedDeploy()) return;
     const indexPath = path.join(siteDir, 'index.html');
@@ -2167,9 +2208,11 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
     if (!siteDirAlreadyBuilt && isBlocks) {
         // Block-editor site: one file per page, no template dir, no build().
         // Start from an empty directory so pages deleted since the last publish go away.
+        const booking = blocksBookingPlan(site, config);
         emptyDirInside(SITES_DIR, siteDir);
         const built = siteExport.buildBlocksSiteTree(siteDir, config, {
             canonicalOrigin: seoBuildOrigin,
+            booking: booking && booking.ctx,
         });
         if (typeof ai.moderateImages === 'function' && built.imageBuffers.length > 0) {
             let verdict;
@@ -2184,6 +2227,8 @@ async function publishSite({ site, config, images, siteDirAlreadyBuilt }) {
                 throw err;
             }
         }
+        // After moderation, so a refused publish leaves the calendar as it was.
+        if (booking) syncBlocksBooking(site, booking);
     } else if (!siteDirAlreadyBuilt) {
         fs.mkdirSync(imagesDir, { recursive: true });
 

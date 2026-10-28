@@ -1698,20 +1698,31 @@ function buildSiteCard(site) {
       .catch(() => { /* unread badge is a bonus — never block the card on it */ });
   }
 
-  // Native Hidook booking dashboard (CAL-01). Only a site published with
-  // appointment.nativeBooking on has a calendar; block sites never do.
-  if (site.templateId !== 'blocks' && site.paid && (site.status === 'live' || site.status === 'active')) {
-    apiGet('/api/sites/' + encodeURIComponent(site.id))
-      .then((data) => {
-        const cfg = data && data.config;
-        if (!isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking)) return;
+  // Native Hidook booking dashboard (CAL-01): a block site with a
+  // "Programări online" block, or an older site published with
+  // appointment.nativeBooking on.
+  if (site.paid && (site.status === 'live' || site.status === 'active')) {
+    const isBlocks = site.templateId === 'blocks';
+    // A block site has a calendar once a publish created it, even if the block
+    // was later removed from the draft: its bookings must stay reachable.
+    const tenantQs = new URLSearchParams({ customerId: site.userId, siteId: site.id }).toString();
+    Promise.all([
+      apiGet('/api/sites/' + encodeURIComponent(site.id)),
+      isBlocks ? apiGet('/api/calendar-native/services?' + tenantQs).then(() => true, () => false) : Promise.resolve(false),
+    ])
+      .then(([data, hasTenant]) => {
+        const cfg = (data && data.config) || {};
+        const hasCalendar = isBlocks ? hasTenant : isNativeBookingOn(cfg.appointment && cfg.appointment.nativeBooking);
+        if (!hasCalendar) return;
         const bookBtn = document.createElement('a');
         bookBtn.className = 'btn-ghost btn-sm';
         bookBtn.textContent = 'Programări';
         bookBtn.target = '_blank';
         bookBtn.rel = 'noopener noreferrer';
         bookBtn.setAttribute('aria-label', 'Deschide programările pentru ' + (site.projectName || site.slug || 'acest site'));
-        const qs = new URLSearchParams({ customerId: site.userId, siteId: site.id, brand: site.projectName || site.slug || '' });
+        const brand = (isBlocks && cfg.header && cfg.header.data && cfg.header.data.brand) || site.projectName || site.slug || '';
+        const qs = new URLSearchParams({ customerId: site.userId, siteId: site.id, brand: String(brand).replace(/<[^>]*>/g, '') });
+        if (isBlocks) qs.set('blocks', '1');
         bookBtn.href = '/calendar-native/owner/?' + qs.toString();
         bookBtn.addEventListener('click', e => e.stopPropagation());
         actions.insertBefore(bookBtn, actions.lastElementChild);

@@ -306,7 +306,8 @@ test('starter contact data: demo e-mails never published, identity swap, pre-pub
     assert.ok(!flat.includes('Atelier Ivoire') && !/07xx xxx xxx/.test(flat) && !flat.includes('Iași'), 'starter identity replaced');
     assert.strictEqual(SB.siteBrand(site), 'Salon Maria');
     assert.ok(flat.includes('Cluj-Napoca') && flat.includes('0744 123 456'));
-    assert.deepStrictEqual(SB.demoLeftovers(site).map((x) => x.key), ['email']);
+    // Identity does not touch the booking block's starter services and hours: still flagged.
+    assert.deepStrictEqual(SB.demoLeftovers(site).map((x) => x.key), ['email', 'booking']);
 
     const cafe = SB.defaultSite('cafenea');
     assert.ok(SB.demoLeftovers(cafe).some((x) => x.key === 'handle'), 'starter Instagram handle is flagged');

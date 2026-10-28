@@ -353,10 +353,10 @@
       box.appendChild(el('p', '', line));
       if (ok) {
         box.appendChild(el('p', 'hnb__result-hint',
-          'Vei primi email cu detaliile și un link de anulare / reprogramare (când livrarea email este activă).'));
+          'Îți trimitem pe email detaliile și un link prin care poți anula sau muta programarea.'));
       } else {
         box.appendChild(el('p', 'hnb__result-hint',
-          'Intervalul ales nu a putut fi confirmat automat. Status: în așteptare. Nu e o confirmare falsă.'));
+          'Ora aleasă nu a putut fi confirmată automat, așa că cererea ta e în așteptare. Primești răspunsul pe email.'));
       }
       // Fallback for when email delivery is not armed (CAL-N-02): the same
       // token the email would carry, shown here too, not only mailed.
@@ -364,13 +364,18 @@
         var manageP = el('p', 'hnb__result-hint', '');
         manageP.appendChild(document.createTextNode('Salvează acest link ca să-ți gestionezi programarea: '));
         var manageA = document.createElement('a');
-        manageA.href = '/calendar-native/manage/?token=' + encodeURIComponent(payload.manageToken);
+        // The manage page lives on the booking server, not on the (often static) site host.
+        manageA.href = cfg.apiBase.replace(/\/$/, '') + '/calendar-native/manage/?token=' + encodeURIComponent(payload.manageToken);
         manageA.textContent = 'Gestionează programarea';
         manageP.appendChild(manageA);
         box.appendChild(manageP);
       }
       root.appendChild(box);
       setStep(3);
+      // The form above collapsed: bring the confirmation into view and to screen readers.
+      box.setAttribute('tabindex', '-1');
+      try { box.focus({ preventScroll: true }); } catch (_) { box.focus(); }
+      if (root.getBoundingClientRect().top < 0 && root.scrollIntoView) root.scrollIntoView({ block: 'start' });
     }
 
     function fetchJson(url, opts) {
@@ -833,6 +838,15 @@
         } else {
           state.timezone = pack.body.timezone || state.timezone;
           mergeSlots(pack.body.slots);
+          // Open on the first day of this month that still has a free time,
+          // not on a day (often today, late evening) that has none.
+          if (!(state.slotsByDate[state.dateLocal] || []).length) {
+            var monthPrefix = monthKeyOf(state.viewYear, state.viewMonth) + '-';
+            var firstFree = Object.keys(state.slotsByDate).filter(function (k) {
+              return k.indexOf(monthPrefix) === 0 && k >= state.today && state.slotsByDate[k].length;
+            }).sort()[0];
+            if (firstFree) state.dateLocal = firstFree;
+          }
         }
         state.fetchedMonthKeys[monthFetchKey(state.viewYear, state.viewMonth)] = true;
         state.resources = (resPack.res.ok && resPack.body && resPack.body.ok) ? (resPack.body.resources || []) : [];

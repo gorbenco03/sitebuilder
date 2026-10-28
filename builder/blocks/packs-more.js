@@ -49,6 +49,7 @@ P.gol = {
       { image: PH, title: 'A treia coloană', text: 'Un text scurt.', cta: 'Link' },
     ] },
     team: { title: 'Echipa', people: [{ image: PH, name: 'Nume Prenume', role: 'Rol' }, { image: PH, name: 'Nume Prenume', role: 'Rol' }, { image: PH, name: 'Nume Prenume', role: 'Rol' }] },
+    booking: { title: 'Programează-te online', text: 'Alegi serviciul, ziua și ora. Primești confirmarea pe email.', services: [{ name: 'Primul serviciu', min: '30' }, { name: 'Al doilea serviciu', min: '60' }], week: [{ on: true, from: '09:00', to: '17:00' }, { on: true, from: '09:00', to: '17:00' }, { on: true, from: '09:00', to: '17:00' }, { on: true, from: '09:00', to: '17:00' }, { on: true, from: '09:00', to: '17:00' }, { on: false, from: '09:00', to: '17:00' }, { on: false, from: '09:00', to: '17:00' }], phone: 'Telefon' },
     form: { title: 'Scrie-ne', text: 'Îți răspundem cât de repede putem.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Mesaj', cta: 'Trimite', address: 'Adresă', phone: 'Telefon', email: 'email@exemplu.ro' },
     instagram: { title: 'Pe Instagram', handle: '@contul.tau', cta: 'Urmărește-ne', images: [PH, PH, PH, PH, PH, PH] },
   },
@@ -240,12 +241,15 @@ P.cosmetica = {
       { image: im('portfolio', 'iv-team-d'), name: 'Daria', role: 'Specialist îngrijire ten' },
       { image: im('portfolio', 'iv-team-l'), name: 'Lavinia', role: 'Make-up și manichiură' },
     ] },
-    form: { title: 'Programează-te', text: 'Te sunăm să confirmăm ora.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Ce tratament te interesează?', cta: 'Trimite', address: 'Bulevardul Unirii 22, București', phone: '07xx xxx xxx', email: 'programari@clinicalumi.ro' },
+    booking: { title: 'Programează-te online', text: 'Alegi tratamentul, ziua și ora. Primești confirmarea pe email.', services: [
+      { name: 'Curățare facială', min: '60' }, { name: 'Hidratare intensă', min: '45' }, { name: 'Manichiură spa', min: '60' }, { name: 'Machiaj de zi', min: '40' },
+    ], week: [{ on: true, from: '10:00', to: '20:00' }, { on: true, from: '10:00', to: '20:00' }, { on: true, from: '10:00', to: '20:00' }, { on: true, from: '10:00', to: '20:00' }, { on: true, from: '10:00', to: '20:00' }, { on: true, from: '10:00', to: '16:00' }, { on: false, from: '09:00', to: '17:00' }], phone: '07xx xxx xxx' },
+    form: { title: 'Ai o întrebare?', text: 'Scrie-ne și îți răspundem în aceeași zi.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Ce tratament te interesează?', cta: 'Trimite', address: 'Bulevardul Unirii 22, București', phone: '07xx xxx xxx', email: 'programari@clinicalumi.ro' },
   },
   pages: [
     { name: 'Acasă', blocks: [['hero', 'split'], ['team', 'round'], ['reviews', 'cards'], ['cta', 'boxed']] },
     { name: 'Tratamente', blocks: [['text', 'center'], ['menu', 'list']] },
-    { name: 'Contact', blocks: [['hours', 'photo'], ['form', 'simple']] },
+    { name: 'Contact', blocks: [['booking', 'split'], ['hours', 'photo'], ['form', 'simple']] },
   ],
 };
 
@@ -278,12 +282,15 @@ P.consultanta = {
       { image: im('portfolio', 'sf-team-o'), title: 'Plan', text: 'Trei priorități, nu treizeci.', cta: 'Detalii' },
       { image: im('portfolio', 'sf-ig5'), title: 'Implementare', text: 'Întâlniri săptămânale, rezultate măsurabile.', cta: 'Detalii' },
     ] },
+    booking: { title: 'Programează un apel', text: 'Alegi ziua și ora. Îți trimit linkul de apel pe email.', services: [
+      { name: 'Apel de cunoaștere (gratuit)', min: '30' }, { name: 'Sesiune de lucru', min: '90' },
+    ], week: [{ on: true, from: '10:00', to: '18:00' }, { on: true, from: '10:00', to: '18:00' }, { on: true, from: '10:00', to: '18:00' }, { on: true, from: '10:00', to: '18:00' }, { on: true, from: '10:00', to: '14:00' }, { on: false, from: '09:00', to: '17:00' }, { on: false, from: '09:00', to: '17:00' }], phone: '07xx xxx xxx' },
     form: { title: 'Programează un apel', text: 'Îți trimit un link pe email.', lName: 'Numele tău', lPhone: 'Telefon', lMsg: 'Pe scurt, despre afacerea ta', cta: 'Trimite', address: 'Online și Cluj-Napoca', phone: '07xx xxx xxx', email: 'salut@andreeavlad.ro' },
   },
   pages: [
     { name: 'Acasă', blocks: [['hero', 'split'], ['columns', 'numbers'], ['reviews', 'single'], ['cta', 'band']] },
     { name: 'Programe', blocks: [['text', 'split'], ['menu', 'list'], ['faq', 'list']] },
-    { name: 'Despre', blocks: [['about', 'side'], ['form', 'info']] },
+    { name: 'Despre', blocks: [['about', 'side'], ['booking', 'split'], ['form', 'info']] },
   ],
 };
 
