@@ -418,13 +418,19 @@ const BLOCKS = {
     defaults: () => ({ title: 'Din bucătărie, pe Instagram', handle: '@casanord', cta: 'Urmărește-ne' }),
     fields: [{ key: 'title', label: 'Titlu', type: 'text' }, { key: 'handle', label: 'Cont', type: 'text' }, { key: 'cta', label: 'Buton', type: 'text' }],
     render(d, v, ctx) {
+      // Public site: only a connected Instafidget feed, never sample photos or an empty section.
+      const embed = ctx.igEmbed || '';
+      if (ctx.published && !embed) return '';
       const handle = String(d.handle || '').replace(/^@/, '').trim();
       const follow = handle && ctx.published ? `<a href="https://instagram.com/${esc(encodeURIComponent(handle))}" class="b-btn b-btn--ghost" target="_blank" rel="noopener" data-f="cta">${esc(d.cta)}</a>` : btn('cta', d.cta, 'b-btn--ghost');
       const head = `<div class="b-head"><div>${t('h2', 'title', d.title, 'b-h2')}${t('p', 'handle', d.handle, 'b-eyebrow')}</div>${follow}</div>`;
-      if (ctx.published) return `<section class="b-sec"><div class="b-wrap">${head}</div></section>`;
+      if (ctx.published) return `<section class="b-sec"><div class="b-wrap">${head}<iframe class="b-ig-embed" src="${esc(embed)}" title="Instagram" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div></section>`;
       const list = d.images || Array.from({ length: 6 }, (_, i) => `${IMG}cn-ig${i + 1}.jpg`);
       const pics = list.map((src) => `<img src="${esc(asset(src))}" alt="">`).join('');
-      return `<section class="b-sec"><div class="b-wrap">${head}<div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">Poze de exemplu: pe site-ul publicat apar titlul și butonul spre contul tău.</p></div></section>`;
+      const note = embed
+        ? 'Instagram e conectat: pe site apar postările tale, prin Instafidget.'
+        : 'Poze de exemplu. Conectează Instagram din panoul din dreapta; până atunci blocul nu apare pe site.';
+      return `<section class="b-sec"><div class="b-wrap">${head}<div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">${note}</p></div></section>`;
     },
   },
 
@@ -627,6 +633,7 @@ button.b-btn{border:0;font:inherit;font-weight:700;cursor:pointer}
 .b-ig img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:calc(var(--r) / 2)}
 @media(max-width:720px){.b-ig--strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .b-note{font-size:13px;opacity:.55;margin-top:12px}
+.b-ig-embed{display:block;width:100%;min-height:520px;border:0;border-radius:var(--r)}
 .b-spacer--line{padding:28px 0}
 .b-spacer--space{padding:40px 0}
 .b-spacer hr{border:0;border-top:1px solid color-mix(in srgb,var(--sfg) 20%,transparent)}
@@ -674,9 +681,11 @@ function applyLinks(html, b) {
 function renderBlock(b, ctx) {
   const def = BLOCKS[b.type];
   if (!def) return '';
+  const inner = def.render(b.data || {}, b.variant, ctx || {});
+  if (!inner) return '';
   const css = elementCss(b);
   const attrs = `data-id="${esc(b.id)}" data-bg="${esc(b.bg || 'auto')}" data-pad="${esc(b.pad || 'normal')}" data-align="${esc(b.align || 'auto')}"${b.hideMobile ? ' data-hidem' : ''}`;
-  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(def.render(b.data || {}, b.variant, ctx || {}), b)}</div>`;
+  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(inner, b)}</div>`;
 }
 
 /** All blocks of one page in order: shared header, the page's own blocks, shared footer. */
@@ -687,7 +696,7 @@ function pageBlocks(site, pageId) {
 
 function siteCtx(site, pageId, opts) {
   const o = opts || {};
-  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref };
+  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref, igEmbed: feedUrl(site) };
 }
 
 /** File name of a page on the published site: the first page is index.html. */
@@ -710,6 +719,7 @@ function renderPage(site, pageId, opts) {
   const prevBase = assetBase;
   if (o.assetBase != null) assetBase = o.assetBase;
   try {
+    if (o.published) site = withoutDemoEmails(site);
     const ctx = siteCtx(site, pageId, o.published ? { published: true, pageHref: (p) => pageFile(site, site.pages.find((x) => x.id === p.id)) } : null);
     const body = pageBlocks(site, pageId).map((b) => renderBlock(b, ctx)).join('');
     const page = site.pages.find((p) => p.id === pageId) || site.pages[0];
@@ -815,6 +825,8 @@ function normalizeSite(input) {
     header, footer, pages,
     current: pages.some((p) => p.id === input.current) ? input.current : pages[0].id,
   };
+  const feed = feedUrl(input);
+  if (feed) out.instagram = { embedUrl: feed };
   if (input.seo && typeof input.seo === 'object') {
     out.seo = { description: String(input.seo.description || '').slice(0, 300) };
   }
@@ -840,9 +852,117 @@ function templateAssets(site) {
   return [...found];
 }
 
+/** The connected Instafidget feed, if any (never instagram.com/facebook.com: they refuse framing). */
+function feedUrl(site) {
+  const raw = site && site.instagram && typeof site.instagram.embedUrl === 'string' ? site.instagram.embedUrl.trim() : '';
+  if (!/^https:\/\/[^\s"'<>]+$/i.test(raw) || raw.length > 500) return '';
+  const host = raw.replace(/^https:\/\//i, '').split(/[/?#:]/)[0].toLowerCase().replace(/^www\./, '');
+  return /(^|\.)(instagram\.com|instagr\.am|facebook\.com|fb\.com)$/.test(host) ? '' : raw;
+}
+
+/* ---------- starter content the customer has not replaced yet ---------- */
+
+const PHONE_DEMO = /07xx\s*xxx\s*xxx/i;
+
+/** E-mail addresses and business names that come from a starter pack. */
+function starterValues() {
+  const emails = new Set();
+  const brands = new Set();
+  const walk = (v) => {
+    if (typeof v === 'string') { if (/^[^\s@]+@[^\s@]+$/.test(v)) emails.add(v.toLowerCase()); return; }
+    if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  Object.values(packs()).forEach((p) => {
+    walk(p.content);
+    if (p.header && p.header.brand) brands.add(p.header.brand);
+  });
+  Object.values(BLOCKS).forEach((d) => walk(d.defaults()));
+  return { emails, brands };
+}
+
+function isDemoEmail(v, known) {
+  const e = String(v || '').trim().toLowerCase();
+  return !!e && (known.emails.has(e) || /@exemplu\./.test(e));
+}
+
+/** Published copy of a site with every starter e-mail blanked (never publish an invented address). */
+function withoutDemoEmails(site) {
+  const known = starterValues();
+  const copy = JSON.parse(JSON.stringify(site));
+  const fix = (b) => { if (b && b.data && isDemoEmail(b.data.email, known)) b.data.email = ''; };
+  copy.pages.forEach((p) => p.blocks.forEach(fix));
+  return copy;
+}
+
+/**
+ * What still looks like starter content, for the check before publishing.
+ * Returns [{ key, label, page }] — each a short Romanian sentence.
+ */
+function demoLeftovers(site) {
+  const known = starterValues();
+  const out = [];
+  const brand = siteBrand(site);
+  if (!brand || known.brands.has(brand) || brand === 'Numele afacerii') {
+    out.push({ key: 'brand', label: `Numele afacerii e încă cel de exemplu („${brand || 'gol'}”).` });
+  }
+  const seen = new Set();
+  const note = (key, label, page) => { if (!seen.has(key + page)) { seen.add(key + page); out.push({ key, label, page }); } };
+  const scan = (b, pageName) => {
+    const walk = (v, k) => {
+      if (typeof v === 'string') {
+        if (PHONE_DEMO.test(v)) note('phone', 'Telefon de exemplu (07xx xxx xxx).', pageName);
+        if (k === 'email' && isDemoEmail(v, known)) note('email', 'E-mail de exemplu: pe site nu apare până nu pui adresa ta.', pageName);
+        if (v.startsWith('data:image/svg+xml')) note('photo', 'Poze de completat.', pageName);
+        return;
+      }
+      if (v && typeof v === 'object') Object.keys(v).forEach((kk) => walk(v[kk], kk));
+    };
+    walk(b.data, '');
+  };
+  scan(site.header, 'Antet');
+  scan(site.footer, 'Subsol');
+  site.pages.forEach((p) => p.blocks.forEach((b) => scan(b, p.name)));
+  const ig = site.pages.some((p) => p.blocks.some((b) => b.type === 'instagram'));
+  if (ig && !feedUrl(site)) out.push({ key: 'instagram', label: 'Blocul Instagram nu e conectat, deci nu apare pe site.' });
+  return out;
+}
+
+/**
+ * First-run identity: swap the starter business name, phone and town for the
+ * customer's own everywhere they appear in the site's text.
+ */
+function applyIdentity(site, who) {
+  const pack = packs()[site.pack] || {};
+  const name = String((who && who.name) || '').trim().slice(0, 80);
+  const phone = String((who && who.phone) || '').trim().slice(0, 40);
+  const town = String((who && who.town) || '').trim().slice(0, 60);
+  const oldBrand = (pack.header && pack.header.brand) || '';
+  const footer = (pack.footer && pack.footer.text) || '';
+  const addr = footer.split(' · ')[0] || '';
+  const oldTown = addr.includes(',') ? addr.slice(addr.lastIndexOf(',') + 1).trim() : '';
+  const swap = (v) => {
+    let x = v;
+    if (name && oldBrand) x = x.split(oldBrand).join(name);
+    if (phone) x = x.replace(new RegExp(PHONE_DEMO.source, 'gi'), phone);
+    if (town && oldTown) x = x.split(oldTown).join(town);
+    return x;
+  };
+  const walk = (o) => {
+    if (!o || typeof o !== 'object') return;
+    Object.keys(o).forEach((k) => {
+      if (typeof o[k] === 'string' && !o[k].startsWith('data:') && !o[k].startsWith('@tpl/')) o[k] = swap(o[k]);
+      else walk(o[k]);
+    });
+  };
+  [site.header, site.footer].forEach((b) => walk(b.data));
+  site.pages.forEach((p) => p.blocks.forEach((b) => walk(b.data)));
+  if (name) { site.header.data.brand = name; site.footer.data.brand = name; }
+  return site;
+}
+
 function setAssetBase(base) { assetBase = String(base || ''); }
 
-const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs };
+const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs, feedUrl, demoLeftovers, applyIdentity };
 if (IS_NODE) module.exports = SB;
 else root.SB = SB;
 })(typeof window !== 'undefined' ? window : globalThis);

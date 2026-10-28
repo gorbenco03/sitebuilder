@@ -141,6 +141,11 @@
         <label class="pub__fld">Adresa site-ului<span class="pub__slug"><input id="pub-slug-input" autocomplete="off" spellcheck="false" maxlength="40"></span></label>
         <p id="pub-slug-note" class="hint"></p>
         <p class="hint" id="pub-trial">Primele 14 zile sunt gratuite. Adaugi un card, site-ul e live imediat, iar plata se face în ziua 14 dacă nu anulezi.</p>
+        <div id="pub-check" class="pub__check" hidden>
+          <b>Înainte să publici</b>
+          <ul id="pub-check-list"></ul>
+          <p class="hint">Poți publica și așa, apoi le schimbi oricând și republici.</p>
+        </div>
         <button type="button" id="pub-go" class="primary">Publică site-ul</button>
       </div>
       <div id="pub-done" hidden>
@@ -150,6 +155,53 @@
       </div>
       <p id="pub-error" class="pub__error" role="alert" hidden></p>
     </div>
+  </div>
+</div>
+
+<div id="ig" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="ig-title">
+    <div class="lib__head">
+      <h2 id="ig-title">Instagram pe site</h2>
+      <button type="button" id="ig-close" aria-label="Închide">×</button>
+    </div>
+    <div class="pub__body">
+      <p class="hint">Feed-ul Instagram e oferit de Instafidget, un produs partener: inclus gratuit 12 luni, apoi Instafidget Free (cu filigran). Hidook Site Builder nu vorbește direct cu Meta.</p>
+      <form id="ig-auth" hidden>
+        <p>Intră în cont cu emailul tău ca să conectezi Instagram. E același cont cu care publici, fără parolă.</p>
+        <label class="pub__fld">Email<input type="email" id="ig-email" autocomplete="email" required></label>
+        <button type="submit" class="primary">Trimite linkul</button>
+      </form>
+      <div id="ig-sent" hidden>
+        <p>Am trimis linkul. Deschide-l din email; pagina aceasta continuă singură după ce intri în cont.</p>
+        <p><a id="ig-devlink" href="#" target="_blank" rel="noopener" hidden>Deschide linkul de autentificare (mod de test)</a></p>
+      </div>
+      <div id="ig-connect" hidden>
+        <label class="pub__terms"><input type="checkbox" id="ig-terms"> <span>Sunt de acord cu <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a> și <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Politica de confidențialitate</a> Instafidget. Se creează un cont pe același email.</span></label>
+        <button type="button" id="ig-go" class="primary" disabled>Conectează Instagram</button>
+      </div>
+      <div id="ig-on" hidden>
+        <p><b>Instagram e conectat.</b> Pe site apar postările tale, după publicare.</p>
+        <button type="button" id="ig-editor" class="primary">Deschide editorul Instafidget</button>
+        <button type="button" id="ig-off" class="link-danger">Deconectează Instagram</button>
+      </div>
+      <p id="ig-status" class="ig__status" role="status" hidden></p>
+    </div>
+  </div>
+</div>
+
+<div id="who" class="lib" hidden>
+  <div class="lib__box lib__box--pub" role="dialog" aria-modal="true" aria-labelledby="who-title">
+    <div class="lib__head">
+      <h2 id="who-title">Să-l facem al tău</h2>
+    </div>
+    <form id="who-form" class="pub__body">
+      <p class="hint">Punem numele, telefonul și orașul tău peste tot unde designul are date de exemplu. Toate sunt opționale.</p>
+      <label class="pub__fld">Numele afacerii<input id="who-name" autocomplete="organization" maxlength="80"></label>
+      <label class="pub__fld">Telefon<input id="who-phone" type="tel" autocomplete="tel" maxlength="40" placeholder="07xx xxx xxx"></label>
+      <label class="pub__fld">Orașul<input id="who-town" autocomplete="address-level2" maxlength="60"></label>
+      <p id="who-error" class="pub__error" role="alert" hidden></p>
+      <div class="pub__row"><button type="submit" class="primary">Gata</button><button type="button" id="who-skip" class="link">Sari peste</button></div>
+    </form>
   </div>
 </div>
 

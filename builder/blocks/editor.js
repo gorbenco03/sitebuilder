@@ -26,6 +26,7 @@ const asset = window.SB.asset;
 
 let siteId = null;       // account site id, once saved to the server
 let resume = null;       // 'auth' | 'checkout': where the product should send the customer back here
+let askIdentity = false; // fresh design: ask for name / phone / town once
 let signedIn = false;
 let serverTimer = null;
 let serverBusy = false;
@@ -60,6 +61,7 @@ function load() {
   const pack = params.get('pack');
   if (pack && PACKS[pack]) {
     window.history.replaceState(null, '', location.pathname);
+    askIdentity = true;
     return defaultSite(pack);
   }
   const local = readLocal();
@@ -821,6 +823,11 @@ function renderInspector() {
   const variants = Object.entries(def.variants);
   let html = '';
   if (shared) html += `<p class="note">Apare pe toate paginile. Ce schimbi aici se vede peste tot. Linkurile din meniu sunt chiar paginile site-ului.</p>`;
+  if (b.type === 'instagram') {
+    const on = !!window.SB.feedUrl(site);
+    html += `<div class="grp"><h3>Conectare</h3><p class="note">${on ? 'Instagram e conectat prin Instafidget. Pe site apar postările tale.' : 'Neconectat: blocul nu apare pe site până nu conectezi contul. Instafidget e inclus gratuit 12 luni.'}</p><button type="button" class="wide" data-ig="open">${on ? 'Gestionează Instagram' : 'Conectează Instagram'}</button></div>`;
+  }
+  if (b.type === 'form') html += `<p class="note">Mesajele ajung în „Mesaje”, pe cardul site-ului din Site-urile mele. Dacă scrii adresa de e-mail de mai jos, vizitatorul o poate folosi când trimiterea nu merge.</p>`;
   if (variants.length > 1) html += `<div class="grp"><h3>Aspect</h3><div class="pills">${variants.map(([k, l]) => `<button type="button" data-variant="${k}" aria-pressed="${k === b.variant}">${esc(l)}</button>`).join('')}</div></div>`;
   html += `<div class="grp"><h3>Fundal</h3><div class="pills">${[['auto', 'Ca tema'], ['light', 'Deschis'], ['dark', 'Închis'], ['accent', 'Accent']].map(([k, l]) => `<button type="button" data-bg="${k}" aria-pressed="${k === b.bg}">${l}</button>`).join('')}</div></div>`;
   if (!shared) {
@@ -897,6 +904,7 @@ $('insp-body').addEventListener('change', (e) => {
 });
 
 $('insp-body').addEventListener('click', (e) => {
+  if (e.target.closest('[data-ig]')) { openInstagram(); return; }
   const b = findBlock(selId);
   if (!b) return;
   const t = e.target.closest('button');
@@ -1164,6 +1172,8 @@ function shortcuts(e) {
   if (e.key === 'Escape') {
     if (!$('pv').hidden) { closePreview(); return; }
     if (!$('pub').hidden) { closePublish(); return; }
+    if (!$('ig').hidden) { closeInstagram(); return; }
+    if (!$('who').hidden) { $('who').hidden = true; return; }
     ['library', 'picker', 'packs'].forEach((id) => { $(id).hidden = true; });
     pendingImage = null;
     return;
@@ -1241,6 +1251,7 @@ async function showSlugStep() {
     } catch (_) { /* new site */ }
   }
   $('pub-trial').hidden = paid;
+  renderChecklist();
   const input = $('pub-slug-input');
   input.value = current || ownSlug || slugify(window.SB.siteBrand(site) || 'site-ul-meu').slice(0, 40);
   input.disabled = !!current;
@@ -1270,32 +1281,46 @@ $('publish').addEventListener('click', openPublish);
 $('pub-close').addEventListener('click', closePublish);
 $('pub-slug-input').addEventListener('input', () => { clearTimeout(slugTimer); slugTimer = setTimeout(checkSlug, 350); });
 
+/**
+ * Magic-link sign-in shared by Publică and Instagram: sends the link, then
+ * waits for this browser to become signed in (link opened in another tab).
+ * If the link opens in this tab instead, the dashboard sends the customer
+ * back here (resume = 'auth').
+ */
+async function startSignIn(email, onSignedIn) {
+  const r = await api('POST', '/api/auth/email', { email });
+  resume = 'auth';
+  try { writeLocal(); } catch (_) { /* quota */ }
+  clearInterval(authPoll);
+  authPoll = setInterval(async () => {
+    try {
+      if ((await api('GET', '/api/me')).user) {
+        clearInterval(authPoll);
+        authPoll = null;
+        signedIn = true;
+        resume = null;
+        try { writeLocal(); } catch (_) { /* quota */ }
+        onSignedIn();
+      }
+    } catch (_) { /* still signed out */ }
+  }, 2500);
+  return r;
+}
+
+function showDevLink(el, r) {
+  el.hidden = !r.devLink;
+  if (r.devLink) el.href = r.devLink;
+}
+
 $('pub-auth').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('pub-email').value.trim();
   if (!email) { pubError('Scrie adresa ta de email.'); return; }
   try {
-    const r = await api('POST', '/api/auth/email', { email });
-    resume = 'auth';
-    try { writeLocal(); } catch (_) { /* quota */ }
+    const r = await startSignIn(email, showSlugStep);
     pubStep('sent');
     $('pub-sent-to').textContent = email;
-    const dev = $('pub-devlink');
-    dev.hidden = !r.devLink;
-    if (r.devLink) dev.href = r.devLink;
-    clearInterval(authPoll);
-    authPoll = setInterval(async () => {
-      try {
-        if ((await api('GET', '/api/me')).user) {
-          clearInterval(authPoll);
-          authPoll = null;
-          signedIn = true;
-          resume = null;
-          try { writeLocal(); } catch (_) { /* quota */ }
-          showSlugStep();
-        }
-      } catch (_) { /* still signed out */ }
-    }, 2500);
+    showDevLink($('pub-devlink'), r);
   } catch (err) {
     pubError(err.message);
   }
@@ -1327,5 +1352,168 @@ $('pub-go').addEventListener('click', async () => {
   } finally {
     go.disabled = false;
     go.textContent = 'Publică site-ul';
+  }
+});
+
+/** Starter content still on the site — shown before publishing, never blocking. */
+function renderChecklist() {
+  const items = window.SB.demoLeftovers(site);
+  const box = $('pub-check');
+  box.hidden = !items.length;
+  $('pub-check-list').innerHTML = items.map((x) => `<li>${esc(x.label)}${x.page ? ` <small>${esc(x.page)}</small>` : ''}</li>`).join('');
+}
+
+/* ---------- first run: the customer's own name, phone and town ---------- */
+
+function openIdentity() {
+  $('who').hidden = false;
+  $('who-name').value = '';
+  $('who-phone').value = '';
+  $('who-town').value = '';
+  $('who-name').focus();
+}
+
+$('who-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const who = { name: $('who-name').value, phone: $('who-phone').value, town: $('who-town').value };
+  if (!who.name.trim() && !who.phone.trim() && !who.town.trim()) { $('who').hidden = true; return; }
+  if (who.phone.trim() && !/^[+0-9][0-9 ().-]{5,}$/.test(who.phone.trim())) {
+    $('who-error').textContent = 'Telefonul pare greșit. Exemplu: 0712 345 678 sau +40 712 345 678.';
+    $('who-error').hidden = false;
+    return;
+  }
+  window.SB.applyIdentity(site, who);
+  $('who').hidden = true;
+  commit();
+  renderAll();
+});
+$('who-skip').addEventListener('click', () => { $('who').hidden = true; });
+
+if (askIdentity) setTimeout(openIdentity, 300);
+
+/* ---------- Instagram through Instafidget (partner; Hidook never talks to Meta) ---------- */
+
+let igEditorUrl = '';
+let igFocus = null;
+
+function igPanel(name) {
+  ['auth', 'sent', 'connect', 'on'].forEach((p) => { $(`ig-${p}`).hidden = p !== name; });
+  igStatus('');
+}
+
+function igStatus(msg, bad) {
+  const el = $('ig-status');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+  el.classList.toggle('is-bad', !!bad);
+}
+
+function setFeed(url) {
+  site.instagram = url ? { embedUrl: url } : undefined;
+  if (!url) delete site.instagram;
+  commit();
+  renderAll();
+}
+
+async function openInstagram() {
+  if (editing) endEdit();
+  $('ig').hidden = false;
+  if (!signedIn) {
+    try { signedIn = !!(await api('GET', '/api/me')).user; } catch (_) { signedIn = false; }
+  }
+  if (!signedIn) { igPanel('auth'); $('ig-email').focus(); return; }
+  igPanel(window.SB.feedUrl(site) ? 'on' : 'connect');
+  $('ig-terms').checked = false;
+  $('ig-go').disabled = true;
+}
+
+function closeInstagram() {
+  $('ig').hidden = true;
+  if (igFocus) { window.removeEventListener('focus', igFocus); igFocus = null; }
+}
+
+$('ig-close').addEventListener('click', closeInstagram);
+$('ig-terms').addEventListener('change', () => { $('ig-go').disabled = !$('ig-terms').checked; });
+
+$('ig-auth').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('ig-email').value.trim();
+  if (!email) { igStatus('Scrie adresa ta de email.', true); return; }
+  try {
+    const r = await startSignIn(email, () => { saveToServer(); igPanel('connect'); });
+    igPanel('sent');
+    showDevLink($('ig-devlink'), r);
+  } catch (err) {
+    igStatus(err.message, true);
+  }
+});
+
+async function siteIdForAccount() {
+  clearTimeout(serverTimer);
+  await saveToServer();
+  return siteId;
+}
+
+$('ig-go').addEventListener('click', async () => {
+  const go = $('ig-go');
+  go.disabled = true;
+  igStatus('Se conectează…');
+  try {
+    const id = await siteIdForAccount();
+    if (!id) { igStatus('Site-ul nu s-a putut salva în cont. Încearcă din nou.', true); return; }
+    const base = `/api/sites/${encodeURIComponent(id)}/social-feed`;
+    const grant = await api('POST', `${base}/grant`, { acceptedTerms: true });
+    if (grant.embedUrl) setFeed(grant.embedUrl);
+    let session = {};
+    try { session = await api('POST', `${base}/editor-session`, {}); } catch (_) { /* editor link is optional */ }
+    igEditorUrl = session.editorUrl || '';
+    if (igEditorUrl && !session.isolated) {
+      const tab = window.open(igEditorUrl, '_blank');
+      if (tab) tab.opener = null;
+      igStatus('Alege postările în editorul Instafidget, apoi revino aici: feed-ul apare singur pe site.');
+      if (igFocus) window.removeEventListener('focus', igFocus);
+      igFocus = async () => {
+        window.removeEventListener('focus', igFocus);
+        igFocus = null;
+        try {
+          const again = await api('POST', `${base}/grant`, { acceptedTerms: true });
+          if (again.embedUrl) { setFeed(again.embedUrl); igPanel('on'); }
+        } catch (_) { /* keeps the current state */ }
+      };
+      window.addEventListener('focus', igFocus);
+      return;
+    }
+    if (grant.embedUrl) igPanel('on');
+    else igStatus('Feed-ul nu e gata încă. Încearcă din nou peste un minut.', true);
+  } catch (err) {
+    igStatus(err.message, true);
+  } finally {
+    go.disabled = !$('ig-terms').checked;
+  }
+});
+
+$('ig-editor').addEventListener('click', async () => {
+  try {
+    const id = await siteIdForAccount();
+    const session = await api('POST', `/api/sites/${encodeURIComponent(id)}/social-feed/editor-session`, {});
+    if (!session.editorUrl) { igStatus('Instafidget nu a returnat un link de editor.', true); return; }
+    const tab = window.open(session.editorUrl, '_blank');
+    if (tab) tab.opener = null;
+  } catch (err) {
+    igStatus(err.message, true);
+  }
+});
+
+$('ig-off').addEventListener('click', async () => {
+  try {
+    const id = await siteIdForAccount();
+    await api('POST', `/api/sites/${encodeURIComponent(id)}/social-feed/disconnect`, {});
+    setFeed('');
+    igPanel('connect');
+    $('ig-terms').checked = false;
+    $('ig-go').disabled = true;
+    igStatus('Instagram e deconectat. Blocul nu mai apare pe site după următoarea publicare.');
+  } catch (err) {
+    igStatus(err.message, true);
   }
 });

@@ -248,3 +248,66 @@ test('one unpaid site per user still applies to blocks', async () => {
     const second = await post(c, '/api/publish', { templateId: 'blocks', slug: slugB, config: SB.defaultSite('salon'), images: [] });
     assert.strictEqual(second.status, 409);
 });
+
+test('Instagram: hidden until Instafidget is connected, then the feed is on the published page', async () => {
+    const c = await login('ig');
+    const slug = 'blocks-ig-' + crypto.randomUUID().slice(0, 6);
+    const cfg = SB.defaultSite('cafenea');
+    const home = cfg.pages[0];
+    assert.ok(home.blocks.some((b) => b.type === 'instagram'), 'cafenea home has an Instagram block');
+
+    const draft = await post(c, '/api/draft', { templateId: 'blocks', config: cfg });
+    assert.strictEqual(draft.status, 200, await draft.clone().text());
+    const siteId = (await draft.json()).site.id;
+    const grant = await post(c, `/api/sites/${siteId}/social-feed/grant`, { acceptedTerms: true });
+    assert.strictEqual(grant.status, 200, await grant.clone().text());
+    const { embedUrl } = await grant.json();
+    assert.ok(SB.feedUrl({ instagram: { embedUrl } }), 'grant returns a usable feed URL');
+    const stored = await (await c(`/api/sites/${siteId}`)).json();
+    assert.strictEqual(stored.config.instagram.embedUrl, embedUrl, 'feed stored on the block site');
+
+    const pub = await post(c, '/api/publish', { siteId, templateId: 'blocks', slug, config: stored.config, images: [] });
+    assert.strictEqual(pub.status, 200, await pub.clone().text());
+    await payAndWait(c, await pub.json(), slug);
+    const live = await (await fetch(`${base}/live/${slug}/`)).text();
+    assert.ok(live.includes(`<iframe class="b-ig-embed" src="${embedUrl}"`), 'feed iframe on the site');
+    const at = live.indexOf('<iframe class="b-ig-embed"');
+    const igSection = live.slice(Math.max(0, at - 600), at);
+    assert.ok(!/<img/i.test(igSection.slice(igSection.lastIndexOf('<section'))), 'no sample photos in the Instagram block');
+
+    const off = await post(c, `/api/sites/${siteId}/social-feed/disconnect`, {});
+    assert.strictEqual(off.status, 200);
+    const after = (await (await c(`/api/sites/${siteId}`)).json()).config;
+    const rep = await post(c, '/api/publish', { siteId, templateId: 'blocks', config: after, images: [] });
+    assert.strictEqual(rep.status, 200, await rep.clone().text());
+    const deadline = Date.now() + 10000;
+    let html = '';
+    while (Date.now() < deadline) {
+        html = await (await fetch(`${base}/live/${slug}/`)).text();
+        if (!html.includes('<iframe class="b-ig-embed"')) break;
+        await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.ok(!html.includes('<iframe class="b-ig-embed"'), 'disconnected: no feed');
+    assert.ok(!html.includes('instagram.com/'), 'disconnected: no Instagram section at all');
+});
+
+test('starter contact data: demo e-mails never published, identity swap, pre-publish check', () => {
+    const site = SB.defaultSite('salon');
+    const contact = site.pages.find((p) => p.blocks.some((b) => b.type === 'form'));
+    const keys = SB.demoLeftovers(site).map((x) => x.key);
+    assert.ok(keys.includes('brand') && keys.includes('phone') && keys.includes('email'), keys.join(','));
+
+    const html = SB.renderPage(site, contact.id, { published: true, assetBase: 'assets/' });
+    assert.ok(!html.includes('salut@atelierivoire.ro'), 'starter e-mail blanked on the published page');
+    assert.ok(/data-mail-to=""/.test(html), 'form has no fallback address');
+
+    SB.applyIdentity(site, { name: 'Salon Maria', phone: '0744 123 456', town: 'Cluj-Napoca' });
+    const flat = JSON.stringify(site);
+    assert.ok(!flat.includes('Atelier Ivoire') && !/07xx xxx xxx/.test(flat) && !flat.includes('Iași'), 'starter identity replaced');
+    assert.strictEqual(SB.siteBrand(site), 'Salon Maria');
+    assert.ok(flat.includes('Cluj-Napoca') && flat.includes('0744 123 456'));
+    assert.deepStrictEqual(SB.demoLeftovers(site).map((x) => x.key), ['email']);
+
+    assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'https://www.instagram.com/x/embed' } }), '', 'instagram.com refuses framing');
+    assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'javascript:alert(1)' } }), '');
+});

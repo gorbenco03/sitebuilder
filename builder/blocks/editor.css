@@ -182,3 +182,14 @@ button { font: inherit; cursor: pointer; }
 .pub__body button.primary { align-self: flex-start; background: var(--ui-accent); border: 1px solid var(--ui-accent); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 16px; min-height: 40px; }
 .pub__body button.primary:disabled { opacity: .6; }
 .pub__error { color: #b91c1c; font-size: 14px; }
+.pub__check { border: 1px solid #f0d58a; background: #fff8e1; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.pub__check ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.pub__check small { color: var(--ui-mute); }
+.pub__terms { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.45; }
+.pub__terms input { margin-top: 3px; }
+.pub__row { display: flex; gap: 12px; align-items: center; }
+.pub__body button.link, .pub__body button.link-danger { background: none; border: 0; padding: 6px 0; font: inherit; color: var(--ui-mute); text-decoration: underline; align-self: flex-start; cursor: pointer; }
+.pub__body button.link-danger { color: #b91c1c; }
+.ig__status { font-size: 14px; color: var(--ui-mute); }
+.ig__status.is-bad { color: #b91c1c; }
+.insp button.wide { width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ui-accent); background: var(--ui-accent); color: #fff; font-weight: 600; }
