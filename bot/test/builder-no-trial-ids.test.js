@@ -7,6 +7,10 @@
  * Allowed renames: publish-plan, publish-price, publish-renewal, btn-pay-publish, status-unpaid.
  * Visible copy: trial-card CTA (VISION 2026-08-26), not pay-once Pay and publish.
  *
+ * Form editor removed 2026-10-28: the publish-modal plan block (publish-price /
+ * publish-renewal ids, .publish-plan, #btn-pay-publish) is gone; the pay CTA now
+ * lives only on the dashboard site card, so those hooks are no longer required.
+ *
  * Run: node bot/test/builder-no-trial-ids.test.js
  */
 const assert = require('assert');
@@ -68,31 +72,15 @@ check('no $(' + "'…'" + ') selectors for forbidden trial/keep-site ids', () =>
     }
 });
 
-check('pay/publish vocabulary is wired (renamed hooks present)', () => {
+check('pay vocabulary is wired on the dashboard site card', () => {
     assert.ok(
-        /\bid\s*=\s*["']publish-price["']/.test(html) || /\$\(\s*['"]publish-price['"]\s*\)/.test(app),
-        'publish-price id/selector required'
+        /status-unpaid/.test(app) && /\.status-unpaid\b/.test(css),
+        'status-unpaid class required for unpaid badge (used by buildSiteCard, styled in app.css)'
     );
-    assert.ok(
-        /\bid\s*=\s*["']publish-renewal["']/.test(html) || /\$\(\s*['"]publish-renewal['"]\s*\)/.test(app),
-        'publish-renewal id/selector required'
-    );
-    assert.ok(
-        /class\s*=\s*["'][^"']*\bpublish-plan\b/.test(html) || /\.publish-plan\b/.test(css),
-        'publish-plan class required'
-    );
-    assert.ok(
-        /\bid\s*=\s*["']btn-pay-publish["']/.test(html) || /\$\(\s*['"]btn-pay-publish['"]\s*\)/.test(app),
-        'btn-pay-publish id/selector required'
-    );
-    assert.ok(
-        /status-unpaid/.test(app) || /\.status-unpaid\b/.test(css),
-        'status-unpaid class required for unpaid badge'
-    );
+    assert.ok(/Neplătit/.test(app), 'unpaid badge label Neplătit required');
 });
 
 check('visible trial-card publish copy preserved', () => {
-    assert.ok(/Unpaid/.test(app) || /Unpaid/.test(html), 'unpaid badge label Unpaid required');
     assert.ok(
         /12 months hosting|first publish|14-day trial|trial de 14 zile|14 zile|primul an/i.test(html),
         'publish plan must keep hosting or trial copy'

@@ -6,6 +6,11 @@
  * ITEM 11: --accent/--paper alias themable --color-primary/--color-cream;
  *          hero.background is structured type "background" (drawer-visible).
  *
+ * Form editor removed 2026-10-28: dropped the builder/app.js drawer/colour-popover
+ * check and the "index loads light templates-data.js" assertion (builder/index.html
+ * no longer loads generated/templates-data.js or engine.js). Generated-registry
+ * size, theme-var, schema and static-serving checks stay.
+ *
  * Run: node bot/test/wave1-perf-theme.test.js
  */
 const assert = require('assert');
@@ -145,25 +150,6 @@ function check(name, fn) {
     }
   });
 
-  await check('builder app treats background as drawer field + lazy heavy load', () => {
-    const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-    const indexHtml = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
-    assert.ok(app.includes("DRAWER_TYPES = new Set(['phone', 'url', 'color', 'background'])") ||
-      /DRAWER_TYPES[\s\S]*'background'/.test(app), 'background in DRAWER_TYPES');
-    assert.ok(app.includes('ensureTemplateLoaded'), 'ensureTemplateLoaded present');
-    assert.ok(app.includes('parseHeroBackground') && app.includes('composeHeroBackground'),
-      'structured hero background helpers');
-    assert.ok(app.includes('template-card-preview-thumb') || app.includes('meta.thumbnail'),
-      'catalog uses thumbnails');
-    assert.ok(app.includes('applyThemeBackground'), 'applyThemeBackground for theme.cream');
-    assert.ok(
-      indexHtml.includes('color-bg-swatch') &&
-        indexHtml.includes('Fundal pagină') &&
-        indexHtml.includes('Culoare fundal pagină'),
-      'color popover exposes Romanian page background control'
-    );
-  });
-
   await check('light boot bundle stays tiny (no 32MB blocking payload)', () => {
     const light = fs.readFileSync(path.join(GEN, 'templates-data.js'), 'utf8');
     assert.ok(light.length < 32 * 1024, 'templates-data.js < 32KB (was ~32MB)');
@@ -171,10 +157,6 @@ function check(name, fn) {
     // Heavies must not be referenced as classic blocking multi-MB scripts in index.
     const indexHtml = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
     const scriptSrcs = [...indexHtml.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map((m) => m[1]);
-    assert.ok(
-      scriptSrcs.some((s) => s.includes('templates-data.js')),
-      'index loads light templates-data.js'
-    );
     assert.ok(
       !scriptSrcs.some((s) => /generated\/templates\/[^/]+\.js/.test(s)),
       'index must not block on heavy per-template scripts'

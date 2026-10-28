@@ -47,15 +47,17 @@
  * since both are real layout-reservation rules and only one of them also
  * avoids letterboxing a same-height-different-shape upload.
  *
+ * The site is published through the API (the form editor that used to publish
+ * it was removed 2026-10-28).
+ *
  * Run: HIDOOK_TEST_PAY=1 HIDOOK_ISOLATED_DEPLOY=1 \
  *   node --experimental-sqlite --test bot/test/wave5-local-service-cls.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
 const { chromium } = require('playwright');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const STYLES_PATH = path.join(ROOT, 'templates', 'local-service', 'styles.css');
@@ -107,54 +109,18 @@ function checkAspectRatioDeclared() {
 // own layout-shift entries on the live site, at both required viewports.
 // ---------------------------------------------------------------------------
 async function measureLiveCls() {
-  process.env.HIDOOK_TEST_PAY = '1';
-  process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-  process.env.NODE_ENV = 'test';
-  process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'wave5-ls-cls-'));
-  process.env.SERVER_SECRET = 'wave5-ls-cls-' + crypto.randomBytes(12).toString('hex');
-  delete process.env.PUBLIC_URL;
-  delete process.env.HIDOOK_FAKE_DEPLOY;
-
-  require(path.join(ROOT, 'scripts', 'build-builder.js'));
-  const { startServer } = require(path.join(ROOT, 'bot', 'server.js'));
-  const server = startServer({ port: 0 });
-  await new Promise((resolve, reject) => {
-    server.once('listening', resolve);
-    server.once('error', reject);
-  });
-  const base = 'http://127.0.0.1:' + server.address().port;
+  const H = await startHarness('wave5-ls-cls');
 
   fs.rmSync(EVIDENCE_DIR, { recursive: true, force: true });
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
 
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  const page = await context.newPage();
 
   try {
-    await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-    await page.locator('#hb-cookie-accept').click();
-    await page.evaluate((id) => startWithTemplate(id), 'local-service');
-    await page.waitForURL(/#edit$/);
-    await page.frameLocator('#preview-iframe').locator('body').waitFor({ state: 'visible' });
-    const closeDrawer = page.locator('#btn-close-drawer');
-    if (await closeDrawer.isVisible().catch(() => false)) await closeDrawer.click();
-
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
-    const slug = 'wave5-ls-cls-' + Date.now().toString(36);
-    await page.locator('#input-slug').fill(slug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-    await page.locator('#input-email').fill('wave5-ls-cls@example.com');
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-    await page.locator('#btn-pay-publish').click();
-    await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 20000 });
-    const liveHref = await page.locator('#success-url-link').getAttribute('href');
-    const liveUrl = new URL(liveHref, base).href;
+    const { liveUrl } = await H.publish('local-service', publishConfig('local-service'), {
+      slug: 'wave5-ls-cls-' + Date.now().toString(36),
+    });
 
     const out = {};
     for (const [name, size] of Object.entries({
@@ -183,8 +149,7 @@ async function measureLiveCls() {
     return out;
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(process.env.DATA_DIR, { recursive: true, force: true });
+    await H.close();
   }
 }
 

@@ -9,6 +9,10 @@
  * Causal RED on parent Wave 5 SHA (pay-once leftover strings).
  * HEAD GREEN: no pay-once / live-only-after-payment; trial flow stated.
  *
+ * Form editor removed 2026-10-28: the Instagram modal pre-trial sentence lived in
+ * the deleted #modal-instagram, so only its "no leftover before you pay" half
+ * survives (now also read from the block editor page).
+ *
  * Run: node bot/test/wave6-trial-copy.test.js
  */
 const assert = require('assert');
@@ -123,13 +127,10 @@ check('HEAD builder keeps Hidook Site Builder; no DESSERD / factory / free-trial
     assert.ok(!/3 zile gratuite|publici GRATUIT/i.test(html), 'no free-trial RO promises');
 });
 
-check('HEAD Instagram pre-trial copy (not before you pay)', () => {
-    const html = headRead('builder/index.html');
-    assert.ok(
-        /înainte\s+să\s+începi\s+trialul|before\s+you\s+start\s+the\s+trial/i.test(html),
-        'Instagram may connect before trial starts'
-    );
-    assert.ok(!/before you pay/i.test(html), 'no leftover before you pay');
+check('HEAD builder pages have no leftover "before you pay" Instagram copy', () => {
+    for (const rel of ['builder/index.html', 'builder/blocks/index.html', 'builder/blocks/editor.js']) {
+        assert.ok(!/before you pay/i.test(headRead(rel)), rel + ': no leftover before you pay');
+    }
 });
 
 if (failed) {

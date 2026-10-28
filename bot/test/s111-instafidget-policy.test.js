@@ -10,6 +10,10 @@
  *   - Mobile chrome at 390: nav/email/site name readable (no Cum/e, no letter-shred email, no qaliv…).
  *   - /app without trailing slash redirects to /app/; HEAD /app/ is 200 HTML not JSON 404.
  *
+ * Form editor removed 2026-10-28: dropped the HEAD check on `.field-input--url`
+ * (Detalii URL fields) and the absolute generated/engine.js path (builder/index.html
+ * no longer loads it).
+ *
  * Run: node bot/test/s111-instafidget-policy.test.js
  */
 const assert = require('assert');
@@ -339,26 +343,10 @@ check('HEAD: .site-card-name is not nowrap+ellipsis mid-clip', () => {
   );
 });
 
-check('HEAD: Detalii URL fields do not use overflow-wrap:anywhere', () => {
-  const css = read(APP_CSS);
-  const m = css.match(
-    /\.field-input--url\s*,\s*\.field-textarea--url\s*\{([^}]*)\}/m
-  );
-  assert.ok(m, 'URL field rule');
-  assert.ok(
-    !/overflow-wrap\s*:\s*anywhere/i.test(m[1]),
-    'no overflow-wrap:anywhere on URL fields'
-  );
-});
-
 check('HEAD: builder assets use absolute /app/ paths', () => {
   const html = read(APP_HTML);
   assert.ok(/href="\/app\/app\.css"/.test(html), 'absolute /app/app.css');
   assert.ok(/src="\/app\/app\.js"/.test(html), 'absolute /app/app.js');
-  assert.ok(
-    /src="\/app\/generated\/engine\.js"/.test(html),
-    'absolute engine.js'
-  );
 });
 
 check('HEAD: server redirects bare /app and accepts HEAD on /app/', () => {

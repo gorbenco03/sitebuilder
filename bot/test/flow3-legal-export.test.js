@@ -10,6 +10,11 @@
  * GREEN on HEAD: legal pages from build, banner dismissible, ZIP self-hostable.
  * Also keeps wave7 builder legal + wave11 HTML export contracts intact.
  *
+ * Form editor removed 2026-10-28: the editor-only checks (deferred preview-ready
+ * commit, #modal-preview Accept click, editor topbar Descarcă ZIP / Download HTML
+ * buttons and the draft ZIP flow from the editor) were dropped. The ZIP download
+ * is now proved from the dashboard site card ("Descarcă ZIP", live paid sites).
+ *
  * Run: node bot/test/flow3-legal-export.test.js
  */
 
@@ -31,7 +36,6 @@ const PARENT_SHA = '27ad51f4e115f3ae05e46c8401a2297e53e18434';
 const REJECTED_SHA = 'f1cda5f66c297ecea358c68629223e49cce51a2e'; // data:text/html legal hrefs — Chromium dead clicks
 const R3_PARENT_SHA = '924547eb05ad51f4a94d703dace609a22fbb8da2'; // overlapping consent + no current-draft UI ZIP
 const R8_PARENT_SHA = '56f7de08c909807320707d02f0d6140139abf2be'; // retained legal scroll + process copy
-const R10_PARENT_SHA = 'fa6f80c9fd005a2f8a89cf58cb758ded30708295'; // deferred ready commit crosses generations
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals', 'desserdirina'];
 
@@ -74,68 +78,6 @@ function baseBlob(rel) {
 
 function headRead(rel) {
     return fs.readFileSync(path.join(ROOT, rel), 'utf8');
-}
-
-function exerciseDeferredPreviewReady(appSource) {
-    const match = appSource.match(/function waitForInteractivePreview\([\s\S]*?\n}\n\n\/\/ Full re-render:/);
-    assert.ok(match, 'waitForInteractivePreview source');
-
-    const animationFrames = [];
-    const messageListeners = new Set();
-    const sandbox = {
-        requestAnimationFrame(callback) {
-            animationFrames.push(callback);
-        },
-        window: {
-            addEventListener(type, callback) {
-                if (type === 'message') messageListeners.add(callback);
-            },
-            removeEventListener(type, callback) {
-                if (type === 'message') messageListeners.delete(callback);
-            },
-        },
-    };
-    vm.runInNewContext(match[0].replace(/\n\n\/\/ Full re-render:$/, '') + '\nthis.wait = waitForInteractivePreview;', sandbox);
-
-    const attrs = new Map();
-    const classes = new Set();
-    const contentWindow = {};
-    const target = {
-        contentWindow,
-        dataset: {},
-        classList: {
-            add(name) { classes.add(name); },
-            remove(name) { classes.delete(name); },
-            contains(name) { return classes.has(name); },
-        },
-        getAttribute(name) { return attrs.has(name) ? attrs.get(name) : null; },
-        setAttribute(name, value) { attrs.set(name, String(value)); },
-        get offsetWidth() { return 800; },
-    };
-
-    const clearOld = sandbox.wait(target, 'old-generation');
-    for (const listener of [...messageListeners]) {
-        listener({
-            source: contentWindow,
-            data: { type: 'hb-preview-ready', token: 'old-generation' },
-        });
-    }
-    assert.strictEqual(animationFrames.length, 1, 'old ready event schedules its deferred commit');
-
-    clearOld();
-    sandbox.wait(target, 'new-generation');
-    assert.strictEqual(target.getAttribute('aria-busy'), 'true', 'new generation starts busy');
-    assert.ok(target.classList.contains('preview-iframe--loading'), 'new generation blocks pointer input');
-
-    animationFrames.shift()();
-    assert.strictEqual(animationFrames.length, 1, 'second deferred frame is scheduled');
-    animationFrames.shift()();
-
-    return {
-        busy: target.getAttribute('aria-busy'),
-        ready: target.dataset.previewReady,
-        loading: target.classList.contains('preview-iframe--loading'),
-    };
 }
 
 function httpReq(port, urlPath, { method = 'GET', headers = {} } = {}) {
@@ -321,26 +263,6 @@ function unzipStore(zipBuf, destDir) {
         const nav = parentBuild.match(/const previewLegalNavSrc = ([\s\S]*?);\nconst previewLegalNavEmbedded/);
         assert.ok(nav, 'R8 parent preview legal interceptor');
         assert.ok(!/scrollTo\s*\(\s*0\s*,\s*0\s*\)/.test(nav[1]), 'R8 parent must lack a legal scroll reset');
-    });
-
-    await check('causal RED: R10 parent lets an old deferred ready commit mark a newer generation ready', () => {
-        const parentApp = execFileSync('git', ['-C', ROOT, 'show', R10_PARENT_SHA + ':builder/app.js'], {
-            encoding: 'utf8',
-            maxBuffer: 4 * 1024 * 1024,
-        });
-        assert.deepStrictEqual(exerciseDeferredPreviewReady(parentApp), {
-            busy: 'false',
-            ready: 'true',
-            loading: true,
-        });
-    });
-
-    await check('HEAD preview readiness: an old deferred commit cannot mark a newer generation ready', () => {
-        assert.deepStrictEqual(exerciseDeferredPreviewReady(headRead('builder/app.js')), {
-            busy: 'true',
-            ready: 'false',
-            loading: true,
-        });
     });
 
     // ── HEAD GREEN: templates ────────────────────────────────────────────
@@ -610,16 +532,13 @@ function unzipStore(zipBuf, destDir) {
         }
     });
 
-    await check('HEAD builder chrome: Descarcă ZIP + cookie banner on /app/', () => {
+    await check('HEAD builder chrome: dashboard Descarcă ZIP + cookie banner on /app/', () => {
         const html = headRead('builder/index.html');
-        assert.ok(/id="btn-download-zip"/.test(html), 'btn-download-zip');
-        assert.ok(/Descarcă ZIP|Descarca ZIP/.test(html), 'RO ZIP label');
         assert.ok(/id="hb-cookie-banner"/.test(html), 'builder cookie banner');
-        assert.ok(/id="btn-download-html"/.test(html), 'keeps Download HTML');
         const js = headRead('builder/app.js');
         assert.ok(/\/api\/export-zip/.test(js), 'app.js fetches export-zip');
-        assert.ok(/downloadDraftZip/.test(js), 'downloadDraftZip wired');
-        assert.ok(/btn-download-zip/.test(js), 'click handler');
+        assert.ok(/downloadSiteZip/.test(js), 'downloadSiteZip wired');
+        assert.ok(/Descarcă ZIP/.test(js), 'RO ZIP label on the dashboard site card');
     });
 
     await check('OWNER-STRIPE-TRIAL.md documents ZIP export', () => {
@@ -748,185 +667,12 @@ function unzipStore(zipBuf, destDir) {
             assert.ok(/\/app\/privacy\.html/.test(res.bodyText), 'builder privacy link');
         });
 
-        await check('HEAD: Salon first trusted Accept works after Mobile → Desktop once generated controls report ready', async () => {
-            await withBrowser(async (browser) => {
-                const context = await browser.newContext();
-                try {
-                    const page = await context.newPage();
-                    await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
-                    await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
-                    await page.evaluate((x) => openPreviewModal(x), 'portfolio');
-                    await page.waitForSelector('#modal-preview', { state: 'visible' });
-                    const frame = page.frameLocator('#preview-modal-iframe');
-                    const accept = frame.locator('#hb-cookie-accept');
-                    await accept.waitFor({ state: 'visible', timeout: 20000 });
-                    await page.waitForFunction(
-                        () => document.getElementById('preview-modal-iframe').dataset.previewReady === 'true',
-                        null,
-                        { timeout: 5000 }
-                    );
-                    assert.strictEqual(
-                        await page.locator('#preview-modal-iframe').getAttribute('aria-busy'),
-                        'false',
-                        'Salon generated controls report interactive readiness'
-                    );
-                    await page.click('#modal-preview-mobile');
-                    await page.click('#modal-preview-desktop');
-                    // Match the editor path below: wait for the width transition
-                    // before deriving trusted pointer coordinates.
-                    await page.waitForTimeout(350);
-                    const box = await accept.boundingBox();
-                    assert.ok(box, 'Salon Accept has trusted-click coordinates');
-                    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
-                    assert.ok(
-                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
-                        'Salon first trusted Accept hides notice after viewport switch'
-                    );
-                    await page.close();
-                } finally {
-                    await context.close();
-                }
-            });
-        });
-
-        await check('HEAD: catalog and editor previews isolate consent; dashboard-auth ZIP saves and downloads current Restaurant draft', async () => {
+        await check('HEAD: dashboard Descarcă ZIP appears only for a live paid site and downloads a self-hostable ZIP', async () => {
             await withBrowser(async (browser) => {
                 const context = await browser.newContext({ acceptDownloads: true });
                 const page = await context.newPage();
-                await page.goto(`http://127.0.0.1:${port}/app/#templates`, { waitUntil: 'domcontentloaded' });
-                await page.waitForFunction(() => typeof openPreviewModal === 'function', null, { timeout: 20000 });
-
-                for (const id of TPLS) {
-                    await page.evaluate((x) => openPreviewModal(x), id);
-                    await page.waitForSelector('#modal-preview', { state: 'visible' });
-                    await page.waitForSelector('#preview-modal-iframe[aria-busy="true"]', { timeout: 5000 });
-                    await page.waitForSelector('#preview-modal-iframe[aria-busy="false"]', { timeout: 20000 });
-                    await page.waitForFunction(
-                        () => document.getElementById('preview-modal-iframe').dataset.previewReady === 'true',
-                        null,
-                        { timeout: 5000 }
-                    );
-                    const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
-                    assert.strictEqual(outerDisplay, 'none', id + ' hides builder-origin notice while preview is open');
-
-                    const frame = page.frameLocator('#preview-modal-iframe');
-                    const accept = frame.locator('#hb-cookie-accept');
-                    await accept.waitFor({ state: 'visible', timeout: 20000 });
-                    await page.click('#modal-preview-mobile');
-                    await page.click('#modal-preview-desktop');
-                    await accept.click();
-                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
-                    assert.ok(
-                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
-                        id + ' first generated Accept after Mobile → Desktop hides notice'
-                    );
-
-                    // Use Playwright's trusted pointer input as soon as the visible
-                    // catalog controls are available. A DOM el.click() after waiting
-                    // for document.complete missed Desserdirina's provisional srcdoc.
-                    const privacy = frame.locator('[data-hb-preview-legal="privacy.html"]');
-                    await privacy.click({ timeout: 20000 });
-                    await frame.locator('.hb-legal').waitFor({ state: 'visible', timeout: 15000 });
-                    assert.ok(
-                        /Politica de confidențialitate/i.test(await frame.locator('body').innerText()),
-                        id + ' first trusted catalog legal click opens the generated page'
-                    );
-
-                    await page.click('#btn-close-preview');
-                    await page.waitForSelector('#modal-preview', { state: 'hidden' });
-                    const restored = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
-                    assert.notStrictEqual(restored, 'none', id + ' restores builder notice after preview closes');
-                }
-
-                for (const id of TPLS) {
-                    await page.evaluate((x) => startWithTemplate(x), id);
-                    await page.waitForURL(/#edit$/, { timeout: 20000 });
-                    await page.waitForSelector('#preview-iframe[aria-busy="true"]', { timeout: 5000 });
-                    await page.waitForSelector('#preview-iframe[aria-busy="false"]', { timeout: 20000 });
-                    await page.waitForFunction(
-                        () => document.getElementById('preview-iframe').dataset.previewReady === 'true',
-                        null,
-                        { timeout: 5000 }
-                    );
-                    const closeDrawer = page.locator('#btn-close-drawer');
-                    if (await closeDrawer.isVisible()) await closeDrawer.click();
-
-                    const outerDisplay = await page.$eval('#hb-cookie-banner', (el) => getComputedStyle(el).display);
-                    assert.strictEqual(outerDisplay, 'none', id + ' editor hides builder-origin notice');
-
-                    const frame = page.frameLocator('#preview-iframe');
-                    const accept = frame.locator('#hb-cookie-accept');
-                    await accept.waitFor({ state: 'visible', timeout: 20000 });
-                    await page.click('#btn-preview-mobile');
-                    await page.click('#btn-preview-desktop');
-                    // Wait for the editor frame's width transition to settle so
-                    // the pointer coordinates exercise the button, not its old
-                    // mobile position.
-                    await page.waitForTimeout(350);
-                    const box = await accept.boundingBox();
-                    assert.ok(box, id + ' editor Accept has trusted-click coordinates');
-                    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-                    await frame.locator('#hb-cookie-banner').waitFor({ state: 'hidden', timeout: 5000 });
-                    assert.ok(
-                        await frame.locator('#hb-cookie-banner').evaluate((el) => el.hidden),
-                        id + ' editor first generated Accept after Mobile → Desktop hides notice'
-                    );
-
-                    await page.goto(`http://127.0.0.1:${port}/app/#templates`);
-                    await page.waitForFunction(() => typeof startWithTemplate === 'function');
-                }
-
-                await page.evaluate((x) => startWithTemplate(x), 'product-menu');
-                await page.waitForURL(/#edit$/, { timeout: 20000 });
-                await page.waitForSelector('#btn-publish');
-                const drawer = page.locator('#details-drawer');
-                if (!(await drawer.isVisible())) await page.click('#btn-open-drawer');
-                await drawer.waitFor({ state: 'visible' });
-                assert.strictEqual(
-                    await page.locator('[name="seo.ogImage"]').count(),
-                    0,
-                    'Restaurant Detalii has no customer seo.ogImage control'
-                );
-                assert.ok(
-                    !/Imagine pentru partajare socială/.test(await page.locator('#drawer-body').innerText()),
-                    'Restaurant Detalii has no customer social-image copy'
-                );
-                await page.click('#btn-close-drawer');
-
-                await page.click('#btn-publish');
-                await page.waitForSelector('#modal-publish', { state: 'visible' });
-                assert.ok(!/Introdu un link complet/.test(await page.locator('#toast').textContent()), 'publish is not blocked by auto-derived social image');
-                await page.click('#btn-close-publish');
-
-                const generatedNotice = page.frameLocator('#preview-iframe').locator('#hb-cookie-banner');
-                await generatedNotice.waitFor({ state: 'visible', timeout: 10000 });
-                await page.click('#btn-download-zip');
-                await page.waitForFunction(() => /Autentifică-te ca să descarci ZIP-ul/.test(document.getElementById('toast').textContent));
-                const errorToastBox = await page.locator('#toast').boundingBox();
-                const noticeBox = await generatedNotice.boundingBox();
-                assert.ok(errorToastBox && noticeBox, 'ZIP sign-in toast and generated notice are measurable');
-                const errorToastStack = await page.evaluate(() => {
-                    const toast = document.getElementById('toast');
-                    const preview = document.getElementById('preview-iframe');
-                    return {
-                        toastZ: getComputedStyle(toast).zIndex,
-                        previewZ: getComputedStyle(preview).zIndex,
-                        opacity: getComputedStyle(toast).opacity,
-                    };
-                });
-                assert.ok(
-                    Number.isFinite(Number(errorToastStack.previewZ)) &&
-                        Number(errorToastStack.toastZ) > Number(errorToastStack.previewZ),
-                    'ZIP sign-in toast computed stack must be above #preview-iframe: ' + JSON.stringify(errorToastStack)
-                );
-                assert.ok(Number(errorToastStack.opacity) >= 0.99, 'ZIP sign-in toast must be fully opaque immediately');
-                assert.ok(
-                    errorToastBox.y + errorToastBox.height <= noticeBox.y || noticeBox.y + noticeBox.height <= errorToastBox.y,
-                    'ZIP sign-in toast must not overlap the generated cookie notice'
-                );
-
-                await page.goto(`http://127.0.0.1:${port}/app/#dashboard`);
+                page.setDefaultTimeout(20000);
+                await page.goto(`http://127.0.0.1:${port}/app/#dashboard`, { waitUntil: 'domcontentloaded' });
                 await page.waitForSelector('#btn-dashboard-auth', { timeout: 10000 });
                 await page.click('#btn-dashboard-auth');
                 const browserEmail = `flow3-ui-${crypto.randomUUID()}@example.com`;
@@ -934,57 +680,48 @@ function unzipStore(zipBuf, destDir) {
                 await page.click('#btn-send-magic');
                 await page.waitForSelector('#dev-link', { state: 'visible' });
                 await page.click('#dev-link');
-                await page.waitForURL(/#edit$/, { timeout: 20000 });
+                await page.waitForURL(/#dashboard$/, { timeout: 20000 });
 
-                let unpaidDownloadStarted = false;
-                page.once('download', () => { unpaidDownloadStarted = true; });
-                await page.click('#btn-download-zip');
-                // 14-day trial (commit 2f1bb95); this oracle only started
-                // actually exercising this Playwright path once the
-                // hard-coded Brave-only loadPlaywright() above was fixed —
-                // it had been silently inert on machines without Brave.
-                await page.waitForFunction(() => /Activează trialul de 14 zile/.test(document.getElementById('toast').textContent), null, { timeout: 10000 });
-                await page.waitForTimeout(250);
-                assert.strictEqual(unpaidDownloadStarted, false, 'unpaid browser export starts no download');
+                // An unpaid draft made through the same API the builders use.
+                const presets = JSON.parse(headRead('templates/product-menu/presets.json')).presets;
+                const config = JSON.parse(JSON.stringify(presets[0].config));
+                config.business = config.business || {};
+                config.business.name = BIZ_NAME;
+                const draftStatus = await page.evaluate(async (body) => {
+                    const r = await fetch('/api/draft', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(body),
+                    });
+                    return r.status;
+                }, { templateId: 'product-menu', config });
+                assert.strictEqual(draftStatus, 200, 'draft created through the API');
+
+                await page.reload({ waitUntil: 'domcontentloaded' });
+                await page.waitForSelector('.site-card', { timeout: 20000 });
+                assert.strictEqual(
+                    await page.locator('button:has-text("Descarcă ZIP")').count(),
+                    0,
+                    'an unpaid draft offers no Descarcă ZIP'
+                );
 
                 const browserUser = registry.getOrCreateUserByEmail(browserEmail);
                 const browserSites = registry.listSites(browserUser.id);
-                assert.strictEqual(browserSites.length, 1, 'unpaid browser export saved one draft');
+                assert.strictEqual(browserSites.length, 1, 'one draft saved');
                 registry.updateSite(browserSites[0].id, {
                     paid: true,
                     status: 'live',
                     subscriptionStatus: 'active',
                 });
 
+                await page.reload({ waitUntil: 'domcontentloaded' });
+                const zipButton = page.locator('button:has-text("Descarcă ZIP")');
+                await zipButton.first().waitFor({ state: 'visible', timeout: 20000 });
                 const downloadPromise = page.waitForEvent('download', { timeout: 20000 });
-                await page.click('#btn-download-zip');
+                await zipButton.first().click();
                 const download = await downloadPromise;
                 await page.waitForFunction(() => /ZIP descărcat/.test(document.getElementById('toast').textContent));
-                const successNotice = page.frameLocator('#preview-iframe').locator('#hb-cookie-banner');
-                await successNotice.waitFor({ state: 'visible', timeout: 10000 });
-                const successToastBox = await page.locator('#toast').boundingBox();
-                const successNoticeBox = await successNotice.boundingBox();
-                assert.ok(successToastBox && successNoticeBox, 'ZIP success toast and generated notice are measurable');
-                const successToastStack = await page.evaluate(() => {
-                    const toast = document.getElementById('toast');
-                    const preview = document.getElementById('preview-iframe');
-                    return {
-                        toastZ: getComputedStyle(toast).zIndex,
-                        previewZ: getComputedStyle(preview).zIndex,
-                        opacity: getComputedStyle(toast).opacity,
-                    };
-                });
-                assert.ok(
-                    Number.isFinite(Number(successToastStack.previewZ)) &&
-                        Number(successToastStack.toastZ) > Number(successToastStack.previewZ),
-                    'ZIP success toast computed stack must be above #preview-iframe: ' + JSON.stringify(successToastStack)
-                );
-                assert.ok(Number(successToastStack.opacity) >= 0.99, 'ZIP success toast must be fully opaque immediately');
-                assert.ok(
-                    successToastBox.y + successToastBox.height <= successNoticeBox.y ||
-                        successNoticeBox.y + successNoticeBox.height <= successToastBox.y,
-                    'ZIP success toast must not overlap the generated cookie notice'
-                );
                 assert.ok(/\.zip$/i.test(download.suggestedFilename()), 'UI download filename is .zip');
                 const zipPath = await download.path();
                 assert.ok(zipPath && fs.existsSync(zipPath), 'browser produced a real downloaded file');

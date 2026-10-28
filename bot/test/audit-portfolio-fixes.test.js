@@ -26,29 +26,20 @@
  *      the header's own box instead of the viewport), and Escape closes it and
  *      returns focus to the toggle.
  *
+ * The site under test is published through the API (the form editor that used to
+ * publish it was removed 2026-10-28).
+ *
  * Run: node bot/test/audit-portfolio-fixes.test.js
  * Evidence: 04-QA-Evidence/audit-portfolio-fixes/
  */
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'audit-portfolio-fixes');
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
-
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'audit-portfolio-fixes-'));
-process.env.DATA_DIR = tmpDir;
-process.env.SERVER_SECRET = 'audit-portfolio-fixes-' + crypto.randomBytes(8).toString('hex');
-process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-process.env.HIDOOK_TEST_PAY = '1';
-process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-delete process.env.HIDOOK_FAKE_DEPLOY;
-delete process.env.STRIPE_SECRET_KEY;
-delete process.env.STRIPE_WEBHOOK_SECRET;
 
 let failed = 0;
 async function check(name, fn) {
@@ -108,18 +99,9 @@ async function main() {
   });
 
   // ---------------------------------------------------------------------
-  // Build + serve + publish a real portfolio site, then drive it with Chromium.
+  // Serve + publish a real portfolio site, then drive it with Chromium.
   // ---------------------------------------------------------------------
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
-    cwd: ROOT,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
-
-  const { startServer } = require('../server.js');
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => (server.listening ? resolve() : server.once('listening', resolve)));
-  const port = server.address().port;
-  const base = 'http://127.0.0.1:' + port;
+  const H = await startHarness('audit-portfolio-fixes');
 
   const report = {};
 
@@ -127,46 +109,10 @@ async function main() {
     const { chromium } = loadPlaywright();
     const browser = await chromium.launch({ headless: true });
     try {
-      // ---- Publish a real portfolio site through the actual editor UI ----
-      const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-      page.setDefaultTimeout(30000);
-      await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-      if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-      }
-      await page.evaluate((id) => startWithTemplate(id), 'portfolio');
-      await page.waitForURL(/#edit$/, { timeout: 25000 });
-      await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-      await page.waitForTimeout(600);
-      const drawer = page.locator('#details-drawer');
-      if (await drawer.isVisible().catch(() => false)) {
-        await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(() => {});
-        await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-      }
-
-      await page.locator('#btn-publish').click();
-      await page.waitForTimeout(300);
-      const slug = 'audit-portfolio-fixes-' + Date.now();
-      await page.locator('#input-slug').fill(slug);
-      await page.waitForTimeout(200);
-      await page.locator('#btn-publish-continue').click();
-      await page.waitForTimeout(300);
-      await page.locator('#input-email').fill('audit-portfolio-fixes@example.com');
-      await page.locator('#btn-send-magic').click();
-      await page.waitForTimeout(500);
-      const devLink = page.locator('#dev-link');
-      await devLink.waitFor({ state: 'visible', timeout: 10000 });
-      await devLink.click(); // app.js intercepts the click and keeps the publish flow going
-      await page.waitForTimeout(1000);
-      const payBtn = page.locator('#btn-pay-publish');
-      await payBtn.waitFor({ state: 'visible', timeout: 15000 });
-      await payBtn.click();
-      await page.waitForTimeout(1200);
-      const successLink = page.locator('#success-url-link');
-      await successLink.waitFor({ state: 'visible', timeout: 15000 });
-      const liveUrl = await successLink.getAttribute('href');
+      // ---- Publish a real portfolio site (API publish + test checkout) ----
+      const published = await H.publish('portfolio', publishConfig('portfolio'), { slug: 'audit-portfolio-fixes-' + Date.now() });
+      const liveUrl = published.liveUrl;
       report.liveUrl = liveUrl;
-      await page.close();
 
       // ---- (2) Desktop: lightbox opens correctly over the live site ----
       await check('browser @ desktop: lightbox opens full-screen, fixed, dark, above chrome; Escape closes it', async () => {
@@ -313,10 +259,7 @@ async function main() {
       await browser.close();
     }
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch (_) {}
+    await H.close();
   }
 
   fs.writeFileSync(path.join(EVIDENCE, 'oracle-report.json'), JSON.stringify(report, null, 2));

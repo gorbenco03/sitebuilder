@@ -18,6 +18,9 @@
  *
  * Env under test: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted
  *
+ * Form editor removed 2026-10-28: the success modal no longer has a pay button, so that source
+ * check now asserts the live-trial title and the absence of pay CTA / draft note.
+ *
  * Run: node bot/test/s51-builder-renewal.test.js
  */
 const assert = require('assert');
@@ -237,23 +240,19 @@ function readOrdersForSite(siteId) {
         );
     });
 
-    await check('showSuccessScreen paid/live: trial 14 zile chrome + pay CTA hidden', () => {
+    await check('success modal paid/live: trial 14 zile chrome, no pay CTA / draft note', () => {
         assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
+        const modal = (htmlSrc.match(/id="modal-success"[\s\S]*?(?=<div id="modal-(?!success)|$)/) || [''])[0];
+        assert.ok(modal.length > 40, 'modal-success markup must exist');
         // Current contract: live success states trial de 14 zile (not pay-once "hosting 12 months")
         assert.ok(
-            /trial\s+de\s+7\s+zile|Site-ul tău e live/i.test(showSuccessSrc),
-            'live success title/copy must state trial de 14 zile / site live'
+            /Site-ul tău e live — trial de 14 zile început/.test(modal),
+            'live success title must state site live + trial de 14 zile'
         );
-        // When live, pay button must be hidden (not only when paymentUrl null)
-        assert.ok(
-            /isLive[\s\S]{0,400}hide\s*\(\s*payBtn|isLive[\s\S]{0,400}payBtn[\s\S]{0,200}hide/i.test(showSuccessSrc) ||
-                (/isLive/.test(showSuccessSrc) && /hide\s*\(\s*payBtn\s*\)/.test(showSuccessSrc)),
-            'live/paid success must hide pay CTA'
-        );
-        assert.ok(!/\bDESSERD\b/i.test(showSuccessSrc), 'no DESSERD in success');
-        assert.ok(!/\bbakery\b/i.test(showSuccessSrc), 'no bakery in success');
-        // Trial chrome is required on live success under current Stripe trial model
-        assert.ok(/trial/i.test(showSuccessSrc), 'live success must carry trial chrome');
+        // The success modal is only reached once the site is live: no pay button, no draft note.
+        assert.ok(!/btn-pay|success-draft-note|Adaugă un card/i.test(modal + showSuccessSrc), 'no pay CTA / draft note in success');
+        assert.ok(!/\bDESSERD\b/i.test(modal + showSuccessSrc), 'no DESSERD in success');
+        assert.ok(!/\bbakery\b/i.test(modal + showSuccessSrc), 'no bakery in success');
     });
 
     await check('builder commercial chrome: no DESSERD / bakery / trial-time / slice IDs as customer address', () => {

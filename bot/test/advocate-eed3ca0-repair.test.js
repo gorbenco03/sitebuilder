@@ -10,15 +10,16 @@
  *
  * Causal RED on 70a67b0 / eed3ca0 before the repair. GREEN after a045208 + dock fix.
  *
+ * The browser checks used to open each template in the form editor's preview
+ * iframe; that editor was removed 2026-10-28, so they now open the template's
+ * published /live/<slug>/ page (same HTML/CSS, published via the API) instead.
+ *
  * Run: node bot/test/advocate-eed3ca0-repair.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
-const http = require('http');
-const { execFileSync } = require('child_process');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
@@ -50,16 +51,6 @@ const SECTION_SELECTORS = {
   professionals: '.pr-hero__meta',
   desserdirina: '.scroll-indicator',
 };
-
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'advocate-eed3ca0-'));
-process.env.DATA_DIR = tmpDir;
-process.env.SERVER_SECRET = 'advocate-eed3ca0-' + crypto.randomBytes(8).toString('hex');
-process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-process.env.HIDOOK_TEST_PAY = '1';
-process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-delete process.env.HIDOOK_FAKE_DEPLOY;
-delete process.env.STRIPE_SECRET_KEY;
-delete process.env.STRIPE_WEBHOOK_SECRET;
 
 let failed = 0;
 async function check(name, fn) {
@@ -199,20 +190,17 @@ async function main() {
     assert.match(js, /classList\.remove\('hb-cookie-open'\)/, 'hide removes hb-cookie-open');
   });
 
-  // Ensure engine ships current cookie CSS into srcdoc previews.
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
-    cwd: ROOT,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
+  const H = await startHarness('advocate-eed3ca0');
+  const base = H.base;
+  // One published site per template; the browser checks open /live/<slug>/.
+  const live = {};
 
-  const { startServer } = require('../server.js');
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => {
-    if (server.listening) return resolve();
-    server.once('listening', resolve);
-  });
-  const port = server.address().port;
-  const base = 'http://127.0.0.1:' + port;
+  async function liveUrlFor(templateId) {
+    if (!live[templateId]) {
+      live[templateId] = (await H.publish(templateId, publishConfig(templateId), { label: templateId })).liveUrl;
+    }
+    return live[templateId];
+  }
 
   try {
     await check('browser: legal document.title Romanian on all 3 pages', async () => {
@@ -251,29 +239,18 @@ async function main() {
         ]) {
           const page = await browser.newPage({ viewport });
           page.setDefaultTimeout(25000);
-          await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
+          await page.goto(await liveUrlFor('local-service'), { waitUntil: 'domcontentloaded' });
           if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
             await page.locator('#hb-cookie-accept').click().catch(() => {});
           }
-          await page.evaluate((id) => startWithTemplate(id), 'local-service');
-          await page.waitForURL(/#edit$/, { timeout: 25000 });
-          await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-          await page.waitForTimeout(1100);
-          // Close details so drawer does not cover canvas (measures the site itself).
-          const drawer = page.locator('#details-drawer');
-          if (await drawer.isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(() => {});
-            await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-          }
-          await page.waitForTimeout(400);
+          await page.waitForTimeout(500);
 
-          const frame = page.frameLocator('#preview-iframe');
-          await frame.locator('body').waitFor({ state: 'attached', timeout: 20000 });
+          const frame = page;
           await frame.locator('.ls-hero__tag, .hero-tagline, .ls-hero__name, h1').first().waitFor({
             state: 'visible',
             timeout: 20000,
           });
-          const metrics = await frame.locator('body').evaluate(() => {
+          const metrics = await frame.evaluate(() => {
             const el =
               document.querySelector('.ls-hero__tag, .hero-tagline') ||
               document.querySelector('.ls-hero__name') ||
@@ -299,7 +276,7 @@ async function main() {
               viewW: window.innerWidth,
             };
           });
-          assert.ok(!metrics.missing, viewport.label + ' preview hero present');
+          assert.ok(!metrics.missing, viewport.label + ' published hero present');
           assert.match(metrics.text, /finisaje premium/i, viewport.label + ' tagline text includes premium');
           assert.ok(!metrics.clippedX, viewport.label + ' tagline must not clip horizontally: ' + JSON.stringify(metrics));
           assert.ok(!metrics.clippedY, viewport.label + ' tagline must not clip vertically: ' + JSON.stringify(metrics));
@@ -326,27 +303,13 @@ async function main() {
         ]) {
           const page = await browser.newPage({ viewport });
           page.setDefaultTimeout(25000);
-          await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-          if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
-            await page.locator('#hb-cookie-accept').click().catch(() => {});
-          }
 
           for (const system of TPLS) {
-            await page.goto(base + '/app/#templates', { waitUntil: 'domcontentloaded' });
-            await page.waitForTimeout(300);
-            await page.evaluate((id) => startWithTemplate(id), system);
-            await page.waitForURL(/#edit$/, { timeout: 25000 });
-            await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-            await page.waitForTimeout(1000);
-            const drawer = page.locator('#details-drawer');
-            if (await drawer.isVisible().catch(() => false)) {
-              await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(() => {});
-              await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-            }
-            const frame = page.frameLocator('#preview-iframe');
-            await frame.locator('body').waitFor({ state: 'attached', timeout: 20000 });
-            // Clear any prior preview consent so the generated banner is visible.
-            await frame.locator('body').evaluate(() => {
+            await page.goto(await liveUrlFor(system), { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(800);
+            const frame = page;
+            // Clear any prior consent so the generated banner is visible.
+            await frame.evaluate(() => {
               try {
                 localStorage.removeItem('hb-cookie-consent');
               } catch (_) {}
@@ -368,8 +331,8 @@ async function main() {
             await page.waitForTimeout(250);
             await frame.locator('#hb-cookie-banner').waitFor({ state: 'visible', timeout: 10000 });
 
-            const report = await frame.locator('body').evaluate(
-              (_body, { heroSel, sectionSel }) => {
+            const report = await frame.evaluate(
+              ({ heroSel, sectionSel }) => {
                 const banner = document.getElementById('hb-cookie-banner');
                 if (!banner || banner.hidden) return { noBanner: true };
                 const br = banner.getBoundingClientRect();
@@ -535,10 +498,7 @@ async function main() {
       }
     });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch (_) {}
+    await H.close();
   }
 
   if (failed) {

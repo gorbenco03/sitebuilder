@@ -5,9 +5,12 @@
  * Causal RED on required base 6fa18d4 if:
  *   - Desserdirina missing from templates/registry.json
  *   - attribution still says "Built by" (VISION requires "Build by …")
- *   - Details drawer does not auto-open on first editor entry
- *
+ * *
  * GREEN on HEAD after Flow 2 implementation.
+ *
+ * Form editor removed 2026-10-28: the Details-drawer auto-open check (+ its
+ * causal-RED base check), the deriveWaHref check, and the Detalii topbar/drawer
+ * title and DESIGN_BADGE assertions were dropped (editor-only code).
  * Run: node bot/test/flow2-template-pass.test.js
  */
 const assert = require('assert');
@@ -80,16 +83,6 @@ check('causal RED: base four templates still say Built by (not VISION Build by)'
   }
 });
 
-check('causal RED: base builder lacks Details auto-open preference', () => {
-  const app = baseBlob('builder/app.js');
-  assert.ok(app, 'base app.js');
-  assert.ok(!/hb-details-drawer-pref/.test(app), 'base has no drawer pref key');
-  assert.ok(!/function shouldAutoOpenDrawer/.test(app), 'base has no shouldAutoOpenDrawer');
-  // openDrawer existed but was only manual / publish-missing
-  assert.ok(/function openDrawer/.test(app), 'base still has openDrawer');
-  assert.ok(!/shouldAutoOpenDrawer\(\)/.test(app), 'base never calls shouldAutoOpenDrawer');
-});
-
 // ─── HEAD GREEN ───────────────────────────────────────────────────────
 
 check('HEAD: registry lists desserdirina as fifth commercial template', () => {
@@ -156,26 +149,6 @@ check('HEAD: every launch template uses exact VISION attribution string', () => 
   }
 });
 
-check('HEAD: Details drawer auto-opens on first editor entry; pref persists', () => {
-  const app = read('builder/app.js');
-  assert.ok(/hb-details-drawer-pref/.test(app), 'pref key');
-  assert.ok(/function shouldAutoOpenDrawer/.test(app), 'shouldAutoOpenDrawer');
-  assert.ok(/function getDrawerPref|localStorage\.getItem\(DRAWER_PREF_KEY\)/.test(app), 'read pref');
-  assert.ok(/setDrawerPref\('open'\)/.test(app) || /localStorage\.setItem\([^\)]*open/.test(app), 'save open');
-  assert.ok(/setDrawerPref\('closed'\)/.test(app) || /localStorage\.setItem\([^\)]*closed/.test(app), 'save closed');
-  // Entering edit triggers auto-open
-  assert.ok(
-    /name === 'edit'[\s\S]{0,400}shouldAutoOpenDrawer/.test(app) ||
-      /shouldAutoOpenDrawer\(\)[\s\S]{0,80}openDrawer/.test(app),
-    'edit screen auto-opens drawer'
-  );
-  // Leaving edit must NOT write closed (only intentional close)
-  const showScreen = app.match(/function showScreen\(name\) \{[\s\S]*?\n\}/);
-  assert.ok(showScreen, 'showScreen extract');
-  // When leaving edit, drawer is hidden without setDrawerPref('closed') in that branch
-  assert.ok(/leaving the screen is not an intentional user close|do not write 'closed'/.test(app), 'leave-edit note');
-});
-
 check('HEAD: catalog/picker chrome is Romanian for stranger /app/', () => {
   const index = read('builder/index.html');
   assert.ok(/>Toate</.test(index), 'Toate chip');
@@ -183,13 +156,9 @@ check('HEAD: catalog/picker chrome is Romanian for stranger /app/', () => {
   assert.ok(/>Servicii profesionale</.test(index), 'Servicii profesionale chip');
   assert.ok(/>Cofetărie</.test(index), 'Cofetărie chip');
   assert.ok(/data-filter="desserdirina"/.test(index), 'desserdirina filter');
-  assert.ok(/>Detalii</.test(index), 'Detalii topbar');
-  assert.ok(/Detalii site/.test(index), 'drawer title RO');
   const app = read('builder/app.js');
-  assert.ok(/'desserdirina':\s*'Cofetărie'/.test(app), 'DESIGN_BADGE desserdirina');
-  assert.ok(/'local-service':\s*'Meserii'/.test(app), 'DESIGN_BADGE Meserii');
   assert.ok(/>Începe</.test(app) || /Începe<\/button>/.test(app), 'Începe CTA');
-  assert.ok(/Previzualizare/.test(app), 'Previzualizare CTA');
+  assert.ok(/Previzualizare/.test(app), 'Previzualizare label');
 });
 
 check('HEAD: render desserdirina RO preset — badge, WA, lang, no dead IG', () => {
@@ -215,38 +184,6 @@ check('HEAD: render desserdirina RO preset — badge, WA, lang, no dead IG', () 
   const edit = renderHtml(tplHtml, cfg, { editMode: true });
   assert.ok(/hb-built-by/.test(edit), 'badge survives editMode');
   assert.ok(!/data-hb-edit="[^"]*"[^>]*>Build by/.test(edit), 'Build by not path-wrapped');
-});
-
-check('HEAD: deriveWaHref still encodes RO diacritics; empty number clears href', () => {
-  const app = read('builder/app.js');
-  const m = app.match(/function deriveWaHref\(config\) \{[\s\S]*?\n\}/);
-  assert.ok(m, 'extract deriveWaHref');
-  // whatsapp-contact#1 (audit 2026-09-27): deriveWaHref now routes the raw
-  // number through normalizeWhatsAppDigits() — extract that too,
-  // deriveWaHref is no longer self-contained.
-  const normFn = app.match(/function normalizeWhatsAppDigits\(raw\) \{[\s\S]*?\n\}/);
-  assert.ok(normFn, 'extract normalizeWhatsAppDigits');
-  const fnSrc =
-    'const WA_DEFAULT_MSG = "Bună!";\n' + normFn[0] + '\n' + m[0] + '\nreturn deriveWaHref;';
-  // eslint-disable-next-line no-new-func
-  const derive = new Function(fnSrc)();
-  const cfg = {
-    contact: {
-      whatsapp: '40721234567',
-      waMessage: 'Bună ziua, aș dori o programare.',
-    },
-  };
-  derive(cfg);
-  assert.ok(cfg.contact.waHref.startsWith('https://wa.me/40721234567?text='), cfg.contact.waHref);
-  assert.ok(cfg.contact.waHref.includes(encodeURIComponent('Bună ziua, aș dori o programare.')));
-  const empty = { contact: { whatsapp: '', waMessage: 'x' } };
-  derive(empty);
-  assert.strictEqual(empty.contact.waHref, '');
-  // whatsapp-contact#1 repro: local format (leading 0, no country code)
-  // must resolve to a valid wa.me link — the defect the audit reproduced.
-  const local = { contact: { whatsapp: '0721234567', waMessage: 'x' } };
-  derive(local);
-  assert.ok(local.contact.waHref.startsWith('https://wa.me/40721234567?text='), local.contact.waHref);
 });
 
 if (failed) {

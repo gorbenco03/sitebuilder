@@ -41,6 +41,7 @@ const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+const { signInPage, publishLive } = require('./lib/dash-seed.js');
 
 /** Same minimal fake Cloudflare Pages API as wave7/wave8's own oracles. */
 function fakeCloudflare({ pagesHost }) {
@@ -136,34 +137,12 @@ test('Domeniu modal shows numbered steps that track real DNS/TLS status, and swi
         // 1. Publish a real site and reach the Domeniu modal on its dashboard
         //    card (same path as wave8-owner-ui-domain-reachable-e2e).
         // =====================================================================
-        await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.evaluate((id) => startWithTemplate(id), 'local-service');
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(1000);
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-
+        // Form editor removed 2026-10-28: sign in + publish through the API, then
+        // use the real dashboard card.
         const runSlug = 'audit27-u06-' + crypto.randomBytes(4).toString('hex');
-        await page.locator('#btn-publish').click();
-        await page.locator('#modal-publish').waitFor({ state: 'visible' });
-        await page.locator('#input-slug').fill(runSlug);
-        await page.locator('#btn-publish-continue').click();
-        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-        await page.locator('#input-email').fill('audit27-u06-domain@example.com');
-        await page.locator('#btn-send-magic').click();
-        await page.locator('#dev-link').waitFor({ state: 'visible' });
-        await page.locator('#dev-link').click();
-        await page.locator('#modal-success').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').click();
-        await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 20000 });
-        await page.locator('#btn-success-close').click().catch(() => {});
-        await page.locator('#modal-success').waitFor({ state: 'hidden' }).catch(() => {});
-
-        await page.locator('#nav-dashboard').click().catch(async () => {
-            await page.evaluate(() => { window.location.hash = '#dashboard'; });
-        });
+        await signInPage(page, base, 'audit27-u06-domain@example.com');
+        await publishLive(page, base, { slug: runSlug, pack: 'salon', name: 'Salon U06' });
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
         const card = page.locator('.site-card', { hasText: runSlug });
         await card.waitFor({ state: 'visible' });
@@ -233,7 +212,7 @@ test('Domeniu modal shows numbered steps that track real DNS/TLS status, and swi
         // =====================================================================
         fakeCf.markActive(cnameName);
         await page.locator('#btn-domain-verify').click();
-        await page.locator('#domain-modal-body .status-badge', { hasText: 'Activ' }).waitFor({ state: 'visible', timeout: 15000 });
+        await page.locator('#domain-modal-body .status-badge', { hasText: /^Activ$/ }).waitFor({ state: 'visible', timeout: 15000 });
         assert.deepStrictEqual(
             await stepStates(page),
             ['done', 'done', 'done', 'current'],

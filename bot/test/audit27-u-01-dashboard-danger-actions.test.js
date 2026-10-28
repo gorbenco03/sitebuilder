@@ -30,6 +30,9 @@
  *      tagline at that point in time) alongside the date/time and the
  *      existing "Restabilește" label.
  *
+ * Form editor removed 2026-10-28: the site is seeded through the API
+ * (bot/test/lib/dash-seed.js) instead of the editor's publish modal.
+ *
  * Run: node --experimental-sqlite --test bot/test/audit27-u-01-dashboard-danger-actions.test.js
  */
 
@@ -41,6 +44,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
+const { signInPage, publishAndPayInUi, publishLive } = require('./lib/dash-seed.js');
 // May run from a worktree with no node_modules of its own — same fallback
 // chain as bot/test/suite4-modal-contract.test.js / delete-site-oracle.mjs.
 const PW_CANDIDATES = [
@@ -82,35 +86,11 @@ test('U-01: dashboard danger actions — own modals, danger styling, newest-firs
   page.on('dialog', (d) => { nativeDialogFired = true; d.dismiss().catch(() => {}); });
 
   try {
-    await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-    await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-
-    await page.evaluate((id) => startWithTemplate(id), 'professionals');
-    await page.waitForURL(/#edit$/, { timeout: 25000 });
-    await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-    await page.waitForTimeout(600);
-    const drawer = page.locator('#details-drawer');
-    if (await drawer.isVisible().catch(() => false)) {
-      await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
-        await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
-      });
-      await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-    }
-
-    // ---- Publish a real paid/live site through the real checkout flow ----
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
+    // Form editor removed 2026-10-28: the account and its site are seeded through
+    // the API; the test-pay return URL is then opened exactly as Stripe's would be.
+    await signInPage(page, base, 'audit27-u01@example.com');
     const slug = 'audit27-u01-' + Date.now().toString(36);
-    await page.locator('#input-slug').fill(slug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-    await page.locator('#input-email').fill('audit27-u01@example.com');
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    const payBtn = page.locator('#btn-pay-publish');
-    await payBtn.waitFor({ state: 'visible' });
-    await payBtn.click();
+    const pub = await publishAndPayInUi(page, base, { slug, pack: 'restaurant', name: 'Restaurant U01' });
     await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 25000 });
 
     // ---- Item 6: no redundant toast — the modal already says it ----
@@ -127,16 +107,27 @@ test('U-01: dashboard danger actions — own modals, danger styling, newest-firs
     await page.locator('#modal-success').waitFor({ state: 'hidden', timeout: 5000 });
     await page.waitForURL(/#dashboard$/, { timeout: 5000 });
 
-    const siteId = await page.evaluate(() => (typeof currentSiteId !== 'undefined' ? currentSiteId : null));
-    assert.ok(siteId, 'currentSiteId set after checkout');
+    const siteId = pub.siteId;
+    assert.ok(siteId, 'site id from the publish response');
 
+    // Published before the unpaid draft below: one unpaid site blocks a second publish.
+    const oldPub = await publishLive(page, base, {
+      templateId: 'product-menu',
+      slug: 'audit27-u01-old-' + Date.now().toString(36),
+      config: {
+        business: { name: 'U01 Vechi', tagline: 'Descriere scurtă', title: 'U01 Vechi | Test', metaDescription: 'U01 Vechi - test.', lang: 'ro' },
+        hero: { background: "url('images/cn-hero.jpg')", ctaLabel: 'Sună acum' },
+        contact: { phone: '+40721234567' },
+        footer: { address: 'Strada Test 1, București' },
+      },
+    });
     // ---- Item 4: newest-first ordering ----
     // Seed an OLDER draft directly through the registry (bypassing the UI,
     // which always creates "now") so this run has a real time difference to
     // sort by, not a coin-flip on raw insertion order.
     const ownerId = registry.getSite(siteId).userId;
     const olderSlug = 'audit27-u01-older-' + Date.now().toString(36);
-    const olderSite = registry.createSite({ userId: ownerId, templateId: 'portfolio', templateVersion: 1, slug: olderSlug, platform: 'web' });
+    const olderSite = registry.createSite({ userId: ownerId, templateId: 'blocks', templateVersion: 1, slug: olderSlug, platform: 'web' });
     registry.updateSite(olderSite.id, { createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString() });
 
     await page.reload({ waitUntil: 'networkidle' });
@@ -193,10 +184,14 @@ test('U-01: dashboard danger actions — own modals, danger styling, newest-firs
     assert.equal(nativeDialogFired, false, 'a native window.confirm()/dialog fired — both call sites must use the product\'s own modal instead');
 
     // ---- Item 7: Istoric versiuni rows carry a short description ----
+    // The description is read from config.business (old templates); block-editor
+    // configs have no such field, so the history of a blocks site has empty
+    // descriptions today (reported as a product gap). Checked here on an
+    // old-template site, which still has the same history modal.
     const versionsData = await page.evaluate(async (id) => {
       const res = await fetch('/api/sites/' + encodeURIComponent(id) + '/versions', { credentials: 'include' });
       return res.json();
-    }, siteId);
+    }, oldPub.siteId);
     assert.ok(Array.isArray(versionsData.versions) && versionsData.versions.length >= 1, 'at least one published version for the site');
     const latestVersion = versionsData.versions[versionsData.versions.length - 1];
     assert.ok(

@@ -65,16 +65,17 @@
  * Causal RED before the templates/{professionals,portfolio}/styles.css
  * fixes, GREEN after.
  *
+ * The long name is set in the config published through the API (the form
+ * editor that typed it in was removed 2026-10-28).
+ *
  * Run: node --experimental-sqlite --test bot/test/wave8-templates-zoom-overflow.test.js
  */
 
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
-const { execFileSync } = require('child_process');
 const { test } = require('node:test');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 
@@ -96,54 +97,10 @@ function loadPlaywright() {
   throw new Error('playwright not found');
 }
 
-async function publishWithLongName(browser, base, templateId, longName) {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-  page.setDefaultTimeout(30000);
-
-  await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-  if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
-    await page.locator('#hb-cookie-accept').click().catch(() => {});
-  }
-  await page.evaluate((id) => startWithTemplate(id), templateId);
-  await page.waitForURL(/#edit$/, { timeout: 30000 }).catch(() => {});
-  await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
-  await page.waitForTimeout(900);
-  await page.locator('#btn-close-drawer').click().catch(() => {});
-  await page.waitForTimeout(400);
-
-  if (longName) {
-    const iframeHandle = await page.$('#preview-iframe');
-    const iframeCtx = await iframeHandle.contentFrame();
-    const nameField = iframeCtx.locator('[data-hb-edit="business.name"]').first();
-    await nameField.click();
-    await page.keyboard.press('Control+A').catch(() => {});
-    await page.keyboard.type(longName);
-    await nameField.blur();
-    await page.waitForTimeout(400);
-  }
-
-  await page.locator('#btn-publish').click();
-  await page.waitForTimeout(300);
-  const slug = 'wave8-zoom-' + templateId + '-' + Date.now();
-  await page.locator('#input-slug').fill(slug);
-  await page.waitForTimeout(200);
-  await page.locator('#btn-publish-continue').click();
-  await page.waitForTimeout(300);
-  await page.locator('#input-email').fill('wave8-zoom-' + templateId + '@example.com');
-  await page.locator('#btn-send-magic').click();
-  await page.waitForTimeout(500);
-  const devLink = page.locator('#dev-link');
-  await devLink.waitFor({ state: 'visible', timeout: 10000 });
-  await devLink.click();
-  await page.waitForTimeout(1000);
-  const payBtn = page.locator('#btn-pay-publish');
-  await payBtn.waitFor({ state: 'visible', timeout: 15000 });
-  await payBtn.click();
-  await page.waitForTimeout(1200);
-  const successLink = page.locator('#success-url-link');
-  await successLink.waitFor({ state: 'visible', timeout: 15000 });
-  const liveUrl = await successLink.getAttribute('href');
-  await page.close();
+async function publishWithLongName(H, templateId, longName) {
+  const { liveUrl } = await H.publish(templateId, publishConfig(templateId, (cfg) => {
+    if (longName) cfg.business.name = longName;
+  }), { slug: 'wave8-zoom-' + templateId + '-' + Date.now() });
   return liveUrl;
 }
 
@@ -175,28 +132,12 @@ async function checkNoZoomOverflow(browser, liveUrl) {
 }
 
 test('wave8 zoom overflow: professionals stays scroll-free at 200% zoom / 390px with a long business name', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wave8-zoom-pr-'));
-  process.env.DATA_DIR = tmpDir;
-  process.env.SERVER_SECRET = 'wave8-zoom-pr-' + crypto.randomBytes(8).toString('hex');
-  process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-  process.env.HIDOOK_TEST_PAY = '1';
-  process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-  delete process.env.HIDOOK_FAKE_DEPLOY;
-  delete process.env.STRIPE_SECRET_KEY;
-  delete process.env.STRIPE_WEBHOOK_SECRET;
-
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'] });
-
-  delete require.cache[require.resolve(path.join(ROOT, 'bot/server.js'))];
-  const { startServer } = require(path.join(ROOT, 'bot/server.js'));
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => (server.listening ? resolve() : server.once('listening', resolve)));
-  const base = 'http://127.0.0.1:' + server.address().port;
+  const H = await startHarness('wave8-zoom-pr');
 
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: true });
   try {
-    const liveUrl = await publishWithLongName(browser, base, 'professionals', LONG_NAMES.professionals);
+    const liveUrl = await publishWithLongName(H, 'professionals', LONG_NAMES.professionals);
     const result = await checkNoZoomOverflow(browser, liveUrl);
 
     assert.ok(
@@ -209,34 +150,17 @@ test('wave8 zoom overflow: professionals stays scroll-free at 200% zoom / 390px 
     );
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await H.close();
   }
 });
 
 test('wave8 zoom overflow: portfolio stays scroll-free at 200% zoom / 390px with a long business name', async (t) => {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wave8-zoom-pf-'));
-  process.env.DATA_DIR = tmpDir;
-  process.env.SERVER_SECRET = 'wave8-zoom-pf-' + crypto.randomBytes(8).toString('hex');
-  process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-  process.env.HIDOOK_TEST_PAY = '1';
-  process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-  delete process.env.HIDOOK_FAKE_DEPLOY;
-  delete process.env.STRIPE_SECRET_KEY;
-  delete process.env.STRIPE_WEBHOOK_SECRET;
-
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], { cwd: ROOT, stdio: ['ignore', 'ignore', 'pipe'] });
-
-  delete require.cache[require.resolve(path.join(ROOT, 'bot/server.js'))];
-  const { startServer } = require(path.join(ROOT, 'bot/server.js'));
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => (server.listening ? resolve() : server.once('listening', resolve)));
-  const base = 'http://127.0.0.1:' + server.address().port;
+  const H = await startHarness('wave8-zoom-pf');
 
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: true });
   try {
-    const liveUrl = await publishWithLongName(browser, base, 'portfolio', LONG_NAMES.portfolio);
+    const liveUrl = await publishWithLongName(H, 'portfolio', LONG_NAMES.portfolio);
     const result = await checkNoZoomOverflow(browser, liveUrl);
 
     assert.ok(
@@ -249,8 +173,7 @@ test('wave8 zoom overflow: portfolio stays scroll-free at 200% zoom / 390px with
     );
   } finally {
     await browser.close();
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await H.close();
   }
 });
 

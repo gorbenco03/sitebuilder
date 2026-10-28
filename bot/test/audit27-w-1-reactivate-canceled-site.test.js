@@ -18,6 +18,9 @@
  * Fails on the pre-W-1 behavior (renewal paid, site left unpublished/404, toast
  * "Trial început"; trial-canceled card offering a fresh trial).
  *
+ * Form editor removed 2026-10-28: the paid site is seeded through the API
+ * (bot/test/lib/dash-seed.js); cancel and reactivate stay real dashboard UI.
+ *
  * Run: node --experimental-sqlite --test bot/test/audit27-w-1-reactivate-canceled-site.test.js
  */
 
@@ -29,6 +32,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
+const { signInPage, publishAndPayInUi } = require('./lib/dash-seed.js');
 const PW_CANDIDATES = [
   path.join(ROOT, 'node_modules', 'playwright'),
   '/Users/Work/Desktop/sitebuilder/node_modules/playwright',
@@ -70,40 +74,17 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
     const page = await context.newPage();
     page.setDefaultTimeout(20000);
     try {
-      await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-      await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-      await page.evaluate((id) => startWithTemplate(id), 'professionals');
-      await page.waitForURL(/#edit$/, { timeout: 25000 });
-      await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-      await page.waitForTimeout(600);
-      const drawer = page.locator('#details-drawer');
-      if (await drawer.isVisible().catch(() => false)) {
-        await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
-          await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
-        });
-        await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-      }
-
-      // ---- publish + pay (test card) ----
-      await page.locator('#btn-publish').click();
-      await page.locator('#modal-publish').waitFor({ state: 'visible' });
+      // Form editor removed 2026-10-28: account + paid site are seeded through the
+      // API; the cancel / reactivate flow below is the real dashboard UI.
       const slug = 'audit27-w1-' + label + '-' + Date.now().toString(36);
-      await page.locator('#input-slug').fill(slug);
-      await page.locator('#btn-publish-continue').click();
-      await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-      await page.locator('#input-email').fill('audit27-w1-' + label + '@example.com');
-      await page.locator('#btn-send-magic').click();
-      await page.locator('#dev-link').waitFor({ state: 'visible' });
-      await page.locator('#dev-link').click();
-      await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-      await page.locator('#btn-pay-publish').click();
+      await signInPage(page, base, 'audit27-w1-' + label + '@example.com');
+      const pub = await publishAndPayInUi(page, base, { slug, pack: 'restaurant', name: 'Restaurant W1' });
       await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 25000 });
       await shot(page, label + '-01-after-first-payment');
       await page.locator('#btn-success-view-sites').click();
       await page.waitForURL(/#dashboard$/, { timeout: 5000 });
 
-      const siteId = await page.evaluate(() => (typeof currentSiteId !== 'undefined' ? currentSiteId : null));
-      assert.ok(siteId, label + ': currentSiteId set after checkout');
+      const siteId = pub.siteId;
       const liveBefore = await fetch(base + '/live/' + slug + '/');
       assert.equal(liveBefore.status, 200, label + ': site is live after the first payment');
 

@@ -3,12 +3,16 @@
  * bot/test/s52-image-replace-live.test.js — S52 replaced photos on isolated live.
  *
  * Causal lock-in:
- *   - Builder extractImages sends data-URL photos as {name,dataUrl} and rewrites to images/…
+ *   - Client payload {name,dataUrl} photos + images/… config paths (local fixture, see extractImages)
  *   - Unpaid draft keeps photos; /live stays 404
  *   - Test-pay → live HTML references images/… and GET image returns distinctive bytes
  *   - Paid edit + republish updates live HTML + image file
  *
  * Env: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted
+ *
+ * Form editor removed 2026-10-28: the builder's extractImages/execPublish are gone, so their source
+ * and sandbox checks were dropped; the same wire payload is now built by a local fixture and the
+ * unpaid-404 -> pay -> live bytes -> republish server journeys stay.
  *
  * Run: node bot/test/s52-image-replace-live.test.js
  */
@@ -17,7 +21,6 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
-const vm     = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS = path.join(ROOT, 'builder', 'app.js');
@@ -100,20 +103,6 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 20000, int
     throw new Error(`timeout waiting for ${urlPath} → ${wantStatus} (last ${last})`);
 }
 
-function extractFunction(src, name) {
-    const re = new RegExp('function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-    const m = re.exec(src);
-    if (!m) return null;
-    let i = m.index + m[0].length;
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-        const ch = src[i++];
-        if (ch === '{') depth++;
-        else if (ch === '}') depth--;
-    }
-    return src.slice(m.index, i);
-}
-
 /** 1×1 red JPEG */
 const JPEG_RED_B64 =
     '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAGcP//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQMBAT8Bf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8Bf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEABj8Cf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8hf//Z';
@@ -155,19 +144,92 @@ function withBusinessName(config, name) {
     return c;
 }
 
-/** Run builder extractImages in a sandbox (mirrors client publish path). */
+/**
+ * Wire-format fixture: the {cleanConfig, images:[{name,dataUrl}]} payload a client posts to
+ * /api/publish (data URLs pulled out of the config, rewritten to images/…). The old form
+ * editor built it in the browser; the server contract it exercises is unchanged.
+ */
+function extractImages(config) {
+  const images = [];
+  const clean = JSON.parse(JSON.stringify(config));
+  const DATA_URL_RE = /data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+/gi;
+
+  function extOf(dataUrl) {
+    const m = /^data:image\/(jpeg|jpg|png|webp)/i.exec(dataUrl || '');
+    if (!m) return 'jpg';
+    const t = m[1].toLowerCase();
+    return t === 'jpeg' ? 'jpg' : t;
+  }
+
+  function isCssish(key, val) {
+    return /background|style|gradient/i.test(key || '') ||
+      /url\s*\(/i.test(val || '') ||
+      /linear-gradient/i.test(val || '');
+  }
+
+  function allocate(key, dataUrl) {
+    const ext = extOf(dataUrl);
+    const k = String(key || '');
+    if (k === 'logo' || /logo/i.test(k)) {
+      return { name: 'logo', file: 'logo.' + ext };
+    }
+    if (/background/i.test(k) || /^hero$/i.test(k)) {
+      const n = images.filter((x) => String(x.name).startsWith('hero')).length + 1;
+      const name = n === 1 ? 'hero' : 'hero-' + n;
+      return { name, file: name + '.' + ext };
+    }
+    const n = images.filter((x) => String(x.name).startsWith('gallery')).length + 1;
+    const name = 'gallery-' + n;
+    return { name, file: name + '.' + ext };
+  }
+
+  function takeDataUrl(raw) {
+    return String(raw || '').replace(/\s+/g, '');
+  }
+
+  function walk(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) { obj.forEach(walk); return; }
+    for (const [k, v] of Object.entries(obj)) {
+      if (typeof v !== 'string') {
+        walk(v);
+        continue;
+      }
+
+      // Pure data-URL field (logo, photo src, etc.)
+      if (v.startsWith('data:image/')) {
+        const dataUrl = takeDataUrl(v);
+        const { name, file } = allocate(k, dataUrl);
+        images.push({ name, dataUrl });
+        const local = 'images/' + file;
+        obj[k] = isCssish(k, v) ? "url('" + local + "')" : local;
+        continue;
+      }
+
+      // CSS / mixed strings with url(data:image...) (hero.background)
+      if (v.includes('data:image/')) {
+        let next = v;
+        const found = v.match(DATA_URL_RE) || [];
+        for (const raw of found) {
+          const dataUrl = takeDataUrl(raw);
+          const { name, file } = allocate(k, dataUrl);
+          images.push({ name, dataUrl });
+          const local = 'images/' + file;
+          next = next.split(raw).join(local);
+        }
+        obj[k] = next;
+        continue;
+      }
+
+      walk(v);
+    }
+  }
+  walk(clean);
+  return { cleanConfig: clean, images };
+}
+
 function runExtractImages(config) {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const fnSrc = extractFunction(appSrc, 'extractImages');
-    assert.ok(fnSrc && fnSrc.length > 40, 'extractImages must exist in builder/app.js');
-    // deepClone is used by extractImages — provide a minimal polyfill
-    const sandbox = {
-        deepClone: (o) => JSON.parse(JSON.stringify(o)),
-        console,
-    };
-    vm.createContext(sandbox);
-    vm.runInContext(fnSrc + '\nthis.__extractImages = extractImages;', sandbox);
-    return sandbox.__extractImages(JSON.parse(JSON.stringify(config)));
+  return extractImages(JSON.parse(JSON.stringify(config)));
 }
 
 async function loginClient(base, email) {
@@ -197,88 +259,8 @@ async function loginClient(base, email) {
     const appSrc = fs.readFileSync(APP_JS, 'utf8');
     const htmlSrc = fs.readFileSync(INDEX_HTML, 'utf8');
     const combined = appSrc + '\n' + htmlSrc;
-    const extractSrc = extractFunction(appSrc, 'extractImages') || '';
-    const execPubSrc = extractFunction(appSrc, 'execPublish') || '';
 
     // ── Builder source ─────────────────────────────────────────────────────
-    await check('extractImages exists and is used by execPublish payload', () => {
-        assert.ok(extractSrc.length > 40, 'extractImages function body');
-        assert.ok(/data:image\//.test(extractSrc), 'must detect data:image values');
-        assert.ok(/images\//.test(extractSrc), 'must rewrite paths to images/…');
-        assert.ok(/name.*dataUrl|dataUrl.*name/.test(extractSrc), 'must push {name, dataUrl}');
-        assert.ok(execPubSrc.length > 40, 'execPublish must exist');
-        assert.ok(
-            /extractImages\s*\(\s*draft\.config\s*\)/.test(execPubSrc),
-            'execPublish must call extractImages(draft.config)'
-        );
-        assert.ok(
-            /images\s*,|images\s*:/.test(execPubSrc) && /api\/publish/.test(execPubSrc),
-            'execPublish must POST images on /api/publish'
-        );
-    });
-
-    await check('extractImages extracts logo + gallery data-URLs and rewrites paths', () => {
-        const logoDu = dataUrlPng(PNG_A);
-        const galDu = dataUrlJpeg(JPEG_RED_B64);
-        const cfg = {
-            logo: logoDu,
-            categories: [{ title: 'G', photos: [{ src: galDu, alt: 'a' }] }],
-            business: { name: 'X' },
-        };
-        const { cleanConfig, images } = runExtractImages(cfg);
-        assert.ok(Array.isArray(images) && images.length >= 2, 'must extract ≥2 images, got ' + images.length);
-        const byName = Object.fromEntries(images.map((i) => [i.name, i]));
-        assert.ok(byName.logo && byName.logo.dataUrl === logoDu, 'logo dataUrl preserved in payload');
-        const gal = images.find((i) => i.name.startsWith('gallery'));
-        assert.ok(gal && gal.dataUrl === galDu, 'gallery dataUrl preserved');
-        assert.ok(
-            typeof cleanConfig.logo === 'string' && cleanConfig.logo.startsWith('images/'),
-            'logo path rewritten to images/… got ' + cleanConfig.logo
-        );
-        const photoSrc = cleanConfig.categories[0].photos[0].src;
-        assert.ok(
-            typeof photoSrc === 'string' && photoSrc.startsWith('images/'),
-            'gallery src rewritten to images/… got ' + photoSrc
-        );
-        // No leftover data URLs in clean config
-        const dumped = JSON.stringify(cleanConfig);
-        assert.ok(!dumped.includes('data:image/'), 'cleanConfig must not keep data:image blobs');
-    });
-
-    await check('extractImages pulls data-URL out of hero CSS url(...) and keeps url(images/…)', () => {
-        const heroDu = dataUrlPng(PNG_A);
-        const css =
-            "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            heroDu +
-            "')";
-        const pureBg = heroDu; // click-to-replace often sets pure data URL on hero.background
-        const { cleanConfig, images } = runExtractImages({
-            hero: { background: css },
-            business: { name: 'HeroCSS' },
-        });
-        assert.ok(
-            images.some((i) => i.dataUrl === heroDu || i.dataUrl.replace(/\s+/g, '') === heroDu),
-            'hero CSS-embedded dataUrl must be in images payload'
-        );
-        const bg = cleanConfig.hero.background;
-        assert.ok(typeof bg === 'string', 'hero.background string');
-        assert.ok(!bg.includes('data:image/'), 'hero.background must not keep data:image blob, got ' + bg.slice(0, 120));
-        assert.ok(
-            /url\(\s*['"]?images\/[^'")\s]+['"]?\s*\)/i.test(bg),
-            'hero.background must keep CSS url(images/…) wrapper, got ' + bg
-        );
-        assert.ok(/linear-gradient/i.test(bg), 'gradient layer preserved alongside local image');
-
-        const pure = runExtractImages({ hero: { background: pureBg }, business: { name: 'Pure' } });
-        assert.ok(pure.images.some((i) => i.dataUrl === pureBg), 'pure hero dataUrl extracted');
-        const pbg = pure.cleanConfig.hero.background;
-        assert.ok(
-            /url\(\s*['"]?images\/[^'")\s]+['"]?\s*\)/i.test(pbg),
-            'pure dataUrl on hero.background must become url(images/…), got ' + pbg
-        );
-        assert.ok(!pbg.includes('data:image/'), 'pure hero path must not remain a bare data URL');
-    });
-
     await check('builder commercial chrome: no DESSERD/bakery/test.local/fake journey', () => {
         assert.ok(/Hidook Site Builder/.test(htmlSrc), 'names Hidook Site Builder');
         assert.ok(!/\bDESSERD\b/i.test(combined), 'no DESSERD');

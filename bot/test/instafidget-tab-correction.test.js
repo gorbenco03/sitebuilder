@@ -9,6 +9,10 @@
  *   - Editor must open as a normal new tab in the same browser (_blank), with
  *     no windowFeatures argument. Isolate the opener after opening the tab.
  *
+ * Form editor removed 2026-10-28: the HEAD checks now read the block editor
+ * (builder/blocks/editor.js + builder/blocks/index.html) where the Instafidget
+ * connect flow lives; the parent-commit RED checks still read the old blob.
+ *
  * Run: node bot/test/instafidget-tab-correction.test.js
  * Exits non-zero on failure.
  */
@@ -53,10 +57,11 @@ function extractConnectInstagram(appSrc) {
   return m[0];
 }
 
+// Block editor: the partner note is the .hint paragraph inside the Instagram panel.
 function extractPartnerNoteText(html) {
-  const m = html.match(/id=["']ig-partner-note["'][^>]*>([\s\S]*?)<\/p>/i);
-  assert.ok(m, '#ig-partner-note must exist in builder/index.html');
-  return m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const panel = html.match(/id=["']ig-title["'][\s\S]*?<p class=["']hint["']>([\s\S]*?)<\/p>/i);
+  assert.ok(panel, 'Instagram partner note must exist in builder/blocks/index.html');
+  return panel[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 // ── Causal RED on required base 540ad05 ──────────────────────────────────
@@ -82,40 +87,32 @@ check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} LAUNCH.md still says Instafi
 });
 
 // ── HEAD: editor opens as same-browser new tab ───────────────────────────
-check('HEAD connectInstagram opens editor as _blank tab without window features', () => {
-  const app = headRead('builder/app.js');
-  const fn = extractConnectInstagram(app);
-
+check('HEAD block editor opens the Instafidget editor as _blank tab without window features', () => {
+  const app = headRead('builder/blocks/editor.js');
+  const opens = app.match(/window\.open\s*\([^)]*\)/g) || [];
+  const editorOpens = opens.filter((o) => /(igEditorUrl|session\.editorUrl)/.test(o));
+  assert.ok(editorOpens.length >= 2, 'both the connect flow and the "Deschide editorul" button open the editor');
+  for (const o of editorOpens) {
+    assert.ok(
+      /window\.open\s*\(\s*(igEditorUrl|session\.editorUrl)\s*,\s*['"]_blank['"]\s*\)/.test(o),
+      'must open with target _blank and no third windowFeatures argument: ' + o
+    );
+  }
   assert.ok(
-    !/['"]instagram-feed-editor['"]/.test(fn),
+    !/['"]instagram-feed-editor['"]/.test(app),
     'must not use named popup target instagram-feed-editor'
   );
   assert.ok(
-    !/width\s*=\s*\d+|height\s*=\s*\d+/.test(fn),
-    'must not pass popup width/height features'
+    !/window\.open\s*\(\s*(igEditorUrl|session\.editorUrl)[\s\S]{0,120}(width|height)\s*=/.test(app),
+    'editor open must not include popup size features'
   );
-  assert.ok(
-    /window\.open\s*\(\s*session\.editorUrl\s*,\s*['"]_blank['"]\s*\)/.test(fn),
-    'must open with target _blank and no third windowFeatures argument'
-  );
-  assert.ok(
-    !/window\.open\s*\(\s*session\.editorUrl\s*,\s*['"]_blank['"]\s*,/.test(fn),
-    'must not pass a third windowFeatures argument'
-  );
-  assert.ok(
-    /\.opener\s*=\s*null/.test(fn),
-    'must isolate the new tab opener without windowFeatures'
-  );
-  // Guard: no leftover sized feature string on this open
-  assert.ok(
-    !/window\.open\s*\(\s*session\.editorUrl[\s\S]{0,120}width\s*=/.test(fn),
-    'editor open must not include width= features'
-  );
+  const openers = app.match(/\.opener\s*=\s*null/g) || [];
+  assert.ok(openers.length >= 2, 'must isolate the new tab opener without windowFeatures (both opens)');
 });
 
 // ── HEAD: product-visible copy = 12 months free + Free watermark ─────────
-check('HEAD #ig-partner-note states free 12 months then Instafidget Free (filigran)', () => {
-  const html = headRead('builder/index.html');
+check('HEAD Instagram panel states free 12 months then Instafidget Free (filigran)', () => {
+  const html = headRead('builder/blocks/index.html');
   const note = extractPartnerNoteText(html);
   assert.ok(
     /Instafidget,\s*a partner product|Instafidget,\s*un produs partener/i.test(note),
@@ -126,7 +123,7 @@ check('HEAD #ig-partner-note states free 12 months then Instafidget Free (filigr
     'included free for 12 months'
   );
   assert.ok(
-    /Instafidget Free\s*\(filigran\)/i.test(note),
+    /Instafidget Free\s*\((?:cu\s+)?filigran\)/i.test(note),
     'then Instafidget Free (filigran)'
   );
 });
@@ -135,6 +132,8 @@ check('HEAD product-visible surfaces have no paid-separately / separate paid add
   const surfaces = [
     'builder/index.html',
     'builder/app.js',
+    'builder/blocks/index.html',
+    'builder/blocks/editor.js',
     'PRODUCT.md',
     'VISION.md',
     'AGENTS.md',

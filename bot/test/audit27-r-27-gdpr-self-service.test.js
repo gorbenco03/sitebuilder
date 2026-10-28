@@ -6,8 +6,10 @@
  * 04-QA-Evidence/Audit-2026-09-27-b45a3e4/findings-all.json; PLAN-AUDIT-2026-09-27.md).
  * Owner decision: GDPR self-service = data download AND full account deletion,
  * reachable from the browser product (not only the frozen Telegram /sterge),
- * from BOTH the plain header (#dashboard/#templates — "Site-urile mele") and
- * the editor topbar's account menu.
+ * from the plain header (#dashboard/#templates — "Site-urile mele"). The form
+ * editor's topbar account menu was removed 2026-10-28 along with the editor;
+ * accounts and sites are now seeded through the API (bot/test/lib/dash-seed.js)
+ * and everything else is driven through the real dashboard UI.
  *
  * Real UI throughout (Playwright, real server, HIDOOK_TEST_PAY +
  * HIDOOK_ISOLATED_DEPLOY stubs — same pattern as
@@ -20,7 +22,7 @@
  *   - A downloads its data via the header account menu (#dashboard): the
  *     actual network response is asserted to contain ONLY A's own data
  *     (business name, site slug) and NEVER B's (business name, slug, email).
- *   - A deletes its account via the editor topbar account menu's product
+ *   - A deletes its account via the header account menu's product
  *     modal (NOT window.confirm — a typed-email-confirmation gate that stays
  *     disabled until the exact account email is typed).
  *   - After deletion: A's /live/<slug>/ stops being served (404), A is
@@ -42,6 +44,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
+const { signInPage, publishLive, blocksConfig } = require('./lib/dash-seed.js');
 
 function freshTmpDataDir(prefix) {
     return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -78,78 +81,6 @@ function escapeForRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-async function acceptCookiesAndStart(page, base, templateId) {
-    await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-    await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.evaluate((id) => startWithTemplate(id), templateId);
-    await page.waitForURL(/#edit$/);
-    await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-    await page.waitForTimeout(1000);
-    if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-        await page.waitForTimeout(300);
-    }
-}
-
-async function editBusinessName(page, text) {
-    const field = page.frameLocator('#preview-iframe').locator('[data-hb-edit="business.name"]').first();
-    await field.click({ clickCount: 3 });
-    await page.keyboard.type(text, { delay: 12 });
-    await field.blur().catch(() => {});
-    await page.waitForFunction(
-        (expected) => typeof draft !== 'undefined' && draft.config && draft.config.business &&
-            draft.config.business.name === expected,
-        text,
-        { timeout: 5000 }
-    );
-    await page.waitForTimeout(1600); // past the debounced server autosave
-}
-
-/** Real magic-link sign-in, starting from the dashboard's own auth CTA — works
- *  whether the tab already has a local draft (resumes to #edit) or is
- *  brand-new (lands on #dashboard/#edit depending on site count). */
-async function signIn(page, base, email) {
-    await page.goto(base + '/app/#dashboard', { waitUntil: 'networkidle' });
-    await page.locator('#hb-cookie-accept').click().catch(() => {});
-    const authBtn = page.locator('#btn-dashboard-auth');
-    if (await authBtn.isVisible().catch(() => false)) {
-        await authBtn.click();
-    } else {
-        await page.locator('#btn-account-menu').click();
-        await page.locator('#account-menu-projects').click();
-        await page.waitForURL(/#dashboard$/);
-        await page.locator('#btn-dashboard-auth').click();
-    }
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-    await page.locator('#input-email').fill(email);
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    await Promise.race([
-        page.waitForURL(/#edit$/),
-        page.waitForURL(/#dashboard$/),
-    ]);
-    await page.waitForTimeout(600);
-}
-
-/** Real publish+pay flow through the UI (HIDOOK_TEST_PAY stub) — ends on
- *  #dashboard with the LIVE success modal, closed. Mirrors
- *  bot/test/suite12-publish-lifecycle.test.js#publishAndPayThroughUi. */
-async function publishAndPayThroughUi(page, slug) {
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
-    await page.locator('#input-slug').fill(slug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#modal-success').waitFor({ state: 'visible' });
-    await page.locator('#btn-pay-publish').click();
-    await page.waitForURL(/#dashboard$/, { timeout: 20000 });
-    await page.locator('#modal-success').waitFor({ state: 'visible', timeout: 15000 });
-    const titleText = (await page.locator('#modal-success-title').innerText()).trim();
-    assert.match(titleText, /live/i, 'must be the LIVE success modal, not the draft/pay-CTA one');
-    await page.locator('#btn-close-success').click().catch(() => {});
-    await page.waitForURL(/#dashboard$/);
-}
-
 test('R-27: "Descarcă datele mele" / "Șterge contul" — reachable, scoped to exactly one account, and the account/site are really gone afterwards', async () => {
     const shotDir = fs.mkdtempSync(path.join(os.tmpdir(), 'audit27-r-27-shots-'));
     const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
@@ -181,29 +112,17 @@ test('R-27: "Descarcă datele mele" / "Șterge contul" — reachable, scoped to 
             // survive A's deletion untouched. ----
             const pageB = await contextB.newPage();
             pageB.setDefaultTimeout(30000);
-            await acceptCookiesAndStart(pageB, base, 'product-menu');
-            await editBusinessName(pageB, markerB);
-            await signIn(pageB, base, emailB);
-            if (!/#edit$/.test(pageB.url())) {
-                await pageB.evaluate(() => { window.location.hash = '#edit'; });
-                await pageB.waitForURL(/#edit$/);
-            }
-            await editBusinessName(pageB, markerB); // re-assert after sign-in resume
-            await publishAndPayThroughUi(pageB, slugB);
+            await signInPage(pageB, base, emailB);
+            await publishLive(pageB, base, { slug: slugB, config: blocksConfig('restaurant', markerB) });
+            await pageB.reload({ waitUntil: 'networkidle' });
             await pageB.screenshot({ path: path.join(shotDir, '01-account-b-published-live.png') });
 
             // ---- A: sign in, publish a real live site of its own. ----
             const pageA = await contextA.newPage();
             pageA.setDefaultTimeout(30000);
-            await acceptCookiesAndStart(pageA, base, 'local-service');
-            await editBusinessName(pageA, markerA);
-            await signIn(pageA, base, emailA);
-            if (!/#edit$/.test(pageA.url())) {
-                await pageA.evaluate(() => { window.location.hash = '#edit'; });
-                await pageA.waitForURL(/#edit$/);
-            }
-            await editBusinessName(pageA, markerA);
-            await publishAndPayThroughUi(pageA, slugA);
+            await signInPage(pageA, base, emailA);
+            await publishLive(pageA, base, { slug: slugA, config: blocksConfig('salon', markerA) });
+            await pageA.reload({ waitUntil: 'networkidle' });
             await pageA.screenshot({ path: path.join(shotDir, '02-account-a-published-live.png') });
 
             // =================================================================
@@ -241,27 +160,15 @@ test('R-27: "Descarcă datele mele" / "Șterge contul" — reachable, scoped to 
             assert.doesNotMatch(exportText, new RegExp(escapeForRegExp(emailB)), 'export must NEVER contain account B\'s email');
 
             // =================================================================
-            // "Șterge contul" — reachable from the EDITOR topbar's account
-            // menu too, gated by a real product modal (typed email, not
+            // "Șterge contul" — reachable from the same header menu, gated
+            // by a real product modal (typed email, not
             // window.confirm).
             // =================================================================
-            const editButton = pageA.locator('.site-card-actions button', { hasText: 'Editează' }).first();
-            await editButton.click();
-            await pageA.waitForURL(/#edit$/);
-            await pageA.locator('#preview-iframe').waitFor({ state: 'visible' });
-            await pageA.waitForTimeout(600);
-            if (await pageA.locator('#details-drawer').isVisible().catch(() => false)) {
-                await pageA.locator('#btn-close-drawer').click().catch(() => {});
-                await pageA.waitForTimeout(300);
-            }
+            await pageA.locator('#btn-account-menu-header').click();
+            await pageA.locator('#account-menu-header').waitFor({ state: 'visible' });
+            await pageA.screenshot({ path: path.join(shotDir, '04-account-a-header-menu-open-for-delete.png') });
 
-            await pageA.locator('#btn-account-menu').click();
-            await pageA.locator('#account-menu').waitFor({ state: 'visible' });
-            await pageA.locator('#account-menu-export-data').waitFor({ state: 'visible' });
-            await pageA.locator('#account-menu-delete-account').waitFor({ state: 'visible' });
-            await pageA.screenshot({ path: path.join(shotDir, '04-account-a-editor-topbar-menu-open.png') });
-
-            await pageA.locator('#account-menu-delete-account').click();
+            await pageA.locator('#account-menu-header-delete-account').click();
             await pageA.locator('#modal-delete-account').waitFor({ state: 'visible' });
             const shownEmail = (await pageA.locator('#delete-account-email').innerText()).trim();
             assert.equal(shownEmail.toLowerCase(), emailA.toLowerCase(), 'the modal must show account A\'s own email to type back');
@@ -299,7 +206,7 @@ test('R-27: "Descarcă datele mele" / "Șterge contul" — reachable, scoped to 
             // Re-signing in with the SAME email must never resurrect the old
             // account's data — it is a brand-new account with zero sites.
             // =================================================================
-            await signIn(pageA, base, emailA);
+            await signInPage(pageA, base, emailA);
             const sitesAfter = await pageA.evaluate(() => fetch('/api/sites', { headers: { Accept: 'application/json' } }).then((r) => r.json()));
             const listAfter = Array.isArray(sitesAfter) ? sitesAfter : (sitesAfter && sitesAfter.sites) || [];
             assert.equal(listAfter.length, 0, 'signing in again with the deleted account\'s email must start with zero sites');
@@ -358,19 +265,13 @@ test('R-27 (reviewer finding): a Stripe subscription cancellation that cannot be
 
             const page = await context.newPage();
             page.setDefaultTimeout(30000);
-            await acceptCookiesAndStart(page, base, 'product-menu');
-            await editBusinessName(page, marker);
-            await signIn(page, base, email);
-            if (!/#edit$/.test(page.url())) {
-                await page.evaluate(() => { window.location.hash = '#edit'; });
-                await page.waitForURL(/#edit$/);
-            }
-            await editBusinessName(page, marker);
+            await signInPage(page, base, email);
             // Real publish+pay first — this is what actually gives the site
             // a stripeSubscriptionId (the HIDOOK_TEST_PAY offline path
             // synthesizes one — see bot/webpublish.js#_storeStripeBillingIds)
             // for the stub below to fail on.
-            await publishAndPayThroughUi(page, slug);
+            await publishLive(page, base, { slug, config: blocksConfig('restaurant', marker) });
+            await page.reload({ waitUntil: 'networkidle' });
 
             // NOW stub cancelSubscription to simulate a genuine failure
             // (Stripe outage / real error) — never "already canceled" or
@@ -380,19 +281,9 @@ test('R-27 (reviewer finding): a Stripe subscription cancellation that cannot be
                 throw new Error('Stripe DELETE /subscriptions/x → 500: simulated outage, not a real Stripe call');
             };
 
-            const editButton = page.locator('.site-card-actions button', { hasText: 'Editează' }).first();
-            await editButton.click();
-            await page.waitForURL(/#edit$/);
-            await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-            await page.waitForTimeout(600);
-            if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-                await page.locator('#btn-close-drawer').click().catch(() => {});
-                await page.waitForTimeout(300);
-            }
-
-            await page.locator('#btn-account-menu').click();
-            await page.locator('#account-menu').waitFor({ state: 'visible' });
-            await page.locator('#account-menu-delete-account').click();
+            await page.locator('#btn-account-menu-header').click();
+            await page.locator('#account-menu-header').waitFor({ state: 'visible' });
+            await page.locator('#account-menu-header-delete-account').click();
             await page.locator('#modal-delete-account').waitFor({ state: 'visible' });
             await page.locator('#input-delete-account-confirm').fill(email);
             const confirmBtn = page.locator('#btn-confirm-delete-account');

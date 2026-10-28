@@ -22,6 +22,9 @@
  *   6. Catalog Meseriași «renovari» missing diacritic
  *   7. Istoric versionId.slice(0,8) hex stub
  *
+ * Form editor removed 2026-10-28: leftovers 1 and 2 (hero resolveImgPath, ensureDraftSiteForInstagram slug)
+ * and the Instagram-modal copy locks covered deleted code and were dropped; the slug-reuse server journey,
+ * schema/registry/CSS/Istoric locks and the no-factory-jargon check on the remaining shell stay.
  * GREEN on HEAD for each. Isolated adapters only.
  * Env: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted.
  * Run: node bot/test/s67-s66-qa-fail.test.js
@@ -31,12 +34,10 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
-const vm     = require('vm');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS = path.join(ROOT, 'builder', 'app.js');
-const OVERLAY_JS = path.join(ROOT, 'builder', 'edit-overlay.js');
 const APP_CSS = path.join(ROOT, 'builder', 'app.css');
 const INDEX_HTML = path.join(ROOT, 'builder', 'index.html');
 const REGISTRY_JSON = path.join(ROOT, 'templates', 'registry.json');
@@ -180,58 +181,13 @@ function loadPresetConfig(templateId) {
     return JSON.parse(JSON.stringify(presets[0].config));
 }
 
-/** Simulate HEAD resolveImgPath + imgmap (with optional reverse data URL keys). */
-function simulateResolve(overlaySrc, imgMap, src) {
-    const fn = extractFunction(overlaySrc, 'resolveImgPath');
-    assert.ok(fn && fn.length > 40, 'resolveImgPath must exist');
-    const sandbox = { imgMap: imgMap, result: null };
-    // inject imgMap into function scope by wrapping
-    vm.runInNewContext(
-        'var imgMap = ' + JSON.stringify(imgMap) + ';\n' +
-        fn + '\nresult = resolveImgPath(' + JSON.stringify(src) + ');',
-        sandbox
-    );
-    return sandbox.result;
-}
-
-function simulateExtractBgUrls(overlaySrc, styleAttr) {
-    const fn = extractFunction(overlaySrc, 'extractBackgroundUrls');
-    assert.ok(fn && fn.length > 40, 'extractBackgroundUrls must exist on HEAD');
-    const sandbox = { result: null };
-    vm.runInNewContext(
-        fn + '\nresult = extractBackgroundUrls(' + JSON.stringify(styleAttr) + ');',
-        sandbox
-    );
-    return sandbox.result;
-}
-
-function runBuildImgMap(appSrc, config, imageMap) {
-    const fnSrc = extractFunction(appSrc, 'buildImgMap');
-    assert.ok(fnSrc && fnSrc.length > 40, 'buildImgMap must exist');
-    const sandbox = {};
-    vm.runInNewContext(fnSrc + '\nthis.__buildImgMap = buildImgMap;', sandbox);
-    let map = sandbox.__buildImgMap(JSON.parse(JSON.stringify(config)));
-    // HEAD also reverse-maps template imageMap data URLs (if helper present)
-    const reverseFn = extractFunction(appSrc, 'mergePreviewImageMap');
-    if (reverseFn && imageMap) {
-        vm.runInNewContext(
-            reverseFn + '\nthis.__merge = mergePreviewImageMap;',
-            sandbox
-        );
-        map = sandbox.__merge(map, imageMap);
-    }
-    return map;
-}
-
 (async () => {
     const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const overlaySrc = fs.readFileSync(OVERLAY_JS, 'utf8');
     const cssSrc = fs.readFileSync(APP_CSS, 'utf8');
     const indexSrc = fs.readFileSync(INDEX_HTML, 'utf8');
     const regSrc = fs.readFileSync(REGISTRY_JSON, 'utf8');
 
     const parentApp = parentBlob('builder/app.js');
-    const parentOverlay = parentBlob('builder/edit-overlay.js');
     const parentCss = parentBlob('builder/app.css');
     const parentIndex = parentBlob('builder/index.html');
     const parentReg = parentBlob('templates/registry.json');
@@ -241,53 +197,6 @@ function runBuildImgMap(appSrc, config, imageMap) {
         'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAGcP//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQMBAT8Bf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8Bf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEABj8Cf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8hf//Z';
 
     // ── Causal RED on parent b844011 ───────────────────────────────────────
-    await check('causal RED: parent resolveImgPath misses inlined data-URL hero', () => {
-        assert.ok(parentOverlay, 'parent overlay');
-        assert.ok(parentApp, 'parent app');
-        // Parent buildImgMap keys only config paths (images/...), not preview data URLs
-        const mapFn = extractFunction(parentApp, 'buildImgMap') || '';
-        assert.ok(mapFn.length > 40, 'parent buildImgMap');
-        assert.ok(
-            !/mergePreviewImageMap/.test(parentApp),
-            'parent has no mergePreviewImageMap reverse data-URL map'
-        );
-        // Simulate parent imgMap (images path only) + DOM data URL after preview inline
-        const filePath = 'images/cn-hero.jpg';
-        const parentMap = { [filePath]: 'hero.background' };
-        // Parent resolveImgPath: extract and run
-        const fn = extractFunction(parentOverlay, 'resolveImgPath');
-        assert.ok(fn, 'parent resolveImgPath');
-        const sandbox = { result: null };
-        vm.runInNewContext(
-            'var imgMap = ' + JSON.stringify(parentMap) + ';\n' +
-            fn + '\nresult = resolveImgPath(' + JSON.stringify(sampleDataUrl) + ');',
-            sandbox
-        );
-        assert.strictEqual(
-            sandbox.result,
-            null,
-            'parent resolveImgPath must miss full data-URL when only images/ key exists (got ' +
-                JSON.stringify(sandbox.result) + ')'
-        );
-        // Parent bg click only posts when resolvedPath truthy — no fallback path
-        const setup = extractFunction(parentOverlay, 'setupImages') || parentOverlay;
-        assert.ok(
-            !/resolveBackgroundPath|fallback.*hero\.background|backgroundPathFallback/i.test(setup),
-            'parent has no background path fallback for data-URL miss'
-        );
-    });
-
-    await check('causal RED: parent ensureDraftSiteForInstagram never sets currentSiteSlug', () => {
-        assert.ok(parentApp, 'parent app');
-        const fn = extractFunction(parentApp, 'ensureDraftSiteForInstagram') || '';
-        assert.ok(fn.length > 40, 'parent ensureDraftSiteForInstagram');
-        assert.ok(
-            !/currentSiteSlug\s*=/.test(fn),
-            'parent IG draft publish must not set currentSiteSlug (slug collision root cause)'
-        );
-        assert.ok(/api\/publish/.test(fn), 'parent still posts unpaid draft');
-    });
-
     await check('causal RED: parent Detalii schema has partner feed / iframe jargon', () => {
         let found = false;
         for (const { p, src } of parentSchemas) {
@@ -342,104 +251,14 @@ function runBuildImgMap(appSrc, config, imageMap) {
     });
 
     // ── HEAD source locks ──────────────────────────────────────────────────
-    await check('HEAD: resolveImgPath / imgmap recovers data-URL hero → hero.background', () => {
-        const filePath = 'images/cn-hero.jpg';
-        const css =
-            "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            filePath +
-            "')";
-        const config = { hero: { background: css }, business: { name: 'Casa' } };
-        const imageMap = { [filePath]: sampleDataUrl };
-        const map = runBuildImgMap(appSrc, config, imageMap);
-        assert.strictEqual(map[filePath], 'hero.background', 'file path still mapped');
-        assert.strictEqual(
-            map[sampleDataUrl],
-            'hero.background',
-            'inlined data URL must map to hero.background'
-        );
-
-        const resolved = simulateResolve(overlaySrc, map, sampleDataUrl);
-        assert.strictEqual(resolved, 'hero.background', 'resolveImgPath(data URL) → hero.background');
-
-        // extractBackgroundUrls still recovers full data URL from multi-layer style
-        const style =
-            "background: linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            sampleDataUrl +
-            "'); padding-top: 4rem";
-        const urls = simulateExtractBgUrls(overlaySrc, style);
-        assert.ok(
-            urls.some((u) => u === sampleDataUrl || u.startsWith('data:image/jpeg;base64,')),
-            'full data URL recovered from style'
-        );
-        // Overlay posts {hb:'image'} even when map was path-only (fallback)
-        const pathOnlyMap = { [filePath]: 'hero.background' };
-        const fallbackFn = extractFunction(overlaySrc, 'resolveBackgroundPathFallback') ||
-            extractFunction(overlaySrc, 'resolveImgPathFallback');
-        assert.ok(
-            fallbackFn ||
-                /resolveBackgroundPathFallback|hero\.background/.test(
-                    extractFunction(overlaySrc, 'setupImages') || ''
-                ),
-            'overlay has data-URL background path fallback'
-        );
-        if (fallbackFn) {
-            const sb = { result: null };
-            vm.runInNewContext(
-                'var imgMap = ' + JSON.stringify(pathOnlyMap) + ';\n' +
-                fallbackFn + '\nresult = resolveBackgroundPathFallback();',
-                sb
-            );
-            assert.strictEqual(sb.result, 'hero.background', 'fallback → hero.background');
-        }
-        assert.ok(/hb:\s*['\"]image['\"]/.test(overlaySrc), 'posts hb image');
-        assert.ok(/Înlocuiește fotografia/.test(overlaySrc), 'Romanian photo overlay label present');
-    });
-
-    await check('HEAD: ensureDraftSiteForInstagram sets currentSiteSlug; own slug valid', () => {
-        const fn = extractFunction(appSrc, 'ensureDraftSiteForInstagram') || '';
-        assert.ok(/currentSiteSlug\s*=/.test(fn), 'IG draft sets currentSiteSlug');
-        assert.ok(/data\.site\.slug|baseSlug/.test(fn), 'uses returned or requested slug');
-        const openFn = extractFunction(appSrc, 'openPublishModal') || '';
-        assert.ok(/currentSiteSlug/.test(openFn), 'publish modal reuses currentSiteSlug');
-        const checkFn = extractFunction(appSrc, 'checkSlug') || '';
-        assert.ok(/currentSiteSlug/.test(checkFn), 'checkSlug treats own slug as available');
-        // Commercial IG copy: no Widgetul factory jargon. Instafidget may appear as
-        // the named partner product in RO modal/status/error strings and in
-        // #ig-partner-note / Instagram editor modal chrome — not as free-floating
-        // catalog or landing chrome outside those surfaces.
+    await check('HEAD: builder copy has no Widgetul / partner feed (iframe) factory jargon', () => {
+        // The Instagram modal and #ig-partner-note went with the form editor; the app shell
+        // must not carry the partner product name or factory words anywhere on the surfaces left.
         assert.ok(!/\bWidgetul\b/i.test(appSrc), 'app.js no Widgetul');
-        // Partner product sentences must stay Romanian product chrome, not EN factory.
-        // Instafidget is the approved partner product name in RO status/errors.
-        assert.ok(/Instafidget/i.test(appSrc), 'app.js names Instafidget partner product');
-        assert.ok(
-            !/partner feed \(iframe\)/i.test(appSrc),
-            'app.js no partner feed (iframe) jargon'
-        );
-        const indexNoHref = indexSrc.replace(/href="[^"]*"/gi, 'href=""');
-        // Strip partner note + Instagram editor modal chrome (status + open button).
-        let indexNoIgChrome = indexNoHref.replace(
-            /id=["']ig-partner-note["'][^>]*>[\s\S]*?<\/p>/i,
-            ''
-        );
-        indexNoIgChrome = indexNoIgChrome.replace(
-            /id=["']ig-editor-status["'][^>]*>[\s\S]*?<\/p>/i,
-            ''
-        );
-        indexNoIgChrome = indexNoIgChrome.replace(
-            /id=["']btn-ig-editor["'][^>]*>[\s\S]*?<\/button>/i,
-            ''
-        );
-        assert.ok(
-            !/Instafidget/i.test(indexNoIgChrome),
-            'index visible copy no Instafidget outside partner note + IG editor chrome'
-        );
+        assert.ok(!/partner feed \(iframe\)/i.test(appSrc), 'app.js no partner feed (iframe) jargon');
         assert.ok(!/\bWidgetul\b/i.test(indexSrc), 'index.html no Widgetul');
-        assert.ok(/Instagram/i.test(indexSrc), 'still says Instagram');
-        assert.ok(
-            /id=["']ig-partner-note["']/.test(indexSrc) &&
-                /Instafidget,\s*(a partner product|un produs partener)/i.test(indexSrc),
-            'Wave 12 partner note names Instafidget as partner product'
-        );
+        const indexNoHref = indexSrc.replace(/href="[^"]*"/gi, 'href=""');
+        assert.ok(!/Instafidget/i.test(indexNoHref), 'index visible copy no Instafidget in catalog/landing chrome');
     });
 
     await check('HEAD: Detalii schemas have no partner feed / iframe jargon', () => {

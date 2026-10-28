@@ -19,6 +19,11 @@
  *   7. Legal HTML has no «studio shipping placeholder»
  *   8. No HIDOOK_FAKE_DEPLOY. Pricing unchanged 99/29. Production refusal intact.
  *
+ * Form editor removed 2026-10-28: showSuccessScreen(site) is only reached for a
+ * live site now (no unpaid/draft variant), so check 5 no longer asserts that it
+ * calls isLiveSiteUrl; the helper, the /live/ handling, the live title (now
+ * static in index.html) and absoluteSiteUrl are still asserted.
+ *
  * Causal RED on base e32ea2a… ; GREEN on HEAD after fix.
  * Run: node bot/test/flow4-isolated-live-url.test.js
  */
@@ -193,10 +198,6 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
     await check('HEAD: live chrome accepts relative /live/<slug>/ as live', () => {
         const app = headRead('builder/app.js');
         assert.ok(/function\s+isLiveSiteUrl\s*\(/.test(app), 'isLiveSiteUrl helper present');
-        assert.ok(
-            /isLiveSiteUrl\s*\(\s*url\s*\)/.test(app) || /const isLive = isLiveSiteUrl\(url\)/.test(app),
-            'showSuccessScreen uses isLiveSiteUrl'
-        );
         // Must treat /live/… as live
         assert.ok(
             /\/live\//.test(app) && /isLiveSiteUrl/.test(app),
@@ -210,8 +211,8 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
             'showSuccessScreen must not rely only on indexOf(http)===0'
         );
         assert.ok(
-            /Site-ul tău e live — trial de 14 zile început/.test(showSrc),
-            'live title line present'
+            /Site-ul tău e live — trial de 14 zile început/.test(headRead('builder/index.html')),
+            'live title line present in the success modal'
         );
         assert.ok(/function\s+absoluteSiteUrl\s*\(/.test(app), 'absoluteSiteUrl for cabinet/success href');
         assert.ok(

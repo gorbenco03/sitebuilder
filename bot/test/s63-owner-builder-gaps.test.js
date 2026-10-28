@@ -1,16 +1,13 @@
 'use strict';
 /**
- * bot/test/s63-owner-builder-gaps.test.js — S63 owner-reported builder gaps.
+ * bot/test/s63-owner-builder-gaps.test.js — S63 owner-reported builder gaps (server halves).
  *
- * Causal leftovers (parent 46269a2 / S62):
- *   1. Instagram: openInstagramModal dead-ends without account (toast only; no editor auth path)
- *   2. Hero/image: buildImgMap skips CSS url() backgrounds; overlay only matches background-image:url
- *   3. Menu: SAFE_LIST does not treat menu.en / menu.ro / *.items — cannot add section/item
- *
- * GREEN on HEAD:
- *   - Editor IG modal has auth + ensureDraftSite before payment
- *   - buildImgMap + overlay resolve hero.background; extractImages sticks through test-pay live
- *   - onListAdd + overlay allow menu section/item; live HTML contains them after test-pay
+ * Form editor removed 2026-10-28: the editor-side locks (openInstagramModal auth path,
+ * buildImgMap, edit-overlay hero/menu matchers, onListAdd) and the causal-RED checks on the
+ * old parent commit covered only deleted surfaces and were dropped. What stays:
+ *   - hero background + gallery image + an added menu section/item survive unpaid draft ->
+ *     test-pay -> /live (old template, wire payload built by a local fixture)
+ *   - an authenticated unpaid draft can be created and the social-feed grant answers (not 401)
  *
  * Env: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted
  * Run: node bot/test/s63-owner-builder-gaps.test.js
@@ -20,14 +17,8 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
-const vm     = require('vm');
-const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const APP_JS = path.join(ROOT, 'builder', 'app.js');
-const OVERLAY_JS = path.join(ROOT, 'builder', 'edit-overlay.js');
-const INDEX_HTML = path.join(ROOT, 'builder', 'index.html');
-const PARENT_SHA = '46269a24182122adfd37c8e486537dc0030e20a3';
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 's63-owner-gaps-'));
 process.env.DATA_DIR               = tmpDir;
@@ -61,17 +52,6 @@ async function check(name, fn) {
         failed++;
         console.error('FAIL', name, '-', e.message);
         if (process.env.VERBOSE) console.error(e.stack);
-    }
-}
-
-function parentBlob(rel) {
-    try {
-        return execFileSync('git', ['-C', ROOT, 'show', `${PARENT_SHA}:${rel}`], {
-            encoding: 'utf8',
-            maxBuffer: 8 * 1024 * 1024,
-        });
-    } catch {
-        return null;
     }
 }
 
@@ -117,20 +97,6 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 20000, int
     throw new Error(`timeout waiting for ${urlPath} → ${wantStatus} (last ${last})`);
 }
 
-function extractFunction(src, name) {
-    const re = new RegExp('function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-    const m = re.exec(src);
-    if (!m) return null;
-    let i = m.index + m[0].length;
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-        const ch = src[i++];
-        if (ch === '{') depth++;
-        else if (ch === '}') depth--;
-    }
-    return src.slice(m.index, i);
-}
-
 const PNG_A = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
     'base64'
@@ -154,30 +120,94 @@ function loadPresetConfig(templateId) {
     return { presetId: presets[0].id, config: cfg };
 }
 
+/**
+ * Wire-format fixture: {cleanConfig, images:[{name,dataUrl}]} as a client posts to /api/publish
+ * (data URLs pulled out of the config and rewritten to images/…).
+ */
+function extractImages(config) {
+  const images = [];
+  const clean = JSON.parse(JSON.stringify(config));
+  const DATA_URL_RE = /data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=\s]+/gi;
+
+  function extOf(dataUrl) {
+    const m = /^data:image\/(jpeg|jpg|png|webp)/i.exec(dataUrl || '');
+    if (!m) return 'jpg';
+    const t = m[1].toLowerCase();
+    return t === 'jpeg' ? 'jpg' : t;
+  }
+
+  function isCssish(key, val) {
+    return /background|style|gradient/i.test(key || '') ||
+      /url\s*\(/i.test(val || '') ||
+      /linear-gradient/i.test(val || '');
+  }
+
+  function allocate(key, dataUrl) {
+    const ext = extOf(dataUrl);
+    const k = String(key || '');
+    if (k === 'logo' || /logo/i.test(k)) {
+      return { name: 'logo', file: 'logo.' + ext };
+    }
+    if (/background/i.test(k) || /^hero$/i.test(k)) {
+      const n = images.filter((x) => String(x.name).startsWith('hero')).length + 1;
+      const name = n === 1 ? 'hero' : 'hero-' + n;
+      return { name, file: name + '.' + ext };
+    }
+    const n = images.filter((x) => String(x.name).startsWith('gallery')).length + 1;
+    const name = 'gallery-' + n;
+    return { name, file: name + '.' + ext };
+  }
+
+  function takeDataUrl(raw) {
+    return String(raw || '').replace(/\s+/g, '');
+  }
+
+  function walk(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) { obj.forEach(walk); return; }
+    for (const [k, v] of Object.entries(obj)) {
+      if (typeof v !== 'string') {
+        walk(v);
+        continue;
+      }
+
+      // Pure data-URL field (logo, photo src, etc.)
+      if (v.startsWith('data:image/')) {
+        const dataUrl = takeDataUrl(v);
+        const { name, file } = allocate(k, dataUrl);
+        images.push({ name, dataUrl });
+        const local = 'images/' + file;
+        obj[k] = isCssish(k, v) ? "url('" + local + "')" : local;
+        continue;
+      }
+
+      // CSS / mixed strings with url(data:image...) (hero.background)
+      if (v.includes('data:image/')) {
+        let next = v;
+        const found = v.match(DATA_URL_RE) || [];
+        for (const raw of found) {
+          const dataUrl = takeDataUrl(raw);
+          const { name, file } = allocate(k, dataUrl);
+          images.push({ name, dataUrl });
+          const local = 'images/' + file;
+          next = next.split(raw).join(local);
+        }
+        obj[k] = next;
+        continue;
+      }
+
+      walk(v);
+    }
+  }
+  walk(clean);
+  return { cleanConfig: clean, images };
+}
+
 function runExtractImages(config) {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const fnSrc = extractFunction(appSrc, 'extractImages');
-    assert.ok(fnSrc && fnSrc.length > 40, 'extractImages must exist');
-    const sandbox = {
-        deepClone: (o) => JSON.parse(JSON.stringify(o)),
-        console,
-    };
-    vm.createContext(sandbox);
-    vm.runInContext(fnSrc + '\nthis.__extractImages = extractImages;', sandbox);
-    return sandbox.__extractImages(JSON.parse(JSON.stringify(config)));
+  return extractImages(JSON.parse(JSON.stringify(config)));
 }
 
-function runBuildImgMap(config) {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const fnSrc = extractFunction(appSrc, 'buildImgMap');
-    assert.ok(fnSrc && fnSrc.length > 40, 'buildImgMap must exist');
-    const sandbox = { console };
-    vm.createContext(sandbox);
-    vm.runInContext(fnSrc + '\nthis.__buildImgMap = buildImgMap;', sandbox);
-    return sandbox.__buildImgMap(JSON.parse(JSON.stringify(config)));
-}
-
-/** Simulate onListAdd menu shape logic (mirrors builder/app.js). */
+/** Config fixture: add a menu section / dish the way the old form editor shaped them. */
 function simulateMenuListAdd(config, listPath) {
     const c = JSON.parse(JSON.stringify(config));
     function getPath(obj, p) {
@@ -242,196 +272,6 @@ async function loginClient(base, email) {
 }
 
 (async () => {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const overlaySrc = fs.readFileSync(OVERLAY_JS, 'utf8');
-    const htmlSrc = fs.readFileSync(INDEX_HTML, 'utf8');
-    const combined = appSrc + '\n' + overlaySrc + '\n' + htmlSrc;
-
-    const parentApp = parentBlob('builder/app.js');
-    const parentOverlay = parentBlob('builder/edit-overlay.js');
-    const parentHtml = parentBlob('builder/index.html');
-
-    // ── Causal RED documentation (parent leftovers) ────────────────────────
-    await check('causal RED: parent openInstagramModal dead-ends without account (toast only)', () => {
-        assert.ok(parentApp, 'parent app.js readable at ' + PARENT_SHA);
-        const openFn = extractFunction(parentApp, 'openInstagramModal') || '';
-        assert.ok(openFn.length > 40, 'parent openInstagramModal exists');
-        assert.ok(
-            /if\s*\(\s*!currentUser\s*\)/.test(openFn),
-            'parent requires currentUser before opening modal'
-        );
-        assert.ok(
-            /showToast\s*\(\s*['"]Intră în cont/.test(openFn),
-            'parent shows dead toast instead of editor auth path'
-        );
-        assert.ok(
-            !/wireIgAuthForm|ig-auth-panel|ensureDraftSiteForInstagram/.test(openFn + parentHtml),
-            'parent has no in-editor IG auth path'
-        );
-    });
-
-    await check('causal RED: parent buildImgMap / overlay miss CSS hero backgrounds', () => {
-        assert.ok(parentApp && parentOverlay, 'parent sources');
-        const mapFn = extractFunction(parentApp, 'buildImgMap') || '';
-        assert.ok(mapFn.length > 40, 'parent buildImgMap exists');
-        // Parent only indexes bare data:/images:/http strings — not url() inside CSS multi-layer
-        assert.ok(
-            !/url\(\s*\\s\*\\s\*\\[['"]?/.test(mapFn) &&
-                !/\/url\\s\*\\\(/.test(mapFn) &&
-                !mapFn.includes("url\\(\\s*['\"]?"),
-            'parent buildImgMap does not extract CSS url() fragments'
-        );
-        // Parent overlay only matches background-image:url — not background: gradient, url()
-        assert.ok(
-            parentOverlay.includes('background-image') &&
-                /background-image\\s\*:\\s\*url\\/.test(parentOverlay),
-            'parent overlay uses background-image:url only'
-        );
-        assert.ok(
-            !parentOverlay.includes('(?:background(?:-image)?)'),
-            'parent lacks flexible background/background-image matcher'
-        );
-    });
-
-    await check('causal RED: parent SAFE_LIST / onListAdd cannot add menu section or dish', () => {
-        assert.ok(parentOverlay && parentApp, 'parent sources');
-        const safeBlock = parentOverlay.match(/SAFE_LIST_PATHS\s*=\s*\[[^\]]+\]/);
-        assert.ok(safeBlock, 'parent SAFE_LIST_PATHS');
-        // 'menu' is listed but isSafeList only exact/endsWith .menu — menu.en fails
-        const isSafe = extractFunction(parentOverlay, 'isSafeList') || '';
-        assert.ok(isSafe.length > 20, 'parent isSafeList');
-        assert.ok(
-            !/menu\\\.\(en\|ro\)/.test(isSafe) && !/menu\.\(en\|ro\)/.test(isSafe),
-            'parent isSafeList has no menu.en/ro rule'
-        );
-        assert.ok(
-            !/\.items\$/.test(isSafe),
-            'parent isSafeList has no nested .items rule'
-        );
-        const onAdd = extractFunction(parentApp, 'onListAdd') || '';
-        assert.ok(
-            !/Secțiune nouă|Articol nou|menu\\\.\(en\|ro\)/.test(onAdd),
-            'parent onListAdd has no restaurant menu section/item shapes'
-        );
-    });
-
-    // ── HEAD source locks ──────────────────────────────────────────────────
-    await check('HEAD: Instagram modal opens with editor auth path (no dead toast-only gate)', () => {
-        const openFn = extractFunction(appSrc, 'openInstagramModal') || '';
-        assert.ok(/openModal\s*\(\s*['"]modal-instagram['"]\s*\)/.test(openFn), 'opens modal');
-        assert.ok(/wireIgAuthForm|ig-auth-panel/.test(openFn + htmlSrc), 'has auth path');
-        assert.ok(/ensureDraftSiteForInstagram/.test(appSrc), 'can save unpaid draft for siteId');
-        assert.ok(/form-ig-auth-email/.test(htmlSrc), 'IG auth form in HTML');
-        assert.ok(/ig-connect-panel/.test(htmlSrc), 'connect panel present');
-        assert.ok(/înainte să începi trialul/i.test(htmlSrc + openFn), 'copy says before trial starts');
-        // Must not early-return with only toast before openModal
-        const toastBeforeOpen = openFn.indexOf("showToast('Intră în cont");
-        const openIdx = openFn.indexOf("openModal('modal-instagram')");
-        assert.ok(openIdx >= 0, 'openModal call present');
-        assert.ok(
-            toastBeforeOpen < 0 || toastBeforeOpen > openIdx,
-            'must not toast-and-return before opening modal'
-        );
-        assert.ok(!/HIDOOK_FAKE_DEPLOY/.test(appSrc), 'no fake deploy');
-        assert.ok(!/\bDESSERD\b/i.test(combined), 'no DESSERD');
-        assert.ok(!/\bbakery\b/i.test(combined), 'no bakery');
-    });
-
-    await check('HEAD: buildImgMap maps CSS url() hero background to hero.background', () => {
-        const heroDu = dataUrlPng(PNG_A);
-        const css =
-            "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            heroDu +
-            "')";
-        const map = runBuildImgMap({
-            hero: { background: css },
-            logo: dataUrlPng(PNG_B),
-            business: { name: 'Map' },
-        });
-        assert.strictEqual(map[heroDu], 'hero.background', 'CSS-embedded dataUrl → hero.background');
-        assert.strictEqual(map[dataUrlPng(PNG_B)], 'logo', 'bare logo still mapped');
-
-        const filePath = "images/cn-hero.jpg";
-        const map2 = runBuildImgMap({
-            hero: {
-                background:
-                    "linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-                    filePath +
-                    "')",
-            },
-        });
-        assert.strictEqual(map2[filePath], 'hero.background', 'file path inside url() → hero.background');
-    });
-
-    await check('HEAD: overlay matches background: multi-layer and menu.en/items safe lists', () => {
-        assert.ok(
-            /background\(\?:-image\)\?/.test(overlaySrc) ||
-                /\(\?:background\(\?:-image\)\?\)/.test(overlaySrc),
-            'overlay matches background or background-image'
-        );
-        assert.ok(
-            /menu\\\.\(en\|ro\)/.test(overlaySrc) || /menu\.\(en\|ro\)/.test(overlaySrc),
-            'menu.en/ro treated as safe lists'
-        );
-        assert.ok(
-            /menu\\\.\(en\|ro\)\\\.\\d\+\\.items|menu\.\(en\|ro\)\.\d+\.items/.test(overlaySrc) ||
-                /\\d\+\\.items\$/.test(overlaySrc),
-            'nested menu items safe'
-        );
-        assert.ok(/\+ Adaugă secțiune/.test(overlaySrc), 'add section label RO');
-        assert.ok(/\+ Adaugă articol/.test(overlaySrc), 'add item label RO');
-    });
-
-    await check('HEAD: onListAdd creates menu section + dish; extractImages keeps hero', () => {
-        assert.ok(/New section/.test(appSrc), 'section default EN');
-        assert.ok(/New item/.test(appSrc), 'item default EN');
-        const { config } = loadPresetConfig('product-menu');
-        const beforeSections = (config.menu && config.menu.en && config.menu.en.length) || 0;
-        const afterSec = simulateMenuListAdd(config, 'menu.en');
-        assert.ok(afterSec.menu.en.length === beforeSections + 1, 'section added to menu.en');
-        const last = afterSec.menu.en[afterSec.menu.en.length - 1];
-        assert.strictEqual(last.category, 'New section');
-        assert.ok(Array.isArray(last.items) && last.items[0] === 'New item');
-        assert.ok(
-            afterSec.menu.ro && afterSec.menu.ro.length === afterSec.menu.en.length,
-            'section mirrored to menu.ro'
-        );
-        const afterItem = simulateMenuListAdd(afterSec, 'menu.en.0.items');
-        const items0 = afterItem.menu.en[0].items;
-        assert.ok(items0[items0.length - 1] === 'New item', 'dish appended');
-
-        // applyImageDataUrl-equivalent: hero CSS with replaced data URL still extracts
-        const du = dataUrlPng(PNG_A);
-        const cfg = JSON.parse(JSON.stringify(config));
-        cfg.hero.background = cfg.hero.background.replace(
-            /url\(\s*['"]?[^'")]+['"]?\s*\)/i,
-            "url('" + du + "')"
-        );
-        if (Array.isArray(cfg.categories) && cfg.categories[0] && cfg.categories[0].photos) {
-            cfg.categories[0].photos[0].src = du;
-        }
-        // After menu edits
-        cfg.menu = afterItem.menu;
-        const marker = 'S63-SELTIE-' + crypto.randomUUID().slice(0, 6);
-        cfg.menu.en[cfg.menu.en.length - 1].category = marker;
-        cfg.menu.en[cfg.menu.en.length - 1].items = ['Fel S63 ' + marker];
-        cfg.menu.ro[cfg.menu.ro.length - 1].category = marker;
-        cfg.menu.ro[cfg.menu.ro.length - 1].items = ['Fel S63 ' + marker];
-        cfg.business.name = 'S63 Menu Live';
-
-        const { cleanConfig, images } = runExtractImages(cfg);
-        assert.ok(images.some((i) => (i.dataUrl || '').replace(/\s+/g, '') === du), 'hero/gallery image extracted');
-        assert.ok(
-            /url\(\s*['"]?images\//i.test(cleanConfig.hero.background),
-            'hero.background → url(images/…)'
-        );
-        assert.ok(!JSON.stringify(cleanConfig).includes('data:image/'), 'no data URLs in clean');
-        assert.ok(
-            JSON.stringify(cleanConfig.menu).includes(marker),
-            'added menu section survives extractImages'
-        );
-    });
-
     await check('HIDOOK_FAKE_DEPLOY not set (isolated + test-pay)', () => {
         assert.strictEqual(process.env.HIDOOK_FAKE_DEPLOY, undefined);
         assert.strictEqual(process.env.HIDOOK_ISOLATED_DEPLOY, '1');

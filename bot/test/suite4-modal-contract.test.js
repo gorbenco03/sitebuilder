@@ -68,8 +68,8 @@
  *     them silently.
  *
  * modal-success is the one exception to "opened through its real trigger"
- * for every check: its real trigger is completing an entire checkout flow
- * (slug -> auth -> pay), which this file does drive for real ONCE to prove
+ * for every check: its real trigger is completing a checkout (the return URL of
+ * the payment), which this file does drive for real ONCE to prove
  * the actual product flow opens it correctly and to check X-size, focus
  * trap and backdrop-close. Repeating that whole flow two more times just to
  * re-open the same modal for the Escape and focus-return checks would be
@@ -84,6 +84,15 @@
  * `document.activeElement` at open time is not that button even on the
  * genuine path — a pre-existing, unrelated behaviour of the pay flow, not
  * a modal-contract defect).
+ *
+ * Form editor removed 2026-10-28: its modals (preview, gallery, add-section,
+ * instagram, export-booking) and publish step 1 are gone, so TRIGGERS now covers
+ * the modals that still exist: the sign-in modal (#modal-publish, opened from the
+ * dashboard's "Autentificare" button), success, versions, the three domain modals,
+ * invoices, site messages, cancel subscription, logout-everywhere, delete account
+ * and delete site. The account and its site are seeded through the API
+ * (bot/test/lib/dash-seed.js); modal-success is opened by the real checkout-return
+ * URL, which is the product's own path to it.
  *
  * Run: node --experimental-sqlite --test bot/test/suite4-modal-contract.test.js
  */
@@ -112,6 +121,7 @@ if (!chromium) throw new Error('playwright not found; install or link node_modul
 
 const VIEWPORT = { width: 390, height: 844 };
 const MIN_CLOSE = 44;
+const { signInPage, publishAndPayInUi } = require('./lib/dash-seed.js');
 
 // modal-domain-disconnect / modal-domain-switch (U-01) only render once a
 // domain has actually been submitted (bot/domains.js#startDomainConnection),
@@ -295,23 +305,6 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
       return handle;
     }
 
-    // PLAN-UX §5.4 (S-4): at this file's 390px touch viewport, the topbar
-    // collapses to its primary actions and Instagram/Descarcă HTML/ZIP/
-    // Culoare move behind "Mai mult" (builder/app.css, body.mobile-coarse-
-    // toolbar). Their own buttons still exist and still own their click
-    // handlers (see MOBILE_MORE_MENU_ITEMS in app.js) — reach them the way
-    // a real phone now does. app.js focuses #btn-topbar-more before
-    // proxying the click, so that is the real opener a modal refocuses on
-    // close, and it is what this helper hands back to contractCheck.
-    async function clickViaMoreMenu(menuItemLabel) {
-      const moreBtn = page.locator('#btn-topbar-more');
-      const handle = await moreBtn.elementHandle();
-      await moreBtn.click();
-      await page.locator('#topbar-more-menu').waitFor({ state: 'visible' });
-      await page.getByRole('menuitem', { name: menuItemLabel }).click({ timeout: 8000 });
-      return handle;
-    }
-
     // modal-delete-account's real trigger is a dropdown item (R-27, GDPR):
     // open the header account menu, then click "Șterge contul" inside it.
     // Unlike every other trigger in this file, the click handler itself
@@ -345,80 +338,20 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     }
 
     // -----------------------------------------------------------------
-    // modal-preview: real trigger is the landing page's "Previzualizare".
-    // Must run before a template is picked (the trigger only exists there).
+    // modal-publish (now only the sign-in modal): real trigger is the
+    // dashboard's own "Autentificare" button, which only exists signed out.
     // -----------------------------------------------------------------
-    await contractCheck(
-      'preview',
-      'modal-preview',
-      'btn-close-preview',
-      // The catalog lists block designs now; the form templates' preview modal
-      // has no catalog button left, so it opens the way that button did.
-      async () => { await page.evaluate(() => openPreviewModal('professionals')); return null; },
-      { skipRefocusCheck: true }
-    );
-
-    // Now actually enter the editor for the rest of the flow.
-    await page.evaluate((id) => startWithTemplate(id), 'professionals');
-    await page.waitForURL(/#edit$/, { timeout: 25000 });
-    await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-    await page.waitForTimeout(600);
-    const drawer = page.locator('#details-drawer');
-    if (await drawer.isVisible().catch(() => false)) {
-      await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
-        await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
-      });
-      await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-    }
-
-    await contractCheck('gallery', 'modal-gallery', 'btn-close-gallery', () => clickAndHandle(page.locator('#btn-open-gallery')));
-    // modal-add-section (T-1A, PLAN-UX §5.2): same collapsed-behind-"Mai
-    // mult" situation as Instagram right below, at this file's 390px touch
-    // viewport (body.mobile-coarse-toolbar hides #btn-open-add-section
-    // itself — see builder/app.css). Always opens the modal regardless of
-    // whether the current template's schema declares any `addable: true`
-    // page section — "professionals" (this file's template) declares none
-    // today, so this drives the friendly empty state, not a real catalog
-    // card. That's still the real trigger and the real modal instance; the
-    // catalog-has-cards path is covered by
-    // bot/test/audit27-t-1a-add-section.test.js's own fixture schema.
-    await contractCheck('add-section', 'modal-add-section', 'btn-close-add-section', () => clickViaMoreMenu('Adaugă o secțiune'));
-    await contractCheck('instagram', 'modal-instagram', 'btn-close-instagram', () => clickViaMoreMenu('Adaugă Instagram'));
-    await contractCheck('publish', 'modal-publish', 'btn-close-publish', () => clickAndHandle(page.locator('#btn-publish')));
+    await page.goto(base + '/app/#dashboard', { waitUntil: 'domcontentloaded' });
+    await page.locator('#btn-dashboard-auth').waitFor({ state: 'visible', timeout: 15000 });
+    await contractCheck('sign-in', 'modal-publish', 'btn-close-publish', () => clickAndHandle(page.locator('#btn-dashboard-auth')));
 
     // -----------------------------------------------------------------
-    // modal-export-booking (U-04, export lens): only appears when
-    // appointment.nativeBooking is on, so turn it on via the real Detalii
-    // panel first, then trigger through the real "Descarcă HTML" button.
-    // contractCheck never clicks "Continuă descărcarea", so no download or
-    // network call actually happens here.
-    // -----------------------------------------------------------------
-    await page.locator('#btn-open-drawer').click({ timeout: 4000 });
-    await drawer.waitFor({ state: 'visible', timeout: 4000 });
-    await page.getByRole('button', { name: 'Activează calendarul nativ de programări Hidook' }).click({ timeout: 4000 });
-    await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
-      await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
-    });
-    await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-    await contractCheck('export-booking', 'modal-export-booking', 'btn-close-export-booking', () => clickViaMoreMenu('Descarcă HTML'));
-
-    // -----------------------------------------------------------------
-    // modal-success: drive the real checkout once (see header comment).
+    // modal-success: drive the real checkout return once (see header comment).
     // -----------------------------------------------------------------
     tested.add('modal-success');
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
     const slug = 'suite4-modal-' + Date.now().toString(36);
-    await page.locator('#input-slug').fill(slug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-    await page.locator('#input-email').fill('suite4-modal@example.com');
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    const payBtn = page.locator('#btn-pay-publish');
-    await payBtn.waitFor({ state: 'visible' });
-    await payBtn.click();
+    await signInPage(page, base, 'suite4-modal@example.com');
+    await publishAndPayInUi(page, base, { slug, pack: 'restaurant', name: 'Restaurant Modal' });
     await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 25000 });
 
     const successCloseBox = await page.evaluate(() => {
@@ -474,7 +407,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     // Dashboard modals: Istoric, Domeniu, Facturi, Șterge — same site,
     // just paid+live from the real checkout above.
     // -----------------------------------------------------------------
-    await page.evaluate(() => { window.location.hash = '#dashboard'; });
+    await page.waitForURL(/#dashboard$/, { timeout: 15000 });
     await page.waitForTimeout(700);
     const card = page.locator('.site-card', { hasText: slug.replace(/-/g, '‑') }).first();
     await card.waitFor({ state: 'visible', timeout: 10000 });

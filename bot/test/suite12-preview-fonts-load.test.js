@@ -2,6 +2,13 @@
 /**
  * bot/test/suite12-preview-fonts-load.test.js
  *
+ * UPDATE 2026-10-28: the form editor and its sandboxed srcdoc preview iframe were
+ * removed, so everything below about the PREVIEW (the CORS header on
+ * /app/generated/template-assets fonts, the iframe sandbox tokens) is historical
+ * and its checks are gone. The guarantee that reaches customers stays and is now
+ * checked on the PUBLISHED site: every desserdirina @font-face loads on
+ * /live/<slug>/, with no font console errors.
+ *
  * Explorer's verified finding (reproduced twice; also open item "m2" from an
  * earlier QA plan): in the editor preview, desserdirina never loaded its own
  * self-hosted fonts (Cormorant Garamond / Montserrat, templates/desserdirina/
@@ -29,106 +36,24 @@
  * Access-Control-Allow-Origin: * to responses under that font-file path only
  * (never credentials, never a blanket grant on the rest of /app/).
  *
- * This file checks, in the real builder:
- *   - every desserdirina @font-face declared in document.fonts loads (not
- *     "error") once forced via FontFace#load(), and zero font CORS console
- *     errors are logged getting there;
- *   - the preview iframe sandbox still lacks allow-same-origin (the fix is
- *     the asset path + CORS header, never the sandbox);
- *   - the font file responses themselves carry ACAO with no credentials
- *     flag, and unrelated /app/ routes carry no ACAO at all (scoped, not
- *     blanket, CORS).
+ * This file checks, on the published desserdirina site in a real browser:
+ *   - every declared @font-face in document.fonts loads (not "error") once
+ *     forced via FontFace#load(), Cormorant Garamond and Montserrat included;
+ *   - no font-related console errors are logged getting there.
  *
  * Run: node --experimental-sqlite --test bot/test/suite12-preview-fonts-load.test.js
  */
 
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
 const test = require('node:test');
-const { execFileSync } = require('node:child_process');
+const { startHarness, publishConfig, loadPlaywright } = require('./lib/old-template-live.js');
 
-const ROOT = path.resolve(__dirname, '..', '..');
-
-const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'suite12-fonts-'));
-process.env.DATA_DIR = dataDir;
-process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-process.env.NODE_ENV = 'test';
-process.env.SERVER_SECRET = 'suite12-fonts-test-secret';
-delete process.env.STRIPE_SECRET_KEY;
-delete process.env.STRIPE_WEBHOOK_SECRET;
-delete process.env.HIDOOK_FAKE_DEPLOY;
-
-// The fix lives partly in scripts/build-builder.js's font-copying/CSS-rewrite
-// step — make sure builder/generated/* reflects the current source before the
-// server serves it, the same way npm run build:app does in dev/CI.
-execFileSync('node', [path.join(ROOT, 'scripts', 'build-builder.js')], {
-    cwd: ROOT,
-    stdio: ['ignore', 'ignore', 'pipe'],
-});
-
-const { startServer } = require('../server.js');
-
-let server;
-let base;
-
-test.before(async () => {
-    server = startServer({ port: 0 });
-    await new Promise((resolve, reject) => {
-        server.once('listening', resolve);
-        server.once('error', reject);
-    });
-    base = 'http://127.0.0.1:' + server.address().port;
-});
-
-test.after(async () => {
-    await new Promise((resolve) => server.close(resolve));
-    fs.rmSync(dataDir, { recursive: true, force: true });
-});
-
-test('desserdirina font-asset responses carry ACAO, correct type, no credentials flag', async () => {
-    const fontDir = path.join(ROOT, 'templates', 'desserdirina', 'fonts');
-    const names = fs.readdirSync(fontDir).filter((n) => /\.(?:woff2?|ttf|otf)$/i.test(n));
-    assert.ok(names.length > 0, 'expected real font files under templates/desserdirina/fonts/');
-
-    for (const name of names) {
-        const url = base + '/app/generated/template-assets/desserdirina/fonts/' + name;
-        const r = await fetch(url, { headers: { Origin: 'null' } });
-        assert.equal(r.status, 200, url + ' must 200 (the real asset, not the SPA-fallback index.html)');
-        assert.equal(
-            r.headers.get('access-control-allow-origin'), '*',
-            url + ' must carry ACAO so the opaque srcdoc preview origin can use it'
-        );
-        assert.equal(
-            r.headers.get('access-control-allow-credentials'), null,
-            url + ' must never pair a wildcard ACAO with a credentials flag'
-        );
-        assert.match(r.headers.get('content-type') || '', /^font\//i, url + ' content-type');
-    }
-});
-
-test('non-font /app/ routes carry no Access-Control-Allow-Origin (scoped, not blanket, CORS)', async () => {
-    const routes = ['/app/', '/app/app.js', '/app/app.css', '/app/generated/templates-data.js'];
-    for (const route of routes) {
-        const r = await fetch(base + route, { headers: { Origin: 'null' } });
-        assert.equal(
-            r.headers.get('access-control-allow-origin'), null,
-            route + ' must not carry the font-only CORS header'
-        );
-    }
-});
-
-test('desserdirina preview in the real builder: every @font-face loads, sandbox unchanged, zero font CORS errors', async () => {
-    let chromium;
-    try {
-        ({ chromium } = require(path.join(ROOT, 'node_modules', 'playwright')));
-    } catch {
-        assert.fail('playwright not available — see HARD RULES: "Playwright from node_modules only"');
-    }
-
+test('desserdirina published site: every @font-face loads, zero font console errors', async () => {
+    const H = await startHarness('suite12-fonts');
+    const { chromium } = loadPlaywright();
     const browser = await chromium.launch({ headless: true });
     try {
+        const { liveUrl } = await H.publish('desserdirina', publishConfig('desserdirina'));
         const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
         page.setDefaultTimeout(30000);
 
@@ -137,28 +62,8 @@ test('desserdirina preview in the real builder: every @font-face loads, sandbox 
             if (msg.type() === 'error') consoleErrors.push(msg.text());
         });
 
-        await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-        if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
-            await page.locator('#hb-cookie-accept').click().catch(() => {});
-        }
-        await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
-        await page.waitForURL(/#edit$/, { timeout: 30000 });
-
-        const iframeLocator = page.locator('#preview-iframe');
-        await iframeLocator.waitFor({ state: 'visible', timeout: 30000 });
-
-        // The fix is the asset path + CORS header, never the sandbox — assert
-        // that stays true (bot/test/suite9-preview-sandbox.test.js owns this
-        // more generally; re-asserted here so a regression that "fixed" fonts
-        // by loosening the sandbox fails in the same file as the font check).
-        const sandboxAttr = await iframeLocator.getAttribute('sandbox');
-        const tokens = new Set(String(sandboxAttr || '').split(/\s+/).filter(Boolean));
-        assert.ok(!tokens.has('allow-same-origin'), '#preview-iframe must stay without allow-same-origin');
-
-        const frameHandle = await iframeLocator.elementHandle();
-        const contentFrame = await frameHandle.contentFrame();
-        await contentFrame.locator('body').waitFor({ state: 'attached', timeout: 20000 });
-        await contentFrame.locator('.hero, .hero-wordmark, .hero-tagline').first().waitFor({
+        await page.goto(liveUrl, { waitUntil: 'domcontentloaded' });
+        await page.locator('.hero, .hero-wordmark, .hero-tagline').first().waitFor({
             state: 'visible',
             timeout: 20000,
         });
@@ -166,7 +71,7 @@ test('desserdirina preview in the real builder: every @font-face loads, sandbox 
         // Force every declared face to actually load (not just the ones the
         // initially-rendered text happens to trigger) so the assertion covers
         // all 20 @font-face rules, not whichever subset paints first.
-        const faces = await contentFrame.evaluate(async () => {
+        const faces = await page.evaluate(async () => {
             const list = Array.from(document.fonts);
             await Promise.all(list.map((f) => f.load().catch(() => {})));
             return list.map((f) => ({ family: f.family, weight: f.weight, style: f.style, status: f.status }));
@@ -180,14 +85,13 @@ test('desserdirina preview in the real builder: every @font-face loads, sandbox 
         assert.ok(families.has('Cormorant Garamond'), 'Cormorant Garamond must be registered in document.fonts');
         assert.ok(families.has('Montserrat'), 'Montserrat must be registered in document.fonts');
 
-        const fontCorsErrors = consoleErrors.filter(
-            (m) => /blocked by CORS policy/i.test(m) && /font/i.test(m)
-        );
+        const fontErrors = consoleErrors.filter((m) => /font/i.test(m));
         assert.deepStrictEqual(
-            fontCorsErrors, [],
-            'zero font CORS console errors expected, got: ' + JSON.stringify(fontCorsErrors)
+            fontErrors, [],
+            'zero font console errors expected, got: ' + JSON.stringify(fontErrors)
         );
     } finally {
         await browser.close();
+        await H.close();
     }
 });

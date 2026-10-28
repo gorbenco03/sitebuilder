@@ -2,14 +2,17 @@
 /**
  * bot/test/s86-s85-advocate.test.js — S86 remake of S85 ADVOCATE: STILL STANDING leaks.
  *
+ * Form editor removed 2026-10-28: leftover 1 (business.name cascade clearing factory IG/FB
+ * url/email in the editor, cascadeBusinessNameIdentity) lived in the deleted editor; its parent-RED,
+ * HEAD and wiring checks were dropped. The rest stays.
+ *
  * Causal leftovers on parent 3e231db (S83 ACCEPT):
- *   1. business.name cascade leaves factory IG/FB url/email (and about/chips without full identity)
  *   2. Meseriași remaining service ASCII + band CTA undiacritic
  *   3. Professionals Detalii: "Link Instagram contact"
  *   4. Unauth #dashboard empty state has no Intră control
  *   5. Live appointment confirmation prints (Europe/Bucharest)
  *
- * Overlay RED on parent, GREEN on HEAD. Isolated static + cascade vm only.
+ * Overlay RED on parent, GREEN on HEAD. Isolated static + copy-ro vm only.
  * Run: node bot/test/s86-s85-advocate.test.js
  */
 const assert = require('assert');
@@ -25,12 +28,6 @@ const LS_PRESETS = 'templates/local-service/presets.json';
 const LS_TEMPLATE = 'templates/local-service/template.html';
 const PRO_SCHEMA = 'templates/professionals/schema.json';
 const PRO_SCRIPT = 'templates/professionals/script.js';
-const PM_PRESETS = 'templates/product-menu/presets.json';
-const PRO_PRESETS = 'templates/professionals/presets.json';
-const PM_TPL = 'templates/product-menu/template.html';
-const PRO_TPL = 'templates/professionals/template.html';
-
-const { renderHtml } = require('../../build.js');
 
 let failed = 0;
 function check(name, fn) {
@@ -59,27 +56,6 @@ function read(rel) {
   return fs.readFileSync(path.join(ROOT, rel), 'utf8');
 }
 
-function extractFunction(src, name) {
-  const re = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-  const m = re.exec(src);
-  if (!m) return null;
-  let i = m.index + m[0].length;
-  let depth = 1;
-  while (i < src.length && depth > 0) {
-    const ch = src[i++];
-    if (ch === '{') depth++;
-    else if (ch === '}') depth--;
-  }
-  return src.slice(m.index, i);
-}
-
-function loadFirstPreset(rel) {
-  const body = JSON.parse(read(rel));
-  const presets = body.presets || [];
-  assert.ok(presets.length >= 1, rel + ' has presets');
-  return JSON.parse(JSON.stringify(presets[0].config));
-}
-
 function collectLabels(schema) {
   const labels = [];
   function walk(n) {
@@ -92,22 +68,6 @@ function collectLabels(schema) {
   }
   walk(schema);
   return labels;
-}
-
-/** Run cascadeBusinessNameIdentity from app source against a config clone. */
-function runCascade(appSrc, config, oldName, newName) {
-  const fn = extractFunction(appSrc, 'cascadeBusinessNameIdentity');
-  assert.ok(fn && fn.length > 40, 'cascadeBusinessNameIdentity must exist in app.js');
-  const getPathFn = extractFunction(appSrc, 'getPath');
-  const setPathFn = extractFunction(appSrc, 'setPath');
-  assert.ok(getPathFn && setPathFn, 'getPath/setPath required');
-  const sandbox = { console };
-  vm.createContext(sandbox);
-  vm.runInContext(getPathFn + '\n' + setPathFn + '\n' + fn + '\n', sandbox);
-  const cfg = JSON.parse(JSON.stringify(config));
-  sandbox.cascadeBusinessNameIdentity(cfg, oldName, newName);
-  if (cfg.business) cfg.business.name = newName;
-  return cfg;
 }
 
 const MESERIASI_ASCII_S85 = [
@@ -123,54 +83,6 @@ const MESERIASI_ASCII_S85 = [
 ];
 
 // ── Causal RED on parent ───────────────────────────────────────────────────
-check('causal RED: parent cascade leaves Casa Nord factory IG/FB url after rename', () => {
-  const src = parentBlob(APP_JS);
-  const presets = parentBlob(PM_PRESETS);
-  assert.ok(src && presets, 'parent blobs');
-  const body = JSON.parse(presets);
-  const cfg = JSON.parse(JSON.stringify(body.presets[0].config));
-  assert.strictEqual(cfg.business.name, 'Casa Nord');
-  const fn = extractFunction(src, 'cascadeBusinessNameIdentity');
-  assert.ok(fn, 'parent has cascade from S83');
-  const getPathFn = extractFunction(src, 'getPath');
-  const setPathFn = extractFunction(src, 'setPath');
-  const sandbox = { console };
-  vm.createContext(sandbox);
-  vm.runInContext(getPathFn + '\n' + setPathFn + '\n' + fn + '\n', sandbox);
-  const next = JSON.parse(JSON.stringify(cfg));
-  sandbox.cascadeBusinessNameIdentity(next, 'Casa Nord', 'Advocate S85');
-  next.business.name = 'Advocate S85';
-  const blob = JSON.stringify(next);
-  // Parent cascade does not clear factory social / slug identity
-  assert.ok(
-    /casa\.nord|casanord|Casa Nord/.test(blob),
-    'parent still has Casa Nord / casa.nord / casanord after cascade'
-  );
-});
-
-check('causal RED: parent cascade leaves cabinet-marin.example email', () => {
-  const src = parentBlob(APP_JS);
-  const presets = parentBlob(PRO_PRESETS);
-  assert.ok(src && presets, 'parent blobs');
-  const body = JSON.parse(presets);
-  const cfg = JSON.parse(JSON.stringify(body.presets[0].config));
-  assert.ok(/Cabinet Marin/.test(cfg.business.name), 'factory Cabinet Marin');
-  assert.ok(/cabinet-marin\.example/.test(cfg.contact.email), 'factory email');
-  const fn = extractFunction(src, 'cascadeBusinessNameIdentity');
-  const getPathFn = extractFunction(src, 'getPath');
-  const setPathFn = extractFunction(src, 'setPath');
-  const sandbox = { console };
-  vm.createContext(sandbox);
-  vm.runInContext(getPathFn + '\n' + setPathFn + '\n' + fn + '\n', sandbox);
-  const next = JSON.parse(JSON.stringify(cfg));
-  sandbox.cascadeBusinessNameIdentity(next, 'Cabinet Marin', 'Cabinet Advocate S85');
-  next.business.name = 'Cabinet Advocate S85';
-  assert.ok(
-    /cabinet-marin\.example/.test(next.contact.email),
-    'parent email still cabinet-marin.example after cascade'
-  );
-});
-
 check('causal RED: parent Meseriași still has remaining service/band ASCII', () => {
   const presets = parentBlob(LS_PRESETS);
   const tpl = parentBlob(LS_TEMPLATE);
@@ -221,58 +133,6 @@ check('causal RED: parent appointment confirmation still prints Europe/Bucharest
 });
 
 // ── GREEN on HEAD ──────────────────────────────────────────────────────────
-check('HEAD: restaurant name cascade clears Casa Nord / casa.nord / casanord identity', () => {
-  const appSrc = read(APP_JS);
-  const cfg = loadFirstPreset(PM_PRESETS);
-  assert.strictEqual(cfg.business.name, 'Casa Nord');
-  const newName = 'Advocate S85';
-  const next = runCascade(appSrc, cfg, 'Casa Nord', newName);
-  assert.strictEqual(next.business.name, newName);
-  assert.ok(next.business.about && !/Casa Nord/.test(next.business.about), 'about free of Casa Nord');
-  assert.ok(next.business.about.startsWith(newName) || !/Casa Nord/.test(next.business.about), 'about updated');
-  assert.ok(!/Casa Nord/.test(next.contact.facebook.label || ''), 'fb label free');
-  assert.ok(!/casanord|casa\.nord|casa-nord/i.test(next.contact.facebook.url || ''), 'fb url free of old slug');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.handle || ''), 'ig handle free');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test(next.instagram.url || ''), 'ig url free');
-  assert.ok(!/casa\.nord|casanord|casa-nord/i.test((next.contact.instagram && next.contact.instagram.url) || ''), 'contact ig url free');
-  assert.ok(!/casa\.nord|casanord|Casa Nord/i.test((next.contact.instagram && next.contact.instagram.label) || ''), 'contact ig label free');
-  const blob = JSON.stringify({
-    about: next.business.about,
-    fb: next.contact.facebook,
-    ig: next.instagram,
-    cig: next.contact.instagram,
-  });
-  assert.ok(!/Casa Nord|casa\.nord|casanord/i.test(blob), 'identity blob free of factory: ' + blob.slice(0, 200));
-});
-
-check('HEAD: after restaurant cascade, renderHtml has no factory IG/FB slug', () => {
-  const appSrc = read(APP_JS);
-  const cfg = loadFirstPreset(PM_PRESETS);
-  const next = runCascade(appSrc, cfg, 'Casa Nord', 'Advocate S85');
-  const html = renderHtml(read(PM_TPL), next);
-  assert.ok(!/Casa Nord/.test(html), 'html free of Casa Nord');
-  assert.ok(!/casa\.nord\.bucuresti/i.test(html), 'html free of @casa.nord.bucuresti');
-  assert.ok(!/casanordbucuresti/i.test(html), 'html free of facebook casanord slug');
-  assert.ok(/Advocate S85/.test(html), 'html shows new name');
-});
-
-check('HEAD: professionals cascade clears Cabinet Juridic Ionescu heading leftovers and email', () => {
-  const appSrc = read(APP_JS);
-  const cfg = loadFirstPreset(PRO_PRESETS);
-  assert.ok(/Cabinet Juridic Ionescu/.test(cfg.business.name), 'factory name');
-  assert.strictEqual(cfg.contact.email, 'contact@cabinetjuridicionescu.ro', 'professional seed uses a plausible .ro email');
-  const newName = 'Cabinet Advocate S85';
-  const next = runCascade(appSrc, cfg, 'Cabinet Juridic Ionescu', newName);
-  assert.strictEqual(next.business.name, newName);
-  assert.ok(!/Cabinet Juridic Ionescu/.test(next.business.title || ''), 'title free of Cabinet Juridic Ionescu');
-  assert.ok(!/cabinetjuridicionescu/i.test(next.contact.email || ''), 'email free of factory identity');
-  assert.ok(!/Cabinet Juridic Ionescu/.test(JSON.stringify(next.business)), 'business block free of Cabinet Juridic Ionescu');
-  const html = renderHtml(read(PRO_TPL), next);
-  assert.ok(!/Cabinet Juridic Ionescu/.test(html), 'live html free of Cabinet Juridic Ionescu');
-  assert.ok(!/contact@cabinetjuridicionescu\.ro/i.test(html), 'live html free of factory email');
-  assert.ok(html.includes(newName), 'live html has new name');
-});
-
 check('HEAD: Meseriași first opened preset/template has no S85 ASCII leftovers', () => {
   const presets = read(LS_PRESETS);
   const tpl = read(LS_TEMPLATE);
@@ -403,25 +263,6 @@ check('HEAD: appointment confirmation text for stranger has no Europe/Bucharest'
   assert.ok(
     /timeZone:\s*tz|data-tz|Europe\/Bucharest/.test(script),
     'Europe/Bucharest or tz still used for math'
-  );
-});
-
-check('HEAD: cascade wired on drawer and canvas name edits + rerender after cascade', () => {
-  const src = read(APP_JS);
-  assert.ok(/cascadeBusinessNameIdentity\s*\(/.test(src), 'cascade called');
-  const hasWiring =
-    /business\.name[\s\S]{0,200}cascadeBusinessNameIdentity|cascadeBusinessNameIdentity[\s\S]{0,200}business\.name/.test(
-      src
-    ) ||
-    /key\s*===\s*['"]business\.name['"][\s\S]{0,300}cascadeBusinessNameIdentity/.test(src) ||
-    /path\s*===\s*['"]business\.name['"][\s\S]{0,300}cascadeBusinessNameIdentity/.test(src);
-  assert.ok(hasWiring, 'cascade wired to business.name');
-  // After cascade, iframe must re-render (about + chips)
-  assert.ok(
-    /cascadeBusinessNameIdentity[\s\S]{0,400}scheduleRerender|cascadeBusinessNameIdentity[\s\S]{0,400}fullRerender/.test(
-      src
-    ),
-    'rerender after cascade'
   );
 });
 

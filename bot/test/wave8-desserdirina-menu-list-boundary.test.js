@@ -70,18 +70,21 @@
  * making the identical class of mistake by hand while first writing this
  * repro.
  *
- * Uses Playwright's bundled Chromium from node_modules (never a hardcoded
- * browser path), and the REAL bot/server.js + builder app — this bug lives
- * in the interactive editor's client-side JS, which a static build.js
- * render cannot exercise.
+ * UPDATE 2026-10-28: the form editor was removed, so bug #1's own checks (the
+ * edit-overlay.js static check, the pre-fix/current overlay fixtures in a real
+ * browser, and the editor-preview heading check) are gone with it. Bug #2 is
+ * template output and stays: the template source always renders the category
+ * heading, and a config with every dish of one category removed — published
+ * through the real API pipeline (/api/publish + test checkout) — keeps that
+ * heading and its sibling categories intact on the live site.
  *
  * Run: node --experimental-sqlite bot/test/wave8-desserdirina-menu-list-boundary.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const BEFORE_REF = process.env.HIDOOK_BEFORE_REF || 'f0f8d53';
@@ -111,181 +114,26 @@ function gitShow(ref, relPath) {
   return execFileSync('git', ['-C', ROOT, 'show', ref + ':' + relPath], { encoding: 'utf8' });
 }
 
-/**
- * Builds a minimal, isolated HTML fixture reproducing the desserdirina menu
- * DOM shape for ONE category with exactly one surviving dish (the exact
- * shape captured live from the real editor right before the last dish is
- * removed), runs `overlayJs` (old or current builder/edit-overlay.js
- * content) against it, and reports whether the remove control ends up
- * scoped to the dish/category or ballooned onto the whole panel.
- *
- * Includes a `<script id="hb-list-schema">` tag matching what
- * builder/app.js's computeListSchemaInfo()/injectListSchema() now embed into
- * every REAL rendered srcdoc (post S1-4: builder/edit-overlay.js's
- * isSafeList() reads this tag instead of a hardcoded name allowlist, so a
- * fixture without it no longer represents what the current overlay actually
- * sees in production — the old, pre-fix overlayJs never reads this tag at
- * all, so its half of this test is unaffected by its presence). The payload
- * mirrors templates/desserdirina/schema.json's `menu.en`/`menu.ro` fields
- * (type:"list", itemShape `{category:"text", items:"list"}`) — declared
- * there as part of this same fix, since schema.json previously never
- * described this template's own bilingual menu structure at all.
- */
-async function measureContainerScope(overlayJs) {
-  const { chromium } = loadPlaywright();
-  const listSchema = JSON.stringify({
-    lists: { 'menu.ro': { min: 0, max: 20 }, 'menu.en': { min: 0, max: 20 } },
-    nested: [
-      { parent: 'menu.ro', key: 'items' },
-      { parent: 'menu.en', key: 'items' },
-    ],
-  });
-  const html = `<!doctype html><html><body>
-    <div class="menu-panel" data-menu-panel="ro">
-      <div class="menu-groups">
-        <details class="menu-group" open>
-          <summary class="menu-cat"><span data-hb-edit="menu.ro.0.category" data-hb-kind="text">Torturi</span></summary>
-          <ul class="menu-items">
-            <li><span data-hb-edit="menu.ro.0.items.0" data-hb-kind="text">Medovic</span></li>
-          </ul>
-        </details>
-        <details class="menu-group" open>
-          <summary class="menu-cat"><span data-hb-edit="menu.ro.1.category" data-hb-kind="text">La comanda</span></summary>
-          <ul class="menu-items">
-            <li><span data-hb-edit="menu.ro.1.items.0" data-hb-kind="text">Torturi</span></li>
-            <li><span data-hb-edit="menu.ro.1.items.1" data-hb-kind="text">Colaci</span></li>
-          </ul>
-        </details>
-      </div>
-    </div>
-    <script>window.parent = window; /* overlay posts to window.parent */</script>
-    <script>${overlayJs}</script>
-    <script type="application/json" id="hb-list-schema">${listSchema}</script>
-  </body></html>`;
-  const browser = await chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
-    await page.setContent(html, { waitUntil: 'load' });
-    await page.waitForTimeout(300);
-    return await page.evaluate(() => {
-      const panel = document.querySelector('.menu-panel');
-      const groups = document.querySelector('.menu-groups');
-      const torturiDetails = document.querySelectorAll('.menu-group')[0];
-      return {
-        panelIsListItem: panel.classList.contains('hb-list-item'),
-        groupsIsListItem: groups.classList.contains('hb-list-item'),
-        torturiUlIsListItem: torturiDetails.querySelector('.menu-items').classList.contains('hb-list-item'),
-        removeButtonsOnPanel: panel.querySelectorAll(':scope > .hb-remove-btn').length,
-        removeButtonsOnGroups: groups.querySelectorAll(':scope > .hb-remove-btn').length,
-      };
-    });
-  } finally {
-    await browser.close();
-  }
-}
-
-async function runEditorFlow() {
-  const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wave8-desserd-menu-'));
-  process.env.DATA_DIR = dataDir;
-  process.env.HIDOOK_TEST_PAY = '1';
-  process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-  delete process.env.STRIPE_SECRET_KEY;
-  delete process.env.RESEND_API_KEY;
-  delete process.env.CLOUDFLARE_API_TOKEN;
-
-  require(path.join(ROOT, 'scripts', 'build-builder.js'));
-  const { startServer } = require(path.join(ROOT, 'bot', 'server.js'));
-  const { onStripeEvent } = require(path.join(ROOT, 'bot', 'web.js'));
-  const server = startServer({ port: 0, onStripeEvent });
-  await new Promise((resolve, reject) => {
-    server.once('listening', resolve);
-    server.once('error', reject);
-  });
-  const base = 'http://127.0.0.1:' + server.address().port;
-
+async function runPublishFlow() {
+  const H = await startHarness('wave8-desserd-menu');
   const { chromium } = loadPlaywright();
   const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-  const page = await context.newPage();
-  const frame = () => page.frameLocator('#preview-iframe');
-
-  async function waitStable({ maxMs = 6000, intervalMs = 250, requiredStable = 2 } = {}) {
-    let last = null, stableCount = 0;
-    const deadline = Date.now() + maxMs;
-    while (Date.now() < deadline) {
-      const len = await frame().locator('body').evaluate(() => document.body.innerHTML.length).catch(() => -1);
-      if (len === last && len >= 0) { stableCount++; if (stableCount >= requiredStable) return len; } else stableCount = 0;
-      last = len;
-      await page.waitForTimeout(intervalMs);
-    }
-    return last;
-  }
-
   try {
-    await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-    await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
-    await page.waitForURL(/#edit$/);
-    await frame().locator('body').waitFor({ state: 'attached', timeout: 20000 });
-    await page.locator('#btn-close-drawer').click().catch(() => {});
-    await waitStable();
+    // Clear every dish out of "Torturi" (RO): the config an owner ends up with
+    // after emptying that category.
+    let emptied = false;
+    const { liveUrl } = await H.publish('desserdirina', publishConfig('desserdirina', (cfg) => {
+      const cat = cfg.menu.ro.find((c) => String(c.category).trim() === 'Torturi');
+      if (!cat) throw new Error('Torturi category missing from the desserdirina preset');
+      cat.items = [];
+      emptied = true;
+    }), { slug: 'wave8-desserd-menu-' + Date.now() });
+    assert.ok(emptied);
 
-    // Clear every dish out of "Torturi" (RO), one owner click at a time,
-    // waiting for a fresh, settled render between clicks -- the realistic
-    // way a person would empty out a menu section by hand. This alone is
-    // the minimal reproduction; no hidden-tab interaction, no rapid
-    // clicking, no multi-step batch sequence needed.
-    for (let i = 0; i < 4; i++) {
-      // `i` is passed in explicitly rather than closed over: locator.evaluate()
-      // serializes the callback and re-runs it inside the PAGE's own JS realm,
-      // which has no access to this outer Node-side `for` loop's binding.
-      // Referencing it directly used to compile fine (Node itself is happy to
-      // capture it) but threw "i is not defined" the moment either `throw`
-      // branch actually ran in-browser — which never happened before this
-      // suite's own fix wave landed (the remove button always existed), so
-      // this had been a latent bug in the test itself, only surfaced once a
-      // regression made `!btn` true and tried to report why.
-      await frame().locator('body').evaluate((i) => {
-        const panel = document.querySelector('[data-menu-panel="ro"]');
-        const cats = Array.prototype.slice.call(panel.querySelectorAll('.menu-group'));
-        const target = cats.find((c) => (c.querySelector('.menu-cat') || {}).textContent.replace(/×$/, '').trim() === 'Torturi');
-        if (!target) throw new Error('Torturi category disappeared before all items were removed (index ' + i + ')');
-        const btn = target.querySelector('.menu-items .hb-remove-btn');
-        if (!btn) throw new Error('no remove button reachable for a Torturi dish (index ' + i + ')');
-        btn.click();
-      }, i);
-      await waitStable();
-    }
-
-    const afterEmptying = await frame().locator('body').evaluate(() => {
-      const panel = document.querySelector('[data-menu-panel="ro"]');
-      const cats = Array.prototype.slice.call(panel.querySelectorAll('.menu-group'));
-      return cats.map((c) => ({
-        heading: (c.querySelector('.menu-cat') || {}).textContent.replace(/×$/, '').trim(),
-        itemCount: c.querySelectorAll('.menu-items > li').length,
-      }));
-    });
-
-    // Publish and verify on the LIVE PUBLISHED SITE -- the original finding
-    // was only ever confirmed there, not in the editor preview.
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
-    const runSlug = 'wave8-desserd-menu-' + Date.now();
-    await page.locator('#input-slug').fill(runSlug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-    await page.locator('#input-email').fill('wave8-menu@example.com');
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    await page.locator('#modal-success').waitFor({ state: 'visible' });
-    await page.locator('#btn-pay-publish').click();
-    await page.locator('#modal-success-title').filter({ hasText: /live/i }).waitFor({ state: 'visible', timeout: 20000 });
-
-    const opened = context.waitForEvent('page');
-    await page.locator('#success-url-link').click();
-    const livePage = await opened;
-    await livePage.waitForLoadState('networkidle');
+    // Verify on the LIVE PUBLISHED SITE -- the original finding was only ever
+    // confirmed there.
+    const livePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    await livePage.goto(liveUrl, { waitUntil: 'networkidle' });
 
     const liveMenu = await livePage.evaluate(() => {
       const panel = document.querySelector('[data-menu-panel="ro"]');
@@ -298,25 +146,18 @@ async function runEditorFlow() {
     });
 
     fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
-    fs.writeFileSync(path.join(EVIDENCE_DIR, 'live-menu-after-emptying-torturi.json'), JSON.stringify({ afterEmptying, liveMenu }, null, 2));
+    fs.writeFileSync(path.join(EVIDENCE_DIR, 'live-menu-after-emptying-torturi.json'), JSON.stringify({ liveMenu }, null, 2));
     await livePage.screenshot({ path: path.join(EVIDENCE_DIR, 'live-site-after-fix.png'), fullPage: true });
 
-    return { afterEmptying, liveMenu };
+    return { liveMenu };
   } finally {
     await browser.close();
-    server.close();
-    fs.rmSync(dataDir, { recursive: true, force: true });
+    await H.close();
   }
 }
 
 (async function main() {
   fs.mkdirSync(EVIDENCE_DIR, { recursive: true });
-
-  await check('static: builder/edit-overlay.js has the general foreign-field boundary check', () => {
-    const js = fs.readFileSync(path.join(ROOT, 'builder', 'edit-overlay.js'), 'utf8');
-    assert.match(js, /function containsForeignField/, 'expected containsForeignField() to exist');
-    assert.match(js, /containsOtherListIndex\(up, root, idx\) \|\| containsForeignField\(up, itemPath\)/, 'expected both checks to gate the climb');
-  });
 
   await check('static: templates/desserdirina/template.html always renders the category heading', () => {
     const html = fs.readFileSync(path.join(ROOT, 'templates', 'desserdirina', 'template.html'), 'utf8');
@@ -329,11 +170,6 @@ async function runEditorFlow() {
     assert.ok(ifItemsIdx === -1 || summaryIdx < ifItemsIdx, 'category heading must render before (outside) the @if items guard');
   });
 
-  await check('RED (pre-fix / ' + BEFORE_REF + '): edit-overlay.js lacked the foreign-field check', () => {
-    const js = gitShow(BEFORE_REF, 'builder/edit-overlay.js');
-    assert.doesNotMatch(js, /function containsForeignField/, 'expected the pre-fix file to lack containsForeignField (the bug)');
-  });
-
   await check('RED (pre-fix / ' + BEFORE_REF + '): template.html gated the WHOLE category (heading included) on items', () => {
     const html = gitShow(BEFORE_REF, 'templates/desserdirina/template.html');
     const roBlock = html.split('data-menu-panel="ro"')[1].split('<!-- @end -->')[0];
@@ -342,27 +178,8 @@ async function runEditorFlow() {
     assert.ok(ifItemsIdx !== -1 && ifItemsIdx < summaryIdx, 'expected the pre-fix file to gate the heading behind @if items (the bug)');
   });
 
-  await check('MECHANISM (isolated fixture, real browser): pre-fix edit-overlay.js balloons the remove control onto the whole panel', async () => {
-    const oldJs = gitShow(BEFORE_REF, 'builder/edit-overlay.js');
-    const result = await measureContainerScope(oldJs);
-    assert.strictEqual(result.panelIsListItem, true, 'pre-fix: the whole .menu-panel should get wrongly marked hb-list-item');
-    assert.strictEqual(result.removeButtonsOnPanel, 1, 'pre-fix: a stray remove button should land directly on .menu-panel');
-  });
-
-  await check('MECHANISM (isolated fixture, real browser): current edit-overlay.js scopes the remove control correctly', async () => {
-    const newJs = fs.readFileSync(path.join(ROOT, 'builder', 'edit-overlay.js'), 'utf8');
-    const result = await measureContainerScope(newJs);
-    assert.strictEqual(result.panelIsListItem, false, 'current: .menu-panel must never be marked hb-list-item for a single-item nested list');
-    assert.strictEqual(result.removeButtonsOnPanel, 0, 'current: no remove button should land directly on .menu-panel');
-    assert.strictEqual(result.torturiUlIsListItem, true, "current: the remove control must land on Torturi's OWN items <ul>");
-  });
-
-  await check('GREEN (real editor + real publish, live site): emptying a category leaves its heading + siblings intact', async () => {
-    const { afterEmptying, liveMenu } = await runEditorFlow();
-
-    const torturiInEditor = afterEmptying.find((c) => c.heading === 'Torturi');
-    assert.ok(torturiInEditor, 'Torturi heading must survive in the editor preview after removing all its dishes');
-    assert.strictEqual(torturiInEditor.itemCount, 0);
+  await check('GREEN (real API publish, live site): emptying a category leaves its heading + siblings intact', async () => {
+    const { liveMenu } = await runPublishFlow();
 
     assert.ok(liveMenu, 'RO menu panel must exist on the live published site');
     const torturiLive = liveMenu.find((c) => c.heading === 'Torturi');

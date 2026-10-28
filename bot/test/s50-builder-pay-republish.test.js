@@ -3,13 +3,15 @@
  * bot/test/s50-builder-pay-republish.test.js — S50 browser pay + isolated republish.
  *
  * Causal lock-in for /app/ after S47/S49 verticals:
- *   - Slug preview fallback is sites.hidook.agency (PRODUCT.md), not hidook.ro
- *   - Unpaid success stays draft + Plătește și publică; not HIDOOK_FAKE_DEPLOY journey
+ *   - Builder never defaults brandDomain to hidook.ro; no HIDOOK_FAKE_DEPLOY journey
  *   - Real registry presets (restaurant + salon/trade): unpaid /live 404 → test pay →
  *     fetchable PUBLIC_URL/live/<slug>/ with distinctive business.name → edit republish
  *
  * Env under test (same adapters as S6 stranger-e2e):
  *   HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted
+ *
+ * Form editor removed 2026-10-28: dropped the updateSlugPreview and unpaid-success-chrome
+ * source checks (both surfaces deleted); the publish/pay/republish server journeys stay.
  *
  * Run: node bot/test/s50-builder-pay-republish.test.js
  */
@@ -100,20 +102,6 @@ async function waitForStatus(base, urlPath, wantStatus, { timeoutMs = 15000, int
     throw new Error(`timeout waiting for ${urlPath} → ${wantStatus} (last ${last})`);
 }
 
-function extractFunction(src, name) {
-    const re = new RegExp('function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-    const m = re.exec(src);
-    if (!m) return null;
-    let i = m.index + m[0].length;
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-        const ch = src[i++];
-        if (ch === '{') depth++;
-        else if (ch === '}') depth--;
-    }
-    return src.slice(m.index, i);
-}
-
 /** Load first preset config from real template registry on disk. */
 function loadPresetConfig(templateId) {
     const presetsPath = path.join(ROOT, 'templates', templateId, 'presets.json');
@@ -139,54 +127,12 @@ function withBusinessName(config, name) {
     const appSrc = fs.readFileSync(APP_JS, 'utf8');
     const htmlSrc = fs.readFileSync(INDEX_HTML, 'utf8');
     const combined = appSrc + '\n' + htmlSrc;
-    const updateSlugSrc = extractFunction(appSrc, 'updateSlugPreview') || '';
-    const showSuccessSrc = extractFunction(appSrc, 'showSuccessScreen') || '';
 
     // ── Builder source lock-ins ────────────────────────────────────────────
-    await check('updateSlugPreview fallback domain is sites.hidook.agency (not hidook.ro)', () => {
-        assert.ok(updateSlugSrc.length > 40, 'updateSlugPreview must exist');
-        assert.ok(
-            /brandDomain\s*\|\|\s*['"]sites\.hidook\.agency['"]/.test(updateSlugSrc),
-            'slug fallback must be sites.hidook.agency when brandDomain unset'
-        );
-        assert.ok(
-            !/brandDomain\s*\|\|\s*['"]hidook\.ro['"]/.test(updateSlugSrc),
-            'slug fallback must not be hidook.ro'
-        );
-        assert.ok(
-            !/\|\|\s*['"]hidook\.ro['"]/.test(updateSlugSrc),
-            'updateSlugPreview must not hardcode hidook.ro'
-        );
-    });
-
     await check('builder has no hidook.ro fallback outside brandDomain override path', () => {
         // Allow mentions only if brandDomain is explicitly set; bare 'hidook.ro' as default is forbidden
         const bareFallback = /appConfig\.brandDomain\s*\|\|\s*['"]hidook\.ro['"]/;
         assert.ok(!bareFallback.test(appSrc), 'builder/app.js must not default brandDomain to hidook.ro');
-    });
-
-    await check('unpaid success chrome: Adaugă card trial (not Draft saved / Pay and publish)', () => {
-        assert.ok(showSuccessSrc.length > 40, 'showSuccessScreen must exist');
-        assert.ok(
-            /Adaugă un card ca să fii live/i.test(showSuccessSrc) ||
-                /Adaugă un card ca să fii live/i.test(htmlSrc) ||
-                /success-draft-note/.test(showSuccessSrc),
-            'unpaid success must prompt add card to go live'
-        );
-        assert.ok(
-            /Adaugă un card — începe trialul de 14 zile/i.test(htmlSrc) ||
-                /Adaugă un card — începe trialul de 14 zile/i.test(appSrc),
-            'pay CTA must be RO trial card verb'
-        );
-        assert.ok(
-            /14-day trial|trial(?:ul)? de 14 zile|14 zile/i.test(htmlSrc + showSuccessSrc),
-            'success chrome must mention trial 14 zile'
-        );
-        assert.ok(
-            !/Pay and publish/i.test(htmlSrc + appSrc) &&
-                !/Complete your payment to publish the site/i.test(htmlSrc + showSuccessSrc),
-            'must not keep pay-once Draft/Pay chrome'
-        );
     });
 
     await check('builder commercial chrome: Hidook Site Builder; no DESSERD/bakery/test.local/fake journey', () => {
@@ -197,11 +143,6 @@ function withBusinessName(config, name) {
         assert.ok(
             !/HIDOOK_FAKE_DEPLOY/.test(appSrc) && !/HIDOOK_FAKE_DEPLOY/.test(htmlSrc),
             'builder journey must not wire HIDOOK_FAKE_DEPLOY'
-        );
-        // Slice IDs must not appear as the customer-facing site address copy
-        assert.ok(
-            !/slug.*S50|S50.*slug|adresa.*S\d+/i.test(updateSlugSrc),
-            'slug preview must not use slice IDs as domain'
         );
     });
 

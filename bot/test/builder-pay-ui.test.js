@@ -8,6 +8,11 @@
  *   - showSuccessScreen does not start/reveal a live-trial countdown
  *   - No free-trial / GRATUIT publish promises
  *
+ * Form editor removed 2026-10-28: the success modal no longer has an unpaid
+ * draft state (pay button / draft note), so the "must stay draft/ciornă" check
+ * on showSuccessScreen was dropped; it is now shown only for a live, trial-started site.
+ * The pay CTA lives on the dashboard site card (buildSiteCard).
+ *
  * Run: node bot/test/builder-pay-ui.test.js
  */
 const assert = require('assert');
@@ -112,12 +117,6 @@ check('showSuccessScreen does not start or reveal a live-trial countdown', () =>
             'showSuccessScreen must not reveal #trial-countdown'
         );
     }
-    // Unpaid success stays draft + pay CTA when paymentUrl exists — do not claim live before pay
-    // (title "Site-ul tău e live!" only when url is http live is OK; must not force live on unpaid)
-    assert.ok(
-        /Ciorna e salvată|ciornă/i.test(showSuccessSrc) || /draftNote|success-draft-note/.test(showSuccessSrc),
-        'showSuccessScreen must keep unpaid path as draft/ciornă'
-    );
 });
 
 check('builder copy: no free trial / GRATUIT publish / permanent hosting promises', () => {
@@ -130,7 +129,7 @@ check('builder copy: no free trial / GRATUIT publish / permanent hosting promise
     );
 });
 
-check('success modal pay CTA uses RO trial card verb (not Păstrează / Pay and publish)', () => {
+check('pay CTA (dashboard site card) uses RO trial card verb (not Păstrează / Pay and publish)', () => {
     const payLabelOk =
         /Adaugă un card — începe trialul de 14 zile/.test(html) ||
         /Adaugă un card — începe trialul de 14 zile/.test(app);

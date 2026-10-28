@@ -5,12 +5,14 @@
  * Causal locks:
  *   - registry includes professionals (4th design system)
  *   - renderHtml professionals preset has appointment section + no unresolved tokens
- *   - builder catalog chip + badge for Servicii profesionale
  *   - pay/test → isolated live professionals HTML
  *   - POST /api/appointments persists status=requested (never confirmed)
  *   - GET /api/appointments is owner-auth only (401 unauth, 403 other user; PII not public)
  *   - republish keeps appointment config text
  *   - no Calendly/Google calendar secrets / fake integration
+ *
+ * Form editor removed 2026-10-28: the "builder catalog chip + badge for Servicii
+ * profesionale" check was dropped (catalog cards are block packs now).
  *
  * Run: node bot/test/s70-professionals-appointments.test.js
  */
@@ -127,14 +129,6 @@ async function main() {
         assert.ok(/Professional services/i.test(schema));
         assert.ok(/appointment\.types|appointment\.weekly/.test(schema));
         assert.ok(!/cofetărie|patiserie|meniu de sezon/i.test(schema));
-    });
-
-    await check('builder catalog exposes professionals chip + badge', () => {
-        const index = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
-        const app = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-        assert.ok(/data-filter="professionals"/.test(index), 'catalog chip missing');
-        assert.ok(/Servicii profesionale|Professional services/.test(index));
-        assert.ok(/'professionals':\s*'Servicii profesionale'/.test(app) || /'professionals':\s*'Professional services'/.test(app), 'DESIGN_BADGE missing');
     });
 
     await check('script appointment model is request-not-booking', () => {

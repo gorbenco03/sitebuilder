@@ -1,6 +1,11 @@
 'use strict';
 /**
- * Flow 2 Romanian unhappy-path and Salon Detalii photo regression oracle.
+ * Flow 2 Romanian unhappy-path regression oracle.
+ *
+ * Form editor removed 2026-10-28: the Salon Detalii photo-chooser proof, the
+ * publish-failure copy check (doActualPublish) and the draft HTML/ZIP export
+ * toasts (downloadDraftHtml / downloadDraftZip) were dropped with the editor.
+ * The export-failure proof now targets the dashboard's downloadSiteZip().
  *
  * STALE ORACLE RECONCILE (S-legacy G1, 2026-09-05):
  * HTML export 401 toast evolved from "Intră în cont ca să descarci ciorna ca HTML."
@@ -54,9 +59,7 @@ function extractFunction(src, name) {
 }
 
 const completeTestCheckout = extractFunction(appSrc, 'completeTestCheckout');
-const downloadDraftHtml = extractFunction(appSrc, 'downloadDraftHtml');
-const downloadDraftZip = extractFunction(appSrc, 'downloadDraftZip');
-const doActualPublish = extractFunction(appSrc, 'doActualPublish');
+const downloadSiteZip = extractFunction(appSrc, 'downloadSiteZip');
 const wireAuthForm = extractFunction(appSrc, 'wireAuthForm');
 const safeServerMessage = extractFunction(appSrc, 'safeServerMessage');
 const unpaidRomanian = 'Ai deja un site neplătit. Plătește-l sau șterge-l înainte să creezi altul.';
@@ -116,30 +119,6 @@ check('apiPost marks server-chosen errors so the UI can tell them apart', () => 
   );
 });
 
-check('publish network failure copy', () => {
-  // The contract is about what the OWNER reads, not about one exact call site.
-  // A raw exception ("NetworkError when attempting to fetch resource", a stack)
-  // must never reach a Romanian UI. A refusal the server itself chose to send
-  // must reach it verbatim -- PLAN-QA-2026-09-12.md S3-1 / defect B1: the
-  // "Ai deja un site neplătit..." 409 was being swallowed by the fallback, so
-  // the owner saw "Publicarea a eșuat. Încearcă din nou." and had no idea why.
-  // safeServerMessage() marks server-authored messages `fromServer` for
-  // exactly this (checked directly, above).
-  assert.ok(
-    doActualPublish.includes('safeServerMessage(e, RO.PUBLISH_FAILED)'),
-    'publish failure keeps the fixed Romanian fallback for non-server errors'
-  );
-  assert.strictEqual(
-    copyRoValue('PUBLISH_FAILED'),
-    'Publicarea a eșuat. Încearcă din nou.',
-    'publish failure fallback text is unchanged'
-  );
-  assert.ok(
-    /safeServerMessage\s*\(\s*e\s*,/.test(doActualPublish),
-    'publish failure must route through the shared safeServerMessage gate, not an inline e.message fallback'
-  );
-});
-
 check('invalid payment copy', () => {
   assert.ok(
     completeTestCheckout.includes("showToast(RO.INVALID_PAYMENT_SESSION, 'error')"),
@@ -169,37 +148,23 @@ check('second unpaid site copy', () => {
   );
 });
 
-async function runExportFailure(downloadFunction, response) {
+async function runExportFailure(response) {
   const toasts = [];
   const button = { disabled: false };
   const sandbox = {
-    currentUser: { email: 'test@example.test' },
-    currentSiteId: null,
-    currentSitePaid: false,
-    currentSiteSlug: '',
-    publishedSiteId: null,
-    draft: { templateId: 'professionals', config: { business: { name: 'Test' } } },
-    $: () => button,
-    apiPost: async () => ({ site: { id: 'site-test', paid: false, slug: 'test' } }),
-    saveDraft() {},
     fetch: async () => {
       if (response instanceof Error) throw response;
       return response;
     },
+    setBtnLoading: (btn, loading) => { btn.disabled = !!loading; },
     showToast: (...args) => toasts.push(args),
   };
-  const functionName = downloadFunction.match(/function\s+(\w+)/)[1];
-  // T-3: downloadDraftHtml/downloadDraftZip now read their Romanian text from
-  // the RO catalog (builder/copy-ro.js) — load it into this sandbox too, same
-  // as the real page's <script> order (copy-ro.js before app.js).
-  // Strip copy-ro.js's own 'use strict' directive before splicing it into a
-  // concatenated script — otherwise it makes the WHOLE combined script
-  // strict, and downloadDraftHtml/downloadDraftZip's own (unrelated,
-  // pre-existing) implicit-global assignments would throw in strict mode.
+  // Load the RO catalog the way the real page does (copy-ro.js before app.js);
+  // strip its 'use strict' so the spliced script is not made strict.
   const copyRoBody = copyRoSrc.replace(/^'use strict';\s*\n?/, '');
-  vm.runInNewContext(`${copyRoBody}\n${downloadFunction}\nthis.download = ${functionName};`, sandbox);
-  await sandbox.download();
-  assert.strictEqual(button.disabled, false, 'export button is restored after a failed download');
+  vm.runInNewContext(`${copyRoBody}\n${downloadSiteZip}\nthis.download = downloadSiteZip;`, sandbox);
+  await sandbox.download('site-test', button);
+  assert.strictEqual(button.disabled, false, 'ZIP button is restored after a failed download');
   assert.strictEqual(toasts.length, 1, 'failed export shows exactly one toast');
   return toasts[0][0];
 }
@@ -211,107 +176,28 @@ async function proveExportErrorsStayRomanian() {
     json: async () => ({ error: 'Export failed' }),
   };
   assert.strictEqual(
-    await runExportFailure(downloadDraftHtml, backendFailure),
-    'Nu am putut descărca HTML-ul.',
-    'HTML export cannot toast a raw backend error'
-  );
-  assert.strictEqual(
-    await runExportFailure(downloadDraftHtml, new Error('Network failed')),
-    'Nu am putut descărca HTML-ul.',
-    'HTML export cannot toast a raw exception message'
-  );
-  assert.strictEqual(
-    await runExportFailure(downloadDraftZip, backendFailure),
+    await runExportFailure(backendFailure),
     'Nu am putut descărca ZIP-ul.',
     'ZIP export cannot toast a raw backend error'
   );
   assert.strictEqual(
-    await runExportFailure(downloadDraftZip, new Error('Network failed')),
+    await runExportFailure(new Error('Network failed')),
     'Nu am putut descărca ZIP-ul.',
     'ZIP export cannot toast a raw exception message'
   );
   assert.strictEqual(
-    await runExportFailure(downloadDraftHtml, { ...backendFailure, status: 401 }),
-    'Intră în cont ca să descarci HTML-ul.',
-    'HTML export keeps its Romanian sign-in guidance'
-  );
-  assert.strictEqual(
-    await runExportFailure(downloadDraftZip, { ...backendFailure, status: 401 }),
+    await runExportFailure({ ...backendFailure, status: 401 }),
     'Autentifică-te ca să descarci ZIP-ul.',
     'ZIP export keeps its Romanian sign-in guidance'
   );
-}
-
-const initImageFileInput = extractFunction(appSrc, 'initImageFileInput');
-const openImagePickerForPath = extractFunction(appSrc, 'openImagePickerForPath');
-const composeHeroBackground = extractFunction(appSrc, 'composeHeroBackground');
-
-class SharedFileInput {
-  constructor() {
-    this.files = [{ name: 'salon.jpg', type: 'image/jpeg' }];
-    this._value = 'salon.jpg';
-    this.listeners = [];
-  }
-  get value() { return this._value; }
-  set value(next) {
-    this._value = next;
-    if (next === '') this.files = [];
-  }
-  addEventListener(type, listener, options) {
-    this.listeners.push({ type, listener, capture: options === true || !!(options && options.capture) });
-  }
-  removeEventListener(type, listener, options) {
-    const capture = options === true || !!(options && options.capture);
-    this.listeners = this.listeners.filter((entry) => (
-      entry.type !== type || entry.listener !== listener || entry.capture !== capture
-    ));
-  }
-  click() {}
-  async choose() {
-    const ordered = this.listeners
-      .filter((entry) => entry.type === 'change')
-      .sort((a, b) => Number(b.capture) - Number(a.capture));
-    for (const entry of ordered) await entry.listener();
-  }
-}
-
-async function proveDetailsPhotoSurvivesSharedChooser() {
-  const input = new SharedFileInput();
-  const status = { value: '' };
-  let appliedBackground = '#1a1a1a';
-  const sandbox = {
-    pendingImagePath: null,
-    $: (id) => id === 'img-file-input' ? input : null,
-    applySelectedImageFile: async () => {},
-    FileReader: class {
-      readAsDataURL() {
-        this.result = 'data:image/jpeg;base64,U0FMT04=';
-        this.onload();
-      }
-    },
-  };
-  vm.runInNewContext(
-    `${composeHeroBackground}\n${initImageFileInput}\n${openImagePickerForPath}\n` +
-      'this.initImageFileInput = initImageFileInput; this.openImagePickerForPath = openImagePickerForPath;',
-    sandbox
+  assert.strictEqual(
+    await runExportFailure({ ...backendFailure, status: 402 }),
+    'Activează trialul de 14 zile sau abonamentul ca să descarci ZIP-ul.',
+    'ZIP export keeps its Romanian trial-required guidance'
   );
-
-  sandbox.initImageFileInput();
-  sandbox.openImagePickerForPath('hero.background', (image) => {
-    status.value = image ? 'Poză adăugată' : '';
-    appliedBackground = sandbox.composeHeroBackground({ color: '#1a1a1a', image });
-  });
-  await input.choose();
-
-  assert.strictEqual(status.value, 'Poză adăugată', 'Detalii reports that the chosen Salon photo was added');
-  assert.match(appliedBackground, /url\(['"]data:image\/jpeg;base64,U0FMT04=['"]\)/, 'hero background keeps the chosen image URL');
-  assert.notStrictEqual(appliedBackground, '#1a1a1a', 'chosen Salon photo cannot collapse to a black color-only hero');
 }
 
-Promise.all([
-  proveDetailsPhotoSurvivesSharedChooser(),
-  proveExportErrorsStayRomanian(),
-])
+proveExportErrorsStayRomanian()
   .catch((error) => {
     failures.push(error.message);
   })
@@ -321,5 +207,5 @@ Promise.all([
       process.exitCode = 1;
       return;
     }
-    console.log('PASS Romanian unhappy paths and Salon Detalii photo chooser');
+    console.log('PASS Romanian unhappy paths and ZIP export errors');
   });

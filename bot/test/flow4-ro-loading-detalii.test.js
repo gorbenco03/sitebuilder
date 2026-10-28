@@ -25,6 +25,11 @@
  * Causal RED on required parent 254be2353503f62d307fdae8bc93986c8dd140e4;
  * GREEN on HEAD after full title/label/hint romanization (+ documented key evolution).
  *
+ * Form editor removed 2026-10-28: the old publish step and "Se încarcă site-ul…"
+ * overlay are gone from builder/app.js, so their positive HEAD asserts were dropped
+ * (the English-absence checks, "Se confirmă plata…" and "Se trimite…" stay). The
+ * schema checks read templates/*, which still render old sites.
+ *
  * Run: node bot/test/flow4-ro-loading-detalii.test.js
  */
 const assert = require('assert');
@@ -397,20 +402,14 @@ check('HEAD: builder/app.js has no customer-visible Publishing… or Confirming 
   assert.ok(!/Confirming payment/.test(app), 'no Confirming payment');
 });
 
-check('HEAD: RO loading replacements present (Se publică… / Se confirmă plata…)', () => {
+check('HEAD: RO loading replacements present (Se confirmă plata… / Se trimite…)', () => {
   const app = headRead('builder/app.js');
-  assert.ok(app.includes(RO_PUBLISH), 'Se publică… present');
   assert.ok(app.includes(RO_PAY), 'Se confirmă plata… present');
-  assert.ok(
-    /setBtnLoading\([^)]*Se publică…/.test(app) || /setLoading\(\s*true,\s*'Se publică…'/.test(app),
-    'Se publică… wired to loading helpers'
-  );
   assert.ok(
     /setLoading\(\s*true,\s*'Se confirmă plata…'/.test(app),
     'Se confirmă plata… on setLoading'
   );
   assert.ok(/Se trimite…/.test(app), 'Se trimite… family kept');
-  assert.ok(/Se încarcă site-ul…/.test(app), 'Se încarcă site-ul… family kept');
 });
 
 check('HEAD: all five schemas — no hero/SEO and no factory English in title/label/hint', () => {

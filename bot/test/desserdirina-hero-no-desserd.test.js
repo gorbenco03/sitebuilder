@@ -6,7 +6,8 @@
  * Fullpass innerText oracles cannot see logo pixels. This check:
  *   (a) seed hero bytes ≠ root bakery sample hero
  *   (b) Vision OCR on the seed hero file finds no DESSERD / by Irina
- *   (c) editor mobile-preview canvas at 390px (stranger first screen) OCR-clean
+ *   (c) the published site at 390px (stranger first screen) OCR-clean
+ *       (was the form editor's mobile preview; editor removed 2026-10-28)
  *
  * Run: node bot/test/desserdirina-hero-no-desserd.test.js
  */
@@ -15,7 +16,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const { execFileSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const PW_PATH = '/Users/Work/.hermes/hermes-agent/node_modules/playwright';
@@ -30,14 +32,6 @@ const BAD_BRAND = /\bDESSERD\b/i;
 const BAD_BY = /\bby\s*(?:I|T)?rina\b/i; // OCR sometimes reads Irina as Trina
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'desserd-hero-'));
-process.env.DATA_DIR = tmpDir;
-process.env.SERVER_SECRET = 'desserd-hero-' + crypto.randomBytes(8).toString('hex');
-process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-process.env.HIDOOK_TEST_PAY = '1';
-process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-delete process.env.HIDOOK_FAKE_DEPLOY;
-delete process.env.STRIPE_SECRET_KEY;
-delete process.env.STRIPE_WEBHOOK_SECRET;
 
 let failed = 0;
 async function check(name, fn) {
@@ -138,22 +132,10 @@ function assertNoDesserdBrand(label, ocrText) {
     assert.ok(BAD_BRAND.test(text), 'root images/hero.jpg must still read DESSERD so the oracle is live; got: ' + text.slice(0, 200));
   });
 
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
-    cwd: ROOT,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
-
-  const { startServer } = require('../server.js');
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => {
-    if (server.listening) return resolve();
-    server.once('listening', resolve);
-  });
-  const port = server.address().port;
-  const base = 'http://127.0.0.1:' + port;
+  const H = await startHarness('desserd-hero');
 
   try {
-    await check('browser: editor mobile-preview 390px hero canvas OCR has no DESSERD', async () => {
+    await check('browser: published site 390px hero first screen OCR has no DESSERD', async () => {
       const { chromium } = loadPlaywright();
       const browser = await chromium.launch({
         headless: true,
@@ -161,37 +143,21 @@ function assertNoDesserdBrand(label, ocrText) {
       });
       const shotPath = path.join(tmpDir, 'desserdirina-mobile-hero-390.png');
       try {
-        const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+        const { liveUrl } = await H.publish('desserdirina', publishConfig('desserdirina'));
+        // Stranger repro: the published site at a 390 phone viewport.
+        const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
         page.setDefaultTimeout(30000);
-        await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
+        await page.goto(liveUrl, { waitUntil: 'domcontentloaded' });
         if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
           await page.locator('#hb-cookie-accept').click().catch(() => {});
         }
-        await page.evaluate((id) => startWithTemplate(id), 'desserdirina');
-        await page.waitForURL(/#edit$/, { timeout: 30000 });
-        await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 30000 });
-        await page.waitForTimeout(1200);
-        const drawer = page.locator('#details-drawer');
-        if (await drawer.isVisible().catch(() => false)) {
-          await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(() => {});
-          await drawer.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-        }
-        // Stranger repro: Vizualizare mobil at 390 canvas
-        const mobileBtn = page.locator('#btn-preview-mobile');
-        if (await mobileBtn.isVisible().catch(() => false)) {
-          await mobileBtn.click();
-          await page.waitForTimeout(600);
-        }
-        await page.waitForTimeout(500);
-        const frame = page.frameLocator('#preview-iframe');
-        await frame.locator('body').waitFor({ state: 'attached', timeout: 20000 });
-        await frame.locator('.hero, .hero-wordmark, .hero-tagline').first().waitFor({
+        await page.locator('.hero, .hero-wordmark, .hero-tagline').first().waitFor({
           state: 'visible',
           timeout: 20000,
         });
-        // Screenshot the preview iframe region (what the stranger sees on first screen).
-        const iframe = page.locator('#preview-iframe');
-        await iframe.screenshot({ path: shotPath });
+        await page.waitForTimeout(1200);
+        // First screen only (what the stranger sees without scrolling).
+        await page.screenshot({ path: shotPath });
         assert.ok(fs.existsSync(shotPath) && fs.statSync(shotPath).size > 8 * 1024, 'hero canvas shot written');
 
         const ocr = ocrImage(shotPath);
@@ -200,19 +166,20 @@ function assertNoDesserdBrand(label, ocrText) {
           /Desserdirina/i.test(ocr) || /TORTURI|ARTIZANAL/i.test(ocr),
           'positive: Desserdirina seed copy should OCR on first screen; got: ' + ocr.slice(0, 240)
         );
-        assertNoDesserdBrand('editor mobile-preview 390 hero', ocr);
+        assertNoDesserdBrand('published 390 hero', ocr);
 
         // Keep a copy under QA evidence for humans.
         const evDir = path.join(ROOT, '04-QA-Evidence/desserdirina-hero-no-desserd');
         fs.mkdirSync(evDir, { recursive: true });
-        fs.copyFileSync(shotPath, path.join(evDir, 'editor-mobile-preview-390-hero.png'));
-        fs.writeFileSync(path.join(evDir, 'ocr-editor-390.txt'), ocr);
+        fs.copyFileSync(shotPath, path.join(evDir, 'published-mobile-390-hero.png'));
+        fs.writeFileSync(path.join(evDir, 'ocr-published-390.txt'), ocr);
       } finally {
         await browser.close();
       }
     });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
+    await H.close();
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (_) {}
   }
 
   if (failed) {
