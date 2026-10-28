@@ -44,7 +44,7 @@ Decizia owner ulterioară specului Opus suprascrie lista inițială „one-time 
 
 ## 3. Șabloane și design
 
-**Editorul pe blocuri (decizie owner, 2026-10-28).** Site-urile noi se fac în editorul pe blocuri (`builder/blocks/`, servit la `/app/blocks/`), nu în editorul pe formulare. Clientul alege din catalog unul din 13 designuri — „De la zero” plus 12 domenii (Restaurant, Salon de frumusețe, Meserii, Servicii profesionale, Cofetărie, Cafenea și brunch, Coafură și machiaj de mireasă, Renovări interioare, Catering și evenimente, Cosmetică și estetică, Consultanță și coaching, Contabilitate) — fiecare cu pagini, texte, poze, culori și fonturi proprii. În editor scrie direct pe pagină (bold, italic, linkuri), adaugă/mută/duplică/șterge blocuri (16 tipuri, cu variante), are mai multe pagini cu antet și subsol comune, temă (culori, fonturi, colțuri), vedere calculator/telefon, previzualizare și undo/redo. Site-ul se salvează în browser și, după autentificare, în cont (`templateId: "blocks"`); publicarea folosește aceleași rute ca înainte (link pe email → adresă → trial Stripe → live), iar fiecare pagină devine un fișier HTML pe site-ul publicat, cu paginile legale, bannerul de cookie și mențiunea hidook. Formularul de contact trimite în „Mesaje” (`/api/site-messages`). Blocul Instagram se conectează prin Instafidget din panoul blocului (aceleași rute `social-feed/*`, același acord de termeni, editorul Instafidget în tab nou); pe site-ul publicat apare doar feed-ul conectat, altfel blocul lipsește cu totul (politica S111). La un design nou, editorul cere o dată, opțional, numele afacerii, telefonul și orașul și le pune peste datele de exemplu din tot site-ul. Înainte de publicare, fereastra „Publică” arată ce a rămas de exemplu (nume, telefon, e-mail, poze de completat, Instagram neconectat), fără să blocheze publicarea; e-mailurile de exemplu nu ajung niciodată pe site-ul publicat (regula H-01). Cele 5 șabloane de mai jos și editorul lor rămân în cod doar pentru site-urile deja create cu ele (toate de test, decizie owner 2026-10-28).
+**Editorul pe blocuri (decizie owner, 2026-10-28).** Site-urile noi se fac în editorul pe blocuri (`builder/blocks/`, servit la `/app/blocks/`), nu în editorul pe formulare. Clientul alege din catalog unul din 13 designuri — „De la zero” plus 12 domenii (Restaurant, Salon de frumusețe, Meserii, Servicii profesionale, Cofetărie, Cafenea și brunch, Coafură și machiaj de mireasă, Renovări interioare, Catering și evenimente, Cosmetică și estetică, Consultanță și coaching, Contabilitate) — fiecare cu pagini, texte, poze, culori și fonturi proprii. În editor scrie direct pe pagină (bold, italic, linkuri), adaugă/mută/duplică/șterge blocuri (16 tipuri, cu variante), are mai multe pagini cu antet și subsol comune, temă (culori, fonturi, colțuri), vedere calculator/telefon, previzualizare și undo/redo. Site-ul se salvează în browser și, după autentificare, în cont (`templateId: "blocks"`); publicarea folosește aceleași rute ca înainte (link pe email → adresă → trial Stripe → live), iar fiecare pagină devine un fișier HTML pe site-ul publicat, cu paginile legale, bannerul de cookie și mențiunea hidook. Formularul de contact trimite în „Mesaje” (`/api/site-messages`). Blocul Instagram se conectează prin Instafidget din panoul blocului (aceleași rute `social-feed/*`, același acord de termeni, editorul Instafidget în tab nou); pe site-ul publicat apare doar feed-ul conectat, altfel blocul lipsește cu totul (politica S111). La un design nou, editorul cere o dată, opțional, numele afacerii, telefonul și orașul și le pune peste datele de exemplu din tot site-ul. Înainte de publicare, fereastra „Publică” arată ce a rămas de exemplu (nume, telefon, e-mail, poze de completat, Instagram neconectat), fără să blocheze publicarea; e-mailurile de exemplu nu ajung niciodată pe site-ul publicat (regula H-01). Editorul pe formulare a fost scos din builder pe 2026-10-28 (decizie owner: site-urile făcute cu el sunt toate de test). Cele 5 șabloane de mai jos rămân doar pe server: `build.js` le randează și publică pentru site-urile deja existente, iar pozele lor sunt folosite de designurile pe blocuri. Un astfel de site apare în „Site-urile mele” cu plată, domeniu, facturi și ștergere, dar fără „Editează”.
 
 Scope-ul șabloanelor pe formulare (editorul vechi):
 
@@ -87,6 +87,8 @@ Done înseamnă:
 - hero background și secțiunile simple au controale reale de culoare/imagine, nu input de CSS brut;
 - preview-ul și live site-ul arată aceeași schimbare;
 - QA verifică pixelii, nu doar config-ul.
+
+> **Istoric (2026-10-28):** secțiunile 4.3–4.6 descriu editorul pe formulare, scos din builder pe 2026-10-28. Nu mai sunt cerințe curente; editorul pe blocuri e descris în §3.
 
 ### 4.3 Details automat
 
@@ -177,7 +179,7 @@ Nu se livrează la clienți plătitori cu text legal inventat.
 
 Done înseamnă:
 
-- userul poate descărca ZIP cu site static complet;
+- userul poate descărca ZIP cu site static complet, din „Site-urile mele” (butonul „Descarcă ZIP” de pe cardul unui site live plătit, `GET /api/export-zip?siteId=`);
 - ZIP-ul conține HTML/CSS/JS/images/legal pages/badge;
 - poate fi servit de pe orice static host fără runtime Hidook;
 - site-ul exportat nu face request-uri către domenii Hidook pentru a funcționa;
