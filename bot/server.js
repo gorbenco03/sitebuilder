@@ -4253,6 +4253,7 @@ async function handlePublish(req, res) {
             return sendJson(res, 200, { site: withPublicUrl(updated), paymentUrl: null });
         } catch (e) {
             if (e.code === 'MODERATION') return sendJson(res, 422, { error: 'Imaginile tale au fost blocate de moderare.' });
+            if (e.code === 'BOOKING_SYNC') return sendJson(res, 503, { error: e.message });
             log('server.publish.paid.error', { siteId: site.id, err: e.message }, 'error');
             const updated = await reg.getSite(site.id);
             return sendJson(res, 500, { error: 'Publicare eșuată: ' + e.message, site: updated });

@@ -89,6 +89,18 @@ function rich(value) {
   return out;
 }
 
+/** Text without markup: tags dropped, entities from inline editing (&amp;, &nbsp;) turned back into characters. */
+function plainText(value) {
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+  return String(value == null ? '' : value).replace(/<[^>]*>/g, '')
+    .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+      if (e[0] !== '#') return Object.prototype.hasOwnProperty.call(named, e.toLowerCase()) ? named[e.toLowerCase()] : m;
+      const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+      return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m;
+    })
+    .replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 /** Editable inline text (may hold bold, italic and links). */
 function t(tag, path, value, cls) {
   return `<${tag}${cls ? ` class="${cls}"` : ''} data-f="${path}" data-rich>${rich(value)}</${tag}>`;
@@ -135,7 +147,7 @@ function bookingWeek(d) {
 /** Services with a name, each with a duration from DURATIONS (minutes). */
 function bookingServices(d) {
   return (Array.isArray(d && d.services) ? d.services : [])
-    .map((s) => ({ name: String((s && s.name) || '').replace(/<[^>]*>/g, '').trim().slice(0, 120), min: DURATIONS.includes(Number(s && s.min)) ? Number(s.min) : 30 }))
+    .map((s) => ({ name: plainText(s && s.name).slice(0, 120), min: DURATIONS.includes(Number(s && s.min)) ? Number(s.min) : 30 }))
     .filter((s) => s.name);
 }
 
@@ -487,7 +499,7 @@ const BLOCKS = {
     render(d, v, ctx) {
       const services = bookingServices(d);
       const week = bookingWeek(d);
-      const phone = String(d.phone || '').replace(/<[^>]*>/g, '').trim();
+      const phone = plainText(d.phone);
       const tel = phone.replace(/\D/g, '').length >= 6 ? phone.replace(/[^\d+]/g, '') : '';
       const call = !phone ? ''
         : !ctx.published ? `<p class="b-muted b-book__call">Preferi la telefon? Sună la ${t('span', 'phone', d.phone)}</p>`
@@ -496,7 +508,7 @@ const BLOCKS = {
       const wrap = (inner) => `<section class="b-sec b-book"><div class="b-wrap ${v === 'center' ? 'b-narrow b-book--center' : 'b-cols b-cols--top'}">${head}${inner}</div></section>`;
       const list = `<ul class="b-book__svcs">${services.map((s) => `<li><span>${esc(s.name)}</span><span class="b-muted">${durLabel(s.min)}</span></li>`).join('')}</ul>`;
       const hours = weekSummary(week);
-      if (ctx.published && ctx.booking) {
+      if (ctx.published && ctx.booking && ctx.booking.blockId === ctx.blockId) {
         const k = ctx.booking;
         const api = esc(k.apiBase || '');
         return wrap(`<div class="b-book__live"><link rel="stylesheet" href="${api}/calendar-native/widget/public-booking-widget.css">`
@@ -817,7 +829,7 @@ function applyLinks(html, b) {
 function renderBlock(b, ctx) {
   const def = BLOCKS[b.type];
   if (!def) return '';
-  const inner = def.render(b.data || {}, b.variant, ctx || {});
+  const inner = def.render(b.data || {}, b.variant, Object.assign({}, ctx, { blockId: b.id }));
   if (!inner) return '';
   const css = elementCss(b);
   const attrs = `data-id="${esc(b.id)}" data-bg="${esc(b.bg || 'auto')}" data-pad="${esc(b.pad || 'normal')}" data-align="${esc(b.align || 'auto')}"${b.hideMobile ? ' data-hidem' : ''}`;
@@ -994,7 +1006,7 @@ function normalizeSite(input) {
 function siteBrand(site) {
   const h = site && site.header && site.header.data && site.header.data.brand;
   const f = site && site.footer && site.footer.data && site.footer.data.brand;
-  return String(h || f || '').replace(/<[^>]*>/g, '').trim();
+  return plainText(h || f || '');
 }
 
 /** Every "@tpl/…" photo the site uses, so publishing can copy exactly those files. */

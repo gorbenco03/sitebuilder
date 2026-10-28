@@ -845,6 +845,7 @@ function renderInspector() {
     const on = !!window.SB.feedUrl(site);
     html += `<div class="grp"><h3>Conectare</h3><p class="note">${on ? 'Instagram e conectat prin Instafidget. Pe site apar postările tale.' : 'Neconectat: blocul nu apare pe site până nu conectezi contul. Instafidget e inclus gratuit 12 luni.'}</p><button type="button" class="wide" data-ig="open">${on ? 'Gestionează Instagram' : 'Conectează Instagram'}</button></div>`;
   }
+  if (b.type === 'booking' && window.SB.bookingBlocks(site)[0].id !== b.id) html += `<p class="note">Site-ul are deja un bloc Programări online. Calendarul apare doar în primul; acesta arată pe site doar lista de servicii și telefonul.</p>`;
   if (b.type === 'booking') html += `<p class="note">Clienții aleg un serviciu și o oră liberă din zilele de mai jos. Calendarul pornește pe site când publici. Fiecare programare îți vine pe email și o vezi în Site-urile mele → Programări, unde poți pune și zile libere.</p>`;
   if (b.type === 'form') html += `<p class="note">Mesajele ajung în „Mesaje”, pe cardul site-ului din Site-urile mele. Dacă scrii adresa de e-mail de mai jos, vizitatorul o poate folosi când trimiterea nu merge.</p>`;
   if (variants.length > 1) html += `<div class="grp"><h3>Aspect</h3><div class="pills">${variants.map(([k, l]) => `<button type="button" data-variant="${k}" aria-pressed="${k === b.variant}">${esc(l)}</button>`).join('')}</div></div>`;

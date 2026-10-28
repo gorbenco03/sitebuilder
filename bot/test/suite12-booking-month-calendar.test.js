@@ -163,8 +163,19 @@ test('month-grid calendar widget', async (t) => {
         const todayCell = page.locator('.hnb__cal-day.is-today');
         await todayCell.waitFor({ state: 'attached' });
         assert.equal(await todayCell.count(), 1, 'exactly one day must be marked as today');
-        assert.ok(await todayCell.evaluate((n) => n.classList.contains('is-selected')),
-            'on first load today must also be the selected day');
+        // First load opens today when it still has a free time, otherwise the
+        // first day of the month that does (e.g. late in the evening).
+        const todayBookable = await todayCell.evaluate((n) => !n.classList.contains('is-unavailable'));
+        if (todayBookable) {
+            assert.ok(await todayCell.evaluate((n) => n.classList.contains('is-selected')),
+                'on first load a bookable today must also be the selected day');
+        } else {
+            const firstFree = page.locator('.hnb__cal-day:not(.is-unavailable)').first();
+            if (await firstFree.count()) {
+                assert.ok(await firstFree.evaluate((n) => n.classList.contains('is-selected')),
+                    'on first load, with nothing left today, the first free day is selected');
+            }
+        }
 
         assert.equal(pageErrors.length, 0, 'no uncaught JS errors: ' + pageErrors.join(' | '));
         await page.close();

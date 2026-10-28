@@ -100,7 +100,7 @@ test('the block renders a preview in the editor, the live widget when published,
   assert.match(editor, /Alege serviciul/);
   assert.doesNotMatch(editor, /data-hidook-cal-native/, 'the editor never boots the live widget');
 
-  const live = SB.renderPage(cfg, page.id, { published: true, booking: { customerId: 'u_1', siteId: 's_1', apiBase: 'https://cal.test', brand: 'Salon Test' } });
+  const live = SB.renderPage(cfg, page.id, { published: true, booking: { customerId: 'u_1', siteId: 's_1', apiBase: 'https://cal.test', brand: 'Salon Test', blockId: block.id } });
   assert.match(live, /<div data-hidook-cal-native data-customer-id="u_1" data-site-id="s_1" data-api-base="https:\/\/cal\.test"/);
   assert.match(live, /src="https:\/\/cal\.test\/calendar-native\/widget\/public-booking-widget\.js"/);
   assert.match(live, /href="tel:0722123456"/);
@@ -109,6 +109,28 @@ test('the block renders a preview in the editor, the live widget when published,
   assert.doesNotMatch(offline, /data-hidook-cal-native|calendar-native/, 'a downloaded copy never calls the booking server');
   assert.match(offline, /Pentru programare sună la <a href="tel:0722123456">/);
   assert.match(offline, /Tuns/);
+});
+
+test('text edited on the page (entities) reaches the calendar and the site as plain characters', () => {
+  const cfg = SB.normalizeSite(salonWithBooking('Salon & Co', [{ name: 'Tuns &amp; barbă', min: '30' }]));
+  const block = SB.bookingBlocks(cfg)[0];
+  block.data.phone = '0722&nbsp;123&nbsp;456';
+  assert.deepEqual(SB.bookingServices(block.data), [{ name: 'Tuns & barbă', min: 30 }]);
+  const page = cfg.pages.find((p) => p.blocks.includes(block));
+  const offline = SB.renderPage(cfg, page.id, { published: true });
+  assert.match(offline, /<span>Tuns &amp; barbă<\/span>/);
+  assert.doesNotMatch(offline, /&amp;amp;|&amp;nbsp;/);
+  assert.match(offline, /<a href="tel:0722123456">0722 123 456<\/a>/);
+});
+
+test('a second booking block on the site shows services and the phone, never a second calendar', () => {
+  const cfg = SB.normalizeSite(salonWithBooking('Salon Dublu', [{ name: 'Tuns', min: '30' }]));
+  const first = SB.bookingBlocks(cfg)[0];
+  const page = cfg.pages.find((p) => p.blocks.includes(first));
+  page.blocks.push(Object.assign(JSON.parse(JSON.stringify(first)), { id: 'secondbooking' }));
+  const html = SB.renderPage(cfg, page.id, { published: true, booking: { customerId: 'u_1', siteId: 's_1', apiBase: '', brand: 'x', blockId: first.id } });
+  assert.equal((html.match(/data-hidook-cal-native/g) || []).length, 1);
+  assert.match(html, /Pentru programare sună la/);
 });
 
 test('starter booking hours are flagged before publishing; changed ones are not', () => {

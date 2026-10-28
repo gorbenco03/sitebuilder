@@ -1,0 +1,77 @@
+[
+  {
+    "system": "professionals",
+    "shot": "open-live-390-professionals-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 740.453125,
+      "width": 288,
+      "height": 95.546875,
+      "text": "Folosim stocare esențială în browser, fără urmărire sau reclame. Acceptă Află mai mult"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "local-service",
+    "shot": "open-live-390-local-service-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 678.859375,
+      "width": 288,
+      "height": 95.546875,
+      "text": "Folosim stocare esențială în browser, fără urmărire sau reclame. Acceptă Află mai mult"
+    },
+    "actionCount": 3,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "portfolio",
+    "shot": "open-live-390-portfolio-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 740.453125,
+      "width": 288,
+      "height": 95.546875,
+      "text": "Folosim stocare esențială în browser, fără urmărire sau reclame. Acceptă Află mai mult"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "product-menu",
+    "shot": "open-live-390-product-menu-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 740.453125,
+      "width": 288,
+      "height": 95.546875,
+      "text": "Folosim stocare esențială în browser, fără urmărire sau reclame. Acceptă Află mai mult"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  },
+  {
+    "system": "desserdirina",
+    "shot": "open-live-390-desserdirina-cookie-open.png",
+    "cookie": {
+      "x": 8,
+      "y": 740.453125,
+      "width": 288,
+      "height": 95.546875,
+      "text": "Folosim stocare esențială în browser, fără urmărire sau reclame. Acceptă Află mai mult"
+    },
+    "actionCount": 1,
+    "waCount": 1,
+    "cookieActionHits": 0,
+    "textHits": 0
+  }
+]

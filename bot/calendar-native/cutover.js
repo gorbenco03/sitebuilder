@@ -318,6 +318,19 @@ function syncTenantFromBookingBlock(db, customerId, siteId, plan) {
     }
     const services = (plan && Array.isArray(plan.services) ? plan.services : []).slice(0, 20);
     const week = plan && Array.isArray(plan.week) ? plan.week : [];
+    // All or nothing: a half-applied sync would leave visitors booking against a mix.
+    db.exec('BEGIN IMMEDIATE;');
+    try {
+        const out = applyBookingBlock(db, customerId, siteId, services, week);
+        db.exec('COMMIT;');
+        return out;
+    } catch (e) {
+        try { db.exec('ROLLBACK;'); } catch (_) { /* ignore */ }
+        throw e;
+    }
+}
+
+function applyBookingBlock(db, customerId, siteId, services, week) {
     const fresh = !engine.getSettings(db, customerId, siteId);
     // Half-hour starts read best; only a service shorter than that needs a finer grid.
     const shortService = services.some((s) => s.min < 30);

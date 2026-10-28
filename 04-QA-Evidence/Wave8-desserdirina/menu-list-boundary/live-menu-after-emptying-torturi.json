@@ -1,0 +1,27 @@
+{
+  "liveMenu": [
+    {
+      "heading": "Torturi",
+      "items": []
+    },
+    {
+      "heading": "La comandă",
+      "items": [
+        "Torturi",
+        "Colaci",
+        "Sarmale",
+        "Mâncare la cutie",
+        "Plăcinte și brânzoaice",
+        "Prăjituri și platouri cu prăjituri"
+      ]
+    },
+    {
+      "heading": "Servicii și Evenimente",
+      "items": [
+        "Catering și mâncare la comandă",
+        "Zile de naștere în local",
+        "Evenimente"
+      ]
+    }
+  ]
+}

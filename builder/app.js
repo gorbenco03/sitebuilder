@@ -1703,12 +1703,16 @@ function buildSiteCard(site) {
   // appointment.nativeBooking on.
   if (site.paid && (site.status === 'live' || site.status === 'active')) {
     const isBlocks = site.templateId === 'blocks';
-    apiGet('/api/sites/' + encodeURIComponent(site.id))
-      .then((data) => {
-        const cfg = data && data.config;
-        const hasCalendar = isBlocks
-          ? !!(cfg && Array.isArray(cfg.pages) && cfg.pages.some((p) => (p.blocks || []).some((b) => b && b.type === 'booking')))
-          : isNativeBookingOn(cfg && cfg.appointment && cfg.appointment.nativeBooking);
+    // A block site has a calendar once a publish created it, even if the block
+    // was later removed from the draft: its bookings must stay reachable.
+    const tenantQs = new URLSearchParams({ customerId: site.userId, siteId: site.id }).toString();
+    Promise.all([
+      apiGet('/api/sites/' + encodeURIComponent(site.id)),
+      isBlocks ? apiGet('/api/calendar-native/services?' + tenantQs).then(() => true, () => false) : Promise.resolve(false),
+    ])
+      .then(([data, hasTenant]) => {
+        const cfg = (data && data.config) || {};
+        const hasCalendar = isBlocks ? hasTenant : isNativeBookingOn(cfg.appointment && cfg.appointment.nativeBooking);
         if (!hasCalendar) return;
         const bookBtn = document.createElement('a');
         bookBtn.className = 'btn-ghost btn-sm';

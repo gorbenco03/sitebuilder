@@ -1,0 +1,40 @@
+{
+  "mechanismProof": {
+    "old": {
+      "before": {
+        "width": 0,
+        "height": 320
+      },
+      "after": {
+        "width": 320,
+        "height": 320
+      },
+      "perf": {
+        "cls": 0,
+        "entryCount": 0
+      }
+    },
+    "new": {
+      "before": {
+        "width": 200,
+        "height": 260
+      },
+      "after": {
+        "width": 200,
+        "height": 260
+      },
+      "perf": {
+        "cls": 0,
+        "entryCount": 0
+      }
+    }
+  },
+  "fullPageDesktop1440": {
+    "before": 0.005781709109616706,
+    "after": 0.00015136059125264484
+  },
+  "fullPageMobile390": {
+    "before": 0.00383345254733161,
+    "after": 0.003928445691027299
+  }
+}

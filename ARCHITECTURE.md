@@ -287,11 +287,12 @@ and keeps the local form; the value itself is left as an inert, unused key.
 **Block-editor sites** turn it on differently: a `booking` block in the site
 (`builder/blocks/blocks.js`, data `{ services: [{name, min}], week: [7 × {on, from, to}], phone }`)
 is the opt-in and the source of truth for services and weekly hours. At
-publish `bot/webpublish.js#prepareBlocksBooking` calls
-`cutover.syncTenantFromBookingBlock` (services keyed `bk_<name-slug>`, others
-deactivated; default resource's weekly hours replaced; settings written once)
-and hands `{ customerId, siteId, apiBase, brand }` to `SB.renderPage`, which
-mounts the widget. `buildBlocksSiteTree` without that object — the ZIP export —
+publish `bot/webpublish.js#blocksBookingPlan` hands
+`{ customerId, siteId, apiBase, brand, blockId }` to `SB.renderPage`, which
+mounts the widget in the first booking block only; after image moderation
+`syncBlocksBooking` calls `cutover.syncTenantFromBookingBlock` in one
+transaction (services keyed `bk_<name-slug>`, others deactivated; default
+resource's weekly hours replaced; settings written once). `buildBlocksSiteTree` without that object — the ZIP export —
 renders a static list instead. The owner dashboard opened with `?blocks=1`
 hides the Servicii tab and shows the default weekly hours read-only.
 
