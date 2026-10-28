@@ -10,7 +10,14 @@
  *   (a2) .dockerignore does not exclude scripts/build-builder.js (and other bake inputs)
  *       — host GREEN is not an equivalent Docker path; COPY . . respects dockerignore
  *   (b) node scripts/build-builder.js produces engine.js + templates-data.js
- *   (c) GET /app/ references those scripts; GET of each JS returns JS (not HTML SPA fallback)
+ *   (c) GET /app/ references the scripts the catalog needs (blocks packs, app.js, ...) and
+ *       each one returns JS (not the HTML SPA fallback); the generated bundle is still served
+ *
+ * Form editor removed 2026-10-28: /app/ no longer loads generated/engine.js or
+ * generated/templates-data.js (the block catalog uses builder/blocks/*.js), so the
+ * "index references generated/..." assertions were replaced by "every local script
+ * the index references is served as JS". The generated files are still built and
+ * served, so the (b) build check and the direct fetch checks stay.
  *
  * Run: node bot/test/builder-boot.test.js
  * Exit non-zero on first failure class.
@@ -233,20 +240,24 @@ function pathExcludedByDockerignore(relPath, patterns) {
     const base = `http://127.0.0.1:${srv.address().port}`;
 
     try {
-        await check('(c) GET /app/ is HTML and loads generated scripts', async () => {
+        await check('(c) GET /app/ is HTML and every local script it loads is served as JS', async () => {
             const res = await fetch(`${base}/app/`);
             assert.strictEqual(res.status, 200, 'GET /app/ status');
             const ct = res.headers.get('content-type') || '';
             assert.ok(ct.includes('text/html'), 'GET /app/ content-type html, got ' + ct);
             const html = await res.text();
-            assert.ok(
-                html.includes('generated/templates-data.js'),
-                'index must reference generated/templates-data.js'
-            );
-            assert.ok(
-                html.includes('generated/engine.js'),
-                'index must reference generated/engine.js'
-            );
+            const scripts = [...html.matchAll(/<script[^>]+src="(\/app\/[^"]+)"/g)].map((m) => m[1]);
+            const bare = (u) => u.split('?')[0];
+            assert.ok(scripts.length >= 4, 'index must reference its local scripts, got ' + scripts.length);
+            assert.ok(scripts.map(bare).includes('/app/blocks/packs.js'), 'index must load the block starter packs');
+            assert.ok(scripts.map(bare).includes('/app/app.js'), 'index must load app.js');
+            for (const src of scripts) {
+                const r = await fetch(base + src);
+                assert.strictEqual(r.status, 200, src + ' status');
+                const sct = r.headers.get('content-type') || '';
+                assert.ok(sct.includes('javascript') || sct.includes('ecmascript'), src + ' must be JS, got ' + sct);
+                assert.ok(!(await r.text()).trimStart().startsWith('<!'), src + ' must not be HTML fallback');
+            }
         });
 
         await check('(c) GET /app/generated/engine.js → JS with HidookEngine', async () => {

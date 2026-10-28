@@ -58,6 +58,13 @@
  * matching local draft (and the in-memory bind) the moment the delete call
  * succeeds, so nothing is left to resurrect.
  *
+ * Form editor removed 2026-10-28: defect #1's recovery banner lived in the
+ * form editor (maybeShowRecoveryBanner, hb.draft.v1) and is gone with it, so its
+ * test was deleted. Defect #3 now seeds the unpaid draft through the API, plants
+ * the block editor's local draft (hb.blocks.draft.v1) and checks that a confirmed
+ * delete from the dashboard clears it and leaves no ghost site. Defects #2a/#2b
+ * are server-side and unchanged.
+ *
  * Local only — no production URL, no real Stripe, no real Cloudflare
  * network calls (a fake Cloudflare Pages REST API stands in via
  * global.fetch, same style as bot/test/wave7-domains-seo-origin.test.js and
@@ -74,6 +81,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 
 const ROOT = path.resolve(__dirname, '../..');
+const { signInPage, postJson, blocksConfig } = require('./lib/dash-seed.js');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Suite12-publish-lifecycle');
 
 // ---------------------------------------------------------------------------
@@ -454,241 +462,9 @@ test('defect #2b: a flaky ensureSubdomain reconfirmation on republish must not r
 });
 
 // ---------------------------------------------------------------------------
-// Defect #1 — the recovery banner. Real browser (Playwright), real server,
-// HIDOOK_TEST_PAY + HIDOOK_ISOLATED_DEPLOY stubs (same as
-// bot/test/wave9-save-recovery-banner.test.js, which this suite extends
-// rather than duplicates — that file still pins the never-published case).
-// ---------------------------------------------------------------------------
-test('defect #1: the recovery banner never calls a paid/live site "site neterminat"', async () => {
-    fs.mkdirSync(EVIDENCE, { recursive: true });
-    const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
-
-    const saved = {};
-    const envOverrides = {
-        HIDOOK_TEST_PAY: '1',
-        HIDOOK_ISOLATED_DEPLOY: '1',
-        NODE_ENV: 'test',
-        DATA_DIR: freshTmpDataDir('suite12-1-'),
-        SERVER_SECRET: 'suite12-1-' + crypto.randomBytes(8).toString('hex'),
-    };
-    for (const k of Object.keys(envOverrides)) saved[k] = process.env[k];
-    for (const k of ['PUBLIC_URL', 'STRIPE_SECRET_KEY', 'CLOUDFLARE_API_TOKEN', 'VERCEL_TOKEN', 'BRAND_DOMAIN', 'DEPLOY_PROVIDER', 'HIDOOK_FAKE_DEPLOY']) saved[k] = process.env[k];
-    Object.assign(process.env, envOverrides);
-    for (const k of ['PUBLIC_URL', 'STRIPE_SECRET_KEY', 'CLOUDFLARE_API_TOKEN', 'VERCEL_TOKEN', 'BRAND_DOMAIN', 'DEPLOY_PROVIDER', 'HIDOOK_FAKE_DEPLOY']) delete process.env[k];
-
-    for (const rel of ['../server.js', '../webpublish.js', '../domains.js', '../registry.js']) {
-        delete require.cache[require.resolve(rel)];
-    }
-    require(path.join(ROOT, 'scripts/build-builder.js'));
-    const { startServer } = require('../server.js');
-
-    const server = startServer({ port: 0 });
-    await new Promise((res, rej) => { server.once('listening', res); server.once('error', rej); });
-    const base = 'http://127.0.0.1:' + server.address().port;
-
-    const browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
-
-    async function acceptCookiesAndStart(page, templateId) {
-        await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.evaluate((id) => startWithTemplate(id), templateId);
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(1000);
-        if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click().catch(() => {});
-            await page.waitForTimeout(300);
-        }
-    }
-
-    async function editBusinessName(page, text) {
-        const field = page.frameLocator('#preview-iframe').locator('[data-hb-edit="business.name"]').first();
-        await field.click({ clickCount: 3 });
-        await page.keyboard.type(text, { delay: 12 });
-        await page.locator('#save-status[data-state="saved"]').waitFor({ state: 'visible', timeout: 4000 });
-  }
-
-    /** Sign in through the dashboard entry point (same dev-magic-link flow
-     * bot/test/suite3-publish-single-flight.test.js already relies on).
-     * POST /api/publish requires auth, and the recovery banner's "resume-live"
-     * case needs a real paid site, so every scenario below signs in once —
-     * the context's session cookie then carries across every later page. */
-    async function signIn(page, email) {
-        await page.locator('#btn-account-menu').click();
-        await page.locator('#account-menu-projects').click();
-        await page.waitForURL(/#dashboard$/);
-        await page.locator('#btn-dashboard-auth').click();
-        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-        await page.locator('#input-email').fill(email);
-        await page.locator('#btn-send-magic').click();
-        await page.locator('#dev-link').waitFor({ state: 'visible' });
-        await page.locator('#dev-link').click();
-        // A local draft already exists at this point (edited before signing
-        // in) and this is a brand-new user with zero sites yet — loadDashboard()
-        // resumes it straight to #edit (see builder/app.js#loadDashboard).
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(600);
-        if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click().catch(() => {});
-            await page.waitForTimeout(300);
-        }
-    }
-
-    async function publishAndPayThroughUi(page) {
-        await page.locator('#btn-publish').click();
-        await page.locator('#modal-publish').waitFor({ state: 'visible' });
-        const slug = 'suite12-1-' + crypto.randomUUID().slice(0, 8);
-        await page.locator('#input-slug').fill(slug);
-        await page.locator('#btn-publish-continue').click();
-        await page.locator('#modal-success').waitFor({ state: 'visible' });
-        // Unpaid success state: pay CTA navigates same-tab to
-        // #test-checkout=... (HIDOOK_TEST_PAY stub) — completeTestCheckout()
-        // then flips the site paid+live and reopens the success modal.
-        await page.locator('#btn-pay-publish').click();
-        // The #test-checkout=... hash is transient — handleRoute() replaces it
-        // with #dashboard practically immediately after completeTestCheckout()
-        // resolves, so waiting for that intermediate URL can race and miss it.
-        // Wait for the final state instead.
-        await page.waitForURL(/#dashboard$/, { timeout: 20000 });
-        await page.locator('#modal-success').waitFor({ state: 'visible', timeout: 15000 });
-        const titleText = (await page.locator('#modal-success-title').innerText()).trim();
-        assert.match(titleText, /live/i, 'must be the LIVE success modal, not the draft/pay-CTA one');
-        await page.locator('#btn-close-success').click().catch(() => {});
-    }
-
-    try {
-        // =====================================================================
-        // A. Fresh, never-published draft — the banner SHOULD show, and must
-        //    still say "site neterminat" (copy-i18n#1 renamed "proiect" ->
-        //    "site" everywhere in app.js; the underlying behaviour here is
-        //    otherwise unchanged).
-        // =====================================================================
-        const pageA1 = await context.newPage();
-        pageA1.setDefaultTimeout(30000);
-        await acceptCookiesAndStart(pageA1, 'portfolio');
-        await editBusinessName(pageA1, 'Suite12 Neterminat');
-        await pageA1.close();
-
-        const pageA2 = await context.newPage();
-        pageA2.setDefaultTimeout(30000);
-        await pageA2.goto(base + '/app/', { waitUntil: 'networkidle' });
-        const bannerA = pageA2.locator('#recovery-banner');
-        await assert.doesNotReject(bannerA.waitFor({ state: 'visible', timeout: 4000 }),
-            'a never-published draft must still be offered back');
-        const textA = (await bannerA.locator('.recovery-banner-text').innerText()).trim();
-        assert.match(textA, /site neterminat/i, 'a genuinely unfinished draft must say "site neterminat"');
-        await pageA2.screenshot({ path: path.join(EVIDENCE, '01-unfinished-draft-banner.png') });
-
-        // Continue editing this same draft through to a paid/live site for
-        // case B below.
-        await pageA2.locator('#btn-recovery-resume').click();
-        await pageA2.waitForURL(/#edit$/);
-        await pageA2.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await pageA2.waitForTimeout(800);
-        if (await pageA2.locator('#details-drawer').isVisible().catch(() => false)) {
-            await pageA2.locator('#btn-close-drawer').click().catch(() => {});
-            await pageA2.waitForTimeout(300);
-        }
-        const email = 'suite12-1-' + crypto.randomUUID().slice(0, 8) + '@example.com';
-        await signIn(pageA2, email);
-        await publishAndPayThroughUi(pageA2);
-        await pageA2.close();
-
-        // =====================================================================
-        // B. Same site, now paid + live, nothing edited since publish — the
-        //    reported bug. The banner must NOT show at all.
-        // =====================================================================
-        const pageB = await context.newPage();
-        pageB.setDefaultTimeout(30000);
-        await pageB.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await pageB.waitForTimeout(600);
-        assert.equal(await pageB.locator('#recovery-banner').isVisible(), false,
-            'defect #1: a paid/live site with nothing edited since publish must never show "site neterminat"');
-        await pageB.screenshot({ path: path.join(EVIDENCE, '02-paid-live-no-banner.png') });
-
-        // =====================================================================
-        // C. Resume editing that SAME live site, make a real change, leave
-        //    without republishing — honest to offer it back, dishonest to
-        //    call it "neterminat". Must name the site.
-        // =====================================================================
-        await pageB.goto(base + '/app/#dashboard', { waitUntil: 'networkidle' });
-        await pageB.waitForTimeout(400);
-        const editBtn = pageB.locator('.site-card button:has-text("Editează")').first();
-        await editBtn.waitFor({ state: 'visible', timeout: 10000 });
-        await editBtn.click();
-        await pageB.waitForURL(/#edit$/);
-        await pageB.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await pageB.waitForTimeout(800);
-        if (await pageB.locator('#details-drawer').isVisible().catch(() => false)) {
-            await pageB.locator('#btn-close-drawer').click().catch(() => {});
-            await pageB.waitForTimeout(300);
-        }
-        await editBusinessName(pageB, 'Suite12 Live Editat Din Nou');
-        await pageB.close();
-
-        const pageC = await context.newPage();
-        pageC.setDefaultTimeout(30000);
-        await pageC.goto(base + '/app/', { waitUntil: 'networkidle' });
-        const bannerC = pageC.locator('#recovery-banner');
-        await assert.doesNotReject(bannerC.waitFor({ state: 'visible', timeout: 4000 }),
-            'defect #1: genuine unpublished edits on a live site must still be offered back');
-        const textC = (await bannerC.locator('.recovery-banner-text').innerText()).trim();
-        assert.doesNotMatch(textC, /site neterminat/i, 'a paid/live site\'s unsaved edits must never be called "site neterminat"');
-        assert.match(textC, /modificări nesalvate/i, 'must honestly say these are unsaved changes');
-        assert.match(textC, /Suite12 Live Editat Din Nou|Suite12 Neterminat/, 'must name the site, not a generic label');
-        await pageC.screenshot({ path: path.join(EVIDENCE, '03-live-site-unsaved-edits-banner.png') });
-
-        // =====================================================================
-        // D. "Renunță" on the live-site case must dismiss the banner but
-        //    NEVER delete anything — the local draft (siteId/paid bind) must
-        //    survive so the owner can still reach/republish their site.
-        // =====================================================================
-        await pageC.locator('#btn-recovery-discard').click();
-        assert.equal(await pageC.locator('#recovery-banner').isVisible(), false, 'Renunță must dismiss the banner');
-        const draftAfterDiscard = await pageC.evaluate(() => {
-            try { return JSON.parse(localStorage.getItem('hb.draft.v1') || 'null'); } catch (_) { return null; }
-        });
-        assert.ok(draftAfterDiscard, 'Renunță on a paid site\'s unsaved edits must NOT delete the local draft');
-        assert.ok(draftAfterDiscard.siteId, 'the paid site\'s bind (siteId) must survive Renunță');
-        assert.equal(draftAfterDiscard.paid, true, 'the paid flag must survive Renunță');
-        await pageC.screenshot({ path: path.join(EVIDENCE, '04-renunta-live-site-preserves-draft.png') });
-        await pageC.close();
-
-        // =====================================================================
-        // E. Multiple sites in the account: a second, untouched paid/live
-        //    site must not confuse the picture — dashboard still shows both
-        //    correctly and no bogus banner appears for the account as a whole
-        //    once the (still-legitimate, case C's) offer is cleared this
-        //    session.
-        // =====================================================================
-        const pageE1 = await context.newPage();
-        pageE1.setDefaultTimeout(30000);
-        await acceptCookiesAndStart(pageE1, 'local-service');
-        await editBusinessName(pageE1, 'Suite12 Al Doilea Site');
-        await publishAndPayThroughUi(pageE1);
-        await pageE1.waitForURL(/#dashboard$/).catch(async () => { await pageE1.goto(base + '/app/#dashboard', { waitUntil: 'networkidle' }); });
-        await pageE1.waitForTimeout(600);
-        const cards = pageE1.locator('.site-card');
-        assert.ok(await cards.count() >= 2, 'dashboard must list both paid/live sites');
-        await pageE1.screenshot({ path: path.join(EVIDENCE, '05-multiple-sites-dashboard.png') });
-        await pageE1.close();
-
-        console.log('PASS suite12 defect #1: the recovery banner tells a genuinely unfinished draft apart from a paid/live site, in every case');
-    } finally {
-        await browser.close().catch(() => {});
-        server.close();
-        for (const [k, v] of Object.entries(saved)) {
-            if (v === undefined) delete process.env[k]; else process.env[k] = v;
-        }
-    }
-});
-
-// ---------------------------------------------------------------------------
 // Defect #3 — deleting a site must not let an orphaned local draft silently
-// recreate it. Real browser (Playwright), real server, same stubs as
-// defect #1's test above.
+// recreate it. Real browser (Playwright), real server, HIDOOK_TEST_PAY +
+// HIDOOK_ISOLATED_DEPLOY stubs.
 // ---------------------------------------------------------------------------
 test('defect #3: deleting a site retires its local draft — no ghost unpaid site reappears with the same name', async () => {
     fs.mkdirSync(EVIDENCE, { recursive: true });
@@ -724,54 +500,21 @@ test('defect #3: deleting a site retires its local draft — no ghost unpaid sit
         const page = await context.newPage();
         page.setDefaultTimeout(30000);
 
-        await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.evaluate((id) => startWithTemplate(id), 'portfolio');
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(1000);
-        if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click().catch(() => {});
-            await page.waitForTimeout(300);
-        }
-        const nameField = () => page.frameLocator('#preview-iframe').locator('[data-hb-edit="business.name"]').first();
-        await nameField().click({ clickCount: 3 });
-        await page.keyboard.type('Suite12 Delete Ghost', { delay: 12 });
-        await page.locator('#save-status[data-state="saved"]').waitFor({ state: 'visible', timeout: 4000 });
-
-        // Sign in (dev magic link) — same flow as defect #1's signIn() above.
-        await page.locator('#btn-account-menu').click();
-        await page.locator('#account-menu-projects').click();
-        await page.waitForURL(/#dashboard$/);
-        await page.locator('#btn-dashboard-auth').click();
-        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
+        // Form editor removed 2026-10-28: the unpaid draft is created through the API
+        // (what the block editor's autosave does) and its local copy is planted
+        // under the block editor's own key (hb.blocks.draft.v1).
         const email = 'suite12-3-' + crypto.randomUUID().slice(0, 8) + '@example.com';
-        await page.locator('#input-email').fill(email);
-        await page.locator('#btn-send-magic').click();
-        await page.locator('#dev-link').waitFor({ state: 'visible' });
-        await page.locator('#dev-link').click();
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(800);
-        if (await page.locator('#details-drawer').isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click().catch(() => {});
-            await page.waitForTimeout(300);
-        }
-
-        // One more edit now that we are signed in — this is what arms
-        // scheduleServerAutosave() (settleAfterLocalSave() only schedules it
-        // once currentUser is set) and is what creates the server-side
-        // UNPAID site via POST /api/draft in the first place.
-        await nameField().click({ clickCount: 3 });
-        await page.keyboard.type('Suite12 Delete Ghost v2', { delay: 12 });
-        await page.locator('#save-status[data-state="saved"]').waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
-        await page.waitForTimeout(2500);
-
+        await signInPage(page, base, email);
+        const created = await postJson(page, base, '/api/draft', { templateId: 'blocks', config: blocksConfig('portfolio', 'Suite12 Delete Ghost') });
+        assert.equal(created.status, 200, JSON.stringify(created.body));
         const beforeSites = await page.evaluate(async () => (await fetch('/api/sites', { credentials: 'include' })).json());
-        assert.equal(beforeSites.sites.length, 1, 'the autosave must have created exactly one unpaid draft site');
+        assert.equal(beforeSites.sites.length, 1, 'the draft must exist as exactly one unpaid site');
         const originalId = beforeSites.sites[0].id;
+        await page.evaluate(({ siteId, site }) => {
+            localStorage.setItem('hb.blocks.draft.v1', JSON.stringify({ siteId, site, resume: null, pending: false, at: Date.now() }));
+        }, { siteId: originalId, site: blocksConfig('portfolio', 'Suite12 Delete Ghost') });
 
-        await page.goto(base + '/app/#dashboard', { waitUntil: 'networkidle' });
+        await page.reload({ waitUntil: 'networkidle' });
         await page.waitForTimeout(500);
 
         const deleteBtn = page.locator('.site-card button:has-text("Șterge")').first();
@@ -790,12 +533,15 @@ test('defect #3: deleting a site retires its local draft — no ghost unpaid sit
         await page.waitForTimeout(3000);
 
         // Reload the dashboard fresh, the way the owner would on their next visit.
-        await page.goto(base + '/app/#dashboard', { waitUntil: 'networkidle' });
+        await page.reload({ waitUntil: 'networkidle' });
         await page.waitForTimeout(800);
 
         const cardCount = await page.locator('.site-card').count();
         await page.screenshot({ path: path.join(EVIDENCE, '07-after-delete-no-ghost.png') });
         assert.equal(cardCount, 0, 'defect #3: no ghost site must reappear after a confirmed delete');
+
+        assert.equal(await page.evaluate(() => localStorage.getItem('hb.blocks.draft.v1')), null,
+            'the block editor\'s local draft bound to the deleted site must be cleared');
 
         const afterSites = await page.evaluate(async () => (await fetch('/api/sites', { credentials: 'include' })).json());
         assert.equal(afterSites.sites.length, 0, 'GET /api/sites must be empty — the delete must not have been silently undone');

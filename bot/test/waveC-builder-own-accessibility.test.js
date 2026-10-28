@@ -19,18 +19,16 @@
  * sites months ago and last night — shipped by a tool that was still carrying
  * them on its own front door.
  *
- * Screens covered: the landing page, the editor with its canvas, the editor
- * with the details drawer open, the publish modal, and (Suite 4 QA) the
- * #save-status pill in both its "Salvat" and "Nu s-a salvat" states — at
- * 1440x900 and 390x844. Each is driven through the real app, not rendered
- * in isolation.
+ * Screens covered: the landing page, the sign-in modal, the "Site-urile mele"
+ * dashboard with a live site card and its account menu — at 1440x900 and 390x844. Each is driven through the
+ * real app (accounts and sites seeded through the API, bot/test/lib/dash-seed.js),
+ * not rendered in isolation.
  *
- * Suite 4 QA (m15) found #save-status failing the same contrast rule this
- * file already enforced on everything else: "Salvat" (green text on a
- * green tint) measured 3.00:1, "Nu s-a salvat" (red on red tint) 4.41:1 —
- * both under the 4.5:1 floor at this pill's 12.48px. Fixed in
- * builder/app.css by darkening both to shades already used elsewhere in
- * this app for the same tint pairing (see the CSS comment there).
+ * Form editor removed 2026-10-28: the editor canvas, details drawer, photo
+ * gallery, design preview modal, the old publish modal and the editor's
+ * #save-status pill (Suite 4 QA m15 contrast fix) no longer exist in the app
+ * shell, so those screens are gone from this list; the block editor
+ * (/app/blocks/) is a separate page not covered here.
  *
  * Two exemptions are applied, both from the criteria themselves:
  *   - WCAG 2.5.8 exempts a target whose size is constrained by the line-height
@@ -49,6 +47,8 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules', 'playwright'));
+
+const { signInPage, publishLive } = require('./lib/dash-seed.js');
 
 const AA_TARGET = 24;   // WCAG 2.5.8, Level AA
 const VIEWPORTS = [
@@ -157,66 +157,30 @@ function auditFn(AA_TARGET) {
     return out;
 }
 
-async function openEditor(page) {
-    await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-    await page.evaluate((id) => startWithTemplate(id), 'professionals');
-    await page.waitForURL(/#edit$/);
-    await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-    await page.waitForTimeout(2200);
+/** Signed in with a live blocks site, sitting on the dashboard. */
+async function openDashboard(page, base) {
+    await signInPage(page, base, 'ba11y-' + crypto.randomUUID().slice(0, 8) + '@example.com');
+    await publishLive(page, base, { slug: 'ba11y-' + crypto.randomUUID().slice(0, 8), pack: 'restaurant', name: 'Restaurant A11y' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.site-card').first().waitFor({ state: 'visible' });
+    await page.waitForTimeout(800);
 }
 
 const SCREENS = [
     ['landing', async () => {}],
-    // Added after darkening --text-light: it is used in thirteen places, and
-    // four screens were not enough to know whether any of them sits on a dark
-    // surface, where a DARKER muted colour reduces contrast instead of raising
-    // it. The gallery and the design-preview modal are the two that could.
-    ['design preview modal', async (page) => {
+    ['sign-in modal', async (page) => {
         await page.locator('#hb-cookie-accept').click({ timeout: 4000 }).catch(() => {});
-        await page.evaluate(() => openPreviewModal('professionals')).catch(() => {});
-        await page.waitForTimeout(1800);
+        await page.goto(page.url().replace(/#.*$/, '') + '#dashboard');
+        await page.locator('#btn-dashboard-auth').click({ timeout: 8000 });
+        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
+        await page.waitForTimeout(400);
     }],
-    ['photo gallery modal', async (page) => {
-        await openEditor(page);
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-        await page.locator('#btn-open-gallery').click({ timeout: 8000 }).catch(() => {});
-        await page.waitForTimeout(1200);
-    }],
-    ['editor canvas', openEditor],
-    ['details drawer', async (page) => {
-        await openEditor(page);
-        if (!(await page.locator('#details-drawer').isVisible().catch(() => false))) {
-            await page.locator('#btn-open-drawer').click().catch(() => {});
-        }
-        await page.waitForTimeout(800);
-    }],
-    ['publish modal', async (page) => {
-        await openEditor(page);
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-        await page.locator('#btn-publish').click().catch(() => {});
-        await page.waitForTimeout(1200);
-    }],
-    // Suite 4 QA (m15): #save-status's "Salvat"/"Nu s-a salvat" pill was
-    // never on any prior screen here — it only appears after a real edit
-    // (saved) or a real network failure (error), neither of which the
-    // other screens above trigger. setSaveState() is the exact function
-    // renderSaveIndicator()'s caller uses for both real transitions (see
-    // builder/app.js) — called directly here instead of staging a live
-    // edit + debounce or an aborted /api/draft request, which would only
-    // reach the same two DOM states less deterministically. No bespoke
-    // contrast check needed: the generic scan below already measures every
-    // visible button/a/p/span/h1-4/label/li/td/div, so #save-status-text
-    // (a <span>) is caught by the same rule as everything else once one of
-    // these screens puts it on screen.
-    ['save status: saved', async (page) => {
-        await openEditor(page);
-        await page.evaluate(() => setSaveState('saved'));
-        await page.waitForTimeout(200);
-    }],
-    ['save status: error', async (page) => {
-        await openEditor(page);
-        await page.evaluate(() => setSaveState('error', 'Nu s-a putut salva.'));
-        await page.waitForTimeout(200);
+    ['dashboard with a live site card', openDashboard],
+    ['account menu', async (page, base) => {
+        await openDashboard(page, base);
+        await page.locator('#btn-account-menu-header').click();
+        await page.locator('#account-menu-header').waitFor({ state: 'visible' });
+        await page.waitForTimeout(300);
     }],
 ];
 
@@ -243,7 +207,7 @@ test('the builder meets the accessibility bar it enforces on its own output', as
                 page.setDefaultTimeout(25000);
                 await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
                 await page.waitForTimeout(700);
-                await setup(page);
+                await setup(page, base);
                 const r = await page.evaluate(auditFn, AA_TARGET);
                 // Guard: a screen that renders nothing interactive would pass
                 // every check below by having nothing to check.

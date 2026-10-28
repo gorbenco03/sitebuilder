@@ -7,7 +7,7 @@
  * server-side ownership, confirmation-name mismatch, and idempotency.
  * The full happy-path (dashboard button → typed confirm → gone from the
  * list + registry row + published dir) is the Playwright oracle's job
- * (bot/test/delete-site-oracle.mjs).
+ * (the former delete-site-oracle.mjs (removed with the form editor)).
  *
  * Run: node --experimental-sqlite --test bot/test/delete-site.test.js
  */

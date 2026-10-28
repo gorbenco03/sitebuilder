@@ -12,6 +12,13 @@
  *   2. disconnect was local-only (applyEmbedUrl('')) while grant already
  *      persisted instagram.embedUrl on the site.
  *
+ * Form editor removed 2026-10-28: the browser half (connectInstagram /
+ * disconnectInstagram / cancelPendingInstagramConnect in builder/app.js, the
+ * focus-waiter behavioral sandbox and the parent-commit app.js RED checks)
+ * lived in the deleted Instagram modal and was dropped. The server half
+ * (social-feed grant/disconnect generation guard) is unchanged and still
+ * covered below, source-level and over HTTP.
+ *
  * Run: node bot/test/flow4-ig-disconnect-stay.test.js
  */
 const assert = require('assert');
@@ -20,7 +27,6 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
-const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 /** Frozen base from Flow 4 QA FAIL remake card. */
@@ -76,48 +82,6 @@ function extractFunction(src, name) {
 
 // ── Causal RED on frozen parent 38b3dc5 ──────────────────────────────────
 
-check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} disconnect is local-only`, () => {
-  const app = parentBlob('builder/app.js');
-  const disc = extractFunction(app, 'disconnectInstagram');
-  assert.ok(disc, 'parent disconnectInstagram exists');
-  assert.ok(
-    /applyEmbedUrl\s*\(\s*['"]['"]\s*\)/.test(disc),
-    'parent clears local embedUrl'
-  );
-  assert.ok(
-    !/social-feed\/disconnect/.test(disc),
-    'parent disconnect must NOT call social-feed/disconnect'
-  );
-  assert.ok(
-    !/cancelPendingInstagramConnect|removeEventListener\s*\(\s*['"]focus['"]/.test(disc),
-    'parent disconnect must NOT cancel the connect focus listener'
-  );
-});
-
-check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} connect focus re-grants without cancel token`, () => {
-  const app = parentBlob('builder/app.js');
-  const connect = extractFunction(app, 'connectInstagram');
-  assert.ok(connect, 'parent connectInstagram exists');
-  assert.ok(
-    /addEventListener\s*\(\s*['"]focus['"]\s*,\s*onFocus\s*\)/.test(connect),
-    'parent registers window focus waiter'
-  );
-  assert.ok(
-    /showToast\s*\(\s*['"]Instagram e conectat\./.test(connect),
-    'parent focus path toasts Instagram e conectat'
-  );
-  assert.ok(
-    /social-feed\/grant/.test(connect),
-    'parent focus path re-POSTs grant'
-  );
-  assert.ok(
-    !/instagramConnectGeneration|cancelPendingInstagramConnect|instagramConnectFocusHandler/.test(
-      connect
-    ),
-    'parent connect has no cancel/generation guard for focus grant'
-  );
-});
-
 check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} server has no social-feed disconnect`, () => {
   const server = parentBlob('bot/server.js');
   assert.ok(
@@ -132,48 +96,6 @@ check(`causal RED: parent ${PARENT_SHA.slice(0, 7)} server has no social-feed di
 });
 
 // ── HEAD GREEN: source contracts ─────────────────────────────────────────
-
-check('HEAD: disconnect cancels pending focus connect and persists disconnect', () => {
-  const app = headRead('builder/app.js');
-  const disc = extractFunction(app, 'disconnectInstagram');
-  const cancel = extractFunction(app, 'cancelPendingInstagramConnect');
-  assert.ok(disc, 'disconnectInstagram exists');
-  assert.ok(cancel, 'cancelPendingInstagramConnect exists');
-  assert.ok(
-    /cancelPendingInstagramConnect\s*\(/.test(disc),
-    'disconnect must cancel pending connect focus'
-  );
-  assert.ok(
-    /social-feed\/disconnect/.test(disc),
-    'disconnect must POST social-feed/disconnect'
-  );
-  assert.ok(
-    /applyEmbedUrl\s*\(\s*['"]['"]\s*\)/.test(disc),
-    'disconnect still clears local embedUrl'
-  );
-  // PLAN-UX-2026-09-27 §5.8 (T-3): this literal now lives in the RO catalog
-  // (builder/copy-ro.js); disconnectInstagram references RO.IG_DISCONNECTED
-  // instead of repeating the string.
-  assert.ok(/RO\.IG_DISCONNECTED\b/.test(disc), 'honest disconnect copy stays wired to RO.IG_DISCONNECTED');
-});
-
-check('HEAD: connect focus grant is generation-guarded and cancellable', () => {
-  const app = headRead('builder/app.js');
-  const connect = extractFunction(app, 'connectInstagram');
-  assert.ok(/cancelPendingInstagramConnect\s*\(/.test(connect), 'connect resets prior waiter');
-  assert.ok(
-    /instagramConnectFocusHandler\s*=\s*onFocus/.test(connect),
-    'focus handler is stored for cancel'
-  );
-  assert.ok(
-    /connectGen\s*!==\s*instagramConnectGeneration/.test(connect),
-    'in-flight grant aborts after disconnect generation bump'
-  );
-  assert.ok(
-    /showToast\s*\(\s*RO\.IG_CONNECTED_ALT/.test(connect),
-    'connect path still toasts when grant finishes without disconnect'
-  );
-});
 
 check('HEAD: server exposes disconnect that clears embedUrl', () => {
   const server = headRead('bot/server.js');
@@ -218,150 +140,6 @@ check('HEAD: grant persists only when op generation still matches', () => {
 });
 
 (async () => {
-  await checkAsync('behavioral: disconnect voids pending focus re-grant toast', async () => {
-    const app = headRead('builder/app.js');
-    // PLAN-UX-2026-09-27 §5.8 (T-3): connectInstagram/disconnectInstagram now
-    // read their Romanian text from the RO catalog (builder/copy-ro.js) —
-    // load it into this sandbox too, same as the real page's <script> order.
-    // Stripped of its own 'use strict' — see other T-3 test fixes for why:
-    // concatenated into one script it would make connectInstagram/
-    // disconnectInstagram's own (unrelated, pre-existing) implicit-global
-    // assignments throw.
-    const copyRoSrc = headRead('builder/copy-ro.js').replace(/^'use strict';\s*\n?/, '');
-    const cancelSrc = extractFunction(app, 'cancelPendingInstagramConnect');
-    const discSrc = extractFunction(app, 'disconnectInstagram');
-    const connectSrc = extractFunction(app, 'connectInstagram');
-    assert.ok(cancelSrc && discSrc && connectSrc);
-
-    const listeners = { focus: [] };
-    const toasts = [];
-    const apiCalls = [];
-    let embedUrl = '';
-    let igStatus = '';
-    let deferredGrant = null;
-
-    const sandbox = {
-      window: {
-        addEventListener(type, fn) {
-          listeners[type] = listeners[type] || [];
-          listeners[type].push(fn);
-        },
-        removeEventListener(type, fn) {
-          listeners[type] = (listeners[type] || []).filter((f) => f !== fn);
-        },
-        open() {
-          return { opener: null };
-        },
-      },
-      draft: { config: { instagram: { embedUrl: '' } } },
-      currentUser: { email: 'client@exemplu.ro' },
-      currentSiteId: 'site-ig-1',
-      publishedSiteId: 'site-ig-1',
-      listeners,
-      $() {
-        return {
-          checked: true,
-          disabled: false,
-          textContent: '',
-          classList: { toggle() {} },
-          style: {},
-        };
-      },
-      setBtnLoading() {},
-      setIgStatus(msg) {
-        igStatus = String(msg || '');
-      },
-      showToast(msg, kind) {
-        toasts.push({ msg: String(msg || ''), kind: kind || '' });
-      },
-      closeModal() {},
-      openModal() {},
-      saveDraft() {},
-      fullRerender() {},
-      syncInstagramModalPanels() {},
-      applyEmbedUrl(url) {
-        embedUrl = String(url || '');
-        sandbox.draft.config.instagram.embedUrl = embedUrl;
-      },
-      siteIdForInstagram() {
-        return 'site-ig-1';
-      },
-      ensureDraftSiteForInstagram: async () => 'site-ig-1',
-      apiPost: async (url) => {
-        const u = String(url);
-        apiCalls.push(u);
-        if (u.includes('/social-feed/grant')) {
-          if (apiCalls.filter((x) => x.includes('/grant')).length === 1) {
-            return {
-              embedUrl: 'https://isolated.local/social-feed/isolated-fixture',
-            };
-          }
-          return await new Promise((resolve) => {
-            deferredGrant = resolve;
-          });
-        }
-        if (u.includes('/social-feed/editor-session')) {
-          return {
-            editorUrl: 'https://isolated.local/app/instafidget-editor.html?siteId=site-ig-1',
-          };
-        }
-        if (u.includes('/social-feed/disconnect')) {
-          return { ok: true, disconnected: true, embedUrl: null };
-        }
-        return {};
-      },
-    };
-
-    vm.runInNewContext(
-      [
-        copyRoSrc,
-        'var instagramConnectFocusHandler = null;',
-        'var instagramConnectGeneration = 0;',
-        'var instagramEditorUrl = "";',
-        cancelSrc,
-        discSrc,
-        connectSrc,
-        'this.cancelPendingInstagramConnect = cancelPendingInstagramConnect;',
-        'this.disconnectInstagram = disconnectInstagram;',
-        'this.connectInstagram = connectInstagram;',
-        'this.getGen = function(){ return instagramConnectGeneration; };',
-        'this.getHandler = function(){ return instagramConnectFocusHandler; };',
-        'this.fireFocus = async function(){ const list = (listeners.focus || []).slice(); for (const fn of list) await fn(); };',
-      ].join('\n'),
-      sandbox
-    );
-
-    await sandbox.connectInstagram();
-    assert.strictEqual(listeners.focus.length, 1, 'focus waiter after connect');
-    assert.ok(embedUrl, 'grant1 applied embed');
-
-    const focusPromise = sandbox.fireFocus();
-    // Allow the delayed grant2 promise to register
-    await new Promise((r) => setImmediate(r));
-    assert.ok(typeof deferredGrant === 'function', 'focus started delayed grant2');
-
-    await sandbox.disconnectInstagram();
-    assert.strictEqual(embedUrl, '', 'cleared on disconnect');
-    assert.ok(
-      apiCalls.some((u) => u.includes('/social-feed/disconnect')),
-      'persisted disconnect'
-    );
-    assert.strictEqual(listeners.focus.length, 0, 'focus waiter removed');
-    assert.strictEqual(sandbox.getHandler(), null, 'stored handler cleared');
-
-    deferredGrant({
-      embedUrl: 'https://isolated.local/social-feed/should-not-apply',
-    });
-    await focusPromise;
-
-    assert.strictEqual(embedUrl, '', 'stale grant2 must not re-apply embedUrl');
-    assert.ok(
-      !toasts.some((t) => /Instagram e conectat/i.test(t.msg)),
-      'stale grant2 must not toast Instagram e conectat'
-    );
-    assert.match(igStatus, /deconectat/i);
-  });
-
   await checkAsync('HTTP: grant then disconnect clears persisted embedUrl', async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ig-disconnect-'));
     process.env.DATA_DIR = tmpDir;

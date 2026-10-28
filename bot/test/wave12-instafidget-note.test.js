@@ -20,6 +20,10 @@
  *   4. OWNER-STRIPE-TRIAL.md contains heading Instafidget (partner) and the same
  *      three facts. Never print secrets.
  *
+ * Form editor removed 2026-10-28: the HEAD checks read the block editor's
+ * Instagram panel (#ig in builder/blocks/index.html) instead of #modal-instagram;
+ * the parent-commit RED checks still read the old index.html blob.
+ *
  * Run: node bot/test/wave12-instafidget-note.test.js
  * Exits non-zero on failure.
  */
@@ -48,7 +52,7 @@ function hasPartnerFacts(text) {
   const free = t.includes(PHRASE_FREE_RO) || t.includes(PHRASE_FREE_EN) ||
     /Inclus gratuit 12 luni|Included free for 12 months/i.test(t);
   const mark = t.includes(PHRASE_WATERMARK_RO) || t.includes(PHRASE_WATERMARK_EN) ||
-    /Instafidget Free\s*\((?:filigran|watermark)\)/i.test(t);
+    /Instafidget Free\s*\((?:cu\s+)?(?:filigran|watermark)\)/i.test(t);
   return partner && free && mark;
 }
 
@@ -83,12 +87,17 @@ function extractModal(html) {
   return m[0];
 }
 
+// Block editor Instagram panel: <div id="ig" ...> up to the next top-level panel.
+function extractIgPanel(html) {
+  const m = html.match(/<div id=["']ig["'][\s\S]*?(?=<div id=["']who["'])/i);
+  assert.ok(m, 'Instagram panel (#ig) must exist in builder/blocks/index.html');
+  return m[0];
+}
+
 function extractPartnerNote(html) {
-  const modal = extractModal(html);
-  const m =
-    modal.match(/id=["']ig-partner-note["'][^>]*>([\s\S]*?)<\/p>/i) ||
-    modal.match(/id=["']ig-partner-note["'][^>]*>([\s\S]*?)<\/div>/i);
-  assert.ok(m, '#ig-partner-note must exist inside #modal-instagram');
+  const panel = extractIgPanel(html);
+  const m = panel.match(/<p class=["']hint["']>([\s\S]*?)<\/p>/i);
+  assert.ok(m, 'partner note (.hint paragraph) must exist inside the Instagram panel');
   // Strip tags for text checks
   const text = m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   return { raw: m[0], text };
@@ -145,18 +154,18 @@ check(`parent ${PARENT_SHA.slice(0, 7)} OWNER-STRIPE-TRIAL.md has no Instafidget
 });
 
 // ── HEAD GREEN: builder partner note ─────────────────────────────────────
-check('HEAD builder/index.html #modal-instagram has #ig-partner-note with three partner facts', () => {
-  const html = headRead('builder/index.html');
+check('HEAD block editor Instagram panel has the partner note with three partner facts', () => {
+  const html = headRead('builder/blocks/index.html');
   const { text } = extractPartnerNote(html);
   assertPartnerFacts(text, 'ig-partner-note');
   assertNoteDoesNotOverclaim(text, 'ig-partner-note');
 });
 
-check('HEAD Add Instagram modal keeps Connect flow and Instafidget Terms/Privacy links', () => {
-  const html = headRead('builder/index.html');
-  const modal = extractModal(html);
-  assert.ok(/id=["']btn-ig-connect["']/.test(modal), 'Connect Instagram button');
-  assert.ok(/id=["']ig-terms-check["']/.test(modal), 'terms checkbox');
+check('HEAD Instagram panel keeps Connect flow and Instafidget Terms/Privacy links', () => {
+  const html = headRead('builder/blocks/index.html');
+  const modal = extractIgPanel(html);
+  assert.ok(/id=["']ig-go["']/.test(modal), 'Connect Instagram button');
+  assert.ok(/id=["']ig-terms["']/.test(modal), 'terms checkbox');
   assert.ok(
     /instafidget\.hidook\.agency\/terms/i.test(modal),
     'Instafidget Terms link'

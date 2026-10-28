@@ -11,8 +11,10 @@
  *      body is a complete HTML document including the draft business/title string.
  *   2. Unauthenticated → 401. Missing draft → 400. Signed-in unpaid HTML/ZIP →
  *      402 Romanian upsell and no attachment. No secrets or factory jargon.
- *   3. builder/index.html topbar has id="btn-download-html" labeled Download HTML;
- *      builder/app.js wires fetch + blob / a[download] (no new publish).
+ *   3. Form editor removed 2026-10-28: the topbar #btn-download-html is gone; the
+ *      customer now reaches the export through the dashboard card's "Descarcă ZIP"
+ *      button (builder/app.js downloadSiteZip: fetch /api/export-zip + blob /
+ *      a[download], no publish, RO 401/402 messages). Checked below instead.
  *   4. OWNER-STRIPE-TRIAL.md documents Download HTML (no secrets).
  *
  * Run: node bot/test/wave11-html-export.test.js
@@ -479,39 +481,20 @@ function assertNoSecretLeak(body) {
             assertNoSecretLeak(res.body);
         });
 
-        await check('builder/index.html has btn-download-html labeled Descarcă HTML', () => {
-            const html = fs.readFileSync(path.join(ROOT, 'builder/index.html'), 'utf8');
-            assert.ok(/id=["']btn-download-html["']/.test(html), 'id=btn-download-html');
-            // Label near the button
-            const idx = html.indexOf('btn-download-html');
-            assert.ok(idx >= 0);
-            const window = html.slice(Math.max(0, idx - 80), idx + 400);
-            assert.ok(/Descarcă HTML|Download HTML/.test(window), 'label Descarcă HTML near button');
-            // Word boundaries: avoid false positive on catalog chip "desserdirina"
-            assert.ok(
-                !/Download HTML[\s\S]{0,200}\bKanban\b|\bDESSERD\b/i.test(html),
-                'no factory jargon'
-            );
-        });
-
-        await check('builder/app.js wires Download HTML (fetch + blob / a[download], no publish)', () => {
-            // T-3 (PLAN-UX-2026-09-27 §5.8) moved the trial/subscription upsell
-            // text out of app.js's inline literal onto RO.DOWNLOAD_HTML_TRIAL_
-            // REQUIRED (builder/copy-ro.js) — same shipped Romanian copy,
-            // referenced by key. Read both so the last assertion below still
-            // proves the real customer-visible text exists.
-            const js = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8')
-                + '\n' + fs.readFileSync(path.join(ROOT, 'builder/copy-ro.js'), 'utf8');
-            assert.ok(/btn-download-html/.test(js), 'app.js references btn-download-html');
-            assert.ok(/\/api\/export-html/.test(js), 'app.js fetches /api/export-html');
-            assert.ok(/download/i.test(js) && (/Blob|createObjectURL|a\.download|\.download\s*=/.test(js)),
-                'uses blob or a[download] to save file');
-            // Must not treat download as a new publish path
-            const m = js.match(/btn-download-html[\s\S]{0,1200}/);
-            assert.ok(m, 'handler region found');
+        await check('builder dashboard card offers Descarcă ZIP (fetch /api/export-zip + blob, no publish)', () => {
+            const js = fs.readFileSync(path.join(ROOT, 'builder/app.js'), 'utf8');
+            const ro = fs.readFileSync(path.join(ROOT, 'builder/copy-ro.js'), 'utf8');
+            assert.ok(/zipBtn\.textContent\s*=\s*'Descarcă ZIP'/.test(js), 'dashboard card has Descarcă ZIP');
+            assert.ok(/downloadSiteZip\(site\.id/.test(js), 'button calls downloadSiteZip');
+            assert.ok(/site\.paid\s*&&\s*\(site\.status === 'live'/.test(js), 'only live paid sites offer it');
+            const m = js.match(/async function downloadSiteZip[\s\S]*?\n\}/);
+            assert.ok(m, 'downloadSiteZip handler found');
+            assert.ok(/\/api\/export-zip\?siteId=/.test(m[0]), 'fetches /api/export-zip');
+            assert.ok(/createObjectURL/.test(m[0]) && /\.download\s*=/.test(m[0]), 'uses blob + a[download]');
             assert.ok(!/\/api\/publish/.test(m[0]), 'download handler must not call /api/publish');
-            assert.ok(/res\.status\s*===\s*402/.test(js), 'builder handles unpaid export status explicitly');
-            assert.ok(/Activează trialul|abonamentul activ/i.test(js), 'builder shows Romanian trial/subscription upsell');
+            assert.ok(/res\.status\s*===\s*402/.test(m[0]), 'builder handles unpaid export status explicitly');
+            assert.ok(/Activează trialul|abonamentul/i.test(ro), 'builder shows Romanian trial/subscription upsell');
+            assert.ok(!/\bDESSERD\b/i.test(js), 'no factory jargon');
         });
 
         await check('OWNER-STRIPE-TRIAL.md documents Download HTML (no secrets)', () => {

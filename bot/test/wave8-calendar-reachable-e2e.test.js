@@ -26,6 +26,10 @@
  * captured by re-running this same file against `git stash`-free reverted
  * copies of the two files this wave touches).
  *
+ * Form editor removed 2026-10-28: steps 2-4 (drawer switch, publish modal) are replaced by
+ * an API-seeded professionals site with appointment.nativeBooking 'da'; steps 5-6 (the
+ * visitor books on the live site, the owner's dashboard shows it) are unchanged.
+ *
  * Run: node --experimental-sqlite --test bot/test/wave8-calendar-reachable-e2e.test.js
  * Evidence: 04-QA-Evidence/Wave8-calendar-reachable/
  */
@@ -39,6 +43,7 @@ const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Wave8-calendar-reachable');
 const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+const { signInPage, publishAndPayInUi } = require('./lib/dash-seed.js');
 
 test('a real customer can turn on native booking, publish, a visitor can book, and the owner sees it in their own dashboard', async () => {
   fs.mkdirSync(EVIDENCE, { recursive: true });
@@ -67,70 +72,20 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
   let dashboardPage = null;
   try {
     // =====================================================================
-    // 1. Create a professionals site (fresh browser, no session yet).
-    // =====================================================================
-    await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-    await page.locator('#hb-cookie-accept').click().catch(() => {});
-    await page.evaluate((id) => startWithTemplate(id), 'professionals');
-    await page.waitForURL(/#edit$/);
-    await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-    await page.waitForTimeout(1200);
-
-    // =====================================================================
-    // 2. Open the drawer and turn ON native booking — this control did not
-    //    exist at all before this wave; if it regresses, this locator times
-    //    out and the test fails here.
-    // =====================================================================
-    if (!(await page.locator('#details-drawer').isVisible().catch(() => false))) {
-      await page.locator('#btn-open-drawer').click();
-    }
-    await page.locator('#details-drawer').waitFor({ state: 'visible' });
-
-    const toggleOn = page.locator('button[aria-label="Activează calendarul nativ de programări Hidook"]');
-    await toggleOn.waitFor({ state: 'visible' });
-    await page.screenshot({ path: path.join(EVIDENCE, '01-drawer-toggle-off.png') });
-    await toggleOn.click();
-    await page.waitForTimeout(600);
-
-    const toggleOff = page.locator('button[aria-label="Dezactivează calendarul nativ de programări Hidook"]');
-    await toggleOff.waitFor({ state: 'visible' });
-    assert.ok(
-      await page.locator('.hb-secrow__label', { hasText: 'Activ pe site-ul public' }).isVisible(),
-      'toggling on must flip the drawer label to "Activ pe site-ul public"'
-    );
-    await page.screenshot({ path: path.join(EVIDENCE, '02-drawer-toggle-on.png') });
-
-    // Written straight through draft.config → saveDraft() (localStorage),
-    // exactly like every other field — undo/redo, autosave, and the publish
-    // payload all cover it for free.
-    const draftAfterToggle = await page.evaluate(() => JSON.parse(localStorage.getItem('hb.draft.v1') || 'null'));
-    assert.ok(draftAfterToggle && draftAfterToggle.config, 'saveDraft() must have persisted a draft to localStorage');
-    assert.ok(
-      /^(da|yes|true|1|on|y|enabled)$/i.test(String(draftAfterToggle.config.appointment.nativeBooking || '').trim()),
-      'appointment.nativeBooking must be truthy in the persisted draft after clicking Activează'
-    );
-
-    await page.locator('#btn-close-drawer').click().catch(() => {});
-
-    // =====================================================================
-    // 3. Publish for real: slug, magic-link sign-in, HIDOOK_TEST_PAY.
+    // 1-3. Form editor removed 2026-10-28 (it held the booking switch, and the
+    //    block editor has no booking block yet): the professionals site is
+    //    seeded through the API with appointment.nativeBooking 'da' — exactly
+    //    what the switch used to write — and paid the way a customer does,
+    //    by following the checkout return URL.
     // =====================================================================
     const runSlug = 'wave8-reach-' + crypto.randomBytes(4).toString('hex');
     const ownerEmail = 'wave8-reachable-owner@example.com';
+    const presets = JSON.parse(fs.readFileSync(path.join(ROOT, 'templates/professionals/presets.json'), 'utf8')).presets;
+    const config = JSON.parse(JSON.stringify(presets[0].config));
+    config.appointment.nativeBooking = 'da';
 
-    await page.locator('#btn-publish').click();
-    await page.locator('#modal-publish').waitFor({ state: 'visible' });
-    await page.locator('#input-slug').fill(runSlug);
-    await page.locator('#btn-publish-continue').click();
-    await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-
-    await page.locator('#input-email').fill(ownerEmail);
-    await page.locator('#btn-send-magic').click();
-    await page.locator('#dev-link').waitFor({ state: 'visible' });
-    await page.locator('#dev-link').click();
-    await page.locator('#modal-success').waitFor({ state: 'visible' });
-    await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-    await page.locator('#btn-pay-publish').click();
+    await signInPage(page, base, ownerEmail);
+    const pub = await publishAndPayInUi(page, base, { templateId: 'professionals', config, slug: runSlug });
     await page
       .locator('#modal-success-title')
       .filter({ hasText: 'Site-ul tău e live' })
@@ -146,6 +101,7 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     const mySites = await page.evaluate(() => fetch('/api/sites', { credentials: 'include' }).then(r => r.json()));
     const site = (mySites.sites || []).find(s => s.slug === runSlug);
     assert.ok(site, 'the just-published site must show up in /api/sites');
+    assert.equal(site.id, pub.siteId);
     assert.equal(site.userId, ownerUserId, 'sanity: site.userId must equal the owner session id');
 
     const opened = page.context().waitForEvent('page');
@@ -228,14 +184,10 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     //    is ever made here: this proves the demo tenant is never involved.
     // =====================================================================
     // The "Site-ul tău e live" success modal is still open and would
-    // intercept clicks on anything behind it — close it first, exactly like
-    // a real owner clicking "Înapoi la editor" would.
-    await page.locator('#btn-success-close').click().catch(() => {});
-    await page.locator('#modal-success').waitFor({ state: 'hidden' }).catch(() => {});
-
-    await page.locator('#nav-dashboard').click().catch(async () => {
-      await page.evaluate(() => { window.location.hash = '#dashboard'; });
-    });
+    // intercept clicks on anything behind it — a real owner clicks
+    // "Vezi Site-urile mele".
+    await page.locator('#btn-success-view-sites').click();
+    await page.locator('#modal-success').waitFor({ state: 'hidden' });
     await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
     const card = page.locator('.site-card', { hasText: runSlug });
     await card.waitFor({ state: 'visible' });
@@ -270,7 +222,7 @@ test('a real customer can turn on native booking, publish, a visitor can book, a
     await bookingRow.waitFor({ state: 'visible', timeout: 15000 });
     await dashboardPage.screenshot({ path: path.join(EVIDENCE, '06-owner-dashboard-shows-booking.png'), fullPage: true });
 
-    console.log('PASS wave8-calendar-reachable-e2e: toggle → publish → visitor books → owner sees it in their own (non-demo) dashboard');
+    console.log('PASS wave8-calendar-reachable-e2e: seeded native-booking site → visitor books → owner sees it in their own (non-demo) dashboard');
   } finally {
     if (dashboardPage) await dashboardPage.close().catch(() => {});
     if (livePage) await livePage.close().catch(() => {});

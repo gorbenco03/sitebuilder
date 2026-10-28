@@ -3,10 +3,11 @@
  * bot/test/suite4-builder-touch-targets.test.js
  *
  * Suite 4 QA (m16): at 390x844, every visible `button`, `a`, `input` and
- * `select` in the builder — landing, editor canvas (including the list
- * add/remove controls injected into the preview iframe by
- * builder/edit-overlay.js), the details drawer, and a dashboard site card —
- * must be at least 44px tall. The one permitted exception is WCAG 2.5.8's
+ * `select` in the builder — landing and a dashboard site card — must be at
+ * least 44px tall. (Form editor removed 2026-10-28: the editor canvas, its
+ * preview-iframe overlay controls and the details drawer no longer exist, so
+ * those screens are no longer measured; the findings below about them are kept
+ * as history. The site is seeded through the API, bot/test/lib/dash-seed.js.) The one permitted exception is WCAG 2.5.8's
  * own: a link sitting inline inside a run of prose, whose height is set by
  * that text's line-height rather than by any button-like styling of its
  * own — forcing THAT to a box would break the sentence around it, not fix
@@ -72,6 +73,7 @@ for (const cand of PW_CANDIDATES) {
   try { ({ chromium } = require(cand)); break; } catch (_) {}
 }
 if (!chromium) throw new Error('playwright not found; install or link node_modules/playwright');
+const { signInPage, publishLive } = require('./lib/dash-seed.js');
 
 const VIEWPORT = { width: 390, height: 844 };
 const MIN_TARGET = 44;
@@ -112,10 +114,6 @@ function scanFn({ MIN, selector }) {
 }
 
 const MAIN_SELECTOR = 'button, a, input, select';
-// edit-overlay.js's own injected editing affordances (list add/remove,
-// image/background replace) — NOT the template's own nav/content, which
-// the iframe also contains. See the scope decision in the header comment.
-const OVERLAY_SELECTOR = '.hb-add-btn, .hb-remove-btn, .hb-img-btn, .hb-bg-btn';
 
 async function scan(target, where, failures, selector = MAIN_SELECTOR) {
   const rows = await target.evaluate(scanFn, { MIN: MIN_TARGET, selector });
@@ -137,26 +135,10 @@ test('suite4 builder touch targets: every button/a/input/select is >=44px tall a
 
   require(path.join(ROOT, 'scripts', 'build-builder.js'));
   const { startServer } = require(path.join(ROOT, 'bot', 'server.js'));
-  const registry = require(path.join(ROOT, 'bot', 'registry.js'));
-  const webpublish = require(path.join(ROOT, 'bot', 'webpublish.js'));
   const server = startServer({ port: 0 });
   await new Promise((resolve) => { if (server.listening) return resolve(); server.once('listening', resolve); });
   const base = 'http://127.0.0.1:' + server.address().port;
   const dataDir = process.env.DATA_DIR;
-
-  // A paid/live site so the dashboard renders a real card with its live
-  // URL link — seeded directly (this oracle isn't testing the publish
-  // FLOW, just the rendered card), same pattern as delete-site-oracle.mjs's
-  // mobile pass.
-  const email = 'suite4-touch@example.com';
-  const user = registry.getOrCreateUserByEmail(email);
-  const slug = 'suite4-touch-' + Date.now().toString(36);
-  const site = registry.createSite({ userId: user.id, templateId: 'professionals', templateVersion: 1, slug, platform: 'web' });
-  registry.updateSite(site.id, { paid: true, status: 'active' });
-  const siteDir = path.join(dataDir, 'sites', site.projectName);
-  fs.mkdirSync(siteDir, { recursive: true });
-  fs.writeFileSync(path.join(siteDir, 'index.html'), '<h1>' + slug + '</h1>');
-  await webpublish.publishSite({ site: registry.getSite(site.id), config: {}, images: [], siteDirAlreadyBuilt: true });
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({ viewport: VIEWPORT, isMobile: true, hasTouch: true });
@@ -174,56 +156,14 @@ test('suite4 builder touch targets: every button/a/input/select is >=44px tall a
     await scan(page, 'landing', failures);
     screensMeasured++;
 
-    // ---- editor canvas (professionals — has a "services" list with
-    // .hb-add-btn, and a "Secțiuni pagină" panel in its drawer) ----
-    await page.evaluate((id) => startWithTemplate(id), 'professionals');
-    await page.waitForURL(/#edit$/, { timeout: 25000 });
-    await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
-    await page.waitForTimeout(1000);
-
-    const drawer = page.locator('#details-drawer');
-    if (await drawer.isVisible().catch(() => false)) {
-      await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(async () => {
-        await page.locator('#btn-close-drawer').click({ force: true }).catch(() => {});
-      });
-      await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-    }
-    await scan(page, 'editor canvas (topbar)', failures);
-    screensMeasured++;
-
-    const iframeEl = await page.locator('#preview-iframe').elementHandle();
-    const frame = await iframeEl.contentFrame();
-    assert.ok(frame, 'preview iframe must expose a contentFrame to scan its list add/remove buttons');
-    await scan(frame, 'editor canvas (preview iframe)', failures, OVERLAY_SELECTOR);
-    screensMeasured++;
-
-    // ---- details drawer (phone field + sections panel) ----
-    await page.locator('#btn-open-drawer').click({ timeout: 8000 }).catch(() => {});
-    await drawer.waitFor({ state: 'visible', timeout: 8000 });
-    await page.waitForTimeout(500);
-    const controlsInDrawer = await page.evaluate(() =>
-      document.querySelectorAll('#details-drawer button, #details-drawer a, #details-drawer input, #details-drawer select').length);
-    assert.ok(controlsInDrawer > 3, 'details drawer did not render its fields — this screen would pass by measuring nothing');
-    await scan(page, 'details drawer', failures);
-    screensMeasured++;
-
     // ---- dashboard (site card, live URL link) ----
-    // Sign in as the seeded user (magic link + dev-link, same pattern as
-    // bot/test/delete-site-oracle.mjs's mobile pass) — #dashboard renders
-    // nothing but an auth prompt otherwise.
-    await page.evaluate(() => { window.location.hash = '#dashboard'; });
-    await page.waitForTimeout(400);
-    const authBtn = page.locator('#btn-dashboard-auth');
-    if (await authBtn.isVisible().catch(() => false)) await authBtn.click();
-    const emailInput = page.locator('#input-email');
-    if (await emailInput.isVisible().catch(() => false)) {
-      await emailInput.fill(email);
-      await page.locator('#btn-send-magic').click();
-      await page.locator('#dev-link').waitFor({ state: 'visible' });
-      await page.locator('#dev-link').click();
-      await page.waitForTimeout(400);
-    }
-    await page.evaluate(() => { window.location.hash = '#dashboard'; });
+    // A paid/live blocks site seeded through the API, so the card renders the
+    // full action row (Editează, Istoric, Domeniu, Facturi, Mesaje, Descarcă
+    // ZIP, Anulează, Șterge) and the live URL link.
+    const slug = 'suite4-touch-' + Date.now().toString(36);
+    await signInPage(page, base, 'suite4-touch@example.com');
+    await publishLive(page, base, { slug, pack: 'restaurant', name: 'Restaurant Touch' });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(700);
     const card = page.locator('.site-card', { hasText: slug.replace(/-/g, '‑') }).first();
     await card.waitFor({ state: 'visible', timeout: 10000 });
@@ -235,6 +175,6 @@ test('suite4 builder touch targets: every button/a/input/select is >=44px tall a
     fs.rmSync(dataDir, { recursive: true, force: true });
   }
 
-  assert.strictEqual(screensMeasured, 5, 'every screen must have been measured');
+  assert.strictEqual(screensMeasured, 2, 'every screen must have been measured');
   assert.deepStrictEqual(failures, [], 'touch-target failures at 390px:\n' + failures.join('\n'));
 });

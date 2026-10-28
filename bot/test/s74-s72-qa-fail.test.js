@@ -12,6 +12,10 @@
  *     fallback "Cererea ta a fost înregistrată", not English "Request sent".
  * Not product regressions; assertions updated to current contract.
  *
+ * Form editor removed 2026-10-28: the editor preview iframe (allow-scripts) is gone; the sandbox
+ * lock now covers the remaining app.js iframes (all sandbox="" — no allow-forms/allow-same-origin
+ * may ever be added) and the template-level pr-appt-submit type=button / click-wiring checks stay.
+ *
  * Causal leftovers on parent 35cb579 (S70 ACCEPT + S71 ff):
  *   1. Landing «Cum e» step 01 still sells three designs after professionals shipped
  *   2. Detalii labels still show factory jargon (Codul limbii / JSON-LD / încorporat /
@@ -539,14 +543,13 @@ function previewReliesOnNativeFormSubmit(scriptSrc, tplSrc) {
     });
 
     // Sandbox lock: builder must not widen iframe privileges
-    await check('HEAD: builder preview sandbox stays allow-scripts only (no allow-forms/same-origin)', () => {
+    await check('HEAD: builder iframes never widen sandbox (no allow-forms/same-origin); template submit is type=button', () => {
         const appSrc = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-        const sandboxAttrs = appSrc.match(/setAttribute\s*\(\s*['"]sandbox['"]\s*,\s*['"][^'"]+['"]\s*\)/g) || [];
+        const sandboxAttrs = appSrc.match(/setAttribute\s*\(\s*['"]sandbox['"]\s*,\s*['"][^'"]*['"]\s*\)/g) || [];
         assert.ok(sandboxAttrs.length >= 1, 'sandbox attributes present');
         for (const a of sandboxAttrs) {
             assert.ok(!/allow-forms/.test(a), 'must not add allow-forms: ' + a);
             assert.ok(!/allow-same-origin/.test(a), 'must not add allow-same-origin: ' + a);
-            assert.ok(/allow-scripts/.test(a), 'keeps allow-scripts: ' + a);
         }
         // submitBtn click wiring (not WA QR click)
         assert.ok(

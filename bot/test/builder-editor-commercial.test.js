@@ -16,6 +16,12 @@
  * only the old identity string, never the new template id "desserdirina".
  * No product regression involved.
  *
+ * Form editor removed 2026-10-28: the checks that read the deleted editor's code
+ * (startWithTemplate / fullRerender / inline text edit / image replace, and the
+ * publish / trial-card / Instagram buttons of the editor topbar) were dropped.
+ * Picking a design now means the catalog's "Începe" opens the block editor at
+ * /app/blocks/?pack=ID; the old templates still render through build.js.
+ *
  * Run: node bot/test/builder-editor-commercial.test.js
  */
 const assert = require('assert');
@@ -145,24 +151,15 @@ check('builder chrome has no DESSERD / MENU BOARD / chalkboard leftovers', () =>
   assert.ok(!/\bS49\b/.test(chrome), 'builder chrome must not expose slice ids');
 });
 
-check('pick design path: startWithTemplate loads default preset into draft.config', () => {
+check('pick design path: the catalog "Începe" opens the block editor with the chosen pack', () => {
   const js = read(BUILDER_JS);
-  assert.ok(/function startWithTemplate\s*\(/.test(js), 'startWithTemplate exists');
-  // Uses first preset config when no saved draft for that template
-  assert.ok(
-    /presets\[0\]\.config|presets\.length\s*>\s*0\s*\?\s*deepClone\(presets\[0\]\.config\)/.test(js),
-    'startWithTemplate must seed draft from presets[0].config'
-  );
-  assert.ok(/window\.location\.hash\s*=\s*['"]#edit['"]/.test(js), 'opens #edit editor route');
-  assert.ok(/function fullRerender\s*\(/.test(js) && /buildSrcdoc\s*\(/.test(js), 'preview path present');
-  assert.ok(
-    /HidookEngine\.renderPreview\s*\([^)]*editMode:\s*true/.test(js) ||
-      /renderPreview\([^)]*\{\s*editMode:\s*true/.test(js),
-    'preview uses engine editMode'
-  );
+  const startFn = js.match(/function startBlocksSite\(packId\) \{[\s\S]*?\n\}/);
+  assert.ok(startFn, 'startBlocksSite exists');
+  assert.ok(/\/app\/blocks\/\?pack=/.test(startFn[0]), 'opens /app/blocks/?pack=<id>');
+  assert.ok(/btn-start-tpl/.test(js) && /startBlocksSite\(id\)/.test(js), 'the card start handler calls startBlocksSite');
 });
 
-check('replace copy + image updates preview (renderHtml + app apply path)', () => {
+check('replace copy + image updates the rendered HTML of an old template (build.js)', () => {
   const { renderHtml } = require('../../build.js');
   const tid = 'product-menu';
   const tplHtml = read(path.join(ROOT, 'templates', tid, 'template.html'));
@@ -179,29 +176,13 @@ check('replace copy + image updates preview (renderHtml + app apply path)', () =
   base.logo = markerImg;
 
   const html = renderHtml(tplHtml, base);
-  assert.ok(html.includes(markerName), 'rendered preview must show replaced business.name');
-  assert.ok(html.includes(markerImg), 'rendered preview must include replaced logo/image URL');
-
-  // Causal: parent app wires text + image into config then re-renders
-  const js = read(BUILDER_JS);
-  assert.ok(/function onInlineTextEdit\s*\(/.test(js), 'inline text edit handler');
-  assert.ok(/setPath\(\s*draft\.config/.test(js), 'writes draft.config via setPath');
-  assert.ok(
-    /function onImageChangeRequest|initImageFileInput/.test(js),
-    'image replace path'
-  );
-  assert.ok(
-    /setPath\(\s*draft\.config,\s*path,\s*dataUrl\)[\s\S]{0,120}fullRerender\s*\(/.test(js),
-    'image dataUrl set must fullRerender preview'
-  );
+  assert.ok(html.includes(markerName), 'rendered page must show replaced business.name');
+  assert.ok(html.includes(markerImg), 'rendered page must include replaced logo/image URL');
 });
 
-check('Hidook Site Builder chrome, pay-before-publish, Instagram slot preserved', () => {
+check('Hidook Site Builder chrome: product name and document language', () => {
   const html = read(BUILDER_HTML);
   assert.ok(html.includes('Hidook Site Builder'), 'product name');
-  assert.ok(/id="btn-publish"|Publish site|Publică/i.test(html), 'publish CTA');
-  assert.ok(/id="btn-pay-publish"|Adaugă un card — începe trialul de 14 zile/.test(html), 'trial-card CTA');
-  assert.ok(/id="btn-add-instagram"|Adaugă Instagram|Add Instagram/.test(html), 'Instagram partner slot');
   assert.ok(/lang="ro"|lang="en"/.test(html), 'document lang set');
 });
 

@@ -8,13 +8,11 @@
  *                  into the editor topbar hidden behind the overlay.
  *   A11Y-02 [high] #modal-instagram does not close on Escape (hardcoded array
  *                  in the global keydown handler was missing 'modal-instagram').
- *   F4      [high] renaming the business corrupts seo.jsonLd: the cascade did a
- *                  raw string.split(oldName).join(newName) over serialized JSON,
- *                  so a new name carrying a quote/backslash produces invalid JSON
- *                  and the site's <script type="application/ld+json"> ships empty.
- *   PORT-04 [high] renaming the business does not touch team.title, so the
- *                  Portfolio preset's static "Echipa Atelier Ivoire" survives a
- *                  rename and contradicts the new brand on the live site.
+ *
+ * Form editor removed 2026-10-28: the F4 (seo.jsonLd rename cascade) and PORT-04
+ * (team.title rename cascade) checks covered cascadeBusinessNameIdentity, which
+ * lived only in the deleted editor, so they were dropped. A11Y-01/02 cover the
+ * modal code that survives in builder/app.js.
  *
  * Source-level extraction + vm execution (same pattern as
  * bot/test/flow4-ig-disconnect-stay.test.js) so this runs without a browser.
@@ -190,76 +188,6 @@ check('A11Y-02: the Escape handler closes whatever modal is open, by shape not b
   );
   // The behavioural proof — every modal, real browser, Esc + backdrop + focus
   // trap + 44px close button — is bot/test/suite4-modal-contract.test.js.
-});
-
-// ─── F4 + PORT-04: cascadeBusinessNameIdentity ────────────────────────────
-
-const getPathSrc = extractFunction(appSrc, 'getPath');
-const setPathSrc = extractFunction(appSrc, 'setPath');
-const cascadeSrc = extractFunction(appSrc, 'cascadeBusinessNameIdentity');
-
-function runCascade(config, oldName, newName) {
-  const sandbox = {};
-  vm.createContext(sandbox);
-  vm.runInContext(
-    [getPathSrc, setPathSrc, cascadeSrc, 'this.cascadeBusinessNameIdentity = cascadeBusinessNameIdentity;'].join('\n'),
-    sandbox
-  );
-  sandbox.cascadeBusinessNameIdentity(config, oldName, newName);
-  return config;
-}
-
-check('F4: renaming to a name with a quote and a backslash keeps seo.jsonLd valid JSON', () => {
-  assert.ok(getPathSrc && setPathSrc && cascadeSrc, 'deps extracted');
-  const oldName = 'Desserdirina';
-  const newName = 'O "Steaua\\Nordului" SRL'; // hostile: literal " and \
-  const config = {
-    business: { name: oldName },
-    seo: {
-      jsonLd: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'LocalBusiness',
-        name: oldName,
-        url: 'https://exemplu.ro',
-      }),
-    },
-  };
-
-  runCascade(config, oldName, newName);
-
-  let parsed;
-  assert.doesNotThrow(() => {
-    parsed = JSON.parse(config.seo.jsonLd);
-  }, 'seo.jsonLd must remain valid JSON after a hostile rename');
-  assert.strictEqual(parsed.name, newName, 'jsonLd.name must equal the new (unescaped) business name');
-});
-
-check('F4: seo.jsonLd that is already invalid JSON is left untouched, not further broken', () => {
-  const config = { seo: { jsonLd: '{not valid json, contains Desserdirina' } };
-  const before = config.seo.jsonLd;
-  runCascade(config, 'Desserdirina', 'Nume Nou "Cu Ghilimele"');
-  assert.strictEqual(config.seo.jsonLd, before, 'invalid JSON must be left exactly as-is');
-});
-
-check('PORT-04: renaming propagates into team.title (Portfolio preset identity)', () => {
-  const oldName = 'Atelier Ivoire';
-  const newName = 'Șt. Țăndărică & Fiii';
-  const config = {
-    business: { name: oldName },
-    team: { title: 'Echipa Atelier Ivoire' },
-  };
-
-  runCascade(config, oldName, newName);
-
-  assert.strictEqual(
-    config.team.title,
-    'Echipa ' + newName,
-    'team.title must carry the new business name forward, like footer already does via {{business.name}}'
-  );
-  assert.ok(
-    config.team.title.indexOf(oldName) === -1,
-    'team.title must not still contain the old business name after a rename'
-  );
 });
 
 if (failed) {

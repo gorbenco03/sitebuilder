@@ -5,6 +5,10 @@
  * Site Builder talks to Instafidget server-to-server only.
  * Secret never appears in responses. acceptedTerms must be true before fetch.
  *
+ * Form editor removed 2026-10-28: the "builder" checks read the block editor
+ * (builder/blocks/editor.js + index.html) where the Instagram connect panel lives,
+ * plus builder/app.js + index.html for the no-secret rule.
+ *
  * Run: node bot/test/social-feed-partner.test.js
  */
 
@@ -27,6 +31,8 @@ const partnerSrc = fs.readFileSync(path.join(ROOT, 'bot', 'instafidget-partner.j
 const serverSrc  = fs.readFileSync(path.join(ROOT, 'bot', 'server.js'), 'utf8');
 const appSrc     = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
 const htmlSrc    = fs.readFileSync(path.join(ROOT, 'builder', 'index.html'), 'utf8');
+const blocksJs   = fs.readFileSync(path.join(ROOT, 'builder', 'blocks', 'editor.js'), 'utf8');
+const blocksHtml = fs.readFileSync(path.join(ROOT, 'builder', 'blocks', 'index.html'), 'utf8');
 
 const auth     = require('../auth.js');
 const registry = require('../registry.js');
@@ -74,10 +80,10 @@ function secretIn(obj) {
     });
 
     await check('builder never mentions partner secret', () => {
-        assert.ok(!/SITEBUILDER_PARTNER_SECRET|x-sitebuilder-partner-secret/i.test(appSrc + htmlSrc));
-        assert.ok(/Adaugă Instagram|Add Instagram|btn-add-instagram/.test(htmlSrc + appSrc));
-        assert.ok(/instafidget.hidook.agency\/terms/.test(htmlSrc + appSrc));
-        assert.ok(/acceptedTerms/.test(appSrc));
+        assert.ok(!/SITEBUILDER_PARTNER_SECRET|x-sitebuilder-partner-secret/i.test(appSrc + htmlSrc + blocksJs + blocksHtml));
+        assert.ok(/Conectează Instagram|id="ig-go"/.test(blocksHtml), 'block editor has the Instagram connect button');
+        assert.ok(/instafidget.hidook.agency\/terms/.test(blocksHtml), 'Instafidget terms link');
+        assert.ok(/acceptedTerms/.test(blocksJs), 'grant sends acceptedTerms');
     });
 
     const srv = startServer({ port: 0 });

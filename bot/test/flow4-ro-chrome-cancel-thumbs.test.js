@@ -8,6 +8,11 @@
  * Causal RED on required parent 1275ccde7ecf4ce60a13f77904fea4d6117ff282;
  * GREEN on HEAD after remake.
  *
+ * Form editor removed 2026-10-28: dropped the Detalii "Alege o poză" / "Poză adăugată"
+ * positives and the catalog `template-card-preview-thumb` class check (catalog cards
+ * are block packs now). English-absence, #test-billing-portal= and the generated
+ * thumbnail checks stay.
+ *
  * Run: node bot/test/flow4-ro-chrome-cancel-thumbs.test.js
  */
 const assert = require('assert');
@@ -127,8 +132,6 @@ check('HEAD: builder landing/app has no customer-visible English factory chrome'
   }
   assert.ok(!/No bots/i.test(html), 'no No bots');
   assert.ok(/Fără boți|Fara boti/.test(html), 'RO Fără boți kept');
-  assert.ok(/Alege o poză/.test(app), 'RO Choose photo');
-  assert.ok(/Poză adăugată/.test(app), 'RO Photo added');
   assert.ok(/Deschide site-ul/.test(app + html), 'RO Open the site');
   assert.ok(/Introdu adresa de email/.test(app), 'RO empty email');
   assert.ok(
@@ -240,18 +243,6 @@ check('HEAD: professionals + desserdirina catalog thumbs are non-empty photograp
   const build = headRead('scripts/build-builder.js');
   assert.ok(/images\/torturi-1\.jpg/.test(build), 'pickThumbnailSource prefers clean pastry photography');
   assert.ok(!/['"]images\/cover\.jpg['"]/.test(build), 'pickThumbnailSource does not prefer legacy promo chrome');
-
-  // Catalog cards use object-fit cover thumb class (not iframe scale on photos)
-  const app = headRead('builder/app.js');
-  const css = headRead('builder/app.css');
-  assert.ok(
-    /className\s*=\s*['"]template-card-preview-thumb['"]/.test(app),
-    'catalog img uses preview-thumb only'
-  );
-  assert.ok(
-    /\.template-card-preview-thumb[\s\S]{0,200}object-fit:\s*cover/.test(css),
-    'thumb CSS object-fit cover'
-  );
 });
 
 // ── Done ─────────────────────────────────────────────────────────────────

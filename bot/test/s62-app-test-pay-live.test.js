@@ -12,6 +12,9 @@
  * Env (same adapters as S50/S6): HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1;
  * HIDOOK_FAKE_DEPLOY deleted. No *.test.local client address.
  *
+ * Form editor removed 2026-10-28: the "empty dashboard resumes a local draft in #edit" source check
+ * now asserts the empty state links to the catalog (the block editor owns draft resume).
+ *
  * Run: node bot/test/s62-app-test-pay-live.test.js
  */
 const assert = require('assert');
@@ -242,22 +245,15 @@ check(`parent ${PARENT_SHA.slice(0, 7)} has no POST /api/test-pay/complete`, () 
             /preventDefault\s*\(/.test(devClick),
             'Open the site click must preventDefault so SPA can finish publish after verify'
         );
-        // Empty dashboard + local draft → resume editor (not stuck on «Nu ai site-uri…»)
+        // Empty dashboard: «Nu ai site-uri…» is a state with a way forward (catalog), not a dead end.
+        // (Local-draft resume belongs to the block editor now; the old #edit resume path is gone.)
         const loadDash = extractFunction(appSrc, 'loadDashboard') || '';
-        const handleRoute = extractFunction(appSrc, 'handleRoute') || '';
         assert.ok(
-            /loadDraft\s*\(/.test(loadDash + handleRoute),
-            'dashboard/route must call loadDraft to resume in-progress site'
-        );
-        assert.ok(
-            // PLAN-UX-2026-09-27 §5.8 (T-3): the literal empty-state copy now
-            // lives in the RO catalog (builder/copy-ro.js); loadDashboard
-            // references it as RO.DASHBOARD_EMPTY_TITLE instead of repeating
-            // the Romanian (or, pre-fix, English) string inline.
+            // PLAN-UX-2026-09-27 §5.8 (T-3): the literal empty-state copy lives in the RO
+            // catalog (builder/copy-ro.js); loadDashboard references RO.DASHBOARD_EMPTY_TITLE.
             (/You haven't created any sites yet/.test(loadDash) || /RO\.DASHBOARD_EMPTY_TITLE/.test(loadDash)) &&
-                (/location\.hash\s*=\s*['"]#edit['"]/.test(loadDash + handleRoute) ||
-                    /startWithTemplate|resumeLocalDraft|restoreDraft/.test(appSrc)),
-            'empty dashboard must route draft back to #edit'
+                /href="#templates"/.test(loadDash),
+            'empty dashboard must offer the catalog (#templates) as the way to the block editor'
         );
     });
 

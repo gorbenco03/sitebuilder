@@ -18,6 +18,9 @@
  * from the parent commit, no git stash involved) — see
  * 04-QA-Evidence/Wave8-owner-ui/invoices-red-before.log.
  *
+ * Form editor removed 2026-10-28: the first charge is made by publishing through the API
+ * instead of the editor's publish modal; the panel assertions are unchanged.
+ *
  * Run: node --experimental-sqlite --test bot/test/wave8-owner-ui-invoices-reachable-e2e.test.js
  * Evidence: 04-QA-Evidence/Wave8-owner-ui/
  */
@@ -31,6 +34,7 @@ const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Wave8-owner-ui');
 const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+const { signInPage, publishLive } = require('./lib/dash-seed.js');
 
 test('a site that has been paid for shows its invoice in the dashboard "Facturi" panel', async () => {
     fs.mkdirSync(EVIDENCE, { recursive: true });
@@ -57,44 +61,15 @@ test('a site that has been paid for shows its invoice in the dashboard "Facturi"
 
     try {
         // =====================================================================
-        // 1. Publish a real site — this IS the first charge (kind: 'publish'),
+        // 1. Publish a real site (API) — this IS the first charge (kind: 'publish'),
         //    which webpublish.js#handleStripePaid appends to the ledger.
         // =====================================================================
-        await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.evaluate((id) => startWithTemplate(id), 'local-service');
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(1000);
-        // Details drawer auto-opens on a fresh design and its overlay covers
-        // the topbar publish button — close it first, same as a real owner
-        // would (and the same step the Wave 8 calendar oracle already takes).
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-
+        // Form editor removed 2026-10-28: sign in + publish through the API.
         const runSlug = 'wave8-owner-ui-inv-' + crypto.randomBytes(4).toString('hex');
         const ownerEmail = 'wave8-owner-ui-invoices@example.com';
-
-        await page.locator('#btn-publish').click();
-        await page.locator('#modal-publish').waitFor({ state: 'visible' });
-        await page.locator('#input-slug').fill(runSlug);
-        await page.locator('#btn-publish-continue').click();
-        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-
-        await page.locator('#input-email').fill(ownerEmail);
-        await page.locator('#btn-send-magic').click();
-        await page.locator('#dev-link').waitFor({ state: 'visible' });
-        await page.locator('#dev-link').click();
-        await page.locator('#modal-success').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').click();
-        await page
-            .locator('#modal-success-title')
-            .filter({ hasText: 'Site-ul tău e live' })
-            .waitFor({ state: 'visible', timeout: 20000 });
-
-        const mySites = await page.evaluate(() => fetch('/api/sites', { credentials: 'include' }).then(r => r.json()));
-        const site = (mySites.sites || []).find((s) => s.slug === runSlug);
-        assert.ok(site, 'the just-published site must show up in /api/sites');
+        await signInPage(page, base, ownerEmail);
+        const pub = await publishLive(page, base, { slug: runSlug, pack: 'salon', name: 'Salon Facturi' });
+        const site = { id: pub.siteId, slug: runSlug };
 
         // Ground truth straight from the ledger this wave does not touch —
         // the UI must show exactly this, not invent or drop anything.
@@ -104,17 +79,12 @@ test('a site that has been paid for shows its invoice in the dashboard "Facturi"
         assert.equal(ledgerInvoices[0].kind, 'publish');
         assert.ok(ledgerInvoices[0].amountCents > 0, 'sanity: the recorded invoice must carry a real charged amount');
 
-        await page.locator('#btn-success-close').click().catch(() => {});
-        await page.locator('#modal-success').waitFor({ state: 'hidden' }).catch(() => {});
-
         // =====================================================================
         // 2. Reach the dashboard exactly where an owner would look, and open
         //    the "Facturi" panel — RED BEFORE this wave: this button/panel did
         //    not exist anywhere in the product.
         // =====================================================================
-        await page.locator('#nav-dashboard').click().catch(async () => {
-            await page.evaluate(() => { window.location.hash = '#dashboard'; });
-        });
+        await page.reload({ waitUntil: 'domcontentloaded' });
         await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
         const card = page.locator('.site-card', { hasText: runSlug });
         await card.waitFor({ state: 'visible' });

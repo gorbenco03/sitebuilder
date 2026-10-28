@@ -2,6 +2,8 @@
 /**
  * bot/test/wave2-template-pass.test.js — Wave 2 items 2, 5, 12, 10b.
  * Static gates only. Does not touch Telegram bot/flow.js.
+ * Form editor removed 2026-10-28: dropped the two deriveWaHref checks (that
+ * helper lived in the deleted builder/app.js); the template/preset checks stay.
  * Run: node bot/test/wave2-template-pass.test.js
  */
 const assert = require('assert');
@@ -10,7 +12,6 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const TPLS = ['product-menu', 'local-service', 'portfolio', 'professionals'];
-const APP_JS = path.join(ROOT, 'builder', 'app.js');
 
 let failed = 0;
 function check(name, fn) {
@@ -134,49 +135,6 @@ check('item12: contact.waMessage in every schema + presets; waHref stays clean i
       }
     }
   }
-});
-
-check('item12: browser builder derives wa.me?text= and hides waHref from strangers', () => {
-  const app = read('builder/app.js');
-  assert.ok(/function deriveWaHref\s*\(/.test(app), 'deriveWaHref missing');
-  assert.ok(/encodeURIComponent/.test(app), 'must encode message');
-  assert.ok(app.includes('wa.me/'), 'wa.me builder');
-  assert.ok(/HIDDEN_DRAWER_KEYS[\s\S]{0,120}contact\.waHref/.test(app) || /waHref.*return true/.test(app), 'waHref hidden');
-  assert.ok(/waMessage/.test(app), 'waMessage in drawer keys');
-  assert.ok(!/bot\/flow\.js/.test(app) || true, 'no flow import required');
-  // derive called on save + preview
-  assert.ok(/function saveDraft[\s\S]{0,200}deriveWaHref/.test(app), 'saveDraft derives');
-  assert.ok(/function buildSrcdoc[\s\S]{0,200}deriveWaHref/.test(app), 'buildSrcdoc derives');
-});
-
-check('item12: deriveWaHref encodes Romanian diacritics (unit via Function)', () => {
-  const app = read('builder/app.js');
-  const m = app.match(/function deriveWaHref\(config\) \{[\s\S]*?\n\}/);
-  assert.ok(m, 'extract deriveWaHref');
-  // whatsapp-contact#1 (audit 2026-09-27): deriveWaHref now routes the raw
-  // number through normalizeWhatsAppDigits() — extract that too.
-  const normFn = app.match(/function normalizeWhatsAppDigits\(raw\) \{[\s\S]*?\n\}/);
-  assert.ok(normFn, 'extract normalizeWhatsAppDigits');
-  // Isolate function body with default msg constant
-  const fnSrc =
-    'const WA_DEFAULT_MSG = "Hello!";\n' +
-    normFn[0] + '\n' +
-    m[0] +
-    '\nreturn deriveWaHref;';
-  // eslint-disable-next-line no-new-func
-  const derive = new Function(fnSrc)();
-  const cfg = {
-    contact: {
-      whatsapp: '40721234567',
-      waMessage: 'Bună ziua, aș dori o programare.',
-    },
-  };
-  derive(cfg);
-  assert.ok(cfg.contact.waHref.startsWith('https://wa.me/40721234567?text='), cfg.contact.waHref);
-  assert.ok(cfg.contact.waHref.includes(encodeURIComponent('Bună ziua, aș dori o programare.')), 'diacritics encoded');
-  const empty = { contact: { whatsapp: '', waMessage: 'x' } };
-  derive(empty);
-  assert.strictEqual(empty.contact.waHref, '');
 });
 
 check('item10b: professionals FAQ details ship open; restaurant menu groups stay open', () => {

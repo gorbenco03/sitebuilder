@@ -75,8 +75,9 @@
  *    scroll), which is exactly the "don't measure mid-animation" trap the
  *    plan calls out.
  *  - The 2 "saturated palette" themes are NOT arbitrary hex picks. They are
- *    2 of the 6 swatches builder/app.js's `COLOR_PRESETS` actually offers in
- *    the colour-picker popover (Portocaliu / Roz), run through the exact
+ *    2 of the 6 swatches the old form editor's `COLOR_PRESETS` offered in
+ *    the colour-picker popover (Portocaliu / Roz; the list is now hardcoded
+ *    below since the editor was removed 2026-10-28), run through the exact
  *    same `hexToHsl`/`hslToHex`/`deriveColors` formula `applyThemeColor()`
  *    uses — so this reproduces exactly what an owner can produce by clicking
  *    a preset dot, not a hypothetical. `theme.cream` (the page BACKGROUND)
@@ -157,20 +158,21 @@ function deriveAccent(primaryHex) {
 }
 
 // ---------------------------------------------------------------------------
-// Every accent preset the builder's colour-picker popover actually offers —
-// read out of builder/app.js's own COLOR_PRESETS array (not copied), so a
-// preset added/removed there is picked up here automatically. The owner can
-// also type an arbitrary custom hex; that is covered separately by
-// suite12-accent-contrast-sweep.test.js's hue sweep, not enumerated here.
+// The six accent presets the old form editor's colour popover offered (its
+// COLOR_PRESETS array, builder/app.js before 2026-10-28). That editor is gone,
+// but sites made with it are still rendered by build.js, so the five templates
+// must still hold contrast on every one of these palettes. Hardcoded here
+// because the list no longer exists anywhere in the builder. An arbitrary
+// custom hex is covered separately by suite12-accent-contrast-sweep.test.js.
 // ---------------------------------------------------------------------------
-function loadColorPresets() {
-    const src = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-    const m = /const COLOR_PRESETS\s*=\s*(\[[\s\S]*?\]);/.exec(src);
-    if (!m) throw new Error('Could not find COLOR_PRESETS in builder/app.js — suite7 reads the live list, it does not hardcode one.');
-    // eslint-disable-next-line no-new-func — trusted, same-repo source file, a plain array literal.
-    return new Function('return (' + m[1] + ');')();
-}
-const COLOR_PRESETS = loadColorPresets();
+const COLOR_PRESETS = [
+    { label: 'Indigo', hex: '#5B5BD6' },
+    { label: 'Turcoaz', hex: '#0D9488' },
+    { label: 'Violet', hex: '#7C3AED' },
+    { label: 'Portocaliu', hex: '#EA580C' },
+    { label: 'Roz', hex: '#DB2777' },
+    { label: 'Verde', hex: '#16A34A' },
+];
 
 const THEMES = [
     { name: 'preset (default)', accent: null },

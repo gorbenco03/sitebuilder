@@ -32,6 +32,10 @@
  * consistency.test.js) rather than driving a full browser, since the property
  * under test is what the copy SAYS, not any interactive behaviour.
  *
+ * Form editor removed 2026-10-28: finding 2 (the editor's `buildNativeBookingPanel`
+ * pointer) lived in the deleted builder editor, so its test was dropped; only the
+ * owner-dashboard copy check (finding 1) stays.
+ *
  * Run: node --experimental-sqlite --test bot/test/suite5-where-are-the-hours.test.js
  */
 
@@ -42,7 +46,6 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
 const DASHBOARD_JS = path.join(ROOT, 'bot/calendar-native/owner/owner-dashboard.js');
-const APP_JS = path.join(ROOT, 'builder/app.js');
 
 function extractFunction(src, name) {
     const re = new RegExp('function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
@@ -76,35 +79,4 @@ test('owner dashboard no longer tells the owner to add/rename services "in the e
     assert.ok(/chiar aici|tot (în )?acest tab/i.test(panelSrc),
         'the corrected copy should say renaming/duration/pause happen right here in the dashboard, ' +
         'not point the owner elsewhere for something this same panel already does');
-});
-
-test('the editor\'s native-booking panel always points at the real dashboard location, paid or not', () => {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const panelSrc = extractFunction(appSrc, 'buildNativeBookingPanel');
-    assert.ok(panelSrc, 'could not extract buildNativeBookingPanel() from builder/app.js');
-
-    // Must mention BOTH the weekly-hours tab and the services/types tab by
-    // their real dashboard names, so an owner can actually find them.
-    assert.match(panelSrc, /Disponibilitate/,
-        'DEFECT M15/m25: the panel never names "Disponibilitate" (where hours are set) — an owner ' +
-        'who just turned native booking on has no idea where to go');
-    assert.match(panelSrc, /Servicii/,
-        'DEFECT M15/m25: the panel never names "Servicii" (where consultation types are set)');
-
-    // The pointer text must be reachable from an `if (on)` gate that is NOT
-    // itself nested inside the `currentSitePaid` gate — i.e. it must render
-    // on a fresh unpaid draft too (m25), not only after publish+payment.
-    const onlyGate = /if\s*\(on\)\s*\{/;
-    assert.match(panelSrc, onlyGate,
-        'expected a plain `if (on) { ... }` block (not gated by currentSitePaid) so the hint shows ' +
-        'on an unpublished/unpaid draft too — the pre-existing paid-only gate is `if (on && ' +
-        'currentSiteId && currentSitePaid ...)`, a different, narrower condition');
-
-    // And the hint text itself must sit textually before the paid-only gate,
-    // i.e. it doesn't only exist inside the `currentSitePaid` branch.
-    const paidGateIndex = panelSrc.search(/if\s*\(on\s*&&\s*currentSiteId\s*&&\s*currentSitePaid/);
-    const disponibilitateIndex = panelSrc.search(/Disponibilitate/);
-    assert.ok(paidGateIndex === -1 || disponibilitateIndex < paidGateIndex,
-        'DEFECT M15/m25: the "Disponibilitate"/"Servicii" pointer only appears inside the ' +
-        'currentSitePaid-gated block — an owner on an unpaid draft would never see it');
 });

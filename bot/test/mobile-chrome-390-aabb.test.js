@@ -3,7 +3,7 @@
  * mobile-chrome-390-aabb — pixel/bounding-box oracle for bottom chrome collisions.
  *
  * Locks the recurring cookie-banner vs WhatsApp/call-dock / credibility-strip
- * class of stranger defects at the 390 mobile-preview width across ALL 5
+ * class of stranger defects at the 390 phone width across ALL 5
  * commercial systems. innerText presence is not enough (fullpass stayed green
  * while clips existed).
  *
@@ -14,16 +14,17 @@
  *
  * Also static-locks the shared layout rule in bot/site-legal.js COOKIE_BANNER_CSS.
  *
+ * Measured on each template's published /live/<slug>/ page at a 390x844
+ * viewport (it used to be the form editor's mobile-preview iframe; the editor
+ * was removed 2026-10-28).
+ *
  * Run: node bot/test/mobile-chrome-390-aabb.test.js
  * Evidence: 04-QA-Evidence/mobile-chrome-390-aabb/
  */
 const assert = require('assert');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const crypto = require('crypto');
-const http = require('http');
-const { execFileSync } = require('child_process');
+const { startHarness, publishConfig } = require('./lib/old-template-live.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'mobile-chrome-390-aabb');
@@ -41,16 +42,6 @@ const TEXT_SELECTORS = {
   'product-menu': '.pm-scroll, .scroll-indicator, .pm-hero__tag, .hero-tagline',
   desserdirina: '.scroll-indicator, .hero-tagline, .hero-wordmark',
 };
-
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mobile-chrome-390-'));
-process.env.DATA_DIR = tmpDir;
-process.env.SERVER_SECRET = 'mobile-chrome-390-' + crypto.randomBytes(8).toString('hex');
-process.env.HIDOOK_ISOLATED_DEPLOY = '1';
-process.env.HIDOOK_TEST_PAY = '1';
-process.env.NODE_ENV = process.env.NODE_ENV === 'production' ? 'test' : (process.env.NODE_ENV || 'test');
-delete process.env.HIDOOK_FAKE_DEPLOY;
-delete process.env.STRIPE_SECRET_KEY;
-delete process.env.STRIPE_WEBHOOK_SECRET;
 
 let failed = 0;
 async function check(name, fn) {
@@ -121,20 +112,7 @@ async function main() {
     );
   });
 
-  // Engine must ship the current shared CSS into srcdoc previews.
-  execFileSync('node', [path.join(ROOT, 'scripts/build-builder.js')], {
-    cwd: ROOT,
-    stdio: ['ignore', 'ignore', 'pipe'],
-  });
-
-  const { startServer } = require('../server.js');
-  const server = startServer({ port: 0 });
-  await new Promise((resolve) => {
-    if (server.listening) return resolve();
-    server.once('listening', resolve);
-  });
-  const port = server.address().port;
-  const base = 'http://127.0.0.1:' + port;
+  const H = await startHarness('mobile-chrome-390');
 
   const report = [];
 
@@ -146,44 +124,16 @@ async function main() {
         executablePath: fs.existsSync(BRAVE) ? BRAVE : undefined,
       });
       try {
-        const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-        page.setDefaultTimeout(30000);
-        await page.goto(base + '/app/', { waitUntil: 'domcontentloaded' });
-        if (await page.locator('#hb-cookie-accept').isVisible().catch(() => false)) {
-          await page.locator('#hb-cookie-accept').click().catch(() => {});
-        }
-
         for (const system of TPLS) {
-          if (system !== TPLS[0]) {
-            const back = page.locator('#btn-back-templates');
-            if (await back.isVisible().catch(() => false)) {
-              await back.click().catch(() => {});
-            } else {
-              await page.goto(base + '/app/#templates', { waitUntil: 'domcontentloaded' });
-            }
-            await page.waitForTimeout(500);
-          }
-
-          await page.evaluate((id) => startWithTemplate(id), system);
-          await page.waitForURL(/#edit$/, { timeout: 25000 });
-          await page.locator('#preview-iframe').waitFor({ state: 'visible', timeout: 25000 });
+          const { liveUrl } = await H.publish(system, publishConfig(system), { label: system });
+          // Binding action name: open the published site at the 390 phone width
+          const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+          page.setDefaultTimeout(30000);
+          await page.goto(liveUrl, { waitUntil: 'domcontentloaded' });
           await page.waitForTimeout(900);
+          const frame = page;
 
-          const drawer = page.locator('#details-drawer');
-          if (await drawer.isVisible().catch(() => false)) {
-            await page.locator('#btn-close-drawer').click({ timeout: 4000 }).catch(() => {});
-            await drawer.waitFor({ state: 'hidden', timeout: 4000 }).catch(() => {});
-          }
-
-          // Binding action name: click mobile preview 390
-          await page.locator('#btn-preview-mobile').click();
-          await page.waitForTimeout(700);
-
-          const frameHandle = await page.$('#preview-iframe');
-          const frame = await frameHandle.contentFrame();
-          assert.ok(frame, system + ' preview frame');
-
-          // Force cookie open inside the site canvas (editor shell already accepted).
+          // Force the cookie banner open on the published site.
           await frame.evaluate(() => {
             try {
               localStorage.removeItem('hb-cookie-consent');
@@ -203,9 +153,9 @@ async function main() {
           await frame.waitForSelector('#hb-cookie-banner:not([hidden])', { timeout: 10000 });
           await page.waitForTimeout(350);
 
-          const shotName = 'click-mobile-preview-390-' + system + '-cookie-open.png';
+          const shotName = 'open-live-390-' + system + '-cookie-open.png';
           const shotPath = path.join(EVIDENCE, shotName);
-          await page.locator('#preview-iframe').screenshot({ path: shotPath });
+          await page.screenshot({ path: shotPath });
 
           const metrics = await frame.evaluate(
             ({ textSel, systemId }) => {
@@ -493,17 +443,14 @@ async function main() {
             cookieActionHits: cookieActionHits.length,
             textHits: textHits.length,
           });
+          await page.close();
         }
-        await page.close();
       } finally {
         await browser.close();
       }
     });
   } finally {
-    await new Promise((resolve) => server.close(resolve));
-    try {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch (_) {}
+    await H.close();
   }
 
   fs.writeFileSync(path.join(EVIDENCE, 'oracle-report.json'), JSON.stringify(report, null, 2));
@@ -513,10 +460,10 @@ async function main() {
       '# mobile-chrome-390-aabb evidence',
       '',
       'Oracle: `bot/test/mobile-chrome-390-aabb.test.js`',
-      'Viewport: editor mobile-preview toggle → site canvas 390×844, cookie forced open.',
+      'Viewport: published /live/<slug>/ page at 390×844, cookie forced open.',
       '',
       'Screenshots named from the action just performed:',
-      ...TPLS.map((s) => `- \`click-mobile-preview-390-${s}-cookie-open.png\``),
+      ...TPLS.map((s) => `- \`open-live-390-${s}-cookie-open.png\``),
       '',
       'Asserts: (a) cookie∩WA/dock empty (b) FAB∩strip/label empty (c) local-service WA count = 1.',
       '',

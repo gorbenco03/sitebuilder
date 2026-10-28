@@ -114,24 +114,27 @@ scripts under `scripts/`.
 per-file contract. Verified: `templates/registry.json` → `templates.length ===
 5` (also pinned by `bot/test/audit-docs-round2.test.js`).
 
-The browser builder (`builder/`) is a hand-rolled SPA (`builder/app.js` +
-`builder/index.html` + `builder/edit-overlay.js`), **not** shipped from source
-in git — `builder/generated/` is gitignored. `scripts/build-builder.js`
-(`npm run build:app`) reads `templates/*` and emits:
+Since 2026-10-28 these templates have no editor in the builder: `build.js`
+still renders and publishes sites already made with them.
 
-- `builder/generated/engine.js` — `window.HidookEngine` (`renderHtml`,
-  `renderPreview`, `escapeHtml`) used by the live in-browser preview
-- `builder/generated/templates-data.js` — light catalog registry only (no
-  heavy schema/presets/base64 images), so the template grid boots fast
-- `builder/generated/templates/<id>.js` — the heavy per-template payload,
-  fetched on demand at Start/Preview
+The browser builder (`builder/`) is a hand-rolled SPA: `builder/app.js` +
+`builder/index.html` hold the catalog (`#templates`), magic-link sign-in,
+"Site-urile mele" (`#dashboard`: billing, domain, invoices, messages, version
+history, ZIP export, delete) and the billing return routes; sites are edited
+in the block editor (§5a). `builder/generated/` is gitignored.
+`scripts/build-builder.js` (`npm run build:app`) reads `templates/*` and
+emits:
+
 - `builder/generated/template-assets/<id>/images/*` — real cacheable image
-  files, not base64-in-JS
+  files, used by the block packs' photos
+- `builder/generated/engine.js`, `templates-data.js`, `templates/<id>.js` —
+  the retired form editor's in-browser renderer and payloads; no page loads
+  them any more, a few tests still do
 
 Both the `Dockerfile` and `.github/workflows/ci.yml` run this build step
-before the server can serve `/app/` with a working catalog. Without it,
-`/app/` still returns 200 (SPA shell), but the template catalog is silently
-empty — a documented first-boot trap, not a crash.
+before the server can serve `/app/` with working photos. Without it, `/app/`
+still returns 200 and lists the designs, but every pack photo is a broken
+image — a documented first-boot trap, not a crash.
 
 ### 5a. Block editor (new sites)
 

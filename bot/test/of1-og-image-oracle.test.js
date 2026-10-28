@@ -2,6 +2,9 @@
 /**
  * OF-1 oracle — social preview images are automatic, never a customer field.
  *
+ * Form editor removed 2026-10-28: dropped the builder/app.js HIDDEN_DRAWER_KEYS
+ * assertion (the Detalii drawer no longer exists); schemas are still checked.
+ *
  * Run: node bot/test/of1-og-image-oracle.test.js
  */
 const assert = require('assert');
@@ -95,15 +98,13 @@ check('causal RED: base drops social meta when professionals has hero photo but 
     }
 });
 
-check('customer schemas and drawer expose no social-image URL control', () => {
+check('customer schemas expose no social-image URL control', () => {
     for (const id of SYSTEMS) {
         const source = read(`templates/${id}/schema.json`);
         const schema = JSON.parse(source);
         assert.ok(!fields(schema).some((field) => field.key === 'seo.ogImage'), `${id} exposes seo.ogImage`);
         assert.ok(!source.includes(FIELD_COPY), `${id} exposes customer-facing social-image copy`);
     }
-    const app = read('builder/app.js');
-    assert.match(app, /HIDDEN_DRAWER_KEYS\s*=\s*\[[^\]]*['"]seo\.ogImage['"]/s);
 });
 
 check('all systems derive og:image and twitter:image from the current hero photo', () => {

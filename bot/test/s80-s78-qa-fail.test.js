@@ -2,19 +2,11 @@
 /**
  * bot/test/s80-s78-qa-fail.test.js — S80 remake of S78 QA FAIL leaks.
  *
- * STALE ORACLE RECONCILE (S-legacy G3, 2026-09-05):
- * startWithTemplate became async and awaits ensureTemplateLoaded before clearing
- * the paid-site bind. The S80 harness called it synchronously without stubbing
- * ensureTemplateLoaded, so the Promise rejected before currentSiteId=null and
- * the oracle falsely reported a product regression. Product still clears bind
- * after a successful catalog start (and bind still refuses cross-template paid
- * sites). Harness updated to async + ensureTemplateLoaded stub. Not a stranger
- * defect.
+ * Form editor removed 2026-10-28: leftovers 1 and 2 (bindSignedInPaidSiteForEdit / startWithTemplate
+ * carrying a paid site bind across templates in the editor) covered deleted code and their VM-simulation
+ * checks were dropped. Leftover 3 (build.js renderHtml mustache leak) is a server/render contract and stays.
  *
- * Causal leftovers on parent b1e5042 / related S78 path:
- *   1. bindSignedInPaidSiteForEdit attaches any single paid site regardless of
- *      draft.templateId (restaurant bind onto professionals).
- *   2. startWithTemplate(different) can leave paid siteId in draft/localStorage.
+ * Causal leftover on parent b1e5042:
  *   3. renderHtml leaves factory {{labels.about}} when key missing.
  *
  * GREEN on HEAD for each. Isolated adapters only.
@@ -25,12 +17,9 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
-const vm = require('vm');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const APP_JS = path.join(ROOT, 'builder', 'app.js');
-const COPY_RO_JS = path.join(ROOT, 'builder', 'copy-ro.js');
 const BUILD_JS = path.join(ROOT, 'build.js');
 const PARENT_SHA = 'b1e5042df3f52378cc77cc643cd4ff6d23d29447';
 
@@ -72,20 +61,6 @@ function parentBlob(rel) {
   }
 }
 
-function extractFunction(src, name) {
-  const re = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-  const m = re.exec(src);
-  if (!m) return null;
-  let i = m.index + m[0].length;
-  let depth = 1;
-  while (i < src.length && depth > 0) {
-    const ch = src[i++];
-    if (ch === '{') depth++;
-    else if (ch === '}') depth--;
-  }
-  return src.slice(m.index, i);
-}
-
 function loadPresetConfig(templateId) {
   const body = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'templates', templateId, 'presets.json'), 'utf8')
@@ -99,133 +74,6 @@ function loadTpl(templateId) {
   return fs.readFileSync(path.join(ROOT, 'templates', templateId, 'template.html'), 'utf8');
 }
 
-/**
- * Simulate bindSignedInPaidSiteForEdit (extracted) against fake sites + draft.
- */
-function simulateBindPaid(appSrc, { sites, draft, user, savedDraft, current }) {
-  const bindFn = extractFunction(appSrc, 'bindSignedInPaidSiteForEdit');
-  assert.ok(bindFn && bindFn.length > 80, 'bindSignedInPaidSiteForEdit must exist');
-
-  const sandbox = {
-    currentUser: user || { email: 't@example.com', id: 'u1' },
-    currentSiteId: (current && current.currentSiteId) || null,
-    currentSitePaid: !!(current && current.currentSitePaid),
-    currentSiteSlug: (current && current.currentSiteSlug) || '',
-    publishedSiteId: (current && current.publishedSiteId) || null,
-    publishedSiteUrl: null,
-    draft: draft || { templateId: 'product-menu', config: { business: { name: 'Qa' } } },
-    _saved: savedDraft || null,
-    _sites: sites || [],
-    console,
-  };
-
-  const prelude = `
-    function loadDraft() { return _saved; }
-    function saveDraft() {
-      if (!draft.templateId || !draft.config) return;
-      _saved = { templateId: draft.templateId, config: draft.config };
-      if (currentSiteId) {
-        _saved.siteId = currentSiteId;
-        _saved.paid = !!currentSitePaid;
-        if (currentSiteSlug) _saved.slug = currentSiteSlug;
-      }
-    }
-    async function fetchCurrentUser() { return currentUser; }
-    function updateUserUI(u) { currentUser = u; }
-    async function apiGet(path) {
-      if (path === '/api/sites') return { sites: _sites };
-      throw new Error('unexpected ' + path);
-    }
-    function getPath(obj, pathStr) {
-      return String(pathStr || '').split('.').reduce((a, k) => (a == null ? a : a[k]), obj);
-    }
-    function toSlug(s) {
-      return String(s || '').toLowerCase()
-        .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
-    }
-  `;
-
-  vm.runInNewContext(
-    prelude + '\n' + bindFn + '\n' +
-      'this.__run = async function() { await bindSignedInPaidSiteForEdit(); return {' +
-      ' currentSiteId, currentSitePaid, currentSiteSlug, publishedSiteId, saved: _saved }; };',
-    sandbox
-  );
-  return sandbox.__run();
-}
-
-/**
- * Simulate startWithTemplate clearing + draft persistence for a template switch.
- * Uses extracted startWithTemplate + saveDraft helpers.
- * startWithTemplate is async and awaits ensureTemplateLoaded before bind clear.
- */
-async function simulateStartWithTemplate(appSrc, { templateId, savedDraft, tplDataById }) {
-  const startFn = extractFunction(appSrc, 'startWithTemplate');
-  const saveFn = extractFunction(appSrc, 'saveDraft');
-  assert.ok(startFn && startFn.length > 40, 'startWithTemplate must exist');
-  assert.ok(saveFn && saveFn.length > 20, 'saveDraft must exist');
-
-  const sandbox = {
-    currentSiteId: (savedDraft && savedDraft.siteId) || null,
-    currentSitePaid: !!(savedDraft && savedDraft.paid),
-    currentSiteSlug: (savedDraft && savedDraft.slug) || '',
-    publishedSiteId: (savedDraft && savedDraft.siteId) || null,
-    draft: {
-      templateId: (savedDraft && savedDraft.templateId) || null,
-      config: (savedDraft && savedDraft.config) || null,
-    },
-    currentTemplate: null,
-    previewFirstRender: true,
-    iframeReady: true,
-    _saved: savedDraft ? JSON.parse(JSON.stringify(savedDraft)) : null,
-    _tplDataById: tplDataById || {},
-    window: { location: { hash: '' } },
-    console,
-    Promise,
-  };
-
-  const prelude = `
-    const DRAFT_KEY = 'hb_draft';
-    function lsSet(k, v) { if (k === DRAFT_KEY) _saved = v; }
-    function lsGet(k) { return k === DRAFT_KEY ? _saved : null; }
-    function loadDraft() { return _saved; }
-    ${saveFn}
-    function getTemplateById(id) { return _tplDataById[id] || null; }
-    function getTemplateList() {
-      return Object.keys(_tplDataById).map(id => ({ id, name: id }));
-    }
-    async function ensureTemplateLoaded(id) {
-      const data = _tplDataById[id];
-      if (!data) throw new Error('missing template ' + id);
-      return data;
-    }
-    function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
-    function showToast() {}
-    function hideToast() {}
-    function prepareDrawerForNewDesign() {}
-    function deriveWaHref() {}
-    function $(id) { return null; }
-  `;
-
-  // PLAN-UX-2026-09-27 §5.8 (T-3): startWithTemplate now reads its Romanian
-  // template-switch toast from the RO catalog (builder/copy-ro.js) via the
-  // t() helper — load the catalog into this sandbox too, same as the real
-  // page's <script> order.
-  // Stripped of its own 'use strict' — concatenated into one script it
-  // would make startWithTemplate's own (unrelated, pre-existing)
-  // implicit-global assignment (`publishedConfigSnapshot = null;`) throw.
-  const copyRoSrc = fs.readFileSync(COPY_RO_JS, 'utf8').replace(/^'use strict';\s*\n?/, '');
-  vm.runInNewContext(
-    copyRoSrc + '\n' + prelude + '\n' + startFn + '\n' +
-      'this.__run = async function(tid) { await startWithTemplate(tid); return {' +
-      ' currentSiteId, currentSitePaid, currentSiteSlug, publishedSiteId,' +
-      ' draft: JSON.parse(JSON.stringify(draft)), saved: _saved ? JSON.parse(JSON.stringify(_saved)) : null }; };',
-    sandbox
-  );
-  return sandbox.__run(templateId);
-}
-
 function hasFactoryMustache(html) {
   return (
     html.includes('{{labels.about}}') ||
@@ -236,80 +84,10 @@ function hasFactoryMustache(html) {
 }
 
 (async () => {
-  const appSrc = fs.readFileSync(APP_JS, 'utf8');
-  const parentApp = parentBlob('builder/app.js');
   const parentBuild = parentBlob('build.js');
-  assert.ok(parentApp, 'parent app.js at ' + PARENT_SHA);
   assert.ok(parentBuild, 'parent build.js at ' + PARENT_SHA);
 
-  const restaurantSite = {
-    id: 'site_rest_s80',
-    paid: true,
-    slug: 'qalive-s78-014843',
-    projectName: 'qalive-s78-014843',
-    templateId: 'product-menu',
-    url: 'http://127.0.0.1/live/qalive-s78-014843/',
-  };
-
   // ── Causal RED on parent ───────────────────────────────────────────────
-  await check('causal RED: parent bind attaches single paid restaurant to professionals draft', async () => {
-    const result = await simulateBindPaid(parentApp, {
-      draft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S78' } },
-      },
-      savedDraft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S78' } },
-      },
-      sites: [restaurantSite],
-    });
-    assert.strictEqual(
-      result.currentSiteId,
-      restaurantSite.id,
-      'parent wrongly binds paid restaurant siteId onto professionals draft'
-    );
-    assert.strictEqual(result.currentSitePaid, true);
-    assert.strictEqual(result.currentSiteSlug, restaurantSite.slug);
-  });
-
-  await check('causal RED: parent startWithTemplate(different) can leave paid siteId in draft', async () => {
-    const proPreset = { presets: [{ id: 'p', config: { business: { name: 'Cabinet' }, labels: {} } }] };
-    const out = await simulateStartWithTemplate(parentApp, {
-      templateId: 'professionals',
-      savedDraft: {
-        templateId: 'product-menu',
-        config: { business: { name: 'Restaurant' } },
-        siteId: restaurantSite.id,
-        paid: true,
-        slug: restaurantSite.slug,
-      },
-      tplDataById: {
-        professionals: proPreset,
-        'product-menu': { presets: [{ id: 'r', config: { business: { name: 'R' } } }] },
-      },
-    });
-    // Soft: in-memory must be cleared on parent (it is). Draft must not keep siteId after different start.
-    assert.strictEqual(out.currentSiteId, null, 'parent clears in-memory currentSiteId');
-    // Prove parent bind from saved restaurant siteId ignores professionals draft.templateId:
-    const bound = await simulateBindPaid(parentApp, {
-      draft: { templateId: 'professionals', config: { business: { name: 'Cabinet' } } },
-      savedDraft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet' } },
-        siteId: restaurantSite.id,
-        paid: true,
-        slug: restaurantSite.slug,
-      },
-      sites: [restaurantSite],
-    });
-    assert.strictEqual(
-      bound.currentSiteId,
-      restaurantSite.id,
-      'parent bind restores paid restaurant from draft.siteId even when draft is professionals'
-    );
-  });
-
   await check('causal RED: parent renderHtml leaves {{labels.about}} when key missing', () => {
     // Evaluate parent build.js replaceTokens behavior via vm-less: write temp require
     // Parent build is identical path — load via Function wrapper from source file blob.
@@ -342,117 +120,6 @@ function hasFactoryMustache(html) {
   });
 
   // ── HEAD GREEN ─────────────────────────────────────────────────────────
-  await check('HEAD: startWithTemplate(professionals) after paid restaurant clears site bind from draft', async () => {
-    const proPreset = {
-      presets: [{ id: 'p', config: { business: { name: 'Cabinet S80' }, labels: { aboutEyebrow: 'Despre' } } }],
-    };
-    const out = await simulateStartWithTemplate(appSrc, {
-      templateId: 'professionals',
-      savedDraft: {
-        templateId: 'product-menu',
-        config: { business: { name: 'Restaurant Live' } },
-        siteId: restaurantSite.id,
-        paid: true,
-        slug: restaurantSite.slug,
-      },
-      tplDataById: {
-        professionals: proPreset,
-        'product-menu': { presets: [{ id: 'r', config: { business: { name: 'R' } } }] },
-      },
-    });
-    assert.strictEqual(out.currentSiteId, null, 'currentSiteId cleared');
-    assert.strictEqual(out.currentSitePaid, false, 'currentSitePaid cleared');
-    assert.strictEqual(out.currentSiteSlug, '', 'currentSiteSlug cleared');
-    assert.ok(out.saved, 'draft saved');
-    assert.ok(!out.saved.siteId, 'draft must not keep paid restaurant siteId');
-    assert.ok(!out.saved.paid, 'draft must not keep paid flag');
-    assert.ok(!out.saved.slug, 'draft must not keep restaurant slug');
-    assert.strictEqual(out.draft.templateId, 'professionals');
-  });
-
-  await check('HEAD: bind does not attach paid site with different templateId', async () => {
-    const result = await simulateBindPaid(appSrc, {
-      draft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-      },
-      savedDraft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-      },
-      sites: [restaurantSite],
-    });
-    assert.strictEqual(result.currentSiteId, null, 'must not bind restaurant onto professionals');
-    assert.strictEqual(result.currentSitePaid, false);
-    assert.ok(!result.currentSiteSlug, 'must not take restaurant slug');
-  });
-
-  await check('HEAD: bind ignores draft.siteId when saved template/site template differs from draft', async () => {
-    const result = await simulateBindPaid(appSrc, {
-      draft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-      },
-      savedDraft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-        siteId: restaurantSite.id,
-        paid: true,
-        slug: restaurantSite.slug,
-      },
-      sites: [restaurantSite],
-    });
-    assert.strictEqual(
-      result.currentSiteId,
-      null,
-      'must not restore restaurant siteId from draft onto professionals'
-    );
-    assert.ok(!result.saved || !result.saved.siteId || result.saved.siteId !== restaurantSite.id,
-      'must not re-persist foreign paid siteId');
-  });
-
-  await check('HEAD: bind still binds when draft template matches paid site (S69 path)', async () => {
-    const result = await simulateBindPaid(appSrc, {
-      draft: {
-        templateId: 'product-menu',
-        config: { business: { name: 'QaLive S80' } },
-      },
-      savedDraft: {
-        templateId: 'product-menu',
-        config: { business: { name: 'QaLive S80' } },
-      },
-      sites: [restaurantSite],
-    });
-    assert.strictEqual(result.currentSiteId, restaurantSite.id, 'same-template bind');
-    assert.strictEqual(result.currentSitePaid, true);
-    assert.strictEqual(result.currentSiteSlug, restaurantSite.slug);
-    assert.ok(result.saved && result.saved.siteId === restaurantSite.id && result.saved.paid === true);
-  });
-
-  await check('HEAD: bind matches same-template among multiple paid sites', async () => {
-    const proSite = {
-      id: 'site_pro_s80',
-      paid: true,
-      slug: 'cabinet-s80-live',
-      projectName: 'cabinet-s80-live',
-      templateId: 'professionals',
-      url: 'http://127.0.0.1/live/cabinet-s80-live/',
-    };
-    const result = await simulateBindPaid(appSrc, {
-      draft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-      },
-      savedDraft: {
-        templateId: 'professionals',
-        config: { business: { name: 'Cabinet S80' } },
-      },
-      sites: [restaurantSite, proSite],
-    });
-    assert.strictEqual(result.currentSiteId, proSite.id);
-    assert.strictEqual(result.currentSiteSlug, proSite.slug);
-  });
-
   await check('HEAD: rendered HTML never shows factory {{labels.about}} / {{LABELS.ABOUT}}', () => {
     const pmTpl = loadTpl('product-menu');
     const prTpl = loadTpl('professionals');

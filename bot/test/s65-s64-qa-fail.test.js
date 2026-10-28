@@ -4,11 +4,13 @@
  *
  * Causal leftovers on parent cbbf955 (S63 ACCEPT):
  *   1. Catalog Meseriași says «lead-gen»
- *   2. Hero overlay splits background on ';' → misses data:image/jpeg;base64
  *   3. Instagram grant 503 without SITEBUILDER_PARTNER_SECRET (isolated must finish)
- *   4. #edit paid republish asks new slug → «adresa e deja folosită»
+ *   4. paid republish must keep the site's own slug (no new address)
  *   5. Menu dishes hidden in closed <details> (Articol nou not visible)
  *
+ * Form editor removed 2026-10-28: leftover 2 (hero overlay background parsing) and the
+ * #edit / openPublishModal source locks of 4 covered deleted code and were dropped; the
+ * paid-republish-keeps-slug server journey stays.
  * GREEN on HEAD for each. Isolated adapters only.
  * Env: HIDOOK_ISOLATED_DEPLOY=1, HIDOOK_TEST_PAY=1; HIDOOK_FAKE_DEPLOY deleted.
  * Run: node bot/test/s65-s64-qa-fail.test.js
@@ -18,12 +20,10 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
-const vm     = require('vm');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS = path.join(ROOT, 'builder', 'app.js');
-const OVERLAY_JS = path.join(ROOT, 'builder', 'edit-overlay.js');
 const REGISTRY_JSON = path.join(ROOT, 'templates', 'registry.json');
 const PM_TPL = path.join(ROOT, 'templates', 'product-menu', 'template.html');
 const PARENT_SHA = 'cbbf9556ba8e6a95eae62433495261e283896865';
@@ -73,20 +73,6 @@ function parentBlob(rel) {
     } catch {
         return null;
     }
-}
-
-function extractFunction(src, name) {
-    const re = new RegExp('function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-    const m = re.exec(src);
-    if (!m) return null;
-    let i = m.index + m[0].length;
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-        const ch = src[i++];
-        if (ch === '{') depth++;
-        else if (ch === '}') depth--;
-    }
-    return src.slice(m.index, i);
 }
 
 function makeClient(base) {
@@ -162,36 +148,12 @@ function loadPresetConfig(templateId) {
     return JSON.parse(JSON.stringify(presets[0].config));
 }
 
-/** Simulate overlay extractBackgroundUrls on a style string (HEAD helper logic). */
-function simulateExtractBgUrls(overlaySrc, styleAttr) {
-    const fn = extractFunction(overlaySrc, 'extractBackgroundUrls');
-    assert.ok(fn && fn.length > 40, 'extractBackgroundUrls must exist on HEAD');
-    const sandbox = { result: null };
-    vm.runInNewContext(
-        fn + '\nresult = extractBackgroundUrls(' + JSON.stringify(styleAttr) + ');',
-        sandbox
-    );
-    return sandbox.result;
-}
-
-/** Parent-era matcher that splits on ';' (the S64 leak). */
-function parentBgMatch(style) {
-    const declMatch = style.match(/(?:^|;)\s*(?:background(?:-image)?)\s*:\s*([^;]+)/i);
-    if (!declMatch) return null;
-    const bgDecl = declMatch[1] || '';
-    const urlMatch = bgDecl.match(/url\(\s*['"]?([^'")]+)['"]?\s*\)/i);
-    return urlMatch ? urlMatch[1] : null;
-}
-
 (async () => {
     const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const overlaySrc = fs.readFileSync(OVERLAY_JS, 'utf8');
     const regSrc = fs.readFileSync(REGISTRY_JSON, 'utf8');
     const pmTpl = fs.readFileSync(PM_TPL, 'utf8');
 
     const parentReg = parentBlob('templates/registry.json');
-    const parentOverlay = parentBlob('builder/edit-overlay.js');
-    const parentApp = parentBlob('builder/app.js');
     const parentPm = parentBlob('templates/product-menu/template.html');
     const parentServer = parentBlob('bot/server.js');
 
@@ -201,30 +163,6 @@ function parentBgMatch(style) {
         assert.ok(/lead-gen/i.test(parentReg), 'parent has lead-gen jargon');
         const local = JSON.parse(parentReg).templates.find((t) => t.id === 'local-service');
         assert.ok(local && /lead-gen/i.test(local.description || ''), 'Meseriași description has lead-gen');
-    });
-
-    await check('causal RED: parent overlay misses data:image/jpeg;base64 background url', () => {
-        assert.ok(parentOverlay, 'parent overlay');
-        assert.ok(
-            /background(?:-image)?\)\?\s*\)\s*:\\s\*\(\[\^;\]\+\)/.test(parentOverlay) ||
-                parentOverlay.includes('([^;]+)') &&
-                    /background(?:-image)?/.test(parentOverlay),
-            'parent uses semicolon-split bg declaration'
-        );
-        assert.ok(
-            !parentOverlay.includes('extractBackgroundUrls'),
-            'parent lacks extractBackgroundUrls helper'
-        );
-        const dataUrl = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAg';
-        const style =
-            "background: linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            dataUrl +
-            "'); color: #fff";
-        const got = parentBgMatch(style);
-        assert.ok(
-            !got || !got.startsWith('data:image/jpeg;base64,'),
-            'parent matcher must fail full data-URL (got ' + JSON.stringify(got) + ')'
-        );
     });
 
     await check('causal RED: parent Instagram grant 503 without partner secret (no isolated stub)', () => {
@@ -241,21 +179,6 @@ function parentBgMatch(style) {
         assert.ok(
             /if\s*\(\s*!partner\.isConfigured\(\)\s*\)/.test(parentServer),
             'parent 503s whenever partner secret missing'
-        );
-    });
-
-    await check('causal RED: parent openPublishModal always asks slug (no paid skip)', () => {
-        assert.ok(parentApp, 'parent app');
-        const openFn = extractFunction(parentApp, 'openPublishModal') || '';
-        assert.ok(openFn.length > 40, 'parent openPublishModal');
-        assert.ok(
-            !/currentSitePaid/.test(openFn + parentApp),
-            'parent has no currentSitePaid paid-republish path'
-        );
-        assert.ok(/openModal\(\s*['"]modal-publish['"]\s*\)/.test(openFn), 'always opens slug modal');
-        assert.ok(
-            !/if\s*\(\s*currentSiteId\s*&&\s*currentSitePaid/.test(openFn),
-            'parent does not skip modal for paid #edit'
         );
     });
 
@@ -280,47 +203,6 @@ function parentBgMatch(style) {
             assert.ok(!/lead-gen/i.test(t.name || ''), t.id + ' name clean');
         }
         assert.ok(!/HIDOOK_FAKE_DEPLOY/.test(appSrc), 'no fake deploy in app');
-    });
-
-    await check('HEAD: overlay extracts full data:image/jpeg;base64 from multi-layer background', () => {
-        const dataUrl =
-            'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAGcP//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUCf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQMBAT8Bf//EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQIBAT8Bf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEABj8Cf//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAT8hf//Z';
-        const style =
-            "background: linear-gradient(160deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.25) 55%), url('" +
-            dataUrl +
-            "'); padding-top: 4rem";
-        const urls = simulateExtractBgUrls(overlaySrc, style);
-        assert.ok(Array.isArray(urls) && urls.length >= 1, 'extracts at least one url');
-        assert.ok(
-            urls.some((u) => u === dataUrl || u.startsWith('data:image/jpeg;base64,')),
-            'full data URL recovered, got ' + JSON.stringify(urls.map((u) => u.slice(0, 40)))
-        );
-        assert.ok(/hb-bg-btn|Schimbă poza/.test(overlaySrc), 'Schimbă poza control present');
-        // Parent-style split still documented as insufficient
-        const broken = parentBgMatch(style);
-        assert.ok(!broken || broken !== dataUrl, 'parent matcher still wrong on same style');
-    });
-
-    await check('HEAD: openPublishModal skips slug modal for paid site; own slug valid', () => {
-        assert.ok(/currentSitePaid/.test(appSrc), 'tracks paid state');
-        assert.ok(/currentSiteSlug/.test(appSrc), 'tracks site slug');
-        const openFn = extractFunction(appSrc, 'openPublishModal') || '';
-        assert.ok(
-            /currentSiteId\s*&&\s*currentSitePaid/.test(openFn),
-            'paid path in openPublishModal'
-        );
-        assert.ok(
-            /doActualPublish\s*\(\s*currentSiteSlug/.test(openFn),
-            'republish uses existing slug'
-        );
-        const checkFn = extractFunction(appSrc, 'checkSlug') || '';
-        assert.ok(
-            /currentSiteSlug/.test(checkFn),
-            'checkSlug treats own slug as available'
-        );
-        const loadFn = extractFunction(appSrc, 'loadSiteForEdit') || '';
-        assert.ok(/currentSitePaid\s*=/.test(loadFn), 'loadSiteForEdit sets paid');
-        assert.ok(/currentSiteSlug\s*=/.test(loadFn), 'loadSiteForEdit sets slug');
     });
 
     await check('HEAD: menu details open by default so Articol nou is visible', () => {

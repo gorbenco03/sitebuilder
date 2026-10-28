@@ -38,9 +38,7 @@
   <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
   <div class="header-right">
     <span id="user-badge" style="display:none" class="user-badge" aria-label="Utilizator conectat"></span>
-    <!-- R-27 (auth-account#3/#4): GDPR self-service + "Deconectare de pe toate
-         dispozitivele" reachable from the dashboard/templates header too, not
-         only from inside an open design's editor topbar (#account-menu below). -->
+    <!-- R-27: GDPR self-service + "Deconectare de pe toate dispozitivele". -->
     <div class="account-menu-wrap" id="account-menu-wrap-header" style="display:none">
       <button id="btn-account-menu-header" class="btn-icon-account" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Meniul contului">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -58,195 +56,10 @@
   </div>
 </header>
 
-<!-- ===== EDITOR TOPBAR (shown only in #edit) ===== -->
-<div id="editor-topbar" class="editor-topbar" style="display:none" role="toolbar" aria-label="Bară editor">
-  <div class="editor-topbar-left">
-    <button id="btn-back-templates" class="btn-icon-back" aria-label="Înapoi la designuri">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span class="editor-topbar-back-label">Înapoi</span>
-    </button>
-    <span id="editor-template-name" class="editor-tpl-name"></span>
-    <div class="account-menu-wrap">
-      <button id="btn-account-menu" class="btn-icon-account" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Meniul contului">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <circle cx="8" cy="5.3" r="2.6" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M2.7 13.4c.85-2.7 3-4.1 5.3-4.1s4.45 1.4 5.3 4.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <div id="account-menu" class="account-menu" role="menu" aria-label="Cont" style="display:none">
-        <button type="button" class="account-menu-item" id="account-menu-projects" role="menuitem">Site-urile mele</button>
-        <button type="button" class="account-menu-item" id="account-menu-export-data" role="menuitem" style="display:none">Descarcă datele mele</button>
-        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-delete-account" role="menuitem" style="display:none">Șterge contul</button>
-        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-logout" role="menuitem" style="display:none">Deconectare</button>
-        <button type="button" class="account-menu-item account-menu-item--danger" id="account-menu-logout-all" role="menuitem" style="display:none" title="Încheie sesiunea pe toate telefoanele și calculatoarele conectate">Deconectare de pe toate dispozitivele</button>
-      </div>
-    </div>
-  </div>
-  <div class="editor-topbar-center">
-    <div class="history-controls" role="group" aria-label="Istoric modificări">
-      <button id="btn-undo" class="btn-icon-history" type="button" aria-label="Anulează" title="Anulează (Ctrl+Z)" disabled>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M4 6H10.5C12.4 6 14 7.6 14 9.5C14 11.4 12.4 13 10.5 13H6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M6.5 3.2L4 6L6.5 8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button id="btn-redo" class="btn-icon-history" type="button" aria-label="Refă" title="Refă (Ctrl+Shift+Z)" disabled>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M12 6H5.5C3.6 6 2 7.6 2 9.5C2 11.4 3.6 13 5.5 13H10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9.5 3.2L12 6L9.5 8.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </div>
-    <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
-      <button id="btn-preview-desktop" class="device-btn active" aria-label="Vizualizare desktop" aria-pressed="true" title="Desktop">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button id="btn-preview-mobile" class="device-btn" aria-label="Vizualizare mobil" aria-pressed="false" title="Mobil">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
-          <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-  <div class="editor-topbar-right">
-    <!--
-      Wave 11 mobile fix: everything except Publish lives in this inner
-      scroll rail. On desktop `.editor-topbar-scroll` is `display:contents`
-      (a no-op — these stay direct flex children of .editor-topbar-right,
-      byte-identical to the old markup's layout). Below 640px it becomes a
-      horizontally-scrollable flex row *of its own*, so an overflowing set of
-      icon buttons scrolls within its own box instead of doing what it did
-      before: bleeding left with negative effective position and silently
-      overlapping the back/account/undo/redo/device-toggle controls, eating
-      their taps. Publish stays outside the rail so it is never scrolled
-      out of reach. See HANDOFF-mobile.md for the full writeup.
-    -->
-    <div class="editor-topbar-scroll">
-      <div id="save-status" class="save-status" data-state="idle" style="display:none" aria-live="polite">
-        <span class="save-status-dot" aria-hidden="true"></span>
-        <span id="save-status-text">Salvat</span>
-        <button type="button" id="btn-save-retry" class="save-status-retry" style="display:none">Reîncearcă</button>
-      </div>
-      <button type="button" id="checklist-indicator" class="checklist-indicator" title="Câmpuri completate cu conținutul tău — click pentru a vedea ce mai lipsește" aria-label="Câmpuri completate cu conținutul tău — deschide lista celor rămase" aria-haspopup="menu" aria-expanded="false" aria-controls="checklist-menu">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-          <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.3"/>
-          <path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span id="checklist-text">...</span>
-      </button>
-      <!-- PLAN-FEEDBACK-2026-09-14 Suite B: explains the amber "still demo
-           content" highlight the canvas paints on untouched identity fields
-           (see builder/edit-overlay.js's .hb-demo-text). Hidden by default —
-           app.js's syncDemoLegend() reveals it only while at least one field
-           is still marked, and hides it again the moment the last one is
-           edited, so it never sits there as decoration once a draft is done. -->
-      <span id="demo-legend" class="demo-legend" title="Text de exemplu — înlocuiește-l cu datele tale" hidden>
-        <span class="demo-legend-swatch" aria-hidden="true"></span>
-        <span class="demo-legend-text">Text de exemplu</span><span class="demo-legend-more"> — înlocuiește-l cu datele tale</span>
-      </span>
-      <button id="btn-add-instagram" class="btn-topbar" type="button" aria-label="Adaugă Instagram">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <rect x="2" y="2" width="11" height="11" rx="3" stroke="currentColor" stroke-width="1.4"/>
-          <circle cx="7.5" cy="7.5" r="2.4" stroke="currentColor" stroke-width="1.4"/>
-          <circle cx="11" cy="4.2" r=".7" fill="currentColor"/>
-        </svg>
-        <span class="btn-topbar-label">Adaugă Instagram</span>
-      </button>
-      <!-- T-1A (PLAN-UX §5.2): secondary entry point — the primary one is the
-           "Adaugă o secțiune" button inside the "Secțiuni pagină" drawer
-           panel (builder/app.js's buildPageSectionsPanel). Same trigger id
-           real click (desktop/tablet) and proxied via "Mai mult" on phones
-           (MOBILE_MORE_MENU_ITEMS) — see builder/add-section.js. -->
-      <button id="btn-open-add-section" class="btn-topbar" type="button" aria-label="Adaugă o secțiune">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <rect x="1.5" y="2.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M7.5 5.5v4M5.5 7.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-        <span class="btn-topbar-label">Adaugă secțiune</span>
-      </button>
-      <button id="btn-color-picker" class="btn-topbar" aria-label="Culoare temă" title="Culoare temă">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <circle cx="7.5" cy="7.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
-          <path d="M7.5 2C7.5 2 3 4.5 3 7.5a4.5 4.5 0 009 0C12 4.5 7.5 2 7.5 2z" fill="currentColor" opacity=".2"/>
-        </svg>
-        <span class="btn-topbar-label">Culoare</span>
-      </button>
-      <button id="btn-open-gallery" class="btn-topbar" type="button" aria-label="Poze — toate fotografiile site-ului, într-un singur loc" title="Poze">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <rect x="1.5" y="2.5" width="12" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-          <circle cx="5" cy="6" r="1.2" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M2 11.5l3.2-3.2a1 1 0 0 1 1.4 0L9 10.7M9.8 9.9l1-1a1 1 0 0 1 1.4 0l1.3 1.3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="btn-topbar-label">Poze</span>
-      </button>
-      <button id="btn-open-drawer" class="btn-topbar" aria-label="Detalii și câmpuri suplimentare" title="Detalii">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <circle cx="7.5" cy="3" r="1.2" fill="currentColor"/>
-          <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"/>
-          <circle cx="7.5" cy="12" r="1.2" fill="currentColor"/>
-        </svg>
-        <span class="btn-topbar-label">Detalii</span>
-      </button>
-      <button id="btn-download-html" class="btn-topbar" type="button" aria-label="Descarcă HTML" title="Descarcă HTML">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <path d="M7.5 2v7M4.5 6.5L7.5 9.5l3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2.5 12.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-        </svg>
-        <span class="btn-topbar-label">Descarcă HTML</span>
-      </button>
-      <button id="btn-download-zip" class="btn-topbar" type="button" aria-label="Descarcă ZIP" title="Descarcă ZIP pentru self-host">
-        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-          <path d="M4 2.5h5.5L12 5v7.5H4V2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M9.5 2.5V5H12" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M7.5 7v3.5M6 9l1.5 1.5L9 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="btn-topbar-label">Descarcă ZIP</span>
-      </button>
-    </div>
-    <button id="btn-publish" class="btn-primary btn-publish-top" type="button" aria-label="Publică site-ul">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M7 2v7M4 5l3 3 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M2 12h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-      </svg>
-      <span>Publică site-ul</span>
-    </button>
-  </div>
-</div>
-
-<!-- ===== TAB CONFLICT BANNER (shown only in #edit, when another tab saves the same draft) ===== -->
-<div id="tab-conflict-banner" class="tab-conflict-banner" role="status" aria-live="polite" aria-hidden="true" style="display:none">
-  <span class="tab-conflict-text" id="tab-conflict-text">Acest proiect e deschis și în altă filă a browserului. Îmbinăm modificările câmp cu câmp — dacă amândouă tab-urile ating exact același câmp, câștigă ultima salvare.</span>
-  <span class="tab-conflict-actions">
-    <button type="button" class="btn-ghost btn-sm" id="btn-tab-conflict-reload">Reîncarcă pagina</button>
-    <button type="button" class="tab-conflict-dismiss" id="btn-tab-conflict-dismiss" aria-label="Închide avertismentul">&times;</button>
-  </span>
-</div>
-
-<!-- ===== RECOVERY BANNER (Wave 9 — shown outside #edit when a local draft was
-     never cleanly finished: browser crash, accidental close). Mutually
-     exclusive with the tab-conflict banner above by construction — that one
-     is #edit-only, this one hides itself the moment #edit opens (see
-     showScreen()), so they never overlap or double-warn. ===== -->
-<div id="recovery-banner" class="recovery-banner" role="status" aria-live="polite" aria-hidden="true" style="display:none">
-  <span class="recovery-banner-text" id="recovery-banner-text">Ai un site neterminat<span id="recovery-banner-name"></span>. Continui de unde ai rămas?</span>
-  <span class="recovery-banner-actions">
-    <button type="button" class="btn-primary btn-sm" id="btn-recovery-resume">Continuă editarea</button>
-    <button type="button" class="btn-ghost btn-sm" id="btn-recovery-discard">Renunță</button>
-  </span>
-</div>
-
-<!-- ===== SESSION EXPIRED BANNER (SESS-01/02 — a 401 on autosave/publish, or
-     a sign-out noticed from another tab). Fixed Romanian explanation with an
-     inline re-auth button reusing the existing magic-link modal — never the
-     server's raw English 401 body. ===== -->
+<!-- ===== SESSION EXPIRED BANNER (SESS-02 — a sign-out noticed from another
+     tab). Inline re-auth reuses the magic-link modal. ===== -->
 <div id="session-expired-banner" class="session-expired-banner" role="alert" aria-live="assertive" aria-hidden="true" style="display:none">
-  <span class="session-expired-text" id="session-expired-text">Sesiunea a expirat — conectează-te din nou ca să salvezi și să publici. Modificările tale sunt păstrate pe acest dispozitiv.</span>
+  <span class="session-expired-text" id="session-expired-text">Sesiunea a expirat — conectează-te din nou ca să-ți vezi site-urile.</span>
   <span class="session-expired-actions">
     <button type="button" class="btn-primary btn-sm" id="btn-session-expired-reauth">Conectează-te din nou</button>
   </span>
@@ -369,52 +182,6 @@
     </footer>
   </section>
 
-  <!-- ========== SCREEN: EDITOR (Inline) ========== -->
-  <section id="screen-edit" class="screen screen-edit" role="main" aria-label="Editează site-ul" style="display:none">
-    <!-- Fresh preset content looks like a finished, real business site (real-looking
-         phone numbers, testimonials, photos) — nothing on the canvas itself says
-         "replace me". This bar is the one persistent (not hover-only, not a
-         3.5s toast) signal that a brand-new draft is still demo content — and,
-         since a name/phone/town field is right here, the fastest way off it.
-         Wave 11: three fields, not a modal — fill any subset and hit "Aplică"
-         to stamp them everywhere they belong (title, meta description,
-         structured data, WhatsApp message, footer…), or "Nu acum" to skip.
-         Reopenable any time via the checklist pill in the topbar. -->
-    <div id="demo-content-banner" class="demo-content-banner" role="status" aria-live="polite" style="display:none">
-      <form id="quickstart-form" class="quickstart-form" autocomplete="off">
-        <span class="quickstart-form-label">Fă site-ul al tău în 20 de secunde:</span>
-        <input type="text" id="quickstart-name" class="quickstart-input" placeholder="Numele afacerii" maxlength="60" aria-label="Numele afacerii" />
-        <input type="tel" id="quickstart-phone" class="quickstart-input" placeholder="Telefon" maxlength="24" aria-label="Telefon" />
-        <input type="text" id="quickstart-town" class="quickstart-input" placeholder="Localitate" maxlength="40" aria-label="Localitate" />
-        <button type="submit" class="quickstart-submit" id="btn-quickstart-apply">Aplică</button>
-      </form>
-      <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-demo-banner" aria-label="Nu acum">Nu acum</button>
-    </div>
-    <!-- PLAN-UX-2026-09-27 §5.1 remainder: shown once, in place of the usual
-         Details auto-open, right after the onboarding wizard completes for
-         this design — see showOnboardingDetailsHint() in app.js. -->
-    <div id="onboarding-details-hint" class="demo-content-banner onboarding-details-hint" role="status" aria-live="polite" style="display:none">
-      <span class="quickstart-form-label">Poți completa oricând restul detaliilor din Detalii.</span>
-      <button type="button" class="btn-primary btn-sm" id="btn-onboarding-details-hint-open">Deschide Detalii</button>
-      <button type="button" class="demo-content-banner-dismiss" id="btn-dismiss-onboarding-hint" aria-label="Nu acum">Nu acum</button>
-    </div>
-    <div class="editor-canvas-wrap" id="editor-canvas-wrap">
-      <div class="preview-skeleton" id="preview-skeleton" aria-hidden="true">
-        <div class="preview-shimmer"></div>
-      </div>
-      <div class="preview-spinner-overlay" id="preview-spinner-overlay" style="display:none" aria-hidden="true">
-        <div class="spinner spinner--sm"></div>
-      </div>
-      <iframe
-        id="preview-iframe"
-        class="preview-iframe preview-iframe--edit"
-        title="Editează site-ul"
-        sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-        aria-label="Editează direct pe site"
-      ></iframe>
-    </div>
-  </section>
-
   <!-- ========== SCREEN: DASHBOARD ========== -->
   <section id="screen-dashboard" class="screen" role="main" aria-label="Site-urile mele" style="display:none">
     <div class="dashboard-container">
@@ -433,115 +200,12 @@
 
 </main>
 
-<!-- ===== CHECKLIST "WHAT'S MISSING" MENU (Wave 12) =====
-     Opened from #checklist-indicator in the topbar. Content is built by
-     builder/app.js's buildChecklistMenu() each time it opens: a
-     "Completare rapidă" shortcut (same quick-start form the pill used to
-     open directly), then one button per still-missing required field,
-     labelled with that field's own schema.json label — clicking one lands
-     the owner on it (drawer, scrolled + focused, or the canvas itself).
-     Positioned like #color-popover below (fixed, inline top/left from the
-     button's own rect, computed in app.js) so it needs no wrapper here. -->
-<div id="checklist-menu" class="account-menu checklist-menu" role="menu" aria-label="Câmpuri rămase de completat" style="display:none"></div>
-
-<!-- ===== COLOR PICKER POPOVER ===== -->
-<div id="color-popover" class="color-popover" role="dialog" aria-label="Culori temă" style="display:none">
-  <div class="color-popover-inner">
-    <div class="color-popover-title">Culoare accent</div>
-    <div class="color-presets" id="color-presets" role="group" aria-label="Culori presetate"></div>
-    <div class="color-custom-row">
-      <input type="color" id="color-custom-swatch" class="field-color-swatch" aria-label="Culoare accent personalizată" />
-      <input type="text" id="color-custom-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Culoare accent hex" />
-    </div>
-    <div class="color-popover-divider" role="separator"></div>
-    <div class="color-popover-title">Fundal pagină</div>
-    <div class="color-custom-row">
-      <input type="color" id="color-bg-swatch" class="field-color-swatch" aria-label="Culoare fundal pagină" />
-      <input type="text" id="color-bg-text" class="field-input color-custom-input" placeholder="#RRGGBB" maxlength="7" aria-label="Culoare fundal hex" />
-    </div>
-  </div>
-</div>
-
-<!-- ===== DETAILS DRAWER ===== -->
-<div id="drawer-overlay" class="drawer-overlay" style="display:none" aria-hidden="true"></div>
-<!-- role="dialog" aria-modal, not "complementary": this panel has a
-     full-screen overlay whose click closes it and Escape closes it, so it
-     behaves as a modal for everyone using a mouse. Announcing it as a
-     complementary landmark told screen-reader users the opposite. -->
-<aside id="details-drawer" class="details-drawer" role="dialog" aria-modal="true" aria-label="Detalii site" style="display:none">
-  <div class="drawer-header">
-    <div class="drawer-heading">
-      <span class="drawer-heading-icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-          <rect x="2.5" y="2.5" width="13" height="13" rx="3" stroke="currentColor" stroke-width="1.5"/>
-          <path d="M6 6.5h6M6 9h6M6 11.5h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </span>
-      <span class="drawer-heading-copy">
-        <span class="drawer-kicker">Design activ</span>
-        <span class="drawer-title">Detalii site</span>
-        <span class="drawer-subtitle">Conținut, contact și setări</span>
-      </span>
-    </div>
-    <button id="btn-close-drawer" class="drawer-close" aria-label="Închide detaliile">&times;</button>
-  </div>
-  <div class="drawer-body" id="drawer-body">
-    <!-- populated by js -->
-  </div>
-</aside>
-
-<!-- ===== MODAL: PUBLISH FLOW ===== -->
-<div id="modal-publish" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-publish-title" style="display:none">
+<!-- ===== MODAL: SIGN-IN (magic link) ===== -->
+<div id="modal-publish" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-auth-title" style="display:none">
   <div class="modal-box modal-box--publish">
     <button class="modal-close" id="btn-close-publish" aria-label="Închide">&times;</button>
-    <div id="publish-step-1" class="publish-step">
-      <div class="publish-icon" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-          <rect width="32" height="32" rx="8" fill="#F3EFE8" stroke="#D9D2C6"/>
-          <path d="M10 16.5l4 4 8-9" stroke="#1E3A32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <h2 id="modal-publish-title" class="modal-title">Gata de publicare</h2>
-      <ul class="publish-plan" aria-label="Cum funcționează publicarea">
-        <li>
-          <span class="publish-plan-icon" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <span>Alege adresa site-ului pe Hidook Site Builder</span>
-        </li>
-        <li>
-          <span class="publish-plan-icon" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <span>Adaugă un card pentru trialul de 14 zile — site-ul e live imediat</span>
-        </li>
-        <li>
-          <span class="publish-plan-icon" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#DCFCE7"/><path d="M5 8l2 2 4-4" stroke="#16A34A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </span>
-          <span><strong id="publish-price">—</strong> după trial acoperă primul an (reînnoire <strong id="publish-renewal">—</strong>/an)</span>
-        </li>
-      </ul>
-      <!-- PLAN-UX-2026-09-27 §5.5 — advisory only, never blocks publishing.
-           Populated by builder/publish-checklist.js#renderPublishModalChecklist(). -->
-      <div id="publish-checklist" class="publish-checklist" role="group" aria-label="Verifică înainte de publicare" hidden>
-        <p class="publish-checklist-heading">Înainte să publici (opțional)</p>
-        <ul class="publish-checklist-list" id="publish-checklist-list"></ul>
-      </div>
-      <div class="slug-chooser" role="group" aria-labelledby="slug-label">
-        <label id="slug-label" class="field-label" for="input-slug">Adresa site-ului tău</label>
-        <div class="slug-input-row">
-          <input id="input-slug" class="field-input" type="text" placeholder="numele-afacerii-tale" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="slug-preview slug-status" />
-          <span class="slug-status-icon" id="slug-status-icon" aria-hidden="true"></span>
-        </div>
-        <p class="slug-preview" id="slug-preview" aria-live="polite"></p>
-        <p class="field-hint" id="slug-normalize-note" aria-live="polite" style="display:none"></p>
-        <p class="field-error" id="slug-error" role="alert" style="display:none"></p>
-      </div>
-      <button id="btn-publish-continue" class="btn-primary btn-full" type="button">Continuă cu această adresă</button>
-    </div>
-    <div id="publish-step-2" class="publish-step" style="display:none">
-      <h2 id="modal-auth-title" class="modal-title">Autentifică-te ca să publici</h2>
+    <div id="publish-step-2" class="publish-step">
+      <h2 id="modal-auth-title" class="modal-title">Intră în cont</h2>
       <p class="modal-sub">Îți trimitem un link pe email — fără parolă, fără cont de creat.</p>
       <form id="form-auth-email" novalidate autocomplete="off">
         <div class="field-group">
@@ -575,16 +239,15 @@
         <path d="M14 24l8 8 12-14" stroke="#16A34A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <h2 id="modal-success-title" class="success-title">Adaugă un card ca să fii live</h2>
+    <h2 id="modal-success-title" class="success-title">Site-ul tău e live — trial de 14 zile început</h2>
     <div class="success-url-block">
-      <a id="success-url-link" href="#" target="_blank" rel="noopener noreferrer" class="success-url-link" aria-label="Deschide site-ul publicat" style="display:none">
+      <a id="success-url-link" href="#" target="_blank" rel="noopener noreferrer" class="success-url-link" aria-label="Deschide site-ul publicat">
         <span id="success-url-text"></span>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <path d="M6 2H2v10h10V8M8 2h4v4M7 7l5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </a>
-      <p id="success-draft-note" class="modal-sub">Adaugă un card ca să începi trialul de 14 zile. Site-ul e live imediat. Ești taxat în ziua 14 dacă nu anulezi. Apoi reînnoire <strong id="success-renewal">—</strong>/an.</p>
-      <button id="btn-copy-url" class="btn-copy" type="button" aria-label="Copiază adresa site-ului" style="display:none">
+      <button id="btn-copy-url" class="btn-copy" type="button" aria-label="Copiază adresa site-ului">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
           <rect x="4" y="4" width="8" height="8" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
           <path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -593,10 +256,6 @@
       </button>
     </div>
     <div class="success-actions">
-      <button id="btn-pay-publish" class="btn-primary btn-full" type="button" style="display:none" aria-label="Adaugă un card — nicio taxare acum, prima taxare abia după trialul de 14 zile">
-        <span class="btn-label-wrap">Adaugă un card — <span id="success-price">—</span> după trialul de 14 zile</span>
-      </button>
-      <p id="pay-assurance" class="field-hint" style="display:none">Nimic taxat azi. Taxăm <strong id="pay-assurance-price">—</strong> în ziua 14, dacă nu anulezi, apoi reînnoire anuală <strong id="pay-assurance-renewal">—</strong>. Anulezi oricând din Site-urile mele.</p>
       <button id="btn-share-wa" class="btn-whatsapp btn-full" type="button">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
           <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 9.5c-.2.6-1.1 1.1-1.6 1.1-.4 0-1.9-.5-3.2-1.8C5.4 8.5 4.9 7 4.9 6.6c0-.5.5-1.4 1.1-1.6.1 0 .3 0 .4.1l1 2c0 .1 0 .2-.1.3l-.5.5c0 .1 0 .1.1.2.3.5.7 1 1.2 1.3.1.1.2.1.3 0l.5-.5c.1-.1.2-.1.3-.1l2 1c.1.1.1.3.3.3z" fill="currentColor"/>
@@ -609,118 +268,12 @@
   </div>
 </div>
 
-<!-- ===== MODAL: PREVIEW (template preview fullscreen) ===== -->
-<div id="modal-preview" class="modal-overlay modal-overlay--wide" role="dialog" aria-modal="true" aria-labelledby="modal-preview-title" style="display:none">
-  <div class="modal-box modal-box--wide">
-    <div class="modal-preview-header">
-      <span id="modal-preview-title" class="modal-preview-title">Previzualizare design</span>
-      <div class="modal-preview-controls">
-        <div class="preview-device-toggle" role="group" aria-label="Dimensiune ecran">
-          <button id="modal-preview-desktop" class="device-btn active" aria-label="Vizualizare desktop" aria-pressed="true" title="Desktop">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="1" y="2" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
-              <path d="M5 14h6M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            </svg>
-          </button>
-          <button id="modal-preview-mobile" class="device-btn" aria-label="Vizualizare mobil" aria-pressed="false" title="Mobil">
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <rect x="4" y="1" width="8" height="14" rx="2" stroke="currentColor" stroke-width="1.4"/>
-              <circle cx="8" cy="12.5" r=".8" fill="currentColor"/>
-            </svg>
-          </button>
-        </div>
-        <button class="modal-close-btn" id="btn-close-preview" aria-label="Închide previzualizarea">&times;</button>
-      </div>
-    </div>
-    <div class="modal-preview-body" id="modal-preview-body">
-      <iframe id="preview-modal-iframe" class="preview-iframe preview-iframe--modal" title="Previzualizare design completă" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" aria-label="Previzualizare completă a designului"></iframe>
-    </div>
-  </div>
-</div>
-
 <!-- ===== MODAL: VERSIONS ===== -->
 <div id="modal-versions" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-versions-title" style="display:none">
   <div class="modal-box">
     <button class="modal-close" id="btn-close-versions" aria-label="Închide">&times;</button>
     <h2 id="modal-versions-title" class="modal-title">Istoric versiuni</h2>
     <div id="versions-list" class="versions-list" aria-live="polite"></div>
-  </div>
-</div>
-
-<!-- ===== MODAL: IMAGE GALLERY ===== -->
-<div id="modal-gallery" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-gallery-title" style="display:none">
-  <div class="modal-box modal-box--gallery">
-    <button class="modal-close" id="btn-close-gallery" aria-label="Închide">&times;</button>
-    <h2 id="modal-gallery-title" class="modal-title">Poze</h2>
-    <div id="gallery-modal-body" class="gallery-modal-body"></div>
-  </div>
-</div>
-
-<!-- ===== MODAL: ADD SECTION (T-1A, PLAN-UX §5.2) =====
-     Markup only — builder/add-section.js owns everything rendered inside
-     #add-section-modal-body (the catalog list, or the empty state) and the
-     click handling on it; builder/app.js's minimal hook is exposing which
-     sections are addable (getAddableSectionDefs) and applying one
-     (hidookAddSection). Standard modal contract (suite4-modal-contract.test.js):
-     backdrop click / Escape / focus trap are already generic (app.js
-     enumerates `.modal-overlay[role="dialog"]`), so only .modal-close needs
-     to exist here at >=44x44px. -->
-<div id="modal-add-section" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-add-section-title" style="display:none">
-  <div class="modal-box modal-box--gallery">
-    <button class="modal-close" id="btn-close-add-section" aria-label="Închide">&times;</button>
-    <h2 id="modal-add-section-title" class="modal-title">Adaugă o secțiune</h2>
-    <p class="modal-sub">Alege un bloc pregătit pentru acest design — apare imediat pe pagină, cu conținut de pornire pe care îl poți edita.</p>
-    <div id="add-section-modal-body" class="add-section-list"></div>
-  </div>
-</div>
-
-<!-- ===== MODAL: ADD INSTAGRAM ===== -->
-<div id="modal-instagram" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-instagram-title" style="display:none">
-  <div class="modal-box">
-    <button class="modal-close" id="btn-close-instagram" aria-label="Închide">&times;</button>
-    <h2 id="modal-instagram-title" class="modal-title">Adaugă Instagram</h2>
-    <p id="ig-state-lead" class="modal-sub">Conectează Instagram din editor, înainte să începi trialul. Feed-ul apare pe site — Hidook Site Builder nu vorbește direct cu Meta.</p>
-    <p id="ig-partner-note" class="modal-sub">Feed-ul Instagram este oferit de Instafidget, un produs partener. Inclus gratuit 12 luni, apoi Instafidget Free (filigran).</p>
-
-    <!-- Step A: sign-in (before trial / without leaving editor) -->
-    <div id="ig-auth-panel" style="display:none">
-      <p class="modal-sub" id="ig-auth-lead">Autentifică-te cu email ca să conectezi Instagram. Este același cont pe care îl folosești la publicare — fără parolă.</p>
-      <form id="form-ig-auth-email" novalidate autocomplete="off">
-        <div class="field-group">
-          <label class="field-label" for="input-ig-email">Adresă de email</label>
-          <input id="input-ig-email" class="field-input" type="email" placeholder="email@exemplu.com" autocomplete="email" required />
-        </div>
-        <div id="ig-auth-error" class="field-error" role="alert" style="display:none"></div>
-        <button class="btn-primary btn-full" type="submit" id="btn-ig-send-magic" style="margin-top:.75rem">Trimite linkul pe email</button>
-      </form>
-      <div id="ig-auth-sent" class="auth-sent" style="display:none">
-        <p class="auth-sent-title">Link trimis! Verifică inbox-ul.</p>
-        <p class="auth-sent-sub">Deschide emailul, apoi revino aici — rămâi în editor.</p>
-        <a id="ig-dev-link" href="#" class="dev-link" style="display:none" aria-label="Deschide linkul de autentificare">Deschide linkul de autentificare</a>
-      </div>
-    </div>
-
-    <!-- Step B: terms + connect (after account; draft may auto-save) -->
-    <div id="ig-connect-panel" style="display:none">
-      <label class="ig-terms" for="ig-terms-check">
-        <input id="ig-terms-check" type="checkbox" />
-        <span>Sunt de acord cu
-          <a href="https://instafidget.hidook.agency/terms" target="_blank" rel="noopener">Termenii</a>
-          și
-          <a href="https://instafidget.hidook.agency/privacy" target="_blank" rel="noopener">Politica de confidențialitate</a>
-          pentru feed-ul Instagram. Se creează un cont pe același email.
-        </span>
-      </label>
-      <p id="ig-status" class="ig-status" aria-live="polite"></p>
-      <button id="btn-ig-connect" class="btn-primary btn-full" type="button" disabled>Conectează Instagram</button>
-    </div>
-
-    <div id="ig-connected-panel" style="display:none">
-      <p class="modal-sub"><strong>Instagram este conectat.</strong> Feed-ul este afișat pe site și rămâne salvat în această ciornă.</p>
-      <p id="ig-editor-status" class="ig-status" aria-live="polite">Pregătim editorul Instafidget…</p>
-      <button id="btn-ig-editor" class="btn-primary btn-full" type="button" disabled>Deschide editorul Instafidget</button>
-      <button id="btn-ig-disconnect" class="btn-ghost btn-full" type="button" style="margin-top:.6rem">Deconectează Instagram</button>
-    </div>
   </div>
 </div>
 
@@ -843,24 +396,6 @@
   </div>
 </div>
 
-<!-- ===== MODAL: EXPORT WITH NATIVE BOOKING ON (export lens, R-09/28f2832) ===== -->
-<div id="modal-export-booking" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-export-booking-title" style="display:none">
-  <div class="modal-box">
-    <button class="modal-close" id="btn-close-export-booking" aria-label="Închide">&times;</button>
-    <h2 id="modal-export-booking-title" class="modal-title">Programările online în exportul static</h2>
-    <p class="modal-sub">Site-ul tău publicat pe Hidook folosește calendarul nativ, cu sloturi live. Exportul HTML/ZIP nu are un server Hidook în spate, așa că acolo calendarul live e dezactivat automat, iar vizitatorii văd formularul clasic de cerere programare — fără disponibilitate live, dar telefon și WhatsApp rămân disponibile. Site-ul publicat pe Hidook nu este afectat.</p>
-    <div class="success-actions">
-      <button class="btn-primary btn-full" type="button" id="btn-export-booking-continue">Continuă descărcarea</button>
-      <button class="btn-ghost btn-full" type="button" id="btn-export-booking-cancel">Renunță</button>
-    </div>
-  </div>
-</div>
-
-<!-- Onboarding wizard (PLAN-UX-2026-09-27 §5.1) — empty container, built and
-     driven entirely by builder/onboarding.js. Shown once, before the first
-     design a first-time visitor starts opens on the canvas. -->
-<div id="onboarding-wizard" class="onb-overlay" style="display:none" aria-hidden="true"></div>
-
 <!-- ===== TOAST ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite" style="display:none"></div>
 
@@ -907,20 +442,11 @@ function accept(){dismiss(true)}
 function show(){var el=document.getElementById('hb-cookie-banner');if(!el||ok())return;el.hidden=false;var b=document.getElementById('hb-cookie-accept');if(b)b.addEventListener('click',accept);el.addEventListener('keydown',function(e){if(e.key==='Escape'){e.stopPropagation();dismiss(false)}})}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show);else show()})();
 </script>
 
-<!-- Hidden file input for image replacement -->
-<input type="file" id="img-file-input" accept="image/*" style="display:none" aria-hidden="true" />
-
-<script src="/app/generated/templates-data.js"></script>
-<script src="/app/generated/engine.js"></script>
 <script src="/app/a11y-focus.js"></script>
-<script src="/app/history-store.js"></script>
 <script src="/app/copy-ro.js"></script>
 <script src="/app/blocks/packs.js"></script>
 <script src="/app/blocks/packs-more.js"></script>
 <script src="/app/blocks/blocks.js"></script>
 <script src="/app/app.js"></script>
-<script src="/app/publish-checklist.js"></script>
-<script src="/app/onboarding.js"></script>
-<script src="/app/add-section.js"></script>
 </body>
 </html>

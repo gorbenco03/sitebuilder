@@ -8,12 +8,13 @@
  * Schema.org/bot/+447 factory jargon; require RO international phone examples
  * instead of +1. Not a stranger-facing regression.
  *
+ * Form editor removed 2026-10-28: leftover 1 (resumeLocalDraft / saveDraft / bindSignedInPaidSiteForEdit /
+ * openPublishModal restoring the paid site bind in the editor) covered deleted code and its source
+ * and VM checks were dropped; the server half (GET /api/sites lists the paid site, republish by
+ * siteId keeps the slug while the public slug-check says taken) stays.
+ *
  * Causal leftovers on parent 230fe4e (S67 ACCEPT):
- *   1. resumeLocalDraft / #edit route restore template+config only — never
- *      currentSiteId / currentSitePaid / currentSiteSlug. openPublishModal only
- *      skips the slug modal when currentSiteId && currentSitePaid, so after
- *      test-pay a fresh /app/#edit treats Publică as first publish and slug-check
- *      says «Această adresă e deja folosită» for the paid slug.
+ *   1. (editor paid-site bind after test-pay — see note above)
  *   2. Detalii labels still contain factory jargon a stranger can open:
  *      embed Instagram / html lang / JSON-LD Schema.org … bot / +447 examples.
  *
@@ -26,11 +27,9 @@ const fs     = require('fs');
 const os     = require('os');
 const path   = require('path');
 const crypto = require('crypto');
-const vm     = require('vm');
 const { execFileSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '../..');
-const APP_JS = path.join(ROOT, 'builder', 'app.js');
 const SCHEMA_PATHS = [
     'templates/product-menu/schema.json',
     'templates/portfolio/schema.json',
@@ -82,21 +81,6 @@ function parentBlob(rel) {
     } catch {
         return null;
     }
-}
-
-function extractFunction(src, name) {
-    // Match optional async keyword so await inside body stays valid
-    const re = new RegExp('(?:async\\s+)?function\\s+' + name + '\\s*\\([^)]*\\)\\s*\\{');
-    const m = re.exec(src);
-    if (!m) return null;
-    let i = m.index + m[0].length;
-    let depth = 1;
-    while (i < src.length && depth > 0) {
-        const ch = src[i++];
-        if (ch === '{') depth++;
-        else if (ch === '}') depth--;
-    }
-    return src.slice(m.index, i);
 }
 
 function collectLabels(schema) {
@@ -185,104 +169,9 @@ function loadPresetConfig(templateId) {
     return JSON.parse(JSON.stringify(presets[0].config));
 }
 
-/**
- * Simulate HEAD bindSignedInPaidSiteForEdit against a fake /api/sites list.
- * Proves openPublishModal paid skip after bind without loadSiteForEdit.
- */
-function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
-    const bindFn = extractFunction(appSrc, 'bindSignedInPaidSiteForEdit');
-    assert.ok(bindFn && bindFn.length > 80, 'bindSignedInPaidSiteForEdit must exist');
-
-    const sandbox = {
-        currentUser: user || { email: 't@example.com', id: 'u1' },
-        currentSiteId: null,
-        currentSitePaid: false,
-        currentSiteSlug: '',
-        publishedSiteId: null,
-        publishedSiteUrl: null,
-        draft: draft || { templateId: 'product-menu', config: { business: { name: 'Qa Live' } } },
-        _saved: savedDraft || null,
-        _sites: sites || [],
-        console,
-    };
-
-    // Minimal helpers the bind function closes over when extracted as source
-    const prelude = `
-        function loadDraft() { return _saved; }
-        function saveDraft() {
-            if (!draft.templateId || !draft.config) return;
-            _saved = { templateId: draft.templateId, config: draft.config };
-            if (currentSiteId) {
-                _saved.siteId = currentSiteId;
-                _saved.paid = !!currentSitePaid;
-                if (currentSiteSlug) _saved.slug = currentSiteSlug;
-            }
-        }
-        async function fetchCurrentUser() { return currentUser; }
-        function updateUserUI(u) { currentUser = u; }
-        async function apiGet(path) {
-            if (path === '/api/sites') return { sites: _sites };
-            throw new Error('unexpected ' + path);
-        }
-        function getPath(obj, pathStr) {
-            return String(pathStr || '').split('.').reduce((a, k) => (a == null ? a : a[k]), obj);
-        }
-        function toSlug(s) {
-            return String(s || '').toLowerCase()
-                .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-                .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
-        }
-    `;
-
-    vm.runInNewContext(
-        prelude + '\n' + bindFn + '\n' +
-        'this.__run = async function() { await bindSignedInPaidSiteForEdit(); return {' +
-        ' currentSiteId, currentSitePaid, currentSiteSlug, publishedSiteId, saved: _saved }; };',
-        sandbox
-    );
-    return sandbox.__run();
-}
-
 (async () => {
-    const appSrc = fs.readFileSync(APP_JS, 'utf8');
-    const parentApp = parentBlob('builder/app.js');
 
     // ── Causal RED on parent ───────────────────────────────────────────────
-    await check('causal RED: parent resumeLocalDraft does not restore paid site id/slug/paid', () => {
-        assert.ok(parentApp, 'parent app.js');
-        const resume = extractFunction(parentApp, 'resumeLocalDraft') || '';
-        assert.ok(resume.length > 40, 'parent resumeLocalDraft');
-        assert.ok(!/currentSiteId\s*=/.test(resume), 'parent resume does not set currentSiteId');
-        assert.ok(!/currentSitePaid\s*=/.test(resume), 'parent resume does not set currentSitePaid');
-        assert.ok(!/currentSiteSlug\s*=/.test(resume), 'parent resume does not set currentSiteSlug');
-        assert.ok(!/saved\.siteId|saved\.paid|saved\.slug/.test(resume), 'parent resume ignores site bind in draft');
-    });
-
-    await check('causal RED: parent handleRoute edit has no bindSignedInPaidSiteForEdit', () => {
-        assert.ok(parentApp, 'parent app.js');
-        assert.ok(
-            !/bindSignedInPaidSiteForEdit/.test(parentApp),
-            'parent lacks bindSignedInPaidSiteForEdit'
-        );
-        const route = extractFunction(parentApp, 'handleRoute') || '';
-        assert.ok(route.length > 40, 'parent handleRoute');
-        // edit branch only resumeLocalDraft + showScreen — no await bind
-        assert.ok(/resumeLocalDraft/.test(route), 'parent uses resumeLocalDraft');
-        assert.ok(!/await\s+bindSignedInPaidSiteForEdit/.test(route), 'parent edit route no paid bind');
-        const openFn = extractFunction(parentApp, 'openPublishModal') || '';
-        assert.ok(
-            !/bindSignedInPaidSiteForEdit/.test(openFn),
-            'parent openPublishModal does not bind before paid skip'
-        );
-        // Parent saveDraft only stores templateId+config
-        const save = extractFunction(parentApp, 'saveDraft') || '';
-        assert.ok(save.length > 20, 'parent saveDraft');
-        assert.ok(
-            !/siteId|currentSitePaid|\.paid/.test(save),
-            'parent saveDraft does not persist paid site bind'
-        );
-    });
-
     await check('causal RED: parent Detalii labels still have embed / html lang / Schema.org|bot / +447', () => {
         let foundEmbed = false;
         let foundHtmlLang = false;
@@ -303,79 +192,6 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
     });
 
     // ── HEAD source locks ──────────────────────────────────────────────────
-    await check('HEAD: resumeLocalDraft restores siteId/paid/slug from draft', () => {
-        const resume = extractFunction(appSrc, 'resumeLocalDraft') || '';
-        assert.ok(/saved\.siteId/.test(resume), 'reads saved.siteId');
-        assert.ok(/currentSiteId\s*=\s*saved\.siteId/.test(resume), 'sets currentSiteId');
-        assert.ok(/currentSitePaid\s*=/.test(resume), 'sets currentSitePaid');
-        assert.ok(/currentSiteSlug\s*=/.test(resume), 'sets currentSiteSlug');
-    });
-
-    await check('HEAD: saveDraft persists paid site bind', () => {
-        const save = extractFunction(appSrc, 'saveDraft') || '';
-        assert.ok(/payload\.siteId\s*=\s*currentSiteId/.test(save), 'persists siteId');
-        assert.ok(/payload\.paid\s*=\s*!!currentSitePaid/.test(save), 'persists paid');
-        assert.ok(/payload\.slug/.test(save), 'persists slug');
-    });
-
-    await check('HEAD: bindSignedInPaidSiteForEdit + #edit route + openPublishModal', () => {
-        assert.ok(/function\s+bindSignedInPaidSiteForEdit/.test(appSrc), 'helper exists');
-        const bind = extractFunction(appSrc, 'bindSignedInPaidSiteForEdit') || '';
-        assert.ok(/\/api\/sites/.test(bind), 'loads user sites');
-        assert.ok(/currentSitePaid/.test(bind), 'sets paid');
-        assert.ok(/currentSiteSlug/.test(bind), 'sets slug');
-        const route = extractFunction(appSrc, 'handleRoute') || '';
-        assert.ok(/await\s+bindSignedInPaidSiteForEdit\s*\(/.test(route), 'edit route awaits bind');
-        const openFn = extractFunction(appSrc, 'openPublishModal') || '';
-        assert.ok(/await\s+bindSignedInPaidSiteForEdit\s*\(/.test(openFn), 'openPublishModal binds first');
-        assert.ok(
-            /currentSiteId\s*&&\s*currentSitePaid/.test(openFn),
-            'paid path still skips slug modal'
-        );
-        assert.ok(
-            /doActualPublish\s*\(\s*currentSiteSlug/.test(openFn),
-            'republish uses existing slug'
-        );
-        // completeTestCheckout + execPublish persist bind
-        assert.ok(/function\s+completeTestCheckout[\s\S]*?saveDraft\s*\(/.test(appSrc),
-            'completeTestCheckout saves draft bind');
-        const exec = extractFunction(appSrc, 'execPublish') || '';
-        assert.ok(/saveDraft\s*\(/.test(exec), 'execPublish saves draft bind');
-        assert.ok(!/HIDOOK_FAKE_DEPLOY/.test(appSrc), 'no fake deploy');
-    });
-
-    await check('HEAD VM: bind without loadSiteForEdit sets paid id/slug so openPublish would skip modal', async () => {
-        const slug = 'qalive-s69';
-        const siteId = 'site_' + crypto.randomUUID().slice(0, 8);
-        const result = await simulateBindPaid(appSrc, {
-            draft: {
-                templateId: 'product-menu',
-                config: { business: { name: 'QaLive S69' } },
-            },
-            // Draft has template+config only — no siteId (fresh #edit after pay)
-            savedDraft: {
-                templateId: 'product-menu',
-                config: { business: { name: 'QaLive S69' } },
-            },
-            sites: [{
-                id: siteId,
-                paid: true,
-                slug,
-                projectName: slug,
-                templateId: 'product-menu',
-                url: 'http://127.0.0.1/live/' + slug + '/',
-            }],
-        });
-        assert.strictEqual(result.currentSiteId, siteId, 'bound site id');
-        assert.strictEqual(result.currentSitePaid, true, 'bound paid');
-        assert.strictEqual(result.currentSiteSlug, slug, 'bound slug');
-        assert.ok(result.saved && result.saved.siteId === siteId && result.saved.paid === true,
-            'persists bind into draft');
-        // openPublishModal condition
-        assert.ok(result.currentSiteId && result.currentSitePaid,
-            'openPublishModal would skip slug modal');
-    });
-
     await check('HEAD: Detalii labels commercial RO (no embed/html lang/Schema.org/bot/+447)', () => {
         for (const rel of SCHEMA_PATHS) {
             const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -423,7 +239,7 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
     const base = `http://127.0.0.1:${srv.address().port}`;
     process.env.PUBLIC_URL = base;
 
-    await check('isolated: after pay, bind via /api/sites + republish same slug (no loadSiteForEdit)', async () => {
+    await check('isolated: after pay, GET /api/sites exposes the paid site + republish by siteId keeps the slug', async () => {
         const email = `s69-edit-${crypto.randomUUID().slice(0, 8)}@example.com`;
         const c = await loginClient(base, email);
         const cfg = loadPresetConfig('product-menu');
@@ -469,12 +285,8 @@ function simulateBindPaid(appSrc, { sites, draft, user, savedDraft }) {
         assert.strictEqual(bound.slug, slug);
         assert.strictEqual(bound.paid, true);
 
-        // Simulate bind result driving openPublishModal skip + republish with siteId only
-        const bindResult = await simulateBindPaid(appSrc, {
-            draft: { templateId: 'product-menu', config: { business: { name: nameV1 } } },
-            savedDraft: { templateId: 'product-menu', config: { business: { name: nameV1 } } },
-            sites,
-        });
+        // The client only needs siteId + the paid flag from GET /api/sites to republish its own site.
+        const bindResult = { currentSiteId: bound.id, currentSitePaid: bound.paid, currentSiteSlug: bound.slug };
         assert.strictEqual(bindResult.currentSiteId, siteId);
         assert.strictEqual(bindResult.currentSitePaid, true);
         assert.strictEqual(bindResult.currentSiteSlug, slug);

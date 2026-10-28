@@ -34,6 +34,9 @@
  * card in this state showed no primary action at all (see
  * 04-QA-Evidence/Wave8-owner-ui/dunning-red-before.log).
  *
+ * Form editor removed 2026-10-28: the site is seeded through the API instead of the
+ * editor's publish modal; the card assertions are unchanged.
+ *
  * Run: node --experimental-sqlite --test bot/test/wave8-owner-ui-dunning-banner-reachable-e2e.test.js
  * Evidence: 04-QA-Evidence/Wave8-owner-ui/
  */
@@ -47,6 +50,7 @@ const crypto = require('node:crypto');
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Wave8-owner-ui');
 const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
+const { signInPage, publishLive } = require('./lib/dash-seed.js');
 
 test('a warning (past_due) and a critical (unpaid) dunning state each show up on the dashboard card', async () => {
     fs.mkdirSync(EVIDENCE, { recursive: true });
@@ -75,43 +79,11 @@ test('a warning (past_due) and a critical (unpaid) dunning state each show up on
     const runSlug = 'wave8-owner-ui-dun-' + runHex;
 
     try {
-        await page.goto(base + '/app/', { waitUntil: 'networkidle' });
-        await page.locator('#hb-cookie-accept').click().catch(() => {});
-        await page.evaluate((id) => startWithTemplate(id), 'local-service');
-        await page.waitForURL(/#edit$/);
-        await page.locator('#preview-iframe').waitFor({ state: 'visible' });
-        await page.waitForTimeout(1000);
-        // Details drawer auto-opens on a fresh design and its overlay covers
-        // the topbar publish button — close it first, same as a real owner
-        // would (and the same step the Wave 8 calendar oracle already takes).
-        await page.locator('#btn-close-drawer').click().catch(() => {});
-
+        // Form editor removed 2026-10-28: sign in + publish through the API.
         const ownerEmail = 'wave8-owner-ui-dunning@example.com';
-
-        await page.locator('#btn-publish').click();
-        await page.locator('#modal-publish').waitFor({ state: 'visible' });
-        await page.locator('#input-slug').fill(runSlug);
-        await page.locator('#btn-publish-continue').click();
-        await page.locator('#form-auth-email').waitFor({ state: 'visible' });
-
-        await page.locator('#input-email').fill(ownerEmail);
-        await page.locator('#btn-send-magic').click();
-        await page.locator('#dev-link').waitFor({ state: 'visible' });
-        await page.locator('#dev-link').click();
-        await page.locator('#modal-success').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').waitFor({ state: 'visible' });
-        await page.locator('#btn-pay-publish').click();
-        await page
-            .locator('#modal-success-title')
-            .filter({ hasText: 'Site-ul tău e live' })
-            .waitFor({ state: 'visible', timeout: 20000 });
-
-        const mySites = await page.evaluate(() => fetch('/api/sites', { credentials: 'include' }).then(r => r.json()));
-        const site = (mySites.sites || []).find((s) => s.slug === runSlug);
-        assert.ok(site, 'the just-published site must show up in /api/sites');
-
-        await page.locator('#btn-success-close').click().catch(() => {});
-        await page.locator('#modal-success').waitFor({ state: 'hidden' }).catch(() => {});
+        await signInPage(page, base, ownerEmail);
+        const pub = await publishLive(page, base, { slug: runSlug, pack: 'restaurant', name: 'Restaurant Dunning' });
+        const site = { id: pub.siteId, slug: runSlug };
 
         // Same fields a real invoice.payment_failed webhook writes
         // (bot/webpublish.js#handleStripeInvoicePaymentFailed) — set directly

@@ -7,6 +7,10 @@
  * in builder/index.html must name that product — not generic "platforma
  * Hidook". S35 chrome (title + logo) must remain.
  *
+ * Form editor removed 2026-10-28: the publish modal's plan list (step 1) is
+ * gone, so the two checks on its first step were replaced by one that scans
+ * the whole of index.html for the generic "platforma Hidook" wording.
+ *
  * Run: node bot/test/builder-publish-product-name.test.js
  * Exits non-zero on failed assertion.
  */
@@ -35,33 +39,10 @@ check('builder/index.html exists', () => {
     assert.ok(fs.existsSync(BUILDER_HTML), 'builder/index.html must exist');
 });
 
-/** First visible text span inside .publish-plan > li (skip icon spans). */
-function firstPublishPlanStepText(html) {
-    const block = html.match(/class=\"publish-plan\"[^>]*>([\s\S]*?)<\/ul>/i);
-    assert.ok(block, 'publish-plan <ul> required');
-    const firstLi = block[1].match(/<li>([\s\S]*?)<\/li>/i);
-    assert.ok(firstLi, 'publish-plan must have at least one <li>');
-    const visible = [...firstLi[1].matchAll(/<span([^>]*)>([^<]*)<\/span>/gi)]
-        .filter((m) => !/aria-hidden/i.test(m[1]) && !/publish-plan-icon/i.test(m[1]))
-        .map((m) => m[2].trim())
-        .filter(Boolean);
-    assert.ok(visible.length >= 1, 'first publish-plan step must have visible text');
-    return visible[0];
-}
-
-check('first publish-plan step contains exact phrase Hidook Site Builder', () => {
-    const text = firstPublishPlanStepText(src);
+check('no builder/index.html surface says platforma Hidook (product is Hidook Site Builder)', () => {
     assert.ok(
-        text.includes('Hidook Site Builder'),
-        'first publish-plan step must contain \"Hidook Site Builder\", got: ' + text
-    );
-});
-
-check('first publish-plan step must not say platforma Hidook', () => {
-    const text = firstPublishPlanStepText(src);
-    assert.ok(
-        !/platforma\s+Hidook/i.test(text),
-        'first publish-plan step must not say \"platforma Hidook\", got: ' + text
+        !/platforma\s+Hidook/i.test(src),
+        'builder/index.html must not say \"platforma Hidook\"'
     );
 });
 

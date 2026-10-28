@@ -19,6 +19,8 @@
  *      slug clips mid-token at 390px (cabinet-s106-advoc | ate-590523/ off-box)
  *
  * Overlay RED on parent, GREEN on HEAD. Static source only.
+ * Form editor removed 2026-10-28: showSuccessScreen(site) now delegates the
+ * slash-only wbr fill to fillUrlWithSlashWbr, so the last check follows that call.
  * Run: node bot/test/s107-s106-advocate.test.js
  */
 const assert = require('assert');
@@ -382,33 +384,38 @@ check('HEAD: .success-url-link itself has no nowrap and no break-all (S67/S95)',
 
 check('HEAD: showSuccessScreen wires slash-only soft breaks into #success-url-text', () => {
   const js = read(APP_JS);
-  // Must touch success-url-text and insert wbr / path split (not textContent-only).
-  assert.ok(
-    /function showSuccessScreen/.test(js),
-    'showSuccessScreen present'
-  );
-  const m = js.match(/function showSuccessScreen\s*\([^)]*\)\s*\{/);
-  assert.ok(m, 'showSuccessScreen signature');
-  const start = m.index + m[0].length - 1;
-  let depth = 0;
-  let i = start;
-  for (; i < js.length; i++) {
-    if (js[i] === '{') depth++;
-    else if (js[i] === '}') {
-      depth--;
-      if (depth === 0) break;
+  const bodyOf = (name) => {
+    const m = js.match(new RegExp('function ' + name + '\\s*\\([^)]*\\)\\s*\\{'));
+    assert.ok(m, name + ' present');
+    const start = m.index + m[0].length - 1;
+    let depth = 0;
+    let i = start;
+    for (; i < js.length; i++) {
+      if (js[i] === '{') depth++;
+      else if (js[i] === '}') {
+        depth--;
+        if (depth === 0) break;
+      }
     }
-  }
-  const body = js.slice(start, i + 1);
+    return js.slice(start, i + 1);
+  };
+  // showSuccessScreen(site) fills #success-url-text through fillUrlWithSlashWbr
+  // (not plain textContent), and that helper inserts the slash-only wbr.
+  const body = bodyOf('showSuccessScreen');
   assert.ok(
-    /createElement\s*\(\s*['"]wbr['"]\s*\)/i.test(body) ||
-      /\/<wbr>/.test(body) ||
-      (/innerHTML/.test(body) && /wbr/i.test(body)) ||
-      (/split\s*\(\s*['"]\/['"]\s*\)/.test(body) && /wbr/i.test(body)),
-    'showSuccessScreen must insert slash-only wbr (not plain textContent only)'
+    /fillUrlWithSlashWbr\s*\(\s*urlText\b/.test(body) && /success-url-text/.test(body),
+    'showSuccessScreen must fill #success-url-text via fillUrlWithSlashWbr (not plain textContent)'
+  );
+  const helper = bodyOf('fillUrlWithSlashWbr');
+  assert.ok(
+    /createElement\s*\(\s*['"]wbr['"]\s*\)/i.test(helper) ||
+      /\/<wbr>/.test(helper) ||
+      (/innerHTML/.test(helper) && /wbr/i.test(helper)) ||
+      (/split\s*\(\s*['"]\/['"]\s*\)/.test(helper) && /wbr/i.test(helper)),
+    'fillUrlWithSlashWbr must insert slash-only wbr'
   );
   // Must not use break-all style injection
-  assert.ok(!/break-all/.test(body), 'no break-all in showSuccessScreen');
+  assert.ok(!/break-all/.test(body + helper), 'no break-all in the success URL fill');
 });
 
 if (failed) {

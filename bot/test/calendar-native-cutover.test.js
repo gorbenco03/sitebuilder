@@ -9,7 +9,7 @@
  *  4. publish preparePublishCutover seeds services/weekly from appointment config
  *  5. Full native path: book → RO status → email outbox → owner confirm/cancel →
  *     visitor manage token cancel frees slot; double-book never falsely confirmed
- *  6. site-legal.js + fullpass-63230d2.mjs untouched by this feature set
+ *  6. site-legal.js untouched by this feature set
  *  7. Legacy /api/appointments path still works for non-opted sites
  *
  * Run: node --experimental-sqlite bot/test/calendar-native-cutover.test.js
@@ -379,8 +379,6 @@ assert.strictEqual(stillThere.status, 'confirmed');
     // --- 11. Untouched protected files ---
     const legal = fs.readFileSync(path.join(ROOT, 'bot/site-legal.js'), 'utf8');
     assert.ok(legal.length > 100);
-    // This test must not have modified them; existence lock
-    assert.ok(fs.existsSync(path.join(ROOT, 'bot/test/fullpass-63230d2.mjs')));
 
     // professionals script still posts legacy appointments
     const prScript = fs.readFileSync(path.join(ROOT, 'templates/professionals/script.js'), 'utf8');

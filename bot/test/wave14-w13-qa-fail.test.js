@@ -10,6 +10,11 @@
  *
  * VISION 2026-08-26: card → 14-day trial → live now → charge day 14 unless cancel.
  *
+ * Form editor removed 2026-10-28: dropped the unpaid-success title/note (the pay
+ * step of #modal-success is gone) and the hero-background control check (no
+ * Detalii drawer). The dashboard card CTA, live success title, site-live-link and
+ * schema checks stay.
+ *
  * Run: node bot/test/wave14-w13-qa-fail.test.js
  */
 const assert = require('assert');
@@ -138,18 +143,11 @@ check(`causal RED: parent hero background input shows raw images/ path`, () => {
 });
 
 // ── HEAD GREEN ───────────────────────────────────────────────────────────
-check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
+check('HEAD unpaid dashboard CTA is trial card chrome, no pay-once chrome anywhere', () => {
   const html = headRead(BUILDER_HTML);
   const js = headRead(BUILDER_JS);
   const blob = html + '\n' + js;
 
-  assert.ok(/Adaugă un card ca să fii live/.test(blob), 'unpaid success title');
-  assert.ok(
-    /Adaugă un card ca să începi trialul de 14 zile\./.test(blob),
-    'unpaid success note'
-  );
-  assert.ok(/Site-ul e live imediat\./.test(blob), 'unpaid success note');
-  assert.ok(/Ești taxat în ziua 14 dacă nu anulezi\./.test(blob), 'unpaid success note');
   assert.ok(
     /Adaugă un card — începe trialul de 14 zile/.test(blob),
     'unpaid CTA label'
@@ -173,7 +171,7 @@ check('HEAD unpaid success title/note/CTA are trial card chrome', () => {
 check('HEAD live success + toast are trial started, not paid year', () => {
   const js = headRead(BUILDER_JS);
   assert.ok(
-    /Site-ul tău e live — trial de 14 zile început/.test(js),
+    /Site-ul tău e live — trial de 14 zile început/.test(headRead(BUILDER_HTML) + js),
     'live success title'
   );
   // U-01 (PLAN-UX-2026-09-27 §3, merged in a17d846) dropped the toast that
@@ -259,40 +257,6 @@ check('HEAD four schemas: Button and section text + Instafidget feed URL RO', ()
       rel + ' must not keep Instagram feed link (optional)'
     );
   }
-});
-
-check('HEAD hero background control does not show raw images/*.jpg', () => {
-  const js = headRead(BUILDER_JS);
-  // Must not assign parsed.image (path) into visible input value
-  assert.ok(
-    !/imgInput\.value\s*=\s*parsed\.image\b/.test(js),
-    'must not put parsed.image into input.value'
-  );
-  assert.ok(
-    /Poză adăugată|Photo added/.test(js),
-    'human photo state label'
-  );
-  // Visible control must not advertise images/cn-hero.jpg or images/*.jpg as values
-  const bgIdx = js.indexOf("type === 'background'");
-  assert.ok(bgIdx >= 0, 'background field branch');
-  const bgBlock = js.slice(bgIdx, bgIdx + 2800);
-  assert.ok(/Poză adăugată|Photo added/.test(bgBlock), 'photo-added label in background control');
-  assert.ok(
-    !/images\/cn-hero\.jpg/.test(bgBlock),
-    'no cn-hero.jpg in background control UI'
-  );
-  assert.ok(
-    !/imgInput\.value\s*=\s*[^;]*images\//.test(bgBlock),
-    'no images/ path assigned to imgInput.value'
-  );
-  assert.ok(
-    !/placeholder\s*=\s*["'][^"']*images\//.test(bgBlock),
-    'placeholder must not show images/ path'
-  );
-  assert.ok(
-    /bgImagePath/.test(bgBlock) || /Poză adăugată|Photo added/.test(bgBlock),
-    'internal path kept off the visible field'
-  );
 });
 
 process.exit(failed ? 1 : 0);

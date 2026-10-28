@@ -2,22 +2,18 @@
 /**
  * Regression coverage for the Flow 1 stranger-QA failure packet.
  *
+ * Form editor removed 2026-10-28: the image-picker cancel/reopen check
+ * (openImagePickerForPath, used for the editor's hero photo) was dropped; the
+ * catalog's empty-state retry survives.
+ *
  * Run: node bot/test/flow1-qa-fail-remake.test.js
  */
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '../..');
 const appSrc = fs.readFileSync(path.join(ROOT, 'builder', 'app.js'), 'utf8');
-// PLAN-UX-2026-09-27 §5.8 (T-3): openImagePickerForPath's error branch now
-// reads its Romanian text from the RO catalog (builder/copy-ro.js) — load
-// it into any sandbox that evals openImagePickerForPath, stripped of its
-// own 'use strict' so it doesn't make the whole concatenated script strict
-// (this app.js code has unrelated, pre-existing implicit-global reliance).
-const copyRoSrc = fs.readFileSync(path.join(ROOT, 'builder', 'copy-ro.js'), 'utf8').replace(/^'use strict';\s*\n?/, '');
-
 function extractBetween(start, end) {
   const startAt = appSrc.indexOf(start);
   assert.notStrictEqual(startAt, -1, `missing ${start}`);
@@ -48,84 +44,6 @@ function check(name, fn) {
 }
 
 (async () => {
-  await check('real cancel then reopen selects only for the current hero', async () => {
-    const pickerSrc = extractBetween(
-      'function openImagePickerForPath',
-      '// Sync a drawer field value when it changes via inline editing'
-    );
-    const inputListeners = new Map();
-    const windowListeners = new Map();
-    const addListener = (listeners, type, handler) => {
-      if (!listeners.has(type)) listeners.set(type, new Set());
-      listeners.get(type).add(handler);
-    };
-    const removeListener = (listeners, type, handler) => {
-      if (listeners.has(type)) listeners.get(type).delete(handler);
-    };
-    const dispatch = async (listeners, type) => {
-      for (const handler of Array.from(listeners.get(type) || [])) await handler();
-    };
-    const input = {
-      files: [],
-      value: '',
-      addEventListener(type, handler) { addListener(inputListeners, type, handler); },
-      removeEventListener(type, handler) { removeListener(inputListeners, type, handler); },
-      click() {},
-    };
-    const hero = { color: '#5b2134', image: 'images/hero-current.jpg' };
-    let previousCalls = 0;
-    let currentCalls = 0;
-    const sandbox = {
-      $: (id) => {
-        assert.strictEqual(id, 'img-file-input');
-        return input;
-      },
-      window: {
-        addEventListener(type, handler) { addListener(windowListeners, type, handler); },
-        removeEventListener(type, handler) { removeListener(windowListeners, type, handler); },
-      },
-      setTimeout,
-      FileReader: class {
-        readAsDataURL() {
-          this.result = 'data:image/jpeg;base64,Q1VSUkVOVA==';
-          this.onload();
-        }
-      },
-    };
-
-    vm.runInNewContext(
-      `${copyRoSrc}\n${pickerSrc}\nthis.openImagePickerForPath = openImagePickerForPath;`,
-      sandbox
-    );
-
-    sandbox.openImagePickerForPath('hero.previous', () => { previousCalls += 1; });
-    assert.strictEqual((inputListeners.get('change') || new Set()).size, 1);
-
-    // A real operating-system cancel returns focus without dispatching `change`.
-    await dispatch(windowListeners, 'focus');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    assert.strictEqual(previousCalls, 0, 'cancel must not invoke the previous callback');
-    assert.deepStrictEqual(hero, { color: '#5b2134', image: 'images/hero-current.jpg' });
-    assert.strictEqual(
-      (inputListeners.get('change') || new Set()).size,
-      0,
-      'cancel must remove the pending selection listener'
-    );
-
-    sandbox.openImagePickerForPath('hero.current', (image) => {
-      currentCalls += 1;
-      hero.image = image;
-    });
-    assert.strictEqual((inputListeners.get('change') || new Set()).size, 1);
-    input.files = [{ name: 'current.jpg', type: 'image/jpeg' }];
-    await dispatch(inputListeners, 'change');
-
-    assert.strictEqual(previousCalls, 0, 'reopen must not revive a cancelled callback');
-    assert.strictEqual(currentCalls, 1, 'the current selection callback must run exactly once');
-    assert.strictEqual(hero.color, '#5b2134', 'selecting a photo must preserve the hero color');
-    assert.strictEqual(hero.image, 'data:image/jpeg;base64,Q1VSUkVOVA==');
-  });
-
   await check('empty registry offers Romanian retry wired to a registry refetch', () => {
     const renderSrc = extractBetween('function renderTemplatesGrid', 'let activeCatalogFilter');
     assert.ok(renderSrc.includes('Reîncearcă'), 'empty state must show Reîncearcă');

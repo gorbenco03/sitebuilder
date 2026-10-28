@@ -4,10 +4,12 @@
  *
  * Causal leftovers on parent 33649fa (S92 ACCEPT):
  *   1. Restaurant/Salon Detalii: English "Link Instagram" on contact.instagram.url + instagram.url
- *   2. Detalii URL fields mid-clip long Instagram handles (native single-line / ellipsis)
+ *   2. (dropped, see note) Detalii URL fields mid-clip long Instagram handles
  *   3. Pay-success .success-url-link word-break:break-all splits live slug mid-token
  *   4. Restaurant first-preset about undiacritic "Gatim seara"
  *
+ * Form editor removed 2026-10-28: leftover 2 (Detalii drawer URL field CSS/JS) lived in the deleted
+ * editor; its parent-RED and HEAD checks and helper were dropped.
  * Overlay RED on parent, GREEN on HEAD. Static source only.
  * Run: node bot/test/s95-s94-advocate.test.js
  */
@@ -23,7 +25,6 @@ const PM_SCHEMA = 'templates/product-menu/schema.json';
 const PORT_SCHEMA = 'templates/portfolio/schema.json';
 const PM_PRESETS = 'templates/product-menu/presets.json';
 const APP_CSS = 'builder/app.css';
-const APP_JS = 'builder/app.js';
 const INDEX_HTML = 'builder/index.html';
 
 const BAD_CONTACT_IG_LABEL = 'Link Instagram pentru secțiunea contact';
@@ -115,43 +116,6 @@ function successUrlSplitsSlug(css) {
   return breakAll || (anywhere && breakAll);
 }
 
-/**
- * Detalii URL field still mid-clips: no dedicated URL field rule that allows
- * wrap or horizontal scroll, and no field-input--url class wiring.
- */
-function detaliiUrlStillClips(css, js) {
-  const hasUrlClassRule =
-    /\.field-input--url\b/.test(css) ||
-    /\.field-input\[type\s*=\s*["']url["']\]/.test(css) ||
-    /textarea\.field-input--url|\.field-textarea--url/.test(css);
-  if (!hasUrlClassRule) {
-    // Parent: plain .field-input only — native single-line clip.
-    return true;
-  }
-  const urlRule =
-    cssRule(css, '.field-input--url') ||
-    css.match(/\.field-input\[type\s*=\s*["']url["']\]\s*\{[^}]+\}/i) ||
-    cssRule(css, '.field-textarea--url');
-  const block = Array.isArray(urlRule) ? urlRule[0] : urlRule;
-  if (!block) return true;
-  const ellipsisClip =
-    /text-overflow\s*:\s*ellipsis/i.test(block) &&
-    /white-space\s*:\s*nowrap/i.test(block);
-  if (ellipsisClip) return true;
-  const allowsRead =
-    /overflow-x\s*:\s*auto/i.test(block) ||
-    /overflow-x\s*:\s*scroll/i.test(block) ||
-    /white-space\s*:\s*pre-wrap/i.test(block) ||
-    /white-space\s*:\s*normal/i.test(block) ||
-    /overflow-wrap/i.test(block) ||
-    /word-break\s*:\s*break-word/i.test(block) ||
-    /word-break\s*:\s*normal/i.test(block);
-  // JS must actually apply the class / use wrap-capable control for url fields.
-  const jsWires =
-    /field-input--url|field-textarea--url|type\s*===\s*['"]url['"]/.test(js || '');
-  return !(allowsRead && jsWires);
-}
-
 // ─── Causal RED on parent ───────────────────────────────────────────
 
 check('causal RED: parent product-menu contact.instagram.url is Link Instagram leftover', () => {
@@ -200,16 +164,6 @@ check('causal RED: parent success-url-link word-break break-all splits slug', ()
     'parent has word-break:break-all on success url'
   );
   assert.ok(successUrlSplitsSlug(css), 'parent success url splits slug token');
-});
-
-check('causal RED: parent Detalii URL fields still mid-clip long handles', () => {
-  const css = parentBlob(APP_CSS);
-  const js = parentBlob(APP_JS);
-  assert.ok(css && js, 'parent css+js');
-  assert.ok(
-    detaliiUrlStillClips(css, js),
-    'parent Detalii URL fields still native-clip'
-  );
 });
 
 // ─── GREEN on HEAD ──────────────────────────────────────────────────
@@ -295,28 +249,6 @@ check('HEAD: success-url does not word-break:break-all the live slug', () => {
     'allows full URL visibility/scroll'
   );
   assert.ok(/success-url-text/.test(indexSrc), 'success url text span present');
-});
-
-check('HEAD: Detalii URL fields do not nowrap-ellipsis-clip long Instagram URLs', () => {
-  const css = read(APP_CSS);
-  const js = read(APP_JS);
-  assert.ok(
-    !detaliiUrlStillClips(css, js),
-    'Detalii URL fields wrap or horizontal-scroll; full handle readable'
-  );
-  // Explicit: no ellipsis+nowrap combo on the URL field rule.
-  const urlBlock =
-    cssRule(css, '.field-input--url') ||
-    (css.match(/\.field-input\[type\s*=\s*["']url["']\]\s*\{[^}]+\}/i) || [])[0] ||
-    cssRule(css, '.field-textarea--url');
-  assert.ok(urlBlock, 'dedicated URL field CSS rule');
-  assert.ok(
-    !(
-      /text-overflow\s*:\s*ellipsis/i.test(urlBlock) &&
-      /white-space\s*:\s*nowrap/i.test(urlBlock)
-    ),
-    'URL field must not nowrap+ellipsis clip'
-  );
 });
 
 if (failed) {

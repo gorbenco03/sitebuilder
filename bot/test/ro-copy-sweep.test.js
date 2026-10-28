@@ -8,6 +8,11 @@
  * Causal: base 893042e still ships the English chrome strings listed below;
  * HEAD must not.
  *
+ * Form editor removed 2026-10-28: RO-must entries for deleted surfaces (Adaugă
+ * Instagram modal, colour popover, Descarcă HTML topbar button) were dropped; the
+ * English-leak list is unchanged (absence still holds) and the Instafidget facts
+ * are read from the block editor's Instagram panel.
+ *
  * Run: node bot/test/ro-copy-sweep.test.js
  */
 const assert = require('assert');
@@ -78,13 +83,8 @@ const BUILDER_RO_MUST = [
   'Cookie-uri',
   'Acceptă',
   'Află mai mult',
-  'Adaugă Instagram',
   'Adresă de email',
   'Trimite linkul pe email',
-  'Inclus gratuit 12 luni',
-  'Instafidget Free (filigran)',
-  '>Culoare</span>',
-  'Descarcă HTML',
   "versBtn.textContent = 'Istoric'",
   "badgeLabel = 'Activ'",
 ];
@@ -197,9 +197,9 @@ check('HEAD rendered product-menu default preset has RO nav/hero, no EN marketin
 });
 
 check('HEAD Instafidget commercial facts survive RO translation', () => {
-  const html = headRead('builder/index.html');
-  const m = html.match(/id=["']ig-partner-note["'][^>]*>([\s\S]*?)<\/p>/i);
-  assert.ok(m, 'ig-partner-note present');
+  const html = headRead('builder/blocks/index.html');
+  const m = html.match(/id=["']ig-title["'][\s\S]*?<p class=["']hint["']>([\s\S]*?)<\/p>/i);
+  assert.ok(m, 'Instagram partner note present in the block editor');
   const text = m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   assert.ok(/Instafidget/i.test(text), 'names Instafidget');
   assert.ok(/produs partener|partner/i.test(text), 'partner framing');

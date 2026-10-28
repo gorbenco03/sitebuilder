@@ -21,6 +21,9 @@
  *
  * Excludes: 00-Governance/, historical QA evidence (except Flow4/CalendarLP notes).
  *
+ * Form editor removed 2026-10-28: dropped the #success-renewal assertions (the
+ * pay-step note inside #modal-success is gone); landing price/renewal spans stay.
+ *
  * Run: node bot/test/flow4-calendar-lp-oracle.test.js
  */
 const assert = require('assert');
@@ -197,7 +200,6 @@ async function run() {
         // PLAN-AUDIT-2026-09-27.md R-01 and builder/terms.html §3.
         assert.ok(/id=["']how-renewal["']/.test(html), 'landing has a how-renewal span');
         assert.ok(/id=["']how-renewal-step["']/.test(html) || true, 'how-renewal-step is optional');
-        assert.ok(/id=["']success-renewal["']/.test(html), 'success-renewal id');
         assert.ok(/id=["']hero-price["']/.test(html), 'hero-price');
         assert.ok(/id=["']hero-renewal["']/.test(html), 'hero-renewal');
         assert.ok(/id=["']proof-price["']/.test(html), 'proof-price');
@@ -221,13 +223,12 @@ async function run() {
         assert.ok(/trial(?:ul)?\s+de\s+14\s+zile|14\s*zile/i.test(html), 'trial 14 zile');
     });
 
-    await check('builder/app.js fills hero/proof/footer/how/success price+renewal from /api/config (currency symbol, owner 2026-09-27)', () => {
+    await check('builder/app.js fills hero/proof/footer/how price+renewal from /api/config (currency symbol, owner 2026-09-27)', () => {
         const js = read(BUILDER_JS);
         assert.ok(/how-price/.test(js) && /how-renewal/.test(js), 'wires how spans');
         assert.ok(/hero-price/.test(js) && /hero-renewal/.test(js), 'wires hero spans');
         assert.ok(/proof-price/.test(js) && /proof-renewal/.test(js), 'wires proof spans');
         assert.ok(/footer-price/.test(js) && /footer-renewal/.test(js), 'wires footer spans');
-        assert.ok(/success-renewal/.test(js), 'wires success renewal');
         assert.ok(/apiGet\(['"]\/api\/config['"]\)|\/api\/config/.test(js), 'reads config');
         assert.ok(/formatPriceLabel|formatRenewalLabel/.test(js));
         // formatLandingPriceLabel (symbol-less landing price, owner 2026-09-16)
