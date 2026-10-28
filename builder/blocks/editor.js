@@ -1253,7 +1253,8 @@ async function showSlugStep() {
   $('pub-trial').hidden = paid;
   renderChecklist();
   const input = $('pub-slug-input');
-  input.value = current || ownSlug || slugify(window.SB.siteBrand(site) || 'site-ul-meu').slice(0, 40);
+  // A live site keeps its address; a draft proposes one from today's business name.
+  input.value = current || slugify(window.SB.siteBrand(site) || ownSlug || 'site-ul-meu').slice(0, 40);
   input.disabled = !!current;
   $('pub-slug-note').textContent = current ? 'Site-ul își păstrează adresa.' : '';
   if (!current) checkSlug();

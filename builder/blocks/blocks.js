@@ -868,6 +868,7 @@ const PHONE_DEMO = /07xx\s*xxx\s*xxx/i;
 function starterValues() {
   const emails = new Set();
   const brands = new Set();
+  const handles = new Set();
   const walk = (v) => {
     if (typeof v === 'string') { if (/^[^\s@]+@[^\s@]+$/.test(v)) emails.add(v.toLowerCase()); return; }
     if (v && typeof v === 'object') Object.values(v).forEach(walk);
@@ -875,9 +876,11 @@ function starterValues() {
   Object.values(packs()).forEach((p) => {
     walk(p.content);
     if (p.header && p.header.brand) brands.add(p.header.brand);
+    if (p.content && p.content.instagram && p.content.instagram.handle) handles.add(p.content.instagram.handle);
   });
   Object.values(BLOCKS).forEach((d) => walk(d.defaults()));
-  return { emails, brands };
+  handles.add(BLOCKS.instagram.defaults().handle);
+  return { emails, brands, handles };
 }
 
 function isDemoEmail(v, known) {
@@ -912,6 +915,7 @@ function demoLeftovers(site) {
       if (typeof v === 'string') {
         if (PHONE_DEMO.test(v)) note('phone', 'Telefon de exemplu (07xx xxx xxx).', pageName);
         if (k === 'email' && isDemoEmail(v, known)) note('email', 'E-mail de exemplu: pe site nu apare până nu pui adresa ta.', pageName);
+        if (k === 'handle' && b.type === 'instagram' && known.handles.has(v)) note('handle', `Contul de Instagram e cel de exemplu (${v}).`, pageName);
         if (v.startsWith('data:image/svg+xml')) note('photo', 'Poze de completat.', pageName);
         return;
       }

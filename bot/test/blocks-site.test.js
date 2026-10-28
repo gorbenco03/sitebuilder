@@ -308,6 +308,8 @@ test('starter contact data: demo e-mails never published, identity swap, pre-pub
     assert.ok(flat.includes('Cluj-Napoca') && flat.includes('0744 123 456'));
     assert.deepStrictEqual(SB.demoLeftovers(site).map((x) => x.key), ['email']);
 
+    const cafe = SB.defaultSite('cafenea');
+    assert.ok(SB.demoLeftovers(cafe).some((x) => x.key === 'handle'), 'starter Instagram handle is flagged');
     assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'https://www.instagram.com/x/embed' } }), '', 'instagram.com refuses framing');
     assert.strictEqual(SB.feedUrl({ instagram: { embedUrl: 'javascript:alert(1)' } }), '');
 });
