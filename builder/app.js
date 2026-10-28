@@ -252,6 +252,12 @@ const STATE_ICONS = {
 /** One consistent block for an empty or error placeholder: icon badge, a
  * one-line title, a one-line explanation and one primary action. `actionHtml`
  * is already-escaped markup (a <button>/<a>); pass '' for no action. */
+function escHtmlForAttr(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function stateBlockHTML({ icon = 'tray', isError = false, title, desc, actionHtml = '', style = '' }) {
   return '<div class="empty-state"' + (style ? ' style="' + escHtml(style) + '"' : '') + '>'
     + '<div class="empty-state-icon' + (isError ? ' is-error' : '') + '">' + (STATE_ICONS[icon] || STATE_ICONS.tray) + '</div>'
@@ -449,19 +455,11 @@ async function fetchAppConfig() {
   const footerRenewal = $('footer-renewal');
   if (footerPrice) footerPrice.textContent = priceLabel;
   if (footerRenewal) footerRenewal.textContent = renewalLabel;
-  const bulletPrice = $('publish-price');
-  const bulletRenewal = $('publish-renewal');
-  if (bulletPrice) bulletPrice.textContent = priceLabel;
-  if (bulletRenewal) bulletRenewal.textContent = renewalLabel;
-  // How-it-works + success modal: same commercial config (no hard-coded 99€/29€)
+  // How-it-works: same commercial config (no hard-coded 99€/29€)
   const howPrice = $('how-price');
   const howRenewal = $('how-renewal');
-  const howRenewalStep = $('how-renewal-step');
   if (howPrice) howPrice.textContent = priceLabel;
   if (howRenewal) howRenewal.textContent = renewalLabel;
-  if (howRenewalStep) howRenewalStep.textContent = renewalLabel;
-  const successRenewal = $('success-renewal');
-  if (successRenewal) successRenewal.textContent = renewalLabel;
 }
 
 /**

@@ -335,3 +335,31 @@ test('review fixes: hostile or odd configs are cleaned before anything renders',
         assert.ok(/<div class="blk"[^>]*>(?:<style>[^<]*<\/style>)?<footer/.test(html) && !/data-hidem[^>]*>(?:<style>[^<]*<\/style>)?<footer/.test(html), 'footer never wrapped in data-hidem');
     }
 });
+
+test('dashboard: Istoric describes a block site version; Descarcă ZIP exports it by siteId', async () => {
+    const c = await login('dash');
+    const slug = 'blocks-' + crypto.randomUUID().slice(0, 8);
+    const cfg = SB.defaultSite('restaurant');
+    const pub = await post(c, '/api/publish', { templateId: 'blocks', slug, config: cfg, images: [] });
+    assert.strictEqual(pub.status, 200, await pub.clone().text());
+    const pubBody = await pub.json();
+
+    const unpaidZip = await c(`/api/export-zip?siteId=${encodeURIComponent(pubBody.site.id)}`);
+    assert.strictEqual(unpaidZip.status, 402, 'no export before the trial starts');
+
+    await payAndWait(c, pubBody, slug);
+
+    const vr = await c(`/api/sites/${encodeURIComponent(pubBody.site.id)}/versions`);
+    assert.strictEqual(vr.status, 200);
+    const { versions } = await vr.json();
+    assert.ok(versions.length >= 1, 'a published version');
+    const pages = cfg.pages.length === 1 ? '1 pagină' : `${cfg.pages.length} pagini`;
+    assert.strictEqual(versions[versions.length - 1].description, `${SB.siteBrand(cfg)} — ${pages}`);
+
+    const zip = await c(`/api/export-zip?siteId=${encodeURIComponent(pubBody.site.id)}`);
+    assert.strictEqual(zip.status, 200);
+    assert.match(zip.headers.get('content-type') || '', /application\/zip/);
+    const buf = Buffer.from(await zip.arrayBuffer());
+    assert.strictEqual(buf.slice(0, 2).toString(), 'PK', 'a zip archive');
+    assert.ok(buf.includes(Buffer.from('index.html')), 'zip holds index.html');
+});

@@ -1951,9 +1951,16 @@ async function handleGetVersions(req, res, siteId) {
         let description = '';
         try {
             const config = await reg.getVersionConfig(siteId, v.versionId);
-            const name = config && config.business && config.business.name ? String(config.business.name).trim() : '';
-            const tagline = config && config.business && config.business.tagline ? String(config.business.tagline).trim() : '';
-            description = [name, tagline].filter(Boolean).join(' — ');
+            if (config && config.v === 2 && Array.isArray(config.pages)) {
+                // Block site: brand from the shared header, plus how many pages it had.
+                const name = require('../builder/blocks/blocks.js').siteBrand(config);
+                const pages = config.pages.length === 1 ? '1 pagină' : config.pages.length + ' pagini';
+                description = [name, pages].filter(Boolean).join(' — ');
+            } else {
+                const name = config && config.business && config.business.name ? String(config.business.name).trim() : '';
+                const tagline = config && config.business && config.business.tagline ? String(config.business.tagline).trim() : '';
+                description = [name, tagline].filter(Boolean).join(' — ');
+            }
             if (description.length > 80) description = description.slice(0, 79) + '…';
         } catch (_) { /* a missing/corrupt version config just gets no description, never a failed list */ }
         return { versionId: v.versionId, publishedAt: v.publishedAt, description, live: v.versionId === liveVersionId };

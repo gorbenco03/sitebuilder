@@ -65,8 +65,9 @@
   --device-frame:  #1F2937;
   /* Third-party look-alikes: the WhatsApp button and the Google result
      preview imitate someone else's colours on purpose. */
-  --brand-whatsapp:       #25D366;
-  --brand-whatsapp-hover: #1EBE59;
+  /* Darker than the logo green so white text passes AA (5.45:1). */
+  --brand-whatsapp:       #0E7A36;
+  --brand-whatsapp-hover: #0B6B30;
   --serp-url:      #1A7A3C;
   --serp-title:    #1A0DAB;
   --serp-desc:     #4D5156;
@@ -1431,6 +1432,7 @@ input, textarea, select {
   word-break: normal;
   overflow-wrap: normal;
   display: flex; align-items: flex-start; gap: 0.3rem;
+  min-height: 24px;
 }
 .success-url-link #success-url-text {
   /* Wrap only at path slashes (<wbr>); each segment stays one token (S99/S107). */
