@@ -14,7 +14,7 @@
  * magic-link sign-in, slug check and /api/publish → Stripe trial checkout.
  */
 
-const { BLOCKS, THEMES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId } = window.SB;
+const { BLOCKS, THEMES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, withThumbs } = window.SB;
 const PACKS = window.SB_PACKS;
 const STORE = 'hb.blocks.draft.v1';
 const TEMPLATE_ID = 'blocks';
@@ -1067,7 +1067,7 @@ $('file').addEventListener('change', () => {
 function previewDoc(type, variant) {
   const b = makeBlock(type, variant, site.pack);
   const ctx = { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: site.current };
-  return `<!doctype html><html><head><meta charset="utf-8"><base href="${esc(location.href)}"><style>${themeCss(site.theme)}</style></head><body>${renderBlock(b, ctx)}</body></html>`.replace(/"/g, '&quot;');
+  return `<!doctype html><html><head><meta charset="utf-8"><base href="${esc(location.href)}"><style>${themeCss(site.theme)}</style></head><body>${withThumbs(() => renderBlock(b, ctx))}</body></html>`.replace(/"/g, '&quot;');
 }
 
 function addableBlocks() {
@@ -1130,7 +1130,7 @@ function openPacks() {
   const order = Object.entries(PACKS).sort((a, b) => (b[1].blank ? 1 : 0) - (a[1].blank ? 1 : 0));
   $('packs-grid').innerHTML = order.map(([id, p]) => {
     const tmp = defaultSite(id);
-    const html = renderPage(tmp, tmp.pages[0].id, location.href).replace(/"/g, '&quot;');
+    const html = withThumbs(() => renderPage(tmp, tmp.pages[0].id, location.href)).replace(/"/g, '&quot;');
     return `<button type="button" class="lib__card${id === site.pack ? ' is-cur' : ''}" data-pack="${id}"><div class="lib__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${html}"></iframe></div><div class="lib__meta"><b>${esc(p.label)}</b><span>${esc(p.desc)}${p.blank ? '' : ` · ${p.pages.length} pagini`}</span></div></button>`;
   }).join('');
   $('packs').hidden = false;

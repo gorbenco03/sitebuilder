@@ -34,9 +34,12 @@ function packs() {
  * against the asset base of wherever the page is rendered.
  */
 let assetBase = '';
+// Previews (a whole page shrunk to a card) use small WebP copies of the pack photos.
+let thumbs = false;
+function thumbBase() { return typeof window !== 'undefined' && typeof window.SB_THUMBS === 'string' ? window.SB_THUMBS : ''; }
 function asset(src) {
   const v = String(src == null ? '' : src);
-  if (v.startsWith('@tpl/')) return assetBase + v.slice(5);
+  if (v.startsWith('@tpl/')) return thumbs ? thumbBase() + v.slice(5).replace(/\.(jpe?g|png)$/i, '.webp') : assetBase + v.slice(5);
   // Only uploads and the site's own files: no third-party images on a customer's site.
   return /^data:image\/(png|jpe?g|webp|gif|svg\+xml)[;,]/i.test(v) || /^images\/[\w.-]+$/.test(v) ? v : '';
 }
@@ -1142,12 +1145,19 @@ function applyIdentity(site, who) {
 
 function setAssetBase(base) { assetBase = String(base || ''); }
 
+/** Run fn with pack photos as preview thumbnails (when the build shipped them). */
+function withThumbs(fn) {
+  const prev = thumbs;
+  thumbs = !!thumbBase();
+  try { return fn(); } finally { thumbs = prev; }
+}
+
 /** Every booking block of the site, in page order. */
 function bookingBlocks(site) {
   return (site.pages || []).flatMap((p) => (p.blocks || []).filter((b) => b && b.type === 'booking'));
 }
 
-const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs, feedUrl, demoLeftovers, applyIdentity, bookingBlocks, bookingWeek, bookingServices };
+const SB = { BLOCKS, THEMES, IMAGES, SIZE_STEPS, makeBlock, makePage, defaultSite, slugify, themeCss, renderBlock, pageBlocks, siteCtx, elementCss, renderPage, rich, esc, newId, asset, setAssetBase, withThumbs, safeHref, pageFile, normalizeSite, siteBrand, templateAssets, packs, feedUrl, demoLeftovers, applyIdentity, bookingBlocks, bookingWeek, bookingServices };
 if (IS_NODE) module.exports = SB;
 else root.SB = SB;
 })(typeof window !== 'undefined' ? window : globalThis);

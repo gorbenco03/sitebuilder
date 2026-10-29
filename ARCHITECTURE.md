@@ -127,6 +127,14 @@ emits:
 
 - `builder/generated/template-assets/<id>/images/*` — real cacheable image
   files, used by the block packs' photos
+- `builder/generated/previews/<content-hash>/…` and `generated/thumbs.js`
+  (`window.SB_THUMBS`) — 640px WebP copies of those
+  photos for every page shown shrunk to a card (landing, Site-urile mele,
+  the editor's design and block pickers; `SB.withThumbs`), served
+  `max-age=31536000, immutable`. Sources are committed in
+  `builder/blocks/thumbs/`; after adding or replacing a pack photo run
+  `node scripts/make-preview-thumbs.js` (needs `cwebp`). Published sites and
+  the editor canvas keep the full photos
 - `builder/generated/engine.js`, `templates-data.js`, `templates/<id>.js` —
   the retired form editor's in-browser renderer and payloads; no page loads
   them any more, a few tests still do
