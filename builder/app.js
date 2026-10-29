@@ -1237,7 +1237,7 @@ function renderTemplatesGrid() {
 function packPreviewHtml(id) {
   const site = window.SB.defaultSite(id);
   if (landingName && !(window.SB_PACKS[id] || {}).blank) window.SB.applyIdentity(site, { name: landingName });
-  return window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/');
+  return window.SB.withThumbs(() => window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/'));
 }
 
 /** Catalog chip each starter pack sits under; "De la zero" shows under every chip. */
@@ -1438,7 +1438,7 @@ function buildSiteCard(site) {
       iframe.setAttribute('sandbox', '');
       iframe.setAttribute('aria-hidden', 'true');
       iframe.title = 'Previzualizare ' + (site.projectName || site.slug || 'site');
-      iframe.srcdoc = window.SB.renderPage(cfg, cfg.pages[0].id, location.origin + '/app/');
+      iframe.srcdoc = window.SB.withThumbs(() => window.SB.renderPage(cfg, cfg.pages[0].id, location.origin + '/app/'));
       thumbWrap.appendChild(iframe);
     }).catch(() => {});
   }

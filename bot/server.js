@@ -353,7 +353,11 @@ function getCachedStatic(filePath, stat) {
     // Strong ETag from size + mtime (stable across process restarts for unchanged
     // files). A shell also folds in its assets' signatures, so a rebuilt app.js
     // invalidates the shell that points at it instead of 304-ing the old URLs.
-    let etag = '"' + stat.size.toString(16) + '-' + Math.floor(stat.mtimeMs).toString(16);
+    // Everything else gets a content hash: every deploy rewrites mtimes, and an
+    // unchanged photo should still answer 304 instead of downloading again.
+    let etag = '"' + stat.size.toString(16) + '-' + (shell
+        ? Math.floor(stat.mtimeMs).toString(16)
+        : crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16));
     if (assetSig) {
         etag += '-' + crypto.createHash('sha1').update(assetSig).digest('hex').slice(0, 8);
     }
@@ -385,6 +389,10 @@ function getGzipBuf(entry) {
 
 function cacheControlForPath(targetPath) {
     const ext = path.extname(targetPath).toLowerCase();
+    // Preview thumbnails live under a content-hash directory (scripts/build-builder.js).
+    if (targetPath.includes(path.sep + 'generated' + path.sep + 'previews' + path.sep)) {
+        return 'public, max-age=31536000, immutable';
+    }
     // Generated assets + images: cacheable, revalidate so 304 works on reload.
     if (
         targetPath.includes(path.sep + 'generated' + path.sep) ||

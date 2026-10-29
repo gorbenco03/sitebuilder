@@ -655,4 +655,33 @@ const tplDataJs = 'window.HIDOOK_TEMPLATES = ' + JSON.stringify(lightRegistry, n
 fs.writeFileSync(path.join(GEN_DIR, 'templates-data.js'), tplDataJs, 'utf8');
 console.log('  templates-data.js written (' + tplDataJs.length + ' bytes) [light registry]');
 
+// Preview thumbnails (scripts/make-preview-thumbs.js) under a content-hash
+// directory, so the server can let browsers keep them for a year: a changed
+// photo gets a new URL, an unchanged one keeps its URL across deploys.
+{
+    const src = path.join(BUILDER_DIR, 'blocks', 'thumbs');
+    const outRoot = path.join(GEN_DIR, 'previews');
+    const files = [];
+    (function walk(dir) {
+        if (!fs.existsSync(dir)) return;
+        for (const name of fs.readdirSync(dir).sort()) {
+            const abs = path.join(dir, name);
+            if (fs.statSync(abs).isDirectory()) walk(abs);
+            else files.push(path.relative(src, abs));
+        }
+    })(src);
+    const hash = require('crypto').createHash('sha1');
+    for (const rel of files) hash.update(rel).update(fs.readFileSync(path.join(src, rel)));
+    const version = hash.digest('hex').slice(0, 10);
+    fs.rmSync(outRoot, { recursive: true, force: true });
+    for (const rel of files) {
+        const dest = path.join(outRoot, version, rel);
+        fs.mkdirSync(path.dirname(dest), { recursive: true });
+        fs.copyFileSync(path.join(src, rel), dest);
+    }
+    const base = files.length ? '/app/generated/previews/' + version + '/' : '';
+    fs.writeFileSync(path.join(GEN_DIR, 'thumbs.js'), 'window.SB_THUMBS = ' + JSON.stringify(base) + ';\n', 'utf8');
+    console.log('  thumbs: ' + files.length + ' preview photos under ' + (base || '(none)'));
+}
+
 console.log('build:app done — builder/generated/ ready.');
