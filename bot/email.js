@@ -29,7 +29,8 @@ async function sendMagicLink(email, url, opts = {}) {
     const from    = process.env.EMAIL_FROM || 'onboarding@resend.dev';
     // welcome: account opened for the buyer at the event (bot/promo-elena.js).
     const welcome = !!opts.welcome;
-    const subject = welcome ? 'Contul tău Hidook Site Builder e gata' : 'Autentificare la Hidook Site Builder';
+    const subject = 'Autentificare la Hidook Site Builder';
+    const title = welcome ? 'Contul tău Hidook Site Builder e gata' : subject;
     const intro = welcome
         ? 'Contul tău e gata și site-ul e deja plătit. Apasă butonul, alege un design și publică-l — fără card.'
         : 'Apasă butonul de mai jos ca să intri în cont.';
@@ -41,7 +42,7 @@ async function sendMagicLink(email, url, opts = {}) {
 <html lang="ro">
 <head><meta charset="UTF-8"></head>
 <body style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-  <h2 style="color:#333">${subject}</h2>
+  <h2 style="color:#333">Hidook Site Builder — ${welcome ? 'contul tău e gata' : 'autentificare'}</h2>
   <p>${intro} Linkul este valabil <strong>15 minute</strong>.</p>
   <p style="text-align:center;margin:32px 0">
     <a href="${url}"
@@ -67,7 +68,7 @@ async function sendMagicLink(email, url, opts = {}) {
         `${later}\n\n` +
         `— Hidook Site Builder`;
 
-    const body = JSON.stringify({ from, to: email, subject, html, text });
+    const body = JSON.stringify({ from, to: email, subject: title, html, text });
 
     const res = await fetch(RESEND_API, {
         method:  'POST',
