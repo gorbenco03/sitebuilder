@@ -19,7 +19,7 @@ const RESEND_API = 'https://api.resend.com/emails';
  * @param {string} url    Magic-link sign-in URL.
  * @returns {Promise<{ sent: boolean, devLink?: string }>}
  */
-async function sendMagicLink(email, url) {
+async function sendMagicLink(email, url, opts = {}) {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
         log('email.magic_link.dev', { email, devLink: url });
@@ -27,14 +27,22 @@ async function sendMagicLink(email, url) {
     }
 
     const from    = process.env.EMAIL_FROM || 'onboarding@resend.dev';
-    const subject = 'Autentificare la Hidook Site Builder';
+    // welcome: account opened for the buyer at the event (bot/promo-elena.js).
+    const welcome = !!opts.welcome;
+    const subject = welcome ? 'Contul tău Hidook Site Builder e gata' : 'Autentificare la Hidook Site Builder';
+    const intro = welcome
+        ? 'Contul tău e gata și site-ul e deja plătit. Apasă butonul, alege un design și publică-l — fără card.'
+        : 'Apasă butonul de mai jos ca să intri în cont.';
+    const later = welcome
+        ? 'Dacă linkul a expirat, cere unul nou de pe site, cu același email.'
+        : 'Dacă nu ai cerut acest email, îl poți ignora în siguranță.';
     const html    = `
 <!DOCTYPE html>
 <html lang="ro">
 <head><meta charset="UTF-8"></head>
 <body style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
-  <h2 style="color:#333">Autentificare la Hidook Site Builder</h2>
-  <p>Apasă butonul de mai jos ca să intri în cont. Linkul este valabil <strong>15 minute</strong>.</p>
+  <h2 style="color:#333">${subject}</h2>
+  <p>${intro} Linkul este valabil <strong>15 minute</strong>.</p>
   <p style="text-align:center;margin:32px 0">
     <a href="${url}"
        style="background:#E8588C;color:#fff;padding:12px 28px;border-radius:6px;
@@ -43,7 +51,7 @@ async function sendMagicLink(email, url) {
     </a>
   </p>
   <p style="font-size:13px;color:#888">
-    Dacă nu ai cerut acest email, îl poți ignora în siguranță.
+    ${later}
   </p>
   <p style="font-size:13px;color:#aaa">
     Sau copiază acest link:<br>
@@ -54,9 +62,9 @@ async function sendMagicLink(email, url) {
 
     const text =
         `Bună,\n\n` +
-        `Apasă acest link ca să intri în contul tău Hidook Site Builder. Linkul este valabil 15 minute.\n\n` +
+        `${intro} Linkul este valabil 15 minute.\n\n` +
         `${url}\n\n` +
-        `Dacă nu ai cerut acest email, îl poți ignora în siguranță.\n\n` +
+        `${later}\n\n` +
         `— Hidook Site Builder`;
 
     const body = JSON.stringify({ from, to: email, subject, html, text });

@@ -1329,7 +1329,10 @@ async function showSlugStep() {
       current = paid ? ownSlug : '';
     } catch (_) { /* new site */ }
   }
-  $('pub-trial').hidden = paid;
+  // Accounts opened at an event publish with no card (bot/promo-elena.js).
+  let free = false;
+  if (!paid) { try { free = !!(await api('GET', '/api/me')).freePublish; } catch (_) { /* keep the trial note */ } }
+  $('pub-trial').hidden = paid || free;
   renderChecklist();
   const input = $('pub-slug-input');
   // A live site keeps its address; a draft proposes one from today's business name.

@@ -77,6 +77,8 @@ function getRegistry() { return require('./registry.js'); }
 function getAuth()     { return require('./auth.js'); }
 function getEmail()    { return require('./email.js'); }
 function getPartner()  { return require('./instafidget-partner.js'); }
+const promoElena = require('./promo-elena.js');
+let elenaRoutes = null;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1721,7 +1723,11 @@ async function handleGetMe(req, res) {
     if (!userId) return;
     const user = await getRegistry().getUser(userId);
     if (!user) return sendJson(res, 401, { error: 'Utilizator negăsit.' });
-    sendJson(res, 200, { user });
+    let freePublish = false;
+    if (promoElena.isBuyer(user.email)) {
+        freePublish = !(await getRegistry().listSites(userId)).some((s) => s.paid === true);
+    }
+    sendJson(res, 200, freePublish ? { user, freePublish } : { user });
 }
 
 // ---------------------------------------------------------------------------
@@ -4268,6 +4274,24 @@ async function handlePublish(req, res) {
         }
     };
 
+    // /elena buyers: the first site of the account publishes paid for a year,
+    // no card, no trial (bot/promo-elena.js).
+    if (!hasActiveCommercialEntitlement(site) && !site.canceledAt) {
+        const user = await reg.getUser(userId);
+        if (user && promoElena.isBuyer(user.email)) {
+            const others = (await reg.listSites(userId)).filter((s) => s.id !== site.id && s.paid === true);
+            if (!others.length) {
+                await reg.updateSite(site.id, {
+                    paid: true,
+                    paidUntil: new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(),
+                });
+                site = await reg.getSite(site.id);
+                log('promo.elena.publish', { siteId: site.id });
+                return await directRepublish();
+            }
+        }
+    }
+
     // Only a currently entitled site may publish directly (re-edit).
     if (hasActiveCommercialEntitlement(site)) {
         return await directRepublish();
@@ -4413,6 +4437,18 @@ function createHandler({ onStripeEvent } = {}) {
                     return res.end();
                 }
                 return sendJson(res, status, readiness);
+            }
+
+            // ── /elena event sales page (bot/promo-elena.js; ELENA_KEY or 404) ──
+            if (url === '/elena' || url === '/elena/' || url.startsWith('/api/elena/')) {
+                if (!elenaRoutes) {
+                    elenaRoutes = promoElena.createRoutes({
+                        sendJson, parseJson, sendNotFound, isSameOriginRequest,
+                        getRegistry, getEmail, withPublicUrl, log,
+                    });
+                }
+                if (await elenaRoutes(req, res, url)) return;
+                return sendNotFound(req, res, 'not found');
             }
 
             // ── Operator admin (token-gated; missing/wrong → plain 404) ──
