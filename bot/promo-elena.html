@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Clienți eveniment · Hidook</title>
+<style>
+:root{--paper:#F6F1E8;--card:#fff;--ink:#1C1814;--muted:#6B635A;--line:#E4DCCF;--accent:#C2410C;--ok:#15803D;--ok-bg:#E8F5EC;--warn-bg:#FDF3E3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:24px;margin:4px 0 2px}
+.sub{color:var(--muted);margin:0 0 18px;font-size:14px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
+input[type=email],input[type=text],input[type=password]{width:100%;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.field{margin-bottom:12px}
+button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16px;min-height:46px;cursor:pointer}
+.primary{background:var(--accent);color:#fff;width:100%;font-size:17px}
+.primary:disabled{opacity:.6}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);font-size:14px;min-height:40px;padding:8px 12px}
+.msg{margin:10px 0 0;font-size:14px}
+.msg.err{color:#B91C1C}.msg.ok{color:var(--ok)}
+.stats{display:flex;gap:8px;margin-bottom:14px}
+.stat{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}
+.buyer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.buyer.paid{border-color:#86EFAC}
+.who{font-weight:700;word-break:break-all}
+.email{color:var(--muted);font-size:14px;word-break:break-all}
+.state{margin:10px 0;font-size:14px;padding:8px 10px;border-radius:8px;background:var(--warn-bg)}
+.state.live{background:var(--ok-bg);color:var(--ok)}
+.state a{color:inherit;font-weight:600;word-break:break-all}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pay{display:flex;align-items:center;gap:10px;font-weight:600;padding:8px 0;cursor:pointer;flex:1}
+.pay input{width:26px;height:26px;accent-color:var(--ok)}
+.empty{color:var(--muted);text-align:center;padding:20px 0}
+.dev{font-size:12px;word-break:break-all}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Clienți eveniment</h1>
+  <p class="sub">Scrii emailul clientului: primește un link, intră, își face site-ul și îl publică fără card.</p>
+
+  <section class="box" id="login" hidden>
+    <form id="login-form">
+      <div class="field">
+        <label for="key">Cod de acces</label>
+        <input type="password" id="key" autocomplete="current-password" required>
+      </div>
+      <button class="primary" type="submit">Intră</button>
+      <p class="msg err" id="login-msg" hidden></p>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+    <section class="box">
+      <form id="add-form">
+        <div class="field">
+          <label for="email">Emailul clientului</label>
+          <input type="email" id="email" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" required placeholder="nume@exemplu.ro">
+        </div>
+        <div class="field">
+          <label for="name">Nume (opțional)</label>
+          <input type="text" id="name" autocomplete="off" placeholder="ex. Salon Ana">
+        </div>
+        <button class="primary" type="submit" id="add-btn">Adaugă și trimite linkul</button>
+        <p class="msg" id="add-msg" role="status" hidden></p>
+      </form>
+    </section>
+
+    <div class="stats">
+      <div class="stat"><b id="s-all">0</b><span>clienți</span></div>
+      <div class="stat"><b id="s-live">0</b><span>publicate</span></div>
+      <div class="stat"><b id="s-paid">0</b><span>achitate</span></div>
+    </div>
+
+    <div id="list"></div>
+  </div>
+</main>
+<script>
+(function () {
+  var KEY = 'elena.key';
+  var key = '';
+  try { key = localStorage.getItem(KEY) || ''; } catch (_) {}
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+  function api(method, url, body) {
+    return fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json', 'X-Elena-Key': key },
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'same-origin'
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { var e = new Error(d.error || 'Ceva n-a mers. Încearcă din nou.'); e.status = r.status; throw e; }
+        return d;
+      });
+    });
+  }
+
+  function showLogin(msg) {
+    $('app').hidden = true; $('login').hidden = false;
+    $('login-msg').hidden = !msg; $('login-msg').textContent = msg || '';
+    $('key').focus();
+  }
+
+  function render(buyers) {
+    var live = 0, paid = 0;
+    $('list').innerHTML = buyers.length ? buyers.map(function (b) {
+      var site = b.sites.filter(function (s) { return s.live; })[0] || b.sites[0];
+      if (b.sites.some(function (s) { return s.live; })) live++;
+      if (b.cashPaid) paid++;
+      var state = !site
+        ? '<div class="state">Nu și-a făcut încă site-ul.</div>'
+        : site.live
+          ? '<div class="state live">Publicat: ' + (site.url ? '<a href="' + esc(site.url) + '" target="_blank" rel="noopener">' + esc(site.url.replace(/^https?:\/\//, '')) + '</a>' : esc(site.name)) + '</div>'
+          : '<div class="state">Lucrează la site („' + esc(site.name) + '”), încă nepublicat.</div>';
+      return '<div class="buyer' + (b.cashPaid ? ' paid' : '') + '" data-email="' + esc(b.email) + '">' +
+        '<div class="who">' + esc(b.name || b.email) + '</div>' +
+        (b.name ? '<div class="email">' + esc(b.email) + '</div>' : '') +
+        state +
+        '<div class="row">' +
+          '<label class="pay"><input type="checkbox" data-act="paid"' + (b.cashPaid ? ' checked' : '') + '> Achitat</label>' +
+          '<button class="ghost" type="button" data-act="link">Retrimite linkul</button>' +
+          '<button class="ghost" type="button" data-act="remove" aria-label="Scoate ' + esc(b.email) + ' din listă">Scoate</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') : '<p class="empty">Încă nu ai adăugat pe nimeni.</p>';
+    $('s-all').textContent = buyers.length;
+    $('s-live').textContent = live;
+    $('s-paid').textContent = paid;
+  }
+
+  function load() {
+    return api('GET', '/api/elena/buyers').then(function (d) {
+      $('login').hidden = true; $('app').hidden = false;
+      render(d.buyers || []);
+    }).catch(function (e) {
+      if (e.status === 401) { var had = !!key; try { localStorage.removeItem(KEY); } catch (_) {} key = ''; showLogin(had ? 'Codul nu mai e valabil. Scrie-l din nou.' : ''); }
+    });
+  }
+
+  function say(text, ok, dev) {
+    var m = $('add-msg');
+    m.hidden = false;
+    m.className = 'msg ' + (ok ? 'ok' : 'err');
+    m.innerHTML = esc(text) + (dev ? '<br><span class="dev">Link (test): <a href="' + esc(dev) + '">' + esc(dev) + '</a></span>' : '');
+  }
+
+  $('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    key = $('key').value.trim();
+    api('GET', '/api/elena/buyers').then(function (d) {
+      try { localStorage.setItem(KEY, key); } catch (_) {}
+      $('login').hidden = true; $('app').hidden = false;
+      render(d.buyers || []);
+      $('email').focus();
+    }).catch(function () { showLogin('Cod greșit.'); });
+  });
+
+  $('add-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = $('email').value.trim();
+    var btn = $('add-btn');
+    btn.disabled = true; btn.textContent = 'Se trimite…';
+    api('POST', '/api/elena/buyers', { email: email, name: $('name').value.trim() }).then(function (d) {
+      say(d.sent ? 'Gata! ' + email + ' a primit linkul pe email.' : 'Adăugat, dar emailul nu a plecat. Apasă „Retrimite linkul” peste un minut.', d.sent, d.devLink);
+      $('email').value = ''; $('name').value = '';
+      $('email').focus();
+      return load();
+    }).catch(function (err) { say(err.message, false); })
+      .then(function () { btn.disabled = false; btn.textContent = 'Adaugă și trimite linkul'; });
+  });
+
+  $('list').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-act]');
+    if (!el) return;
+    var email = el.closest('.buyer').getAttribute('data-email');
+    var act = el.getAttribute('data-act');
+    if (act === 'paid') {
+      api('POST', '/api/elena/paid', { email: email, cashPaid: el.checked }).then(load).catch(function (err) { el.checked = !el.checked; alert(err.message); });
+    } else if (act === 'link') {
+      el.disabled = true;
+      api('POST', '/api/elena/link', { email: email }).then(function (d) {
+        el.textContent = d.sent ? 'Link trimis ✓' : 'Nu a plecat';
+      }).catch(function (err) { el.textContent = err.message; })
+        .then(function () { setTimeout(function () { el.disabled = false; el.textContent = 'Retrimite linkul'; }, 4000); });
+    } else if (act === 'remove') {
+      if (!confirm('Scoți ' + email + ' din listă? Dacă nu a publicat încă, nu mai poate publica gratuit.')) return;
+      api('POST', '/api/elena/remove', { email: email }).then(load);
+    }
+  });
+
+  if (key) load(); else showLogin('');
+  setInterval(function () { if (key && !document.hidden) load(); }, 20000);
+})();
+</script>
+</body>
+</html>
