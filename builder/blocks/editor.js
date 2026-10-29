@@ -1447,11 +1447,13 @@ function renderChecklist() {
 /* ---------- first run: the customer's own name, phone and town ---------- */
 
 function openIdentity() {
+  // The business name typed on the landing page arrives as ?name=.
+  const name = String(params.get('name') || '').trim().slice(0, 80);
   $('who').hidden = false;
-  $('who-name').value = '';
+  $('who-name').value = name;
   $('who-phone').value = '';
   $('who-town').value = '';
-  $('who-name').focus();
+  $(name ? 'who-phone' : 'who-name').focus();
 }
 
 $('who-form').addEventListener('submit', (e) => {

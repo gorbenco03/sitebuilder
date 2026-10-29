@@ -8,7 +8,7 @@
   <link rel="icon" href="/favicon.ico" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/app/app.css" />
 </head>
 <body>
@@ -27,12 +27,13 @@
 <!-- ===== HEADER ===== -->
 <header class="app-header" id="app-header">
   <a href="#templates" class="logo" aria-label="Hidook Site Builder — Acasă" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-    <span class="logo-mark" aria-hidden="true">H</span>
+    <span class="logo-mark" aria-hidden="true">h</span>
     <span class="logo-word">Hidook<span class="logo-word-full"> Site Builder</span></span>
   </a>
   <nav class="header-nav" id="header-nav" aria-label="Navigare principală">
     <a href="#templates" data-route="templates" onclick="window.scrollTo({top:0,behavior:'smooth'})">Designuri</a>
     <a href="#cum-e" data-route="how">Cum funcționează</a>
+    <a href="#pret" data-route="price">Preț</a>
     <a href="#dashboard" data-route="dashboard" id="nav-dashboard" style="display:none">Site-urile mele</a>
   </nav>
   <a href="#templates-grid" class="btn-primary btn-sm header-cta" id="header-cta">Alege un design</a>
@@ -72,16 +73,21 @@
   <section id="screen-templates" class="screen" role="main" aria-label="Alege un design">
     <div class="hero-section">
       <div class="hero-copy">
-        <h1 class="hero-title">Site-ul afacerii tale,<br><em>gata azi</em></h1>
+        <p class="hero-eyebrow">Site builder pentru afaceri locale</p>
+        <h1 class="hero-title">Site-ul afacerii tale, <em>gata azi.</em></h1>
         <p class="hero-sub" id="hero-sub">
-          Alege un design pentru domeniul tău sau pornește de la zero. Schimbi texte și poze, adaugi blocuri și pagini, vezi previzualizarea.
-          Adaugă un card ca să începi trialul de 14 zile — site-ul e live imediat.
+          Pentru saloane, restaurante, meșteri și cabinete, cu programări online incluse. Alegi un design, scrii pe pagină ce vrei și vezi previzualizarea.
+          Adaugi un card ca să începi trialul de 14 zile și site-ul e live imediat.
           Taxare <strong id="hero-price">99</strong> în ziua 14, dacă nu anulezi, apoi reînnoire anuală <strong id="hero-renewal">29</strong> până anulezi.
         </p>
-        <div class="hero-actions">
-          <a href="#templates-grid" class="btn-primary" id="hero-cta">Alege un design</a>
-          <a href="#cum-e" class="btn-text">Cum funcționează</a>
-        </div>
+        <form class="hero-name" id="hero-name-form" novalidate>
+          <label class="hero-name-field" for="hero-name">
+            <span class="hero-name-label">Cum se numește afacerea ta?</span>
+            <input id="hero-name" class="hero-name-input" type="text" maxlength="80" autocomplete="organization" placeholder="ex: Salon Mira" />
+          </label>
+          <button type="submit" class="btn-accent hero-cta" id="hero-cta">Vezi-ți site-ul <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="hero-hint" id="hero-name-hint">Scrie numele și îl vezi pe loc în toate designurile de mai jos.</p>
       </div>
       <div class="hero-stage" aria-hidden="true">
         <div class="hero-stage-stack" id="hero-stage-stack">
@@ -92,59 +98,52 @@
       </div>
     </div>
 
-
-    <div class="catalog-chips" id="catalog-chips" role="group" aria-label="Tip de afacere">
-      <button type="button" class="catalog-chip" data-filter="all" aria-pressed="true">Toate</button>
-      <button type="button" class="catalog-chip" data-filter="product-menu" aria-pressed="false">Restaurant</button>
-      <button type="button" class="catalog-chip" data-filter="portfolio" aria-pressed="false">Salon</button>
-      <button type="button" class="catalog-chip" data-filter="local-service" aria-pressed="false">Meserii</button>
-      <button type="button" class="catalog-chip" data-filter="professionals" aria-pressed="false">Servicii profesionale</button>
-      <button type="button" class="catalog-chip" data-filter="desserdirina" aria-pressed="false">Cofetărie</button>
-    </div>
-    <div id="templates-grid" class="templates-grid" role="list" aria-label="Designuri disponibile">
-      <div class="card-skeleton" aria-hidden="true">
-        <div class="skeleton-preview"></div>
-        <div class="skeleton-body">
-          <div class="skeleton-line skeleton-line--short"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line skeleton-line--med"></div>
+    <div class="catalog-band">
+      <div class="catalog-head">
+        <div>
+          <p class="section-eyebrow">13 designuri</p>
+          <h2 class="section-title">Alege un design</h2>
+          <p class="section-sub">Fiecare vine cu pagini, texte și poze pentru domeniul tău. Le schimbi pe toate.</p>
+        </div>
+        <div class="catalog-chips" id="catalog-chips" role="group" aria-label="Tip de afacere">
+          <button type="button" class="catalog-chip" data-filter="all" aria-pressed="true">Toate</button>
+          <button type="button" class="catalog-chip" data-filter="product-menu" aria-pressed="false">Restaurant</button>
+          <button type="button" class="catalog-chip" data-filter="portfolio" aria-pressed="false">Salon</button>
+          <button type="button" class="catalog-chip" data-filter="local-service" aria-pressed="false">Meserii</button>
+          <button type="button" class="catalog-chip" data-filter="professionals" aria-pressed="false">Servicii profesionale</button>
+          <button type="button" class="catalog-chip" data-filter="desserdirina" aria-pressed="false">Cofetărie</button>
         </div>
       </div>
-      <div class="card-skeleton" aria-hidden="true">
-        <div class="skeleton-preview"></div>
-        <div class="skeleton-body">
-          <div class="skeleton-line skeleton-line--short"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line skeleton-line--med"></div>
+      <div id="templates-grid" class="templates-grid" role="list" aria-label="Designuri disponibile">
+        <div class="card-skeleton" aria-hidden="true">
+          <div class="skeleton-preview"></div>
+          <div class="skeleton-body">
+            <div class="skeleton-line skeleton-line--short"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--med"></div>
+          </div>
         </div>
-      </div>
-      <div class="card-skeleton" aria-hidden="true">
-        <div class="skeleton-preview"></div>
-        <div class="skeleton-body">
-          <div class="skeleton-line skeleton-line--short"></div>
-          <div class="skeleton-line"></div>
-          <div class="skeleton-line skeleton-line--med"></div>
+        <div class="card-skeleton" aria-hidden="true">
+          <div class="skeleton-preview"></div>
+          <div class="skeleton-body">
+            <div class="skeleton-line skeleton-line--short"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--med"></div>
+          </div>
         </div>
-      </div>
-    </div>
-
-    <div class="proof-row" aria-label="Detalii produs">
-      <div class="proof-item">
-        <div class="proof-value" id="proof-price">99</div>
-        <div class="proof-label">după trial, apoi reînnoire anuală <span id="proof-renewal">29</span> până anulezi</div>
-      </div>
-      <div class="proof-item">
-        <div class="proof-value">Trial de 14 zile</div>
-        <div class="proof-label">card obligatoriu — live imediat; taxare în ziua 14 dacă nu anulezi</div>
-      </div>
-      <div class="proof-item">
-        <div class="proof-value">Editezi oricând</div>
-        <div class="proof-label">republici același site în timpul și după trial</div>
+        <div class="card-skeleton" aria-hidden="true">
+          <div class="skeleton-preview"></div>
+          <div class="skeleton-body">
+            <div class="skeleton-line skeleton-line--short"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line skeleton-line--med"></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <section class="how-section" id="cum-e" aria-labelledby="how-title">
-      <h2 id="how-title">Cum funcționează</h2>
+      <h2 id="how-title" class="section-title">Cum funcționează</h2>
       <div class="how-grid">
         <article class="how-step">
           <div class="how-step-num">01</div>
@@ -169,16 +168,102 @@
       </div>
     </section>
 
+    <section class="gift-section" aria-labelledby="gift-title">
+      <h2 id="gift-title" class="section-title">Ce primești, în același preț</h2>
+      <div class="gift-grid">
+        <div class="gift-card gift-card--booking">
+          <div class="gift-booking-copy">
+            <h3>Programări online</h3>
+            <p>Pui serviciile și orele în editor. Clienții aleg ziua și ora direct pe site, iar programările le vezi în contul tău.</p>
+          </div>
+          <div class="gift-booking-demo" aria-hidden="true">
+            <div class="gift-demo-row"><span class="gift-demo-pill is-on">Tuns · 1 oră</span><span class="gift-demo-pill">Vopsit · 1 oră 30</span></div>
+            <div class="gift-demo-days">
+              <span class="gift-demo-dow">Lu</span><span class="gift-demo-dow">Ma</span><span class="gift-demo-dow">Mi</span><span class="gift-demo-dow">Jo</span><span class="gift-demo-dow">Vi</span><span class="gift-demo-dow">Sâ</span><span class="gift-demo-dow">Du</span>
+              <span class="gift-demo-day">3</span><span class="gift-demo-day">4</span><span class="gift-demo-day is-on">5</span><span class="gift-demo-day">6</span><span class="gift-demo-day">7</span><span class="gift-demo-day">8</span><span class="gift-demo-day is-off">9</span>
+            </div>
+            <div class="gift-demo-row"><span class="gift-demo-slot">10:00</span><span class="gift-demo-slot is-on">10:30</span><span class="gift-demo-slot">11:00</span><span class="gift-demo-slot">11:30</span></div>
+          </div>
+        </div>
+        <div class="gift-card">
+          <h3>Mesaje de pe site</h3>
+          <p>Ce îți scriu clienții din formularul de contact găsești în contul tău.</p>
+        </div>
+        <div class="gift-card">
+          <h3>Domeniul tău</h3>
+          <p>Primești o adresă pe loc. Domeniul tău propriu îl conectezi din cont.</p>
+        </div>
+        <div class="gift-card">
+          <h3>Instagram pe site</h3>
+          <p>Postările tale de Instagram apar singure pe site, incluse 12 luni.</p>
+        </div>
+        <div class="gift-card">
+          <h3>Site-ul e al tău</h3>
+          <p>Îl descarci oricând ca arhivă ZIP și îl pui unde vrei.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="price-band proof-row" id="pret" aria-labelledby="price-title">
+      <div class="price-band-copy">
+        <h2 id="price-title" class="section-title">Un singur preț, fără surprize</h2>
+        <p>Primele 14 zile sunt gratuite și site-ul e live de la început. Adaugi un card când publici; dacă anulezi în cele 14 zile, nu plătești nimic.</p>
+      </div>
+      <div class="price-band-items">
+        <div class="proof-item">
+          <div class="proof-value proof-value--accent" id="proof-price">99</div>
+          <div class="proof-label">în ziua 14, primul an</div>
+        </div>
+        <div class="proof-item">
+          <div class="proof-value" id="proof-renewal">29</div>
+          <div class="proof-label">pe an, după aceea, până anulezi</div>
+        </div>
+        <a href="#templates-grid" class="btn-accent">Alege un design <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+
+    <section class="faq-section" id="intrebari" aria-labelledby="faq-title">
+      <h2 id="faq-title" class="section-title">Întrebări, pe scurt</h2>
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary>Trebuie să știu design sau programare?</summary>
+          <p>Nu. Pornești de la un design gata făcut și schimbi textele și pozele direct pe pagină.</p>
+        </details>
+        <details class="faq-item">
+          <summary>De ce îmi cereți cardul la început?</summary>
+          <p>Site-ul e live din prima zi. Prima plată se face abia în ziua 14; dacă anulezi înainte, nu plătești nimic.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Unde văd programările?</summary>
+          <p>În „Site-urile mele”, pe butonul Programări al site-ului.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Pot să-mi folosesc domeniul meu?</summary>
+          <p>Da. Îl conectezi din „Site-urile mele”, de pe cardul site-ului.</p>
+        </details>
+        <details class="faq-item">
+          <summary>Pot pleca oricând cu site-ul?</summary>
+          <p>Da. Îl descarci ca arhivă ZIP și îl poți pune la orice firmă de găzduire.</p>
+        </details>
+      </div>
+    </section>
+
     <footer class="landing-footer">
-      <p>Hidook Site Builder — <strong id="footer-price">99</strong> după trial, apoi reînnoire anuală <strong id="footer-renewal">29</strong> până anulezi.</p>
-      <p>Fără boți. Card → trial de 14 zile → live imediat. Taxare în ziua 14 dacă nu anulezi. Site-ul tău, editările tale.</p>
-      <p class="landing-footer-legal">
-        <a href="/app/terms.html">Termeni</a>
-        <span aria-hidden="true">·</span>
-        <a href="/app/privacy.html">Confidențialitate</a>
-        <span aria-hidden="true">·</span>
-        <a href="/app/cookies.html">Cookie-uri</a>
-      </p>
+      <div class="landing-footer-inner">
+        <div class="landing-footer-cta">
+          <p class="landing-footer-title">Gata să-l vezi <em>live?</em></p>
+          <a href="#templates-grid" class="btn-accent">Începe cu un design <span aria-hidden="true">→</span></a>
+        </div>
+        <p>Hidook Site Builder — <strong id="footer-price">99</strong> după trial, apoi reînnoire anuală <strong id="footer-renewal">29</strong> până anulezi.</p>
+        <p>Fără boți. Card → trial de 14 zile → live imediat. Taxare în ziua 14 dacă nu anulezi. Site-ul tău, editările tale.</p>
+        <p class="landing-footer-legal">
+          <a href="/app/terms.html">Termeni</a>
+          <span aria-hidden="true">·</span>
+          <a href="/app/privacy.html">Confidențialitate</a>
+          <span aria-hidden="true">·</span>
+          <a href="/app/cookies.html">Cookie-uri</a>
+        </p>
+      </div>
     </footer>
   </section>
 

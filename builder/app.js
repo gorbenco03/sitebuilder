@@ -1194,15 +1194,15 @@ function renderTemplatesGrid() {
       previewLoaded = true;
       observer.disconnect();
       try {
-        const site = window.SB.defaultSite(id);
         const iframe = document.createElement('iframe');
         iframe.className = 'template-card-preview-frame';
         iframe.title = 'Previzualizare ' + pack.label;
         iframe.setAttribute('sandbox', '');
         iframe.setAttribute('aria-hidden', 'true');
         iframe.tabIndex = -1;
+        iframe.dataset.pack = id;
         iframe.addEventListener('load', () => shimmer.classList.add('loaded'));
-        iframe.srcdoc = window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/');
+        iframe.srcdoc = packPreviewHtml(id);
         previewWrap.appendChild(iframe);
       } catch (_) {
         shimmer.classList.add('loaded');
@@ -1231,6 +1231,13 @@ function renderTemplatesGrid() {
 
   applyCatalogFilter(activeCatalogFilter);
   populateHeroStage();
+}
+
+/** First page of a starter pack, with the landing name in place of the demo one. */
+function packPreviewHtml(id) {
+  const site = window.SB.defaultSite(id);
+  if (landingName && !(window.SB_PACKS[id] || {}).blank) window.SB.applyIdentity(site, { name: landingName });
+  return window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/');
 }
 
 /** Catalog chip each starter pack sits under; "De la zero" shows under every chip. */
@@ -1271,13 +1278,39 @@ function blocksResumeUrl(reason) {
   }
 }
 
-/** Open the block editor on a fresh copy of a starter pack. */
+/** Open the block editor on a fresh copy of a starter pack (with the name typed on the landing). */
 function startBlocksSite(packId) {
-  window.location.href = '/app/blocks/?pack=' + encodeURIComponent(packId);
+  const name = landingName ? '&name=' + encodeURIComponent(landingName) : '';
+  window.location.href = '/app/blocks/?pack=' + encodeURIComponent(packId) + name;
 }
 
 let activeCatalogFilter = 'all';
 let heroStagePopulated = false;
+// Business name typed in the landing hero: shown in every preview, handed to the editor.
+let landingName = '';
+
+let landingNameTimer = null;
+function onLandingNameInput(e) {
+  landingName = String(e.target.value || '').trim().slice(0, 80);
+  clearTimeout(landingNameTimer);
+  landingNameTimer = setTimeout(() => {
+    document.querySelectorAll('#hero-stage-stack iframe[data-pack], #templates-grid iframe[data-pack]').forEach((f) => {
+      try { f.srcdoc = packPreviewHtml(f.dataset.pack); } catch (_) { /* keep the previous preview */ }
+    });
+  }, 250);
+}
+
+function wireLandingName() {
+  const input = $('hero-name');
+  const form = $('hero-name-form');
+  if (!input || !form) return;
+  input.addEventListener('input', onLandingNameInput);
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const grid = $('templates-grid');
+    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
 
 function applyCatalogFilter(filter) {
   activeCatalogFilter = filter || 'all';
@@ -1307,13 +1340,13 @@ function populateHeroStage() {
   slots.forEach((slot, i) => {
     const id = ids[i % ids.length];
     try {
-      const site = window.SB.defaultSite(id);
       const iframe = document.createElement('iframe');
       iframe.title = '';
       iframe.setAttribute('sandbox', '');
       iframe.setAttribute('tabindex', '-1');
       iframe.setAttribute('aria-hidden', 'true');
-      iframe.srcdoc = window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/');
+      iframe.dataset.pack = id;
+      iframe.srcdoc = packPreviewHtml(id);
       slot.innerHTML = '';
       slot.appendChild(iframe);
     } catch (_) { /* keep empty paper card */ }
@@ -1448,6 +1481,8 @@ function buildSiteCard(site) {
     badgeClass = 'status-draft'; badgeLabel = 'Neplătit';
   }
 
+  if (!site.paid) card.classList.add('site-card--draft');
+
   const info = document.createElement('div');
   info.className = 'site-card-info';
 
@@ -1538,7 +1573,7 @@ function buildSiteCard(site) {
   // keeps its billing, domain and delete actions.
   if (site.templateId === 'blocks') {
     const editBtn = document.createElement('a');
-    editBtn.className = 'btn-ghost btn-sm';
+    editBtn.className = 'btn-ghost btn-sm site-card-edit';
     editBtn.textContent = 'Editează';
     editBtn.href = '/app/blocks/?site=' + encodeURIComponent(site.id);
     editBtn.setAttribute('aria-label', 'Editează site-ul ' + (site.projectName || site.slug || ''));
@@ -2715,6 +2750,8 @@ async function openSiteMessagesModal(siteId, opener) {
 // ---------------------------------------------------------------------------
 
 const screens = ['templates', 'dashboard'];
+/** In-page landing sections a hash link may point at. */
+const LANDING_ANCHORS = ['cum-e', 'templates-grid', 'pret', 'intrebari'];
 
 function showScreen(name) {
   screens.forEach(s => {
@@ -2777,12 +2814,12 @@ async function handleRoute(hash) {
   }
   const route = raw;
 
-  if (route === 'templates' || route === 'cum-e' || route === 'templates-grid') {
+  if (route === 'templates' || LANDING_ANCHORS.includes(route)) {
     showScreen('templates');
     renderTemplatesGrid();
-    if (route === 'cum-e' || route === 'templates-grid') {
+    if (route !== 'templates') {
       requestAnimationFrame(() => {
-        const target = document.getElementById(route === 'cum-e' ? 'cum-e' : 'templates-grid');
+        const target = document.getElementById(route);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
@@ -2842,6 +2879,8 @@ function returnToEditor() {
 }
 
 function wireStaticButtons() {
+  wireLandingName();
+
   // Catalog filter chips (landing)
   const chips = $('catalog-chips');
   if (chips) {
