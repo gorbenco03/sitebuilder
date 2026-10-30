@@ -24,7 +24,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PAGE = path.join(__dirname, 'promo-elena.html');
 
 function enabled() {
-    return typeof process.env.ELENA_KEY === 'string' && process.env.ELENA_KEY.length >= 8;
+    return typeof process.env.ELENA_KEY === 'string' && process.env.ELENA_KEY.length >= 4;
 }
 
 function file() {
@@ -52,12 +52,31 @@ function normEmail(v) {
     return typeof v === 'string' ? v.trim().toLowerCase() : '';
 }
 
+// The code can be 4 digits, so wrong guesses are capped per client IP.
+const MAX_WRONG = 10;
+const LOCK_MS = 15 * 60 * 1000;
+const wrong = new Map();
+
+function clientIp(req) {
+    const fwd = String((req.headers && req.headers['x-forwarded-for']) || '').split(',')[0].trim();
+    return fwd || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+
 function keyOk(req) {
     if (!enabled()) return false;
+    const ip = clientIp(req);
+    const now = Date.now();
+    const w = wrong.get(ip);
+    if (w && now - w.since > LOCK_MS) wrong.delete(ip);
+    else if (w && w.n >= MAX_WRONG) return false;
     const got = String((req.headers && req.headers['x-elena-key']) || '');
     const a = crypto.createHash('sha256').update(process.env.ELENA_KEY).digest();
     const b = crypto.createHash('sha256').update(got).digest();
-    return crypto.timingSafeEqual(a, b);
+    if (crypto.timingSafeEqual(a, b)) return true;
+    const cur = wrong.get(ip) || { n: 0, since: now };
+    cur.n += 1;
+    wrong.set(ip, cur);
+    return false;
 }
 
 /** True when this email was added by Elena and the offer is on. */

@@ -94,3 +94,13 @@ test('key-gated list, buyer publishes free once, stranger does not', async (t) =
   const pub2 = await publish(s.base, other);
   assert.notStrictEqual(pub2.body.site && pub2.body.site.paid, true, 'a stranger is not published for free');
 });
+
+test('a 4-digit code works and 10 wrong tries lock that IP out', async (t) => {
+  const s = boot({ ELENA_KEY: '4821' });
+  t.after(s.stop);
+  await s.ready;
+  const list = (key) => fetch(s.base + '/api/elena/buyers', { headers: { 'X-Elena-Key': key } });
+  assert.strictEqual((await list('4821')).status, 200);
+  for (let i = 0; i < 10; i++) assert.strictEqual((await list(String(1000 + i))).status, 401);
+  assert.strictEqual((await list('4821')).status, 401, 'locked even with the right code');
+});
