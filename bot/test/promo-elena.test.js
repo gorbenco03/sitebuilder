@@ -101,6 +101,10 @@ test('a 4-digit code works and 10 wrong tries lock that IP out', async (t) => {
   await s.ready;
   const list = (key) => fetch(s.base + '/api/elena/buyers', { headers: { 'X-Elena-Key': key } });
   assert.strictEqual((await list('4821')).status, 200);
+  const H = { 'Content-Type': 'application/json', 'X-Elena-Key': '4821', Origin: s.base };
+  await fetch(s.base + '/api/elena/buyers', { method: 'POST', headers: H, body: JSON.stringify({ email: 'tel@example.ro', phone: '0722 123 456' }) });
+  const rows = await (await list('4821')).json();
+  assert.strictEqual((rows.buyers || rows).find((b) => b.email === 'tel@example.ro').phone, '0722 123 456');
   for (let i = 0; i < 10; i++) assert.strictEqual((await list(String(1000 + i))).status, 401);
   assert.strictEqual((await list('4821')).status, 401, 'locked even with the right code');
 });

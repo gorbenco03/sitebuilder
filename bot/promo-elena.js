@@ -120,7 +120,7 @@ function createRoutes(deps) {
             } catch (e) {
                 log('promo.elena.list_error', { err: e.message }, 'error');
             }
-            out.push({ email: b.email, name: b.name || '', addedAt: b.addedAt, cashPaid: !!b.cashPaid, sites });
+            out.push({ email: b.email, name: b.name || '', phone: b.phone || '', addedAt: b.addedAt, cashPaid: !!b.cashPaid, sites });
         }
         return out;
     }
@@ -163,6 +163,7 @@ function createRoutes(deps) {
                 d.buyers.unshift(buyer);
             }
             if (body && typeof body.name === 'string') buyer.name = body.name.trim().slice(0, 80);
+            if (body && typeof body.phone === 'string' && body.phone.trim()) buyer.phone = body.phone.trim().slice(0, 30);
             save(d);
             await getRegistry().getOrCreateUserByEmail(email);
             let link = { sent: false };

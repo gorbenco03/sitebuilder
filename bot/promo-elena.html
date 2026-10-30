@@ -14,7 +14,7 @@ h1{font-size:24px;margin:4px 0 2px}
 .sub{color:var(--muted);margin:0 0 18px;font-size:14px}
 .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
 label{display:block;font-weight:600;font-size:14px;margin:0 0 6px}
-input[type=email],input[type=text],input[type=password]{width:100%;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+input[type=email],input[type=text],input[type=tel],input[type=password]{width:100%;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
 .field{margin-bottom:12px}
 button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16px;min-height:46px;cursor:pointer}
 .primary{background:var(--accent);color:#fff;width:100%;font-size:17px}
@@ -66,6 +66,10 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
         <div class="field">
           <label for="name">Nume (opțional)</label>
           <input type="text" id="name" autocomplete="off" placeholder="ex. Salon Ana">
+        </div>
+        <div class="field">
+          <label for="phone">Telefon (opțional)</label>
+          <input type="tel" id="phone" inputmode="tel" autocomplete="off" placeholder="ex. 0722 123 456">
         </div>
         <button class="primary" type="submit" id="add-btn">Adaugă și trimite linkul</button>
         <p class="msg" id="add-msg" role="status" hidden></p>
@@ -123,6 +127,7 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
       return '<div class="buyer' + (b.cashPaid ? ' paid' : '') + '" data-email="' + esc(b.email) + '">' +
         '<div class="who">' + esc(b.name || b.email) + '</div>' +
         (b.name ? '<div class="email">' + esc(b.email) + '</div>' : '') +
+        (b.phone ? '<div class="email"><a href="tel:' + esc(b.phone.replace(/[^\d+]/g, '')) + '">' + esc(b.phone) + '</a></div>' : '') +
         state +
         '<div class="row">' +
           '<label class="pay"><input type="checkbox" data-act="paid"' + (b.cashPaid ? ' checked' : '') + '> Achitat</label>' +
@@ -168,9 +173,9 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
     var email = $('email').value.trim();
     var btn = $('add-btn');
     btn.disabled = true; btn.textContent = 'Se trimite…';
-    api('POST', '/api/elena/buyers', { email: email, name: $('name').value.trim() }).then(function (d) {
+    api('POST', '/api/elena/buyers', { email: email, name: $('name').value.trim(), phone: $('phone').value.trim() }).then(function (d) {
       say(d.sent ? 'Gata! ' + email + ' a primit linkul pe email.' : 'Adăugat, dar emailul nu a plecat. Apasă „Retrimite linkul” peste un minut.', d.sent, d.devLink);
-      $('email').value = ''; $('name').value = '';
+      $('email').value = ''; $('name').value = ''; $('phone').value = '';
       $('email').focus();
       return load();
     }).catch(function (err) { say(err.message, false); })
