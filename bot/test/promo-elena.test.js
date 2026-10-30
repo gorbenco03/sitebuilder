@@ -104,3 +104,20 @@ test('a 4-digit code works and 10 wrong tries lock that IP out', async (t) => {
   for (let i = 0; i < 10; i++) assert.strictEqual((await list(String(1000 + i))).status, 401);
   assert.strictEqual((await list('4821')).status, 401, 'locked even with the right code');
 });
+
+test('showcase sites under /elena/<name>/ are public, even without ELENA_KEY', async (t) => {
+  const s = boot({ ELENA_KEY: '' });
+  t.after(s.stop);
+  await s.ready;
+  const r = await fetch(s.base + '/elena/ruj', { redirect: 'manual' });
+  assert.strictEqual(r.status, 301);
+  assert.strictEqual(r.headers.get('location'), '/elena/ruj/');
+  for (const name of ['ruj', 'crema', 'ser', 'salon']) {
+    const page = await fetch(s.base + `/elena/${name}/`);
+    assert.strictEqual(page.status, 200, name);
+    assert.match(page.headers.get('content-security-policy'), /wasm-unsafe-eval/);
+    assert.match(await page.text(), /<script type="module"[^>]*src="\.\/assets\//, name + ' uses relative asset paths');
+  }
+  assert.strictEqual((await fetch(s.base + '/elena/ruj/%2e%2e/%2e%2e/server.js')).status, 404);
+  assert.strictEqual((await fetch(s.base + '/elena/altceva/')).status, 404);
+});

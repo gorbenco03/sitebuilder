@@ -200,4 +200,53 @@ function createRoutes(deps) {
     };
 }
 
-module.exports = { enabled, isBuyer, createRoutes };
+// Showcase sites for the event (built Vite projects, relative paths), public
+// with or without ELENA_KEY: /elena/ruj/, /elena/crema/, /elena/ser/, /elena/salon/.
+const DEMO_DIR = path.join(__dirname, 'promo-elena-sites');
+const DEMO_RE = /^\/elena\/(ruj|crema|ser|salon)(\/.*)?$/;
+const DEMO_MIME = {
+    '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.webp': 'image/webp',
+    '.avif': 'image/avif', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff': 'font/woff',
+    '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.glb': 'model/gltf-binary',
+    '.hdr': 'application/octet-stream', '.txt': 'text/plain; charset=utf-8',
+};
+// Three.js decoders need wasm and blob: workers/images; nothing loads off-site.
+const DEMO_CSP = [
+    "default-src 'self'", "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
+    "worker-src 'self' blob:", "style-src 'self' 'unsafe-inline'", "img-src 'self' data: blob:",
+    "font-src 'self' data:", "connect-src 'self' data: blob:", "object-src 'none'",
+    "base-uri 'self'", "frame-ancestors 'self'",
+].join('; ');
+
+/** Serves a showcase site; returns false when the URL is not one. */
+function serveDemo(req, res, url) {
+    const m = DEMO_RE.exec(url);
+    if (!m || (req.method !== 'GET' && req.method !== 'HEAD')) return false;
+    if (!m[2]) {
+        res.writeHead(301, { Location: `/elena/${m[1]}/` });
+        res.end();
+        return true;
+    }
+    const root = path.join(DEMO_DIR, m[1]);
+    let rel;
+    try { rel = decodeURIComponent(m[2]); } catch (_) { return false; }
+    let fp = path.normalize(path.join(root, rel.endsWith('/') ? rel + 'index.html' : rel));
+    if (!fp.startsWith(root + path.sep)) return false;
+    let st;
+    try { st = fs.statSync(fp); } catch (_) { return false; }
+    if (!st.isFile()) return false;
+    const isHtml = fp.endsWith('.html');
+    res.writeHead(200, {
+        'Content-Type': DEMO_MIME[path.extname(fp).toLowerCase()] || 'application/octet-stream',
+        'Content-Length': st.size,
+        'Cache-Control': isHtml ? 'no-cache' : (fp.includes(`${path.sep}assets${path.sep}`) ? 'public, max-age=31536000, immutable' : 'public, max-age=86400'),
+        'Content-Security-Policy': DEMO_CSP,
+        'X-Robots-Tag': 'noindex',
+    });
+    if (req.method === 'HEAD') { res.end(); return true; }
+    fs.createReadStream(fp).pipe(res);
+    return true;
+}
+
+module.exports = { enabled, isBuyer, createRoutes, serveDemo };

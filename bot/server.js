@@ -4439,6 +4439,8 @@ function createHandler({ onStripeEvent } = {}) {
                 return sendJson(res, status, readiness);
             }
 
+            if (url.startsWith('/elena/') && promoElena.serveDemo(req, res, url)) return;
+
             // ── /elena event sales page (bot/promo-elena.js; ELENA_KEY or 404) ──
             if (url === '/elena' || url === '/elena/' || url.startsWith('/api/elena/')) {
                 if (!elenaRoutes) {
