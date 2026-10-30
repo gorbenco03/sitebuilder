@@ -693,9 +693,13 @@ function isHostingExpired(site) {
 // 18. Auth
 // ---------------------------------------------------------------------------
 
+// Event buyers (/elena) publish their first site without a card.
+let freePublish = false;
+
 async function fetchCurrentUser() {
   try {
     const data = await apiGet('/api/me');
+    freePublish = !!data.freePublish;
     return data.user || null;
   } catch (e) {
     if (e.status === 401) return null;
@@ -1595,6 +1599,12 @@ function buildSiteCard(site) {
   // below at the yearly price — it never gets a second trial.
   if (legacyDraft) {
     // No pay action; Șterge below stays.
+  } else if (freePublish && !site.paid && site.status !== 'unpublished') {
+    const pubBtn = document.createElement('a');
+    pubBtn.className = 'btn-primary btn-sm';
+    pubBtn.textContent = 'Publică site-ul';
+    pubBtn.href = '/app/blocks/?site=' + encodeURIComponent(site.id);
+    actions.appendChild(pubBtn);
   } else if ((!site.paid || hostingExpired) && site.status !== 'unpublished') {
     const keepBtn = document.createElement('button');
     keepBtn.className = 'btn-primary btn-sm';
