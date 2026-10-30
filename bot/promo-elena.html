@@ -38,6 +38,14 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
 .pay input{width:26px;height:26px;accent-color:var(--ok)}
 .empty{color:var(--muted);text-align:center;padding:20px 0}
 .dev{font-size:12px;word-break:break-all}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:transparent;padding:0;min-height:40px;color:var(--ink);font-size:16px;text-align:left}
+.track{position:relative;flex:none;width:52px;height:30px;border-radius:15px;background:#D6CEC2;transition:background .2s}
+.track::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.switch[aria-checked=true] .track{background:var(--accent)}
+.switch[aria-checked=true] .track::after{transform:translateX(22px)}
+.demos{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.demos a{display:block;padding:12px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none}
+.demos b{display:block}.demos span{font-size:13px;color:var(--muted)}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -58,6 +66,17 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
   </section>
 
   <div id="app" hidden>
+    <section class="box">
+      <button class="switch" type="button" id="demos-switch" role="switch" aria-checked="false" aria-controls="demos">
+        <span>Site-uri de prezentare</span><span class="track" aria-hidden="true"></span>
+      </button>
+      <ul class="demos" id="demos" hidden>
+        <li><a href="/elena/ruj/" target="_blank" rel="noopener"><b>Ruj</b><span>LUMÉA Rouge, /elena/ruj</span></a></li>
+        <li><a href="/elena/crema/" target="_blank" rel="noopener"><b>Cremă</b><span>LUMÉA Aqua, /elena/crema</span></a></li>
+        <li><a href="/elena/ser/" target="_blank" rel="noopener"><b>Ser</b><span>LUMÉA Aurum, /elena/ser</span></a></li>
+        <li><a href="/elena/salon/" target="_blank" rel="noopener"><b>Salon</b><span>Halo Atelier, /elena/salon</span></a></li>
+      </ul>
+    </section>
     <section class="box">
       <form id="add-form">
         <div class="field">
@@ -92,6 +111,18 @@ button{font:inherit;font-weight:600;border-radius:10px;border:0;padding:12px 16p
   var key = '';
   try { key = localStorage.getItem(KEY) || ''; } catch (_) {}
   var $ = function (id) { return document.getElementById(id); };
+
+  function setDemos(on) {
+    $('demos-switch').setAttribute('aria-checked', on ? 'true' : 'false');
+    $('demos').hidden = !on;
+    try { localStorage.setItem('elena.demos', on ? '1' : ''); } catch (_) {}
+  }
+  var demosOn = false;
+  try { demosOn = localStorage.getItem('elena.demos') === '1'; } catch (_) {}
+  setDemos(demosOn);
+  $('demos-switch').addEventListener('click', function () {
+    setDemos($('demos-switch').getAttribute('aria-checked') !== 'true');
+  });
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 
   function api(method, url, body) {
