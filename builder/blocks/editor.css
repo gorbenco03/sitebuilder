@@ -33,7 +33,7 @@ button { font: inherit; cursor: pointer; }
 .tabs button { flex: 1; border: 0; background: none; padding: 12px; font-weight: 600; color: var(--ui-mute); border-bottom: 2px solid transparent; }
 .tabs button[aria-selected="true"] { color: var(--ui-ink); border-bottom-color: var(--ui-accent); }
 .panel { padding: 14px; overflow: auto; flex: 1; }
-.panel h3 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-mute); margin: 18px 0 8px; }
+.panel h3 { font-size: 13px; font-weight: 600; color: var(--ui-mute); margin: 20px 0 8px; }
 .panel h3:first-child { margin-top: 0; }
 .hint { font-size: 13px; color: var(--ui-mute); margin: 0 0 10px; }
 
@@ -75,7 +75,7 @@ button { font: inherit; cursor: pointer; }
 .insp__head h2 { font-size: 16px; margin: 0; }
 .insp__head button, .lib__head button { border: 0; background: none; font-size: 24px; line-height: 1; color: var(--ui-mute); width: 36px; height: 36px; }
 #insp-body { padding: 14px; overflow: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; }
-.grp h3 { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-mute); margin: 0 0 8px; }
+.grp h3 { font-size: 13px; font-weight: 600; color: var(--ui-mute); margin: 0 0 8px; }
 .pills { display: flex; flex-wrap: wrap; gap: 6px; }
 .pills button { border: 1px solid var(--ui-line); background: #fff; border-radius: 999px; padding: 7px 12px; font-size: 13px; }
 .pills button[aria-pressed="true"] { background: var(--ui-ink); border-color: var(--ui-ink); color: #fff; }
