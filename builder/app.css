@@ -686,10 +686,8 @@ input, textarea, select {
 
 .section-eyebrow,
 .hero-eyebrow {
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   color: var(--accent);
 }
 .hero-title {
@@ -756,10 +754,13 @@ input, textarea, select {
   .hero-name { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4); }
   .hero-name .hero-cta { flex: 1 1 100%; }
 }
-.hero-hint {
+.hero-terms {
   font-size: var(--fs-sm);
+  line-height: 1.5;
   color: var(--text-muted);
+  max-width: 52ch;
 }
+.hero-terms strong { color: var(--text); font-weight: 600; }
 
 /* Three live designs in staggered columns. */
 .hero-stage {
@@ -1487,13 +1488,12 @@ input, textarea, select {
 .status-live    { background: var(--success-bg); color: var(--success-strong); }
 .status-live::before { background: var(--success); }
 .status-unpaid   { background: var(--warning-bg-strong); color: var(--warning-strong); }
-.status-unpaid::before { background: var(--warning-dot); animation: pulse-dot 1.8s ease infinite; }
+.status-unpaid::before { background: var(--warning-dot); }
 .status-expired { background: var(--error-bg); color: var(--error); }
 .status-expired::before { background: var(--error); }
 .status-draft   { background: var(--bg); color: var(--text-muted); }
 .status-draft::before { background: var(--text-light); }
 
-@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 /* U-08: one shared visual pattern for every empty/error/loading placeholder —
    icon badge, one-line title, one-line explanation, one primary action.
@@ -1844,8 +1844,7 @@ input, textarea, select {
 .dns-records-table th {
   text-align: left;
   font-size: var(--fs-2xs);
-  text-transform: uppercase;
-  letter-spacing: .03em;
+  font-weight: 600;
   color: var(--text-light);
   padding: 0 var(--space-2) .35rem 0;
   font-weight: 600;
@@ -1970,8 +1969,6 @@ input, textarea, select {
   background: var(--accent);
   padding: .1rem .45rem;
   border-radius: var(--radius-pill);
-  text-transform: uppercase;
-  letter-spacing: .02em;
 }
 .site-message-from { font-size: var(--fs-sm); color: var(--text); }
 .site-message-text { font-size: var(--fs-sm); color: var(--text); line-height: 1.4; margin: 0; white-space: pre-wrap; word-break: break-word; }

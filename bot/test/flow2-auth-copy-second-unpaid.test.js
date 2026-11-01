@@ -72,7 +72,7 @@ function extractFunction(src, name) {
   const copyHandler = appSrc.slice(copyStart, copyEnd);
   await check('copy-address success, idle, and error states are Romanian only', () => {
     assert.ok(copyStart >= 0 && copyEnd > copyStart, 'copy-address handler remains extractable');
-    assert.ok(copyHandler.includes("copyBtn.textContent = 'Copiat!'"), 'success state says Copiat!');
+    assert.ok(copyHandler.includes("copyBtn.textContent = 'Copiat'"), 'success state says Copiat');
     assert.ok(copyHandler.includes('Copiază'), 'idle state says Copiază');
     assert.ok(!copyHandler.includes('Copied!'), 'English success state is absent');
     assert.ok(!/> Copy['<]/.test(copyHandler), 'English idle state is absent');
