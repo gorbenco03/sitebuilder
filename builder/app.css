@@ -293,6 +293,7 @@ input, textarea, select {
 .app-header .header-cta {
   display: none;
   margin-left: 0.35rem;
+  order: 1;
 }
 @media (min-width: 640px) {
   .app-header a.header-cta,
@@ -300,6 +301,25 @@ input, textarea, select {
     display: inline-flex;
   }
 }
+
+/* Returning owners sign in from any screen; hidden once signed in. */
+.header-login {
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font: inherit;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color var(--transition);
+}
+.header-login:hover { background: var(--border); }
+.header-login:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
 .header-right {
   display: flex;
@@ -342,12 +362,17 @@ input, textarea, select {
   .logo {
     order: 1;
   }
+  .header-login {
+    padding: 0 var(--space-2);
+    font-size: var(--fs-sm);
+  }
   .header-right {
     order: 2;
     margin-left: auto;
     flex: 1 1 auto;
     min-width: 0;
     max-width: calc(100% - 7rem);
+    justify-content: flex-end;
     gap: 0.35rem;
   }
   .user-badge {

@@ -715,6 +715,8 @@ function updateUserUI(user) {
   // R-27: the header account menu carries "Descarcă datele mele" /
   // "Șterge contul" / "Deconectare de pe toate dispozitivele".
   const headerMenuWrap = $('account-menu-wrap-header');
+  const loginBtn = $('btn-header-login');
+  if (loginBtn) loginBtn.style.display = user ? 'none' : '';
   if (user) {
     if (badge) { badge.textContent = user.email || ('ID: ' + String(user.id).slice(0,8)); show(badge); }
     if (logoutBtn) show(logoutBtn);
@@ -918,23 +920,25 @@ function tryTelegramAuth() {
 function wireDashboardAuthButton() {
   const btn = $('btn-dashboard-auth');
   if (!btn) return;
-  btn.onclick = () => {
-    // m1: this modal is reused from the publish flow, but nobody here is
-    // publishing anything — set a context-appropriate title BEFORE opening it
-    // (the static markup default is the publish-flow copy, for that caller).
-    const authTitleEl = $('modal-auth-title');
-    if (authTitleEl) authTitleEl.textContent = RO.AUTH_TITLE_VIEW_SITES;
-    show($('form-auth-email'));
-    hide($('auth-sent'));
-    hideId('auth-error');
-    openModal('modal-publish');
-    wireAuthForm(async () => {
-      closeModal('modal-publish');
-      const user = await fetchCurrentUser().catch(() => null);
-      updateUserUI(user);
-      if (user) await loadDashboard();
-    });
-  };
+  btn.onclick = () => openSignInToSites(btn);
+}
+
+/** Header "Intră în cont" and the #dashboard Intră: sign in, then Site-urile mele. */
+function openSignInToSites(opener) {
+  // m1: this modal is reused from the publish flow, but nobody here is
+  // publishing anything — set a context-appropriate title BEFORE opening it
+  // (the static markup default is the publish-flow copy, for that caller).
+  const authTitleEl = $('modal-auth-title');
+  if (authTitleEl) authTitleEl.textContent = RO.AUTH_TITLE_VIEW_SITES;
+  show($('form-auth-email'));
+  hide($('auth-sent'));
+  hideId('auth-error');
+  openModal('modal-publish', opener);
+  wireAuthForm(async () => {
+    closeModal('modal-publish');
+    if (window.location.hash === '#dashboard') await handleRoute('#dashboard');
+    else window.location.hash = '#dashboard';
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -2961,6 +2965,8 @@ function returnToEditor() {
 
 function wireStaticButtons() {
   wireLandingName();
+  const headerLogin = $('btn-header-login');
+  if (headerLogin) headerLogin.addEventListener('click', () => openSignInToSites(headerLogin));
   const demoInput = $('demo-title-input');
   if (demoInput) {
     let demoTimer;
