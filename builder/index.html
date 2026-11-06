@@ -339,8 +339,16 @@
         </div>
         <p class="auth-sent-title">Link trimis. Verifică inbox-ul</p>
         <p class="auth-sent-sub">Deschide emailul și apasă linkul ca să te autentifici.</p>
+        <form id="form-auth-code" class="auth-code" novalidate autocomplete="off">
+          <label class="field-label" for="input-auth-code">Sau scrie codul de 6 cifre din email</label>
+          <div class="auth-code-row">
+            <input id="input-auth-code" class="field-input auth-code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="123456" aria-describedby="auth-code-error" />
+            <button class="btn-primary" type="submit" id="btn-auth-code">Intră</button>
+          </div>
+          <div id="auth-code-error" class="field-error" role="alert" style="display:none"></div>
+        </form>
         <p class="auth-sent-status">Rămâi pe această pagină — continuăm automat imediat ce te autentifici în acest browser.</p>
-        <p class="auth-sent-note">Dacă deschizi linkul pe telefon sau pe alt calculator, din siguranță sesiunea rămâne doar acolo — deschide linkul chiar în acest browser (sau retrimite-l mai sus) ca să continui aici.</p>
+        <p class="auth-sent-note">Dacă deschizi linkul pe telefon sau pe alt calculator, din siguranță sesiunea rămâne doar acolo — scrie aici codul din email ca să continui în acest browser.</p>
         <a id="dev-link" href="#" target="_blank" rel="noopener noreferrer" style="display:none" class="dev-link" aria-label="Deschide site-ul">Deschide site-ul</a>
       </div>
     </div>

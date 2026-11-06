@@ -1648,6 +1648,9 @@ input, textarea, select {
 .auth-sent-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
 .auth-sent-title { font-size: var(--fs-md); font-weight: 600; color: var(--text); }
 .auth-sent-sub { font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.5; }
+.auth-code { width: 100%; text-align: left; display: flex; flex-direction: column; gap: var(--space-2); }
+.auth-code-row { display: flex; gap: var(--space-2); }
+.auth-code-input { flex: 1 1 auto; min-width: 0; font-variant-numeric: tabular-nums; letter-spacing: 0.2em; }
 .auth-sent-status { font-size: var(--fs-xs); color: var(--accent-hover); line-height: 1.5; }
 .auth-sent-note { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.5; opacity: 0.85; }
 .dev-link {

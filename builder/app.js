@@ -1003,6 +1003,48 @@ function startAuthPolling(onAuthSuccess) {
   authPollTimer = setTimeout(tryOnce, 2000);
 }
 
+/** The 6-digit code from the sign-in email: same session as the link, typed here. */
+function wireAuthCodeForm(email, devCode, onAuthSuccess) {
+  const form = $('form-auth-code');
+  const input = $('input-auth-code');
+  const errorDiv = $('auth-code-error');
+  if (!form || !input) return;
+  input.value = '';
+  if (errorDiv) hide(errorDiv);
+  const label = form.querySelector('label');
+  if (label) label.textContent = devCode
+    ? 'Sau scrie codul de 6 cifre (cod de test: ' + devCode + ')'
+    : 'Sau scrie codul de 6 cifre din email';
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const code = input.value.replace(/\s+/g, '');
+    if (!/^\d{6}$/.test(code)) {
+      if (errorDiv) { errorDiv.textContent = 'Scrie codul de 6 cifre din email.'; show(errorDiv); }
+      return;
+    }
+    const btn = $('btn-auth-code');
+    setBtnLoading(btn, true, 'Se verifică…');
+    if (errorDiv) hide(errorDiv);
+    try {
+      await apiPost('/api/auth/code', { email, code });
+      const user = await fetchCurrentUser().catch(() => null);
+      if (!user) throw new Error('no session');
+      stopAuthPolling();
+      updateUserUI(user);
+      closeModal('modal-publish');
+      hideToast();
+      if (onAuthSuccess) {
+        setLoading(true, 'Se încarcă…');
+        try { await onAuthSuccess(); } catch (_) {} finally { setLoading(false); }
+      }
+    } catch (err) {
+      if (errorDiv) { errorDiv.textContent = safeServerMessage(err, 'Codul nu a putut fi verificat. Încearcă din nou.'); show(errorDiv); }
+    } finally {
+      setBtnLoading(btn, false);
+    }
+  };
+}
+
 function wireAuthForm(onAuthSuccess) {
   const form = $('form-auth-email');
   const sentDiv = $('auth-sent');
@@ -1031,6 +1073,7 @@ function wireAuthForm(onAuthSuccess) {
         const res = await apiPost('/api/auth/email', { email });
         if (form) hide(form);
         if (sentDiv) show(sentDiv);
+        wireAuthCodeForm(email, res.devCode, onAuthSuccess);
         // SESS-03: start waiting for the SAME browser to become signed in —
         // covers both "clicked the link in this same browser" and the dev
         // link below (which also stops this once it succeeds on its own).

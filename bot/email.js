@@ -34,6 +34,7 @@ async function sendMagicLink(email, url, opts = {}) {
     const intro = welcome
         ? 'Contul tău e gata și site-ul e deja plătit. Apasă butonul, alege un design și publică-l — fără card.'
         : 'Apasă butonul de mai jos ca să intri în cont.';
+    const code = /^\d{6}$/.test(String(opts.code || '')) ? String(opts.code) : '';
     const later = welcome
         ? 'Dacă linkul a expirat, cere unul nou de pe site, cu același email.'
         : 'Dacă nu ai cerut acest email, îl poți ignora în siguranță.';
@@ -50,7 +51,11 @@ async function sendMagicLink(email, url, opts = {}) {
               text-decoration:none;font-size:16px;display:inline-block">
       Intră în cont
     </a>
-  </p>
+  </p>${code ? `
+  <p style="text-align:center;font-size:14px;color:#555">
+    Sau scrie acest cod în fereastra de autentificare:<br>
+    <strong style="display:inline-block;margin-top:8px;font-size:28px;letter-spacing:6px;color:#222">${code}</strong>
+  </p>` : ''}
   <p style="font-size:13px;color:#888">
     ${later}
   </p>
@@ -65,6 +70,7 @@ async function sendMagicLink(email, url, opts = {}) {
         `Bună,\n\n` +
         `${intro} Linkul este valabil 15 minute.\n\n` +
         `${url}\n\n` +
+        (code ? `Sau scrie acest cod în fereastra de autentificare: ${code}\n\n` : '') +
         `${later}\n\n` +
         `— Hidook Site Builder`;
 
