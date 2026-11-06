@@ -367,6 +367,23 @@ async function _reactivateFromNonPaymentUnpublish(site, { subscriptionId, notify
  *   already know — they clicked Cancel in the portal).
  * @returns {Promise<object|null>}
  */
+/**
+ * Stripe's portal cancels at the end of the paid period by default: the
+ * subscription stays 'active'/'trialing' with cancel_at_period_end or
+ * cancel_at set. Record that, so the owner can delete the site (no future
+ * charge) and the dashboard can say it was cancelled.
+ */
+function subscriptionCancelFields(sub) {
+    const cancelAtSec = Number(sub && sub.cancel_at);
+    const scheduled = !!(sub && (sub.cancel_at_period_end || (Number.isFinite(cancelAtSec) && cancelAtSec > 0)));
+    return {
+        cancelAtPeriodEnd: scheduled,
+        cancelAt: scheduled && Number.isFinite(cancelAtSec) && cancelAtSec > 0
+            ? new Date(cancelAtSec * 1000).toISOString()
+            : null,
+    };
+}
+
 async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
     if (!event || !event.type) return null;
     const type = event.type;
@@ -471,6 +488,7 @@ async function handleStripeSubscriptionEvent(event, { notifyAdmin } = {}) {
         stripeSubscriptionId: sub.id,
         stripeSubscriptionStatus: status,
         subscriptionStatus: status,
+        ...subscriptionCancelFields(sub),
     };
     const customerId = typeof sub.customer === 'string'
         ? sub.customer
@@ -2992,6 +3010,7 @@ function _notifyOwnerChannel(site, url, messenger, notifyAdmin) {
 
 module.exports = {
     publishSite,
+    subscriptionCancelFields,
     makeLocalSeedImagesEager,
     handleStripePaid,
     handleStripeInvoicePaid,

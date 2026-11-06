@@ -89,6 +89,7 @@ const SITE_CORE_FIELDS = Object.freeze([
 const SITE_EXTRA_FIELDS = Object.freeze([
     'ownerChatId', 'businessName', 'canceledAt', 'paidUntil',
     'stripeSubscriptionId', 'stripeSubscriptionStatus', 'subscriptionStatus',
+    'cancelAtPeriodEnd', 'cancelAt',
     'stripeCustomerId',
     // Dunning record written by handleStripeInvoicePaymentFailed. Without
     // these two on the allowlist updateSite() accepts the patch and silently
