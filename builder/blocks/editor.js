@@ -1886,6 +1886,8 @@ bootAccount();
 /* ---------- publish: sign in → address → trial checkout (or republish) ---------- */
 
 let authPoll = null;
+let signInCheck = null;
+let signInEmail = '';
 let publishEpoch = 0;
 let publishReady = false;
 let publishSiteId = null;
@@ -2045,25 +2047,66 @@ async function startSignIn(email, onSignedIn) {
     throw Object.assign(new Error('Ciorna nu s-a putut salva în browser. Redu pozele și reîncearcă înainte de autentificare.'), { status: 507 });
   }
   const r = await api('POST', '/api/auth/email', { email });
+  signInEmail = email;
   clearInterval(authPoll);
-  authPoll = setInterval(async () => {
+  signInCheck = async () => {
     try {
       if ((await api('GET', '/api/me')).user) {
         clearInterval(authPoll);
         authPoll = null;
+        signInCheck = null;
         resume = null;
         await bootAccount();
         if (serverReady) onSignedIn();
       }
     } catch (_) { /* still signed out */ }
-  }, 2500);
+  };
+  authPoll = setInterval(() => { if (signInCheck) signInCheck(); }, 2500);
   return r;
+}
+
+/** The 6-digit code from the sign-in email, typed in the "sent" panel. */
+function showCodeForm(box, devCode) {
+  let form = box.querySelector('.code-form');
+  if (!form) {
+    form = document.createElement('form');
+    form.className = 'code-form';
+    form.noValidate = true;
+    form.innerHTML = '<label class="pub__fld"><span class="code-label"></span><input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456"></label>'
+      + '<button type="submit" class="primary">Intră</button><p class="pub__error" role="alert" hidden></p>';
+    box.appendChild(form);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = form.querySelector('input');
+      const err = form.querySelector('.pub__error');
+      const btn = form.querySelector('button');
+      const code = input.value.replace(/\s+/g, '');
+      err.hidden = true;
+      if (!/^\d{6}$/.test(code)) { err.textContent = 'Scrie codul de 6 cifre din email.'; err.hidden = false; return; }
+      btn.disabled = true;
+      try {
+        await api('POST', '/api/auth/code', { email: signInEmail, code });
+        if (signInCheck) await signInCheck();
+      } catch (x) {
+        err.textContent = x.message || 'Codul nu a putut fi verificat. Încearcă din nou.';
+        err.hidden = false;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+  form.querySelector('input').value = '';
+  form.querySelector('.pub__error').hidden = true;
+  form.querySelector('.code-label').textContent = devCode
+    ? 'Sau scrie codul de 6 cifre (cod de test: ' + devCode + ')'
+    : 'Sau scrie codul de 6 cifre din email';
 }
 
 function showDevLink(el, r) {
   el.hidden = !r.devLink;
   if (r.devLink) el.href = r.devLink;
   const box = el.closest('[id$="-sent"]');
+  showCodeForm(box, r.devCode);
   box.querySelector('p').textContent = r.devLink
     ? 'Simulare locală: nu s-a trimis niciun email. Deschide linkul de mai jos pentru autentificare în acest mediu de test.'
     : 'Am trimis linkul pe email. Deschide-l din email; pagina continuă după autentificare.';

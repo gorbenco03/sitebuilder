@@ -204,6 +204,10 @@ button { font: inherit; cursor: pointer; }
 .pub__body button.primary { align-self: flex-start; background: var(--ui-accent); border: 1px solid var(--ui-accent); color: #fff; font-weight: 600; border-radius: 8px; padding: 10px 16px; min-height: 40px; }
 .pub__body button.primary:disabled { opacity: .6; }
 .pub__error { color: #b91c1c; font-size: 14px; }
+.code-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: 12px; }
+.code-form .pub__fld { flex: 1 1 12rem; }
+.code-form input { letter-spacing: .2em; font-variant-numeric: tabular-nums; }
+.code-form .pub__error { flex-basis: 100%; margin: 0; }
 .pub__check { border: 1px solid #f0d58a; background: #fff8e1; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
 .pub__check ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 .pub__check small { color: var(--ui-mute); }

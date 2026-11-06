@@ -1536,6 +1536,25 @@ async function handleGetTemplates(req, res) {
     res.end(outBuf);
 }
 
+// Sign-in codes: the email carries the link and a 6-digit code for the same
+// login token, so an owner who opens the email on another device can type the
+// code here. One live code per email, 15 minutes, 5 wrong tries.
+const LOGIN_CODE_TTL_MS = 15 * 60 * 1000;
+const LOGIN_CODE_MAX_TRIES = 5;
+const loginCodes = new Map();
+
+function loginCodeHash(email, code) {
+    return crypto.createHash('sha256').update(email + ':' + code).digest('hex');
+}
+
+function issueLoginCode(email, token) {
+    const now = Date.now();
+    for (const [k, v] of loginCodes) if (v.exp < now) loginCodes.delete(k);
+    const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    loginCodes.set(email, { token, hash: loginCodeHash(email, code), exp: now + LOGIN_CODE_TTL_MS, tries: 0 });
+    return code;
+}
+
 async function handleAuthEmail(req, res) {
     const body = await parseJson(req);
     const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
@@ -1565,6 +1584,7 @@ async function handleAuthEmail(req, res) {
 
     const publicUrl = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
     const verifyUrl = `${publicUrl}/auth/verify?token=${token}`;
+    const code = issueLoginCode(email, token);
 
     let sent = false;
     let devLink;
@@ -1572,7 +1592,7 @@ async function handleAuthEmail(req, res) {
         log('server.auth.email.no_provider_in_production', {}, 'error');
     } else {
         try {
-            const result = await getEmail().sendMagicLink(email, verifyUrl);
+            const result = await getEmail().sendMagicLink(email, verifyUrl, { code });
             sent    = result.sent !== false;
             devLink = result.devLink;
         } catch (e) {
@@ -1581,8 +1601,46 @@ async function handleAuthEmail(req, res) {
     }
 
     const resp = { ok: true, sent };
-    if (devLink && process.env.NODE_ENV !== 'production') resp.devLink = devLink;
+    if (devLink && process.env.NODE_ENV !== 'production') { resp.devLink = devLink; resp.devCode = code; }
     sendJson(res, 200, resp);
+}
+
+async function handleAuthCode(req, res) {
+    const body = await parseJson(req);
+    const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const code = body && typeof body.code === 'string' ? body.code.replace(/\s+/g, '') : '';
+    if (!email || !/^\d{6}$/.test(code)) {
+        return sendJson(res, 400, { error: 'Scrie codul de 6 cifre din email.' });
+    }
+    const entry = loginCodes.get(email);
+    if (!entry || entry.exp < Date.now()) {
+        loginCodes.delete(email);
+        return sendJson(res, 400, { error: 'Codul a expirat. Cere un cod nou.' });
+    }
+    const a = Buffer.from(entry.hash, 'hex');
+    const b = Buffer.from(loginCodeHash(email, code), 'hex');
+    if (!crypto.timingSafeEqual(a, b)) {
+        entry.tries += 1;
+        if (entry.tries >= LOGIN_CODE_MAX_TRIES) {
+            loginCodes.delete(email);
+            return sendJson(res, 400, { error: 'Prea multe încercări. Cere un cod nou.' });
+        }
+        return sendJson(res, 400, { error: 'Cod greșit. Verifică cifrele din email.' });
+    }
+    loginCodes.delete(email);
+
+    const reg = getRegistry();
+    let payload;
+    try { payload = await reg.consumeLoginToken(entry.token); } catch { payload = null; }
+    if (!payload || !payload.email) return sendJson(res, 400, { error: 'Codul a expirat. Cere un cod nou.' });
+
+    let user;
+    try { user = await reg.getOrCreateUserByEmail(payload.email); } catch { user = null; }
+    if (!user) return sendJson(res, 503, { error: 'Serviciu temporar indisponibil.' });
+    let cookieValue;
+    try { cookieValue = getAuth().signSession(user.id); } catch { return sendJson(res, 503, { error: 'Serviciu temporar indisponibil.' }); }
+    res.setHeader('Set-Cookie', getAuth().buildSessionCookie(cookieValue));
+    sendJson(res, 200, { ok: true });
 }
 
 async function handleAuthVerify(req, res, query) {
@@ -4578,6 +4636,10 @@ function createHandler({ onStripeEvent } = {}) {
 
             if (req.method === 'POST' && url === '/api/auth/email') {
                 return await handleAuthEmail(req, res);
+            }
+
+            if (req.method === 'POST' && url === '/api/auth/code') {
+                return await handleAuthCode(req, res);
             }
 
             if (req.method === 'GET' && url === '/auth/verify') {
