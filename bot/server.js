@@ -1974,10 +1974,29 @@ function withPublicUrl(site) {
     return { ...site, publicUrl: webpublish.publicUrlForSite(site) };
 }
 
+/**
+ * Sites recorded as billed but with no stored cancel state (cancelled in the
+ * Stripe portal before cancelAtPeriodEnd was recorded): ask Stripe once and
+ * store the answer. Returns the refreshed site, or the same one on any error.
+ */
+async function syncScheduledCancel(site) {
+    if (!site || !site.stripeSubscriptionId || site.cancelAtPeriodEnd !== undefined) return site;
+    if (!hasActiveCommercialEntitlement(site)) return site;
+    try {
+        const sub = await payments.getSubscription(site.stripeSubscriptionId);
+        if (!sub) return site;
+        const patch = require('./webpublish.js').subscriptionCancelFields(sub);
+        return (await getRegistry().updateSite(site.id, patch)) || { ...site, ...patch };
+    } catch (e) {
+        log('server.sync_scheduled_cancel.failed', { siteId: site.id, err: e.message }, 'warn');
+        return site;
+    }
+}
+
 async function handleGetSites(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
-    const sites = await getRegistry().listSites(userId);
+    const sites = await Promise.all(((await getRegistry().listSites(userId)) || []).map(syncScheduledCancel));
     const invoiceIndex = require('./webpublish.js').getInvoiceHistoryIndex(sites);
     sendJson(res, 200, { sites: (sites || []).map(site => withDunningState(site, invoiceIndex)).map(withPublicUrl) });
 }
@@ -2129,10 +2148,21 @@ async function handleDeleteSite(req, res, siteId) {
     }
 
     if (hasActiveCommercialEntitlement(site)) {
-        return sendJson(res, 409, {
-            error: 'Site-ul are un abonament activ. Apasă mai întâi „Anulează” pe acest site înainte de a-l șterge — altfel clienți care au plătit ar rămâne fără site.',
-            code: 'ACTIVE_SUBSCRIPTION',
-        });
+        // A cancel scheduled for the end of the paid period (Stripe portal
+        // default) is a cancel: stop it now and let the delete continue.
+        const synced = site.cancelAtPeriodEnd === undefined ? await syncScheduledCancel(site) : site;
+        if (!synced.cancelAtPeriodEnd) {
+            return sendJson(res, 409, {
+                error: 'Site-ul are un abonament activ. Apasă mai întâi „Anulează” pe acest site înainte de a-l șterge — altfel clienți care au plătit ar rămâne fără site.',
+                code: 'ACTIVE_SUBSCRIPTION',
+            });
+        }
+        try {
+            await payments.cancelSubscription(site.stripeSubscriptionId);
+        } catch (e) {
+            log('server.delete_site.cancel_failed', { siteId, err: e.message }, 'error');
+            return sendJson(res, 502, { error: 'Nu am putut opri abonamentul în Stripe. Încearcă din nou peste câteva minute.' });
+        }
     }
 
     let futureBookings = 0;

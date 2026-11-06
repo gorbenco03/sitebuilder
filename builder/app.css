@@ -2126,3 +2126,4 @@ input, textarea, select {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
+.site-card-cancel-note { align-self: center; font-size: var(--fs-xs); color: var(--text-muted); }

@@ -1760,6 +1760,13 @@ function buildSiteCard(site) {
       }
     });
     actions.appendChild(reactivateBtn);
+  } else if (site.paid && site.cancelAtPeriodEnd && (site.status === 'live' || site.status === 'active')) {
+    // Cancelled in Stripe for the end of the paid period: say so, no second Anulează.
+    const note = document.createElement('span');
+    note.className = 'site-card-cancel-note';
+    const until = site.cancelAt ? formatHostingUntilDate(site.cancelAt) : '';
+    note.textContent = until ? 'Abonament anulat · live până la ' + until : 'Abonament anulat';
+    actions.appendChild(note);
   } else if (site.paid && (site.status === 'live' || site.status === 'active')) {
     // Cancel → Stripe Customer Portal (or offline HIDOOK_TEST_PAY portal contract).
     // U-01: opens the product's own modal instead of window.confirm() —
@@ -1927,7 +1934,7 @@ function buildSiteCard(site) {
  * whether to show its "Anulează" button at all — reused here so the
  * delete-site modal's gate can never disagree with what the card shows. */
 function siteHasActiveSubscription(site) {
-  return !!(site && site.paid && (site.status === 'live' || site.status === 'active'));
+  return !!(site && site.paid && !site.cancelAtPeriodEnd && (site.status === 'live' || site.status === 'active'));
 }
 
 let cancelSubscriptionModalSite = null;
