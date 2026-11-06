@@ -208,7 +208,8 @@ check('builder chrome contains no known English QA leaks', () => {
     assert.ok(!indexHtml.includes('vezi preview.'), 'landing hero still says vezi preview');
     assert.ok(!source.includes('Preview-ul live'), 'Details hint still says Preview-ul live');
 
-    assert.ok(indexHtml.includes('vezi previzualizarea.'), 'landing uses Previzualizare wording');
+    assert.ok(indexHtml.includes('Selectezi un text, îl rescrii și vezi cum arată pe telefon.'), 'landing explains its editing sample in Romanian');
+    assert.ok(indexHtml.includes('Rezultatul titlului pe telefon — exemplu Salon'), 'sample preview has a Romanian accessible title');
     for (const key of ['PAYMENT_CANCELLED', 'LOGIN_LINK_EXPIRED', 'PAYMENT_PROCESSED_SITE_SOON']) {
         assert.ok(appSrc.includes('RO.' + key), `Romanian return toast no longer sourced from RO.${key}`);
     }

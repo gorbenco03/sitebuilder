@@ -105,7 +105,7 @@ test('a warning (past_due) and a critical (unpaid) dunning state each show up on
             await page.evaluate(() => { window.location.hash = '#dashboard'; });
         });
         await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
-        let card = page.locator('.site-card', { hasText: runHex });
+        let card = page.locator('.site-card').filter({ has: page.locator('a.site-card-edit[href="/app/blocks/?site=' + encodeURIComponent(site.id) + '"]') });
         await card.waitFor({ state: 'visible', timeout: 15000 });
 
         const warningBanner = card.locator('.dunning-banner--warning');
@@ -130,7 +130,7 @@ test('a warning (past_due) and a critical (unpaid) dunning state each show up on
             await page.evaluate(() => { window.location.hash = '#dashboard'; });
         });
         await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
-        card = page.locator('.site-card', { hasText: runHex });
+        card = page.locator('.site-card').filter({ has: page.locator('a.site-card-edit[href="/app/blocks/?site=' + encodeURIComponent(site.id) + '"]') });
         await card.waitFor({ state: 'visible', timeout: 15000 });
 
         const criticalBanner = card.locator('.dunning-banner--critical');

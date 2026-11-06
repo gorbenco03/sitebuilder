@@ -133,14 +133,14 @@ test('U-01: dashboard danger actions — own modals, danger styling, newest-firs
     await page.reload({ waitUntil: 'networkidle' });
     await page.waitForURL(/#dashboard$/, { timeout: 10000 });
     await page.waitForTimeout(600);
-    const cardTexts = await page.locator('.site-card').allInnerTexts();
-    const liveIdx = cardTexts.findIndex((t) => t.includes(slug.replace(/-/g, '‑')));
-    const olderIdx = cardTexts.findIndex((t) => t.includes(olderSlug.replace(/-/g, '‑')));
+    const cardIds = await page.locator('.site-card a.site-card-edit').evaluateAll(links => links.map(link => new URL(link.href).searchParams.get('site')));
+    const liveIdx = cardIds.indexOf(siteId);
+    const olderIdx = cardIds.indexOf(olderSite.id);
     assert.ok(liveIdx !== -1 && olderIdx !== -1, 'both the just-published site and the older seeded draft must be in the list');
     assert.ok(liveIdx < olderIdx, 'newest site (idx ' + liveIdx + ') must sort before the older seeded draft (idx ' + olderIdx + ')');
 
     // ---- Item 3: "Șterge" uses a distinct danger style ----
-    const card = page.locator('.site-card', { hasText: slug.replace(/-/g, '‑') }).first();
+    const card = page.locator('.site-card').filter({ has: page.locator('a.site-card-edit[href="/app/blocks/?site=' + encodeURIComponent(siteId) + '"]') }).first();
     await card.waitFor({ state: 'visible', timeout: 10000 });
     const deleteBtnClass = await card.locator('button', { hasText: 'Șterge' }).getAttribute('class');
     assert.match(deleteBtnClass || '', /\bbtn-danger\b/, '"Șterge" button must use btn-danger, not the same btn-ghost as every other card action');

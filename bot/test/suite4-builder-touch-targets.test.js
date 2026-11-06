@@ -162,10 +162,10 @@ test('suite4 builder touch targets: every button/a/input/select is >=44px tall a
     // ZIP, Anulează, Șterge) and the live URL link.
     const slug = 'suite4-touch-' + Date.now().toString(36);
     await signInPage(page, base, 'suite4-touch@example.com');
-    await publishLive(page, base, { slug, pack: 'restaurant', name: 'Restaurant Touch' });
+    const pub = await publishLive(page, base, { slug, pack: 'restaurant', name: 'Restaurant Touch' });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(700);
-    const card = page.locator('.site-card', { hasText: slug.replace(/-/g, '‑') }).first();
+    const card = page.locator('.site-card').filter({ has: page.locator('a.site-card-edit[href="/app/blocks/?site=' + encodeURIComponent(pub.siteId) + '"]') }).first();
     await card.waitFor({ state: 'visible', timeout: 10000 });
     await scan(page, 'dashboard', failures);
     screensMeasured++;

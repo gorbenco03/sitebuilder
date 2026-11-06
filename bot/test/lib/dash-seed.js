@@ -96,7 +96,8 @@ async function openDashboardCard(page, base, slug) {
   await page.goto(base + '/app/#dashboard', { waitUntil: 'domcontentloaded' });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.locator('#screen-dashboard').waitFor({ state: 'visible' });
-  const card = page.locator('.site-card', { hasText: String(slug).replace(/-/g, '‑') }).first();
+  const address = page.locator('a.site-live-link').filter({ hasText: new RegExp('/' + String(slug).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/?$') });
+  const card = page.locator('.site-card').filter({ has: address }).first();
   await card.waitFor({ state: 'visible', timeout: 15000 });
   return card;
 }

@@ -194,13 +194,10 @@ const pricingPath = path.join(__dirname, '..', 'pricing.js');
     }
 
     const templatesDir = path.join(__dirname, '..', '..', 'templates');
-    let tplId = 'product-menu';
-    try {
-        const dirs = fs.readdirSync(templatesDir).filter((d) => {
-            try { return fs.statSync(path.join(templatesDir, d)).isDirectory(); } catch { return false; }
-        });
-        if (dirs.length) tplId = dirs[0];
-    } catch (_) {}
+    // MINIMAL_CONFIG is a legacy form config, not a block-editor document.
+    const registry = JSON.parse(fs.readFileSync(path.join(templatesDir, 'registry.json'), 'utf8'));
+    const tplId = registry.templates.find((template) => template.id === 'product-menu')?.id;
+    assert.strictEqual(tplId, 'product-menu', 'pricing fixture must be a supported registry template');
 
     const MINIMAL_CONFIG = {
         business: { name: 'Pricing Test Co', tagline: 'T', title: 'T', metaDescription: 'd', about: 'a', lang: 'ro' },

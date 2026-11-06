@@ -1,0 +1,305 @@
+{
+  "policy": "Same-source details owned by block packs, not legacy-template images. Hash provenance is not a photo license.",
+  "records": [
+    {
+      "source": "templates/portfolio/images/sf-ext2.jpg",
+      "sourceSha256": "dab6243c6a00583e2b30fe2052efcfbf9f9c858743abd5a4a3ae34e001351a48",
+      "cropPixels": [
+        211,
+        192,
+        643,
+        787
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-waves-detail.jpg",
+      "sha256": "d7d7b59ca4b5131cfc5cfbc75ff1b987eaa8fa3231e37d47353ecb273577998f",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-waves-detail.webp",
+      "thumbnailSha256": "9f0a068b589dcd8b722a76f5bd50dbf124074a700dee5db6524e60e6ccf4be0f",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-waves-detail.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-waves-detail.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-waves-detail.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-waves-detail.webp"
+    },
+    {
+      "source": "templates/portfolio/images/sf-ext2.jpg",
+      "sourceSha256": "dab6243c6a00583e2b30fe2052efcfbf9f9c858743abd5a4a3ae34e001351a48",
+      "cropPixels": [
+        115,
+        19,
+        730,
+        528
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-waves-accessory.jpg",
+      "sha256": "8d33bd06edf4da405914d66a80ad456f07e359b040fc9b56621173369ada086a",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-waves-accessory.webp",
+      "thumbnailSha256": "264b2f91f268afab264069324ab1278a8c4ecb62840794f840d27445cb382875",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-waves-accessory.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-waves-accessory.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-waves-accessory.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-waves-accessory.webp"
+    },
+    {
+      "source": "templates/portfolio/images/sf-ext3.jpg",
+      "sourceSha256": "744c5a66870ab75e138dc9bafdd659059d517b2ba79e639a1a293e94a6209b5d",
+      "cropPixels": [
+        144,
+        221,
+        730,
+        749
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-bun-detail.jpg",
+      "sha256": "19519345c6a6f357378a315e5aed5c2d304a449f79f250df97849559612af695",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-bun-detail.webp",
+      "thumbnailSha256": "ebd6dfb045b1e6f979ac18046b7a2f1e0afc520eb82bb2234b5b897f520d3fdd",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-bun-detail.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-bun-detail.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-bun-detail.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-bun-detail.webp"
+    },
+    {
+      "source": "templates/portfolio/images/sf-ext3.jpg",
+      "sourceSha256": "744c5a66870ab75e138dc9bafdd659059d517b2ba79e639a1a293e94a6209b5d",
+      "cropPixels": [
+        288,
+        77,
+        864,
+        595
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-bun-accessory.jpg",
+      "sha256": "881d9d634bfa08a04a39770a3667fc9075689c21c582218a466952a479d762d8",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-bun-accessory.webp",
+      "thumbnailSha256": "5b8f91c33c906c9f389aaa146e822a1bb67bbda2c0155049c1f9a635d97bb148",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-bun-accessory.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-bun-accessory.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-bun-accessory.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-bun-accessory.webp"
+    },
+    {
+      "source": "templates/portfolio/images/sf-mua1.jpg",
+      "sourceSha256": "f09d631b52e8d45dcd3c7a30a276c75a857ecc38fb6789d9bd2476ca9706ff73",
+      "cropPixels": [
+        269,
+        221,
+        768,
+        701
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-natural-detail.jpg",
+      "sha256": "de498d9420e9bdf95c6f119bc09e41ac49b75d5b483d0c9a0c1446f30789c8fe",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-natural-detail.webp",
+      "thumbnailSha256": "0ce70e724928551087b8207e924e1c528e3d439420f1809f1ffba839c95b5092",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-natural-detail.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-natural-detail.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-natural-detail.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-natural-detail.webp"
+    },
+    {
+      "source": "templates/portfolio/images/sf-mua1.jpg",
+      "sourceSha256": "f09d631b52e8d45dcd3c7a30a276c75a857ecc38fb6789d9bd2476ca9706ff73",
+      "cropPixels": [
+        182,
+        192,
+        845,
+        557
+      ],
+      "derivative": "templates/blocks/images/nov05-bridal-natural-eye.jpg",
+      "sha256": "5edf7287db4a2fd72c0b464db28a62b5866e236666cedbf7f28f578ffe2696c1",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bridal-natural-eye.webp",
+      "thumbnailSha256": "836d170b3a38f6c68aa8bcf42d35fc9b42523c6f98d717d717860d4e1431e572",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/portfolio/images/nov05-bridal-natural-eye.jpg",
+        "-o",
+        "builder/blocks/thumbs/portfolio/images/nov05-bridal-natural-eye.webp"
+      ],
+      "previousDerivative": "templates/portfolio/images/nov05-bridal-natural-eye.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/portfolio/images/nov05-bridal-natural-eye.webp"
+    },
+    {
+      "source": "templates/local-service/images/pr-baie1.jpg",
+      "sourceSha256": "b9d58df72ce415c4a193e839b025c240de5938717dc1e61163ead760ca9c3820",
+      "cropPixels": [
+        48,
+        269,
+        557,
+        864
+      ],
+      "derivative": "templates/blocks/images/nov05-bathroom-detail.jpg",
+      "sha256": "5e0b182709ce2ce82341a00ee66ed5e95e277ae37cb56968de7c19ee30f8f09a",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bathroom-detail.webp",
+      "thumbnailSha256": "6b3c48e4be84b8a7fe365f7cdd271fb68d6bf0bb89859d20cd518e337c3f1acf",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/local-service/images/nov05-bathroom-detail.jpg",
+        "-o",
+        "builder/blocks/thumbs/local-service/images/nov05-bathroom-detail.webp"
+      ],
+      "previousDerivative": "templates/local-service/images/nov05-bathroom-detail.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/local-service/images/nov05-bathroom-detail.webp"
+    },
+    {
+      "source": "templates/local-service/images/pr-baie1.jpg",
+      "sourceSha256": "b9d58df72ce415c4a193e839b025c240de5938717dc1e61163ead760ca9c3820",
+      "cropPixels": [
+        451,
+        173,
+        874,
+        845
+      ],
+      "derivative": "templates/blocks/images/nov05-bathroom-shower.jpg",
+      "sha256": "b8a65acf914c16462772ed0d75e19746e42f3baceca918ad21a52743d0a760aa",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-bathroom-shower.webp",
+      "thumbnailSha256": "ddf8df0abee188f87422a421894513a3c747d5996eb297b16ee5f3a7cb5cb3e6",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/local-service/images/nov05-bathroom-shower.jpg",
+        "-o",
+        "builder/blocks/thumbs/local-service/images/nov05-bathroom-shower.webp"
+      ],
+      "previousDerivative": "templates/local-service/images/nov05-bathroom-shower.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/local-service/images/nov05-bathroom-shower.webp"
+    },
+    {
+      "source": "templates/local-service/images/pr-buc1.jpg",
+      "sourceSha256": "3fa43b25dad28e90d38c564da0eab6980300663ffcb9ee4a848d065be5dfb1b5",
+      "cropPixels": [
+        77,
+        240,
+        720,
+        845
+      ],
+      "derivative": "templates/blocks/images/nov05-kitchen-detail.jpg",
+      "sha256": "a83b426f352d0f09ee60488db5af23eec2cb823b62f362bb8d6c4de1049ecd62",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-kitchen-detail.webp",
+      "thumbnailSha256": "e2873a71cdce863f6b52a62e2c0eba2a830b57d45789ac1f5321db8b9eb1eda1",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/local-service/images/nov05-kitchen-detail.jpg",
+        "-o",
+        "builder/blocks/thumbs/local-service/images/nov05-kitchen-detail.webp"
+      ],
+      "previousDerivative": "templates/local-service/images/nov05-kitchen-detail.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/local-service/images/nov05-kitchen-detail.webp"
+    },
+    {
+      "source": "templates/local-service/images/pr-buc1.jpg",
+      "sourceSha256": "3fa43b25dad28e90d38c564da0eab6980300663ffcb9ee4a848d065be5dfb1b5",
+      "cropPixels": [
+        48,
+        19,
+        634,
+        528
+      ],
+      "derivative": "templates/blocks/images/nov05-kitchen-light.jpg",
+      "sha256": "6cf464f49c807bf89ca0894a0aad8a55da13d5db8bf28f6ee422d3b81a179878",
+      "thumbnail": "builder/blocks/thumbs/blocks/images/nov05-kitchen-light.webp",
+      "thumbnailSha256": "7ddd8aa52f11e304f0b0674a350bfdb22f3b0fbe0e72d2f0982c1d66d24c3248",
+      "command": [
+        "cwebp",
+        "-quiet",
+        "-q",
+        "70",
+        "-resize",
+        "640",
+        "0",
+        "-metadata",
+        "none",
+        "templates/local-service/images/nov05-kitchen-light.jpg",
+        "-o",
+        "builder/blocks/thumbs/local-service/images/nov05-kitchen-light.webp"
+      ],
+      "previousDerivative": "templates/local-service/images/nov05-kitchen-light.jpg",
+      "previousThumbnail": "builder/blocks/thumbs/local-service/images/nov05-kitchen-light.webp"
+    }
+  ]
+}

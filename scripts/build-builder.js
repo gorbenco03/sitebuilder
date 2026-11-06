@@ -59,6 +59,17 @@ function trimJsWhitespace(js) {
 // Ensure output directory exists.
 fs.mkdirSync(GEN_DIR, { recursive: true });
 
+// Publish complete files atomically; concurrent test imports share this output.
+let publicationId = 0;
+function writeGeneratedFile(dest, content, encoding) {
+    const temp = path.join(GEN_DIR, '.build-' + process.pid + '-' + (++publicationId) + '.tmp');
+    fs.writeFileSync(temp, content, encoding);
+    fs.renameSync(temp, dest);
+}
+function copyGeneratedFile(source, dest) {
+    writeGeneratedFile(dest, fs.readFileSync(source));
+}
+
 // ─── 1.  engine.js ───────────────────────────────────────────────────────────
 
 // Read build.js source as text — we'll extract the pure functions from it.
@@ -371,7 +382,7 @@ window.HidookEngine = { renderHtml: renderHtml, escapeHtml: escapeHtml, renderPr
 `;
 
 const engineIifeOut = trimJsWhitespace(engineIife);
-fs.writeFileSync(path.join(GEN_DIR, 'engine.js'), engineIifeOut, 'utf8');
+writeGeneratedFile(path.join(GEN_DIR, 'engine.js'), engineIifeOut, 'utf8');
 console.log('  engine.js written (' + engineIifeOut.length + ' bytes)');
 
 // ─── 2.  Light registry + per-template heavy payloads + static assets ────────
@@ -470,17 +481,17 @@ function writeFallbackThumb(id) {
         '<text x="320" y="210" text-anchor="middle" font-family="Georgia,serif" font-size="28" fill="#14120F">' +
         String(id).replace(/[<>&]/g, '') +
         '</text></svg>';
-    clearThumbsForId(id);
+    clearThumbsForId(id, id + '.svg');
     const dest = path.join(THUMBS_DIR, id + '.svg');
-    fs.writeFileSync(dest, svg, 'utf8');
+    writeGeneratedFile(dest, svg, 'utf8');
     return '/app/generated/thumbs/' + id + '.svg';
 }
 
-function clearThumbsForId(id) {
-    // Drop stale extensions so a photo source does not leave professionals.svg beside professionals.jpg.
+function clearThumbsForId(id, keepName) {
+    // Prune stale extensions, never the current file another builder may read.
     if (!fs.existsSync(THUMBS_DIR)) return;
     for (const name of fs.readdirSync(THUMBS_DIR)) {
-        if (name === id || name.startsWith(id + '.')) {
+        if (name !== keepName && (name === id || name.startsWith(id + '.'))) {
             try { fs.unlinkSync(path.join(THUMBS_DIR, name)); } catch (_) { /* ignore */ }
         }
     }
@@ -506,9 +517,21 @@ function pruneStaleFiles(dirPath, keepNames) {
 
 const lightEntries = [];
 
+// Block-pack detail crops are independent of the legacy template registry.
+const blockImages = path.join(TEMPLATES, 'blocks', 'images');
+if (fs.existsSync(blockImages) && fs.statSync(blockImages).isDirectory()) {
+    const blockAssets = path.join(ASSETS_DIR, 'blocks', 'images');
+    fs.mkdirSync(blockAssets, { recursive: true });
+    for (const name of fs.readdirSync(blockImages)) {
+        const source = path.join(blockImages, name);
+        if (!fs.statSync(source).isFile() || !IMAGE_EXTS.has(path.extname(name).toLowerCase())) continue;
+        copyGeneratedFile(source, path.join(blockAssets, name));
+    }
+}
+
 // Shared MIT QR encoder for sandboxed builder previews. Published/exported
 // templates use their same-root qrcode.js symlink/copy instead.
-fs.copyFileSync(path.join(TEMPLATES, 'shared', 'qrcode.js'), path.join(GEN_DIR, 'qrcode.js'));
+copyGeneratedFile(path.join(TEMPLATES, 'shared', 'qrcode.js'), path.join(GEN_DIR, 'qrcode.js'));
 
 for (const entry of registry.templates) {
     const id  = entry.id;
@@ -553,7 +576,7 @@ for (const entry of registry.templates) {
             const ext = path.extname(name).toLowerCase();
             if (!IMAGE_EXTS.has(ext)) continue;
             const dest = path.join(assetOut, name);
-            fs.copyFileSync(abs, dest);
+            copyGeneratedFile(abs, dest);
             copiedImageNames.add(name);
             imageMap['images/' + name] = '/app/generated/template-assets/' + id + '/images/' + name;
         }
@@ -589,7 +612,7 @@ for (const entry of registry.templates) {
             // Skip a font file no @font-face rule actually references (dead
             // weight in every export/ZIP) — see performance#3, AUDIT-2026-09-27.
             if (!files.stylesCss.includes('fonts/' + name)) continue;
-            fs.copyFileSync(abs, path.join(fontAssetOut, name));
+            copyGeneratedFile(abs, path.join(fontAssetOut, name));
             copiedFontNames.add(name);
             const absoluteUrl = '/app/generated/template-assets/' + id + '/fonts/' + name;
             files.stylesCss = files.stylesCss.split('fonts/' + name).join(absoluteUrl);
@@ -602,7 +625,7 @@ for (const entry of registry.templates) {
         'window.HIDOOK_TEMPLATE_HEAVY = window.HIDOOK_TEMPLATE_HEAVY || {};\n' +
         'window.HIDOOK_TEMPLATE_HEAVY[' + JSON.stringify(id) + '] = ' +
         JSON.stringify(heavy) + ';\n';
-    fs.writeFileSync(path.join(HEAVY_DIR, id + '.js'), heavyJs, 'utf8');
+    writeGeneratedFile(path.join(HEAVY_DIR, id + '.js'), heavyJs, 'utf8');
     console.log('  templates/' + id + '.js written (' + heavyJs.length + ' bytes)');
 
     // Thumbnail for catalog cards (grid paints immediately without heavy payload).
@@ -619,8 +642,8 @@ for (const entry of registry.templates) {
     if (thumbSrc) {
         const ext = path.extname(thumbSrc).toLowerCase() || '.jpg';
         const thumbName = id + ext;
-        clearThumbsForId(id);
-        fs.copyFileSync(thumbSrc, path.join(THUMBS_DIR, thumbName));
+        clearThumbsForId(id, thumbName);
+        copyGeneratedFile(thumbSrc, path.join(THUMBS_DIR, thumbName));
         thumbnail = '/app/generated/thumbs/' + thumbName;
         const dims = imageDims(path.join(THUMBS_DIR, thumbName));
         if (dims) { thumbWidth = dims.width; thumbHeight = dims.height; }
@@ -652,7 +675,7 @@ const lightRegistry = {
 };
 
 const tplDataJs = 'window.HIDOOK_TEMPLATES = ' + JSON.stringify(lightRegistry, null, 2) + ';\n';
-fs.writeFileSync(path.join(GEN_DIR, 'templates-data.js'), tplDataJs, 'utf8');
+writeGeneratedFile(path.join(GEN_DIR, 'templates-data.js'), tplDataJs, 'utf8');
 console.log('  templates-data.js written (' + tplDataJs.length + ' bytes) [light registry]');
 
 // Preview thumbnails (scripts/make-preview-thumbs.js) under a content-hash
@@ -673,14 +696,14 @@ console.log('  templates-data.js written (' + tplDataJs.length + ' bytes) [light
     const hash = require('crypto').createHash('sha1');
     for (const rel of files) hash.update(rel).update(fs.readFileSync(path.join(src, rel)));
     const version = hash.digest('hex').slice(0, 10);
-    fs.rmSync(outRoot, { recursive: true, force: true });
+    // Content-addressed URLs may still be used by readers of an earlier build.
     for (const rel of files) {
         const dest = path.join(outRoot, version, rel);
         fs.mkdirSync(path.dirname(dest), { recursive: true });
-        fs.copyFileSync(path.join(src, rel), dest);
+        copyGeneratedFile(path.join(src, rel), dest);
     }
     const base = files.length ? '/app/generated/previews/' + version + '/' : '';
-    fs.writeFileSync(path.join(GEN_DIR, 'thumbs.js'), 'window.SB_THUMBS = ' + JSON.stringify(base) + ';\n', 'utf8');
+    writeGeneratedFile(path.join(GEN_DIR, 'thumbs.js'), 'window.SB_THUMBS = ' + JSON.stringify(base) + ';\n', 'utf8');
     console.log('  thumbs: ' + files.length + ' preview photos under ' + (base || '(none)'));
 }
 

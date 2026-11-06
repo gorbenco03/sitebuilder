@@ -28,6 +28,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { prepareLandingScroll } = require('./helpers/landing-scroll-ready');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { chromium } = require(path.join(ROOT, 'node_modules/playwright'));
@@ -121,8 +122,7 @@ test('landing#3: clicking the logo or "Designuri" from a scrolled position retur
     if (await cookieAccept.isVisible().catch(() => false)) await cookieAccept.click().catch(() => {});
 
     // -- logo --
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(100);
+    await prepareLandingScroll(page);
     const beforeLogo = await page.evaluate(() => window.scrollY);
     assert.ok(beforeLogo > 200, 'must actually be scrolled down before the logo click (was ' + beforeLogo + ')');
     await page.locator('a.logo').click();
@@ -133,8 +133,7 @@ test('landing#3: clicking the logo or "Designuri" from a scrolled position retur
     assert.ok(afterLogo < 50, 'logo click must scroll back to the hero (scrollY was ' + afterLogo + ')');
 
     // -- "Designuri" nav link --
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(100);
+    await prepareLandingScroll(page);
     const beforeNav = await page.evaluate(() => window.scrollY);
     assert.ok(beforeNav > 200, 'must actually be scrolled down before the nav click (was ' + beforeNav + ')');
     await page.locator('.header-nav a[data-route="templates"]').click();

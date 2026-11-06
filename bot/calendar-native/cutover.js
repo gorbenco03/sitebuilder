@@ -20,6 +20,7 @@
  */
 
 const engine = require('./engine');
+const { createHash } = require('node:crypto');
 
 const TENANT_RE = /^[a-zA-Z0-9_-]{2,80}$/;
 
@@ -342,11 +343,19 @@ function applyBookingBlock(db, customerId, siteId, services, week) {
     } : {});
 
     const keep = new Set();
+    const legacyIds = new Set();
+
     services.forEach((s, idx) => {
         const base = 'bk_' + (String(s.name).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
             .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'serviciu');
-        let id = base;
-        for (let n = 2; keep.has(id); n++) id = base + '-' + n;
+        let legacyId = base;
+        for (let n = 2; legacyIds.has(legacyId); n++) legacyId = base + '-' + n;
+        legacyIds.add(legacyId);
+        // Service ids are globally unique. Keep this tenant's old references,
+        // but namespace new rows so identical packs never collide across sites.
+        const id = engine.getService(db, customerId, siteId, legacyId)
+            ? legacyId
+            : 'bk_' + createHash('sha256').update(JSON.stringify([customerId, siteId, legacyId])).digest('hex');
         keep.add(id);
         const existing = engine.getService(db, customerId, siteId, id);
         engine.upsertService(db, customerId, siteId, {

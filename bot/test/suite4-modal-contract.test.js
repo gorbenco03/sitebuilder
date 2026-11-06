@@ -351,7 +351,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     tested.add('modal-success');
     const slug = 'suite4-modal-' + Date.now().toString(36);
     await signInPage(page, base, 'suite4-modal@example.com');
-    await publishAndPayInUi(page, base, { slug, pack: 'restaurant', name: 'Restaurant Modal' });
+    const published = await publishAndPayInUi(page, base, { slug, pack: 'restaurant', name: 'Restaurant Modal' });
     await page.locator('#modal-success-title').filter({ hasText: 'Site-ul tău e live' }).waitFor({ state: 'visible', timeout: 25000 });
 
     const successCloseBox = await page.evaluate(() => {
@@ -409,7 +409,7 @@ test('suite4 modal contract: every builder modal — Esc, backdrop, 44px X, focu
     // -----------------------------------------------------------------
     await page.waitForURL(/#dashboard$/, { timeout: 15000 });
     await page.waitForTimeout(700);
-    const card = page.locator('.site-card', { hasText: slug.replace(/-/g, '‑') }).first();
+    const card = page.locator('.site-card').filter({ has: page.locator(`a.site-card-edit[href="/app/blocks/?site=${encodeURIComponent(published.siteId)}"]`) });
     await card.waitFor({ state: 'visible', timeout: 10000 });
 
     await contractCheck('versions', 'modal-versions', 'btn-close-versions', () => clickAndHandle(card.locator('button', { hasText: 'Istoric' })));

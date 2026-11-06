@@ -36,6 +36,7 @@ const path   = require('path');
 const crypto = require('crypto');
 const { execFileSync } = require('child_process');
 
+const { assertLandingCopy } = require('./helpers/integrated-oracle-contracts');
 const ROOT = path.resolve(__dirname, '../..');
 const APP_JS = path.join(ROOT, 'builder', 'app.js');
 const APP_CSS = path.join(ROOT, 'builder', 'app.css');
@@ -252,13 +253,13 @@ function loadPresetConfig(templateId) {
 
     // ── HEAD source locks ──────────────────────────────────────────────────
     await check('HEAD: builder copy has no Widgetul / partner feed (iframe) factory jargon', () => {
-        // The Instagram modal and #ig-partner-note went with the form editor; the app shell
-        // must not carry the partner product name or factory words anywhere on the surfaces left.
+        // C02 permits only the exact disclosure in the Instagram feature card.
+        // Factory/foreign wording remains forbidden in every other shell surface.
         assert.ok(!/\bWidgetul\b/i.test(appSrc), 'app.js no Widgetul');
         assert.ok(!/partner feed \(iframe\)/i.test(appSrc), 'app.js no partner feed (iframe) jargon');
         assert.ok(!/\bWidgetul\b/i.test(indexSrc), 'index.html no Widgetul');
-        const indexNoHref = indexSrc.replace(/href="[^"]*"/gi, 'href=""');
-        assert.ok(!/Instafidget/i.test(indexNoHref), 'index visible copy no Instafidget in catalog/landing chrome');
+        assertLandingCopy(indexSrc);
+        assert.ok(!/Instafidget/i.test(appSrc), 'app.js no partner naming outside approved landing feature');
     });
 
     await check('HEAD: Detalii schemas have no partner feed / iframe jargon', () => {

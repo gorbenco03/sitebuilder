@@ -33,6 +33,16 @@ let saving = null;       // in-flight POST /api/draft
 let signedIn = false;
 let serverTimer = null;
 let serverAgain = false;
+let ownerId = null;
+let localOwnerId = null;
+let localSaved = false;
+let accountKnown = false;
+let cachedAccountDraft = null;
+let accountBase = null;  // exact acknowledged account content underlying this local revision
+let baseVersion;         // undefined is unknown, never proof of an unchanged account
+let recoveryRequired = false;
+let draftConflict = null;
+let localRecoveries = []; // durable alternatives; resolved copies remain available for explicit recovery
 let site = load();
 let selId = null;
 let undoStack = [JSON.stringify(site)];
@@ -50,9 +60,14 @@ let renamingPage = null;
 
 /* ---------- state ---------- */
 
-function readLocal() {
+function draftSnapshot(value) {
+  return JSON.stringify(value, (_, v) => v && typeof v === 'object' && !Array.isArray(v)
+    ? Object.keys(v).sort().reduce((o, k) => { o[k] = v[k]; return o; }, {}) : v);
+}
+
+function readLocal(key = STORE) {
   try {
-    const d = JSON.parse(localStorage.getItem(STORE) || 'null');
+    const d = JSON.parse(localStorage.getItem(key) || 'null');
     if (d && d.site && d.site.v === 2 && d.site.pages && d.site.pages.length) return d;
   } catch (_) { /* fall through */ }
   return null;
@@ -62,33 +77,112 @@ function readLocal() {
 function load() {
   const pack = params.get('pack');
   if (pack && PACKS[pack]) {
-    window.history.replaceState(null, '', location.pathname);
     askIdentity = true;
+    pending = true;
     return defaultSite(pack);
   }
   const local = readLocal();
   const wanted = params.get('site');
-  if (local && (!wanted || local.siteId === wanted)) { siteId = local.siteId || null; resume = local.resume || null; pending = !!local.pending; return local.site; }
+  if (local && (!wanted || local.siteId === wanted)) {
+    siteId = local.siteId || null;
+    localOwnerId = local.ownerId || null;
+    localSaved = true;
+    resume = local.resume || null;
+    pending = !!local.pending;
+    baseVersion = typeof local.baseVersion === 'string' && local.baseVersion.trim() ? local.baseVersion : undefined;
+    recoveryRequired = !!local.recoveryRequired;
+    try { accountBase = local.accountBase ? draftSnapshot(JSON.parse(local.accountBase)) : null; } catch (_) { accountBase = null; }
+    if (siteId || localOwnerId) {
+      cachedAccountDraft = local.site;
+      return defaultSite('gol');
+    }
+    return local.site;
+  }
   if (!wanted) { location.replace('/app/#templates'); }
   return defaultSite('gol');
 }
 
+function draftKey(owner, id) {
+  return `${STORE}:${encodeURIComponent(owner)}:${encodeURIComponent(id)}`;
+}
+
+function recoveryRecords(records, owner, id) {
+  const copies = new Map();
+  const add = (record, resolved = false) => {
+    if (!record || record.ownerId !== owner || record.siteId !== id || record.site?.v !== 2) return;
+    const { recoveryCopies, ...copy } = record;
+    if (copy.pending) {
+      const key = `${draftSnapshot(copy.site)}\n${copy.baseVersion || ''}`;
+      const previous = copies.get(key);
+      copies.set(key, { record: copy, resolved: previous ? resolved && previous.resolved : resolved });
+      if (previous?.record.recoveryRequired) copies.get(key).record.recoveryRequired = true;
+    }
+    for (const alternative of recoveryCopies || []) add(alternative.record, alternative.resolved);
+  };
+  for (const record of records) add(record);
+  return [...copies.values()];
+}
+
+function currentLocalRecord() {
+  return { ownerId: ownerId || localOwnerId, siteId, site: draftConflict ? draftConflict.local : (cachedAccountDraft || site), accountBase, baseVersion, recoveryRequired, resume, pending, recoveryCopies: localRecoveries, at: Date.now() };
+}
+
 function writeLocal() {
-  localStorage.setItem(STORE, JSON.stringify({ siteId, site, resume, pending, at: Date.now() }));
+  let failure = null;
+  const put = (key, record) => {
+    try { localStorage.setItem(key, JSON.stringify(record)); return true; }
+    catch (e) { failure = e; return false; }
+  };
+  const previous = readLocal();
+  let archived = true;
+  if (previous?.ownerId && previous.siteId && (previous.ownerId !== (ownerId || localOwnerId) || previous.siteId !== siteId)) {
+    const key = draftKey(previous.ownerId, previous.siteId);
+    const copies = recoveryRecords([readLocal(key), previous], previous.ownerId, previous.siteId);
+    archived = put(key, { ...previous, recoveryCopies: copies });
+  }
+  const record = currentLocalRecord();
+  // Each key is independently fallible. Never replace the sole unarchived copy.
+  if (record.ownerId && siteId) put(draftKey(record.ownerId, siteId), record);
+  if (archived) put(STORE, record);
+  localSaved = !failure;
+  if (failure) throw failure;
+  // Do not lose the selected design on reload until its first durable write.
+  if (askIdentity && !siteId) window.history.replaceState(null, '', location.pathname);
+}
+
+function browserStatus() {
+  return localSaved ? 'Salvat în browser · nepublicat' : 'Nu s-a putut salva în browser. Redu pozele și reîncearcă înainte să închizi pagina.';
 }
 
 function save() {
   pending = true;
-  try {
-    writeLocal();
-    setSaved(signedIn ? 'Se salvează…' : 'Salvat în browser');
-  } catch (_) {
-    setSaved('Nu s-a putut salva (poze prea mari)');
+  try { writeLocal(); } catch (_) { /* status below */ }
+  if (signedIn && !serverReady) {
+    setSaved(`Nu s-a putut confirma salvarea în cont. ${localSaved ? 'Modificările sunt în browser.' : 'Nici copia din browser nu s-a putut salva. Nu închide pagina.'} Reîncearcă verificarea.`, 'error');
+    return;
   }
+  setSaved(localSaved && signedIn ? 'Salvat în browser · se salvează în cont…' : browserStatus(), localSaved ? 'pending' : 'error');
   scheduleServerSave();
 }
 
-function setSaved(text) { $('saved').textContent = text; }
+function setSaved(text, state = 'saved') {
+  $('saved').textContent = text;
+  $('saved').dataset.state = state;
+  const retry = $('retry-save');
+  if (retry) retry.hidden = state !== 'error';
+}
+
+async function retrySave() {
+  if (cachedAccountDraft && !serverReady) return bootAccount();
+  try { writeLocal(); } catch (_) { /* preserve the current draft in memory */ }
+  if (!serverReady || !accountKnown) return bootAccount();
+  if (signedIn) return saveToServer();
+  setSaved(browserStatus(), localSaved ? 'saved' : 'error');
+}
+
+function networkError(e) {
+  return e instanceof TypeError || !e.status ? 'Nu s-a putut conecta. Verifică internetul și încearcă din nou.' : e.message;
+}
 
 async function api(method, url, body) {
   const res = await fetch(url, {
@@ -122,63 +216,297 @@ function scheduleServerSave() {
 
 /** Sends the site to the account; resolves when this and any queued save are done. */
 function saveToServer() {
-  if (!serverReady) return Promise.resolve();
+  if (!serverReady || !signedIn || draftConflict) return Promise.resolve();
   if (saving) { serverAgain = true; return saving; }
-  saving = (async () => {
+  const task = (async () => {
     do {
       serverAgain = false;
-      const sent = JSON.stringify(site);
+      const snapshot = JSON.parse(JSON.stringify(site));
+      const sent = draftSnapshot(snapshot);
+      const sentVersion = baseVersion;
+      const sentSiteId = siteId;
+      let attempted = false;
       try {
-        const data = await api('POST', '/api/draft', { siteId: siteId || undefined, templateId: TEMPLATE_ID, config: site });
-        if (data.site) rememberSiteId(data.site.id);
-        if (JSON.stringify(site) === sent) { pending = false; try { writeLocal(); } catch (_) { /* quota */ } }
-        setSaved('Salvat în cont');
+        if (sentSiteId && (typeof sentVersion !== 'string' || recoveryRequired)) {
+          throw new Error('Versiunea de bază trebuie verificată.');
+        }
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          setSaved('Nu s-a putut salva în cont. Verifică internetul și reîncearcă.', 'error');
+          break;
+        }
+        const sentBase = draftSnapshot(window.SB.normalizeSite(snapshot));
+        attempted = true;
+        const data = await api('POST', '/api/draft', {
+          siteId: sentSiteId || undefined, templateId: TEMPLATE_ID, config: snapshot,
+          ...(sentSiteId ? { expectedVersionId: sentVersion } : {}),
+        });
+        if (!data.site || !data.site.id || (sentSiteId && data.site.id !== sentSiteId) ||
+            typeof data.versionId !== 'string' || !data.versionId.trim() || data.versionId === sentVersion) {
+          throw new Error('Răspuns de salvare incomplet');
+        }
+        accountBase = sentBase;
+        baseVersion = data.versionId;
+        recoveryRequired = false;
+        for (const copy of localRecoveries) {
+          if (draftSnapshot(window.SB.normalizeSite(copy.record.site)) === sentBase) copy.resolved = true;
+        }
+        rememberSiteId(data.site.id);
+        localOwnerId = ownerId;
+        pending = draftSnapshot(site) !== sent;
+        try { writeLocal(); } catch (_) { /* account copy is durable */ }
+        if (!pending) {
+          setSaved(localSaved ? 'Salvat în cont' : 'Salvat în cont · copia din browser nu s-a putut salva', localSaved ? 'saved' : 'error');
+        } else {
+          serverAgain = true;
+          setSaved('Modificări noi · se salvează în cont…', 'pending');
+        }
       } catch (e) {
-        if (e.status === 401) { signedIn = false; setSaved('Salvat în browser'); }
-        else setSaved(e.message || 'Nu s-a putut salva în cont');
+        serverReady = false;
+        clearTimeout(serverTimer);
+        if (e.status === 401) {
+          signedIn = false;
+          setSaved(`${browserStatus()} · Sesiunea a expirat. Intră din nou în cont din Publică.`, 'error');
+        } else {
+          recoveryRequired = attempted || recoveryRequired;
+          try { writeLocal(); } catch (_) { /* retain unsynced memory and previous durable copy */ }
+          setSaved(`Nu s-a putut salva în cont cu confirmare. ${localSaved ? 'Modificările sunt în browser.' : 'Nici copia din browser nu s-a putut salva. Nu închide pagina.'} Reîncearcă verificarea înainte de a continua.`, 'error');
+          if (e.status === 409) await bootAccount();
+        }
         break;
       }
-    } while (serverAgain);
-    saving = null;
+    } while (serverAgain && serverReady && !draftConflict);
   })();
-  return saving;
+  saving = task;
+  const clear = () => { if (saving === task) saving = null; };
+  task.then(clear, clear);
+  return task;
 }
 
 /** After the first paint: who is signed in, and the account copy of ?site=. */
+function lockAccountDraft(locked) {
+  for (const selector of ['.main', '#editor-tools', '#preview']) {
+    const el = document.querySelector?.(selector);
+    if (el) el.inert = locked;
+  }
+}
+
+function showDraftConflict(message = '') {
+  let dialog = $('draft-conflict');
+  if (!dialog) {
+    dialog = document.createElement('dialog');
+    dialog.id = 'draft-conflict';
+    dialog.className = 'draft-conflict';
+    dialog.setAttribute('aria-labelledby', 'draft-conflict-title');
+    dialog.innerHTML = '<h2 id="draft-conflict-title">Versiuni ale ciornei</h2><p>Contul și browserul păstrează versiuni diferite. Fundalul arată contul verificat. Nu am înlocuit nimic automat.</p><p>Alege contul sau o ciornă locală pentru a înlocui contul. Nicio alegere nu publică. Celelalte copii rămân în „Ciorne păstrate” (Instrumente pe telefon).</p><p id="draft-conflict-error" role="alert"></p><div><button type="button" id="draft-use-account">Continuă cu versiunea din cont</button><button type="button" id="draft-use-local">Recuperează ciorna din browser și înlocuiește contul</button></div>';
+    dialog.addEventListener('cancel', e => e.preventDefault());
+    document.body.append(dialog);
+    $('draft-use-account').onclick = () => resolveDraftConflict(false);
+    $('draft-use-local').onclick = () => resolveDraftConflict(true);
+  }
+  let alternatives = $('draft-local-alternatives');
+  if (!alternatives) {
+    alternatives = document.createElement('div');
+    alternatives.id = 'draft-local-alternatives';
+    dialog.append(alternatives);
+  }
+  alternatives.replaceChildren?.();
+  const versions = draftConflict?.alternatives || [];
+  $('draft-use-local').hidden = versions.length > 1;
+  if (versions.length > 1) versions.forEach((copy, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `Recuperează ciorna ${index + 1}: ${copy.header?.data?.brand || 'fără nume'} · ${copy.theme?.palette || 'design propriu'} și înlocuiește contul`;
+    button.onclick = () => resolveDraftConflict(true, index);
+    alternatives.append(button);
+  });
+  $('draft-conflict-error').textContent = message || (versions.length > 1 ? 'Ciornele locale nu pot fi ordonate sigur. Alege explicit.' : '');
+  if (!dialog.open) dialog.showModal();
+}
+
+function showRetainedDrafts() {
+  let button = $('retained-drafts');
+  if (!button && localRecoveries.length) {
+    button = document.createElement('button');
+    button.id = 'retained-drafts';
+    button.type = 'button';
+    button.textContent = 'Ciorne păstrate';
+    ($('editor-tools') || $('saved').parentNode)?.append(button);
+    button.onclick = async () => {
+      if (!serverReady || saving) return;
+      try {
+        const user = (await api('GET', '/api/me')).user;
+        if (!user || user.id !== ownerId) throw new Error('Contul s-a schimbat. Redeschide site-ul din Site-urile mele.');
+        const data = await api('GET', `/api/sites/${encodeURIComponent(siteId)}`);
+        if (!data.config || data.config.v !== 2 || typeof data.versionId !== 'string') throw new Error('Ciorna din cont nu poate fi verificată.');
+        localRecoveries = recoveryRecords([readLocal(), readLocal(draftKey(ownerId, siteId)), currentLocalRecord()], ownerId, siteId);
+        const alternatives = localRecoveries.map(copy => copy.record.site);
+        if (!alternatives.length) return;
+        draftConflict = { local: alternatives[0], alternatives, account: draftSnapshot(data.config), versionId: data.versionId };
+        site = data.config;
+        serverReady = false;
+        lockAccountDraft(true);
+        renderAll();
+        setSaved('Ciorne păstrate. Alege versiunea înainte de a continua.', 'error');
+        showDraftConflict();
+      } catch (e) { setSaved(networkError(e), 'error'); }
+    };
+  }
+  if (button) button.hidden = !localRecoveries.length;
+}
+
+async function resolveDraftConflict(useLocal, index = 0) {
+  const conflict = draftConflict;
+  if (!conflict || conflict.busy) return;
+  conflict.busy = true;
+  try {
+    const user = (await api('GET', '/api/me')).user;
+    if (!user || user.id !== ownerId) throw new Error('Contul s-a schimbat. Redeschide site-ul din Site-urile mele.');
+    const data = await api('GET', `/api/sites/${encodeURIComponent(siteId)}`);
+    if (!data.config || data.config.v !== 2 || typeof data.versionId !== 'string' || !data.versionId.trim()) throw new Error('Ciorna din cont nu poate fi verificată.');
+    const latest = draftSnapshot(data.config);
+    if (latest !== conflict.account || data.versionId !== conflict.versionId) {
+      conflict.account = latest;
+      conflict.versionId = data.versionId;
+      site = data.config;
+      renderAll();
+      showDraftConflict('Versiunea din cont s-a schimbat între timp. Verifică din nou alegerea înainte de a continua.');
+      return;
+    }
+    site = useLocal ? (conflict.alternatives?.[index] || conflict.local) : data.config;
+    for (const copy of localRecoveries) copy.resolved = true;
+    accountBase = latest;
+    baseVersion = data.versionId;
+    recoveryRequired = false;
+    cachedAccountDraft = null;
+    pending = useLocal;
+    draftConflict = null;
+    undoStack.splice(0, undoStack.length, JSON.stringify(site));
+    hIndex = 0;
+    selId = null;
+    try { writeLocal(); } catch (_) { /* durable account and old browser copy remain intact */ }
+    $('draft-conflict').close();
+    serverReady = true;
+    lockAccountDraft(false);
+    renderAll();
+    showRetainedDrafts();
+    if (useLocal) await saveToServer();
+    else setSaved(localSaved ? 'Salvat în cont' : 'Salvat în cont · copia din browser nu s-a putut salva', localSaved ? 'saved' : 'error');
+  } catch (e) {
+    showDraftConflict(networkError(e));
+  } finally { conflict.busy = false; }
+}
+
 async function bootAccount() {
-  try { signedIn = !!(await api('GET', '/api/me')).user; } catch (_) { signedIn = false; }
-  const wanted = params.get('site');
+  serverReady = false;
+  lockAccountDraft(!!(cachedAccountDraft || siteId || params.get('site')));
+  // A fresh untouched design is a draft too, even when onboarding is skipped.
+  if (askIdentity) { try { writeLocal(); } catch (_) { /* status below */ } }
+  let user;
+  try {
+    user = (await api('GET', '/api/me')).user;
+    signedIn = !!user;
+    accountKnown = true;
+    ownerId = user ? user.id : null;
+  } catch (_) {
+    accountKnown = false;
+    setSaved(`${browserStatus()} · Contul nu poate fi verificat. Verifică internetul și reîncearcă.`, 'error');
+    return;
+  }
+  const wanted = (askIdentity ? null : params.get('site')) || siteId;
+  if (ownerId && wanted && (!siteId || localOwnerId !== ownerId)) {
+    const scoped = readLocal(draftKey(ownerId, wanted));
+    if (scoped && scoped.ownerId === ownerId && scoped.siteId === wanted) {
+      siteId = wanted;
+      localOwnerId = ownerId;
+      cachedAccountDraft = scoped.site;
+      pending = !!scoped.pending;
+      baseVersion = typeof scoped.baseVersion === 'string' ? scoped.baseVersion : undefined;
+      recoveryRequired = !!scoped.recoveryRequired;
+      accountBase = scoped.accountBase || null;
+    }
+  }
+  if (localOwnerId && localOwnerId !== ownerId) {
+    siteId = null;
+    pending = false;
+    resume = null;
+    localSaved = false;
+    site = defaultSite('gol');
+    renderAll();
+    setSaved('Ciorna aparține altui cont. Deschide site-ul din Site-urile mele.', 'error');
+    location.replace('/app/#dashboard');
+    return;
+  }
   if (wanted && signedIn) {
     const haveLocal = siteId === wanted;
     try {
       const data = await api('GET', `/api/sites/${encodeURIComponent(wanted)}`);
-      if (!data.config || data.config.v !== 2) throw Object.assign(new Error('not a block site'), { status: 409 });
-      // Edits this browser made that never reached the account win over the account copy.
-      if (!(haveLocal && pending)) {
-        site = data.config;
-        if (!site.current || !site.pages.some((p) => p.id === site.current)) site.current = site.pages[0].id;
-        undoStack.splice(0, undoStack.length, JSON.stringify(site));
-        hIndex = 0;
-        selId = null;
+      if (!data.config || data.config.v !== 2 || typeof data.versionId !== 'string' || !data.versionId.trim()) throw Object.assign(new Error('not a verified block site'), { status: 409 });
+      // Read both durable keys, even when the active key already names this site.
+      localRecoveries = recoveryRecords([
+        readLocal(), readLocal(draftKey(ownerId, wanted)),
+        ...(haveLocal ? [currentLocalRecord()] : []),
+      ], ownerId, wanted);
+      const remote = draftSnapshot(data.config);
+      for (const copy of localRecoveries) {
+        if (draftSnapshot(window.SB.normalizeSite(copy.record.site)) === remote) copy.resolved = true;
       }
-      siteId = data.site.id;
-      try { writeLocal(); } catch (_) { /* quota */ }
-      renderAll();
-    } catch (e) {
-      if (!haveLocal) {
-        // Nothing trustworthy to save: stay read-only rather than overwrite the account draft.
-        setSaved(e.status === 404 || e.status === 403 ? 'Site-ul nu a fost găsit în contul tău' : 'Nu s-a putut încărca site-ul din cont. Reîncarcă pagina.');
+      const candidates = localRecoveries.filter(copy => !copy.resolved && draftSnapshot(window.SB.normalizeSite(copy.record.site)) !== remote);
+      const candidate = candidates[0]?.record;
+      const local = candidate ? candidate.site : null;
+      if (candidate) {
+        pending = true;
+        baseVersion = candidate.baseVersion;
+        recoveryRequired = !!candidate.recoveryRequired;
+      }
+      const localRevision = local ? draftSnapshot(window.SB.normalizeSite(local)) : null;
+      if (local && localRevision !== remote && (candidates.length > 1 || recoveryRequired || baseVersion !== data.versionId)) {
+        draftConflict = { local, alternatives: candidates.map(copy => copy.record.site), account: remote, versionId: data.versionId };
+        site = data.config;
+        renderAll();
+        setSaved('Două versiuni diferite. Alege ciorna de păstrat înainte de salvare.', 'error');
+        showDraftConflict();
         return;
       }
+      if (local && localRevision !== remote) {
+        site = local;
+      } else {
+        site = data.config;
+        pending = false;
+      }
+      accountBase = remote;
+      baseVersion = data.versionId;
+      recoveryRequired = false;
+      draftConflict = null;
+      $('draft-conflict')?.close();
+      if (!site.current || !site.pages.some((p) => p.id === site.current)) site.current = site.pages[0].id;
+      undoStack.splice(0, undoStack.length, JSON.stringify(site));
+      hIndex = 0;
+      selId = null;
+      cachedAccountDraft = null;
+      siteId = data.site.id;
+      localOwnerId = ownerId;
+      try { writeLocal(); } catch (_) { /* status below */ }
+      renderAll();
+    } catch (e) {
+      setSaved(e.status === 404 || e.status === 403 ? 'Site-ul nu a fost găsit în contul tău. Revino la Site-urile mele.' : 'Nu s-a putut încărca site-ul din cont. Verifică internetul și reîncearcă.', 'error');
+      return;
     }
-  } else if (wanted && !signedIn && siteId !== wanted) {
-    location.replace('/app/#dashboard');
+  } else if (wanted && !signedIn) {
+    setSaved('Intră din nou în cont din Publică pentru a redeschide acest site.', 'error');
     return;
   }
+  if (!wanted && cachedAccountDraft && signedIn) {
+    site = cachedAccountDraft;
+    cachedAccountDraft = null;
+    undoStack.splice(0, undoStack.length, JSON.stringify(site));
+    hIndex = 0;
+    renderAll();
+  }
   serverReady = true;
-  setSaved(signedIn ? (siteId && !pending ? 'Salvat în cont' : 'Se salvează…') : 'Salvat în browser');
-  if (signedIn && (!siteId || pending)) saveToServer();
-  // Back from the sign-in link: carry on with publishing.
+  lockAccountDraft(false);
+  if (wanted && signedIn) showRetainedDrafts();
+  if (signedIn && (!siteId || pending)) await saveToServer();
+  else setSaved(signedIn && !pending ? (localSaved ? 'Salvat în cont' : 'Salvat în cont · copia din browser nu s-a putut salva') : browserStatus(), localSaved ? 'saved' : 'error');
   const was = resume;
   if (was) { resume = null; try { writeLocal(); } catch (_) { /* quota */ } }
   if (was === 'auth' && signedIn) openPublish();
@@ -240,9 +568,11 @@ const EDITOR_CSS = `
 [data-img]{cursor:pointer}
 [data-img]:hover{filter:brightness(.88)}
 .b-nav__links a{cursor:pointer}
-.ed-label{position:absolute;top:0;left:0;z-index:40;display:none;background:#2438d6;color:#fff;font:600 12px/1 -apple-system,Helvetica,Arial,sans-serif;padding:6px 9px;border-radius:0 0 6px 0}
-.blk:hover>.ed-label,.blk.is-sel>.ed-label{display:block}
-.ed-tools{position:absolute;top:10px;right:10px;z-index:41;display:flex;gap:4px;background:#fff;border-radius:10px;padding:4px;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.ed-chrome{position:absolute;top:0;left:0;width:100%;z-index:43;display:none;pointer-events:none}
+.blk:hover>.ed-chrome,.blk.is-sel>.ed-chrome{display:grid;gap:6px}
+.blk.is-sel>.ed-chrome{z-index:44}
+.ed-label{justify-self:start;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;background:#2438d6;color:#fff;font:600 12px/1.35 -apple-system,Helvetica,Arial,sans-serif;padding:6px 9px;border-radius:0 0 6px 0;pointer-events:auto}
+.ed-tools{justify-self:end;max-width:100%;box-sizing:border-box;flex-wrap:wrap;justify-content:flex-end;display:flex;gap:4px;background:#fff;border-radius:10px;padding:4px;box-shadow:0 6px 24px rgba(0,0,0,.25);pointer-events:auto}
 .ed-tools button{font:600 13px -apple-system,Helvetica,Arial,sans-serif;color:#15171c;background:#fff;border:0;border-radius:7px;min-width:34px;height:34px;padding:0 9px;cursor:pointer}
 .ed-tools button:hover{background:#eef1ff}
 .ed-tools .ed-del{color:#b42318}
@@ -250,7 +580,8 @@ const EDITOR_CSS = `
 .blk:hover>.ed-add,.blk.is-sel>.ed-add{opacity:1}
 .ed-add button{font:600 13px -apple-system,Helvetica,Arial,sans-serif;background:#2438d6;color:#fff;border:0;border-radius:999px;height:34px;padding:0 14px;box-shadow:0 4px 14px rgba(36,56,214,.45);cursor:pointer}
 .b-attr{user-select:none}
-.ed-label,.ed-tools,.ed-add,.ed-tt{zoom:var(--ed-z,1)}
+.ed-chrome,.ed-add,.ed-tt{zoom:var(--ed-z,1)}
+.ed-chrome>.ed-add{position:static;justify-self:center;transform:none;opacity:1;pointer-events:auto;zoom:1}
 .ed-drag{cursor:grab}
 body.is-editing .ed-tools{display:none}
 .ed-drop{position:absolute;left:0;right:0;height:4px;background:#2438d6;z-index:60;pointer-events:none;box-shadow:0 0 0 3px rgba(36,56,214,.25)}
@@ -283,10 +614,13 @@ function renderTheme() { if (doc) doc.getElementById('theme').textContent = them
 function decorate(el, b) {
   const def = BLOCKS[b.type];
   const shared = isShared(b.id);
+  const chrome = doc.createElement('div');
+  chrome.className = 'ed-chrome';
   const label = doc.createElement('div');
   label.className = 'ed-label';
   label.textContent = def.label + ' · ' + def.variants[b.variant] + (shared ? ' · pe toate paginile' : '');
-  el.appendChild(label);
+  chrome.appendChild(label);
+  el.appendChild(chrome);
   if (b.id === selId) {
     el.classList.add('is-sel');
     const tools = doc.createElement('div');
@@ -296,13 +630,14 @@ function decorate(el, b) {
       (shared ? '' : `<button type="button" class="ed-drag" draggable="true" title="Trage ca să muți blocul">⠿ Trage</button>`) +
       (many ? `<button type="button" data-act="variant" title="Schimbă aspectul">Aspect ↻</button>` : '') +
       (shared ? '' : `<button type="button" data-act="up" title="Mută sus">↑</button><button type="button" data-act="down" title="Mută jos">↓</button><button type="button" data-act="dup" title="Duplică (Cmd+D)">Duplică</button><button type="button" data-act="del" class="ed-del" title="Șterge (Delete)">Șterge</button>`);
-    if (tools.innerHTML) el.appendChild(tools);
+    if (tools.innerHTML) chrome.appendChild(tools);
   }
   if (b.id !== site.footer.id) {
     const add = doc.createElement('div');
     add.className = 'ed-add';
     add.innerHTML = '<button type="button" data-act="add">+ Adaugă bloc aici</button>';
-    el.appendChild(add);
+    if (b.id === selId) chrome.appendChild(add);
+    else el.appendChild(add);
   }
 }
 
@@ -348,7 +683,13 @@ function bindFrame() {
   doc.addEventListener('click', (e) => {
     if (e.target.closest('.ed-tt')) return textToolAction(e);
     const pageLink = e.target.closest('[data-page]');
-    if (pageLink) { e.preventDefault(); switchPage(pageLink.dataset.page); return; }
+    if (pageLink) {
+      e.preventDefault();
+      switchPage(pageLink.dataset.page);
+      const target = pageLink.dataset.actionTarget;
+      if (target) doc.getElementById(target)?.scrollIntoView();
+      return;
+    }
     const a = e.target.closest('a');
     if (a) e.preventDefault();
     if (a && editing && editing.el.contains(a) && editing.el !== a) return;
@@ -374,7 +715,7 @@ function bindFrame() {
     if (!f || !blk) return;
     const b = findBlock(blk.dataset.id);
     setPath(b.data, f.dataset.f, f.hasAttribute('data-rich') ? rich(f.innerHTML) : f.textContent);
-    $('saved').textContent = 'Se salvează…';
+    setSaved('Modificări nesalvate…', 'pending');
     clearTimeout(textTimer);
     textTimer = setTimeout(() => { commit(); syncInspectorValues(); }, 500);
     placeTextTools();
@@ -619,7 +960,10 @@ function textToolAction(e) {
     const next = dir > 0 ? SIZE_STEPS.find((x) => x > cur + 0.5) : [...SIZE_STEPS].reverse().find((x) => x < cur - 0.5);
     if (next) s.size = next;
   }
-  if (kind === 'reset') { const href = s.href; b.el[editing.path] = href ? { href } : {}; }
+  if (kind === 'reset') {
+    const { href, action } = s;
+    b.el[editing.path] = { ...(href ? { href } : {}), ...(action ? { action } : {}) };
+  }
   if (kind === 'hide') {
     s.hidden = true;
     refreshBlockCss(b);
@@ -658,16 +1002,17 @@ function applyLink(value) {
 
 function select(id, opts = {}) {
   selId = id;
+  if (compactEditor.matches) closeSide();
   renderList();
   renderInspector();
   if (!opts.keepCanvas) { renderCanvas(); return; }
   doc.querySelectorAll('.blk').forEach((el) => {
     el.classList.remove('is-sel');
-    el.querySelectorAll(':scope > .ed-tools').forEach((x) => x.remove());
+    el.querySelectorAll(':scope > .ed-chrome > .ed-tools').forEach((x) => x.remove());
   });
   const el = doc.querySelector(`.blk[data-id="${id}"]`);
   if (el) {
-    el.querySelectorAll(':scope > .ed-label, :scope > .ed-add').forEach((x) => x.remove());
+    el.querySelectorAll(':scope > .ed-chrome, :scope > .ed-add').forEach((x) => x.remove());
     decorate(el, findBlock(id));
   }
 }
@@ -830,6 +1175,27 @@ $('block-list').addEventListener('dragend', () => { listDragId = null; renderLis
 
 /* ---------- inspector ---------- */
 
+const INSPECTOR_GROUPS = ['content', 'appearance', 'advanced'];
+function uiPreference(key, fallback) {
+  try { return localStorage.getItem('hb.blocks.ui.' + key) || fallback; } catch (_) { return fallback; }
+}
+function setUiPreference(key, value) {
+  try { localStorage.setItem('hb.blocks.ui.' + key, value); } catch (_) { /* optional UI preference */ }
+}
+let inspectorGroup = uiPreference('inspector', 'content');
+if (!INSPECTOR_GROUPS.includes(inspectorGroup)) inspectorGroup = 'content';
+function showInspectorGroup(group, focus = false) {
+  inspectorGroup = group;
+  setUiPreference('inspector', group);
+  INSPECTOR_GROUPS.forEach(k => {
+    const tab = $('insp-tab-' + k);
+    tab.setAttribute('aria-selected', String(k === group));
+    tab.tabIndex = k === group ? 0 : -1;
+    $('insp-panel-' + k).hidden = k !== group;
+  });
+  if (focus) $('insp-tab-' + group).focus();
+}
+
 function renderInspector() {
   const box = $('inspector');
   const b = selId && findBlock(selId);
@@ -848,17 +1214,23 @@ function renderInspector() {
   if (b.type === 'booking' && window.SB.bookingBlocks(site)[0].id !== b.id) html += `<p class="note">Site-ul are deja un bloc Programări online. Calendarul apare doar în primul; acesta arată pe site doar lista de servicii și telefonul.</p>`;
   if (b.type === 'booking') html += `<p class="note">Clienții aleg un serviciu și o oră liberă din zilele de mai jos. Calendarul pornește pe site când publici. Fiecare programare îți vine pe email și o vezi în Site-urile mele → Programări, unde poți pune și zile libere.</p>`;
   if (b.type === 'form') html += `<p class="note">Mesajele ajung în „Mesaje”, pe cardul site-ului din Site-urile mele. Dacă scrii adresa de e-mail de mai jos, vizitatorul o poate folosi când trimiterea nu merge.</p>`;
+  const contentNotes = html;
+  html = '';
   if (variants.length > 1) html += `<div class="grp"><h3>Aspect</h3><div class="pills">${variants.map(([k, l]) => `<button type="button" data-variant="${k}" aria-pressed="${k === b.variant}">${esc(l)}</button>`).join('')}</div></div>`;
   html += `<div class="grp"><h3>Fundal</h3><div class="pills">${[['auto', 'Ca tema'], ['light', 'Deschis'], ['dark', 'Închis'], ['accent', 'Accent']].map(([k, l]) => `<button type="button" data-bg="${k}" aria-pressed="${k === b.bg}">${l}</button>`).join('')}</div></div>`;
   if (!shared) {
     html += `<div class="grp"><h3>Spațiere</h3><div class="pills">${[['compact', 'Compact'], ['normal', 'Normal'], ['airy', 'Aerisit']].map(([k, l]) => `<button type="button" data-pad="${k}" aria-pressed="${k === (b.pad || 'normal')}">${l}</button>`).join('')}</div></div>`;
     html += `<div class="grp"><h3>Aliniere</h3><div class="pills">${[['auto', 'Ca designul'], ['center', 'Totul centrat']].map(([k, l]) => `<button type="button" data-align="${k}" aria-pressed="${k === (b.align || 'auto')}">${l}</button>`).join('')}</div></div>`;
-    html += `<div class="grp"><label class="check"><input type="checkbox" data-hidem ${b.hideMobile ? 'checked' : ''}> Ascunde pe telefon</label></div>`;
   }
+  const appearance = html;
+  html = !shared ? `<div class="grp"><label class="check"><input type="checkbox" data-hidem ${b.hideMobile ? 'checked' : ''}> Ascunde pe telefon</label></div>` : '';
   const visFields = def.fields.filter((f) => f.type === 'text' || f.type === 'textarea');
   if (visFields.length) html += `<div class="grp"><h3>Elemente afișate</h3><div class="checks">${visFields.map((f) => `<label class="check"><input type="checkbox" data-vis="${f.key}" ${(b.el && b.el[f.key] && b.el[f.key].hidden) ? '' : 'checked'}> ${esc(f.label)}</label>`).join('')}</div></div>`;
-  if (def.fields.length) html += `<div class="grp"><h3>Conținut</h3><div style="display:flex;flex-direction:column;gap:12px">${def.fields.map((f) => fieldHtml(b, f, f.key)).join('')}</div></div>`;
-  if (!shared) html += `<div class="grp"><h3>Bloc</h3><div class="row-actions"><button type="button" data-act="up">Mută sus</button><button type="button" data-act="down">Mută jos</button><button type="button" data-act="dup">Duplică</button><button type="button" data-act="del" class="danger">Șterge</button></div></div>`;
+  const advanced = html || '<p class="hint">Nu sunt setări avansate pentru acest bloc.</p>';
+  const content = contentNotes + (def.fields.length ? `<div class="grp"><h3>Conținut</h3><div class="insp-fields">${def.fields.map((f) => fieldHtml(b, f, f.key)).join('')}</div></div>` : '');
+  const groups = { content, appearance, advanced };
+  html = `<p class="insp-identity">Bloc selectat: ${esc(def.label)} · ${esc(def.variants[b.variant] || '')}${shared ? ' · comun tuturor paginilor' : ` · ${esc(curPage().name)}`}</p><div class="insp-tabs" role="tablist" aria-label="Setările blocului">${INSPECTOR_GROUPS.map((k, i) => `<button type="button" id="insp-tab-${k}" role="tab" aria-controls="insp-panel-${k}" aria-selected="${k === inspectorGroup}" tabindex="${k === inspectorGroup ? 0 : -1}" data-group="${k}">${['Conținut', 'Aspect', 'Avansat'][i]}</button>`).join('')}</div>${INSPECTOR_GROUPS.map(k => `<section id="insp-panel-${k}" role="tabpanel" aria-labelledby="insp-tab-${k}"${k === inspectorGroup ? '' : ' hidden'}>${groups[k]}</section>`).join('')}`;
+  if (!shared) html += `<div class="grp insp-actions" aria-label="Acțiuni pentru bloc"><h3>Organizează blocul</h3><div class="row-actions"><button type="button" data-act="up">Mută sus</button><button type="button" data-act="down">Mută jos</button></div><div class="row-actions insp-destructive"><button type="button" data-act="dup">Duplică blocul</button><button type="button" data-act="del" class="danger">Șterge blocul</button></div></div>`;
   if (b.type === 'footer') html += `<p class="hint">Linia „Build by hidook.tech powered by hidook.agency” nu se poate edita.</p>`;
   $('insp-body').innerHTML = html;
   fitFrame();
@@ -943,7 +1315,7 @@ $('insp-body').addEventListener('input', (e) => {
   if (!el || !b) return;
   setPath(b.data, el.dataset.path, el.value);
   rerenderBlock(b.id);
-  $('saved').textContent = 'Se salvează…';
+  setSaved('Modificări nesalvate…', 'pending');
   clearTimeout(textTimer);
   textTimer = setTimeout(() => { commit(); $('site-name').textContent = site.header.data.brand; }, 500);
 });
@@ -973,7 +1345,18 @@ $('insp-body').addEventListener('change', (e) => {
   }
 });
 
+$('insp-body').addEventListener('keydown', (e) => {
+  const tab = e.target.closest('[data-group]');
+  if (!tab) return;
+  const i = INSPECTOR_GROUPS.indexOf(tab.dataset.group);
+  const next = e.key === 'ArrowRight' ? (i + 1) % 3 : e.key === 'ArrowLeft' ? (i + 2) % 3 : e.key === 'Home' ? 0 : e.key === 'End' ? 2 : null;
+  if (next === null) return;
+  e.preventDefault();
+  showInspectorGroup(INSPECTOR_GROUPS[next], true);
+});
 $('insp-body').addEventListener('click', (e) => {
+  const group = e.target.closest('[data-group]');
+  if (group) { showInspectorGroup(group.dataset.group); return; }
   if (e.target.closest('[data-ig]')) { openInstagram(); return; }
   const b = findBlock(selId);
   if (!b) return;
@@ -1020,10 +1403,19 @@ $('insp-close').addEventListener('click', deselect);
 
 function openPicker(target) {
   pendingImage = target;
+  if (!$('picker-error')) {
+    const error = document.createElement('p');
+    error.id = 'picker-error';
+    error.className = 'pub__error picker-error';
+    error.setAttribute('role', 'alert');
+    $('picker-grid').before(error);
+  }
+  $('picker-error').hidden = true;
+  $('picker-upload').textContent = 'Încarcă de pe calculator';
   const b = findBlock(target.id);
   const cur = b && getPath(b.data, target.path);
   const all = [...new Set([...PACKS[site.pack].images, ...Object.values(PACKS).flatMap((x) => x.images)])];
-  $('picker-grid').innerHTML = all.map((src) => `<button type="button" class="pick${src === cur ? ' is-cur' : ''}" data-src="${esc(src)}"><img src="${esc(asset(src))}" alt="" loading="lazy"></button>`).join('');
+  $('picker-grid').innerHTML = all.map((src, i) => `<button type="button" class="pick${src === cur ? ' is-cur' : ''}" data-src="${esc(src)}" aria-label="Alege poza ${i + 1}" aria-pressed="${src === cur}"><img src="${esc(asset(src))}" alt="" loading="lazy"></button>`).join('');
   $('picker').hidden = false;
 }
 
@@ -1046,28 +1438,72 @@ $('file').addEventListener('change', () => {
   const file = $('file').files[0];
   $('file').value = '';
   if (!file || !pendingImage) return;
+  const target = pendingImage;
+  const fail = () => {
+    if (pendingImage !== target || $('picker').hidden) return;
+    $('picker-error').textContent = 'Nu am putut citi imaginea. Alege un alt fișier JPG, PNG sau WebP, ori o poză din bibliotecă.';
+    $('picker-error').hidden = false;
+    $('picker-upload').textContent = 'Alege alt fișier';
+    $('picker-upload').focus();
+  };
   const reader = new FileReader();
+  reader.onerror = fail;
+  reader.onabort = fail;
   reader.onload = () => {
     const im = new Image();
+    im.onerror = fail;
     im.onload = () => {
-      const k = Math.min(1, 1600 / Math.max(im.width, im.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(im.width * k);
-      c.height = Math.round(im.height * k);
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-      setImage(c.toDataURL('image/jpeg', 0.82));
+      if (pendingImage !== target || $('picker').hidden) return;
+      try {
+        if (!im.width || !im.height) { fail(); return; }
+        const k = Math.min(1, 1600 / Math.max(im.width, im.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.width * k);
+        c.height = Math.round(im.height * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        setImage(c.toDataURL('image/jpeg', 0.82));
+      } catch (_) { fail(); }
     };
     im.src = reader.result;
   };
-  reader.readAsDataURL(file);
+  try { reader.readAsDataURL(file); } catch (_) { fail(); }
 });
 
 /* ---------- block previews: library + Adaugă panel ---------- */
 
-function previewDoc(type, variant) {
+function previewDoc(type, variant, raw = false) {
   const b = makeBlock(type, variant, site.pack);
   const ctx = { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: site.current };
-  return `<!doctype html><html><head><meta charset="utf-8"><base href="${esc(location.href)}"><style>${themeCss(site.theme)}</style></head><body>${withThumbs(() => renderBlock(b, ctx))}</body></html>`.replace(/"/g, '&quot;');
+  const html = `<!doctype html><html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><base href="${esc(location.href)}"><style>${themeCss(site.theme)}</style></head><body>${withThumbs(() => renderBlock(b, ctx))}</body></html>`;
+  return raw ? html : esc(html);
+}
+
+function openRecognitionPreview(title, html, actionLabel, action) {
+  const previous = document.activeElement;
+  const dialog = document.createElement('dialog');
+  dialog.className = 'recognition-preview';
+  dialog.id = 'recognition-preview';
+  dialog.setAttribute('aria-labelledby', 'recognition-title');
+  dialog.innerHTML = `<div class="recognition-head"><h2 id="recognition-title">${esc(title)}</h2><button type="button" id="recognition-close">Înapoi</button></div><p class="hint">Previzualizare de exemplu. Ciorna nu se modifică până nu alegi acțiunea de mai jos.</p><iframe sandbox="" title="${esc(title)}"></iframe><button type="button" class="primary" id="recognition-use">${esc(actionLabel)}</button>`;
+  document.body.append(dialog);
+  dialog.querySelector('iframe').srcdoc = html;
+  dialog.querySelector('#recognition-close').onclick = () => dialog.close();
+  dialog.querySelector('#recognition-use').onclick = () => { dialog.close(); action(); };
+  dialog.addEventListener('close', () => { dialog.remove(); if (previous?.isConnected) previous.focus(); }, { once: true });
+  dialog.addEventListener('keydown', e => { e.stopPropagation(); });
+  dialog.showModal();
+  dialog.querySelector('#recognition-close').focus();
+}
+
+function previewBlockChoice(type, variant, at, library = false) {
+  openRecognitionPreview(`${BLOCKS[type].label} · ${BLOCKS[type].variants[variant]}`, previewDoc(type, variant, true), 'Inserează blocul', () => {
+    if (library) $('library').hidden = true;
+    insertBlock(type, variant, at);
+  });
+}
+
+function blockChoice(x, small = false) {
+  return `<div class="${small ? 'addcard' : 'lib__card'}" ${small ? 'draggable="true"' : ''} data-type="${x.type}" data-v="${x.v}"><div class="${small ? 'addcard__thumb' : 'lib__thumb'}"><iframe sandbox="" title="${esc(x.def.label)} · ${esc(x.label)}" aria-hidden="true" tabindex="-1" loading="lazy" srcdoc="${previewDoc(x.type, x.v)}"></iframe></div><div class="lib__meta"><b>${esc(x.def.label)}</b><span>${esc(x.label)}</span></div><div class="choice-actions"><button type="button" data-choice="preview">Previzualizează</button><button type="button" data-choice="insert">Inserează</button></div></div>`;
 }
 
 function addableBlocks() {
@@ -1082,7 +1518,7 @@ function addableBlocks() {
 function renderAddPanel() {
   const groups = {};
   addableBlocks().forEach((x) => { (groups[x.def.category] = groups[x.def.category] || []).push(x); });
-  $('add-list').innerHTML = Object.entries(groups).map(([cat, items]) => `<h3>${esc(cat)}</h3><div class="addgrid">${items.map((x) => `<button type="button" class="addcard" draggable="true" data-type="${x.type}" data-v="${x.v}" title="${esc(x.def.label)} · ${esc(x.label)}"><span class="addcard__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${previewDoc(x.type, x.v)}"></iframe></span><span class="addcard__lbl">${esc(x.def.label)}<small>${esc(x.label)}</small></span></button>`).join('')}</div>`).join('');
+  $('add-list').innerHTML = Object.entries(groups).map(([cat, items]) => `<h3>${esc(cat)}</h3><div class="addgrid">${items.map(x => blockChoice(x, true)).join('')}</div>`).join('');
 }
 
 $('add-list').addEventListener('dragstart', (e) => {
@@ -1095,7 +1531,10 @@ $('add-list').addEventListener('dragstart', (e) => {
 $('add-list').addEventListener('dragend', () => { setTimeout(clearDrag, 0); });
 $('add-list').addEventListener('click', (e) => {
   const c = e.target.closest('.addcard');
-  if (c) insertBlock(c.dataset.type, c.dataset.v, curPage().blocks.length);
+  const action = e.target.closest('[data-choice]');
+  if (!c || !action) return;
+  if (action.dataset.choice === 'preview') previewBlockChoice(c.dataset.type, c.dataset.v, curPage().blocks.length);
+  else insertBlock(c.dataset.type, c.dataset.v, curPage().blocks.length);
 });
 
 function openLibrary(at) {
@@ -1110,13 +1549,15 @@ function openLibrary(at) {
 function renderLibGrid() {
   $('lib-cats').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.cat === libCat)));
   $('lib-grid').innerHTML = addableBlocks().filter((x) => libCat === 'Toate' || x.def.category === libCat)
-    .map((x) => `<button type="button" class="lib__card" data-type="${x.type}" data-v="${x.v}"><div class="lib__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${previewDoc(x.type, x.v)}"></iframe></div><div class="lib__meta"><b>${esc(x.def.label)}</b><span>${esc(x.label)}</span></div></button>`).join('');
+    .map(x => blockChoice(x)).join('');
 }
 
 $('lib-cats').addEventListener('click', (e) => { const c = e.target.closest('[data-cat]'); if (c) { libCat = c.dataset.cat; renderLibGrid(); } });
 $('lib-grid').addEventListener('click', (e) => {
   const card = e.target.closest('.lib__card');
-  if (!card) return;
+  const action = e.target.closest('[data-choice]');
+  if (!card || !action) return;
+  if (action.dataset.choice === 'preview') { previewBlockChoice(card.dataset.type, card.dataset.v, insertAt, true); return; }
   $('library').hidden = true;
   insertBlock(card.dataset.type, card.dataset.v, insertAt);
 });
@@ -1126,31 +1567,87 @@ $('add-block').addEventListener('click', () => openLibrary(null));
 
 /* ---------- starter packs ---------- */
 
+let packsFocus = null;
+let packsInert = [];
+let replacement = null;
+function closePacks() {
+  $('packs').hidden = true;
+  packsInert.forEach(([el, inert]) => { el.inert = inert; });
+  packsInert = [];
+  replacement = null;
+  const target = packsFocus && packsFocus.isConnected ? packsFocus : $('open-packs');
+  if (compactEditor.matches && tools.contains(target)) {
+    tools.classList.add('is-open');
+    toolsToggle.setAttribute('aria-expanded', 'true');
+  }
+  target.focus();
+}
+
+function packPreviewDoc(id) {
+  const tmp = defaultSite(id);
+  return withThumbs(() => renderPage(tmp, tmp.pages[0].id, location.origin + '/app/'));
+}
+
 function openPacks() {
+  packsFocus = document.activeElement;
+  replacement = null;
+  $('packs-confirm')?.remove();
+  $('packs-grid').hidden = false;
   const order = Object.entries(PACKS).sort((a, b) => (b[1].blank ? 1 : 0) - (a[1].blank ? 1 : 0));
   $('packs-grid').innerHTML = order.map(([id, p]) => {
-    const tmp = defaultSite(id);
-    const html = withThumbs(() => renderPage(tmp, tmp.pages[0].id, location.href)).replace(/"/g, '&quot;');
-    return `<button type="button" class="lib__card${id === site.pack ? ' is-cur' : ''}" data-pack="${id}"><div class="lib__thumb"><iframe tabindex="-1" loading="lazy" srcdoc="${html}"></iframe></div><div class="lib__meta"><b>${esc(p.label)}</b><span>${esc(p.desc)}${p.blank ? '' : ` · ${p.pages.length} pagini`}</span></div></button>`;
+    return `<div class="lib__card${id === site.pack ? ' is-cur' : ''}" data-pack="${id}"><div class="lib__thumb"><iframe sandbox="" title="Previzualizare ${esc(p.label)}" aria-hidden="true" tabindex="-1" loading="lazy" srcdoc="${esc(packPreviewDoc(id))}"></iframe></div><div class="lib__meta"><b>${esc(p.label)}${id === site.pack ? ' · Design curent' : ''}</b><span>${esc(p.desc)}${p.blank ? '' : ` · ${p.pages.length} pagini`}</span></div><div class="choice-actions"><button type="button" data-pack-action="preview">Previzualizează</button><button type="button" data-pack-action="choose">Alege designul</button></div></div>`;
   }).join('');
   $('packs').hidden = false;
+  packsInert = [...document.body.children].filter(el => el !== $('packs')).map(el => [el, el.inert]);
+  packsInert.forEach(([el]) => { el.inert = true; });
+  $('packs-close').focus();
 }
 
 $('open-packs').addEventListener('click', openPacks);
-$('packs-close').addEventListener('click', () => { $('packs').hidden = true; });
-$('packs').addEventListener('click', (e) => { if (e.target === $('packs')) $('packs').hidden = true; });
+$('packs-close').addEventListener('click', closePacks);
+$('packs').addEventListener('click', (e) => { if (e.target === $('packs')) closePacks(); });
+$('packs').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePacks(); return; }
+  if (e.key !== 'Tab') return;
+  const buttons = [...$('packs').querySelectorAll('button:not([disabled]), a[href], input')].filter(el => el.getClientRects().length);
+  const first = buttons[0], last = buttons[buttons.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 $('packs-grid').addEventListener('click', (e) => {
   const c = e.target.closest('[data-pack]');
-  if (!c) return;
-  if (!confirm(`Pornești de la designul „${PACKS[c.dataset.pack].label}”? Site-ul de acum se înlocuiește (poți reveni cu Anulează).`)) return;
-  const keep = { instagram: site.instagram, seo: site.seo };
-  site = defaultSite(c.dataset.pack);
-  if (keep.instagram) site.instagram = keep.instagram;
-  if (keep.seo) site.seo = keep.seo;
-  selId = null;
-  $('packs').hidden = true;
-  commit(); renderAll();
+  const action = e.target.closest('[data-pack-action]');
+  if (!c || !action) return;
+  if (action.dataset.packAction === 'preview') {
+    openRecognitionPreview(PACKS[c.dataset.pack].label, packPreviewDoc(c.dataset.pack), 'Alege acest design…', () => confirmPack(c));
+    return;
+  }
+  confirmPack(c);
 });
+function confirmPack(c) {
+  replacement = c.querySelector('[data-pack-action="choose"]');
+  $('packs-grid').hidden = true;
+  const confirmation = document.createElement('div');
+  confirmation.id = 'packs-confirm';
+  confirmation.className = 'packs-confirm';
+  confirmation.innerHTML = `<p>Înlocuiești site-ul de acum cu designul „${esc(PACKS[c.dataset.pack].label)}”? Paginile și conținutul actual vor fi înlocuite. Poți reveni cu „Anulează” în editor, înainte să reîncarci pagina. Site-ul public nu se schimbă până nu republici.</p><div class="pub__row"><button type="button" id="packs-cancel">Păstrează site-ul actual</button><button type="button" id="packs-replace" class="primary">Înlocuiește designul</button></div>`;
+  $('packs-grid').after(confirmation);
+  $('packs-cancel').addEventListener('click', () => {
+    confirmation.remove();
+    $('packs-grid').hidden = false;
+    replacement.focus();
+    replacement = null;
+  });
+  $('packs-replace').addEventListener('click', () => {
+    const keep = { instagram: site.instagram, seo: site.seo };
+    site = defaultSite(c.dataset.pack);
+    if (keep.instagram) site.instagram = keep.instagram;
+    if (keep.seo) site.seo = keep.seo;
+    selId = null;
+    commit(); renderAll(); closePacks();
+  });
+  $('packs-cancel').focus();
+}
 
 /* ---------- theme panel ---------- */
 
@@ -1171,17 +1668,81 @@ $('radius').addEventListener('input', () => {
   textTimer = setTimeout(commit, 400);
 });
 
+/* ---------- compact editor controls ---------- */
+
+const compactEditor = matchMedia('(max-width: 767px)');
+const side = document.querySelector('.side');
+const tools = document.createElement('div');
+tools.id = 'editor-tools';
+tools.className = 'top__tools';
+const toolsToggle = document.createElement('button');
+toolsToggle.type = 'button';
+toolsToggle.id = 'tools-toggle';
+toolsToggle.textContent = 'Instrumente';
+toolsToggle.setAttribute('aria-controls', tools.id);
+toolsToggle.setAttribute('aria-expanded', 'false');
+$('site-name').before(toolsToggle, tools);
+[$('site-name'), $('open-packs'), $('undo').parentElement, $('dev-desktop').parentElement].forEach((el) => tools.append(el));
+function closeTools() {
+  tools.classList.remove('is-open');
+  toolsToggle.setAttribute('aria-expanded', 'false');
+}
+toolsToggle.addEventListener('click', () => {
+  const open = tools.classList.toggle('is-open');
+  toolsToggle.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('click', (e) => {
+  if (!tools.contains(e.target) && e.target !== toolsToggle && !$('packs').contains(e.target)) closeTools();
+});
+const sideClose = document.createElement('button');
+sideClose.type = 'button';
+sideClose.id = 'side-close';
+sideClose.textContent = 'Înapoi la pagină';
+side.append(sideClose);
+function closeSide() {
+  side.classList.remove('is-open');
+  ['page', 'add', 'theme'].forEach((k) => $('tab-' + k).setAttribute('aria-expanded', String(!compactEditor.matches && $('tab-' + k).getAttribute('aria-selected') === 'true')));
+}
+sideClose.addEventListener('click', () => {
+  closeSide();
+  side.querySelector('[aria-selected="true"]').focus();
+});
+function syncCompactEditor() {
+  closeTools();
+  closeSide();
+  setDevice(compactEditor.matches);
+}
+compactEditor.addEventListener('change', syncCompactEditor);
+
 let addPanelBuilt = false;
 function showTab(which) {
+  const collapse = compactEditor.matches && side.classList.contains('is-open') && $('tab-' + which).getAttribute('aria-selected') === 'true';
+  if (compactEditor.matches) {
+    if (!$('inspector').hidden) deselect();
+    side.classList.toggle('is-open', !collapse);
+  }
   ['page', 'add', 'theme'].forEach((k) => {
     $('tab-' + k).setAttribute('aria-selected', String(k === which));
+    $('tab-' + k).setAttribute('aria-controls', 'panel-' + k);
+    $('tab-' + k).setAttribute('aria-expanded', String(k === which && (!compactEditor.matches || !collapse)));
+    $('tab-' + k).tabIndex = k === which ? 0 : -1;
     $('panel-' + k).hidden = k !== which;
   });
   if (which === 'add' && !addPanelBuilt) { renderAddPanel(); addPanelBuilt = true; }
 }
-$('tab-page').addEventListener('click', () => showTab('page'));
-$('tab-add').addEventListener('click', () => showTab('add'));
-$('tab-theme').addEventListener('click', () => showTab('theme'));
+['page', 'add', 'theme'].forEach((which, i, tabs) => {
+  const tab = $('tab-' + which);
+  tab.setAttribute('aria-controls', 'panel-' + which);
+  tab.tabIndex = i === 0 ? 0 : -1;
+  tab.addEventListener('click', () => showTab(which));
+  tab.addEventListener('keydown', (e) => {
+    const next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (next === null) return;
+    e.preventDefault();
+    showTab(tabs[next]);
+    $('tab-' + tabs[next]).focus();
+  });
+});
 
 /* ---------- view + preview ---------- */
 
@@ -1217,13 +1778,14 @@ function openPreview() {
   renderPreview();
   $('pv-back').focus();
 }
-function renderPreview() {
+function renderPreview(targetId) {
   $('pv-pages').innerHTML = site.pages.map((p) => `<button type="button" data-pvpage="${p.id}" aria-pressed="${p.id === pvPage}">${esc(p.name)}</button>`).join('');
   const f = $('pv-frame');
   f.onload = () => {
+    if (targetId) f.contentDocument.getElementById(targetId)?.scrollIntoView();
     f.contentDocument.addEventListener('click', (e) => {
       const l = e.target.closest('[data-page]');
-      if (l) { e.preventDefault(); pvPage = l.dataset.page; renderPreview(); return; }
+      if (l) { e.preventDefault(); pvPage = l.dataset.page; renderPreview(l.dataset.actionTarget); return; }
       const a = e.target.closest('a');
       if (a && (a.getAttribute('href') || '#').startsWith('#')) e.preventDefault();
     });
@@ -1253,8 +1815,13 @@ function shortcuts(e) {
     if (!$('pub').hidden) { closePublish(); return; }
     if (!$('ig').hidden) { closeInstagram(); return; }
     if (!$('who').hidden) { $('who').hidden = true; return; }
+    const overlayOpen = ['library', 'picker', 'packs'].some((id) => !$(id).hidden);
     ['library', 'picker', 'packs'].forEach((id) => { $(id).hidden = true; });
     pendingImage = null;
+    if (overlayOpen) return;
+    if (tools.classList.contains('is-open')) { closeTools(); toolsToggle.focus(); return; }
+    if (compactEditor.matches && !$('inspector').hidden) { deselect(); $('tab-page').focus(); return; }
+    if (compactEditor.matches && side.classList.contains('is-open')) { sideClose.click(); }
     return;
   }
   if (!$('pv').hidden) return;
@@ -1269,7 +1836,28 @@ document.addEventListener('keydown', shortcuts);
 
 /* ---------- boot ---------- */
 
+function renderBlankGuide() {
+  const guide = $('blank-guide');
+  guide.hidden = !PACKS[site.pack].blank;
+  if (guide.hidden) return;
+  if (uiPreference('blank-dismissed', '') === 'yes') {
+    guide.innerHTML = '<button type="button" data-guide="show">Arată ghidul opțional</button>';
+    return;
+  }
+  guide.innerHTML = `<h3>De la zero, în ritmul tău</h3><p class="hint">Ghid opțional, fără blocuri adăugate automat. Alege doar ce îți folosește.</p><div class="checks">${['Scrie pe scurt cine ești și ce oferi.', 'Alege oferta și o dovadă reală: poze sau lucrări.', 'Completează contactul și verifică previzualizarea.'].map((text, i) => `<label class="check"><input type="checkbox" data-guide-step="${i}"${uiPreference('blank-step-' + i, '') === 'yes' ? ' checked' : ''}> ${text}</label>`).join('')}</div><details><summary>3 idei de ordine a blocurilor</summary><ul><li>Servicii: Introducere → Servicii → Pași → Contact</li><li>Portofoliu: Introducere → Galerie → Despre → Contact</li><li>Ofertă simplă: Introducere → Prețuri → Întrebări → Contact</li></ul><p class="hint">Adaugă manual blocurile din „Adaugă”. Poți ignora sau schimba această ordine.</p></details><button type="button" data-guide="dismiss">Ascunde ghidul</button>`;
+}
+$('blank-guide').addEventListener('click', e => {
+  const button = e.target.closest('[data-guide]');
+  if (!button) return;
+  setUiPreference('blank-dismissed', button.dataset.guide === 'dismiss' ? 'yes' : 'no');
+  renderBlankGuide();
+});
+$('blank-guide').addEventListener('change', e => {
+  if (e.target.matches('[data-guide-step]')) setUiPreference('blank-step-' + e.target.dataset.guideStep, e.target.checked ? 'yes' : 'no');
+});
+
 function renderAll() {
+  renderBlankGuide();
   $('site-name').textContent = site.header.data.brand;
   $('pack-name').textContent = PACKS[site.pack].label;
   renderPages();
@@ -1282,14 +1870,51 @@ function renderAll() {
   if (!$('panel-add').hidden) { renderAddPanel(); addPanelBuilt = true; }
 }
 
+const retrySaveButton = document.createElement('button');
+retrySaveButton.id = 'retry-save';
+retrySaveButton.type = 'button';
+retrySaveButton.textContent = 'Reîncearcă salvarea';
+retrySaveButton.hidden = true;
+retrySaveButton.addEventListener('click', retrySave);
+$('saved').after(retrySaveButton);
+$('saved').title = 'Salvarea ciornei nu publică modificările. Pentru site-ul public folosește Publică.';
+window.addEventListener('online', () => { if (pending || !accountKnown) retrySave(); });
+syncCompactEditor();
 initFrame();
 bootAccount();
 
 /* ---------- publish: sign in → address → trial checkout (or republish) ---------- */
 
 let authPoll = null;
+let publishEpoch = 0;
+let publishReady = false;
+let publishSiteId = null;
+let publishSite = null;
+function currentPublish(epoch) {
+  return epoch === publishEpoch && !$('pub').hidden && publishSite === site && (publishSiteId === null || publishSiteId === siteId);
+}
+function lockPublish() {
+  publishReady = false;
+  $('pub-slug-input').disabled = true;
+  $('pub-slug-input').readOnly = false;
+  $('pub-slug-input').value = '';
+  $('pub-go').disabled = true;
+  $('pub-go').textContent = 'Se încarcă…';
+  $('pub-slug-note').textContent = 'Se verifică ciorna și adresa site-ului…';
+}
+function configuredMoney(amount, currency) {
+  if (!Number.isFinite(amount) || !['eur', 'gbp', 'usd'].includes(currency)) throw new Error('Prețul nu a putut fi încărcat. Închide și redeschide fereastra de publicare.');
+  return currency === 'eur' ? `${amount}€` : `${currency === 'gbp' ? '£' : '$'}${amount}`;
+}
 
 function pubStep(name) {
+  if (!$('pub-draft-note')) {
+    const note = document.createElement('p');
+    note.id = 'pub-draft-note';
+    note.className = 'hint';
+    note.textContent = 'Salvarea în browser sau în cont păstrează ciorna, nu publică modificările. Site-ul public se schimbă doar după publicare.';
+    $('pub-auth').before(note);
+  }
   ['auth', 'sent', 'slug', 'done'].forEach((s) => { $(`pub-${s}`).hidden = s !== name; });
   $('pub-error').hidden = true;
 }
@@ -1300,63 +1925,107 @@ function pubError(msg) {
 }
 
 function closePublish() {
+  ++publishEpoch;
+  lockPublish();
   $('pub').hidden = true;
+  clearTimeout(slugTimer);
   clearInterval(authPoll);
   authPoll = null;
 }
 
 async function openPublish() {
   if (editing) endEdit();
+  const epoch = ++publishEpoch;
+  publishSiteId = siteId;
+  publishSite = site;
+  lockPublish();
+  pubStep('auth');
   $('pub').hidden = false;
   if (!signedIn) {
-    try { signedIn = !!(await api('GET', '/api/me')).user; } catch (_) { signedIn = false; }
+    try { const me = await api('GET', '/api/me'); if (!currentPublish(epoch)) return; signedIn = !!me.user; }
+    catch (_) { if (!currentPublish(epoch)) return; signedIn = false; }
   }
-  if (!signedIn) { pubStep('auth'); $('pub-email').focus(); return; }
+  if (!currentPublish(epoch)) return;
+  if (!signedIn) { $('pub-email').focus(); return; }
   await showSlugStep();
 }
 
 async function showSlugStep() {
+  if ($('pub').hidden) return;
+  const epoch = ++publishEpoch;
+  publishSiteId = siteId;
+  publishSite = site;
+  lockPublish();
   pubStep('slug');
-  clearTimeout(serverTimer);
-  await saveToServer();
-  let current = '';
-  let paid = false;
-  if (siteId) {
-    try {
-      const rec = (await api('GET', `/api/sites/${encodeURIComponent(siteId)}`)).site || {};
-      paid = !!rec.paid;
-      ownSlug = rec.slug || '';
-      current = paid ? ownSlug : '';
-    } catch (_) { /* new site */ }
+  $('pub-trial').hidden = true;
+  try {
+    if (!serverReady) {
+      await bootAccount();
+      if (epoch !== publishEpoch || $('pub').hidden || (publishSiteId && publishSiteId !== siteId)) return;
+      publishSite = site;
+    }
+    if (!currentPublish(epoch)) return;
+    if (!serverReady || !signedIn) throw new Error('Ciorna nu a fost verificată în cont. Reîncearcă salvarea înainte de publicare.');
+    clearTimeout(serverTimer);
+    await saveToServer();
+    if (!currentPublish(epoch)) return;
+    publishSiteId = siteId;
+    if (!serverReady || pending || draftConflict || recoveryRequired || !siteId) throw new Error('Alege și salvează ciorna înainte de publicare.');
+    // Failure to read the site must not unlock an uncertain or fixed live address.
+    const rec = (await api('GET', `/api/sites/${encodeURIComponent(siteId)}`)).site;
+    if (!currentPublish(epoch)) return;
+    if (!rec) throw new Error('Adresa site-ului nu a putut fi verificată. Închide și reîncearcă.');
+    const paid = !!rec.paid;
+    const me = await api('GET', '/api/me');
+    if (!currentPublish(epoch)) return;
+    if (!me.user) throw new Error('Intră din nou în cont înainte de publicare.');
+    const free = !!me.freePublish;
+    if (!paid && !free) {
+      const cfg = await api('GET', '/api/config');
+      if (!currentPublish(epoch)) return;
+      const first = configuredMoney(cfg.amount != null ? cfg.amount : cfg.priceEur, cfg.currency);
+      const renewal = configuredMoney(cfg.renewal, cfg.currency);
+      $('pub-trial').textContent = `Adaugi un card obligatoriu și începi perioada de probă de 14 zile. Site-ul devine public imediat. Dacă nu anulezi, plătești ${first} în ziua 14 pentru primul an, apoi ${renewal}/an până anulezi.`;
+    }
+    if (!currentPublish(epoch)) return;
+    ownSlug = rec.slug || '';
+    const current = paid ? ownSlug : '';
+    if (paid && !current) throw new Error('Adresa site-ului nu a putut fi verificată. Închide și reîncearcă.');
+    $('pub-trial').hidden = paid || free;
+    renderChecklist();
+    const input = $('pub-slug-input');
+    input.value = current || slugify(window.SB.siteBrand(site) || ownSlug || 'site-ul-meu').slice(0, 40);
+    input.disabled = !!current;
+    $('pub-slug-note').textContent = current ? 'Site-ul își păstrează adresa.' : '';
+    publishReady = true;
+    $('pub-go').disabled = false;
+    $('pub-go').textContent = 'Publică site-ul';
+    if (!current) checkSlug();
+    $('pub-go').focus();
+  } catch (err) {
+    if (currentPublish(epoch)) { pubError(networkError(err)); $('pub-go').textContent = 'Publică site-ul'; }
   }
-  // Accounts opened at an event publish with no card (bot/promo-elena.js).
-  let free = false;
-  if (!paid) { try { free = !!(await api('GET', '/api/me')).freePublish; } catch (_) { /* keep the trial note */ } }
-  $('pub-trial').hidden = paid || free;
-  renderChecklist();
-  const input = $('pub-slug-input');
-  // A live site keeps its address; a draft proposes one from today's business name.
-  input.value = current || slugify(window.SB.siteBrand(site) || ownSlug || 'site-ul-meu').slice(0, 40);
-  input.disabled = !!current;
-  $('pub-slug-note').textContent = current ? 'Site-ul își păstrează adresa.' : '';
-  if (!current) checkSlug();
-  $('pub-go').focus();
 }
 
 let slugTimer = null;
 let ownSlug = '';        // the address this site already holds (unpaid draft or live)
 async function checkSlug() {
+  const epoch = publishEpoch;
+  if (!publishReady || !currentPublish(epoch)) return false;
   const slug = $('pub-slug-input').value.trim().toLowerCase();
+  const fresh = () => publishReady && currentPublish(epoch) && $('pub-slug-input').value.trim().toLowerCase() === slug;
   const note = $('pub-slug-note');
   if (!/^[a-z0-9-]{3,40}$/.test(slug)) { note.textContent = 'Între 3 și 40 de caractere: litere mici, cifre și cratimă.'; return false; }
   if (slug === ownSlug) { note.textContent = 'Adresa e liberă.'; return true; }
   try {
     const r = await api('GET', `/api/slug-check?slug=${encodeURIComponent(slug)}`);
+    if (!fresh()) return false;
     note.textContent = r.available ? 'Adresa e liberă.' : (r.error || 'Adresa e deja folosită. Alege alta.');
     return !!r.available;
   } catch (_) {
-    note.textContent = '';
-    return true;
+    if (!fresh()) return false;
+    note.textContent = 'Adresa nu a putut fi verificată. Verifică internetul și încearcă din nou.';
+    return false;
   }
 }
 
@@ -1371,20 +2040,20 @@ $('pub-slug-input').addEventListener('input', () => { clearTimeout(slugTimer); s
  * back here (resume = 'auth').
  */
 async function startSignIn(email, onSignedIn) {
-  const r = await api('POST', '/api/auth/email', { email });
   resume = 'auth';
-  try { writeLocal(); } catch (_) { /* quota */ }
+  try { writeLocal(); } catch (_) {
+    throw Object.assign(new Error('Ciorna nu s-a putut salva în browser. Redu pozele și reîncearcă înainte de autentificare.'), { status: 507 });
+  }
+  const r = await api('POST', '/api/auth/email', { email });
   clearInterval(authPoll);
   authPoll = setInterval(async () => {
     try {
       if ((await api('GET', '/api/me')).user) {
         clearInterval(authPoll);
         authPoll = null;
-        signedIn = true;
-        serverReady = true;
         resume = null;
-        try { writeLocal(); } catch (_) { /* quota */ }
-        onSignedIn();
+        await bootAccount();
+        if (serverReady) onSignedIn();
       }
     } catch (_) { /* still signed out */ }
   }, 2500);
@@ -1394,31 +2063,48 @@ async function startSignIn(email, onSignedIn) {
 function showDevLink(el, r) {
   el.hidden = !r.devLink;
   if (r.devLink) el.href = r.devLink;
+  const box = el.closest('[id$="-sent"]');
+  box.querySelector('p').textContent = r.devLink
+    ? 'Simulare locală: nu s-a trimis niciun email. Deschide linkul de mai jos pentru autentificare în acest mediu de test.'
+    : 'Am trimis linkul pe email. Deschide-l din email; pagina continuă după autentificare.';
 }
 
 $('pub-auth').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('pub-email').value.trim();
   if (!email) { pubError('Scrie adresa ta de email.'); return; }
+  const epoch = publishEpoch;
   try {
-    const r = await startSignIn(email, showSlugStep);
+    const r = await startSignIn(email, () => { if (currentPublish(epoch)) showSlugStep(); });
+    if (!currentPublish(epoch)) return;
     pubStep('sent');
-    $('pub-sent-to').textContent = email;
     showDevLink($('pub-devlink'), r);
   } catch (err) {
-    pubError(err.message);
+    if (currentPublish(epoch)) pubError(networkError(err));
   }
 });
 
 $('pub-go').addEventListener('click', async () => {
+  const epoch = publishEpoch;
+  const go = $('pub-go');
+  if (!publishReady || !currentPublish(epoch) || go.disabled) return;
   const input = $('pub-slug-input');
   const slug = input.value.trim().toLowerCase();
-  if (!input.disabled && !(await checkSlug())) { pubError($('pub-slug-note').textContent); return; }
-  const go = $('pub-go');
   go.disabled = true;
-  go.textContent = 'Se publică…';
+  input.readOnly = true;
   try {
+    if (!input.disabled && !(await checkSlug())) {
+      if (currentPublish(epoch)) pubError($('pub-slug-note').textContent);
+      return;
+    }
+    if (!currentPublish(epoch)) return;
+    go.textContent = 'Se publică…';
+    clearTimeout(serverTimer);
+    await saveToServer();
+    if (!currentPublish(epoch)) return;
+    if (!serverReady || pending || draftConflict || recoveryRequired) throw new Error('Alege și salvează ciorna înainte de publicare.');
     const data = await api('POST', '/api/publish', { templateId: TEMPLATE_ID, config: site, images: [], slug, siteId: siteId || undefined });
+    if (!currentPublish(epoch)) return;
     if (data.site) rememberSiteId(data.site.id);
     if (data.paymentUrl) {
       resume = 'checkout';
@@ -1432,19 +2118,75 @@ $('pub-go').addEventListener('click', async () => {
     link.hidden = !url;
     if (url) { link.href = url; link.textContent = url; }
   } catch (err) {
-    pubError(err.message);
+    if (currentPublish(epoch)) pubError(networkError(err));
   } finally {
-    go.disabled = false;
-    go.textContent = 'Publică site-ul';
+    if (currentPublish(epoch)) {
+      go.disabled = false;
+      input.readOnly = false;
+      go.textContent = 'Publică site-ul';
+    }
   }
 });
 
 /** Starter content still on the site — shown before publishing, never blocking. */
 function renderChecklist() {
-  const items = window.SB.demoLeftovers(site);
+  const items = [...window.SB.demoLeftovers(site), ...identityLeftovers(site), {
+    label: 'Pagini juridice incomplete — doar pentru validare în dezvoltare. Înainte de utilizarea comercială, proprietarul trebuie să furnizeze și să aprobe identitatea legală (denumire, CUI/VAT, sediu), operatorul/procesatorii, retenția, subprocesorii, jurisdicția și textul final. Câmpurile PLACEHOLDER rămân de completat.',
+  }];
   const box = $('pub-check');
   box.hidden = !items.length;
   $('pub-check-list').innerHTML = items.map((x) => `<li>${esc(x.label)}${x.page ? ` <small>${esc(x.page)}</small>` : ''}</li>`).join('');
+}
+
+/* ---------- starter-aware identity ---------- */
+
+// Only untouched starter fields participate; owner text and URLs are not geography templates.
+function identityBlocks(draft) {
+  return [draft.header, draft.footer, ...draft.pages.flatMap((p) => p.blocks)];
+}
+
+function starterTownText(value, town) {
+  return value.replace(/(?<![\p{L}\p{N}])(?:din jurul Bucureștiului|în afara Bucureștiului|București și Ilfov|Bucureștiului|București|Cluj-Napoca|Brașov|Iași|Ilfov|Otopeni|Voluntari)(?![\p{L}\p{N}])/gu, (match) => {
+    if (match === 'din jurul Bucureștiului') return `din zona ${town}`;
+    if (match === 'în afara Bucureștiului') return `în afara localității ${town}`;
+    return town;
+  });
+}
+
+function applyEditorIdentity(draft, who) {
+  const town = String(who.town || '').trim().slice(0, 60);
+  if (town) {
+    for (const b of identityBlocks(draft)) {
+      const starter = makeBlock(b.type, b.variant, draft.pack).data;
+      const walk = (data, seed) => {
+        if (!data || !seed || typeof data !== 'object' || typeof seed !== 'object') return;
+        Object.keys(data).forEach((key) => {
+          if (typeof data[key] === 'string' && data[key] === seed[key] && !/^(?:data:|@tpl\/|https?:|mailto:|tel:)/i.test(data[key])) {
+            data[key] = starterTownText(data[key], town);
+          } else if (typeof data[key] === 'object') walk(data[key], seed[key]);
+        });
+      };
+      walk(b.data, starter);
+    }
+  }
+  window.SB.applyIdentity(draft, { name: who.name, phone: who.phone });
+  return draft;
+}
+
+function identityLeftovers(draft) {
+  const out = [];
+  for (const b of identityBlocks(draft)) {
+    const starter = makeBlock(b.type, b.variant, draft.pack).data;
+    const key = b.type === 'footer' ? 'text' : 'address';
+    const seed = starter[key];
+    if (typeof seed !== 'string' || !seed.includes(',')) continue;
+    const street = seed.slice(0, seed.lastIndexOf(','));
+    if (String(b.data[key] || '').startsWith(street + ',')) {
+      const page = draft.pages.find((p) => p.blocks.includes(b));
+      out.push({ key: 'address', label: 'Adresă de exemplu: orașul poate fi schimbat, dar strada trebuie înlocuită cu adresa ta.', page: page ? page.name : 'Subsol' });
+    }
+  }
+  return out;
 }
 
 /* ---------- first run: the customer's own name, phone and town ---------- */
@@ -1468,7 +2210,7 @@ $('who-form').addEventListener('submit', (e) => {
     $('who-error').hidden = false;
     return;
   }
-  window.SB.applyIdentity(site, who);
+  applyEditorIdentity(site, who);
   $('who').hidden = true;
   commit();
   renderAll();
@@ -1530,7 +2272,7 @@ $('ig-auth').addEventListener('submit', async (e) => {
     igPanel('sent');
     showDevLink($('ig-devlink'), r);
   } catch (err) {
-    igStatus(err.message, true);
+    igStatus(networkError(err), true);
   }
 });
 
@@ -1577,7 +2319,7 @@ $('ig-go').addEventListener('click', async () => {
     if (grant.embedUrl) igPanel('on');
     else igStatus('Feed-ul nu e gata încă. Încearcă din nou peste un minut.', true);
   } catch (err) {
-    igStatus(err.message, true);
+    igStatus(networkError(err), true);
   } finally {
     go.disabled = !$('ig-terms').checked;
   }
@@ -1592,7 +2334,7 @@ $('ig-editor').addEventListener('click', async () => {
     if (tab) tab.opener = null;
     else igStatus('Browserul a blocat tabul nou. Permite ferestrele pentru acest site și încearcă din nou.', true);
   } catch (err) {
-    igStatus(err.message, true);
+    igStatus(networkError(err), true);
   }
 });
 
@@ -1606,6 +2348,6 @@ $('ig-off').addEventListener('click', async () => {
     $('ig-go').disabled = true;
     igStatus('Instagram e deconectat. Blocul nu mai apare pe site după următoarea publicare.');
   } catch (err) {
-    igStatus(err.message, true);
+    igStatus(networkError(err), true);
   }
 });

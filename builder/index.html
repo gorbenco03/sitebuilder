@@ -76,16 +76,17 @@
         <p class="hero-eyebrow">Site builder pentru afaceri locale</p>
         <h1 class="hero-title">Site-ul afacerii tale, <em>gata azi</em></h1>
         <p class="hero-sub" id="hero-name-hint">
-          Pentru saloane, restaurante, meșteri și cabinete, cu programări online incluse. Alegi un design, scrii pe pagină ce vrei și vezi previzualizarea.
-          Scrie numele afacerii și îl vezi pe loc în toate designurile.
+          Pentru saloane, restaurante, meșteri și cabinete. Un design de pornire, apoi textele, pozele și stilul tău.
+          Scrie numele afacerii și vezi cum îi stă pe un site.
         </p>
         <form class="hero-name" id="hero-name-form" novalidate>
           <label class="hero-name-field" for="hero-name">
             <span class="hero-name-label">Cum se numește afacerea ta?</span>
             <input id="hero-name" class="hero-name-input" type="text" maxlength="80" autocomplete="organization" placeholder="ex: Salon Mira" />
           </label>
-          <button type="submit" class="btn-accent hero-cta" id="hero-cta">Vezi-ți site-ul <span aria-hidden="true">→</span></button>
+          <button type="submit" class="btn-accent hero-cta" id="hero-cta">Alege un design <span aria-hidden="true">→</span></button>
         </form>
+        <div class="hero-shortcuts"><a href="#pret">Preț și trial</a><a href="#intrebari">Întrebări frecvente</a></div>
         <p class="hero-terms" id="hero-sub">
           Adaugi un card ca să începi trialul de 14 zile și site-ul e live imediat.
           Taxare <strong id="hero-price">99</strong> în ziua 14, dacă nu anulezi, apoi reînnoire anuală <strong id="hero-renewal">29</strong> până anulezi.
@@ -100,14 +101,38 @@
       </div>
     </div>
 
+    <section class="edit-demo" id="demonstratie" aria-labelledby="demo-title">
+      <div class="demo-intro">
+        <p class="section-eyebrow">Din design, în site-ul tău</p>
+        <h2 class="section-title" id="demo-title">Cuvintele tale.<br>Schimbarea, pe loc.</h2>
+        <p>Selectezi un text, îl rescrii și vezi cum arată pe telefon. În editor poți schimba și pozele, culorile sau ordinea blocurilor.</p>
+        <a href="#templates-grid" class="demo-start">Alege designul de pornire <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="demo-workspace">
+        <div class="demo-tools">
+          <p class="demo-caption">01 / Încearcă un titlu</p>
+          <button type="button" id="demo-select" class="demo-select" aria-controls="demo-title-input">Selectează titlul</button>
+          <label for="demo-title-input">02 / Rescrie în cuvintele tale</label>
+          <textarea id="demo-title-input" rows="3" maxlength="100" aria-describedby="demo-note">Păr sănătos, culoare care ține</textarea>
+          <p id="demo-note">Exemplu interactiv pe designul Salon. Nu îți modifică și nu salvează o ciornă.</p>
+        </div>
+        <div class="demo-result">
+          <p class="demo-caption">03 / Rezultatul pe telefon</p>
+          <div class="demo-phone"><iframe id="demo-preview" title="Rezultatul titlului pe telefon — exemplu Salon" sandbox="" tabindex="-1"></iframe></div>
+          <p id="demo-status" role="status">Titlul de exemplu este afișat.</p>
+        </div>
+      </div>
+    </section>
+
     <div class="catalog-band">
       <div class="catalog-head">
         <div>
-          <p class="section-eyebrow">13 designuri</p>
-          <h2 class="section-title">Alege un design</h2>
-          <p class="section-sub">Fiecare vine cu pagini, texte și poze pentru domeniul tău. Le schimbi pe toate.</p>
+          <p class="section-eyebrow">13 designuri · 12 domenii + De la zero</p>
+          <h2 class="section-title">Un început potrivit<br>pentru afacerea ta.</h2>
+          <p class="section-sub">Pagini, texte și poze gata de schimbat. Începe cu un exemplu sau cu o pagină goală.</p>
+          <p class="catalog-family-label" id="catalog-family-label">Restrânge după familie de afaceri</p>
         </div>
-        <div class="catalog-chips" id="catalog-chips" role="group" aria-label="Tip de afacere">
+        <div class="catalog-chips" id="catalog-chips" role="group" aria-labelledby="catalog-family-label">
           <button type="button" class="catalog-chip" data-filter="all" aria-pressed="true">Toate</button>
           <button type="button" class="catalog-chip" data-filter="product-menu" aria-pressed="false">Restaurant</button>
           <button type="button" class="catalog-chip" data-filter="portfolio" aria-pressed="false">Salon</button>
@@ -141,6 +166,11 @@
             <div class="skeleton-line skeleton-line--med"></div>
           </div>
         </div>
+      </div>
+      <div class="catalog-footer">
+        <p id="catalog-count" role="status">3 exemple din 13 designuri</p>
+        <button type="button" class="btn-primary" id="catalog-expand" aria-expanded="false" aria-controls="templates-grid">Vezi toate cele 13 designuri</button>
+        <a href="#pret">Vezi prețul</a><a href="#intrebari">Întrebări frecvente</a>
       </div>
     </div>
 
@@ -197,11 +227,11 @@
         </div>
         <div class="gift-card">
           <h3>Instagram pe site</h3>
-          <p>Postările tale de Instagram apar singure pe site, incluse 12 luni.</p>
+          <p>Conectezi contul Instagram prin Instafidget, iar postările apar pe site. Serviciul este inclus 12 luni; apoi treci la Instafidget Free, cu filigran.</p>
         </div>
         <div class="gift-card">
           <h3>Site-ul e al tău</h3>
-          <p>Îl descarci oricând ca arhivă ZIP și îl pui unde vrei.</p>
+          <p>Poți descărca site-ul ca arhivă ZIP în perioada de probă sau cât timp site-ul este activ și plătit. Îl poți găzdui apoi în altă parte.</p>
         </div>
       </div>
     </section>
@@ -245,7 +275,7 @@
         </details>
         <details class="faq-item">
           <summary>Pot pleca oricând cu site-ul?</summary>
-          <p>Da. Îl descarci ca arhivă ZIP și îl poți pune la orice firmă de găzduire.</p>
+          <p>Da. Descarcă arhiva ZIP în perioada de probă sau cât timp site-ul este activ și plătit. O poți găzdui apoi în altă parte.</p>
         </details>
       </div>
     </section>
@@ -369,7 +399,7 @@
   <div class="modal-box modal-box--domain">
     <button class="modal-close" id="btn-close-domain" aria-label="Închide">&times;</button>
     <h2 id="modal-domain-title" class="modal-title">Domeniul tău propriu</h2>
-    <p class="modal-sub">Conectează un domeniu pe care îl deții deja (ex: afacereamea.ro) direct la site-ul tău Hidook — fără concierge, fără să cumperi un domeniu nou aici.</p>
+    <p class="modal-sub">Conectează la site-ul tău Hidook un domeniu pe care îl deții deja (de exemplu, afacereamea.ro). Îți arătăm pas cu pas ce setări să faci la furnizorul domeniului. Nu trebuie să cumperi un domeniu nou.</p>
     <div id="domain-modal-body" aria-live="polite"></div>
   </div>
 </div>
@@ -474,7 +504,7 @@
   <div class="modal-box">
     <button class="modal-close" id="btn-close-cancel-subscription" aria-label="Închide">&times;</button>
     <h2 id="modal-cancel-subscription-title" class="modal-title">Anulează abonamentul</h2>
-    <p class="modal-sub">Sigur vrei să anulezi abonamentul pentru <strong id="cancel-subscription-name"></strong>? Site-ul iese din vânzare imediat, fără nicio rambursare parțială pentru perioada rămasă — dar poți reactiva oricând mai târziu.</p>
+    <p class="modal-sub">Sigur vrei să anulezi abonamentul pentru <strong id="cancel-subscription-name"></strong>? <span id="cancel-subscription-conditions">Site-ul nu va mai fi public după anulare.</span></p>
     <div id="cancel-subscription-error" class="field-error" role="alert" style="display:none"></div>
     <div class="modal-confirm-actions">
       <button class="btn-danger btn-full" type="button" id="btn-confirm-cancel-subscription">Anulează abonamentul</button>
@@ -498,7 +528,7 @@
   </div>
 </div>
 <style>
-.hb-cookie-banner{position:fixed;z-index:40;left:1rem;right:auto;bottom:1rem;max-width:min(22rem,calc(100vw - 2rem));margin:0;padding:.85rem 1rem;border-radius:12px;background:#111;color:#f5f5f5;box-shadow:0 12px 40px rgba(0,0,0,.28);font-size:.88rem;line-height:1.45;display:flex;flex-direction:column;gap:.65rem}
+.hb-cookie-banner{position:fixed;z-index:40;left:1rem;right:auto;bottom:1rem;max-width:min(22rem,calc(100vw - 2rem));margin:0;padding:.65rem .85rem;border-radius:8px;background:#111;color:#f5f5f5;box-shadow:0 12px 40px rgba(0,0,0,.28);font-size:.88rem;line-height:1.45;display:flex;flex-direction:column;gap:.65rem}
 @media (max-width:520px){.hb-cookie-banner{left:.75rem;right:.75rem;max-width:none;bottom:.75rem}}
 .hb-cookie-banner[hidden]{display:none!important}
 body.preview-cookie-isolated > .hb-cookie-banner,

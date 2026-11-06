@@ -96,13 +96,14 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       // ---- cancel through the dashboard's own modal ----
       await page.reload({ waitUntil: 'networkidle' });
       const needle = slug.replace(/-/g, '‑');
-      const card = page.locator('.site-card', { hasText: needle }).first();
+      const ownedCard = () => page.locator('.site-card').filter({ has: page.locator('a.site-card-edit[href="/app/blocks/?site=' + encodeURIComponent(siteId) + '"]') });
+      const card = ownedCard().first();
       await card.waitFor({ state: 'visible', timeout: 10000 });
       await card.locator('button', { hasText: 'Anulează' }).click();
       await page.locator('#modal-cancel-subscription').waitFor({ state: 'visible' });
       await page.locator('#btn-confirm-cancel-subscription').click();
       await page.waitForURL(/#dashboard$/, { timeout: 15000 });
-      await page.locator('.site-card', { hasText: needle }).locator('.status-badge', { hasText: 'Anulat' }).waitFor({ timeout: 15000 });
+      await ownedCard().locator('.status-badge', { hasText: 'Anulat' }).waitFor({ timeout: 15000 });
       const canceled = registry.getSite(siteId);
       assert.equal(canceled.status, 'unpublished', label + ': canceled site is unpublished');
       const prevPaidUntil = canceled.paidUntil;
@@ -110,7 +111,7 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       assert.equal((await fetch(base + '/live/' + slug + '/')).status, 404, label + ': canceled site is offline');
 
       // ---- before the click: price + resulting date, no trial offer ----
-      const ccard = page.locator('.site-card', { hasText: needle }).first();
+      const ccard = ownedCard().first();
       const noteText = (await ccard.locator('[data-reactivate-note]').innerText()).replace(/\s+/g, ' ').trim();
       // Stacks only on time actually paid for; a trial-canceled site was never charged.
       const expectedIso = registry.addMonthsIso(canceled.paid === true && Date.parse(prevPaidUntil) > Date.now() ? prevPaidUntil : new Date().toISOString(), 12);
@@ -150,7 +151,7 @@ test('W-1: reactivating a canceled site pays 29, no new trial, site live again i
       assert.equal(String(after.paidUntil).slice(0, 10), expectedIso.slice(0, 10), label + ': paidUntil = (paid ? max(previous paidUntil, now) : now) + 1 year');
 
       await page.waitForURL(/#dashboard$/, { timeout: 10000 });
-      const activeCard = page.locator('.site-card', { hasText: needle }).first();
+      const activeCard = ownedCard().first();
       await activeCard.locator('.status-badge', { hasText: 'Activ' }).waitFor({ timeout: 15000 });
       const activeText = await activeCard.innerText();
       assert.ok(/Hosting până pe/.test(activeText), label + ': card shows Hosting până pe <date>, not a trial line: ' + activeText);

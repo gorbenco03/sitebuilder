@@ -51,6 +51,8 @@ function openCalendarDb(opts = {}) {
         fs.mkdirSync(path.dirname(dbPath), { recursive: true });
     }
     const db = new DatabaseSync(dbPath);
+    // Startup WAL acquisition must use the same wait as booking transactions.
+    db.exec('PRAGMA busy_timeout = 5000;');
     db.exec('PRAGMA foreign_keys = ON;');
     db.exec('PRAGMA journal_mode = WAL;');
     // Wave 7 (audit #25): resource-scoped booking now gets exercised by
@@ -63,7 +65,6 @@ function openCalendarDb(opts = {}) {
     // BEGIN IMMEDIATE + partial UNIQUE index locking design itself (untouched
     // per the architecture-preservation rule). 5s is generous for a single
     // short transaction and harmless for the existing single-process default.
-    db.exec('PRAGMA busy_timeout = 5000;');
     migrate(db);
 
     // VISION §8 PII retention: idempotent, self-contained, never blocks

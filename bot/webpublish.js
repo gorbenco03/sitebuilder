@@ -1324,12 +1324,30 @@ function _resolveLegacyInvoiceStatus(row) {
  * @param {object} site
  * @returns {Array<object>}
  */
-function getInvoiceHistory(site) {
+function getInvoiceHistory(site, index) {
     if (!site || !site.id) return [];
-    return ledger.read()
-        .filter((r) => r && r.siteId === site.id && (r.event === 'invoice' || r.event === 'payment_failed'))
+    if (index) return index.get(site.id) || [];
+    return normalizeInvoiceHistory(ledger.read(), site.id);
+}
+
+function normalizeInvoiceHistory(records, siteId) {
+    return records
+        .filter((r) => r && r.siteId === siteId && (r.event === 'invoice' || r.event === 'payment_failed'))
         .map((r) => (r.event === 'invoice' ? { ...r, status: _resolveLegacyInvoiceStatus(r) } : { ...r, status: 'failed' }))
         .sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
+}
+
+/** Request-local, ownership-scoped index; no process cache or ledger/schema writes. */
+function getInvoiceHistoryIndex(sites) {
+    const index = new Map((sites || []).filter(s => s && s.id).map(s => [s.id, []]));
+    if (!index.size) return index;
+    for (const row of ledger.read()) {
+        if (row && index.has(row.siteId) && (row.event === 'invoice' || row.event === 'payment_failed')) {
+            index.get(row.siteId).push(row);
+        }
+    }
+    for (const [siteId, rows] of index) index.set(siteId, normalizeInvoiceHistory(rows, siteId));
+    return index;
 }
 
 // ---------------------------------------------------------------------------
@@ -2512,6 +2530,19 @@ async function deployPlaceholder(_site) {
 // handleStripePaid — generalized across platforms
 // ---------------------------------------------------------------------------
 
+function checkoutPublishFailure(siteId, error) {
+    registry.updateSite(siteId, { status: 'needs-retry' });
+    const code = error && error.code;
+    return { publishError: {
+        code: code === 'BOOKING_SYNC' || code === 'MODERATION' ? code : 'PUBLISH_FAILED',
+        message: code === 'BOOKING_SYNC'
+            ? error.message + ' Revino în editor și apasă Publică, fără o plată nouă.'
+            : code === 'MODERATION'
+                ? 'Imaginile au fost blocate de moderare. Schimbă imaginile în editor și apasă Publică, fără o plată nouă.'
+                : 'Publicarea a eșuat. Revino în editor și apasă Publică pentru a încerca din nou, fără o plată nouă.',
+    } };
+}
+
 /**
  * Idempotent: called after Stripe confirms card-on-file / payment for any order (web or telegram).
  * - Accepts checkout.session.completed when payment_status is `paid` OR `no_payment_required`
@@ -2594,9 +2625,8 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     //   - 'paid'                → a real charge happened at checkout (always
     //     true for a renewal/reactivation checkout — bot/payments.js#createCheckout
     //     never attaches a trial when firstPeriodCents === renewalCents,
-    //     which is exactly the renewal-kind amount — and true for the
-    //     HIDOOK_TEST_PAY offline pay-button simulation, see
-    //     bot/server.js#handleTestPayComplete). Record a paid invoice.
+    //     which is exactly the renewal-kind amount). Local first checkout
+    //     simulates no_payment_required too. Record a paid invoice only here.
     //   - 'no_payment_required' → the 14-day card trial just started. $0
     //     moved. The real charge is a SEPARATE later event
     //     (handleStripeInvoicePaid, billing_reason=subscription_cycle, day
@@ -2690,6 +2720,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
                 } catch (e) {
                     log('webpublish.stripe_paid.renewal_reactivate_failed', { siteId, orderId, err: e.message }, 'error');
                     registry.updateSite(siteId, { status: 'needs-retry', paid: true, paidUntil });
+                    return checkoutPublishFailure(siteId, e);
                 }
             } else if (wasCanceled) {
                 log('webpublish.stripe_paid.renewal_no_version', { siteId, orderId }, 'error');
@@ -2702,7 +2733,12 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
     // ── First publish / reactivation payment ───────────────────────────────
     const paidUntil = registry.addMonthsIso(new Date().toISOString(), 12);
     try {
-        registry.updateSite(siteId, { paid: true, paidUntil });
+        registry.updateSite(siteId, {
+            paid: true, paidUntil,
+            ...(paymentStatus === 'no_payment_required' ? {
+                stripeSubscriptionStatus: 'trialing', subscriptionStatus: 'trialing',
+            } : {}),
+        });
     } catch (_) {}
 
     const paidSite = { ...registry.getSite(siteId), paid: true, paidUntil };
@@ -2726,7 +2762,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
                     log('webpublish.stripe_paid.reactivated', { siteId, orderId, url: result.url });
                 } catch (e) {
                     log('webpublish.stripe_paid.reactivate_failed', { siteId, orderId, err: e.message }, 'error');
-                    registry.updateSite(siteId, { status: 'needs-retry' });
+                    return checkoutPublishFailure(siteId, e);
                 }
                 return;
             }
@@ -2753,6 +2789,7 @@ async function handleStripePaid(event, { messenger, notifyAdmin } = {}) {
             });
         } catch (e) {
             log('webpublish.stripe_paid.publish_failed', { siteId, orderId, err: e.message }, 'error');
+            return checkoutPublishFailure(siteId, e);
         }
         return;
     }
@@ -2977,6 +3014,7 @@ module.exports = {
     reconcileSiteFromStripe,
     getDunningState,
     getInvoiceHistory,
+    getInvoiceHistoryIndex,
     buildDunningNoticeRo,
     // Wave10 — owner payment-failure email (tests + HANDOFF-payments-notify.md)
     buildPaymentDeclinedEmailRo,

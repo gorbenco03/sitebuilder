@@ -102,6 +102,12 @@
     opts = opts || {};
     var body = $('#hm-body');
     body.innerHTML = '';
+    if (opts.error) {
+      var error = el('div', 'hm__alert hm__alert--err', opts.error);
+      error.setAttribute('role', 'alert');
+      error.setAttribute('tabindex', '-1');
+      body.appendChild(error);
+    }
     if (opts.flash) {
       var flash = el('div', 'hm__alert hm__alert--ok', opts.flash);
       flash.setAttribute('role', 'status');
@@ -158,6 +164,7 @@
 
       var reschedBtn = el('button', 'hm__btn hm__btn--ghost', 'Reprogramează');
       reschedBtn.type = 'button';
+      reschedBtn.disabled = !!opts.rescheduleBlocked;
       reschedBtn.setAttribute('data-hm-reschedule', '1');
       reschedBtn.addEventListener('click', function () {
         openReschedulePane(booking);
@@ -178,7 +185,7 @@
       var hint = el('p', 'hm__hint',
         'Anularea și reprogramarea sunt posibile cu cel puțin ' +
         (booking.minCancelHours != null ? booking.minCancelHours : 24) +
-        ' ore înainte de început (setarea cabinetului).');
+        ' ore înainte de început (conform regulilor de programare).');
       actions.appendChild(hint);
       body.appendChild(actions);
 
@@ -186,6 +193,23 @@
       pane.id = 'hm-resched-pane';
       pane.hidden = true;
       body.appendChild(pane);
+    }
+    if (opts.error) {
+      var recovery = el('div', 'hm__actions');
+      recovery.appendChild(el('p', 'hm__hint',
+        'Mai sus este ultima stare primită a programării. Dacă răspunsul s-a întrerupt, verifică starea înainte să încerci din nou. Pentru ajutor, revino pe site-ul unde ai făcut programarea și contactează direct echipa.'));
+      var reload = el('button', 'hm__btn hm__btn--ghost', 'Reîncarcă programarea');
+      reload.type = 'button';
+      reload.setAttribute('data-hm-reload', '1');
+      reload.addEventListener('click', function () {
+        if (reload.disabled) return;
+        reload.disabled = true;
+        reload.textContent = 'Se verifică…';
+        load(booking);
+      });
+      recovery.appendChild(reload);
+      body.appendChild(recovery);
+      error.focus();
     }
   }
 
@@ -228,7 +252,7 @@
     });
     var dates = Object.keys(byDate).sort();
     if (!dates.length) {
-      pane.appendChild(el('p', 'hm__hint', 'Nu mai sunt intervale libere în următoarele zile. Încearcă mai târziu sau contactează cabinetul direct.'));
+      pane.appendChild(el('p', 'hm__hint', 'Nu mai sunt intervale libere în următoarele zile. Încearcă mai târziu sau contactează direct echipa.'));
       return;
     }
     pane.appendChild(el('p', 'hm__label', 'Alege un interval nou'));
@@ -264,17 +288,21 @@
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
         if (!res.body || !res.body.ok) {
-          errBox.hidden = false;
-          errBox.textContent = (res.body && res.body.error) || 'Reprogramarea a eșuat.';
-          // Slot may have just been taken — refresh the list so it disappears.
-          openReschedulePane(prevBooking);
+          var code = res.body && res.body.code;
+          renderBooking(prevBooking, {
+            error: (res.body && res.body.error) || 'Reprogramarea a eșuat.',
+            rescheduleBlocked: code === 'WINDOW' || code === 'STATE' || code === 'TOKEN' || code === 'NOT_FOUND'
+          });
+          // Refresh only slot availability; the refusal stays outside the pane.
+          if (code === 'SLOT_TAKEN' || code === 'SLOT_OUTSIDE_AVAILABILITY' || code === 'SLOT_IN_PAST') {
+            openReschedulePane(prevBooking);
+          }
           return;
         }
         renderBooking(res.body.booking, { flash: 'Programare mutată. Vechiul interval este din nou liber.' });
       })
       .catch(function () {
-        errBox.hidden = false;
-        errBox.textContent = 'Nu am putut reprograma acum. Încearcă din nou.';
+        renderBooking(prevBooking, { error: 'Nu am putut reprograma acum. Reîncarcă programarea pentru a verifica starea înainte să încerci din nou.' });
       });
   }
 
@@ -287,8 +315,14 @@
     })
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
-        if (!res.body || !res.body.ok) {
-          renderError((res.body && res.body.error) || 'Anularea a eșuat.');
+        if (res.status < 200 || res.status >= 300 || !res.body || !res.body.ok ||
+            !res.body.booking || res.body.booking.id !== prev.id || res.body.booking.status !== 'cancelled') {
+          var returned = res.body && res.body.booking;
+          var current = returned && returned.id === prev.id &&
+            /^(requested|confirmed|cancelled|reschedule_needed)$/.test(returned.status) &&
+            Number.isFinite(Date.parse(returned.startUtc)) && Number.isFinite(Date.parse(returned.endUtc))
+            ? returned : prev;
+          renderBooking(current, { error: (res.body && res.body.error) || 'Nu am putut confirma anularea. Reîncarcă programarea pentru a verifica starea.' });
           return;
         }
         renderBooking(res.body.booking, {
@@ -298,14 +332,18 @@
         });
       })
       .catch(function () {
-        renderError('Nu am putut anula acum. Încearcă din nou.');
+        renderBooking(prev, { error: 'Nu am putut confirma anularea. Reîncarcă programarea pentru a verifica starea sau încearcă din nou.' });
       });
   }
 
-  function load() {
+  function load(previous) {
+    function failed(message) {
+      if (previous) renderBooking(previous, { error: message });
+      else renderError(message);
+    }
     var token = tokenFromUrl();
     if (!token) {
-      renderError('Lipsește linkul de gestionare. Deschide linkul din email.');
+      failed('Lipsește linkul de gestionare. Deschide linkul din email.');
       return;
     }
     fetch('/api/calendar-native/manage?token=' + encodeURIComponent(token), {
@@ -313,19 +351,19 @@
     })
       .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
-        if (!res.body || !res.body.ok || !res.body.booking) {
-          renderError((res.body && res.body.error) || 'Link invalid sau expirat.');
+        if (res.status < 200 || res.status >= 300 || !res.body || !res.body.ok || !res.body.booking) {
+          failed((res.body && res.body.error) || 'Link invalid sau expirat.');
           return;
         }
         renderBooking(res.body.booking);
       })
       .catch(function () {
-        renderError('Programările online sunt temporar indisponibile. Încearcă mai târziu.');
+        failed('Programările online sunt temporar indisponibile. Încearcă mai târziu.');
       });
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', load);
+    document.addEventListener('DOMContentLoaded', function () { load(); });
   } else {
     load();
   }

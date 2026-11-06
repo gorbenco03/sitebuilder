@@ -49,6 +49,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
 const { serveDir, loadPlaywright, TEMPLATE_DIR, ROOT } = require('./wave10-portfolio-helpers.js');
+const { prepareCarousel, observeCarousel, waitForCarouselStep } = require('./helpers/nov06-gallery-state.js');
 
 const BEFORE_REF = process.env.HIDOOK_S11_BEFORE_REF || 'a26df88c53925aeca822fd9f44ca3334e8879d2f';
 const STATIC_FILES = ['template.html', 'styles.css', 'script.js', 'collage.js', 'qrcode.js'];
@@ -222,11 +223,13 @@ test('portfolio gallery: uniform photo size, correct carousel engagement, no pag
             // Clicking next actually scrolls the deck, and keyboard (Enter)
             // activates the same real <button> — proving it is reachable
             // and operable by keyboard, not just mouse.
+            await prepareCarousel(page);
             const scrollLeftBefore = await page.evaluate(() => document.querySelector('.collage-deck').scrollLeft);
             const nextBtn = page.locator('.collage-nav--next');
+            const keyboardStep = await observeCarousel(page);
             await nextBtn.focus();
             await page.keyboard.press('Enter');
-            await page.waitForTimeout(500);
+            await waitForCarouselStep(page, keyboardStep, 1);
             const scrollLeftAfter = await page.evaluate(() => document.querySelector('.collage-deck').scrollLeft);
             assert.ok(scrollLeftAfter > scrollLeftBefore, `Enter on the focused next button did not scroll the deck (${scrollLeftBefore} -> ${scrollLeftAfter})`);
 
@@ -235,8 +238,9 @@ test('portfolio gallery: uniform photo size, correct carousel engagement, no pag
             for (let i = 0; i < count + 2; i++) {
               const disabled = await page.locator('.collage-nav--next').isDisabled();
               if (disabled) break;
+              const step = await observeCarousel(page);
               await page.locator('.collage-nav--next').click();
-              await page.waitForTimeout(400);
+              await waitForCarouselStep(page, step, 1);
             }
             assert.equal(await page.locator('.collage-nav--next').isDisabled(), true, 'next never became disabled after repeated clicks — carousel does not reach the last photo');
             assert.equal(await page.locator('.collage-nav--prev').isDisabled(), false, 'prev should be enabled once scrolled away from the start');
@@ -245,8 +249,9 @@ test('portfolio gallery: uniform photo size, correct carousel engagement, no pag
             for (let i = 0; i < count + 2; i++) {
               const disabled = await page.locator('.collage-nav--prev').isDisabled();
               if (disabled) break;
+              const step = await observeCarousel(page);
               await page.locator('.collage-nav--prev').click();
-              await page.waitForTimeout(400);
+              await waitForCarouselStep(page, step, -1);
             }
             assert.equal(await page.locator('.collage-nav--prev').isDisabled(), true, 'prev never became disabled after repeated clicks back to the start');
           }

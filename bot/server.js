@@ -1882,10 +1882,18 @@ async function handleDeleteMyAccount(req, res) {
  * @param {object} site
  * @returns {object} site with a `dunning` field (null when nothing to show)
  */
-function withDunningState(site) {
+function withDunningState(site, invoiceIndex) {
     if (!site) return site;
     const webpublish = require('./webpublish.js');
-    return { ...site, dunning: webpublish.getDunningState(site) };
+    // The trial's provisional hosting year is not payment history. The
+    // dashboard already consumes chargedAt; derive it from a paid invoice,
+    // not paidUntil, so a 29 reactivation never looks like another trial.
+    const charge = webpublish.getInvoiceHistory(site, invoiceIndex).find(row => row.status === 'paid');
+    return {
+        ...site,
+        ...(charge && charge.ts ? { chargedAt: charge.ts } : {}),
+        dunning: webpublish.getDunningState(site),
+    };
 }
 
 /**
@@ -1912,7 +1920,8 @@ async function handleGetSites(req, res) {
     const userId = requireAuth(req, res);
     if (!userId) return;
     const sites = await getRegistry().listSites(userId);
-    sendJson(res, 200, { sites: (sites || []).map(withDunningState).map(withPublicUrl) });
+    const invoiceIndex = require('./webpublish.js').getInvoiceHistoryIndex(sites);
+    sendJson(res, 200, { sites: (sites || []).map(site => withDunningState(site, invoiceIndex)).map(withPublicUrl) });
 }
 
 async function handleGetSite(req, res, siteId) {
@@ -1930,10 +1939,12 @@ async function handleGetSite(req, res, siteId) {
     // is the same "latest" pattern latestSiteConfig() already uses below.
     const versions = await getRegistry().listVersions(siteId);
     let config = null;
-    if (versions.length > 0) {
-        config = await getRegistry().getVersionConfig(siteId, versions[versions.length - 1].versionId);
+    const versionId = versions.length ? versions[versions.length - 1].versionId : null;
+    if (versionId !== null) {
+        config = await getRegistry().getVersionConfig(siteId, versionId);
+        if (!config) return sendJson(res, 409, { error: 'Versiunea ciornei nu mai este disponibilă. Reîncearcă încărcarea.' });
     }
-    sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config });
+    sendJson(res, 200, { site: withPublicUrl(withDunningState(site)), config, versionId });
 }
 
 /**
@@ -3311,7 +3322,8 @@ async function handleTestPayComplete(req, res) {
         data: {
             object: {
                 id: sessionId,
-                payment_status: 'paid',
+                // First checkout collects a test card, not the day-14 charge.
+                payment_status: kind === 'renewal' ? 'paid' : 'no_payment_required',
                 metadata: {
                     platform: 'web',
                     orderId: order.id,
@@ -3324,18 +3336,25 @@ async function handleTestPayComplete(req, res) {
     };
 
     const webpublish = require('./webpublish.js');
+    let outcome;
     try {
-        await webpublish.handleStripePaid(event, { notifyAdmin: () => {} });
+        outcome = await webpublish.handleStripePaid(event, { notifyAdmin: () => {} });
     } catch (e) {
         log('server.test_pay.complete.error', { sessionId, err: e.message }, 'error');
         return sendJson(res, 500, { error: 'Payment confirmation failed.' });
     }
 
     const site = order.siteId ? await reg.getSite(order.siteId) : null;
-    if (!site) {
-        return sendJson(res, 200, { ok: true, site: null });
+    if (!site || site.status !== 'live' || !site.url) {
+        const failure = outcome && outcome.publishError;
+        return sendJson(res, 503, {
+            ok: false,
+            code: failure ? failure.code : 'PUBLISH_FAILED',
+            error: failure ? failure.message : 'Publicarea nu s-a finalizat. Revino în editor și apasă Publică pentru a încerca din nou, fără o plată nouă.',
+            site: site ? withPublicUrl(site) : null,
+        });
     }
-    // Fresh paid site may still be deploying; return current registry row
+    // This local handler awaited publication: success means actually live.
     return sendJson(res, 200, {
         ok: true,
         kind,
@@ -3601,6 +3620,11 @@ async function handleSaveDraft(req, res) {
     catch (e) { return sendJson(res, e.status || 400, { error: e.message }); }
 
     const { siteId, templateId } = body || {};
+    const conditional = !!body && Object.prototype.hasOwnProperty.call(body, 'expectedVersionId');
+    if (conditional && (typeof siteId !== 'string' || !siteId.trim() ||
+        (body.expectedVersionId !== null && (typeof body.expectedVersionId !== 'string' || !body.expectedVersionId.trim())))) {
+        return sendJson(res, 422, { error: 'Referința versiunii ciornei nu este validă.' });
+    }
     let config = body && body.config;
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
         return sendJson(res, 422, { error: 'Ciorna nu conține o configurație validă.' });
@@ -3663,10 +3687,16 @@ async function handleSaveDraft(req, res) {
         }
     }
 
-    await reg.saveVersion(site.id, config);
+    let version;
+    try {
+        version = await reg.saveVersion(site.id, config, conditional ? { expectedVersionId: body.expectedVersionId } : undefined);
+    } catch (e) {
+        if (e.code === 'DRAFT_VERSION_CONFLICT') return sendJson(res, 409, { code: e.code, error: 'Ciorna din cont s-a schimbat. Alege versiunea de păstrat.' });
+        throw e;
+    }
     if (!site.paid) await reg.updateSite(site.id, { status: 'draft', paid: false });
     const updated = await reg.getSite(site.id);
-    return sendJson(res, 200, { site: updated });
+    return sendJson(res, 200, { site: updated, versionId: version.versionId });
 }
 
 /**

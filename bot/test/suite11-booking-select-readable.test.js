@@ -53,6 +53,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const http = require('node:http');
+const { closeTestServer } = require('./helpers/nov06-browser-lifecycle.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 const { build } = require(path.join(ROOT, 'build.js'));
@@ -216,7 +217,7 @@ function serveDir(dir) {
         server.listen(0, '127.0.0.1', () => {
             server.off('error', reject);
             const port = server.address().port;
-            resolve({ server, base: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(r)) });
+            resolve({ server, base: `http://127.0.0.1:${port}`, close: () => closeTestServer(server) });
         });
     });
 }
@@ -240,8 +241,9 @@ test('professionals booking form: Data/Ora <select> options are dark-on-light on
         for (const { label, theme } of THEMES) {
             const dir = buildProfessionalsSite(theme);
             const { base, close } = await serveDir(dir);
+            let page;
             try {
-                const page = await browser.newPage();
+                page = await browser.newPage();
                 await page.goto(base + '/');
                 // script.js populates #pr-appt-date/#pr-appt-slot on load from the
                 // real weekly-hours config (cabinet-marin: Mon-Fri 09:00-17:00ish),
@@ -306,7 +308,8 @@ test('professionals booking form: Data/Ora <select> options are dark-on-light on
                 assert.notEqual(disabledResult.color, enabledColor,
                     `${label}: disabled option must look visibly different from an enabled one`);
             } finally {
-                await close();
+                try { if (page) await page.close(); }
+                finally { await close(); }
                 fs.rmSync(dir, { recursive: true, force: true });
             }
         }
@@ -339,15 +342,17 @@ test('owner dashboard filter <select>s: options are dark-on-light and color-sche
 </div>
 </body></html>`);
         const { base, close } = await serveDir(dir);
+        let page;
         try {
-            const page = await browser.newPage();
+            page = await browser.newPage();
             await page.goto(base + '/');
             const optionContrast = await measure(page, 'select option:not([disabled])', 'color');
             assert.ok(optionContrast >= 4.5, `owner dashboard select option: contrast ${optionContrast} < 4.5:1`);
             const colorScheme = await page.locator('select').first().evaluate((n) => getComputedStyle(n).colorScheme);
             assert.equal(colorScheme, 'light', `owner dashboard select: color-scheme should be "light", got ${JSON.stringify(colorScheme)}`);
         } finally {
-            await close();
+            try { if (page) await page.close(); }
+            finally { await close(); }
         }
     } finally {
         await browser.close();

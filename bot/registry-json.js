@@ -323,7 +323,7 @@ const MAX_VERSIONS = 10;
 /**
  * @param {string} siteId
  * @param {object} config
- * @param {{ published?: boolean }} [opts] `published: true` marks this row
+ * @param {{ published?: boolean, expectedVersionId?: string|null }} [opts] `published: true` marks this row
  *   as a real Publică (bot/webpublish.js#publishSite) rather than an
  *   ordinary draft autosave. Not part of the public return/listVersions
  *   shape (registry-characterization.test.js pins that to
@@ -331,7 +331,16 @@ const MAX_VERSIONS = 10;
  *   below evicts first. Mirrors bot/registry-sqlite.js#saveVersion.
  */
 function saveVersion(siteId, config, opts) {
+    const conditional = !!opts && Object.prototype.hasOwnProperty.call(opts, 'expectedVersionId');
+    if (conditional && opts.expectedVersionId !== null && (typeof opts.expectedVersionId !== 'string' || !opts.expectedVersionId.trim())) {
+        throw Object.assign(new Error('Invalid draft revision'), { code: 'DRAFT_VERSION_INVALID' });
+    }
     const db = _load();
+    if (conditional) {
+        const rows = (db.versions || {})[siteId] || [];
+        const latest = rows.length ? rows[rows.length - 1].versionId : null;
+        if (latest !== opts.expectedVersionId) throw Object.assign(new Error('Draft revision changed'), { code: 'DRAFT_VERSION_CONFLICT' });
+    }
     db.versions = db.versions || {};
     db.versions[siteId] = db.versions[siteId] || [];
 

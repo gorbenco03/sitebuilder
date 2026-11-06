@@ -36,6 +36,7 @@
       <button type="button" role="tab" id="tab-theme" aria-selected="false">Temă</button>
     </div>
     <div id="panel-page" class="panel">
+      <div id="blank-guide" hidden></div>
       <h3>Paginile site-ului</h3>
       <ul id="page-list" class="plist"></ul>
       <button type="button" id="add-page" class="add add--sm">+ Pagină nouă</button>
@@ -44,7 +45,7 @@
       <button type="button" id="add-block" class="add">+ Adaugă un bloc</button>
     </div>
     <div id="panel-add" class="panel" hidden>
-      <p class="hint">Trage un bloc pe pagină, acolo unde îl vrei. Sau dă click ca să-l pui la sfârșit.</p>
+      <p class="hint">Previzualizează un bloc în tema ta înainte să-l inserezi. Poți și să-l tragi pe pagină.</p>
       <div id="add-list"></div>
     </div>
     <div id="panel-theme" class="panel" hidden>
@@ -142,7 +143,7 @@
       <div id="pub-slug" hidden>
         <label class="pub__fld">Adresa site-ului<span class="pub__slug"><input id="pub-slug-input" autocomplete="off" spellcheck="false" maxlength="40"></span></label>
         <p id="pub-slug-note" class="hint"></p>
-        <p class="hint" id="pub-trial">Primele 14 zile sunt gratuite. Adaugi un card, site-ul e live imediat, iar plata se face în ziua 14 dacă nu anulezi.</p>
+        <p id="pub-trial" class="hint" hidden>Se încarcă prețul perioadei de probă…</p>
         <div id="pub-check" class="pub__check" hidden>
           <b>Înainte să publici</b>
           <ul id="pub-check-list"></ul>

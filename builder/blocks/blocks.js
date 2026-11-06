@@ -111,7 +111,9 @@ function t(tag, path, value, cls) {
 
 /** Replaceable image. */
 function img(path, src, alt, cls) {
-  return `<img${cls ? ` class="${cls}"` : ''} data-img="${path}" src="${esc(asset(src))}" alt="${esc(alt || '')}">`;
+  const url = asset(src);
+  if (!url) return `<span class="b-image-empty${cls ? ' ' + cls : ''}" data-img="${path}" role="img" aria-label="Imagine neadăugată">Imagine neadăugată</span>`;
+  return `<img${cls ? ` class="${cls}"` : ''} data-img="${path}" src="${esc(url)}" alt="${esc(alt || '')}">`;
 }
 
 function btn(path, label, cls) {
@@ -179,17 +181,17 @@ const BLOCKS = {
     ],
     render(d, v, ctx) {
       const pages = (ctx && ctx.pages) || [];
-      const links = pages.map((p) => `<a href="${esc(ctx.pageHref ? ctx.pageHref(p) : '#' + p.slug)}" data-page="${esc(p.id)}"${ctx.current === p.id ? ' class="is-cur"' : ''}>${esc(p.name)}</a>`).join('');
+      const links = pages.map((p) => `<a href="${esc(ctx.pageHref ? ctx.pageHref(p) : '#' + p.slug)}" data-page="${esc(p.id)}"${ctx.current === p.id ? ' class="is-cur" aria-current="page"' : ''}>${esc(p.name)}</a>`).join('');
       const brand = `<span class="b-nav__brand" data-f="brand">${esc(d.brand)}</span>`;
       if (v === 'centered') {
-        return `<nav class="b-nav b-nav--centered"><div class="b-wrap"><div class="b-nav__links">${links}</div>${brand}<div class="b-nav__end">${btn('cta', d.cta)}</div></div></nav>`;
+        return `<nav class="b-nav b-nav--centered" aria-label="Navigare principală"><div class="b-wrap"><div class="b-nav__links">${links}</div>${brand}<div class="b-nav__end">${btn('cta', d.cta)}</div></div></nav>`;
       }
-      return `<nav class="b-nav"><div class="b-wrap">${brand}<div class="b-nav__links">${links}</div>${btn('cta', d.cta)}</div></nav>`;
+      return `<nav class="b-nav" aria-label="Navigare principală"><div class="b-wrap">${brand}<div class="b-nav__links">${links}</div>${btn('cta', d.cta)}</div></nav>`;
     },
   },
 
   hero: {
-    label: 'Prima secțiune (hero)', category: 'Antet',
+    label: 'Prima secțiune', category: 'Antet',
     variants: { split: 'Text + poză', full: 'Poză pe tot ecranul', centered: 'Doar text, centrat' },
     defaults: () => ({
       eyebrow: 'Restaurant · București',
@@ -466,11 +468,11 @@ const BLOCKS = {
       const form = ctx.published
         ? `<form class="b-form" data-site-messages-api="" data-site-slug="" data-mail-to="${/^[^\s@"<>]+@[^\s@"<>]+$/.test(to) ? esc(to) : ''}" novalidate>`
           + `<label class="b-form__lbl">${rich(d.lName)}<input class="b-input" name="name" autocomplete="name" required></label>`
-          + `<label class="b-form__lbl">${rich(d.lPhone)}<input class="b-input" name="contact" autocomplete="tel" required></label>`
+          + `<label class="b-form__lbl">${rich(d.lPhone)}<input class="b-input" type="tel" inputmode="tel" name="contact" autocomplete="tel" maxlength="60" required><span class="b-form__help">Scrie un număr de telefon valid, de exemplu 0712 345 678 sau +40 712 345 678.</span></label>`
           + `<label class="b-form__lbl">${rich(d.lMsg)}<textarea class="b-input" name="message" rows="4" required></textarea></label>`
           + '<input class="b-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">'
           + `<button type="submit" class="b-btn">${esc(d.cta)}</button><p class="b-form__status" data-cf-status role="status" hidden></p></form>`
-        : `<form class="b-form" onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea>${btn('cta', d.cta)}</form>`;
+        : `<form class="b-form" onsubmit="return false">${t('span', 'lName', d.lName, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lName)}">${t('span', 'lPhone', d.lPhone, 'b-form__lbl')}<input class="b-input" aria-label="${esc(d.lPhone)}">${t('span', 'lMsg', d.lMsg, 'b-form__lbl')}<textarea class="b-input" rows="4" aria-label="${esc(d.lMsg)}"></textarea><span class="b-btn" data-f="cta" role="button" aria-disabled="true">${esc(d.cta)}</span></form>`;
       const head = `${t('h2', 'title', d.title, 'b-h2')}${t('p', 'text', d.text, 'b-body')}`;
       if (v === 'info') {
         return `<section class="b-sec"><div class="b-wrap b-cols b-cols--top"><div>${head}<div class="b-info">${t('p', 'address', d.address)}${t('p', 'phone', d.phone, 'b-strong')}${t('p', 'email', d.email)}</div></div>${form}</div></section>`;
@@ -484,7 +486,7 @@ const BLOCKS = {
     variants: { split: 'Text lângă calendar', center: 'Centrat' },
     defaults: () => ({
       title: 'Programează-te online',
-      text: 'Alegi serviciul, ziua și ora care îți convin. Primești confirmarea pe email.',
+      text: 'Vezi serviciile și programul de mai jos.',
       services: [{ name: 'Consultație', min: '30' }],
       week: weekDays((i) => i < 5, '09:00', '17:00'),
       phone: '07xx xxx xxx',
@@ -538,7 +540,7 @@ const BLOCKS = {
       const days = WEEKDAYS.map((n, i) => `<span class="${week[i].on ? (i === open ? 'is-on' : '') : 'is-off'}">${n.slice(0, 2)}</span>`).join('');
       const note = hours.length
         ? 'Pe site, aici apare calendarul cu orele libere. Programările le primești pe email și le vezi în Site-urile mele → Programări.'
-        : 'Alege în panoul din dreapta zilele în care primești programări.';
+        : 'Alege în setările acestui bloc zilele în care primești programări.';
       return wrap(`<div class="b-book__card"><p class="b-book__step">1. Alege serviciul</p><ul class="b-book__svcs b-book__svcs--pick">${svcs}</ul>`
         + `<p class="b-book__step">2. Alege ziua și ora</p><div class="b-book__days">${days}</div><div class="b-book__slots">${slots.map((s) => `<span>${s}</span>`).join('')}</div>`
         + `${hours.length ? `<p class="b-muted">${hours.map(esc).join('<br>')}</p>` : ''}<p class="b-note">${note}</p></div>`);
@@ -562,7 +564,7 @@ const BLOCKS = {
       const pics = list.map((src) => `<img src="${esc(asset(src))}" alt="">`).join('');
       const note = embed
         ? 'Instagram e conectat: pe site apar postările tale, prin Instafidget.'
-        : 'Poze de exemplu. Conectează Instagram din panoul din dreapta; până atunci blocul nu apare pe site.';
+        : 'Poze de exemplu. Conectează Instagram din setările acestui bloc; până atunci, blocul nu apare pe site-ul publicat.';
       return `<section class="b-sec"><div class="b-wrap">${head}<div class="b-ig b-ig--${v}">${pics}</div><p class="b-note">${note}</p></div></section>`;
     },
   },
@@ -627,7 +629,15 @@ function makeBlock(type, variant, packId) {
     : def.defaults();
   if (pack && type === 'nav') Object.assign(data, pack.header);
   if (pack && type === 'footer') Object.assign(data, pack.footer);
-  return { id: newId(), type, variant: variant || Object.keys(def.variants)[0], bg: 'auto', data };
+  const b = { id: newId(), type, variant: variant || Object.keys(def.variants)[0], bg: 'auto', data };
+  const actions = pack && pack.actions && pack.actions[type];
+  if (actions) {
+    b.el = {};
+    Object.entries(actions).forEach(([path, action]) => {
+      if (PATH_RE.test(path) && ACTIONS.includes(action)) b.el[path] = { action };
+    });
+  }
+  return b;
 }
 
 function slugify(name) {
@@ -635,7 +645,26 @@ function slugify(name) {
 }
 
 function makePage(name, blocks, packId) {
-  return { id: newId(), name, slug: slugify(name), blocks: (blocks || []).map(([type, v]) => makeBlock(type, v, packId)) };
+  return { id: newId(), name, slug: slugify(name), blocks: (blocks || []).map(([type, v, overlay]) => {
+    const b = makeBlock(type, v, packId);
+    if (!overlay || typeof overlay !== 'object' || Array.isArray(overlay)) return b;
+    if (overlay.data && typeof overlay.data === 'object' && !Array.isArray(overlay.data)) {
+      const data = cleanValue(overlay.data, 0) || {};
+      Object.keys(data).forEach((key) => {
+        if (['__proto__', 'constructor', 'prototype'].includes(key)) return;
+        if (Array.isArray(b.data[key]) && !Array.isArray(data[key])) return;
+        b.data[key] = clone(data[key]);
+      });
+    }
+    if (overlay.actions && typeof overlay.actions === 'object' && !Array.isArray(overlay.actions)) {
+      Object.entries(overlay.actions).forEach(([path, action]) => {
+        if (!PATH_RE.test(path) || !ACTIONS.includes(action) || ['__proto__', 'constructor', 'prototype'].includes(path)) return;
+        if (!b.el) b.el = {};
+        b.el[path] = Object.assign({}, b.el[path], { action });
+      });
+    }
+    return b;
+  }) };
 }
 
 function defaultSite(packId) {
@@ -645,19 +674,44 @@ function defaultSite(packId) {
   return { v: 2, pack: id, theme: clone(pack.theme), header: makeBlock('nav', 'bar', id), footer: makeBlock('footer', 'simple', id), pages, current: pages[0].id };
 }
 
+function colorChannels(hex) { return hex.slice(1).match(/../g).map((v) => parseInt(v, 16)); }
+function colorMix(a, b, amount) {
+  const x = colorChannels(a), y = colorChannels(b);
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * amount).toString(16).padStart(2, '0')).join('');
+}
+function luminance(hex) {
+  return colorChannels(hex).map((n) => { const v = n / 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; })
+    .reduce((sum, v, i) => sum + v * [.2126, .7152, .0722][i], 0);
+}
+function contrast(a, b) { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+/** Keep the chosen surface; derive legible text for the actual solid backgrounds. */
+function readableAccent(accent, background, foreground) {
+  const backgrounds = [background, colorMix(background, foreground, .06)];
+  const good = (color) => backgrounds.every((bg) => contrast(color, bg) >= 4.6);
+  if (good(accent)) return accent;
+  const end = contrast('#000000', background) > contrast('#ffffff', background) ? '#000000' : '#ffffff';
+  for (let step = 1; step <= 100; step++) {
+    const color = colorMix(accent, end, step / 100);
+    if (good(color)) return color;
+  }
+  return end;
+}
+
 /** Theme + block CSS, shared by the editor canvas and the exported page. */
 function themeCss(theme) {
   const p = THEMES.palettes[theme.palette] || THEMES.palettes.seara;
   const f = THEMES.fonts[theme.fonts] || THEMES.fonts.clasic;
-  return `:root{--bg:${p.bg};--fg:${p.fg};--paper:${p.paper};--ink:${p.ink};--accent:${p.accent};--on:${p.on || p.ink};--fd:${f.display};--ft:${f.text};--r:${theme.radius}px}
+  const preferred = p.on || p.ink;
+  const on = contrast(preferred, p.accent) >= 4.6 ? preferred : (contrast('#000000', p.accent) > contrast('#ffffff', p.accent) ? '#000000' : '#ffffff');
+  return `:root{--bg:${p.bg};--fg:${p.fg};--paper:${p.paper};--ink:${p.ink};--accent:${p.accent};--on:${on};--accent-text-auto:${readableAccent(p.accent, p.bg, p.fg)};--accent-text-light:${readableAccent(p.accent, p.paper, p.ink)};--accent-text-dark:${readableAccent(p.accent, p.ink, p.paper)};--accent-text-surface:${readableAccent(on, p.accent, on)};--fd:${f.display};--ft:${f.text};--r:${theme.radius}px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--ft);line-height:1.55}
 img{display:block;max-width:100%}
 a{color:inherit}
-.blk{--sbg:var(--bg);--sfg:var(--fg);background:var(--sbg);color:var(--sfg)}
-.blk[data-bg="light"]{--sbg:var(--paper);--sfg:var(--ink)}
-.blk[data-bg="dark"]{--sbg:var(--ink);--sfg:var(--paper)}
-.blk[data-bg="accent"]{--sbg:var(--accent);--sfg:var(--ink)}
+.blk{--sbg:var(--bg);--sfg:var(--fg);--accent-text:var(--accent-text-auto);background:var(--sbg);color:var(--sfg)}
+.blk[data-bg="light"]{--sbg:var(--paper);--sfg:var(--ink);--accent-text:var(--accent-text-light)}
+.blk[data-bg="dark"]{--sbg:var(--ink);--sfg:var(--paper);--accent-text:var(--accent-text-dark)}
+.blk[data-bg="accent"]{--sbg:var(--accent);--sfg:var(--on);--accent-text:var(--accent-text-surface)}
 .b-wrap{max-width:1120px;margin:0 auto;padding:0 28px}
 .b-narrow{max-width:760px}
 .b-sec{padding:88px 0}
@@ -665,10 +719,10 @@ a{color:inherit}
 .b-stack{display:flex;flex-direction:column;gap:28px}
 .b-display{font-family:var(--fd);font-weight:400;font-size:clamp(40px,5.4vw,72px);line-height:1.02;letter-spacing:-.01em;margin:14px 0 18px}
 .b-h2{font-family:var(--fd);font-weight:400;font-size:clamp(30px,3.4vw,46px);line-height:1.08;margin-bottom:18px}
-.b-eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.b-eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text)}
 .blk[data-bg="accent"] .b-eyebrow{color:var(--sfg)}
-.b-lede{font-size:19px;opacity:.82;max-width:44ch}
-.b-body{font-size:17px;opacity:.86;max-width:60ch;margin-bottom:10px}
+.b-lede{font-size:19px;color:color-mix(in srgb,currentColor 82%,var(--sbg));max-width:44ch}
+.b-body{font-size:17px;color:color-mix(in srgb,currentColor 86%,var(--sbg));max-width:60ch;margin-bottom:10px}
 .b-strong{font-weight:700;opacity:1}
 .b-muted{opacity:.68;font-size:15px}
 .b-quote{font-family:var(--fd);font-size:clamp(26px,3vw,40px);line-height:1.25;margin:16px 0}
@@ -677,25 +731,28 @@ a{color:inherit}
 .b-btn{display:inline-flex;align-items:center;min-height:48px;padding:0 24px;border-radius:var(--r);background:var(--accent);color:var(--on);text-decoration:none;font-weight:700;font-size:15px;letter-spacing:.02em}
 .blk[data-bg="accent"] .b-btn{background:var(--ink);color:var(--paper)}
 .b-btn--ghost{background:transparent;color:inherit;box-shadow:inset 0 0 0 1px currentColor}
+.b-action-help{display:block;flex-basis:100%;font:400 12px/1.4 var(--ft);letter-spacing:0;padding-bottom:8px}
+.b-action-unconfigured{display:inline-flex;flex-direction:column;max-width:100%;gap:4px}
 .b-media{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r)}
 .b-nav{padding:18px 0;border-bottom:1px solid color-mix(in srgb,var(--sfg) 14%,transparent)}
 .b-nav .b-wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
-.b-nav__brand{font-family:var(--fd);font-size:24px}
-.b-nav__links{display:flex;gap:26px;font-size:15px}
-.b-nav__links a{text-decoration:none;opacity:.8}
+.b-nav__brand{font-family:var(--fd);font-size:24px;overflow-wrap:anywhere;min-width:0}
+.b-nav__links{display:flex;flex-wrap:wrap;gap:4px 26px;font-size:15px;min-width:0}
+.b-nav__links a{display:inline-flex;align-items:center;min-height:44px;max-width:100%;overflow-wrap:anywhere;text-decoration:none;opacity:.8}
+.b-nav a:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .b-nav__links a.is-cur{opacity:1;box-shadow:inset 0 -2px 0 var(--accent)}
-[data-rich] a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+[data-rich] a{color:var(--accent-text);text-decoration:underline;text-underline-offset:3px}
 [data-rich] strong{font-weight:700}
 .b-nav--centered .b-wrap{display:grid;grid-template-columns:1fr auto 1fr}
 .b-nav--centered .b-nav__end{justify-self:end}
-@media(max-width:720px){.b-nav__links{display:none}.b-nav--centered .b-wrap{grid-template-columns:auto 1fr}}
+@media(max-width:720px){.b-nav__links{flex-basis:100%;order:3;gap:4px 20px}.b-nav--centered .b-wrap{display:flex}.b-nav__brand{flex:1 1 140px}.b-nav .b-btn{max-width:100%;white-space:normal}}
 .b-hero{padding:72px 0 88px}
 .b-hero--split .b-media{aspect-ratio:4/5;max-height:620px}
 .b-hero--centered{text-align:center;padding:120px 0}
 .b-hero--centered .b-lede{margin:0 auto}
 .b-hero--centered .b-quote--marks::before{content:'„'}.b-quote--marks::after{content:'”'}
 .b-actions{justify-content:center}
-.b-hero--full{position:relative;min-height:640px;display:flex;align-items:flex-end;padding:0 0 72px;color:#fff}
+.b-hero--full{--accent-text:#ffffff;position:relative;min-height:640px;display:flex;align-items:flex-end;padding:0 0 72px;color:#fff}
 .b-hero__bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .b-hero__shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.65))}
 .b-hero--full .b-hero__copy{position:relative}
@@ -714,26 +771,30 @@ a{color:inherit}
 .b-card__row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;margin-top:6px}
 .b-card h3{font-family:var(--fd);font-weight:400;font-size:21px}
 .b-gal{display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr))}
-.b-gal img{width:100%;height:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r)}
+.b-gal img,.b-gal .b-image-empty{width:100%;height:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--r)}
+.b-image-empty{display:flex;align-items:center;justify-content:center;min-height:120px;padding:16px;background:color-mix(in srgb,var(--sfg) 8%,var(--sbg));color:var(--sfg);font-size:14px;text-align:center}
+.b-gal img[hidden]{display:none}
 .b-gal--mosaic{grid-auto-rows:180px}
-.b-gal--mosaic img{aspect-ratio:auto}
+.b-gal--mosaic img,.b-gal--mosaic .b-image-empty{aspect-ratio:auto}
 .b-gal--mosaic .b-gal__item:nth-child(6n+1){grid-column:span 2;grid-row:span 2}
 @media(max-width:720px){.b-gal{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .b-review{border-top:1px solid color-mix(in srgb,var(--sfg) 22%,transparent);padding-top:18px;display:flex;flex-direction:column;gap:12px;font-size:17px}
-.b-review cite{font-style:normal;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.b-review cite{font-style:normal;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-text)}
 .b-hours{display:flex;flex-direction:column}
 .b-hours__row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid color-mix(in srgb,var(--sfg) 16%,transparent)}
 .b-band{padding:64px 0}
 .b-band__row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px}
 .b-band .b-h2{margin-bottom:6px}
 .b-box{background:color-mix(in srgb,var(--sfg) 6%,transparent);border-radius:calc(var(--r) * 2);padding:56px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px}
+.blk[data-bg="accent"] .b-box{background:transparent;box-shadow:inset 0 0 0 1px currentColor}
+.blk[data-bg="accent"] :is(.b-body,.b-lede,.b-muted,.b-note,.b-attr,.b-legal,.b-nav__links a){color:inherit;opacity:1}
 .b-faq{display:flex;flex-direction:column}
 .b-faq__item{border-top:1px solid color-mix(in srgb,var(--sfg) 18%,transparent);padding:18px 0}
 .b-faq__item summary{font-size:18px;font-weight:600;cursor:pointer}
 .b-faq__item p{margin-top:8px}
 .b-foot{padding:40px 0 24px;border-top:1px solid color-mix(in srgb,var(--sfg) 14%,transparent)}
 .b-foot__row{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:baseline}
-.b-attr{text-align:center;font-size:12px;opacity:.55;margin-top:28px}
+.b-attr{text-align:center;font-size:12px;opacity:.75;margin-top:28px}
 .b-attr a{color:inherit}
 .b-legal{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;font-size:13px;margin-top:24px;opacity:.75}
 .b-legal a{color:inherit}
@@ -746,8 +807,8 @@ a{color:inherit}
 @media(max-width:800px){.b-cols-n{grid-template-columns:1fr}}
 .b-col{display:flex;flex-direction:column;gap:10px}
 .b-col__img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:var(--r)}
-.b-col__num{font-family:var(--fd);font-size:44px;color:var(--accent);line-height:1}
-.b-link{color:var(--accent);font-weight:700;text-decoration:none;font-size:15px}
+.b-col__num{font-family:var(--fd);font-size:44px;color:var(--accent-text);line-height:1}
+.b-link{color:var(--accent-text);font-weight:700;text-decoration:none;font-size:15px}
 .b-person{display:flex;flex-direction:column;gap:6px}
 .b-person img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:var(--r)}
 .b-person--round{align-items:center;text-align:center}
@@ -760,19 +821,21 @@ label.b-form__lbl{display:flex;flex-direction:column;gap:6px}
 button.b-btn{border:0;font:inherit;font-weight:700;cursor:pointer}
 .b-hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
 .b-form__status{font-size:15px;margin-top:8px}
+.b-form__help{font-size:13px;font-weight:400}
+.b-input[aria-invalid="true"]{outline:2px solid currentColor;outline-offset:2px}
 .b-info{display:flex;flex-direction:column;gap:6px;margin-top:20px;font-size:17px}
 .b-ig{display:grid;gap:8px;grid-template-columns:repeat(3,minmax(0,1fr))}
 .b-ig--strip{grid-template-columns:repeat(6,minmax(0,1fr))}
 .b-ig img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:calc(var(--r) / 2)}
 @media(max-width:720px){.b-ig--strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.b-note{font-size:13px;opacity:.55;margin-top:12px}
+.b-note{font-size:13px;opacity:.75;margin-top:12px}
 .b-ig-embed{display:block;width:100%;min-height:520px;border:0;border-radius:var(--r)}
 .b-book--center{text-align:center}
 .b-book--center .b-body{margin-left:auto;margin-right:auto}
 .b-book--center .b-book__card,.b-book--center .b-book__live{margin-top:28px;text-align:left}
 .b-book__call{margin-top:6px}
-.b-book__card{background:var(--paper);color:var(--ink);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 0 color-mix(in srgb,var(--ink) 10%,transparent)}
-.b-book__step{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent)}
+.b-book__card{--accent-text:var(--accent-text-light);background:var(--paper);color:var(--ink);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 0 color-mix(in srgb,var(--ink) 10%,transparent)}
+.b-book__step{font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--accent-text)}
 .b-book__svcs{list-style:none;display:flex;flex-direction:column;gap:8px}
 .b-book__svcs li{display:flex;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid color-mix(in srgb,var(--ink) 16%,transparent);border-radius:calc(var(--r) / 2 + 4px)}
 .b-book__svcs--pick li.is-on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -781,8 +844,10 @@ button.b-btn{border:0;font:inherit;font-weight:700;cursor:pointer}
 .b-book__days .is-on{background:var(--accent);border-color:var(--accent);color:var(--on)}
 .b-book__days .is-off{opacity:.35;text-decoration:line-through}
 .b-book .hnb{--hnb-accent:var(--accent);--hnb-accent-2:color-mix(in srgb,var(--accent) 55%,#000);--hnb-accent-soft:color-mix(in srgb,var(--accent) 14%,#fff);--hnb-ink:var(--ink);--hnb-sans:var(--ft);--hnb-serif:var(--fd)}
-.blk .b-book .hnb__steps li.is-current,.blk .b-book .hnb__cal-day.is-selected,.blk .b-book .hnb__resource.is-selected,.blk .b-book .hnb__slot.is-selected,.blk .b-book .hnb__cta{color:var(--on)}
-.blk .b-book .hnb__cta:hover{background:var(--accent);filter:brightness(.92)}
+.blk .b-book .hnb__steps li.is-current,.blk .b-book .hnb__cal-day.is-selected,.blk .b-book .hnb__resource.is-selected,.blk .b-book .hnb__slot.is-selected,.blk .b-book .hnb__cta{background:var(--accent);color:var(--on)}
+.blk .b-book .hnb__slot.is-selected .hnb__slot-local{opacity:1}
+.blk .b-book .hnb__cta:hover{background:var(--accent);color:var(--on)}
+.b-btn:focus-visible,.b-link:focus-visible{outline:2px solid currentColor;outline-offset:4px}
 .b-book .hnb__eyebrow,.b-book .hnb__title,.b-book .hnb__sub{display:none}
 @media(min-width:900px){.b-book .b-cols{grid-template-columns:minmax(0,1fr) minmax(0,1.7fr)}}
 .b-spacer--line{padding:28px 0}
@@ -815,17 +880,45 @@ function elementCss(b) {
     if (s.bold === true) r.push('font-weight:700');
     if (s.bold === false) r.push('font-weight:400');
     if (s.italic) r.push('font-style:italic');
-    if (s.color === 'accent') r.push('color:var(--accent);opacity:1');
+    if (s.color === 'accent') r.push('color:var(--accent-text);opacity:1');
     if (s.color === 'muted') r.push('opacity:.6');
     if (r.length) out.push(`${sel}{${r.join(';')}}`);
   });
   return out.join('');
 }
 
-function applyLinks(html, b) {
-  return html.replace(/<a href="#"([^>]*?)data-f="([^"]+)"/g, (m, attrs, path) => {
-    const href = b.el && b.el[path] && b.el[path].href;
-    return href ? `<a href="${esc(safeHref(href))}"${attrs}data-f="${path}"` : m;
+const ACTIONS = ['menu', 'booking', 'contact', 'phone', 'about', 'gallery'];
+
+function actionTarget(action, ctx) {
+  const pages = ctx && ctx.pages || [];
+  if (action === 'phone') {
+    for (const page of pages) {
+      for (const block of page.blocks || []) {
+        const phone = String(block.data && block.data.phone || '').trim();
+        const digits = phone.replace(/\D/g, '');
+        if (/^\+?[0-9\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15) return { href: 'tel:' + phone.replace(/[^+0-9]/g, '') };
+      }
+    }
+    action = 'contact';
+  }
+  const types = action === 'contact' ? ['form', 'hours'] : ACTIONS.includes(action) ? [action] : [];
+  for (const type of types) {
+    for (const page of pages) {
+      const block = (page.blocks || []).find((b) => b.type === type && !b.hideMobile);
+      if (block) return { href: (ctx.pageHref ? ctx.pageHref(page) : '#' + page.slug) + (ctx.pageHref ? '#' + block.id : ''), page: page.id, block: block.id };
+    }
+  }
+  return null;
+}
+
+function applyLinks(html, b, ctx) {
+  return html.replace(/<a href="#"([^>]*?)data-f="([^"]+)"([^>]*)>([\s\S]*?)<\/a>/g, (m, attrs, path, rest, label) => {
+    const setting = b.el && b.el[path] || {};
+    const custom = setting.href && setting.href !== '#' ? safeHref(setting.href) : null;
+    if (custom && custom !== '#') return `<a href="${esc(custom)}"${attrs}data-f="${path}"${rest}>${label}</a>`;
+    const target = actionTarget(setting.action, ctx);
+    if (target) return `<a href="${esc(target.href)}"${target.page ? ` data-page="${esc(target.page)}" data-action-target="${esc(target.block)}"` : ''}${attrs}data-f="${path}"${rest}>${label}</a>`;
+    return `<span class="b-action-unconfigured"><a aria-disabled="true"${attrs}data-f="${path}"${rest}>${label}</a>${plainText(label) && !setting.hidden ? '<small class="b-action-help">Configurează destinația acestui buton în editor.</small>' : ''}</span>`;
   });
 }
 
@@ -835,8 +928,8 @@ function renderBlock(b, ctx) {
   const inner = def.render(b.data || {}, b.variant, Object.assign({}, ctx, { blockId: b.id }));
   if (!inner) return '';
   const css = elementCss(b);
-  const attrs = `data-id="${esc(b.id)}" data-bg="${esc(b.bg || 'auto')}" data-pad="${esc(b.pad || 'normal')}" data-align="${esc(b.align || 'auto')}"${b.hideMobile ? ' data-hidem' : ''}`;
-  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(inner, b)}</div>`;
+  const attrs = `id="${esc(b.id)}" data-id="${esc(b.id)}" data-bg="${esc(b.bg || 'auto')}" data-pad="${esc(b.pad || 'normal')}" data-align="${esc(b.align || 'auto')}"${b.hideMobile ? ' data-hidem' : ''}`;
+  return `<div class="blk" ${attrs}>${css ? `<style>${css}</style>` : ''}${applyLinks(inner, b, ctx)}</div>`;
 }
 
 /** All blocks of one page in order: shared header, the page's own blocks, shared footer. */
@@ -847,7 +940,7 @@ function pageBlocks(site, pageId) {
 
 function siteCtx(site, pageId, opts) {
   const o = opts || {};
-  return { pages: site.pages.map((p) => ({ id: p.id, name: p.name, slug: p.slug })), current: pageId, published: !!o.published, pageHref: o.pageHref, igEmbed: feedUrl(site), booking: o.booking || null };
+  return { pages: site.pages, current: pageId, published: !!o.published, pageHref: o.pageHref, igEmbed: feedUrl(site), booking: o.booking || null };
 }
 
 /** File name of a page on the published site: the first page is index.html. */
@@ -858,7 +951,10 @@ function pageFile(site, page) {
 const IMAGES = ['cn-hero', 'cn-r1', 'cn-r2', 'cn-r3', 'cn-d1', 'cn-d2', 'cn-d3', 'cn-ig1', 'cn-ig2', 'cn-ig3', 'cn-ig4', 'cn-ig5', 'cn-ig6',
   'tv-hero', 'tv-a1', 'tv-a2', 'tv-a3', 'tv-m1', 'tv-m2', 'tv-m3', 'tv-ig1', 'tv-ig2', 'tv-ig3', 'tv-ig4', 'tv-ig5', 'tv-ig6'].map((n) => IMG + n + '.jpg');
 
-const FORM_JS = "document.addEventListener('submit',function(e){var f=e.target;if(!f.matches||!f.matches('form[data-site-messages-api]'))return;e.preventDefault();var g=function(n){return((f.elements[n]||{}).value||'').trim()},name=g('name'),contact=g('contact'),message=g('message'),st=f.querySelector('[data-cf-status]'),b=f.querySelector('button[type=submit]');var say=function(m){st.textContent=m;st.hidden=!m};if(!name||!contact||!message){say('Completează numele, un contact și mesajul.');return}var mail=function(){var to=f.getAttribute('data-mail-to');if(!to){say('Nu am putut trimite mesajul acum. Sună-ne sau scrie-ne direct.');return}say('Nu am putut trimite direct — îți deschidem clientul de email.');location.href='mailto:'+to+'?subject='+encodeURIComponent('Mesaj nou de pe site — '+name)+'&body='+encodeURIComponent('De la: '+name+'\\nContact: '+contact+'\\n\\n'+message)};var api=f.getAttribute('data-site-messages-api')||'';if(!api){mail();return}b.disabled=true;fetch(api+'/api/site-messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:f.getAttribute('data-site-slug')||'',name:name,contact:contact,message:message,website:g('website')})}).then(function(r){if(!r.ok)throw 0;say('Mulțumim! Mesajul tău a fost trimis — revenim cât mai curând.');f.reset()}).catch(mail).finally(function(){b.disabled=false})})";
+const FORM_JS = "document.addEventListener('submit',function(e){var f=e.target;if(!f.matches||!f.matches('form[data-site-messages-api]'))return;e.preventDefault();var g=function(n){return((f.elements[n]||{}).value||'').trim()},name=g('name'),contact=g('contact'),message=g('message'),st=f.querySelector('[data-cf-status]'),b=f.querySelector('button[type=submit]');var say=function(m){st.textContent=m;st.hidden=!m};if(!name||!contact||!message){say('Completează numele, un contact și mesajul.');return}var phone=f.elements.contact,digits=contact.replace(/\\D/g,'');if(!/^\\+?[0-9\\s().-]+$/.test(contact)||digits.length<7||digits.length>15){say('Scrie un număr de telefon valid, de exemplu 0712 345 678 sau +40 712 345 678.');phone.setAttribute('aria-invalid','true');phone.focus();return}phone.removeAttribute('aria-invalid');var mail=function(){var to=f.getAttribute('data-mail-to');if(!to){say('Nu am putut trimite mesajul acum. Sună-ne sau scrie-ne direct.');return}say('Nu am putut trimite direct — îți deschidem clientul de email.');location.href='mailto:'+to+'?subject='+encodeURIComponent('Mesaj nou de pe site — '+name)+'&body='+encodeURIComponent('De la: '+name+'\\nContact: '+contact+'\\n\\n'+message)};var api=f.getAttribute('data-site-messages-api')||'';if(!api){mail();return}b.disabled=true;fetch(api+'/api/site-messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:f.getAttribute('data-site-slug')||'',name:name,contact:contact,message:message,website:g('website')})}).then(function(r){if(!r.ok)throw 0;say('Mulțumim! Mesajul tău a fost trimis — revenim cât mai curând.');f.reset()}).catch(mail).finally(function(){b.disabled=false})})";
+
+/** Keep an unavailable gallery photo explicit, without discarding its source. */
+const GALLERY_JS = "document.addEventListener('error',function(e){var im=e.target;if(!im.matches||!im.matches('.b-gal img')||im.hidden)return;im.hidden=true;var note=document.createElement('span');note.className='b-image-empty';note.setAttribute('role','img');note.setAttribute('aria-label',im.alt?'Imagine indisponibilă: '+im.alt:'Imagine indisponibilă');note.setAttribute('data-img',im.getAttribute('data-img')||'');note.textContent='Imagine indisponibilă';im.after(note)},true)";
 
 /**
  * Standalone page.
@@ -880,7 +976,8 @@ function renderPage(site, pageId, opts) {
     const desc = site.seo && site.seo.description ? `<meta name="description" content="${esc(site.seo.description)}">` : '';
     const canon = o.canonical ? `<link rel="canonical" href="${esc(o.canonical)}"><meta property="og:url" content="${esc(o.canonical)}">` : '';
     const mail = o.published && /data-site-messages-api=/.test(body) ? `<script>${FORM_JS}</script>` : '';
-    return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${o.baseHref ? `<base href="${esc(o.baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${desc}${canon}<meta property="og:title" content="${esc(title)}"><style>${themeCss(site.theme)}</style>${o.head || ''}</head><body>${body}${o.body || ''}${mail}</body></html>`;
+    const gallery = o.published && /class="b-gal /.test(body) ? `<script>${GALLERY_JS}</script>` : '';
+    return `<!doctype html><html lang="ro"><head><meta charset="utf-8">${o.baseHref ? `<base href="${esc(o.baseHref)}">` : ''}<meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title>${desc}${canon}<meta property="og:title" content="${esc(title)}"><style>${themeCss(site.theme)}</style>${gallery}${o.head || ''}</head><body>${body}${o.body || ''}${mail}</body></html>`;
   } finally {
     assetBase = prevBase;
   }
@@ -922,6 +1019,7 @@ function cleanEl(el) {
     if (s.italic) r.italic = true;
     if (s.color === 'accent' || s.color === 'muted') r.color = s.color;
     if (typeof s.href === 'string' && s.href) r.href = safeHref(s.href.slice(0, 500));
+    if (ACTIONS.includes(s.action)) r.action = s.action;
     out[path] = r;
   });
   return out;
@@ -1080,8 +1178,21 @@ function demoLeftovers(site) {
     out.push({ key: 'brand', label: `Numele afacerii e încă cel de exemplu („${brand || 'gol'}”).` });
   }
   const seen = new Set();
-  const note = (key, label, page) => { if (!seen.has(key + page)) { seen.add(key + page); out.push({ key, label, page }); } };
+  const note = (key, label, page) => {
+    const existing = out.find((x) => x.key === key && x.page === page);
+    if (key === 'photo' && existing && existing.label === 'Poze de completat.') existing.label = label;
+    if (!seen.has(key + page)) { seen.add(key + page); out.push({ key, label, page }); }
+  };
   const scan = (b, pageName) => {
+    if (b.type === 'gallery') {
+      const items = Array.isArray(b.data.items) ? b.data.items : [];
+      const blankPhoto = packs().gol.content.gallery.items[0].image;
+      if (items.some((it) => !asset(it.image) || it.image === blankPhoto)) {
+        note('photo', 'Galerie: adaugă pozele tale din panoul blocului → Schimbă poza. Locurile necompletate apar fără fotografie pe site.', pageName);
+      } else if (items.some((it) => /^images\//.test(it.image))) {
+        note('photo', 'Verifică pozele galeriei în previzualizare și după publicare. Dacă apare „Imagine indisponibilă”, încarcă din nou poza din panoul blocului → Schimbă poza, apoi republică.', pageName);
+      }
+    }
     const walk = (v, k) => {
       if (typeof v === 'string') {
         if (PHONE_DEMO.test(v)) note('phone', 'Telefon de exemplu (07xx xxx xxx).', pageName);

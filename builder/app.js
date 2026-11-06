@@ -1117,7 +1117,12 @@ async function completeTestCheckout(sessionId) {
       showToast(RO.PAYMENT_PROCESSED, 'success', 5000);
     }
   } catch (e) {
-    showToast(RO.PAYMENT_CONFIRM_FAILED, 'error', 6000);
+    const publishCodes = ['BOOKING_SYNC', 'MODERATION', 'PUBLISH_FAILED'];
+    const publishFailed = e && e.fromServer && e.status === 503 && publishCodes.includes(e.code);
+    const message = publishFailed
+      ? 'Publicarea nu a reușit. ' + safeServerMessage(e, RO.PAYMENT_CONFIRM_FAILED, publishCodes)
+      : RO.PAYMENT_CONFIRM_FAILED;
+    showToast(message, 'error', publishFailed ? 15000 : 6000);
   } finally {
     setLoading(false);
   }
@@ -1160,10 +1165,13 @@ function renderTemplatesGrid() {
   const grid = $('templates-grid');
   if (!grid) return;
   grid.innerHTML = '';
+  renderLandingDemo();
 
   // New sites are block sites (builder/blocks/); a starter pack is the "design".
   const packs = window.SB_PACKS || {};
   if (!window.SB || !Object.keys(packs).length) {
+    if ($('catalog-expand')) $('catalog-expand').disabled = true;
+    if ($('catalog-count')) $('catalog-count').textContent = 'Catalogul nu este disponibil momentan.';
     grid.innerHTML = stateBlockHTML({
       icon: 'alert',
       isError: true,
@@ -1175,6 +1183,7 @@ function renderTemplatesGrid() {
     $('btn-retry-templates').addEventListener('click', reloadDesignPacks);
     return;
   }
+  if ($('catalog-expand')) $('catalog-expand').disabled = false;
   const order = ['gol'].concat(Object.keys(packs).filter((id) => id !== 'gol'));
   window.SB.setAssetBase('/app/generated/template-assets/');
 
@@ -1237,6 +1246,30 @@ function renderTemplatesGrid() {
   populateHeroStage();
 }
 
+/** Isolated sample: the same starter and renderer as the editor, never a saved draft. */
+function renderLandingDemo() {
+  const frame = $('demo-preview');
+  const input = $('demo-title-input');
+  if (!frame || !input) return false;
+  if (!window.SB || !window.SB_PACKS || !window.SB_PACKS.salon) {
+    $('demo-status').textContent = 'Exemplul nu este disponibil momentan. Poți reîncerca încărcarea designurilor mai jos.';
+    return false;
+  }
+  try {
+    window.SB.setAssetBase('/app/generated/template-assets/');
+    const site = window.SB.defaultSite('salon');
+    if (landingName) window.SB.applyIdentity(site, { name: landingName });
+    const hero = site.pages[0].blocks.find((block) => block.type === 'hero');
+    hero.data.title = input.value;
+    frame.srcdoc = window.SB.withThumbs(() => window.SB.renderPage(site, site.pages[0].id, location.origin + '/app/'));
+    $('demo-status').textContent = 'Titlul este afișat pe telefon.';
+    return true;
+  } catch (_) {
+    $('demo-status').textContent = 'Exemplul nu este disponibil momentan. Poți alege un design mai jos.';
+    return false;
+  }
+}
+
 /** First page of a starter pack, with the landing name in place of the demo one. */
 function packPreviewHtml(id) {
   const site = window.SB.defaultSite(id);
@@ -1289,6 +1322,7 @@ function startBlocksSite(packId) {
 }
 
 let activeCatalogFilter = 'all';
+let catalogExpanded = false;
 let heroStagePopulated = false;
 // Business name typed in the landing hero: shown in every preview, handed to the editor.
 let landingName = '';
@@ -1312,25 +1346,43 @@ function wireLandingName() {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const grid = $('templates-grid');
-    if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (grid) grid.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   });
 }
 
-function applyCatalogFilter(filter) {
+function applyCatalogFilter(filter, control) {
+  const controlTop = control ? control.getBoundingClientRect().top : null;
   activeCatalogFilter = filter || 'all';
   document.querySelectorAll('#catalog-chips .catalog-chip').forEach((chip) => {
     const on = chip.dataset.filter === activeCatalogFilter;
     chip.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-  document.querySelectorAll('#templates-grid .template-card').forEach((card) => {
+  const cards = Array.from(document.querySelectorAll('#templates-grid .template-card'));
+  cards.forEach((card) => {
     const vert = card.dataset.vertical || card.dataset.templateId || '';
     const id = card.dataset.templateId || '';
     const show = activeCatalogFilter === 'all'
-      || vert === 'all'
-      || vert === activeCatalogFilter
-      || id === activeCatalogFilter;
+      ? catalogExpanded || ['gol', 'restaurant', 'salon'].includes(id)
+      : vert === 'all' || vert === activeCatalogFilter || id === activeCatalogFilter;
     card.hidden = !show;
   });
+  const count = $('catalog-count');
+  if (count) count.textContent = cards.filter((card) => !card.hidden).length + ' din ' + cards.length + ' designuri afișate';
+  const expand = $('catalog-expand');
+  if (expand) {
+    const all = catalogExpanded && activeCatalogFilter === 'all';
+    expand.setAttribute('aria-expanded', all ? 'true' : 'false');
+    expand.textContent = all ? 'Revino la cele 3 exemple' : 'Vezi toate cele 13 designuri';
+  }
+  if (control) {
+    const header = document.querySelector('.app-header');
+    const minTop = (header ? header.getBoundingClientRect().bottom : 0) + 16;
+    const rect = control.getBoundingClientRect();
+    const targetTop = Math.max(minTop, Math.min(controlTop, window.innerHeight - rect.height - 16));
+    control.focus({ preventScroll: true });
+    // Anchor the initiating control across reflow, without motion or lost focus.
+    window.scrollTo({ top: window.scrollY + rect.top - targetTop, behavior: 'instant' });
+  }
 }
 
 /** Landing hero: three starter packs as small live pages (restaurant in the middle). */
@@ -1427,6 +1479,11 @@ function isNativeBookingOn(value) {
   return Boolean(value);
 }
 
+const siteDisplayNames = new WeakMap();
+function siteDisplayName(site) {
+  return siteDisplayNames.get(site) || site.projectName || site.slug || site.id || 'acest site';
+}
+
 function buildSiteCard(site) {
   const card = document.createElement('div');
   card.className = 'site-card';
@@ -1437,11 +1494,18 @@ function buildSiteCard(site) {
     apiGet('/api/sites/' + encodeURIComponent(site.id)).then((data) => {
       const cfg = data && data.config;
       if (!cfg || cfg.v !== 2) return;
+      const brand = window.SB.siteBrand(cfg).trim();
+      if (brand && brand !== 'Numele afacerii') {
+        siteDisplayNames.set(site, brand);
+        name.textContent = siteDisplayName(site);
+        const editLink = card.querySelector('.site-card-edit');
+        if (editLink) editLink.setAttribute('aria-label', 'Editează site-ul ' + brand);
+      }
       window.SB.setAssetBase('/app/generated/template-assets/');
       const iframe = document.createElement('iframe');
       iframe.setAttribute('sandbox', '');
       iframe.setAttribute('aria-hidden', 'true');
-      iframe.title = 'Previzualizare ' + (site.projectName || site.slug || 'site');
+      iframe.title = 'Previzualizare ' + (brand || site.projectName || site.slug || 'site');
       iframe.srcdoc = window.SB.withThumbs(() => window.SB.renderPage(cfg, cfg.pages[0].id, location.origin + '/app/'));
       thumbWrap.appendChild(iframe);
     }).catch(() => {});
@@ -1493,7 +1557,7 @@ function buildSiteCard(site) {
   const name = document.createElement('div');
   name.className = 'site-card-name';
   // Keep hyphenated slugs (qalive-w15) one unit — U+2011 is not a soft-wrap point.
-  const rawName = String(site.projectName || site.slug || site.id || '');
+  const rawName = String(siteDisplayName(site));
   name.textContent = rawName.replace(/-/g, '\u2011');
 
   const meta = document.createElement('div');
@@ -1829,7 +1893,14 @@ let cancelSubscriptionModalSite = null;
 function openCancelSubscriptionModal(site, opener) {
   cancelSubscriptionModalSite = site;
   const nameEl = $('cancel-subscription-name');
-  if (nameEl) nameEl.textContent = site.projectName || site.slug || 'acest site';
+  if (nameEl) nameEl.textContent = siteDisplayName(site);
+  const conditions = $('cancel-subscription-conditions');
+  if (conditions) {
+    const reactivate = formatRenewalLabel(appConfig);
+    conditions.textContent = isSiteInTrial(site)
+      ? `Site-ul nu va mai fi public după anulare. Dacă anulezi în perioada de probă, înainte de prima taxare, nu plătești nimic. Îl poți reactiva ulterior pentru ${reactivate}, fără o nouă perioadă de probă.`
+      : `Site-ul nu va mai fi public după anulare, fără nicio rambursare parțială pentru perioada rămasă. Îl poți reactiva ulterior pentru ${reactivate}, fără o nouă perioadă de probă.`;
+  }
   const errEl = $('cancel-subscription-error');
   if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
   openModal('modal-cancel-subscription', opener);
@@ -2761,7 +2832,7 @@ async function openSiteMessagesModal(siteId, opener) {
 
 const screens = ['templates', 'dashboard'];
 /** In-page landing sections a hash link may point at. */
-const LANDING_ANCHORS = ['cum-e', 'templates-grid', 'pret', 'intrebari'];
+const LANDING_ANCHORS = ['cum-e', 'templates-grid', 'pret', 'intrebari', 'demonstratie'];
 
 function showScreen(name) {
   screens.forEach(s => {
@@ -2830,7 +2901,7 @@ async function handleRoute(hash) {
     if (route !== 'templates') {
       requestAnimationFrame(() => {
         const target = document.getElementById(route);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (target) target.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
       });
     }
   } else if (route === 'edit') {
@@ -2890,6 +2961,22 @@ function returnToEditor() {
 
 function wireStaticButtons() {
   wireLandingName();
+  const demoInput = $('demo-title-input');
+  if (demoInput) {
+    let demoTimer;
+    demoInput.addEventListener('input', () => {
+      clearTimeout(demoTimer);
+      demoTimer = setTimeout(() => {
+        if (renderLandingDemo()) $('demo-status').textContent = 'Titlul tău este afișat pe telefon.';
+      }, 150);
+    });
+    $('demo-select').addEventListener('click', () => { demoInput.focus(); demoInput.select(); });
+  }
+  const expand = $('catalog-expand');
+  if (expand) expand.addEventListener('click', () => {
+    catalogExpanded = !(catalogExpanded && activeCatalogFilter === 'all');
+    applyCatalogFilter('all', expand);
+  });
 
   // Catalog filter chips (landing)
   const chips = $('catalog-chips');
@@ -2897,7 +2984,7 @@ function wireStaticButtons() {
     chips.addEventListener('click', (e) => {
       const btn = e.target.closest('.catalog-chip');
       if (!btn) return;
-      applyCatalogFilter(btn.dataset.filter || 'all');
+      applyCatalogFilter(btn.dataset.filter || 'all', btn);
     });
   }
 

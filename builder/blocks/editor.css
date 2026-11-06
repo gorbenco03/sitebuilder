@@ -19,7 +19,21 @@ button { font: inherit; cursor: pointer; }
 .top__name small { font-weight: 500; color: var(--ui-mute); margin-left: 6px; }
 .top__group { display: flex; gap: 6px; }
 .top__spacer { flex: 1; }
-.top__saved { font-size: 13px; color: #15803d; }
+.top__saved { font-size: 13px; color: #15803d; max-width: 320px; }
+.top__saved[data-state="pending"] { color: var(--ui-mute); }
+.top__saved[data-state="error"] { color: #a1261b; }
+.packs-confirm { padding: 0 24px 24px; line-height: 1.6; overflow-y: auto; }
+.packs-confirm .pub__row { flex-wrap: wrap; }
+.packs-confirm button { border: 1px solid var(--ui-line); border-radius: 8px; padding: 12px; min-height: 44px; }
+.picker-error { padding: 0 20px; flex-shrink: 0; }
+.draft-conflict { color: var(--ui-ink); background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 14px; padding: 24px; width: min(520px, calc(100% - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; line-height: 1.5; }
+.draft-conflict::backdrop { background: rgba(26, 23, 20, .55); }
+.draft-conflict h2 { margin-top: 0; font-size: 22px; }
+.draft-conflict div { display: flex; flex-direction: column; gap: 10px; }
+.draft-conflict button { min-height: 44px; padding: 12px; border: 1px solid var(--ui-line); border-radius: 8px; background: var(--ui-bg); color: var(--ui-ink); }
+.draft-conflict #draft-use-account { background: var(--ui-accent); color: #fff; }
+#draft-local-alternatives { margin-top: 10px; }
+#draft-conflict-error { color: #a1261b; }
 .top button { border: 1px solid var(--ui-line); background: #fff; border-radius: 8px; padding: 8px 12px; min-height: 36px; }
 .top button:disabled { opacity: .4; cursor: default; }
 .top button.primary { background: var(--ui-accent); border-color: var(--ui-accent); color: #fff; font-weight: 600; }
@@ -120,9 +134,9 @@ button { font: inherit; cursor: pointer; }
 .lib__box--sm { width: min(900px, 100%); height: min(640px, 100%); }
 .lib__head-actions { display: flex; align-items: center; gap: 8px; }
 .lib__head .upload { font-size: 14px; width: auto; height: 36px; padding: 0 14px; border: 1px solid var(--ui-line); border-radius: 8px; color: var(--ui-ink); }
-.picker-grid { flex: 1; overflow: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; align-content: start; }
-.pick { border: 2px solid transparent; border-radius: 10px; padding: 0; overflow: hidden; background: #eee; }
-.pick img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.picker-grid { flex: 1; min-height: 0; overflow: auto; padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: max-content; gap: 10px; align-content: start; }
+.pick { min-width: 0; aspect-ratio: 4 / 3; border: 2px solid transparent; border-radius: 10px; padding: 0; overflow: hidden; background: #eee; }
+.pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pick:hover { border-color: var(--ui-accent); }
 .pick.is-cur { border-color: var(--ui-ink); }
 .check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
@@ -201,3 +215,104 @@ button { font: inherit; cursor: pointer; }
 .ig__status { font-size: 14px; color: var(--ui-mute); }
 .ig__status.is-bad { color: #b91c1c; }
 .insp button.wide { width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--ui-accent); background: var(--ui-accent); color: #fff; font-weight: 600; }
+
+/* The same controls stay available in a compact editor. */
+body { height: 100dvh; }
+.top { flex-wrap: wrap; flex-shrink: 0; }
+.top__tools { display: contents; }
+#tools-toggle, #side-close { display: none; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 3px; }
+.lib__head { flex-shrink: 0; }
+
+@media (max-width: 1000px) {
+  .main { position: relative; }
+  .insp { position: absolute; z-index: 3; right: 0; top: 0; bottom: 0; width: min(360px, 100%); box-shadow: -12px 0 32px -20px rgba(0,0,0,.35); }
+}
+
+@media (max-width: 767px) {
+  .top { position: relative; gap: 6px; padding: 6px 8px; }
+  .top__back { flex-basis: 100%; min-height: 32px; display: flex; align-items: center; }
+  .top > .top__spacer { display: none; }
+  .top > .top__saved { flex-basis: 100%; order: 3; font-size: 12px; overflow-wrap: anywhere; }
+  .top > button { flex: 1; padding: 8px 6px; font-size: 13px; min-height: 44px; }
+  #tools-toggle { display: block; }
+  .top__tools { display: none; }
+  .top__tools.is-open { position: absolute; top: 100%; left: 8px; right: 8px; z-index: 5; display: flex; flex-direction: column; gap: 10px; padding: 14px; max-height: 50dvh; overflow: auto; border: 1px solid var(--ui-line); border-radius: 0 0 12px 12px; background: var(--ui-panel); box-shadow: 0 12px 30px -16px rgba(0,0,0,.4); }
+  .top__tools button { min-height: 44px; }
+  .top__tools .top__group { flex-wrap: wrap; }
+  .top__tools .top__group button { flex: 1; min-height: 44px; }
+  .top__name, .top__pack { overflow-wrap: anywhere; }
+  .main { flex-direction: column; }
+  .side { width: 100%; flex: 0 1 auto; max-height: 48%; border-right: 0; border-bottom: 1px solid var(--ui-line); }
+  .tabs { flex-shrink: 0; }
+  .tabs button { min-height: 44px; padding: 10px 6px; }
+  .side .panel { display: none; min-height: 0; }
+  .side.is-open .panel:not([hidden]) { display: block; }
+  .side.is-open #side-close { display: block; flex-shrink: 0; order: 2; min-height: 44px; border: 0; border-top: 1px solid var(--ui-line); background: var(--ui-bg); color: var(--ui-ink); font-weight: 600; }
+  .stage { padding: 8px; min-height: 0; }
+  .frame-wrap { border-radius: 6px; }
+  .insp { position: static; flex: 0 0 70%; width: 100%; height: 70%; max-height: 100%; border-left: 0; border-top: 1px solid var(--ui-line); border-radius: 12px 12px 0 0; box-shadow: 0 -12px 32px -20px rgba(0,0,0,.4); }
+  .insp__head { padding: 6px 12px; flex-shrink: 0; }
+  .insp__head button { width: 44px; height: 44px; }
+  #insp-body { min-height: 0; padding: 12px; }
+  .fld, .fld input, .fld textarea, .fld select { min-width: 0; max-width: 100%; }
+  .fld input, .fld textarea, .fld select { font-size: 16px; }
+  .weekfld__row { flex-wrap: wrap; }
+  .plist .pactions { opacity: 1; }
+  .plist .pactions button { width: 32px; height: 36px; }
+  .lib { padding: 8px; }
+  .lib__head { padding: 8px 10px; gap: 8px; }
+  .lib__head h2 { font-size: 16px; overflow-wrap: anywhere; }
+  .lib__head button { flex-shrink: 0; min-height: 44px; }
+  #picker .lib__head { flex-wrap: wrap; }
+  #picker .lib__head-actions { width: 100%; justify-content: space-between; }
+  .picker-grid { padding: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lib__body { flex-direction: column; }
+  .lib__cats { width: 100%; flex-direction: row; overflow: auto; flex-shrink: 0; border-right: 0; border-bottom: 1px solid var(--ui-line); }
+  .lib__cats button { flex-shrink: 0; min-height: 44px; }
+  .lib__grid { min-width: 0; grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  .lib__box--pub { max-height: 100%; }
+  .pub__body { padding: 8px 14px 14px; overflow: auto; min-height: 0; }
+  .pub__fld input { min-width: 0; font-size: 16px; }
+  .pv__bar { flex-wrap: wrap; padding: 8px; gap: 6px; max-height: 40%; overflow: auto; }
+  .pv__bar button { min-height: 44px; }
+  .pv__bar .top__spacer { display: none; }
+  .pv__pages { flex-basis: 100%; }
+  .pv__stage { padding: 8px; }
+}
+
+/* Recognition controls */
+.choice-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 10px 10px; margin-top: auto; }
+.choice-actions button, #blank-guide button { border: 1px solid var(--ui-line); background: #fff; color: var(--ui-ink); border-radius: 8px; min-height: 44px; padding: 8px 10px; font-size: 13px; }
+.choice-actions button:last-child { font-weight: 600; }
+.addgrid { grid-template-columns: minmax(0, 1fr); }
+.addcard .lib__meta { padding: 8px 10px; }
+.addcard__thumb { height: 110px; }
+.addcard__thumb iframe { width: 400%; height: 400%; transform: scale(.25); }
+.recognition-preview { color: var(--ui-ink); background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 12px; width: min(1200px, calc(100% - 16px)); height: calc(100dvh - 24px); max-height: none; max-width: none; padding: 16px; }
+.recognition-preview[open] { display: flex; flex-direction: column; gap: 12px; }
+.recognition-preview::backdrop { background: rgba(26,23,20,.65); }
+.recognition-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.recognition-head h2 { font-size: 18px; margin: 0; overflow-wrap: anywhere; }
+.recognition-preview button { border: 1px solid var(--ui-line); border-radius: 8px; padding: 10px 14px; min-height: 44px; background: var(--ui-bg); color: var(--ui-ink); }
+.recognition-preview .primary { background: var(--ui-accent); color: #fff; align-self: flex-start; }
+.recognition-preview iframe { width: 100%; flex: 1; min-height: 0; border: 1px solid var(--ui-line); background: #fff; }
+.insp-identity { font-size: 13px; line-height: 1.5; padding: 8px 10px; margin: 0; border-left: 3px solid var(--ui-accent); background: var(--ui-bg); }
+.insp-tabs { display: flex; flex-shrink: 0; border-bottom: 1px solid var(--ui-line); }
+.insp-tabs button { flex: 1; padding: 8px; min-height: 44px; border: 0; border-bottom: 3px solid transparent; background: #fff; color: var(--ui-mute); font-size: 13px; }
+.insp-tabs [aria-selected="true"] { border-bottom-color: var(--ui-accent); color: var(--ui-ink); font-weight: 700; }
+.insp-fields, #insp-body [role="tabpanel"] { display: flex; flex-direction: column; gap: 12px; }
+.insp-actions { border-top: 1px solid var(--ui-line); padding-top: 16px; }
+.insp-destructive { border-top: 1px dashed var(--ui-line); padding-top: 12px; margin-top: 12px; }
+#blank-guide { border: 1px solid var(--ui-line); border-radius: 10px; padding: 12px; margin-bottom: 20px; background: var(--ui-bg); }
+#blank-guide h3 { margin-top: 0; color: var(--ui-ink); }
+#blank-guide .check { align-items: flex-start; line-height: 1.5; }
+#blank-guide details { margin: 12px 0; font-size: 13px; line-height: 1.5; }
+#blank-guide summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+#blank-guide ul { padding-left: 20px; }
+button:focus-visible, #blank-guide summary:focus-visible { outline: 3px solid var(--ui-accent); outline-offset: 2px; }
+@media (max-width: 767px) {
+  .recognition-preview { padding: 10px; gap: 8px; }
+  .recognition-preview .hint { margin: 0; }
+  .recognition-head button { flex-shrink: 0; }
+}

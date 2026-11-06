@@ -163,6 +163,33 @@ function blankMessagesApiInHtml(html) {
 // 3. Public submission: validate + persist + notify.
 // ---------------------------------------------------------------------------
 
+/** Accept legacy email contacts or a dialable RO/international phone, never truncating it. */
+function normalizeReplyContact(value) {
+    const raw = String(value == null ? '' : value).trim();
+    if (!raw || raw.length > CONTACT_MAX || /[\x00-\x1f\x7f]/.test(raw)) return null;
+    if (raw.includes('@')) {
+        const parts = raw.split('@');
+        if (parts.length !== 2 || !/^[^\s@"<>(),;:\\]+$/.test(parts[0]) ||
+            parts[0].startsWith('.') || parts[0].endsWith('.') || parts[0].includes('..')) return null;
+        const labels = parts[1].split('.');
+        return labels.length >= 2 && labels.every(label =>
+            /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label)) ? raw : null;
+    }
+    if (!/^\+?[0-9\s().-]+$/.test(raw)) return null;
+    let digits = raw.replace(/\D/g, '');
+    const international = raw.startsWith('+') || digits.startsWith('00');
+    if (digits.startsWith('00')) digits = digits.slice(2);
+    if (international) {
+        if (!/^[1-9]\d{6,14}$/.test(digits)) return null;
+        if (digits.startsWith('40') && !/^40[237]\d{8}$/.test(digits)) return null;
+        return '+' + digits;
+    }
+    if (digits.startsWith('0')) return /^0[237]\d{8}$/.test(digits) ? digits : null;
+    if (!/^[1-9]\d{6,14}$/.test(digits)) return null;
+    if (digits.startsWith('40') && !/^40[237]\d{8}$/.test(digits)) return null;
+    return '+' + digits;
+}
+
 /**
  * @param {{ slug: string, name: string, contact: string, message: string, website?: string }} body
  * @returns {{ ok: true, dropped?: boolean } | { ok: false, status: number, error: string, code?: string }}
@@ -193,10 +220,14 @@ function createPublicMessage(body) {
     }
 
     const name = String((body && body.name) || '').trim().slice(0, NAME_MAX);
-    const contact = String((body && body.contact) || '').trim().slice(0, CONTACT_MAX);
+    const rawContact = String((body && body.contact) || '').trim();
     const message = String((body && body.message) || '').trim().slice(0, MESSAGE_MAX);
-    if (!name || !contact || !message) {
+    if (!name || !rawContact || !message) {
         return { ok: false, status: 400, error: 'Numele, contactul și mesajul sunt obligatorii.', code: 'MISSING_FIELDS' };
+    }
+    const contact = normalizeReplyContact(rawContact);
+    if (!contact) {
+        return { ok: false, status: 400, error: 'Scrie un număr de telefon valid (de exemplu 0712 345 678 sau +40 712 345 678) ori o adresă de email validă.', code: 'INVALID_CONTACT' };
     }
 
     const record = reg.createSiteMessage({ siteId: site.id, name, contact, message });

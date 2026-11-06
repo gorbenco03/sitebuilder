@@ -376,7 +376,7 @@ function _deleteVersionsBySeq(seqs) {
 /**
  * @param {string} siteId
  * @param {object} config
- * @param {{ published?: boolean }} [opts] `published: true` marks this row
+ * @param {{ published?: boolean, expectedVersionId?: string|null }} [opts] `published: true` marks this row
  *   as a real Publică (bot/webpublish.js#publishSite) rather than an
  *   ordinary draft autosave. Not part of the public return/listVersions
  *   shape (registry-characterization.test.js pins that to
@@ -384,12 +384,22 @@ function _deleteVersionsBySeq(seqs) {
  *   below evicts first.
  */
 function saveVersion(siteId, config, opts) {
+    const conditional = !!opts && Object.prototype.hasOwnProperty.call(opts, 'expectedVersionId');
+    if (conditional && opts.expectedVersionId !== null && (typeof opts.expectedVersionId !== 'string' || !opts.expectedVersionId.trim())) {
+        throw Object.assign(new Error('Invalid draft revision'), { code: 'DRAFT_VERSION_INVALID' });
+    }
     const versionId   = crypto.randomUUID();
     const publishedAt = new Date().toISOString();
     const published   = !!(opts && opts.published);
 
     db.exec('BEGIN IMMEDIATE;');
     try {
+        if (conditional) {
+            const row = db.prepare('SELECT version_id FROM versions WHERE site_id = ? ORDER BY seq DESC LIMIT 1').get(siteId);
+            if ((row ? row.version_id : null) !== opts.expectedVersionId) {
+                throw Object.assign(new Error('Draft revision changed'), { code: 'DRAFT_VERSION_CONFLICT' });
+            }
+        }
         db.prepare('INSERT INTO versions (version_id, site_id, published_at, config, published) VALUES (?, ?, ?, ?, ?)')
             .run(versionId, siteId, publishedAt, JSON.stringify(config), published ? 1 : 0);
 

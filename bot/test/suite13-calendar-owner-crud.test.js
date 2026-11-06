@@ -55,6 +55,7 @@ const { openCalendarDb } = require('../calendar-native/db');
 const engine = require('../calendar-native/engine');
 const ownerApi = require('../calendar-native/owner-api');
 const publicApi = require('../calendar-native/public-api');
+const { futureUtcNoon } = require('./helpers/nov06-calendar-fixture');
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cal-suite13-'));
 const db = openCalendarDb({
@@ -105,7 +106,7 @@ assert.strictEqual(engine.getService(db, T.customerId, T.siteId, createOut2.serv
 
 // Delete WITH a future active booking is blocked, never silently orphaning
 // or cancelling it.
-const futureStart = new Date(Date.now() + 5 * 86400000).toISOString();
+const futureStart = futureUtcNoon(5);
 const futureBooking = engine.createBooking(db, T.customerId, T.siteId, {
     serviceId: svcId, startUtc: futureStart, visitorName: 'Ion Pop', visitorEmail: 'ion@example.com',
 });
@@ -143,7 +144,7 @@ assert.ok(resCreate.ok);
 const resId = resCreate.resource.id;
 engine.setWeeklyAvailability(db, T.customerId, T.siteId, ALL_DAY_WINDOWS, { resourceId: resId });
 
-const resFutureStart = new Date(Date.now() + 4 * 86400000).toISOString();
+const resFutureStart = futureUtcNoon(4);
 const resBooking = engine.createBooking(db, T.customerId, T.siteId, {
     serviceId: svcForStaff.id, resourceId: resId, startUtc: resFutureStart,
     visitorName: 'Maria D', visitorEmail: 'maria@example.com',
@@ -244,7 +245,7 @@ try {
     engine.createBooking(db, T.customerId, T.siteId, {
         serviceId: hourslessSvc.id,
         resourceId: hourlessRes.resource.id,
-        startUtc: new Date(Date.now() + 2 * 86400000).toISOString(),
+        startUtc: futureUtcNoon(2),
         visitorName: 'Radu N', visitorEmail: 'radu@example.com',
     });
 } catch (e) {
@@ -259,7 +260,7 @@ const afterHours = ownerApi.listOwnerResources(db, T.customerId, T.siteId).resou
 assert.strictEqual(afterHours.hasHours, true);
 const nowBookable = engine.createBooking(db, T.customerId, T.siteId, {
     serviceId: hourslessSvc.id, resourceId: hourlessRes.resource.id,
-    startUtc: new Date(Date.now() + 2 * 86400000).toISOString(),
+    startUtc: futureUtcNoon(2),
     visitorName: 'Radu N', visitorEmail: 'radu@example.com',
 });
 assert.strictEqual(nowBookable.status, 'confirmed', 'once hours exist, the same resource must be bookable');

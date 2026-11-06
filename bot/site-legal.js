@@ -70,10 +70,12 @@ function legalShell(opts) {
     <h1>${escapeHtml(h1)}</h1>
     <p class="hb-legal-meta">${biz} · ${y} · politici de bază ale site-ului</p>
     <div class="hb-legal-notice" role="note">
-      <strong>Politici de bază pentru site-ul publicat — nu sunt consultanță juridică personalizată.</strong>
-      Titularul afacerii completează datele de identificare (denumire legală, CUI/VAT, adresă, jurisdicție)
-      în locurile marcate <code>[PLACEHOLDER …]</code>. Până atunci, aceste pagini descriu practicile tipice
-      ale site-ului generat (formulare, cookie-uri esențiale, contact).
+      <strong>Ciornă juridică incompletă — nu este pregătită pentru utilizare comercială.</strong>
+      Înainte de lansarea comercială, proprietarul trebuie să furnizeze și să aprobe denumirea legală a entității,
+      CUI/VAT, adresa sediului, operatorul și procesatorii, retenția datelor, subprocesorii
+      (inclusiv serviciile de plăți, găzduire, e-mail, Instagram și calendar folosite), jurisdicția și textul legal final.
+      Câmpurile <code>[PLACEHOLDER …]</code> sunt încă de completat; numele afișat al afacerii nu confirmă identitatea legală.
+      Aceste pagini sunt pentru validare în dezvoltare, nu dovedesc conformitatea și nu sunt consultanță juridică.
     </div>
     ${body}
     <nav class="hb-legal-nav" aria-label="Pagini legale">

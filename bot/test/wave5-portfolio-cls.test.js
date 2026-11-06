@@ -37,9 +37,15 @@
  *
  * This oracle builds the REAL production output (via build.js's `build()`,
  * which also generates cookie-banner.css/js exactly like a real publish),
- * once from the git HEAD (pre-fix) sources and once from the current working
- * tree, and measures CLS with Playwright's Chromium (node_modules) at 1440
- * and 390 wide under the audit's throttling profile.
+ * from current working-tree sources for acceptance. The negative control uses
+ * pinned pre-fix template AND consent assets, with only stylesheet discovery
+ * deferred until after an observed first paint. A body stylesheet's natural
+ * request timing no longer reliably guarantees a post-paint application in
+ * Chromium. This bounded scheduling mutation reinstates the diagnosed late
+ * clearance, not invented CSS dimensions or a mocked PerformanceObserver.
+ * An early-load twin uses identical historical bytes plus the original fix's
+ * head placement / initial consent class, isolating timing from content.
+ * Both widths retain real Chromium layout-shift entries and audit throttling.
  *
  * Run: node bot/test/wave5-portfolio-cls.test.js
  * Evidence: 04-QA-Evidence/Wave5-portfolio/performance/
@@ -49,14 +55,12 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const http = require('http');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
+const vm = require('vm');
+const crypto = require('crypto');
 
-
-// The pre-fix baseline is pinned to the commit this wave branched from, not
-// to HEAD. Using HEAD meant the oracle asserted "the bug is present at HEAD",
-// which stops being true the moment the fix is merged -- the check would then
-// fail forever, for the wrong reason. Override with HIDOOK_BEFORE_REF.
-const BEFORE_REF = process.env.HIDOOK_BEFORE_REF || '8a13c19';
+// Immutable historical fixture; current build() is deliberately still used.
+const BEFORE_REF = '8a13c198621e34d95266597dc1d1642b4fcc3afa';
 const ROOT = path.resolve(__dirname, '../..');
 const EVIDENCE = path.join(ROOT, '04-QA-Evidence', 'Wave5-portfolio', 'performance');
 const TPL_DIR = path.join(ROOT, 'templates', 'portfolio');
@@ -83,9 +87,28 @@ function loadPlaywright() {
   return require('playwright');
 }
 
-/** Read a template file's content at a given git ref ("HEAD" = before this wave's edits). */
+/** Read only pinned historical fixture bytes, never alter production modules. */
 function readAtRef(ref, relFile) {
-  return execSync(`git show ${ref}:templates/portfolio/${relFile}`, { cwd: ROOT, encoding: 'utf8' });
+  return execFileSync('git', ['show', ref + ':templates/portfolio/' + relFile], { cwd: ROOT, encoding: 'utf8' });
+}
+
+const historicalLegalSource = execFileSync('git', ['show', BEFORE_REF + ':bot/site-legal.js'], { cwd: ROOT, encoding: 'utf8' });
+const historicalModule = { exports: {} };
+vm.runInNewContext(historicalLegalSource, { module: historicalModule, require }, { filename: 'historical-site-legal.js' });
+const historicalLegal = historicalModule.exports;
+const consentLink = '<link rel="stylesheet" href="cookie-banner.css">';
+function historicalFixture(dir, late) {
+  for (const [name, bytes] of [['cookie-banner.css', historicalLegal.COOKIE_BANNER_CSS], ['cookie-banner.js', historicalLegal.COOKIE_BANNER_JS]]) {
+    fs.writeFileSync(path.join(dir, name), bytes);
+  }
+  const file = path.join(dir, 'index.html');
+  const html = fs.readFileSync(file, 'utf8');
+  assert.strictEqual(html.split(consentLink).length, 2, 'historical output has exactly one body consent stylesheet');
+  assert.ok(html.indexOf(consentLink) > html.indexOf('</head>'));
+  const withoutLink = html.replace(consentLink, '');
+  // Only discovery timing changes. Early twin mirrors the two original fixes.
+  fs.writeFileSync(file, late ? withoutLink : withoutLink.replace('</head>', consentLink +
+    "<script>document.documentElement.classList.add('hb-cookie-open')</script></head>"));
 }
 
 function readWorkingTree(relFile) {
@@ -136,10 +159,16 @@ function serveDir(dir) {
 }
 
 const CLS_INIT = () => {
-  window.__perf = { cls: 0, lcp: null };
+  window.__perf = { cls: 0, lcp: null, shifts: [] };
   try {
     new PerformanceObserver((list) => {
-      for (const e of list.getEntries()) if (!e.hadRecentInput) window.__perf.cls += e.value;
+      for (const e of list.getEntries()) if (!e.hadRecentInput) {
+        window.__perf.cls += e.value;
+        window.__perf.shifts.push({ time: e.startTime, value: e.value, sources: (e.sources || []).map(s => ({
+          className: s.node && s.node.className,
+          previous: s.previousRect.toJSON(), current: s.currentRect.toJSON(),
+        })) });
+      }
     }).observe({ type: 'layout-shift', buffered: true });
   } catch (e) {}
   try {
@@ -151,7 +180,7 @@ const CLS_INIT = () => {
   } catch (e) {}
 };
 
-async function measureCls(browser, base, viewport, screenshotPath) {
+async function measureCls(browser, base, viewport, screenshotPath, late = false) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   await page.addInitScript(CLS_INIT);
@@ -166,6 +195,26 @@ async function measureCls(browser, base, viewport, screenshotPath) {
   await client.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   await page.goto(base + '/index.html', { waitUntil: 'load' });
   await page.waitForTimeout(2000);
+  if (late) {
+    await page.waitForFunction(() => performance.getEntriesByName('first-contentful-paint').length > 0);
+    await page.evaluate(async () => {
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const copy = document.querySelector('.hero-content');
+      const geometry = () => ({ paddingBottom: getComputedStyle(copy).paddingBottom, rect: copy.getBoundingClientRect().toJSON() });
+      window.__perf.clearanceBefore = geometry();
+      window.__perf.releaseTime = performance.now();
+      window.__perf.firstPaint = performance.getEntriesByName('first-contentful-paint')[0].startTime;
+      await new Promise((resolve, reject) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet'; link.href = 'cookie-banner.css';
+        link.onload = resolve; link.onerror = reject;
+        document.head.appendChild(link);
+      });
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      window.__perf.clearanceAfter = geometry();
+    });
+    await page.waitForTimeout(2000);
+  }
   const perf = await page.evaluate(() => window.__perf);
   if (screenshotPath) await page.screenshot({ path: screenshotPath });
   await context.close();
@@ -177,14 +226,23 @@ async function main() {
   const { chromium } = loadPlaywright();
 
   const beforeDir = buildVariant('before', (name) => readAtRef(BEFORE_REF, name));
+  const earlyDir = buildVariant('early', (name) => readAtRef(BEFORE_REF, name));
+  historicalFixture(beforeDir, true);
+  historicalFixture(earlyDir, false);
   const afterDir = buildVariant('after', (name) => readWorkingTree(name));
 
   const beforeServer = await serveDir(beforeDir);
+  const earlyServer = await serveDir(earlyDir);
+  const earlyBase = 'http://127.0.0.1:' + earlyServer.address().port;
   const afterServer = await serveDir(afterDir);
   const beforeBase = 'http://127.0.0.1:' + beforeServer.address().port;
   const afterBase = 'http://127.0.0.1:' + afterServer.address().port;
 
-  const results = { before: {}, after: {} };
+  const results = { before: {}, after: {}, early: {}, fixture: {
+    ref: BEFORE_REF,
+    legalSha256: crypto.createHash('sha256').update(historicalLegalSource).digest('hex'),
+    schedulingMutation: 'discover historical consent CSS only after FCP + two painted frames; no CSS dimension changes',
+  } };
 
   try {
     const browser = await chromium.launch({ headless: true });
@@ -197,8 +255,9 @@ async function main() {
       for (const { key, viewport } of viewports) {
         results.before[key] = await measureCls(
           browser, beforeBase, viewport,
-          path.join(EVIDENCE, 'before-' + key + '.png')
+          path.join(EVIDENCE, 'before-' + key + '.png'), true
         );
+        results.early[key] = await measureCls(browser, earlyBase, viewport);
         results.after[key] = await measureCls(
           browser, afterBase, viewport,
           path.join(EVIDENCE, 'after-' + key + '.png')
@@ -210,18 +269,30 @@ async function main() {
     }
   } finally {
     await new Promise((r) => beforeServer.close(r));
+    await new Promise((r) => earlyServer.close(r));
     await new Promise((r) => afterServer.close(r));
+    fs.rmSync(earlyDir, { recursive: true, force: true });
     fs.rmSync(beforeDir, { recursive: true, force: true });
     fs.rmSync(afterDir, { recursive: true, force: true });
   }
 
   fs.writeFileSync(path.join(EVIDENCE, 'summary.json'), JSON.stringify(results, null, 2));
 
-  await check('before (git HEAD): desktop CLS reproduces the real regression (> 0.05)', () => {
+  for (const key of ['desktop1440', 'mobile390']) {
+    await check('causal clearance control ' + key, () => {
+      const p = results.before[key];
+      assert.ok(p.firstPaint < p.releaseTime, 'stylesheet must be released after a real paint');
+      assert.ok(parseFloat(p.clearanceAfter.paddingBottom) > parseFloat(p.clearanceBefore.paddingBottom), 'historical consent CSS must increase real hero padding');
+      assert.ok(p.shifts.some(s => s.time >= p.releaseTime && s.sources.some(n => /hero-content|scroll-hint/.test(n.className))), 'real post-release shift must name hero copy/scroll hint');
+      assert.ok(results.early[key].cls < 0.02, 'same historical bytes loaded early must eliminate shift');
+    });
+  }
+
+  await check('before (scheduled historical fixture): desktop CLS reproduces the real regression (> 0.05)', () => {
     assert.ok(results.before.desktop1440.cls > 0.05,
       'expected a real pre-fix shift on desktop, got CLS=' + results.before.desktop1440.cls);
   });
-  await check('before (git HEAD): mobile CLS reproduces the real regression (> 0.05)', () => {
+  await check('before (scheduled historical fixture): mobile CLS reproduces the real regression (> 0.05)', () => {
     assert.ok(results.before.mobile390.cls > 0.05,
       'expected a real pre-fix shift on mobile, got CLS=' + results.before.mobile390.cls);
   });
